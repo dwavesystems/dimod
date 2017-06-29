@@ -1,7 +1,7 @@
 
 
 class DiscreteModelSolver(object):
-    def solve_qubo(self, Q, detailed=False, **solver_params):
+    def solve_qubo(self, Q, **solver_params):
         """Implemented solvers should overwrite this.
 
         Args:
@@ -13,14 +13,14 @@ class DiscreteModelSolver(object):
         """
         raise NotImplementedError
 
-    def solve_ising(self, h, J, detailed=False, **solver_params):
+    def solve_ising(self, h, J, **solver_params):
         """TODO"""
         raise NotImplementedError
 
-    def solve_structured_qubo(self, Q, detailed=False, **solver_params):
+    def solve_structured_qubo(self, Q, **solver_params):
         """TODO"""
         raise NotImplementedError
 
-    def solve_structured_ising(self, h, J, detailed=False, **solver_params):
+    def solve_structured_ising(self, h, J, **solver_params):
         """TODO"""
         raise NotImplementedError

@@ -3,51 +3,44 @@ TODO: Note that this requires SAPI for now, we would like to remove
 this requirement
 """
 from dwave_sapi2.local import local_connection
-from dwave_sapi2.core import solve_ising, solve_qubo
-from dwave_sapi2.util import get_chimera_adjacency, qubo_to_ising
+from dwave_sapi2.core import solve_ising
+from dwave_sapi2.util import get_hardware_adjacency, qubo_to_ising
 from dwave_sapi2.embedding import find_embedding, embed_problem, unembed_answer
 
 
 from dwave_qasolver.solver_template import DiscreteModelSolver
+from dwave_qasolver.solution_templates import SpinSolution
+from dwave_qasolver.decorators import solve_qubo_api, solve_ising_api
+from dwave_qasolver.decorators import qubo_index_labels, ising_index_labels
 
-from dwave_qasolver.decorators import solve_qubo_api
+
+_sapi_solver = local_connection.get_solver("c4-sw_optimize")
 
 
 class SoftwareOptimizer(DiscreteModelSolver):
     @solve_qubo_api()
-    def solve_qubo(self, Q, detailed=False, **args):
-        # relabel Q with indices
-        label = {}
-        idx = 0
-        for n1, n2 in Q:
-            if n1 not in label:
-                label[n1] = idx
-                idx += 1
-            if n2 not in label:
-                label[n2] = idx
-                idx += 1
-        Qrl = {(label[n1], label[n2]): Q[(n1, n2)] for (n1, n2) in Q}
+    @qubo_index_labels()
+    def solve_qubo(self, Q, **args):
+        (h, J, ising_offset) = qubo_to_ising(Q)
+        solutions = self.solve_ising(h, J, **args)
+        return solutions.as_bool()
 
-        # get the solfware solver from sapi
-        solver = local_connection.get_solver("c4-sw_optimize")
-        A = get_chimera_adjacency(4, 4, 4)
+    @solve_ising_api()
+    @ising_index_labels()
+    def solve_ising(self, h, J, **args):
 
-        # convert the problem to Ising
-        (h, J, ising_offset) = qubo_to_ising(Qrl)
+        if not J:
+            solutions = [{node: h[node] < 0 and 1 or -1 for node in h}]
+            return SpinSolution(solutions)
 
-        # get the embedding, this function assumes that the given problem is
-        # unstructured
-        embeddings = find_embedding(Qrl, A, tries=50)
-        if not embeddings:
-            raise Exception('problem is too large to be embedded')
-        [h0, j0, jc, embeddings] = embed_problem(h, J, embeddings, A)
+        solver = _sapi_solver
 
-        # actually solve the thing
-        j = j0
-        j.update(jc)
-        result = solve_ising(solver, h0, j)
-        ans = unembed_answer(result['solutions'], embeddings, 'minimize_energy', h, J)
+        A = get_hardware_adjacency(solver)
 
-        # unapply the relabelling and convert back from spin
-        inv_label = {label[n]: n for n in label}
-        return {inv_label[i]: (spin + 1) / 2 for i, spin in enumerate(ans[0])}
+        embeddings = find_embedding(J, A)
+
+        (h0, j0, jc, new_emb) = embed_problem(h, J, embeddings, A)
+        emb_j = j0.copy()
+        emb_j.update(jc)
+        result = solve_ising(solver, h0, emb_j, num_reads=6)
+        new_answer = unembed_answer(result['solutions'], new_emb, 'minimize_energy', h, J)

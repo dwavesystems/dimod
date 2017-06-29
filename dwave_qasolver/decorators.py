@@ -4,11 +4,12 @@ TODO
 
 from decorator import decorator
 
-__all__ = ['solve_qubo_api', 'qubo_index_labels']
+__all__ = ['solve_qubo_api', 'solve_ising_api',
+           'qubo_index_labels', 'ising_index_labels']
 
 
 def solve_qubo_api():
-    """Provides input checking for qubo methods.
+    """Provides input checking for QUBO methods.
 
     Returns:
         Function that checks the form of inputs to confirm that they
@@ -20,13 +21,63 @@ def solve_qubo_api():
     """
     @decorator
     def _solve_qubo(f, *args, **kw):
-
         Q = args[1]
         if not isinstance(Q, dict):
             raise TypeError("expected first input 'Q' to be of type 'dict'")
 
         return f(*args, **kw)
     return _solve_qubo
+
+
+def solve_ising_api():
+    """Provides input checking for Ising methods.
+
+    Returns:
+        Function that checks the form of the Ising inputs to confirm
+        TODO
+
+    Raises:
+        TypeError: If `J` is not a dict.
+
+        ValueError: If the keys of `J` are not edges, that is tuples
+        of form (var1, var2)
+
+        ValueError: For each edge (v0, v1) in `J`, either expect v0 and v1
+        to be keys of `h` if `h` is a dict, or v0 < len(h) and v1 < len(h).
+
+        ValueError: Variables cannot have edges to themselves.
+
+    """
+    @decorator
+    def _solve_ising(f, *args, **kw):
+
+        h = args[1]
+        J = args[2]
+
+        if isinstance(h, (list, tuple)):
+            h = {idx: bias for idx, bias in enumerate(h)}
+
+        if not isinstance(J, dict):
+            raise TypeError("expected input 'J' to be a 'dict'")
+
+        if any(len(edge) != 2 for edge in J):
+            raise ValueError("each key in J should be an edge of form (var1, var2)")
+
+        for edge in J:
+            for v in edge:
+                if v not in h:
+                    raise ValueError("recieved unexpected variable '{}' in 'J'. ".format(v))
+
+            v0, v1 = edge
+            if v0 == v1:
+                raise ValueError("'({}, {})' is not an allowed edge.".format(v0, v1))
+
+        newargs = [arg for arg in args]
+        newargs[1] = h
+        newargs[2] = J
+
+        return f(*newargs, **kw)
+    return _solve_ising
 
 
 def qubo_index_labels():
@@ -49,7 +100,6 @@ def qubo_index_labels():
     def _qubo_index_labels(f, *args, **kw):
 
         Q = args[1]
-        detailed_solution = args[2]
 
         # get all of the node labels from Q
         nodes = reduce(set.union, ({n0, n1} for n0, n1 in Q))
@@ -70,10 +120,37 @@ def qubo_index_labels():
 
         solutions = f(*newargs, **kw)
 
-        if detailed_solution:
-            raise NotImplemented
-        else:
-            return [{inv_relabel[idx]: soln[idx] for idx in soln}
-                    for soln in solutions]
+        return solutions.relabel_variables(inv_relabel)
 
     return _qubo_index_labels
+
+
+def ising_index_labels():
+    """Replaces the variable labels in h and J with integers.
+
+    Returns:
+        Function that replaces the user-given Ising problem with one
+        that has integer labels, runs the decorated method, then
+        restores the original labels.
+
+    Notes:
+        The integer labels start with 0.
+
+        The relabelling is applied to the given labels sorted
+        lexigraphically.
+
+    """
+    @decorator
+    def _ising_index_labels(f, *args, **kw):
+
+        h = args[1]
+        J = args[2]
+
+        variables = reduce(set.union, ({n0, n1} for n0, n1 in J), set())
+        variables.update(h)
+
+        if all(idx in variables for idx in range(len(variables))):
+            return f(*args, **kw)
+
+        raise NotImplementedError
+    return _ising_index_labels
