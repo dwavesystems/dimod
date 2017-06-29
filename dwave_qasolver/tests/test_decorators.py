@@ -1,6 +1,7 @@
 import unittest
 
 from dwave_qasolver.solver_template import DiscreteModelSolver
+from dwave_qasolver.solution_templates import SpinSolution, BooleanSolution
 from dwave_qasolver.decorators import solve_qubo_api, qubo_index_labels
 
 
@@ -15,7 +16,7 @@ class DummySolver(DiscreteModelSolver):
         # check that all of the nodes are index labelled
         testcase.assertTrue(all(isinstance(n, int) for n in nodes))
 
-        return [{node: 0 for node in nodes}]
+        return BooleanSolution([{node: 0 for node in nodes}])
 
 
 class TestDecorators(unittest.TestCase):

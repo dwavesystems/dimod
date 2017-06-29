@@ -44,3 +44,7 @@ class SoftwareOptimizer(DiscreteModelSolver):
         emb_j.update(jc)
         result = solve_ising(solver, h0, emb_j, num_reads=6)
         new_answer = unembed_answer(result['solutions'], new_emb, 'minimize_energy', h, J)
+
+        solutions = [{idx: spin for idx, spin in enumerate(ans)} for ans in new_answer]
+
+        return SpinSolution(solutions)
