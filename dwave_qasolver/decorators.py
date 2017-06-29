@@ -143,14 +143,35 @@ def ising_index_labels():
     @decorator
     def _ising_index_labels(f, *args, **kw):
 
+        # get h and J out of the given arguments
         h = args[1]
         J = args[2]
 
+        # we want to know all of the variables used
         variables = reduce(set.union, ({n0, n1} for n0, n1 in J), set())
         variables.update(h)
 
+        # if all of the variables are already index-labelled, then we don't need to do
+        # anything
         if all(idx in variables for idx in range(len(variables))):
             return f(*args, **kw)
 
-        raise NotImplementedError
+        # Let's make the mapping, we do this by sorting the current labels lexigraphically
+        relabel = {var: idx for idx, var in enumerate(sorted(variables))}
+        inv_relabel = {relabel[var]: var for var in relabel}
+
+        # now apply this mapping to h and J
+        h = {relabel[var]: h[var] for var in h}
+        J = {(relabel[v0], relabel[v1]): J[(v0, v1)] for v0, v1 in J}
+
+        # finally run the function with the new h, J
+        newargs = [arg for arg in args]
+        newargs[1] = h
+        newargs[2] = J
+
+        # run the solver
+        response = f(*newargs, **kw)
+
+        # finally unapply the relabelling
+        return response.relabel_variables(inv_relabel)
     return _ising_index_labels
