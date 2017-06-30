@@ -24,3 +24,7 @@ class DiscreteModelSolver(object):
     def solve_structured_ising(self, h, J, **solver_params):
         """TODO"""
         raise NotImplementedError
+
+    @property
+    def structure(self):
+        raise NotImplementedError
