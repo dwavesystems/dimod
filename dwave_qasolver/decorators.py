@@ -1,11 +1,16 @@
 """
 TODO
 """
+import sys
 
 from decorator import decorator
 
 __all__ = ['solve_qubo_api', 'solve_ising_api',
            'qubo_index_labels', 'ising_index_labels']
+
+# compatibility for python 2/3
+if sys.version_info[0] == 2:
+    range = xrange
 
 
 def solve_qubo_api():

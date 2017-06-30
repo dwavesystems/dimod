@@ -1,4 +1,4 @@
-class QASolution(object):
+class DMResponse(object):
     def __init__(self, solutions):
         self.solutions = solutions
 
@@ -17,17 +17,17 @@ class QASolution(object):
         return self.__class__(relabelled_solutions)
 
 
-class BooleanSolution(QASolution):
+class BooleanResponse(DMResponse):
     def as_spins(self):
         spin_solutions = [{var: 2 * solution[var] - 1 for var in solution}
                           for solution in self.solutions]
 
-        return SpinSolution(spin_solutions)
+        return SpinResponse(spin_solutions)
 
 
-class SpinSolution(QASolution):
+class SpinResponse(DMResponse):
     def as_bool(self):
         bool_solutions = [{var: (solution[var] + 1) / 2 for var in solution}
                           for solution in self.solutions]
 
-        return BooleanSolution(bool_solutions)
+        return BooleanResponse(bool_solutions)
