@@ -13,7 +13,7 @@ if sys.version_info[0] == 2:
     range = xrange
 
 
-def solve_qubo_api():
+def solve_qubo_api(Q_arg=1):
     """Provides input checking for QUBO methods.
 
     Returns:
@@ -26,7 +26,7 @@ def solve_qubo_api():
     """
     @decorator
     def _solve_qubo(f, *args, **kw):
-        Q = args[1]
+        Q = args[Q_arg]
         if not isinstance(Q, dict):
             raise TypeError("expected first input 'Q' to be of type 'dict'")
 
@@ -34,7 +34,7 @@ def solve_qubo_api():
     return _solve_qubo
 
 
-def solve_ising_api():
+def solve_ising_api(h_arg=1, J_arg=2):
     """Provides input checking for Ising methods.
 
     Returns:
@@ -56,11 +56,12 @@ def solve_ising_api():
     @decorator
     def _solve_ising(f, *args, **kw):
 
-        h = args[1]
-        J = args[2]
+        h = args[h_arg]
+        J = args[J_arg]
 
         if isinstance(h, (list, tuple)):
             h = {idx: bias for idx, bias in enumerate(h)}
+            args[h_arg] = h
 
         if not isinstance(J, dict):
             raise TypeError("expected input 'J' to be a 'dict'")
@@ -77,11 +78,7 @@ def solve_ising_api():
             if v0 == v1:
                 raise ValueError("'({}, {})' is not an allowed edge.".format(v0, v1))
 
-        newargs = [arg for arg in args]
-        newargs[1] = h
-        newargs[2] = J
-
-        return f(*newargs, **kw)
+        return f(*args, **kw)
     return _solve_ising
 
 

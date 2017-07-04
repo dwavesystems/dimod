@@ -2,47 +2,55 @@ import unittest
 
 import itertools
 import random
+import math
 
 from dwave_qasolver import SpinResponse, BinaryResponse
 from dwave_qasolver.solution_templates import DiscreteModelResponse
 
 
-class TestSolutionsTemplates(unittest.TestCase):
-    def test_spin_self_sorting(self):
+class TestDiscreteModelResponse(unittest.TestCase):
+    """Tests on the DiscreteModelResponse"""
 
-        response = SpinResponse()
+    def test_add_solution(self):
+        """Tests for the add_solution method and the various retrieval methods.
+        """
+        response = DiscreteModelResponse()
 
-        nV = 10
+        # ok, if we add a solution by itself, it should have an energy of NaN
+        soln0 = {0: 0, 0: 1}
+        response.add_solution(soln0)
 
-        # add 100 random solutions one by one
-        for __ in range(100):
-            soln = _random_spin_solution(nV)
-            en = random.random()
-            response.add_solution(soln, en)
+        # ok, we should have length 1 now, and the solution should be nan
+        self.assertTrue(math.isnan(response[soln0]))
+        self.assertEqual(len(response), 1)
+        self.assertEqual(response.solutions(), [soln0])
+        self.assertTrue(all(math.isnan(en) for en in response.energies()))
+        self.assertTrue(all(math.isnan(en) for en in response.energies_iter()))
 
-        self.assertEqual(len(response), 100,
-                         'We added {} solutions, length should be {}'.format(100, len(response)))
+        # now another solution
+        soln1 = {0: 1, 1: 0}
+        response.add_solution(soln1, -1)
 
-        previous = -1 * float('inf')
-        for en in response.energies():
-            self.assertLessEqual(previous, en)
-            previous = en
-
-
-    def test_spin_calc_energy(self):
-        response = SpinResponse()
-
-        nV = 10
-
-        h = {idx: random.uniform(-2, 2) for idx in range(nV)}
-        J = {(n0, n1): random.uniform(-1, 1) for (n0, n1) in itertools.combinations(range(nV), 2)}
-
-        for __ in range(100):
-            soln = _random_spin_solution(nV)
-
-            response.add_solution(soln, h=h, J=J)
+        # so the energy for soln1 should be -1
+        self.assertEqual(response[soln1], -1)
+        self.assertEqual(len(response), 2)
 
 
+class TestBinaryResponse(unittest.TestCase):
+
+    def test_add_solution(self):
+        response = BinaryResponse()
+
+        # TODO
+
+
+def _check_solution_energy_order(testcase, response):
+    """Check that the order of the solutions is from lowest to highest energy.
+    """
+    previous = -1 * float('inf')
+    for en in response.energies():
+        testcase.assertLessEqual(previous, en)
+        previous = en
 
 
 def _random_spin_solution(n):
