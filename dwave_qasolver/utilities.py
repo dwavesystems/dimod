@@ -73,8 +73,7 @@ def qubo_energy(Q, solution):
 
 
 def ising_to_qubo(h, J):
-    """TODO: UPDATE
-    (Q, offset) = ising_to_qubo(h, j)
+    """Converts an Ising problem to a qubo problem.
 
     Map an ising model defined over -1/+1 variables to a binary quadratic
     program x' * Q * x defined over 0/1 variables. We return the Q defining
@@ -85,14 +84,12 @@ def ising_to_qubo(h, J):
     See qubo_to_ising(Q) for the inverse function.
 
     Args:
-        h: h for ising problem
-        j: J for ising problem
+        h (dict): A dict of the linear coefficients of the Ising problem.
+        J (dict): A dict of the quadratic coefficients of the Ising problem.
 
     Returns:
-        A tuple which contains a dictionary Q for qubo problem and offset
-
-    Raises:
-        ValueError: bad parameter value
+        dict: A dict of the qubo coefficients.
+        float: The energy offset.
 
     """
 
@@ -116,9 +113,8 @@ def ising_to_qubo(h, J):
     return q, offset
 
 
-def qubo_to_ising(q):
-    """TODO: UPDATE
-    (h, J, offset) = qubo_to_ising(q)
+def qubo_to_ising(Q):
+    """Converts a qubo problem to an Ising problem.
 
     Map a binary quadratic program x' * Q * x defined over 0/1 variables to
     an ising model defined over -1/+1 variables. We return the h and J
@@ -129,20 +125,19 @@ def qubo_to_ising(q):
     See ising_to_qubo(h, J) for the inverse function.
 
     Args:
-        q: Q for qubo problem
+        Q: A dict of the qubo coefficients.
 
     Returns:
-        A tuple which contains a list h for ising problem, a dictionary J
-        for ising problem and offset
+        dict: A dict of the linear coefficients of the Ising problem.
+        dict: A dict of the quadratic coefficients of the Ising problem.
+        float: The energy offset.
 
-    Raises:
-        ValueError: bad parameter value
     """
     h = defaultdict(float)
     j = {}
     offset = 0
 
-    for (i, k), e in iteritems(q):
+    for (i, k), e in iteritems(Q):
         if i == k:
             # linear biases
             h[i] += 0.5 * e
