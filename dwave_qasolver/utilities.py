@@ -1,3 +1,14 @@
+import sys
+from collections import defaultdict
+
+__all__ = ['ising_to_qubo', 'qubo_to_ising', 'ising_energy', 'qubo_energy']
+
+if sys.version_info[0] == 2:
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
+
+
 def ising_energy(h, J, solution):
     """Calculate the Ising energy of the given solution.
 
@@ -59,3 +70,92 @@ def qubo_energy(Q, solution):
         energy += solution[v0] * solution[v1] * Q[(v0, v1)]
 
     return energy
+
+
+def ising_to_qubo(h, J):
+    """TODO: UPDATE
+    (Q, offset) = ising_to_qubo(h, j)
+
+    Map an ising model defined over -1/+1 variables to a binary quadratic
+    program x' * Q * x defined over 0/1 variables. We return the Q defining
+    the BQP model as well as the offset in energy between the two problem
+    formulations, i.e. s' * J * s + h' * s = offset + x' * Q * x. The linear term
+    of the BQP is contained along the diagonal of Q.
+
+    See qubo_to_ising(Q) for the inverse function.
+
+    Args:
+        h: h for ising problem
+        j: J for ising problem
+
+    Returns:
+        A tuple which contains a dictionary Q for qubo problem and offset
+
+    Raises:
+        ValueError: bad parameter value
+
+    """
+
+    q = defaultdict(float)
+    offset = 0
+
+    # the linear biases are the easiest
+    for v, bias in iteritems(h):
+        q[(v, v)] = 2 * bias
+        offset -= bias
+
+    # next the quadratic biases
+    for (u, v), bias in iteritems(J):
+        q[(u, v)] += 4 * bias
+        q[(u, u)] -= 2 * bias
+        q[(v, v)] -= 2 * bias
+        offset += bias
+
+    # finally convert q to a dict, rather than default dict
+    q = dict((k, v) for k, v in iteritems(q) if v != 0)
+    return q, offset
+
+
+def qubo_to_ising(q):
+    """TODO: UPDATE
+    (h, J, offset) = qubo_to_ising(q)
+
+    Map a binary quadratic program x' * Q * x defined over 0/1 variables to
+    an ising model defined over -1/+1 variables. We return the h and J
+    defining the Ising model as well as the offset in energy between the
+    two problem formulations, i.e. x' * Q * x = offset + s' * J * s + h' * s. The
+    linear term of the qubo is contained along the diagonal of Q.
+
+    See ising_to_qubo(h, J) for the inverse function.
+
+    Args:
+        q: Q for qubo problem
+
+    Returns:
+        A tuple which contains a list h for ising problem, a dictionary J
+        for ising problem and offset
+
+    Raises:
+        ValueError: bad parameter value
+    """
+    h = defaultdict(float)
+    j = {}
+    offset = 0
+
+    for (i, k), e in iteritems(q):
+        if i == k:
+            # linear biases
+            h[i] += 0.5 * e
+            offset += 0.5 * e
+        else:
+            # quadratic biases
+            j[(i, k)] = 0.25 * e
+            h[i] += 0.25 * e
+            h[k] += 0.25 * e
+            offset += 0.25 * e
+
+    # remove the 0 entries of J
+    h = dict(h)
+    j = dict((k, v) for k, v in iteritems(j) if v != 0)
+
+    return h, j, offset
