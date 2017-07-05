@@ -1,1 +1,1 @@
-from dwave_qasolver.solvers.optimization_solver import *
+from dwave_qasolver.solvers.simulated_annealing_solver import *

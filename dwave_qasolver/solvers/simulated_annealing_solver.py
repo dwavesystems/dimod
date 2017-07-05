@@ -1,26 +1,64 @@
 import sys
 import random
 import math
+import itertools
+from multiprocessing import Pool
 
-from dwave_qasolver.decorators import solve_ising_api
+from dwave_qasolver.solver_template import DiscreteModelSolver
+from dwave_qasolver.decorators import solve_ising_api, solve_qubo_api
 from dwave_qasolver.utilities import ising_energy
+
+from dwave_qasolver.solution_templates import SpinResponse
 
 
 if sys.version_info[0] == 2:
     range = xrange
 
 
+class SimulatedAnnealingSolver(DiscreteModelSolver):
+
+    @solve_ising_api()
+    def solve_ising(self, h, J, samples=10, multiprocessing=False,
+                    T_range=(10, .3), sweeps=1000):
+
+        response = SpinResponse()
+
+        if not multiprocessing or samples < 2:
+            for __ in range(samples):
+                sample, energy = solve_ising_simulated_annealing(h, J, T_range, sweeps)
+                response.add_solution(sample, energy)
+
+        else:
+            p = Pool(10)
+            args = itertools.repeat((h, J, T_range, sweeps), samples)
+            for sample, energy in p.map(_solve_ising_sa, args):
+                response.add_solution(sample, energy)
+
+        return response
+
+    def solve_structured_ising(self, h, J, **args):
+        return self.solve_ising(h, J, **args)
+
+
+def _solve_ising_sa(args):
+    """Wrapper to allow solve_ising_simulated_annealing to be used
+    with multiprocessing.
+    """
+    return solve_ising_simulated_annealing(*args)
+
+
 def solve_ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000):
+    """TODO
+    """
 
     if any(t <= 0 for t in T_range):
         raise ValueError('temperatures must be positive')
-    # TODO, lot's more input checking
+    # TODO, lots more input checking
 
     # TODO seed?
 
     # set up the adjacency matrix
-    nodes = reduce(set.union, (set(edge) for edge in J))
-    adj = {n: set() for n in nodes}
+    adj = {n: set() for n in h}
     for n0, n1 in J:
         adj[n0].add(n1)
         adj[n1].add(n0)
@@ -33,7 +71,7 @@ def solve_ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000):
     betas = [beta_init + i * (beta_final - beta_init) / (sweeps - 1) for i in range(sweeps)]
 
     # we also need a coloring of the graph. We just use a simply greedy heuristic
-    coloring, colors = greedy_coloring(adj)
+    __, colors = greedy_coloring(adj)
 
     # let's make our initial soln guess (randomly)
     # solution = {v: random.choice((-1, 1)) for v in h}
