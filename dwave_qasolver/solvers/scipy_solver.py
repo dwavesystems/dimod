@@ -9,23 +9,20 @@ def simulated_annealing_simple(h, J, steps=5000):
 
     energies = {}
 
-    def ising_energy(s):
-        key = tuple(s[n] for n in nodes)
-
-        if key in energies:
-            return energies[key]
-
-        en = 0
+    def energy_difference(s0, s1):
+        diff = 0
 
         for v in h:
-            en += s[v] * h[v]
+            if s0[v] > s1[v]:
+                diff -= h[v]
+            elif s0[v] < s1[v]:
+                diff += h[v]
 
         for v0, v1 in J:
-            en += s[v0] * s[v1] * J[(v0, v1)]
+            if s0[v0] != s1[v0] or s0[v1] != v1[v1]:
+                diff += J[(v0, v1)] * (s0[v0] * s0[v1] - s1[v0] * s1[v1])
 
-        energies[key] = en
-
-        return en
+        return diff
 
     s = {v: bias > 0 and -1 or 1 for v, bias in h.items()}
     energy = ising_energy(s)
@@ -36,7 +33,7 @@ def simulated_annealing_simple(h, J, steps=5000):
         sp = neighbor(s)
         energy_p = ising_energy(sp)
 
-        if accept(energy, energy_p, T):
+        if accept(diff, 0, T):
             s = sp
             energy = energy_p
 
