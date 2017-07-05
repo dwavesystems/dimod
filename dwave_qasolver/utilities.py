@@ -64,8 +64,8 @@ def qubo_energy(Q, solution):
     https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
 
     """
-
     energy = 0
+
     for v0, v1 in Q:
         energy += solution[v0] * solution[v1] * Q[(v0, v1)]
 
