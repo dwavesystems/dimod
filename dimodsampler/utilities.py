@@ -11,8 +11,8 @@ else:
     iteritems = lambda d: d.items()
 
 
-def ising_energy(h, J, solution):
-    """Calculate the Ising energy of the given solution.
+def ising_energy(h, J, sample):
+    """Calculate the Ising energy of the given sample.
 
     H(s) = sum_i h_i * s_i + sum_(i, j) J_(i,j) * s_i * s_j
 
@@ -20,7 +20,7 @@ def ising_energy(h, J, solution):
         h: The linear biases in a dict of the form {var: bias, ...}.
         J: The quadratic biases in a dict of the form
         {(var0, var1): bias, ...}.
-        solution: A dict of spins of the form {var: spin, ...} where
+        sample: A dict of spins of the form {var: spin, ...} where
         each spin is either -1 or 1.
 
     Returns:
@@ -36,17 +36,17 @@ def ising_energy(h, J, solution):
 
     # add the contribution from the linear biases
     for v in h:
-        energy += h[v] * solution[v]
+        energy += h[v] * sample[v]
 
     # add the contribution from the quadratic biases
     for v0, v1 in J:
-        energy += J[(v0, v1)] * solution[v0] * solution[v1]
+        energy += J[(v0, v1)] * sample[v0] * sample[v1]
 
     return energy
 
 
-def qubo_energy(Q, solution):
-    """Calculate the quadratic polynomial value of the given solution
+def qubo_energy(Q, sample):
+    """Calculate the quadratic polynomial value of the given sample
     to a quadratic unconstrained binary optimization (QUBO) problem.
 
     E(x) = sum_(i, j) Q_(i, j) * x_i * x_j
@@ -54,7 +54,7 @@ def qubo_energy(Q, solution):
     Args:
         Q: A dict of the qubo coefficients of the form
         {(var0, var1): coeff, ...}
-        solution: A dict of binary variables of the form
+        sample: A dict of binary variables of the form
         {var: bin, ...} where each bin is either 0 or 1.
 
     Returns:
@@ -69,7 +69,7 @@ def qubo_energy(Q, solution):
     energy = 0
 
     for v0, v1 in Q:
-        energy += solution[v0] * solution[v1] * Q[(v0, v1)]
+        energy += sample[v0] * sample[v1] * Q[(v0, v1)]
 
     return energy
 
