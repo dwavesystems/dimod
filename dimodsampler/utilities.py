@@ -1,9 +1,11 @@
 import sys
+
 from collections import defaultdict
 
-__all__ = ['ising_to_qubo', 'qubo_to_ising', 'ising_energy', 'qubo_energy']
+__all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 
-if sys.version_info[0] == 2:
+PY2 = sys.version_info[0] == 2
+if PY2:
     iteritems = lambda d: d.iteritems()
 else:
     iteritems = lambda d: d.items()

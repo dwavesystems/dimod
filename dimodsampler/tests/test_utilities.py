@@ -1,7 +1,7 @@
 import unittest
 from itertools import groupby
 
-from dwave_qasolver import ising_to_qubo, qubo_to_ising, ising_energy, qubo_energy
+from dimodsampler import ising_to_qubo, qubo_to_ising, ising_energy, qubo_energy
 
 
 class TestIsingEnergy(unittest.TestCase):
