@@ -6,7 +6,7 @@ from multiprocessing import Pool
 
 from dwave_qasolver.solver_template import DiscreteModelSolver
 from dwave_qasolver.decorators import solve_ising_api, solve_qubo_api
-from dwave_qasolver.utilities import ising_energy
+from dwave_qasolver.utilities import ising_energy, qubo_to_ising
 
 from dwave_qasolver.solution_templates import SpinResponse
 
@@ -38,6 +38,15 @@ class SimulatedAnnealingSolver(DiscreteModelSolver):
 
     def solve_structured_ising(self, h, J, **args):
         return self.solve_ising(h, J, **args)
+
+    @solve_qubo_api()
+    def solve_qubo(self, Q, **args):
+        h, J, offset = qubo_to_ising(Q)
+        spin_response = self.solve_ising(h, J, **args)
+        return spin_response.as_binary(offset)
+
+    def solve_structured_qubo(self, Q, **args):
+        return self.solve_qubo(Q, **args)
 
 
 def _solve_ising_sa(args):

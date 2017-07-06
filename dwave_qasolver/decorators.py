@@ -104,7 +104,7 @@ def qubo_index_labels():
         Q = args[1]
 
         # get all of the node labels from Q
-        nodes = reduce(set.union, ({n0, n1} for n0, n1 in Q))
+        nodes = set.union(*[set(edge) for edge in Q])
 
         # if the nodes are already index labelled (from 0, n) then we are already
         # done

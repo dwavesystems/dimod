@@ -11,6 +11,7 @@ class TestSolverAPI:
         variables = [0]
 
         response = solver.solve_qubo(Q)
+
         self.check_response_form(response, variables)
 
     def test_single_node_ising(self):

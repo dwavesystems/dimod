@@ -12,20 +12,19 @@ class TestDiscreteModelResponse(unittest.TestCase):
     """Tests on the DiscreteModelResponse"""
 
     def test_add_solution(self):
-        """Tests for the add_solution method and the various retrieval methods.
-        """
+        """Tests for the add_solution method and the various retrieval methods."""
         response = DiscreteModelResponse()
 
         # ok, if we add a solution by itself, it should have an energy of NaN
         soln0 = {0: 0, 0: 1}
-        response.add_solution(soln0)
+        response.add_solution(soln0, 1)
 
         # ok, we should have length 1 now, and the solution should be nan
-        self.assertTrue(math.isnan(response[soln0]))
+        self.assertEqual(response[soln0], 1)
         self.assertEqual(len(response), 1)
         self.assertEqual(response.solutions(), [soln0])
-        self.assertTrue(all(math.isnan(en) for en in response.energies()))
-        self.assertTrue(all(math.isnan(en) for en in response.energies_iter()))
+        self.assertEqual(response.energies(), [1])
+        self.assertTrue(all(en == 1 for en in response.energies_iter()))
 
         # now another solution
         soln1 = {0: 1, 1: 0}
@@ -34,6 +33,24 @@ class TestDiscreteModelResponse(unittest.TestCase):
         # so the energy for soln1 should be -1
         self.assertEqual(response[soln1], -1)
         self.assertEqual(len(response), 2)
+
+        # now check the order of the solutions
+        _check_solution_energy_order(self, response)
+
+    def test_add_solutions_from(self):
+        """Adding multiple solutions at once."""
+
+        response = DiscreteModelResponse()
+
+        soln0 = {0: 0, 0: 1}
+        soln1 = {0: 1, 1: 0}
+
+        response.add_solutions_from([soln0, soln1], [1, -1])
+
+        self.assertEqual(response[soln1], -1)
+
+        # now check the order of the solutions
+        _check_solution_energy_order(self, response)
 
 
 class TestBinaryResponse(unittest.TestCase):

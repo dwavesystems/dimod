@@ -4,6 +4,7 @@ import bisect
 import math
 
 from dwave_qasolver.decorators import solve_ising_api, solve_qubo_api
+from dwave_qasolver.utilities import ising_energy, qubo_energy
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:
@@ -17,15 +18,55 @@ class DiscreteModelResponse(object):
         self._energies = []
         self.data = {}
 
-    def add_solution(self, solution, energy=float('nan')):
+    def add_solution(self, solution, energy):
+        """Loads a solution into the response.
+
+        Args:
+            solution (dict): TODO
+            energy (float/int): TODO
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Raises:
+            TypeError: If `solution` is not a dict.
+            TypeError: If `energy` is not an int or float.
+
+        Examples:
+            >>> response = DiscreteModelResponse()
+            >>> response.add_solution({0: 0}, 1)
+            >>> response.add_solution({0: 1}, -1)
+            >>> print(response.solutions())
+            [{0: 1}, {0: 0}]
+            >>> print(response.energies())
+            [-1, 1]
+
+        """
+
+        if not isinstance(solution, dict):
+            raise TypeError("expected 'solution' to be a dict")
+        if not isinstance(energy, (float, int)):
+            raise TypeError("expected 'energy' to be numeric")
+
         idx = bisect.bisect(self._energies, energy)
         self._solutions.insert(idx, solution)
         self._energies.insert(idx, energy)
 
-    def add_solutions_from(self, solutions, energies=None):
-        if energies is None:
-            energies = itertools.repeat(float('nan'))
+    def add_solutions_from(self, solutions, energies):
+        """Loads multiple solutions into response.
 
+        Args:
+            solutions: An iterable of solutions. Each solution TODO
+            energies: An iterable of energies. Each TODO
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Raises:
+            TypeError: If  and solution in `solutions` is not a dict.
+            TypeError: If any energy in `energies` is not an int or float.
+
+        """
         for soln, en in zip(solutions, energies):
             self.add_solution(soln, en)
 
@@ -83,14 +124,9 @@ class DiscreteModelResponse(object):
 
 
 class BinaryResponse(DiscreteModelResponse):
-    def as_spins(self):
-        spin_solutions = [{var: 2 * solution[var] - 1 for var in solution}
-                          for solution in self.solutions]
-
-        return SpinResponse(spin_solutions)
 
     @solve_qubo_api(3)
-    def add_solution(self, solution, energy=float('nan'), Q={}):
+    def add_solution(self, solution, energy=None, Q={}):
         """Adds a single solution to the response.
 
         Args:
@@ -126,19 +162,24 @@ class BinaryResponse(DiscreteModelResponse):
         # finally add the solution
         DiscreteModelResponse.add_solution(self, solution, calculated_energy)
 
-    def add_solutions_from(self, solutions, energies=None, Q=None):
+    @solve_qubo_api(3)
+    def add_solutions_from(self, solutions, energies=None, Q={}):
+        if Q is None and not energies:
+            raise TypeError("Either 'energies' or 'Q' must be provided")
+
+        if Q is not None:
+            calculated_energies = (qubo_energy(Q, soln) for soln in solutions)
+
+        raise NotImplementedError
+
+    def as_spins(self, offset):
         raise NotImplementedError
 
 
 class SpinResponse(DiscreteModelResponse):
-    def as_bool(self):
-        bool_solutions = [{var: (solution[var] + 1) / 2 for var in solution}
-                          for solution in self.solutions]
-
-        return BooleanResponse(bool_solutions)
 
     @solve_ising_api(3, 4)
-    def add_solution(self, solution, energy=float('nan'), h={}, J={}):
+    def add_solution(self, solution, energy=None, h={}, J={}):
         if any(spin not in (-1, 1) for spin in solution.values()):
             raise ValueError("solution values must be spin (-1 or 1)")
 
@@ -169,3 +210,22 @@ class SpinResponse(DiscreteModelResponse):
 
     def add_solutions_from(self, solutions, energies=None, h=None, J=None):
         raise NotImplementedError
+
+    def as_binary(self, offset, copy=True):
+
+        b_response = BinaryResponse()
+
+        # create iterators over the stored data
+        binary_solutions = ({v: (solution[v] + 1) / 2 for v in solution}
+                            for solution in self.solutions_iter())
+        binary_energies = (energy + offset for energy in self.energies_iter())
+
+        b_response.add_solutions_from(binary_solutions, binary_energies)
+
+        b_response = self.data
+
+        if copy:
+            return b_response
+            return
+
+        self = b_response
