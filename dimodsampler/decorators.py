@@ -1,85 +1,141 @@
-"""
-TODO
-"""
 import sys
 
 from decorator import decorator
 
-__all__ = ['solve_qubo_api', 'solve_ising_api',
-           'qubo_index_labels', 'ising_index_labels']
+__all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
 
-# compatibility for python 2/3
-if sys.version_info[0] == 2:
+PY2 = sys.version_info[0] == 2
+if PY2:
     range = xrange
 
 
-def solve_qubo_api(Q_arg=1):
-    """Provides input checking for QUBO methods.
+def qubo(Q_arg):
+    """Provides input checking for quadratic unconstrained binary
+    optimization (QUBO) methods.
+
+    A dictionary of QUBO coefficients `Q` should be a dict. The keys
+    should be tuples of the form (u, v) where u, v are variables in
+    the problem. The variables can themselves be any hashable object.
+
+    If both (u, v) and (v, u) are in `Q`, then their values are added.
+
+    Args:
+        Q_arg (int): Location of the `Q` argument in args.
 
     Returns:
-        Function that checks the form of inputs to confirm that they
-        match the form specified in TODO.
+        Function which checks the form of the `Q` argument before
+        running the decorated function.
 
     Raises:
         TypeError: If `Q` is not a dict.
+        TypeError: If any of the keys of `Q` are not tuples.
+        ValueError: If any of the keys of `Q` are not length 2.
+
+    Examples:
+        Decorate function like this:
+
+        @qubo(1)
+        def solve_qubo(self, Q):
+            pass
+
+        @qubo(0)
+        def qubo_energy(Q, sample):
+            pass
 
     """
     @decorator
-    def _solve_qubo(f, *args, **kw):
+    def _qubo(f, *args, **kw):
         Q = args[Q_arg]
+
         if not isinstance(Q, dict):
             raise TypeError("expected first input 'Q' to be of type 'dict'")
 
+        if not all(isinstance(edge, tuple) for edge in Q):
+            raise TypeError("the keys of 'Q' should all be tuples of length 2")
+
+        if not all(len(edge) == 2 for edge in Q):
+            raise ValueError("the keys of 'Q' should all be tuples of length 2")
+
         return f(*args, **kw)
-    return _solve_qubo
+    return _qubo
 
 
-def solve_ising_api(h_arg=1, J_arg=2):
+def ising(h_arg, J_arg):
     """Provides input checking for Ising methods.
 
+    Ising problems are defined by a collection of linear biases `h`,
+    and a collection of quadratic biases `J`. `J` should be a dict
+    where each key is a tuple of the form (u, v) such that u, v are
+    variables in the Ising problem and u != v. `h` should be a dict
+    where the keys are the variables in the Ising problem.
+
+    If `h` is provided as a list, it will be converted to a dict
+    where the keys are the indices. Additionally, if any variable
+    is referenced by `J` but is not a key of `h`, it will be added
+    to `h` with bias 0.
+
+    Args:
+        h_arg (int): Location of the `h` argument in args.
+        J_arg (int): Location of the `J` argument in args.
+
     Returns:
-        Function that checks the form of the Ising inputs to confirm
-        TODO
+        Function which checks the form of the `h` and `J` arguments
+        before running the decorated function.
 
     Raises:
+        TypeError: If `h` is not a dict.
         TypeError: If `J` is not a dict.
+        TypeError: If the keys of `J` are not tuples.
+        ValueError: If the keys of `J` are not of length 2.
 
-        ValueError: If the keys of `J` are not edges, that is tuples
-        of form (var1, var2)
+    Examples:
+        Decorate function like this:
 
-        ValueError: For each edge (v0, v1) in `J`, either expect v0 and v1
-        to be keys of `h` if `h` is a dict, or v0 < len(h) and v1 < len(h).
+        @ising(1, 2)
+        def solve_ising(self, h, J):
+            pass
 
-        ValueError: Variables cannot have edges to themselves.
+        @ising(0, 1)
+        def ising_energy(h, J, sample):
+            pass
 
     """
     @decorator
-    def _solve_ising(f, *args, **kw):
+    def _ising(f, *args, **kw):
 
         h = args[h_arg]
         J = args[J_arg]
 
+        # if h is provided as a list, make it a dict where the keys of h are
+        # the indices.
         if isinstance(h, (list, tuple)):
-            h = {idx: bias for idx, bias in enumerate(h)}
-            args[h_arg] = h
+            h = dict(enumerate(h))
+        elif not isinstance(h, dict):
+            raise TypeError("expected input 'h' to be a dict")
 
+        # now all the checking of J
         if not isinstance(J, dict):
-            raise TypeError("expected input 'J' to be a 'dict'")
+            raise TypeError("expected input 'J' to be a dict")
 
-        if any(len(edge) != 2 for edge in J):
-            raise ValueError("each key in J should be an edge of form (var1, var2)")
+        if not all(isinstance(edge, tuple) for edge in J):
+            raise TypeError("expected the keys of 'J' to be tuples of length 2")
 
-        for edge in J:
-            for v in edge:
-                if v not in h:
-                    raise ValueError("recieved unexpected variable '{}' in 'J'. ".format(v))
+        if not all(len(edge) == 2 for edge in J):
+            raise ValueError("expected the keys of 'J' to be tuples of length 2")
 
-            v0, v1 = edge
-            if v0 == v1:
-                raise ValueError("'({}, {})' is not an allowed edge.".format(v0, v1))
+        # finally any nodes in J that are not in h are added to h
+        for u, v in J:
+            if u not in h:
+                h[u] = 0.
+            if v not in h:
+                h[v] = 0.
+
+        args = list(args)
+        args[h_arg] = h
+        # args[J_arg] = J
 
         return f(*args, **kw)
-    return _solve_ising
+    return _ising
 
 
 def qubo_index_labels():
