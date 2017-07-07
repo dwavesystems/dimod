@@ -7,6 +7,9 @@ __all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
 PY2 = sys.version_info[0] == 2
 if PY2:
     range = xrange
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
 
 
 def qubo(Q_arg):
@@ -138,53 +141,69 @@ def ising(h_arg, J_arg):
     return _ising
 
 
-def qubo_index_labels():
+def qubo_index_labels(Q_arg):
     """Replaces the labels in the dictionary of QUBO coefficients with
     integers.
 
+    Args:
+        Q_arg (int): Location of the `Q` argument in args.
+
     Returns:
-        Function that replaces the user-given Q with one with integer
+        Function that replaces the user-given `Q` with one with integer
         labels, runs the decorated method, then restores the previous
         labels.
 
     Notes:
         The integer labels start with 0.
 
-        The relabelling is applied to the given labels sorted
-        lexigraphically.
+        If the given labels are orderable, the relabelling is applied
+        to the nodes sorted lexigraphically.
 
     """
     @decorator
     def _qubo_index_labels(f, *args, **kw):
 
-        Q = args[1]
+        Q = args[Q_arg]
 
         # get all of the node labels from Q
-        nodes = set.union(*[set(edge) for edge in Q])
+        nodes = set().union(*Q)
 
-        # if the nodes are already index labelled (from 0, n) then we are already
+        # if the nodes are already index labelled from (0, n-1) then we are already
         # done
         if all(idx in nodes for idx in range(len(nodes))):
             return f(*args, **kw)
 
-        # let's relabel them, sorting the node labels lexigraphically
-        relabel = {node: idx for idx, node in enumerate(sorted(nodes))}
-        inv_relabel = {relabel[node]: node for node in relabel}
-        newQ = {(relabel[node0], relabel[node1]): Q[(node0, node1)]
-                for node0, node1 in Q}
+        # let's relabel them, sorting the node labels lexigraphically.
+        # In python 3, unlike types cannot be sorted, so let's just handle
+        # that case with a try/catch.
+        try:
+            inv_relabel = dict(enumerate(sorted(nodes)))
+        except TypeError:
+            inv_relabel = dict(enumerate(nodes))
+        relabel = {v: idx for idx, v in iteritems(inv_relabel)}
 
-        newargs = [arg for arg in args]
-        newargs[1] = newQ
+        # with relabel in hand, let's make a new Q with the nodes
+        # labelled appropriately
+        newQ = {(relabel[u], relabel[v]): coeff for (u, v), coeff in iteritems(Q)}
 
-        solutions = f(*newargs, **kw)
+        # now substitute our newQ into the arguments and run the function
+        newargs = list(args)
+        newargs[Q_arg] = newQ
 
-        return solutions.relabel_variables(inv_relabel)
+        response = f(*newargs, **kw)
+
+        # the returned response will need to be relabelled with inv_relabel
+        return response.relabel_variables(inv_relabel, copy=True)
 
     return _qubo_index_labels
 
 
-def ising_index_labels():
+def ising_index_labels(h_arg, J_arg):
     """Replaces the variable labels in h and J with integers.
+
+    Args:
+        h_arg (int): Location of the `h` argument in args.
+        J_arg (int): Location of the `J` argument in args.
 
     Returns:
         Function that replaces the user-given Ising problem with one
@@ -194,42 +213,46 @@ def ising_index_labels():
     Notes:
         The integer labels start with 0.
 
-        The relabelling is applied to the given labels sorted
-        lexigraphically.
+        If the given labels are orderable, the relabelling is applied
+        to the nodes sorted lexigraphically.
 
     """
     @decorator
     def _ising_index_labels(f, *args, **kw):
 
         # get h and J out of the given arguments
-        h = args[1]
-        J = args[2]
+        h = args[h_arg]
+        J = args[J_arg]
 
-        # we want to know all of the variables used
-        variables = reduce(set.union, ({n0, n1} for n0, n1 in J), set())
-        variables.update(h)
+        # we want to know all of the nodes used in h and J
+        nodes = set().union(*J) | set(h)
 
-        # if all of the variables are already index-labelled, then we don't need to do
-        # anything
-        if all(idx in variables for idx in range(len(variables))):
+        # if the nodes are already index labelled from (0, n-1) then we are already
+        # done
+        if all(idx in nodes for idx in range(len(nodes))):
             return f(*args, **kw)
 
-        # Let's make the mapping, we do this by sorting the current labels lexigraphically
-        relabel = {var: idx for idx, var in enumerate(sorted(variables))}
-        inv_relabel = {relabel[var]: var for var in relabel}
+        # let's relabel them, sorting the node labels lexigraphically.
+        # In python 3, unlike types cannot be sorted, so let's just handle
+        # that case with a try/catch.
+        try:
+            inv_relabel = dict(enumerate(sorted(nodes)))
+        except TypeError:
+            inv_relabel = dict(enumerate(nodes))
+        relabel = {v: idx for idx, v in iteritems(inv_relabel)}
 
         # now apply this mapping to h and J
-        h = {relabel[var]: h[var] for var in h}
-        J = {(relabel[v0], relabel[v1]): J[(v0, v1)] for v0, v1 in J}
+        h = {relabel[v]: bias for v, bias in iteritems(h)}
+        J = {(relabel[u], relabel[v]): bias for (u, v), bias in iteritems(J)}
 
         # finally run the function with the new h, J
         newargs = [arg for arg in args]
-        newargs[1] = h
-        newargs[2] = J
+        newargs[h_arg] = h
+        newargs[J_arg] = J
 
-        # run the solver
         response = f(*newargs, **kw)
 
         # finally unapply the relabelling
         return response.relabel_variables(inv_relabel)
+
     return _ising_index_labels

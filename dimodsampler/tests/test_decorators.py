@@ -3,6 +3,55 @@ import unittest
 from dimodsampler.decorators import *
 
 
+class dummyResponse:
+    def relabel_variables(self, relabel, copy=True):
+        return None
+
+
+class TestIndexRelabelling(unittest.TestCase):
+    def test_qubo_unorderable(self):
+
+        # create a dummy function that checks that the nodes
+        @qubo_index_labels(0)
+        def qubo_func(Q):
+            labels = set().union(*Q)
+
+            for idx in range(len(labels)):
+                self.assertIn(idx, labels)
+
+            # assume that relabel is applied correctly
+            return dummyResponse()
+
+        # variables with the same type of labels
+        Q = {('a', 'b'): 0, ('b', 'c'): 1}
+        qubo_func(Q)
+
+        # variables with multiple types of label which are unorderable
+        Q = {('a', 3): 0, ('b', 'c'): 1}
+        qubo_func(Q)
+
+    def test_ising_unorderable(self):
+
+        # create dummy function that checks the nodes
+        @ising_index_labels(0, 1)
+        def ising_func(h, J):
+            labels = set().union(*J) | set(h)
+
+            for idx in range(len(labels)):
+                self.assertIn(idx, labels)
+
+            # assume that relabel is applied correctly
+            return dummyResponse()
+
+        h = {'a': 0, 'b': 1}
+        J = {('a', 'c'): .5}
+        ising_func(h, J)
+
+        # unorderable labels
+        h = {(0, 1): 0, 'b': 0}
+        J = {((0, 1), 'b'): -1}
+
+
 class TestAPIDecorators(unittest.TestCase):
     def test_qubo_exceptions(self):
 
