@@ -159,6 +159,17 @@ def qubo_index_labels(Q_arg):
         If the given labels are orderable, the relabelling is applied
         to the nodes sorted lexigraphically.
 
+    Examples:
+        Decorate function like this:
+
+        @qubo_index_labels(1)
+        def solve_qubo(self, Q):
+            pass
+
+        @qubo_index_labels(0)
+        def qubo_energy(Q, sample):
+            pass
+
     """
     @decorator
     def _qubo_index_labels(f, *args, **kw):
@@ -215,6 +226,17 @@ def ising_index_labels(h_arg, J_arg):
 
         If the given labels are orderable, the relabelling is applied
         to the nodes sorted lexigraphically.
+
+    Examples:
+        Decorate function like this:
+
+        @ising_index_labels(1, 2)
+        def solve_ising(self, h, J):
+            pass
+
+        @ising_index_labels(0, 1)
+        def ising_energy(h, J, sample):
+            pass
 
     """
     @decorator
