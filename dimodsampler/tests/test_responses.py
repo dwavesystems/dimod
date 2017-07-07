@@ -2,77 +2,68 @@ import unittest
 
 import itertools
 import random
-import math
+import itertools
 
-from dwave_qasolver import SpinResponse, BinaryResponse
-from dwave_qasolver.solution_templates import DiscreteModelResponse
+from dimodsampler import SpinResponse, BinaryResponse
+from dimodsampler import DiscreteModelResponse
 
 
 class TestDiscreteModelResponse(unittest.TestCase):
     """Tests on the DiscreteModelResponse"""
-
-    def test_add_solution(self):
-        """Tests for the add_solution method and the various retrieval methods."""
+    def test_empty_object(self):
         response = DiscreteModelResponse()
 
-        # ok, if we add a solution by itself, it should have an energy of NaN
-        soln0 = {0: 0, 0: 1}
-        response.add_solution(soln0, 1)
+        # should be empty
+        self.assertEqual(list(response.samples()), [])
+        self.assertEqual(list(response.energies()), [])
+        self.assertEqual(len(response), 0)
 
-        # ok, we should have length 1 now, and the solution should be nan
-        self.assertEqual(response[soln0], 1)
-        self.assertEqual(len(response), 1)
-        self.assertEqual(response.solutions(), [soln0])
-        self.assertEqual(response.energies(), [1])
-        self.assertTrue(all(en == 1 for en in response.energies_iter()))
+    def test_samples(self):
+        response = DiscreteModelResponse()
+        response.add_sample({0: -1}, 1, data={'n': 5})
+        response.add_sample({0: 1}, -1, data={'n': 1})
+        self.assertEqual(list(response.samples()),
+                         [{0: 1}, {0: -1}])
+        self.assertEqual(list(response.samples(data=True)),
+                         [({0: 1}, {'n': 1}), ({0: -1}, {'n': 5})])
 
-        # now another solution
-        soln1 = {0: 1, 1: 0}
-        response.add_solution(soln1, -1)
+    def test_energies(self):
+        response = DiscreteModelResponse()
+        response.add_sample({0: -1}, 1, data={'n': 5})
+        response.add_sample({0: 1}, -1, data={'n': 1})
+        self.assertEqual(list(response.energies()),
+                         [-1, 1])
+        self.assertEqual(list(response.energies(data=True)),
+                         [(-1, {'n': 1}), (1, {'n': 5})])
 
-        # so the energy for soln1 should be -1
-        self.assertEqual(response[soln1], -1)
-        self.assertEqual(len(response), 2)
+    def test_items(self):
+        response = DiscreteModelResponse()
+        response.add_sample({0: -1}, 1, data={'n': 5})
+        response.add_sample({0: 1}, -1, data={'n': 1})
+        self.assertEqual(list(response.items()), [({0: 1}, -1), ({0: -1}, 1)])
+        self.assertEqual(list(response.items(data=True)),
+                         [({0: 1}, -1, {'n': 1}), ({0: -1}, 1, {'n': 5})])
 
-        # now check the order of the solutions
-        _check_solution_energy_order(self, response)
-
-    def test_add_solutions_from(self):
-        """Adding multiple solutions at once."""
-
+    def test_add_samples_from(self):
         response = DiscreteModelResponse()
 
-        soln0 = {0: 0, 0: 1}
-        soln1 = {0: 1, 1: 0}
+        sample0 = {0: -1}
+        energy0 = 1
+        data0 = {'n': 107}
 
-        response.add_solutions_from([soln0, soln1], [1, -1])
+        samples = itertools.repeat(sample0, 10)
+        energies = itertools.repeat(energy0, 10)
+        sample_data = itertools.repeat(data0, 10)
 
-        self.assertEqual(response[soln1], -1)
+        response.add_samples_from(samples, energies, sample_data)
 
-        # now check the order of the solutions
-        _check_solution_energy_order(self, response)
+        samples = itertools.repeat(sample0, 10)
+        energies = itertools.repeat(energy0, 10)
 
+        response.add_samples_from(samples, energies)
 
-class TestBinaryResponse(unittest.TestCase):
+        items = itertools.repeat((sample0, energy0, data0), 10)
+        response.add_samples_from(items)
 
-    def test_add_solution(self):
-        response = BinaryResponse()
-
-        # TODO
-
-
-def _check_solution_energy_order(testcase, response):
-    """Check that the order of the solutions is from lowest to highest energy.
-    """
-    previous = -1 * float('inf')
-    for en in response.energies():
-        testcase.assertLessEqual(previous, en)
-        previous = en
-
-
-def _random_spin_solution(n):
-    return {idx: random.choice((-1, 1)) for idx in range(n)}
-
-
-def _random_bin_solution(n):
-    return {idx: random.choice((0, 1)) for idx in range(n)}
+        items = itertools.repeat((sample0, energy0), 10)
+        response.add_samples_from(items)
