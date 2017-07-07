@@ -3,8 +3,8 @@ import itertools
 import bisect
 import math
 
-from dwave_qasolver.decorators import solve_ising_api, solve_qubo_api
-from dwave_qasolver.utilities import ising_energy, qubo_energy
+from dwave_qasolver import solve_ising_api, solve_qubo_api
+from dwave_qasolver import ising_energy, qubo_energy
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:
