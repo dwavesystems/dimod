@@ -45,6 +45,7 @@ class TestDiscreteModelResponse(unittest.TestCase):
                          [({0: 1}, -1, {'n': 1}), ({0: -1}, 1, {'n': 5})])
 
     def test_add_samples_from(self):
+        """There are several different ways that responses can be added."""
         response = DiscreteModelResponse()
 
         sample0 = {0: -1}
@@ -63,7 +64,9 @@ class TestDiscreteModelResponse(unittest.TestCase):
         response.add_samples_from(samples, energies)
 
         items = itertools.repeat((sample0, energy0, data0), 10)
-        response.add_samples_from(items)
+        response.add_samples_from(*zip(*items))
 
         items = itertools.repeat((sample0, energy0), 10)
-        response.add_samples_from(items)
+        response.add_samples_from(*zip(*items))
+
+        self.assertEqual(len(response), 40)

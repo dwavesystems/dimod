@@ -13,8 +13,7 @@ if sys.version_info[0] == 2:
 
 class DiscreteModelResponse(object):
     def __init__(self):
-        """TODO
-        """
+        """Constructor. See __doc__ for DiscreteModelResponse"""
         self._samples = []
         self._energies = []
         self._sample_data = []
@@ -166,53 +165,90 @@ class DiscreteModelResponse(object):
         self._energies.insert(idx, energy)
         self._sample_data.insert(idx, data)
 
-    def add_samples_from(self, samples, energies=None, sample_data=None):
-        """Loads samples and associated energies from an iterator or
-        iterators.
+    def add_samples_from(self, samples, energies, sample_data=None):
+        """Loads samples and associated energies from iterators.
 
         Args:
-            samples (iterator):
-            energies (iterator, optional):
-            sample_data (iterator, optional):
+            samples (iterator): An iterable object that yields
+            samples. Each sample should be a dict of the form
+            {var: value, ...}.
+            energies (iterator): An iterable object that yields
+            energies associated with each sample.
+            sample_data (iterator, optional): An iterable object
+            that yields data about each sample as  dict. Default
+            empty dicts.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
 
         Raises:
-            TypeError: If `sample` is not a dict.
-            TypeError: If `energy` is not an int or float.
-            TypeError: If `data` is not a dict.
+            TypeError: If any `sample` in `samples` is not a dict.
+            TypeError: If any `energy`  in `energies` is not an int
+            or float.
+            TypeError: If any `data` in `sample_data` is not a dict.
 
         Examples:
+            >>> samples = [{0: -1}, {0: 1}, {0: -1}]
+            >>> energies = [1, -1, 1]
+            >>> sample_data = [{'t': .2}, {'t': .5}, {'t': .1}]
+
             >>> response = DiscreteModelResponse()
-            >>> samples = [{0: -1}, {0: 1}]
-            >>> energies = [-1, 1]
-            >>> data = [{'n', 67}, {'n': 5}]
-
             >>> response.add_samples_from(samples, energies)
+            >>> list(response.samples())
+            [{0: 1}, {0: -1}, {0: -1}]
 
-            >>> response.add_samples_from(samples, energies, data)
+            >>> response = DiscreteModelResponse()
+            >>> response.add_samples_from(samples, energies, sample_data)
+            >>> list(response.samples())
+            [{0: 1}, {0: -1}, {0: -1}]
 
-            >>> items = zip(samples, energies)
-            >>> response.add_samples_from(items)
-
-            >>> items = zip(samples, energies, data)
-            >>> response.add_samples_from(items)
+            >>> items = [({0: -1}, -1), ({0: -1}, 1)]
+            >>> response = DiscreteModelResponse()
+            >>> response.add_samples_from(*zip(*items))
+            >>> list(response.samples())
+            [{0: 1}, {0: -1}]
 
         """
-        if energies is None and sample_data is None:
-            # in this case we expect samples to be an iterator of 2- or 3-tuples
-            for tpl in samples:
-                self.add_sample(*tpl)
-        elif sample_data is None:
-            for sample, energy in zip(samples, energies):
-                self.add_sample(sample, energy)
-        else:
-            for sample, energy, data in zip(samples, energies, sample_data):
-                self.add_sample(sample, energy, data)
+
+        if sample_data is None:
+            # if no sample data is provided, we want to yield a unique dict
+            # for each sample added to the system
+            def _sample_data():
+                while True:
+                    yield {}
+            sample_data = _sample_data()
+
+        # load them into self
+        for sample, energy, data in zip(samples, energies, sample_data):
+            self.add_sample(sample, energy, data)
 
     def __str__(self):
-        return 'samples: {}\nenergies:  {}'.format(self._samples, self._energies)
+        """Return a string representation of the response.
+
+        Returns:
+            str: A string representation of the graph.
+
+        """
+
+        lines = [self.__repr__(), 'data: {}'.format(self.data)]
+
+        item_n = 0
+        total_n = len(self)
+        for sample, energy, data in self.items(data=True):
+            if item_n > 9 and item_n < total_n - 1:
+                if item_n == 10:
+                    lines.append('...')
+                item_n += 1
+                continue
+
+            lines.append('Item {}:'.format(item_n))
+            lines.append('  sample: {}'.format(sample))
+            lines.append('  energy: {}'.format(energy))
+            lines.append('  data: {}'.format(data))
+
+            item_n += 1
+
+        return '\n'.join(lines)
 
     def __getitem__(self, sample):
         """Get the energy for the given sample.
@@ -240,22 +276,6 @@ class DiscreteModelResponse(object):
     def __len__(self):
         """The number of samples in response."""
         return self._samples.__len__()
-
-    def relabel_variables(self, mapping, copy=True):
-
-        new_response = DiscreteModelResponse()
-
-        for soln, en in self.items_iter():
-            raise NotImplementedError
-            new_response.add_sample(soln, en)
-
-        new_response.data = self.data
-
-        if copy:
-            return new_response
-
-        self = new_response
-        return
 
 
 class BinaryResponse(DiscreteModelResponse):
