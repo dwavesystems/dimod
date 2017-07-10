@@ -6,12 +6,15 @@ import itertools
 
 from dimodsampler import SpinResponse, BinaryResponse
 from dimodsampler import DiscreteModelResponse
+from dimodsampler import ising_to_qubo, qubo_to_ising
 
 
-class TestDiscreteModelResponse(unittest.TestCase):
-    """Tests on the DiscreteModelResponse"""
+class ResponseGenericTests(object):
+    one = 1
+    zero = 0
+
     def test_empty_object(self):
-        response = DiscreteModelResponse()
+        response = self.response_factory()
 
         # should be empty
         self.assertEqual(list(response.samples()), [])
@@ -19,36 +22,36 @@ class TestDiscreteModelResponse(unittest.TestCase):
         self.assertEqual(len(response), 0)
 
     def test_samples(self):
-        response = DiscreteModelResponse()
-        response.add_sample({0: -1}, 1, data={'n': 5})
-        response.add_sample({0: 1}, -1, data={'n': 1})
+        response = self.response_factory()
+        response.add_sample({0: self.zero}, 1, data={'n': 5})
+        response.add_sample({0: self.one}, -1, data={'n': 1})
         self.assertEqual(list(response.samples()),
-                         [{0: 1}, {0: -1}])
+                         [{0: self.one}, {0: self.zero}])
         self.assertEqual(list(response.samples(data=True)),
-                         [({0: 1}, {'n': 1}), ({0: -1}, {'n': 5})])
+                         [({0: self.one}, {'n': 1}), ({0: self.zero}, {'n': 5})])
 
     def test_energies(self):
-        response = DiscreteModelResponse()
-        response.add_sample({0: -1}, 1, data={'n': 5})
-        response.add_sample({0: 1}, -1, data={'n': 1})
+        response = self.response_factory()
+        response.add_sample({0: self.zero}, 1, data={'n': 5})
+        response.add_sample({0: self.one}, -1, data={'n': 1})
         self.assertEqual(list(response.energies()),
                          [-1, 1])
         self.assertEqual(list(response.energies(data=True)),
                          [(-1, {'n': 1}), (1, {'n': 5})])
 
     def test_items(self):
-        response = DiscreteModelResponse()
-        response.add_sample({0: -1}, 1, data={'n': 5})
-        response.add_sample({0: 1}, -1, data={'n': 1})
-        self.assertEqual(list(response.items()), [({0: 1}, -1), ({0: -1}, 1)])
+        response = self.response_factory()
+        response.add_sample({0: self.zero}, 1, data={'n': 5})
+        response.add_sample({0: self.one}, -1, data={'n': 1})
+        self.assertEqual(list(response.items()), [({0: self.one}, -1), ({0: self.zero}, 1)])
         self.assertEqual(list(response.items(data=True)),
-                         [({0: 1}, -1, {'n': 1}), ({0: -1}, 1, {'n': 5})])
+                         [({0: self.one}, -1, {'n': 1}), ({0: self.zero}, 1, {'n': 5})])
 
     def test_add_samples_from(self):
         """There are several different ways that responses can be added."""
-        response = DiscreteModelResponse()
+        response = self.response_factory()
 
-        sample0 = {0: -1}
+        sample0 = {0: self.zero}
         energy0 = 1
         data0 = {'n': 107}
 
@@ -73,19 +76,71 @@ class TestDiscreteModelResponse(unittest.TestCase):
 
     def test_relabel_variables(self):
 
-        response = DiscreteModelResponse()
+        response = self.response_factory()
 
-        response.add_sample({'a': -1, 'b': 1}, 1, data={'n': 5})
-        response.add_sample({'a': 1, 'b': -1}, -1, data={'n': 1})
+        response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
+        response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
 
-        mapping = {'a': 1, 'b': 0}
+        mapping = {'a': self.one, 'b': 0}
         rl_response = response.relabel_samples(mapping)
         response.relabel_samples(mapping, copy=False)
 
-        mapping = {'a': 1, 'b': 1}
-        response = DiscreteModelResponse()
+        mapping = {'a': self.one, 'b': self.one}
+        response = self.response_factory()
 
-        response.add_sample({'a': -1, 'b': 1}, 1, data={'n': 5})
-        response.add_sample({'a': 1, 'b': -1}, -1, data={'n': 1})
+        response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
+        response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
         with self.assertRaises(ValueError):
             response.relabel_samples(mapping, copy=False)
+
+
+class TestDiscreteModelResponse(unittest.TestCase, ResponseGenericTests):
+    """Tests on the DiscreteModelResponse"""
+    response_factory = DiscreteModelResponse
+
+
+class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
+    response_factory = BinaryResponse
+
+
+class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
+    one = 1
+    zero = -1  # spin-valued
+    response_factory = SpinResponse
+
+    def test_add_sample_hJ(self):
+        # add_sample with no energy specified, but h, J given
+
+        h = {0: 0, 1: 0}
+        J = {(0, 1): 1}
+
+        sample0 = {0: -1, 1: 1}
+        sample1 = {0: 1, 1: -1}
+        sample2 = {0: 1, 1: 1}
+
+        en0 = -1  # the resulting energy
+        en1 = -1
+        en2 = 1
+
+        response = self.response_factory()
+        response.add_sample(sample0, h=h, J=J)
+        self.assertEqual(list(response.energies()), [en0])
+
+        response.add_samples_from([sample0, sample1, sample2], h=h, J=J)
+        self.assertEqual(list(response.energies()), [-1, -1, -1, 1])
+
+    def test_as_binary(self):
+
+        h = {0: 0, 1: 0}
+        J = {(0, 1): 1}
+
+        sample0 = {0: -1, 1: 1}
+        sample1 = {0: 1, 1: -1}
+        sample2 = {0: 1, 1: 1}
+
+        Q, offset = ising_to_qubo(h, J)
+
+        response = self.response_factory()
+        response.add_samples_from([sample0, sample1, sample2], h=h, J=J)
+
+        bin_response = response.as_binary(offset)
