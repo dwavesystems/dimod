@@ -70,3 +70,22 @@ class TestDiscreteModelResponse(unittest.TestCase):
         response.add_samples_from(*zip(*items))
 
         self.assertEqual(len(response), 40)
+
+    def test_relabel_variables(self):
+
+        response = DiscreteModelResponse()
+
+        response.add_sample({'a': -1, 'b': 1}, 1, data={'n': 5})
+        response.add_sample({'a': 1, 'b': -1}, -1, data={'n': 1})
+
+        mapping = {'a': 1, 'b': 0}
+        rl_response = response.relabel_samples(mapping)
+        response.relabel_samples(mapping, copy=False)
+
+        mapping = {'a': 1, 'b': 1}
+        response = DiscreteModelResponse()
+
+        response.add_sample({'a': -1, 'b': 1}, 1, data={'n': 5})
+        response.add_sample({'a': 1, 'b': -1}, -1, data={'n': 1})
+        with self.assertRaises(ValueError):
+            response.relabel_samples(mapping, copy=False)

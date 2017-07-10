@@ -4,7 +4,7 @@ from dimodsampler.decorators import *
 
 
 class dummyResponse:
-    def relabel_variables(self, relabel, copy=True):
+    def relabel_samples(self, relabel, copy=True):
         return None
 
 

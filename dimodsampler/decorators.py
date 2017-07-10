@@ -204,7 +204,7 @@ def qubo_index_labels(Q_arg):
         response = f(*newargs, **kw)
 
         # the returned response will need to be relabelled with inv_relabel
-        return response.relabel_variables(inv_relabel, copy=True)
+        return response.relabel_samples(inv_relabel, copy=True)
 
     return _qubo_index_labels
 
@@ -275,6 +275,6 @@ def ising_index_labels(h_arg, J_arg):
         response = f(*newargs, **kw)
 
         # finally unapply the relabelling
-        return response.relabel_variables(inv_relabel)
+        return response.relabel_samples(inv_relabel)
 
     return _ising_index_labels

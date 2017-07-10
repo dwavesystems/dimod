@@ -9,15 +9,19 @@ from dimodsampler import ising_energy, qubo_energy
 if sys.version_info[0] == 2:
     range = xrange
     zip = itertools.izip
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
 
 
 class DiscreteModelResponse(object):
-    def __init__(self):
+
+    def __init__(self, data={}):
         """Constructor. See __doc__ for DiscreteModelResponse"""
         self._samples = []
         self._energies = []
         self._sample_data = []
-        self.data = {}
+        self.data = data
 
     def __iter__(self):
         """Iterate over the samples. Use the expression 'for sample in
@@ -215,7 +219,7 @@ class DiscreteModelResponse(object):
             # for each sample added to the system
             def _sample_data():
                 while True:
-                    yield {}
+                    yield {}  # faster than dict()
             sample_data = _sample_data()
 
         # load them into self
@@ -276,6 +280,76 @@ class DiscreteModelResponse(object):
     def __len__(self):
         """The number of samples in response."""
         return self._samples.__len__()
+
+    def relabel_samples(self, mapping, copy=True):
+        """Relabels the variable in the samples.
+
+        Args:
+            mapping (dict): A dictionary with the old labels as keys
+            and the new labels as values. A partial mapping is
+            allowed.
+            copy (optional): If True, return a copy or if False
+            relabel the samples in place.
+
+        Examples:
+            >>> response = DiscreteModelResponse()
+            >>> response.add_sample({'a': -1, 'b': 1}, 1)
+            >>> response.add_sample({'a': 1, 'b': -1}, -1)
+            >>> mapping = {'a': 1, 'b': 0}
+
+            >>> new_response = response.relabel_samples(mapping)
+            >>> list(new_response.samples())
+            [{0: -1, 1: 1}, {0: 1, 1: -1}]
+
+            >>> response.relabel_samples(mapping, copy=False)
+            >>> list(response.samples())
+            [{0: -1, 1: 1}, {0: 1, 1: -1}]
+
+        """
+
+        try:
+            if copy:
+                return _relabel_copy(self, mapping)
+            else:
+                return _relabel_inplace(self, mapping)
+        except MappingError:
+            raise ValueError('given mapping does not have unique values.')
+
+
+class MappingError(Exception):
+    """mapping causes conflicting values in samples"""
+
+
+def _relabel_copy(response, mapping):
+
+    # make a a new response of the same class
+    rl_response = response.__class__()
+
+    # copy over the data
+    rl_response.data = response.data
+
+    # for each sample, energy, data in self, relabel the sample
+    # and add to the new response. Missing labels are kept the
+    # same.
+    for sample, energy, data in response.items(data=True):
+        rl_sample = {}
+        for v, val in iteritems(sample):
+            if v in mapping:
+                new_v = mapping[v]
+                if new_v in rl_sample:
+                    raise MappingError
+                rl_sample[mapping[v]] = val
+            if v not in mapping:
+                rl_sample[v] = val
+        rl_response.add_sample(rl_sample, energy, data)
+
+    # return the new object
+    return rl_response
+
+
+def _relabel_inplace(response, mapping):
+    response = _relabel_copy(response, mapping)
+    return
 
 
 class BinaryResponse(DiscreteModelResponse):
