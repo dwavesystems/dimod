@@ -356,13 +356,117 @@ def _relabel_inplace(response, mapping):
 
 class BinaryResponse(DiscreteModelResponse):
     def add_sample(self, sample, energy=None, data={}, Q=None):
-        raise NotImplementedError
+        """Loads a sample and associated energy into the response.
+
+        Args:
+            sample (dict): A sample as would be returned by a discrete
+            model solver. Should be a dict of the form
+            {var: value, ...}. The values should be spin-valued, that is
+            -1 or 1.
+            energy (float/int, optional): The energy associated with the
+            given sample.
+            data (dict, optional): A dict containing any additional
+            data about the sample. Default empty.
+            Q (dict): Defines a Quadratic Unconstrained Binary
+            Optimization problem that can be used to calculate the energy
+            associated with `sample`.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Raises:
+            TypeError: If `sample` is not a dict.
+            TypeError: If `energy` is not an int or float.
+            TypeError: If `data` is not a dict.
+            ValueError: If any of the values in `sample` are not -1
+            or 1.
+            TypeError: If energy is not provided, Q must be.
+
+        Examples:
+            >>> sample = {0: 1, 1: 0, 2: 0}
+            >>> energy = -1
+            >>> response = BinaryResponse()
+            >>> response.add_sample(sample, energy)
+            >>> list(response.samples())
+            [{0: 1, 1: 0, 2: 0}]
+            >>> response.add_sample(sample, Q={(0, 0): -1, (1, 1): 0, (2, 2): 0})
+            >>> list(response.items())
+            [({0: 1, 1: 0, 2: 0}, -1), ({0: 1, 1: 0, 2: 0}, -1)]
+            >>> response.add_sample(sample, data={'n': 10},
+                                    Q={(0, 0): -1, (1, 1): 0, (2, 2): 0})
+
+
+        """
+        # check that the sample is sp]n-valued
+        if any(val not in (0, 1) for val in itervalues(sample)):
+            raise ValueError('given sample is not binary. Values should be 0 or 1')
+
+        # if energy is not provided, but Q is, then we can calculate
+        # the energy for the sample.
+        if energy is None:
+            if Q is None:
+                raise TypeError("most provide 'energy' or 'Q'")
+            energy = qubo_energy(Q, sample)
+
+        DiscreteModelResponse.add_sample(self, sample, energy, data)
 
     def add_samples_from(self, samples, energies=None, sample_data=None, Q=None):
-        raise NotImplementedError
+        """Loads samples and associated energies from iterators.
+
+        Args:
+            samples (iterator): An iterable object that yields
+            samples. Each sample should be a dict of the form
+            {var: value, ...}.
+            energies (iterator): An iterable object that yields
+            energies associated with each sample.
+            sample_data (iterator, optional): An iterable object
+            that yields data about each sample as  dict. Default
+            empty dicts.
+            Q (dict): Defines a Quadratic Unconstrained Binary
+            Optimization problem that can be used to calculate the energy
+            associated with `sample`.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Raises:
+            TypeError: If any `sample` in `samples` is not a dict.
+            TypeError: If any `energy`  in `energies` is not an int
+            or float.
+            TypeError: If any `data` in `sample_data` is not a dict.
+            ValueError: If any of the values in `sample` are not 0
+            or 1.
+            TypeError: If energy is not provided, Q must be.
+
+        Examples:
+            TODO
+
+        """
+
+        if energies is None:
+            energies = itertools.repeat(None)
+
+        if sample_data is None:
+            # if no sample data is provided, we want to yield a unique dict
+            # for each sample added to the system
+            def _sample_data():
+                while True:
+                    yield {}  # faster than dict()
+            sample_data = _sample_data()
+
+        for sample, energy, sample_data in zip(samples, energies, sample_data):
+            self.add_sample(sample, energy, sample_data, Q=Q)
 
     def as_spin(self, offset):
-        raise NotImplementedError
+
+        spin_response = SpinResponse()
+        spin_response.data = self.data.copy()
+
+        for sample, energy, data in self.items(data=True):
+            spin_sample = {v: 2 * val - 1 for v, val in iteritems(sample)}
+            spin_response.add_sample(spin_sample, energy - offset, data)
+
+        return spin_response
 
 
 class SpinResponse(DiscreteModelResponse):
@@ -406,8 +510,7 @@ class SpinResponse(DiscreteModelResponse):
             raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
 
         # if energy is not provided, but h, J are, then we can calculate
-        # the energy for the sample. We also provide input checking to
-        # h, J
+        # the energy for the sample.
         if energy is None:
             if h is None or J is None:
                 raise TypeError("most provide 'energy' or 'h' and 'J'")
@@ -485,4 +588,12 @@ class SpinResponse(DiscreteModelResponse):
             self.add_sample(sample, energy, sample_data, h=h, J=J)
 
     def as_binary(self, offset):
-        raise NotImplementedError
+
+        bin_response = BinaryResponse()
+        bin_response.data = self.data.copy()
+
+        for sample, energy, data in self.items(data=True):
+            bin_sample = {v: (val + 1) / 2 for v, val in iteritems(sample)}
+            bin_response.add_sample(bin_sample, energy - offset, data)
+
+        return bin_response

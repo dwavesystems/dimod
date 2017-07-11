@@ -6,7 +6,7 @@ import itertools
 
 from dimodsampler import SpinResponse, BinaryResponse
 from dimodsampler import DiscreteModelResponse
-from dimodsampler import ising_to_qubo, qubo_to_ising
+from dimodsampler import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
 
 
 class ResponseGenericTests(object):
@@ -102,6 +102,25 @@ class TestDiscreteModelResponse(unittest.TestCase, ResponseGenericTests):
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
     response_factory = BinaryResponse
 
+    def test_as_spin(self):
+        # add_sample with no energy specified, but Q given
+
+        Q = {(0, 0): -1, (0, 1): 1, (1, 1): -1}
+
+        sample0 = {0: 0, 1: 1}
+        sample1 = {0: 1, 1: 1}
+        sample2 = {0: 0, 1: 0}
+
+        h, J, offset = qubo_to_ising(Q)
+
+        response = self.response_factory()
+        response.add_samples_from([sample0, sample1, sample2], Q=Q)
+
+        spin_response = response.as_spin(offset)
+
+        for sample, energy in spin_response.items():
+            self.assertEqual(ising_energy(h, J, sample), energy)
+
 
 class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
     one = 1
@@ -144,3 +163,5 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
         response.add_samples_from([sample0, sample1, sample2], h=h, J=J)
 
         bin_response = response.as_binary(offset)
+        for sample, energy in bin_response.items():
+            self.assertEqual(qubo_energy(Q, sample), energy)
