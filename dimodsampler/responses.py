@@ -5,8 +5,8 @@ import bisect
 from dimodsampler.decorators import ising, qubo
 from dimodsampler import ising_energy, qubo_energy
 
-# Python 2/3 compatibility
-if sys.version_info[0] == 2:
+PY2 = sys.version_info[0] == 2
+if PY2:
     range = xrange
     zip = itertools.izip
     iteritems = lambda d: d.iteritems()
@@ -323,7 +323,6 @@ class MappingError(Exception):
 
 
 def _relabel_copy(response, mapping):
-
     # make a a new response of the same class
     rl_response = response.__class__()
 
@@ -395,7 +394,6 @@ class BinaryResponse(DiscreteModelResponse):
             >>> response.add_sample(sample, data={'n': 10},
                                     Q={(0, 0): -1, (1, 1): 0, (2, 2): 0})
 
-
         """
         # check that the sample is sp]n-valued
         if any(val not in (0, 1) for val in itervalues(sample)):
@@ -439,7 +437,30 @@ class BinaryResponse(DiscreteModelResponse):
             TypeError: If energy is not provided, Q must be.
 
         Examples:
-            TODO
+            >>> samples = [{0: 0}, {0: 1}, {0: 0}]
+            >>> energies = [1, -1, 1]
+            >>> sample_data = [{'t': .2}, {'t': .5}, {'t': .1}]
+
+            >>> response = BinaryResponse()
+            >>> response.add_samples_from(samples, energies)
+            >>> list(response.samples())
+            [{0: 1}, {0: 0}, {0: 0}]
+
+            >>> response = BinaryResponse()
+            >>> response.add_samples_from(samples, energies, sample_data)
+            >>> list(response.samples())
+            [{0: 1}, {0: 0}, {0: 0}]
+
+            >>> items = [({0: -1}, -1), ({0: -1}, 1)]
+            >>> response = BinaryResponse()
+            >>> response.add_samples_from(*zip(*items))
+            >>> list(response.samples())
+            [{0: 1}, {0: 0}]
+
+            >>> response = BinaryResponse()
+            >>> response.add_samples_from(samples, h={0: -1}, J={}})
+            >>> list(response.energies())
+            [-1, 1, 1]
 
         """
 
@@ -458,7 +479,23 @@ class BinaryResponse(DiscreteModelResponse):
             self.add_sample(sample, energy, sample_data, Q=Q)
 
     def as_spin(self, offset):
-        """TODO"""
+        """Converts a BinaryResponse to a SpinResponse.
+
+        Args:
+            offset (float/int, optional): The energy offset as would
+            be returned by `ising_to_qubo`. The energy offset is
+            applied to each energy in the response.
+
+        Returns:
+            SpinResponse: A SpinResponse with the samples converted
+            from spin to binary, the energies updated with `offset` and
+            all of the data transferred directly.
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+        """
 
         spin_response = SpinResponse()
         spin_response.data = self.data.copy()
@@ -588,8 +625,24 @@ class SpinResponse(DiscreteModelResponse):
         for sample, energy, sample_data in zip(samples, energies, sample_data):
             self.add_sample(sample, energy, sample_data, h=h, J=J)
 
-    def as_binary(self, offset):
-        """TODO"""
+    def as_binary(self, offset=0):
+        """Converts a SpinResponse to a BinaryResponse.
+
+        Args:
+            offset (float/int, optional): The energy offset as would
+            be returned by `ising_to_qubo`. The energy offset is
+            applied to each energy in the response.
+
+        Returns:
+            BinaryResponse: A BinaryResponse with the samples converted
+            from spin to binary, the energies updated with `offset` and
+            all of the data transferred directly.
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+        """
 
         bin_response = BinaryResponse()
         bin_response.data = self.data.copy()
