@@ -1,16 +1,9 @@
 
 
 class DiscreteModelSolver(object):
+    """TODO"""
     def solve_qubo(self, Q, **solver_params):
-        """Implemented solvers should overwrite this.
-
-        Args:
-            Q (dict): A dict encoding a qubo.
-
-        Returns:
-
-
-        """
+        """TODO"""
         raise NotImplementedError
 
     def solve_ising(self, h, J, **solver_params):

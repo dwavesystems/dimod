@@ -17,9 +17,20 @@ else:
 
 
 class DiscreteModelResponse(object):
+    """Serves as a superclass for response objects.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+        as a dictionary. Default {}.
+
+    Examples:
+        >>> response = DiscreteModelResponse({'name', 'example'})
+        >>> print(response.data)
+        '{'name', 'example'}'
+
+    """
 
     def __init__(self, data={}):
-        """Constructor. See __doc__ for DiscreteModelResponse"""
         self._samples = []
         self._energies = []
         self._sample_data = []
