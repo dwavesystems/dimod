@@ -458,6 +458,7 @@ class BinaryResponse(DiscreteModelResponse):
             self.add_sample(sample, energy, sample_data, Q=Q)
 
     def as_spin(self, offset):
+        """TODO"""
 
         spin_response = SpinResponse()
         spin_response.data = self.data.copy()
@@ -588,6 +589,7 @@ class SpinResponse(DiscreteModelResponse):
             self.add_sample(sample, energy, sample_data, h=h, J=J)
 
     def as_binary(self, offset):
+        """TODO"""
 
         bin_response = BinaryResponse()
         bin_response.data = self.data.copy()
