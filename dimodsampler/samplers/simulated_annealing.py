@@ -49,60 +49,80 @@ class SimulatedAnnealingSolver(DiscreteModelSampler):
         return self.solve_qubo(Q, **args)
 
 
-def _solve_ising_sa(args):
-    """Wrapper to allow solve_ising_simulated_annealing to be used
-    with multiprocessing.
+def _ising_simulated_annealing_multiprocessing(args):
+    """TODO
     """
-    return solve_ising_simulated_annealing(*args)
+    raise NotImplementedError
 
 
-def ising_simulated_annealing(h, J, beta_range=(10, .3), sweeps=1000,
-                              intermediate_solutions=True):
+def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
     """Tries to find the spins that minimize the given Ising problem.
 
     Args:
-        h
-        J
-        T_range
-        sweeps
-        intermediate_solutions
+        h (dict): A dictionary of the linear biases in the Ising
+        problem. Should be of the form {v: bias, ...} for each
+        variable v in the Ising problem.
+        J (dict): A dictionary of the quadratic biases in the Ising
+        problem. Should be a dict of the form {(u, v): bias, ...}
+        for each edge (u, v) in the Ising problem. If J[(u, v)] and
+        J[(v, u)] exist then the biases are added.
+        beta_range (tuple): A 2-tuple defining the beginning and end
+        of the beta schedule (beta is the inverse temperature). The
+        schedule is applied linearly in beta. Default is (.1, 3.33).
+        sweeps (int): The number of sweeps or steps. Default is 1000.
 
+    Returns:
+        dict: A sample as a dictionary of spins.
+        float: The energy of the returned sample.
+
+    Raises:
+        TypeError: If the values in `beta_range` are not numeric.
+        TypeError: If `sweeps` is not an int.
+        TypeError: If `beta_range` is not a tuple.
+        ValueError: If the values in `beta_range` are not positive.
+        ValueError: If `beta_range` is not a 2-tuple.
+        ValueError: If `sweeps` is not positive.
+
+    https://en.wikipedia.org/wiki/Simulated_annealing
 
     """
 
-    if any(t <= 0 for t in T_range):
-        raise ValueError('temperatures must be positive')
+    # input checking, assume h and J are already checked
+    if not isinstance(beta_range, (tuple, list)):
+        raise TypeError("'beta_range' should be a tuple of length 2")
+    if any(not isinstance(b, (int, float)) for b in beta_range):
+        raise TypeError("values in 'beta_range' should be numeric")
+    if any(b <= 0 for b in beta_range):
+        raise ValueError("beta values in 'beta_range' should be positive")
+    if len(beta_range) != 2:
+        raise ValueError("'beta_range' should be a tuple of length 2")
+    if not isinstance(sweeps, int):
+        raise TypeError("'sweeps' should be a positive int")
+    if sweeps <= 0:
+        raise ValueError("'sweeps' should be a positive int")
 
-    # set up the adjacency matrix
+    # We want the schedule to be linear in beta (inverse temperature)
+    beta_init, beta_final = beta_range
+    betas = [beta_init + i * (beta_final - beta_init) / (sweeps - 1.) for i in range(sweeps)]
+
+    # set up the adjacency matrix. We can rely on every node in J already being in h
     adj = {n: set() for n in h}
     for n0, n1 in J:
         adj[n0].add(n1)
         adj[n1].add(n0)
 
-    t_init, t_final = T_range
-
-    # ok, first up we want the inverse temperature schedule
-    beta_init = 1. / t_init
-    beta_final = 1. / t_final
-    betas = [beta_init + i * (beta_final - beta_init) / (sweeps - 1) for i in range(sweeps)]
-
-    # we also need a coloring of the graph. We just use a simply greedy heuristic
+    # we will use a vertex coloring the the graph and update the nodes by color. A quick
+    # greedy coloring will be sufficient.
     __, colors = greedy_coloring(adj)
 
-    # let's make our initial soln guess (randomly)
-    # solution = {v: random.choice((-1, 1)) for v in h}
-    solution = {0: -1, 1: 1, 2: -1, 3: -1}
-
-    # # finally, before we get started, we want to track the best solution found over
-    # # the full anneal
-    # best_solution = solution
-    # best_energy = ising_energy(h, J, solution)
+    # let's make our initial guess (randomly)
+    spins = {v: random.choice((-1, 1)) for v in h}
 
     for swp in range(sweeps):
 
-        # we want to know the gain in energy for flipping each of the spins in the solution
+        # we want to know the gain in energy for flipping each of the spins
         # we can calculate all of the linear terms simultaniously
-        energy_diff_h = {v: -2 * solution[v] * h[v] for v in h}
+        energy_diff_h = {v: -2 * spins[v] * h[v] for v in h}
 
         # for each color, do updates
         for color in colors:
@@ -116,23 +136,23 @@ def ising_simulated_annealing(h, J, beta_range=(10, .3), sweeps=1000,
                 ediff = 0
                 for v1 in adj[v0]:
                     if (v0, v1) in J:
-                        ediff += solution[v0] * solution[v1] * J[(v0, v1)]
+                        ediff += spins[v0] * spins[v1] * J[(v0, v1)]
                     if (v1, v0) in J:
-                        ediff += solution[v0] * solution[v1] * J[(v1, v0)]
+                        ediff += spins[v0] * spins[v1] * J[(v1, v0)]
 
                 energy_diff_J[v0] = -2. * ediff
 
-            # now decide whether to flip spins in the solution according to the
+            # now decide whether to flip spins according to the
             # following scheme:
             #   p ~ Uniform(0, 1)
             #   log(p) < -beta(swp) * (energy_diff)
             for v in nodes:
                 logp = math.log(random.uniform(0, 1))
                 if logp < -1. * betas[swp] * (energy_diff_h[v] + energy_diff_J[v]):
-                    # flip the variable in the solution
-                    solution[v] *= -1
+                    # flip the variable in the spins
+                    spins[v] *= -1
 
-    return solution, ising_energy(h, J, solution)
+    return spins, ising_energy(h, J, spins)
 
 
 def greedy_coloring(adj):
