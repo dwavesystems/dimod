@@ -118,7 +118,8 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
     # let's make our initial guess (randomly)
     spins = {v: random.choice((-1, 1)) for v in h}
 
-    for swp in range(sweeps):
+    # there are exactly as many betas as sweeps
+    for beta in betas:
 
         # we want to know the gain in energy for flipping each of the spins
         # we can calculate all of the linear terms simultaniously
@@ -148,7 +149,7 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
             #   log(p) < -beta(swp) * (energy_diff)
             for v in nodes:
                 logp = math.log(random.uniform(0, 1))
-                if logp < -1. * betas[swp] * (energy_diff_h[v] + energy_diff_J[v]):
+                if logp < -1. * beta * (energy_diff_h[v] + energy_diff_J[v]):
                     # flip the variable in the spins
                     spins[v] *= -1
 
