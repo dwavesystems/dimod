@@ -56,7 +56,7 @@ def _solve_ising_sa(args):
     return solve_ising_simulated_annealing(*args)
 
 
-def ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000,
+def ising_simulated_annealing(h, J, beta_range=(10, .3), sweeps=1000,
                               intermediate_solutions=True):
     """Tries to find the spins that minimize the given Ising problem.
 
@@ -136,12 +136,21 @@ def ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000,
 
 
 def greedy_coloring(adj):
-    """TODO
+    """Determines a vertex coloring.
 
+    Args:
+        adj (dict): The edge structure of the graph to be colored.
+        `adj` should be of the form {node: neighbors, ...} where
+        neighbors is a set.
 
     Returns:
-        dict: the coloring {node: {color1, color2}}
-        dict: the colors {color: [node, node]
+        dict: the coloring {node: color, ...}
+        dict: the colors {color: [node, ...], ...}
+
+    Note:
+        This is a greedy heuristic, the resulting coloring is not
+        necessarily minimal.
+
     """
 
     # now let's start coloring
