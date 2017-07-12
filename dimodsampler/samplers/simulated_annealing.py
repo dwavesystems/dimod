@@ -6,7 +6,7 @@ from multiprocessing import Pool
 
 from dimodsampler import DiscreteModelSampler
 from dimodsampler.decorators import ising, qubo
-from dimodsampler import ising_energy
+from dimodsampler import ising_energy, qubo_to_ising, SpinResponse
 
 __all__ = ['SimulatedAnnealingSolver']
 
@@ -18,41 +18,58 @@ if sys.version_info[0] == 2:
 class SimulatedAnnealingSolver(DiscreteModelSampler):
 
     @ising(1, 2)
-    def solve_ising(self, h, J, samples=10, multiprocessing=False,
-                    T_range=(10, .3), sweeps=1000):
+    def sample_ising(self, h, J, samples=10, beta_range=(.1, 3.33), sweeps=1000,
+                     multiprocessing=False):
+        """TODO
 
+        """
+
+        # input checking, h, J are handled by the @ising decorator, beta_range,
+        # sweeps are handled by ising_simulated_annealing
+        if not isinstance(samples, int):
+            raise TypeError("'samples' should be a positive integer")
+        if samples < 1:
+            raise ValueError("'samples' should be a positive integer")
+
+        # create the response object. Ising returns spin values.
         response = SpinResponse()
 
+        # now we use ising_simulated_annealing to generate samples, either in
+        # parallel or not.
         if not multiprocessing or samples < 2:
+            # if the multiprocessing flag is False or the user is only requesting 1
+            # sample then we can just run ising_simulated_annealing directly
             for __ in range(samples):
-                sample, energy = solve_ising_simulated_annealing(h, J, T_range, sweeps)
-                response.add_solution(sample, energy)
+                sample, energy = ising_simulated_annealing(h, J, beta_range, sweeps)
+                response.add_sample(sample, energy)
 
         else:
-            p = Pool(10)
-            args = itertools.repeat((h, J, T_range, sweeps), samples)
-            for sample, energy in p.map(_solve_ising_sa, args):
-                response.add_solution(sample, energy)
+            # if the multiprocessing flag is set to true, we can run the
+            # ising_simulated_annealing functions in parallel for each sample
+            # because of the limitations of Pool.map, we need to give the arguments
+            # as a single tuple.
+            args = itertools.repeat((h, J, beta_range, sweeps), samples)
+            for sample, energy in Pool(samples).map(_ising_simulated_annealing_single_arg, args):
+                response.add_sample(sample, energy)
 
         return response
 
-    def solve_structured_ising(self, h, J, **args):
-        return self.solve_ising(h, J, **args)
+    def sample_structured_ising(self, h, J, **args):
+        return self.sample_ising(h, J, **args)
 
     @qubo(1)
-    def solve_qubo(self, Q, **args):
+    def sample_qubo(self, Q, **args):
         h, J, offset = qubo_to_ising(Q)
-        spin_response = self.solve_ising(h, J, **args)
+        spin_response = self.sample_ising(h, J, **args)
         return spin_response.as_binary(offset)
 
-    def solve_structured_qubo(self, Q, **args):
-        return self.solve_qubo(Q, **args)
+    def sample_structured_qubo(self, Q, **args):
+        return self.sample_qubo(Q, **args)
 
 
-def _ising_simulated_annealing_multiprocessing(args):
-    """TODO
-    """
-    raise NotImplementedError
+def _ising_simulated_annealing_single_arg(args):
+    """Allows ising_simulated_annealing to be used with Pool.map"""
+    return ising_simulated_annealing(*args)
 
 
 def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):

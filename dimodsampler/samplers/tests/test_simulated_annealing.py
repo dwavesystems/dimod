@@ -5,23 +5,22 @@ import random
 
 from dimodsampler import SimulatedAnnealingSolver, ising_energy
 from dimodsampler.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
-# from dwave_qasolver.solvers.simulated_annealing_solver import solve_ising_simulated_annealing
-# from dwave_qasolver.solvers.tests.generic_solver_tests import TestSolverAPI
+from dimodsampler.samplers.tests.generic_sampler_tests import TestSolverAPI
 
 
-# class TestSASolver(unittest.TestCase, TestSolverAPI):
-#     def setUp(self):
-#         self.solver = SimulatedAnnealingSolver()
+class TestSASampler(unittest.TestCase, TestSolverAPI):
+    def setUp(self):
+        self.sampler = SimulatedAnnealingSolver()
 
-#     def test_multiprocessing(self):
+    def test_multiprocessing(self):
 
-#         solver = self.solver
+        sampler = self.sampler
 
-#         h = {0: -.5, 1: 0, 2: 1, 3: -.5}
-#         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
+        h = {0: -.5, 1: 0, 2: 1, 3: -.5}
+        J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
 
-#         solver.solve_ising(h, J, samples=100, multiprocessing=False)
-#         solver.solve_ising(h, J, samples=100, multiprocessing=True)
+        sampler.sample_ising(h, J, samples=100, multiprocessing=False)
+        sampler.sample_ising(h, J, samples=100, multiprocessing=True)
 
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
