@@ -7,3 +7,5 @@ from dimodsampler.responses import *
 import dimodsampler.responses
 
 from dimodsampler.solver_template import *
+
+from dimodsampler.samplers import *

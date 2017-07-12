@@ -1,1 +1,1 @@
-from dimodsampler.solvers.simulated_annealing_solver import *
+from dimodsampler.samplers.simulated_annealing import *

@@ -4,8 +4,9 @@ import math
 import itertools
 from multiprocessing import Pool
 
-from dimodsampler import DiscreteModelSolver
-from dimodsampler.decorators import ising
+from dimodsampler import DiscreteModelSampler
+from dimodsampler.decorators import ising, qubo
+from dimodsampler import ising_energy
 
 __all__ = ['SimulatedAnnealingSolver']
 
@@ -14,9 +15,9 @@ if sys.version_info[0] == 2:
     range = xrange
 
 
-class SimulatedAnnealingSolver(DiscreteModelSolver):
+class SimulatedAnnealingSolver(DiscreteModelSampler):
 
-    @solve_ising_api()
+    @ising(1, 2)
     def solve_ising(self, h, J, samples=10, multiprocessing=False,
                     T_range=(10, .3), sweeps=1000):
 
@@ -38,7 +39,7 @@ class SimulatedAnnealingSolver(DiscreteModelSolver):
     def solve_structured_ising(self, h, J, **args):
         return self.solve_ising(h, J, **args)
 
-    @solve_qubo_api()
+    @qubo(1)
     def solve_qubo(self, Q, **args):
         h, J, offset = qubo_to_ising(Q)
         spin_response = self.solve_ising(h, J, **args)
@@ -55,9 +56,8 @@ def _solve_ising_sa(args):
     return solve_ising_simulated_annealing(*args)
 
 
-@ising(0, 1)
-def solve_ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000,
-                                    intermediate_solutions=True):
+def ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000,
+                              intermediate_solutions=True):
     """Tries to find the spins that minimize the given Ising problem.
 
     Args:
