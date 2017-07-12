@@ -4,11 +4,10 @@ import math
 import itertools
 from multiprocessing import Pool
 
-from dwave_qasolver.solver_template import DiscreteModelSolver
-from dwave_qasolver.decorators import solve_ising_api, solve_qubo_api
-from dwave_qasolver.utilities import ising_energy, qubo_to_ising
+from dimodsampler import DiscreteModelSolver
+from dimodsampler.decorators import ising
 
-from dwave_qasolver.solution_templates import SpinResponse
+__all__ = ['SimulatedAnnealingSolver']
 
 
 if sys.version_info[0] == 2:
@@ -56,15 +55,23 @@ def _solve_ising_sa(args):
     return solve_ising_simulated_annealing(*args)
 
 
-def solve_ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000):
-    """TODO
+@ising(0, 1)
+def solve_ising_simulated_annealing(h, J, T_range=(10, .3), sweeps=1000,
+                                    intermediate_solutions=True):
+    """Tries to find the spins that minimize the given Ising problem.
+
+    Args:
+        h
+        J
+        T_range
+        sweeps
+        intermediate_solutions
+
+
     """
 
     if any(t <= 0 for t in T_range):
         raise ValueError('temperatures must be positive')
-    # TODO, lots more input checking
-
-    # TODO seed?
 
     # set up the adjacency matrix
     adj = {n: set() for n in h}
