@@ -19,27 +19,27 @@ class TestSASampler(unittest.TestCase, TestSolverAPI):
         h = {0: -.5, 1: 0, 2: 1, 3: -.5}
         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
 
-        response0 = sampler.sample_ising(h, J, samples=10, multiprocessing=False)
-        response1 = sampler.sample_ising(h, J, samples=10, multiprocessing=True)
+        response0 = sampler.sample_ising(h, J, n_samples=10, multiprocessing=False)
+        response1 = sampler.sample_ising(h, J, n_samples=10, multiprocessing=True)
 
         # make sure we actully got back 100 samples
         self.assertEqual(len(response0), 10)
         self.assertEqual(len(response1), 10)
 
-        response2 = sampler.sample_structured_ising(h, J, samples=10, multiprocessing=False)
-        response3 = sampler.sample_structured_ising(h, J, samples=10, multiprocessing=True)
+        response2 = sampler.sample_structured_ising(h, J, n_samples=10, multiprocessing=False)
+        response3 = sampler.sample_structured_ising(h, J, n_samples=10, multiprocessing=True)
         self.assertEqual(len(response2), 10)
         self.assertEqual(len(response3), 10)
 
         Q = {(0, 0): 0, (1, 1): 0, (0, 1): -1}
 
-        response4 = sampler.sample_qubo(Q, samples=10, multiprocessing=False)
-        response5 = sampler.sample_qubo(Q, samples=10, multiprocessing=True)
+        response4 = sampler.sample_qubo(Q, n_samples=10, multiprocessing=False)
+        response5 = sampler.sample_qubo(Q, n_samples=10, multiprocessing=True)
         self.assertEqual(len(response4), 10)
         self.assertEqual(len(response5), 10)
 
-        response6 = sampler.sample_structured_qubo(Q, samples=10, multiprocessing=False)
-        response7 = sampler.sample_structured_qubo(Q, samples=10, multiprocessing=True)
+        response6 = sampler.sample_structured_qubo(Q, n_samples=10, multiprocessing=False)
+        response7 = sampler.sample_structured_qubo(Q, n_samples=10, multiprocessing=True)
         self.assertEqual(len(response6), 10)
         self.assertEqual(len(response7), 10)
 

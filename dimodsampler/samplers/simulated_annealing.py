@@ -58,9 +58,9 @@ class SimulatedAnnealingSampler(DiscreteModelSampler):
         # input checking
         # h, J are handled by the @ising decorator
         # beta_range, sweeps are handled by ising_simulated_annealing
-        if not isinstance(samples, int):
+        if not isinstance(n_samples, int):
             raise TypeError("'samples' should be a positive integer")
-        if samples < 1:
+        if n_samples < 1:
             raise ValueError("'samples' should be a positive integer")
 
         # create the response object. Ising returns spin values.
@@ -68,10 +68,10 @@ class SimulatedAnnealingSampler(DiscreteModelSampler):
 
         # now we use ising_simulated_annealing to generate samples, either in
         # parallel or not.
-        if not multiprocessing or samples < 2:
+        if not multiprocessing or n_samples < 2:
             # if the multiprocessing flag is False or the user is only requesting 1
             # sample then we can just run ising_simulated_annealing directly
-            for __ in range(samples):
+            for __ in range(n_samples):
                 sample, energy = ising_simulated_annealing(h, J, beta_range, sweeps)
                 response.add_sample(sample, energy)
 
@@ -80,8 +80,8 @@ class SimulatedAnnealingSampler(DiscreteModelSampler):
             # ising_simulated_annealing functions in parallel for each sample
             # because of the limitations of Pool.map, we need to give the arguments
             # as a single tuple.
-            args = itertools.repeat((h, J, beta_range, sweeps), samples)
-            for sample, energy in Pool(samples).map(_ising_simulated_annealing_single_arg, args):
+            args = itertools.repeat((h, J, beta_range, sweeps), n_samples)
+            for sample, energy in Pool(n_samples).map(_ising_simulated_annealing_single_arg, args):
                 response.add_sample(sample, energy)
 
         return response
