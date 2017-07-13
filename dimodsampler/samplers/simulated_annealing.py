@@ -8,14 +8,14 @@ from dimodsampler import DiscreteModelSampler
 from dimodsampler.decorators import ising, qubo
 from dimodsampler import ising_energy, qubo_to_ising, SpinResponse
 
-__all__ = ['SimulatedAnnealingSolver']
+__all__ = ['SimulatedAnnealingSampler']
 
 
 if sys.version_info[0] == 2:
     range = xrange
 
 
-class SimulatedAnnealingSolver(DiscreteModelSampler):
+class SimulatedAnnealingSampler(DiscreteModelSampler):
 
     @ising(1, 2)
     def sample_ising(self, h, J, samples=10, beta_range=(.1, 3.33), sweeps=1000,
