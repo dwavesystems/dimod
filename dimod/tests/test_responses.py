@@ -4,9 +4,9 @@ import itertools
 import random
 import itertools
 
-from dimodsampler import SpinResponse, BinaryResponse
-from dimodsampler import DiscreteModelResponse
-from dimodsampler import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
+from dimod import SpinResponse, BinaryResponse
+from dimod import DiscreteModelResponse
+from dimod import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
 
 
 class ResponseGenericTests(object):

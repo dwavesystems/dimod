@@ -2,8 +2,8 @@ import sys
 import itertools
 import bisect
 
-from dimodsampler.decorators import ising, qubo
-from dimodsampler import ising_energy, qubo_energy
+from dimod.decorators import ising, qubo
+from dimod import ising_energy, qubo_energy
 
 PY2 = sys.version_info[0] == 2
 if PY2:

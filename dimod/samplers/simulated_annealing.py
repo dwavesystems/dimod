@@ -4,9 +4,9 @@ import math
 import itertools
 from multiprocessing import Pool
 
-from dimodsampler import DiscreteModelSampler
-from dimodsampler.decorators import ising, qubo
-from dimodsampler import ising_energy, qubo_to_ising, SpinResponse
+from dimod import DiscreteModelSampler
+from dimod.decorators import ising, qubo
+from dimod import ising_energy, qubo_to_ising, SpinResponse
 
 __all__ = ['SimulatedAnnealingSampler']
 

@@ -1,6 +1,6 @@
 import unittest
 
-from dimodsampler.decorators import *
+from dimod.decorators import *
 
 
 class dummyResponse:
