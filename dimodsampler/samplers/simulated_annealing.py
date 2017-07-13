@@ -18,14 +18,46 @@ if sys.version_info[0] == 2:
 class SimulatedAnnealingSampler(DiscreteModelSampler):
 
     @ising(1, 2)
-    def sample_ising(self, h, J, samples=10, beta_range=(.1, 3.33), sweeps=1000,
+    def sample_ising(self, h, J, beta_range=(.1, 3.33), n_samples=10, sweeps=1000,
                      multiprocessing=False):
-        """TODO
+        """Sample from low-energy spin states using simulated annealing.
+
+        Args:
+            h (dict): A dictionary of the linear biases in the Ising
+            problem. Should be of the form {v: bias, ...} for each
+            variable v in the Ising problem.
+            J (dict): A dictionary of the quadratic biases in the Ising
+            problem. Should be a dict of the form {(u, v): bias, ...}
+            for each edge (u, v) in the Ising problem. If J[(u, v)] and
+            J[(v, u)] exist then the biases are added.
+            beta_range (tuple, optional): A 2-tuple defining the
+            beginning and end of the beta schedule (beta is the
+            inverse temperature). The schedule is applied linearly
+            in beta. Default is (.1, 3.33).
+            n_samples (int, optional): Each sample is the result of
+            a single run of the simulated annealing algorithm.
+            sweeps (int, optional): The number of sweeps or steps.
+            Default is 1000.
+            multiprocessing (bool, optional): When True, the simulated
+            annealing algorithms are run in parallel using the Python
+            multiprocessing library.
+
+        Returns:
+            :obj:`SpinResponse`
+
+        Examples:
+            >>> sampler = SimulatedAnnealingSampler()
+            >>> h = {0: -1, 1: -1}
+            >>> J = {(0, 1): -1}
+            >>> response = sampler.sample_ising(h, J, samples=1)
+            >>> list(response.samples())
+            [{0: 1, 1: 1}]
 
         """
 
-        # input checking, h, J are handled by the @ising decorator, beta_range,
-        # sweeps are handled by ising_simulated_annealing
+        # input checking
+        # h, J are handled by the @ising decorator
+        # beta_range, sweeps are handled by ising_simulated_annealing
         if not isinstance(samples, int):
             raise TypeError("'samples' should be a positive integer")
         if samples < 1:
@@ -83,10 +115,12 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
         problem. Should be a dict of the form {(u, v): bias, ...}
         for each edge (u, v) in the Ising problem. If J[(u, v)] and
         J[(v, u)] exist then the biases are added.
-        beta_range (tuple): A 2-tuple defining the beginning and end
-        of the beta schedule (beta is the inverse temperature). The
-        schedule is applied linearly in beta. Default is (.1, 3.33).
-        sweeps (int): The number of sweeps or steps. Default is 1000.
+        beta_range (tuple, optional): A 2-tuple defining the
+        beginning and end of the beta schedule (beta is the
+        inverse temperature). The schedule is applied linearly
+        in beta. Default is (.1, 3.33).
+        sweeps (int, optional): The number of sweeps or steps.
+        Default is 1000.
 
     Returns:
         dict: A sample as a dictionary of spins.
@@ -163,7 +197,7 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
             # now decide whether to flip spins according to the
             # following scheme:
             #   p ~ Uniform(0, 1)
-            #   log(p) < -beta(swp) * (energy_diff)
+            #   log(p) < -beta * (energy_diff)
             for v in nodes:
                 logp = math.log(random.uniform(0, 1))
                 if logp < -1. * beta * (energy_diff_h[v] + energy_diff_J[v]):
