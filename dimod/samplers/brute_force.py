@@ -1,6 +1,5 @@
 import sys
 import itertools
-from multiprocessing import Pool
 
 from dimod import DiscreteModelSampler
 from dimod.decorators import ising, qubo

@@ -116,7 +116,7 @@ class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
         response = self.response_factory()
         response.add_samples_from([sample0, sample1, sample2], Q=Q)
 
-        spin_response = response.as_spin(offset)
+        spin_response = response.as_spin(-1 * offset)
 
         for sample, energy in spin_response.items():
             self.assertEqual(ising_energy(h, J, sample), energy)
@@ -162,6 +162,6 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
         response = self.response_factory()
         response.add_samples_from([sample0, sample1, sample2], h=h, J=J)
 
-        bin_response = response.as_binary(offset)
+        bin_response = response.as_binary(-1 * offset)
         for sample, energy in bin_response.items():
             self.assertEqual(qubo_energy(Q, sample), energy)

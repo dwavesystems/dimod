@@ -513,7 +513,7 @@ class BinaryResponse(DiscreteModelResponse):
 
         for sample, energy, data in self.items(data=True):
             spin_sample = {v: 2 * val - 1 for v, val in iteritems(sample)}
-            spin_response.add_sample(spin_sample, energy - offset, data)
+            spin_response.add_sample(spin_sample, energy + offset, data)
 
         return spin_response
 
@@ -660,6 +660,6 @@ class SpinResponse(DiscreteModelResponse):
 
         for sample, energy, data in self.items(data=True):
             bin_sample = {v: (val + 1) / 2 for v, val in iteritems(sample)}
-            bin_response.add_sample(bin_sample, energy - offset, data)
+            bin_response.add_sample(bin_sample, energy + offset, data)
 
         return bin_response
