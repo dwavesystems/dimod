@@ -13,12 +13,15 @@ __all__ = ['SimulatedAnnealingSampler']
 
 if sys.version_info[0] == 2:
     range = xrange
+    itervalues = lambda d: d.itervalues()
+else:
+    itervalues = lambda d: d.values()
 
 
 class SimulatedAnnealingSampler(DiscreteModelSampler):
 
     @ising(1, 2)
-    def sample_ising(self, h, J, beta_range=(.1, 3.33), n_samples=10, sweeps=1000,
+    def sample_ising(self, h, J, beta_range=None, n_samples=10, sweeps=1000,
                      multiprocessing=False):
         """Sample from low-energy spin states using simulated annealing.
 
@@ -40,7 +43,7 @@ class SimulatedAnnealingSampler(DiscreteModelSampler):
             Default is 1000.
             multiprocessing (bool, optional): When True, the simulated
             annealing algorithms are run in parallel using the Python
-            multiprocessing library.
+            multiprocessing library. Default False.
 
         Returns:
             :obj:`SpinResponse`
@@ -80,8 +83,9 @@ class SimulatedAnnealingSampler(DiscreteModelSampler):
             # ising_simulated_annealing functions in parallel for each sample
             # because of the limitations of Pool.map, we need to give the arguments
             # as a single tuple.
+
             args = itertools.repeat((h, J, beta_range, sweeps), n_samples)
-            for sample, energy in Pool(n_samples).map(_ising_simulated_annealing_single_arg, args):
+            for sample, energy in Pool(min(10, n_samples)).map(_ising_simulated_annealing_single_arg, args):
                 response.add_sample(sample, energy)
 
         return response
@@ -104,7 +108,7 @@ def _ising_simulated_annealing_single_arg(args):
     return ising_simulated_annealing(*args)
 
 
-def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
+def ising_simulated_annealing(h, J, beta_range=None, sweeps=1000):
     """Tries to find the spins that minimize the given Ising problem.
 
     Args:
@@ -118,7 +122,8 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
         beta_range (tuple, optional): A 2-tuple defining the
         beginning and end of the beta schedule (beta is the
         inverse temperature). The schedule is applied linearly
-        in beta. Default is (.1, 3.33).
+        in beta. Default is chosen based on the total bias associated
+        with each node.
         sweeps (int, optional): The number of sweeps or steps.
         Default is 1000.
 
@@ -138,22 +143,32 @@ def ising_simulated_annealing(h, J, beta_range=(.1, 3.33), sweeps=1000):
 
     """
 
-    # input checking, assume h and J are already checked
-    if not isinstance(beta_range, (tuple, list)):
-        raise TypeError("'beta_range' should be a tuple of length 2")
-    if any(not isinstance(b, (int, float)) for b in beta_range):
-        raise TypeError("values in 'beta_range' should be numeric")
-    if any(b <= 0 for b in beta_range):
-        raise ValueError("beta values in 'beta_range' should be positive")
-    if len(beta_range) != 2:
-        raise ValueError("'beta_range' should be a tuple of length 2")
+    if beta_range is None:
+        beta_init = .1
+
+        sigmas = {v: abs(h[v]) for v in h}
+        for u, v in J:
+            sigmas[u] += abs(J[(u, v)])
+            sigmas[v] += abs(J[(u, v)])
+
+        beta_final = 2 * max(itervalues(sigmas))
+
+    else:
+        if not isinstance(beta_range, (tuple, list)):
+            raise TypeError("'beta_range' should be a tuple of length 2")
+        if any(not isinstance(b, (int, float)) for b in beta_range):
+            raise TypeError("values in 'beta_range' should be numeric")
+        if any(b <= 0 for b in beta_range):
+            raise ValueError("beta values in 'beta_range' should be positive")
+        if len(beta_range) != 2:
+            raise ValueError("'beta_range' should be a tuple of length 2")
+        beta_init, beta_final = beta_range
     if not isinstance(sweeps, int):
         raise TypeError("'sweeps' should be a positive int")
     if sweeps <= 0:
         raise ValueError("'sweeps' should be a positive int")
 
     # We want the schedule to be linear in beta (inverse temperature)
-    beta_init, beta_final = beta_range
     betas = [beta_init + i * (beta_final - beta_init) / (sweeps - 1.) for i in range(sweeps)]
 
     # set up the adjacency matrix. We can rely on every node in J already being in h

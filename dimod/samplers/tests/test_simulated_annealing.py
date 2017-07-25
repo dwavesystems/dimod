@@ -58,6 +58,21 @@ class TestSASampler(unittest.TestCase, TestSolverAPI):
         self.assertEqual(len(response6), 10)
         self.assertEqual(len(response7), 10)
 
+    def test_bug1(self):
+        # IN IN OUT AUX
+        h = {0: -.5, 1: 0, 2: 1, 3: -.5}
+        J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
+
+        J[(0, 4)] = -.1
+        J[(4, 5)] = -.1
+        J[(5, 6)] = -.1
+        h[4] = 0
+        h[5] = 0
+        h[6] = .1
+
+        response = SimulatedAnnealingSampler().sample_ising(h, J, n_samples=100,
+                                                            multiprocessing=True)
+
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
     def test_ising_simulated_annealing_basic(self):
