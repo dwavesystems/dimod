@@ -12,6 +12,13 @@ if sys.version_info[0] == 2:
 
 
 class ExactSolver(DiscreteModelSampler):
+    """The simplest possible brute-force solver.
+
+    Note that this starts to become slow for problems with 18 or more
+    variables. This solver is intended for testing, not for solving
+    anything more than toy problems.
+
+    """
 
     @qubo(1)
     def sample_qubo(self, Q):

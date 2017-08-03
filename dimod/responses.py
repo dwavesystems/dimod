@@ -5,6 +5,8 @@ import bisect
 from dimod.decorators import ising, qubo
 from dimod import ising_energy, qubo_energy
 
+__all__ = ['DiscreteModelResponse', 'SpinResponse', 'BinaryResponse']
+
 PY2 = sys.version_info[0] == 2
 if PY2:
     range = xrange
