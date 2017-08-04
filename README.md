@@ -20,6 +20,7 @@ A shared API for QUBO/Ising/BQP samplers.
 ```
 
 The response object returned has many ways to access the information
+
 ```python
 >>> list(response)  # your results might vary
 [{0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 0.0, 1: 1.0}, {0: 0.0, 1: 1.0}, {0: 1.0, 1: 1.0}]
