@@ -4,7 +4,7 @@ import math
 import itertools
 from multiprocessing import Pool
 
-from dimod import DiscreteModelSampler
+from dimod import TemplateSampler
 from dimod.decorators import ising, qubo
 from dimod import ising_energy, qubo_to_ising, SpinResponse
 
@@ -18,7 +18,7 @@ else:
     itervalues = lambda d: d.values()
 
 
-class SimulatedAnnealingSampler(DiscreteModelSampler):
+class SimulatedAnnealingSampler(TemplateSampler):
 
     @ising(1, 2)
     def sample_ising(self, h, J, beta_range=None, n_samples=10, sweeps=1000,

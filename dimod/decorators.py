@@ -38,7 +38,7 @@ def qubo(Q_arg):
         Decorate function like this:
 
         @qubo(1)
-        def solve_qubo(self, Q):
+        def sample_qubo(self, Q):
             pass
 
         @qubo(0)
@@ -95,7 +95,7 @@ def ising(h_arg, J_arg):
         Decorate function like this:
 
         @ising(1, 2)
-        def solve_ising(self, h, J):
+        def sample_ising(self, h, J):
             pass
 
         @ising(0, 1)
@@ -163,7 +163,7 @@ def qubo_index_labels(Q_arg):
         Decorate function like this:
 
         @qubo_index_labels(1)
-        def solve_qubo(self, Q):
+        def sample_qubo(self, Q):
             pass
 
         @qubo_index_labels(0)
@@ -231,7 +231,7 @@ def ising_index_labels(h_arg, J_arg):
         Decorate function like this:
 
         @ising_index_labels(1, 2)
-        def solve_ising(self, h, J):
+        def sample_ising(self, h, J):
             pass
 
         @ising_index_labels(0, 1)

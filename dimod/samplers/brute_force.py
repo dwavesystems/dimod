@@ -1,8 +1,7 @@
 import sys
 
-from dimod.solver_template import DiscreteModelSampler
+from dimod.solver_template import TemplateSampler
 from dimod.decorators import ising, qubo, ising_index_labels
-from dimod.utilities import qubo_to_ising
 from dimod.responses import ising_energy, SpinResponse
 
 __all__ = ['ExactSolver']
@@ -14,7 +13,7 @@ else:
     iteritems = lambda d: d.items()
 
 
-class ExactSolver(DiscreteModelSampler):
+class ExactSolver(TemplateSampler):
     """The simplest possible brute-force solver.
 
     Note that this starts to become slow for problems with 18 or more
@@ -22,21 +21,6 @@ class ExactSolver(DiscreteModelSampler):
     anything more than toy problems.
 
     """
-
-    @qubo(1)
-    def sample_qubo(self, Q):
-        """TODO"""
-        h, J, offset = qubo_to_ising(Q)
-        spin_response = self.sample_ising(h, J)
-        return spin_response.as_binary(offset)
-
-    def sample_structured_qubo(self, Q):
-        """TODO"""
-        return self.sample_qubo(Q)
-
-    def sample_structured_ising(self, h, J):
-        """TODO"""
-        return self.sample_ising(h, J)
 
     @ising(1, 2)
     @ising_index_labels(1, 2)
