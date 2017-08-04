@@ -54,6 +54,14 @@ Examples
     However, if we assign a structure to our sampler, the structured
     methods will no longer work.
 
+    >>> sampler = MyLinearSampler()
+    >>> sampler.structure = 'linear'
+    >>> try:
+    ...     sampler.sample_structured_qubo({})
+    ... except NotImplementedError:
+    ...     print('not implemented')
+    'not implemented'
+
 """
 
 
