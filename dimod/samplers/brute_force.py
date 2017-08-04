@@ -1,14 +1,17 @@
 import sys
 import itertools
 
-from dimod import DiscreteModelSampler
-from dimod.decorators import ising, qubo
+from dimod import DiscreteModelSampler, qubo_to_ising
+from dimod.decorators import ising, qubo, ising_index_labels
 from dimod import ising_energy, qubo_energy, SpinResponse, BinaryResponse
 
 __all__ = ['ExactSolver']
 
 if sys.version_info[0] == 2:
     range = xrange
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
 
 
 class ExactSolver(DiscreteModelSampler):
@@ -23,34 +26,53 @@ class ExactSolver(DiscreteModelSampler):
     @qubo(1)
     def sample_qubo(self, Q):
         """TODO"""
-        variables = set().union(*Q)
-        response = BinaryResponse()
-        for ones in powerset(variables):
-            sample = {v: v in ones and 1 or 0 for v in variables}
-            energy = qubo_energy(Q, sample)
-            response.add_sample(sample, energy)
-        return response
+        h, J, offset = qubo_to_ising(Q)
+        spin_response = self.sample_ising(h, J)
+        return spin_response.as_binary(offset)
 
     def sample_structured_qubo(self, Q):
         """TODO"""
         return self.sample_qubo(Q)
 
-    @ising(1, 2)
-    def sample_ising(self, h, J):
-        """TODO"""
-        response = SpinResponse()
-        for ones in powerset(h):
-            sample = {v: v in ones and 1 or -1 for v in h}
-            energy = ising_energy(h, J, sample)
-            response.add_sample(sample, energy)
-        return response
-
     def sample_structured_ising(self, h, J):
         """TODO"""
         return self.sample_ising(h, J)
 
+    @ising(1, 2)
+    @ising_index_labels(1, 2)
+    def sample_ising(self, h, J):
 
-def powerset(iterable):
-    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
-    s = list(iterable)
-    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
+        adjJ = {v: {} for v in h}
+        for (u, v), bias in iteritems(J):
+            if v not in adjJ[u]:
+                adjJ[u][v] = bias
+            else:
+                adjJ[u][v] += bias
+
+            if u not in adjJ[v]:
+                adjJ[v][u] = bias
+            else:
+                adjJ[v][u] += bias
+
+        response = SpinResponse()
+        sample = {v: -1 for v in h}
+        energy = ising_energy(h, J, sample)
+        response.add_sample(sample, energy)
+
+        for i in range(1, 1 << len(h)):
+            v = ffs(i)
+
+            # flip the bit in the sample
+            sample[v] *= -1
+
+            linear_diff = 2 * sample[v] * h[v]
+            quad_diff = 2 * sum(adjJ[v][u] * sample[u] * sample[v] for u in adjJ[v])
+
+            energy += linear_diff + quad_diff
+
+            response.add_sample(sample, energy)
+        return response
+
+
+def ffs(x):
+    return (x & -x).bit_length() - 1
