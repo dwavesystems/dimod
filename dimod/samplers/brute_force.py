@@ -65,10 +65,10 @@ class ExactSolver(DiscreteModelSampler):
             # flip the bit in the sample
             sample[v] *= -1
 
-            linear_diff = 2 * sample[v] * h[v]
-            quad_diff = 2 * sum(adjJ[v][u] * sample[u] * sample[v] for u in adjJ[v])
+            # get the energy difference
+            quad_diff = sum(adjJ[v][u] * sample[u] for u in adjJ[v])
 
-            energy += linear_diff + quad_diff
+            energy += 2 * sample[v] * (h[v] + quad_diff)
 
             response.add_sample(sample, energy)
         return response
