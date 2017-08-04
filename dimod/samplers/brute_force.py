@@ -1,9 +1,9 @@
 import sys
-import itertools
 
-from dimod import DiscreteModelSampler, qubo_to_ising
+from dimod.solver_template import DiscreteModelSampler
 from dimod.decorators import ising, qubo, ising_index_labels
-from dimod import ising_energy, qubo_energy, SpinResponse, BinaryResponse
+from dimod.utilities import qubo_to_ising
+from dimod.responses import ising_energy, SpinResponse
 
 __all__ = ['ExactSolver']
 
