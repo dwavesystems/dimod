@@ -1,6 +1,6 @@
 import sys
 
-from dimod.solver_template import TemplateSampler
+from dimod.sampler_template import TemplateSampler
 from dimod.decorators import ising, qubo, ising_index_labels
 from dimod.responses import ising_energy, SpinResponse
 

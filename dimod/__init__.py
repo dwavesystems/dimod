@@ -8,6 +8,6 @@ import dimod.decorators
 from dimod.responses import *
 import dimod.responses
 
-from dimod.solver_template import *
+from dimod.sampler_template import *
 
 from dimod.samplers import *
