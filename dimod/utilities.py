@@ -1,3 +1,7 @@
+"""
+A collection of utility functions useful for Samplers.
+"""
+
 import sys
 
 from collections import defaultdict
@@ -16,6 +20,8 @@ def ising_energy(h, J, sample):
 
     H(s) = sum_i h_i * s_i + sum_(i, j) J_(i,j) * s_i * s_j
 
+    https://en.wikipedia.org/wiki/Ising_model
+
     Args:
         h: The linear biases in a dict of the form {var: bias, ...}.
         J: The quadratic biases in a dict of the form
@@ -28,8 +34,6 @@ def ising_energy(h, J, sample):
 
     Notes:
         No input checking is performed.
-
-    https://en.wikipedia.org/wiki/Ising_model
 
     """
     energy = 0
@@ -51,6 +55,8 @@ def qubo_energy(Q, sample):
 
     E(x) = sum_(i, j) Q_(i, j) * x_i * x_j
 
+    https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
+
     Args:
         Q: A dict of the qubo coefficients of the form
         {(var0, var1): coeff, ...}
@@ -62,8 +68,6 @@ def qubo_energy(Q, sample):
 
     Notes:
         No input checking is performed.
-
-    https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
 
     """
     energy = 0
@@ -90,8 +94,7 @@ def ising_to_qubo(h, J):
         J (dict): A dict of the quadratic coefficients of the Ising problem.
 
     Returns:
-        dict: A dict of the qubo coefficients.
-        float: The energy offset.
+        (dict, float): A dict of the qubo coefficients. The energy offset.
 
     """
 
@@ -116,7 +119,7 @@ def ising_to_qubo(h, J):
 
 
 def qubo_to_ising(Q):
-    """Converts a qubo problem to an Ising problem.
+    """Converts a QUBO problem to an Ising problem.
 
     Map a binary quadratic program x' * Q * x defined over 0/1 variables to
     an ising model defined over -1/+1 variables. We return the h and J
@@ -130,9 +133,10 @@ def qubo_to_ising(Q):
         Q: A dict of the qubo coefficients.
 
     Returns:
-        dict: A dict of the linear coefficients of the Ising problem.
-        dict: A dict of the quadratic coefficients of the Ising problem.
-        float: The energy offset.
+        (dict, dict, float):
+        A dict of the linear coefficients of the Ising problem.
+        A dict of the quadratic coefficients of the Ising problem.
+        The energy offset.
 
     """
     h = defaultdict(float)
