@@ -5,7 +5,7 @@ import random
 import itertools
 
 from dimod import SpinResponse, BinaryResponse
-from dimod import DiscreteModelResponse
+from dimod import TemplateResponse
 from dimod import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
 
 
@@ -94,9 +94,9 @@ class ResponseGenericTests(object):
             response.relabel_samples(mapping, copy=False)
 
 
-class TestDiscreteModelResponse(unittest.TestCase, ResponseGenericTests):
-    """Tests on the DiscreteModelResponse"""
-    response_factory = DiscreteModelResponse
+class TestTemplateResponse(unittest.TestCase, ResponseGenericTests):
+    """Tests on the TemplateResponse"""
+    response_factory = TemplateResponse
 
 
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):

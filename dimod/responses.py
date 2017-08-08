@@ -5,7 +5,7 @@ import bisect
 from dimod.decorators import ising, qubo
 from dimod import ising_energy, qubo_energy
 
-__all__ = ['DiscreteModelResponse', 'SpinResponse', 'BinaryResponse']
+__all__ = ['TemplateResponse', 'SpinResponse', 'BinaryResponse']
 
 PY2 = sys.version_info[0] == 2
 if PY2:
@@ -18,7 +18,7 @@ else:
     itervalues = lambda d: d.values()
 
 
-class DiscreteModelResponse(object):
+class TemplateResponse(object):
     """Serves as a superclass for response objects.
 
     Args:
@@ -26,7 +26,7 @@ class DiscreteModelResponse(object):
         as a dictionary. Default {}.
 
     Examples:
-        >>> response = DiscreteModelResponse({'name', 'example'})
+        >>> response = TemplateResponse({'name', 'example'})
         >>> print(response.data)
         '{'name', 'example'}'
 
@@ -47,7 +47,7 @@ class DiscreteModelResponse(object):
             in order of increasing energy.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_samples_from([{0: -1}, {0: 1}], [1, -1])
             >>> [s for s in response]
             [{0: 1}, {0: -1}]
@@ -71,7 +71,7 @@ class DiscreteModelResponse(object):
             of increasing sample energy.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_sample({0: -1}, 1, data={'n': 5})
             >>> response.add_sample({0: 1}, -1, data={'n': 1})
             >>> list(response.samples())
@@ -101,7 +101,7 @@ class DiscreteModelResponse(object):
             order of increasing energy.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_sample({0: -1}, 1, data={'n': 5})
             >>> response.add_sample({0: 1}, -1, data={'n': 1})
             >>> list(response.energies())
@@ -132,7 +132,7 @@ class DiscreteModelResponse(object):
             increasing energy.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_sample({0: -1}, 1, data={'n': 5})
             >>> response.add_sample({0: 1}, -1, data={'n': 1})
             >>> list(response.items())
@@ -166,7 +166,7 @@ class DiscreteModelResponse(object):
             TypeError: If `data` is not a dict.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_sample({0: -1}, 1)
             >>> response.add_sample({0: 1}, -1, data={'n': 1})
 
@@ -211,35 +211,54 @@ class DiscreteModelResponse(object):
             >>> energies = [1, -1, 1]
             >>> sample_data = [{'t': .2}, {'t': .5}, {'t': .1}]
 
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_samples_from(samples, energies)
             >>> list(response.samples())
             [{0: 1}, {0: -1}, {0: -1}]
 
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_samples_from(samples, energies, sample_data)
             >>> list(response.samples())
             [{0: 1}, {0: -1}, {0: -1}]
 
             >>> items = [({0: -1}, -1), ({0: -1}, 1)]
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_samples_from(*zip(*items))
             >>> list(response.samples())
             [{0: 1}, {0: -1}]
 
         """
 
-        if sample_data is None:
-            # if no sample data is provided, we want to yield a unique dict
-            # for each sample added to the system
-            def _sample_data():
-                while True:
-                    yield {}  # faster than dict()
-            sample_data = _sample_data()
+        N = len(self)  # current number of samples
 
-        # load them into self
-        for sample, energy, data in zip(samples, energies, sample_data):
-            self.add_sample(sample, energy, data)
+        samples = list(samples)
+        energies = list(energies)
+
+        if not all(isinstance(sample, dict) for sample in samples):
+            raise TypeError("expected each sample in 'samples' to be a dict")
+        if not all(isinstance(energy, (float, int)) for energy in energies):
+            raise TypeError("expected each energy in 'energies' to be numeric")
+
+        if sample_data is None:
+            sample_data = [{} for __ in energies]
+        else:
+            sample_data = list(sample_data)
+            if not all(isinstance(data, dict) for data in sample_data):
+                raise TypeError("expected sample_data to be an iterator of dicts")
+
+        if N > 0:
+            # if we already have samples, concatenate
+            samples += self._samples
+            energies += self._energies
+            sample_data += self._sample_data
+
+        # order the new lists by energy
+        order = sorted(range(len(energies)), key=energies.__getitem__)
+
+        # replace the stored samples/energies with the new list
+        self._samples = [samples[i] for i in order]
+        self._energies = [energies[i] for i in order]
+        self._sample_data = [sample_data[i] for i in order]
 
     def __str__(self):
         """Return a string representation of the response.
@@ -307,7 +326,7 @@ class DiscreteModelResponse(object):
             relabel the samples in place.
 
         Examples:
-            >>> response = DiscreteModelResponse()
+            >>> response = TemplateResponse()
             >>> response.add_sample({'a': -1, 'b': 1}, 1)
             >>> response.add_sample({'a': 1, 'b': -1}, -1)
             >>> mapping = {'a': 1, 'b': 0}
@@ -366,7 +385,7 @@ def _relabel_inplace(response, mapping):
     return
 
 
-class BinaryResponse(DiscreteModelResponse):
+class BinaryResponse(TemplateResponse):
     def add_sample(self, sample, energy=None, data={}, Q=None):
         """Loads a sample and associated energy into the response.
 
@@ -419,7 +438,7 @@ class BinaryResponse(DiscreteModelResponse):
                 raise TypeError("most provide 'energy' or 'Q'")
             energy = qubo_energy(Q, sample)
 
-        DiscreteModelResponse.add_sample(self, sample, energy, data)
+        TemplateResponse.add_sample(self, sample, energy, data)
 
     def add_samples_from(self, samples, energies=None, sample_data=None, Q=None):
         """Loads samples and associated energies from iterators.
@@ -477,19 +496,17 @@ class BinaryResponse(DiscreteModelResponse):
 
         """
 
+        samples = list(samples)
+
+        if any(any(val not in (0, 1) for val in itervalues(sample)) for sample in samples):
+            raise ValueError('given samples are not binary. Values should be 0 or 1')
+
         if energies is None:
-            energies = itertools.repeat(None)
+            if Q is None:
+                raise TypeError("most provide 'energy' or 'Q'")
+            energies = [qubo_energy(Q, sample) for sample in samples]
 
-        if sample_data is None:
-            # if no sample data is provided, we want to yield a unique dict
-            # for each sample added to the system
-            def _sample_data():
-                while True:
-                    yield {}  # faster than dict()
-            sample_data = _sample_data()
-
-        for sample, energy, sample_data in zip(samples, energies, sample_data):
-            self.add_sample(sample, energy, sample_data, Q=Q)
+        TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
     def as_spin(self, offset):
         """Converts a BinaryResponse to a SpinResponse.
@@ -513,14 +530,16 @@ class BinaryResponse(DiscreteModelResponse):
         spin_response = SpinResponse()
         spin_response.data = self.data.copy()
 
-        for sample, energy, data in self.items(data=True):
-            spin_sample = {v: 2 * val - 1 for v, val in iteritems(sample)}
-            spin_response.add_sample(spin_sample, energy + offset, data)
+        samples = [{v: 2 * val - 1 for v, val in iteritems(sample)} for sample in self.samples()]
+        energies = [energy + offset for energy in self.energies()]
+        sample_data = [data for __, __, data in self.items(data=True)]
+
+        spin_response.add_samples_from(samples, energies, sample_data)
 
         return spin_response
 
 
-class SpinResponse(DiscreteModelResponse):
+class SpinResponse(TemplateResponse):
     def add_sample(self, sample, energy=None, data={}, h=None, J=None):
         """Loads a sample and associated energy into the response.
 
@@ -567,7 +586,7 @@ class SpinResponse(DiscreteModelResponse):
                 raise TypeError("most provide 'energy' or 'h' and 'J'")
             energy = ising_energy(h, J, sample)
 
-        DiscreteModelResponse.add_sample(self, sample, energy, data)
+        TemplateResponse.add_sample(self, sample, energy, data)
 
     def add_samples_from(self, samples, energies=None, sample_data=None, h=None, J=None):
         """Loads samples and associated energies from iterators.
@@ -624,19 +643,17 @@ class SpinResponse(DiscreteModelResponse):
 
         """
 
+        samples = list(samples)
+
+        if any(any(val not in (-1, 1) for val in itervalues(sample)) for sample in samples):
+            raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
+
         if energies is None:
-            energies = itertools.repeat(None)
+            if h is None or J is None:
+                raise TypeError("most provide 'energy' or 'h' and 'J'")
+            energies = [ising_energy(h, J, sample) for sample in samples]
 
-        if sample_data is None:
-            # if no sample data is provided, we want to yield a unique dict
-            # for each sample added to the system
-            def _sample_data():
-                while True:
-                    yield {}  # faster than dict()
-            sample_data = _sample_data()
-
-        for sample, energy, sample_data in zip(samples, energies, sample_data):
-            self.add_sample(sample, energy, sample_data, h=h, J=J)
+        TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
     def as_binary(self, offset=0):
         """Converts a SpinResponse to a BinaryResponse.
@@ -660,8 +677,10 @@ class SpinResponse(DiscreteModelResponse):
         bin_response = BinaryResponse()
         bin_response.data = self.data.copy()
 
-        for sample, energy, data in self.items(data=True):
-            bin_sample = {v: (val + 1) / 2 for v, val in iteritems(sample)}
-            bin_response.add_sample(bin_sample, energy + offset, data)
+        samples = [{v: (val + 1) / 2 for v, val in iteritems(sample)} for sample in self.samples()]
+        energies = [energy + offset for energy in self.energies()]
+        sample_data = [data for __, __, data in self.items(data=True)]
+
+        bin_response.add_samples_from(samples, energies, sample_data)
 
         return bin_response
