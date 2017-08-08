@@ -90,18 +90,6 @@ class SimulatedAnnealingSampler(TemplateSampler):
 
         return response
 
-    def sample_structured_ising(self, h, J, **args):
-        return self.sample_ising(h, J, **args)
-
-    @qubo(1)
-    def sample_qubo(self, Q, **args):
-        h, J, offset = qubo_to_ising(Q)
-        spin_response = self.sample_ising(h, J, **args)
-        return spin_response.as_binary(offset)
-
-    def sample_structured_qubo(self, Q, **args):
-        return self.sample_qubo(Q, **args)
-
 
 def _ising_simulated_annealing_single_arg(args):
     """Allows ising_simulated_annealing to be used with Pool.map"""
