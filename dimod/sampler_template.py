@@ -1,5 +1,4 @@
-"""TODO, TODO again
-
+"""
 Examples
 --------
     Define a sampler that only operates on QUBO problems:
@@ -12,7 +11,7 @@ Examples
     ...         sample = {}
     ...         for (u, v) in Q:
     ...             if u != v:
-    ...                 pass
+    ...                 continue
     ...
     ...             if Q[(u, v)] > 0:
     ...                 val = 0
@@ -85,28 +84,124 @@ class TemplateSampler(object):
 
     @qubo(1)
     def sample_qubo(self, Q, **kwargs):
-        """TODO"""
+        """Converts the given QUBO into an Ising problem, then invokes the
+        sample_ising method.
+
+        See sample_ising documentation for more information.
+
+        Args:
+            Q (dict): A dictionary defining the QUBO. Should be of the form
+                {(u, v): bias} where u, v are variables and bias is numeric.
+            **kwargs: Any keyword arguments are passed directly to
+                sample_ising.
+
+        Returns:
+            :obj:`BinaryResponse`:
+                A `BinaryResponse`, converted from the `SpinResponse` return
+                from sample_ising.
+
+        Note:
+            This method is inherited from the :obj:`TemplateSampler` base class.
+
+        """
         h, J, offset = qubo_to_ising(Q)
         spin_response = self.sample_ising(h, J, **kwargs)
         return spin_response.as_binary(offset)
 
     @ising(1, 2)
     def sample_ising(self, h, J, **kwargs):
-        """TODO"""
+        """Converts the given Ising probkem into a QUBO, then invokes the
+        sample_qubo method.
+
+        See sample_qubo documentation for more information.
+
+        Args:
+            h (dict/list): The linear terms in the Ising problem. If a
+                dict, should be of the form {v: bias, ...} where v is
+                a variable in the Ising problem, and bias is the linear
+                bias associated with v. If a list, should be of the form
+                [bias, ...] where the indices of the biases are the
+                variables in the Ising problem.
+            J (dict): A dictionary of the quadratic terms in the Ising
+                problem. Should be of the form {(u, v): bias} where u,
+                v are variables in the Ising problem and bias is the
+                quadratic bias associated with u, v.
+            **kwargs: Any keyword arguments are passed directly to
+                sample_qubo.
+
+        Returns:
+            :obj:`SpinResponse`:
+                A `SpinResponse`, converted from the `BinaryResponse`
+                return from sample_ising.
+
+        Note:
+            This method is inherited from the :obj:`TemplateSampler` base class.
+
+        """
         Q, offset = ising_to_qubo(h, J)
         binary_response = self.sample_qubo(Q, **kwargs)
         return binary_response.as_spin(offset)
 
     @qubo(1)
     def sample_structured_qubo(self, Q, **kwargs):
-        """TODO"""
+        """Invokes the sample_qubo method.
+
+        See sample_qubo documentation for more information.
+
+        Args:
+            Q (dict): A dictionary defining the QUBO. Should be of the form
+                {(u, v): bias} where u, v are variables and bias is numeric.
+            **kwargs: Any keyword arguments are passed directly to
+                sample_ising.
+
+        Returns:
+            :obj:`BinaryResponse`:
+                A `BinaryResponse`, converted from the `SpinResponse` return
+                from sample_ising.
+
+        Note:
+            This method is inherited from the :obj:`TemplateSampler` base class.
+
+        Raises:
+            NotImplementedError: If the `structure` property is not None.
+
+        """
         if self.structure is not None:
             raise NotImplementedError()
         return self.sample_qubo(Q, **kwargs)
 
     @ising(1, 2)
     def sample_structured_ising(self, h, J, **kwargs):
-        """TODO"""
+        """Invokes the sample_ising method.
+
+        See sample_qubo documentation for more information.
+
+        Args:
+            h (dict/list): The linear terms in the Ising problem. If a
+                dict, should be of the form {v: bias, ...} where v is
+                a variable in the Ising problem, and bias is the linear
+                bias associated with v. If a list, should be of the form
+                [bias, ...] where the indices of the biases are the
+                variables in the Ising problem.
+            J (dict): A dictionary of the quadratic terms in the Ising
+                problem. Should be of the form {(u, v): bias} where u,
+                v are variables in the Ising problem and bias is the
+                quadratic bias associated with u, v.
+            **kwargs: Any keyword arguments are passed directly to
+                sample_qubo.
+
+        Returns:
+            :obj:`SpinResponse`:
+                A `SpinResponse`, converted from the `BinaryResponse`
+                return from sample_ising.
+
+        Note:
+            This method is inherited from the :obj:`TemplateSampler` base class.
+
+        Raises:
+            NotImplementedError: If the `structure` property is not None.
+
+        """
         if self.structure is not None:
             raise NotImplementedError()
         return self.sample_ising(h, J, **kwargs)

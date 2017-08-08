@@ -16,10 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-# sys.path.insert(0, os.path.dirname(os.path.abspath('.')))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # -- General configuration ------------------------------------------------
 # import sphinx
@@ -194,3 +194,10 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None,
                        'http://networkx.readthedocs.io/en/latest/': None}
+
+
+# sort documentation they way the appear in the source file
+autodoc_member_order = 'bysource'
+
+# show inherited members
+# autodoc_default_flags = ['members', 'undoc-members', 'inherited-members', 'show-inheritance']
