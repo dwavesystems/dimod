@@ -158,7 +158,7 @@ def ising_simulated_annealing(h, J, beta_range=None, sweeps=1000):
     for beta in betas:
 
         # we want to know the gain in energy for flipping each of the spins
-        # we can calculate all of the linear terms simultaniously
+        # we can calculate all of the linear terms simultaneously
         energy_diff_h = {v: -2 * spins[v] * h[v] for v in h}
 
         # for each color, do updates

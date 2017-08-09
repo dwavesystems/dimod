@@ -161,8 +161,8 @@ def qubo_index_labels(Q_arg):
     Notes:
         The integer labels start with 0.
 
-        If the given labels are orderable, the relabelling is applied
-        to the nodes sorted lexigraphically.
+        If the given labels are orderable, the relabeling is applied
+        to the nodes sorted lexicographically.
 
     Examples:
     Decorate functions like this::
@@ -184,12 +184,12 @@ def qubo_index_labels(Q_arg):
         # get all of the node labels from Q
         nodes = set().union(*Q)
 
-        # if the nodes are already index labelled from (0, n-1) then we are already
+        # if the nodes are already index labeled from (0, n-1) then we are already
         # done
         if all(idx in nodes for idx in range(len(nodes))):
             return f(*args, **kw)
 
-        # let's relabel them, sorting the node labels lexigraphically.
+        # let's relabel them, sorting the node labels lexicographically.
         # In python 3, unlike types cannot be sorted, so let's just handle
         # that case with a try/catch.
         try:
@@ -199,7 +199,7 @@ def qubo_index_labels(Q_arg):
         relabel = {v: idx for idx, v in iteritems(inv_relabel)}
 
         # with relabel in hand, let's make a new Q with the nodes
-        # labelled appropriately
+        # labeled appropriately
         newQ = {(relabel[u], relabel[v]): coeff for (u, v), coeff in iteritems(Q)}
 
         # now substitute our newQ into the arguments and run the function
@@ -229,8 +229,8 @@ def ising_index_labels(h_arg, J_arg):
     Notes:
         The integer labels start with 0.
 
-        If the given labels are orderable, the relabelling is applied
-        to the nodes sorted lexigraphically.
+        If the given labels are orderable, the relabeling is applied
+        to the nodes sorted lexicographically.
 
     Examples:
     Decorate functions like this::
@@ -254,12 +254,12 @@ def ising_index_labels(h_arg, J_arg):
         # we want to know all of the nodes used in h and J
         nodes = set().union(*J) | set(h)
 
-        # if the nodes are already index labelled from (0, n-1) then we are already
+        # if the nodes are already index labeled from (0, n-1) then we are already
         # done
         if all(idx in nodes for idx in range(len(nodes))):
             return f(*args, **kw)
 
-        # let's relabel them, sorting the node labels lexigraphically.
+        # let's relabel them, sorting the node labels lexicographically.
         # In python 3, unlike types cannot be sorted, so let's just handle
         # that case with a try/catch.
         try:
@@ -279,7 +279,7 @@ def ising_index_labels(h_arg, J_arg):
 
         response = f(*newargs, **kw)
 
-        # finally unapply the relabelling
+        # finally unapply the relabeling
         return response.relabel_samples(inv_relabel)
 
     return _ising_index_labels

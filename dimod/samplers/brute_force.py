@@ -73,7 +73,7 @@ class ExactSolver(TemplateSampler):
         response.add_sample(sample.copy(), energy)
 
         # now we iterate, flipping one bit at a time until we have
-        # traversed all samples. This is a grey code.
+        # traversed all samples. This is a gray code.
         # https://en.wikipedia.org/wiki/Gray_code
         for i in range(1, 1 << len(h)):
             v = _ffs(i)

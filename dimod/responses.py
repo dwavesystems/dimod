@@ -278,8 +278,9 @@ class TemplateResponse(object):
             energies (iterator): An iterable object that yields
                 energies associated with each sample.
             sample_data (iterator, optional): An iterable object
-                that yields data about each sample as  dict. Default
-                empty dicts.
+                that yields data about each sample as  dict. If
+                None, then each data will be an empty dict. Default
+                None.
 
         Notes:
             Solutions are stored in order of energy, lowest first.

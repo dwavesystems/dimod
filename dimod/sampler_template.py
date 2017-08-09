@@ -38,7 +38,7 @@ Examples
     >>> list(response.samples())
     [{0: 1, 1: -1}]
 
-    Similarily for the structured methods.
+    Similarly for the structured methods.
 
     >>> h = {0: -1, 1: 2}
     >>> J = {}
@@ -110,7 +110,7 @@ class TemplateSampler(object):
 
     @ising(1, 2)
     def sample_ising(self, h, J, **kwargs):
-        """Converts the given Ising probkem into a QUBO, then invokes the
+        """Converts the given Ising problem into a QUBO, then invokes the
         sample_qubo method.
 
         See sample_qubo documentation for more information.

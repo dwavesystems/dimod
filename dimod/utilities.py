@@ -58,7 +58,7 @@ def qubo_energy(Q, sample):
     https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
 
     Args:
-        Q: A dict of the qubo coefficients of the form
+        Q: A dict of the QUBO coefficients of the form
         {(var0, var1): coeff, ...}
         sample: A dict of binary variables of the form
         {var: bin, ...} where each bin is either 0 or 1.
@@ -79,9 +79,9 @@ def qubo_energy(Q, sample):
 
 
 def ising_to_qubo(h, J):
-    """Converts an Ising problem to a qubo problem.
+    """Converts an Ising problem to a QUBO problem.
 
-    Map an ising model defined over -1/+1 variables to a binary quadratic
+    Map an Ising model defined over -1/+1 variables to a binary quadratic
     program x' * Q * x defined over 0/1 variables. We return the Q defining
     the BQP model as well as the offset in energy between the two problem
     formulations, i.e. s' * J * s + h' * s = offset + x' * Q * x. The linear term
@@ -94,7 +94,7 @@ def ising_to_qubo(h, J):
         J (dict): A dict of the quadratic coefficients of the Ising problem.
 
     Returns:
-        (dict, float): A dict of the qubo coefficients. The energy offset.
+        (dict, float): A dict of the QUBO coefficients. The energy offset.
 
     """
 
@@ -122,15 +122,15 @@ def qubo_to_ising(Q):
     """Converts a QUBO problem to an Ising problem.
 
     Map a binary quadratic program x' * Q * x defined over 0/1 variables to
-    an ising model defined over -1/+1 variables. We return the h and J
+    an Ising model defined over -1/+1 variables. We return the h and J
     defining the Ising model as well as the offset in energy between the
     two problem formulations, i.e. x' * Q * x = offset + s' * J * s + h' * s. The
-    linear term of the qubo is contained along the diagonal of Q.
+    linear term of the QUBO is contained along the diagonal of Q.
 
     See ising_to_qubo(h, J) for the inverse function.
 
     Args:
-        Q: A dict of the qubo coefficients.
+        Q: A dict of the QUBO coefficients.
 
     Returns:
         (dict, dict, float):
