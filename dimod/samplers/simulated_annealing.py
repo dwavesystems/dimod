@@ -1,8 +1,12 @@
+"""
+A reference implementation of a simulated annealing sampler using the dimod API.
+
+"""
+
 import sys
 import random
 import math
 import itertools
-from multiprocessing import Pool
 
 from dimod import TemplateSampler
 from dimod.decorators import ising, qubo
@@ -21,29 +25,25 @@ else:
 class SimulatedAnnealingSampler(TemplateSampler):
 
     @ising(1, 2)
-    def sample_ising(self, h, J, beta_range=None, n_samples=10, sweeps=1000,
-                     multiprocessing=False):
+    def sample_ising(self, h, J, beta_range=None, n_samples=10, sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
             h (dict): A dictionary of the linear biases in the Ising
-            problem. Should be of the form {v: bias, ...} for each
-            variable v in the Ising problem.
+                problem. Should be of the form {v: bias, ...} for each
+                variable v in the Ising problem.
             J (dict): A dictionary of the quadratic biases in the Ising
-            problem. Should be a dict of the form {(u, v): bias, ...}
-            for each edge (u, v) in the Ising problem. If J[(u, v)] and
-            J[(v, u)] exist then the biases are added.
+                problem. Should be a dict of the form {(u, v): bias, ...}
+                for each edge (u, v) in the Ising problem. If J[(u, v)] and
+                J[(v, u)] exist then the biases are added.
             beta_range (tuple, optional): A 2-tuple defining the
-            beginning and end of the beta schedule (beta is the
-            inverse temperature). The schedule is applied linearly
-            in beta. Default is (.1, 3.33).
+                beginning and end of the beta schedule (beta is the
+                inverse temperature). The schedule is applied linearly
+                in beta. Default is (.1, 3.33).
             n_samples (int, optional): Each sample is the result of
-            a single run of the simulated annealing algorithm.
-            sweeps (int, optional): The number of sweeps or steps.
-            Default is 1000.
-            multiprocessing (bool, optional): When True, the simulated
-            annealing algorithms are run in parallel using the Python
-            multiprocessing library. Default False.
+                a single run of the simulated annealing algorithm.
+                sweeps (int, optional): The number of sweeps or steps.
+                Default is 1000.
 
         Returns:
             :obj:`SpinResponse`
@@ -69,31 +69,12 @@ class SimulatedAnnealingSampler(TemplateSampler):
         # create the response object. Ising returns spin values.
         response = SpinResponse()
 
-        # now we use ising_simulated_annealing to generate samples, either in
-        # parallel or not.
-        if not multiprocessing or n_samples < 2:
-            # if the multiprocessing flag is False or the user is only requesting 1
-            # sample then we can just run ising_simulated_annealing directly
-            for __ in range(n_samples):
-                sample, energy = ising_simulated_annealing(h, J, beta_range, sweeps)
-                response.add_sample(sample, energy)
-
-        else:
-            # if the multiprocessing flag is set to true, we can run the
-            # ising_simulated_annealing functions in parallel for each sample
-            # because of the limitations of Pool.map, we need to give the arguments
-            # as a single tuple.
-
-            args = itertools.repeat((h, J, beta_range, sweeps), n_samples)
-            for sample, energy in Pool(min(10, n_samples)).map(_ising_simulated_annealing_single_arg, args):
-                response.add_sample(sample, energy)
+        # run the simulated annealing algorithm
+        for __ in range(n_samples):
+            sample, energy = ising_simulated_annealing(h, J, beta_range, sweeps)
+            response.add_sample(sample, energy)
 
         return response
-
-
-def _ising_simulated_annealing_single_arg(args):
-    """Allows ising_simulated_annealing to be used with Pool.map"""
-    return ising_simulated_annealing(*args)
 
 
 def ising_simulated_annealing(h, J, beta_range=None, sweeps=1000):
@@ -101,19 +82,19 @@ def ising_simulated_annealing(h, J, beta_range=None, sweeps=1000):
 
     Args:
         h (dict): A dictionary of the linear biases in the Ising
-        problem. Should be of the form {v: bias, ...} for each
-        variable v in the Ising problem.
+            problem. Should be of the form {v: bias, ...} for each
+            variable v in the Ising problem.
         J (dict): A dictionary of the quadratic biases in the Ising
-        problem. Should be a dict of the form {(u, v): bias, ...}
-        for each edge (u, v) in the Ising problem. If J[(u, v)] and
-        J[(v, u)] exist then the biases are added.
+            problem. Should be a dict of the form {(u, v): bias, ...}
+            for each edge (u, v) in the Ising problem. If J[(u, v)] and
+            J[(v, u)] exist then the biases are added.
         beta_range (tuple, optional): A 2-tuple defining the
-        beginning and end of the beta schedule (beta is the
-        inverse temperature). The schedule is applied linearly
-        in beta. Default is chosen based on the total bias associated
-        with each node.
+            beginning and end of the beta schedule (beta is the
+            inverse temperature). The schedule is applied linearly
+            in beta. Default is chosen based on the total bias associated
+            with each node.
         sweeps (int, optional): The number of sweeps or steps.
-        Default is 1000.
+            Default is 1000.
 
     Returns:
         dict: A sample as a dictionary of spins.
@@ -215,8 +196,8 @@ def greedy_coloring(adj):
 
     Args:
         adj (dict): The edge structure of the graph to be colored.
-        `adj` should be of the form {node: neighbors, ...} where
-        neighbors is a set.
+            `adj` should be of the form {node: neighbors, ...} where
+            neighbors is a set.
 
     Returns:
         dict: the coloring {node: color, ...}

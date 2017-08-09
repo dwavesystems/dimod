@@ -1,4 +1,5 @@
 """TODO"""
+from __future__ import division
 
 import sys
 import itertools
@@ -691,7 +692,7 @@ class SpinResponse(TemplateResponse):
         bin_response = BinaryResponse()
         bin_response.data = self.data.copy()
 
-        bin_response._samples = [{v: (val + 1) / 2 for v, val in iteritems(sample)}
+        bin_response._samples = [{v: (val + 1) // 2 for v, val in iteritems(sample)}
                                  for sample in self.samples()]
         bin_response._energies = [energy + offset for energy in self.energies()]
 

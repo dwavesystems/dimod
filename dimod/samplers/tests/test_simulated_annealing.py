@@ -19,44 +19,30 @@ class TestSASampler(unittest.TestCase, TestSolverAPI):
         h = {0: -.5, 1: 0, 2: 1, 3: -.5}
         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
 
-        response0 = sampler.sample_ising(h, J, n_samples=10, multiprocessing=False)
-        response1 = sampler.sample_ising(h, J, n_samples=10, multiprocessing=True)
+        response0 = sampler.sample_ising(h, J, n_samples=10)
 
         for sample, energy in response0.items():
-            self.assertEqual(ising_energy(h, J, sample), energy)
-        for sample, energy in response1.items():
             self.assertEqual(ising_energy(h, J, sample), energy)
 
         # make sure we actully got back 100 samples
         self.assertEqual(len(response0), 10)
-        self.assertEqual(len(response1), 10)
 
-        response2 = sampler.sample_structured_ising(h, J, n_samples=10, multiprocessing=False)
-        response3 = sampler.sample_structured_ising(h, J, n_samples=10, multiprocessing=True)
+        response2 = sampler.sample_structured_ising(h, J, n_samples=10)
         self.assertEqual(len(response2), 10)
-        self.assertEqual(len(response3), 10)
 
         for sample, energy in response2.items():
-            self.assertEqual(ising_energy(h, J, sample), energy)
-        for sample, energy in response3.items():
             self.assertEqual(ising_energy(h, J, sample), energy)
 
         Q = {(0, 0): 0, (1, 1): 0, (0, 1): -1}
 
-        response4 = sampler.sample_qubo(Q, n_samples=10, multiprocessing=False)
-        response5 = sampler.sample_qubo(Q, n_samples=10, multiprocessing=True)
+        response4 = sampler.sample_qubo(Q, n_samples=10)
         self.assertEqual(len(response4), 10)
-        self.assertEqual(len(response5), 10)
 
         for sample, energy in response4.items():
             self.assertEqual(qubo_energy(Q, sample), energy)
-        for sample, energy in response5.items():
-            self.assertEqual(qubo_energy(Q, sample), energy)
 
-        response6 = sampler.sample_structured_qubo(Q, n_samples=10, multiprocessing=False)
-        response7 = sampler.sample_structured_qubo(Q, n_samples=10, multiprocessing=True)
+        response6 = sampler.sample_structured_qubo(Q, n_samples=10)
         self.assertEqual(len(response6), 10)
-        self.assertEqual(len(response7), 10)
 
     def test_bug1(self):
         # IN IN OUT AUX
@@ -70,8 +56,7 @@ class TestSASampler(unittest.TestCase, TestSolverAPI):
         h[5] = 0
         h[6] = .1
 
-        response = SimulatedAnnealingSampler().sample_ising(h, J, n_samples=100,
-                                                            multiprocessing=True)
+        response = SimulatedAnnealingSampler().sample_ising(h, J, n_samples=100)
 
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):

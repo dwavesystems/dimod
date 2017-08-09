@@ -1,8 +1,12 @@
+"""A exact solver that calculates the energy of all possible samples.
+"""
+
 import sys
 
 from dimod.sampler_template import TemplateSampler
-from dimod.decorators import ising, qubo, ising_index_labels
-from dimod.responses import ising_energy, SpinResponse
+from dimod.decorators import ising, ising_index_labels
+from dimod.responses import SpinResponse
+from dimod.utilities import ising_energy
 
 __all__ = ['ExactSolver']
 
@@ -14,17 +18,38 @@ else:
 
 
 class ExactSolver(TemplateSampler):
-    """The simplest possible brute-force solver.
+    """A simple exact solver, intended for testing and debugging.
 
-    Note that this starts to become slow for problems with 18 or more
-    variables. This solver is intended for testing, not for solving
-    anything more than toy problems.
+    Notes:
+        This solver starts to become slow for problems with 18 or more
+        variables.
 
     """
 
     @ising(1, 2)
     @ising_index_labels(1, 2)
     def sample_ising(self, h, J):
+        """Solves the Ising problem exactly.
+
+        Args:
+            h (dict/list): The linear terms in the Ising problem. If a
+                dict, should be of the form {v: bias, ...} where v is
+                a variable in the Ising problem, and bias is the linear
+                bias associated with v. If a list, should be of the form
+                [bias, ...] where the indices of the biases are the
+                variables in the Ising problem.
+            J (dict): A dictionary of the quadratic terms in the Ising
+                problem. Should be of the form {(u, v): bias} where u,
+                v are variables in the Ising problem and bias is the
+                quadratic bias associated with u, v.
+
+        Returns:
+            :obj:`SpinResponse`
+
+        Notes:
+            Becomes slow for problems with 18 or more variables.
+
+        """
 
         adjJ = {v: {} for v in h}
         for (u, v), bias in iteritems(J):
@@ -41,10 +66,10 @@ class ExactSolver(TemplateSampler):
         response = SpinResponse()
         sample = {v: -1 for v in h}
         energy = ising_energy(h, J, sample)
-        response.add_sample(sample, energy)
+        response.add_sample(sample.copy(), energy)
 
         for i in range(1, 1 << len(h)):
-            v = ffs(i)
+            v = _ffs(i)
 
             # flip the bit in the sample
             sample[v] *= -1
@@ -54,9 +79,10 @@ class ExactSolver(TemplateSampler):
 
             energy += 2 * sample[v] * (h[v] + quad_diff)
 
-            response.add_sample(sample, energy)
+            response.add_sample(sample.copy(), energy)
         return response
 
 
-def ffs(x):
+def _ffs(x):
+    """Gets the index of the least significant set bit of x."""
     return (x & -x).bit_length() - 1
