@@ -51,6 +51,7 @@ class ExactSolver(TemplateSampler):
 
         """
 
+        # it will be convenient to have J in a nested-dict form.
         adjJ = {v: {} for v in h}
         for (u, v), bias in iteritems(J):
             if v not in adjJ[u]:
@@ -63,11 +64,17 @@ class ExactSolver(TemplateSampler):
             else:
                 adjJ[v][u] += bias
 
+        # initialize the response
         response = SpinResponse()
+
+        # generate the first sample and add it to the response
         sample = {v: -1 for v in h}
         energy = ising_energy(h, J, sample)
         response.add_sample(sample.copy(), energy)
 
+        # now we iterate, flipping one bit at a time until we have
+        # traversed all samples. This is a grey code.
+        # https://en.wikipedia.org/wiki/Gray_code
         for i in range(1, 1 << len(h)):
             v = _ffs(i)
 
@@ -77,6 +84,7 @@ class ExactSolver(TemplateSampler):
             # get the energy difference
             quad_diff = sum(adjJ[v][u] * sample[u] for u in adjJ[v])
 
+            # calculate the new energy as a difference from the old
             energy += 2 * sample[v] * (h[v] + quad_diff)
 
             response.add_sample(sample.copy(), energy)
