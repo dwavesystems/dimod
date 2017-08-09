@@ -1,3 +1,5 @@
+"""TODO"""
+
 import sys
 import itertools
 import bisect
@@ -23,7 +25,7 @@ class TemplateResponse(object):
 
     Args:
         data (dict, optional): Data about the response as a whole
-        as a dictionary. Default {}.
+            as a dictionary. Default {}.
 
     Examples:
         >>> response = TemplateResponse({'name', 'example'})
@@ -60,9 +62,9 @@ class TemplateResponse(object):
 
         Args:
             data (bool, optional): If True, return an iterator
-            over the the samples in a 2-tuple (sample, data).
-            If False return an iterator over the samples.
-            Default False.
+                over the the samples in a 2-tuple `(sample, data)`.
+                If False return an iterator over the samples.
+                Default False.
 
         Returns:
             iterator: If data is False, return an iterator over
@@ -90,9 +92,9 @@ class TemplateResponse(object):
 
         Args:
             data (bool, optional): If True, return an iterator
-            over the the energies in a 2-tuple (energy, data).
-            If False return an iterator over the energies.
-            Default False.
+                over the the energies in a 2-tuple (energy, data).
+                If False return an iterator over the energies.
+                Default False.
 
         Returns:
             iterator: If data is False, return an iterator over
@@ -120,9 +122,9 @@ class TemplateResponse(object):
 
         Args:
             data (bool, optional): If True, return an iterator
-            of 3-tuples (sample, energy, data). If False return
-            an iterator of 2-tuples (sample, energy) over all of
-            the samples and energies. Default False.
+                of 3-tuples (sample, energy, data). If False return
+                an iterator of 2-tuples (sample, energy) over all of
+                the samples and energies. Default False.
 
         Returns:
             iterator: If data is False, return an iterator of 2-tuples
@@ -150,12 +152,12 @@ class TemplateResponse(object):
 
         Args:
             sample (dict): A sample as would be returned by a discrete
-            model solver. Should be a dict of the form
-            {var: value, ...}.
-            energy (float/int): The energy associated with the given
-            sample.
+                model solver. Should be a dict of the form
+                {var: value, ...}.
+                energy (float/int): The energy associated with the given
+                sample.
             data (dict, optional): A dict containing any additional
-            data about the sample. Default empty.
+                data about the sample. Default empty.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -189,13 +191,13 @@ class TemplateResponse(object):
 
         Args:
             samples (iterator): An iterable object that yields
-            samples. Each sample should be a dict of the form
-            {var: value, ...}.
+                samples. Each sample should be a dict of the form
+                {var: value, ...}.
             energies (iterator): An iterable object that yields
-            energies associated with each sample.
+                energies associated with each sample.
             sample_data (iterator, optional): An iterable object
-            that yields data about each sample as  dict. Default
-            empty dicts.
+                that yields data about each sample as  dict. Default
+                empty dicts.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -320,10 +322,10 @@ class TemplateResponse(object):
 
         Args:
             mapping (dict): A dictionary with the old labels as keys
-            and the new labels as values. A partial mapping is
-            allowed.
+                and the new labels as values. A partial mapping is
+                allowed.
             copy (optional): If True, return a copy or if False
-            relabel the samples in place.
+                relabel the samples in place.
 
         Examples:
             >>> response = TemplateResponse()
@@ -386,21 +388,22 @@ def _relabel_inplace(response, mapping):
 
 
 class BinaryResponse(TemplateResponse):
+    """TODO"""
     def add_sample(self, sample, energy=None, data={}, Q=None):
         """Loads a sample and associated energy into the response.
 
         Args:
             sample (dict): A sample as would be returned by a discrete
-            model solver. Should be a dict of the form
-            {var: value, ...}. The values should be spin-valued, that is
-            -1 or 1.
+                model solver. Should be a dict of the form
+                {var: value, ...}. The values should be spin-valued, that is
+                -1 or 1.
             energy (float/int, optional): The energy associated with the
-            given sample.
+                given sample.
             data (dict, optional): A dict containing any additional
-            data about the sample. Default empty.
+                data about the sample. Default empty.
             Q (dict): Defines a Quadratic Unconstrained Binary
-            Optimization problem that can be used to calculate the energy
-            associated with `sample`.
+                Optimization problem that can be used to calculate the energy
+                associated with `sample`.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -445,16 +448,16 @@ class BinaryResponse(TemplateResponse):
 
         Args:
             samples (iterator): An iterable object that yields
-            samples. Each sample should be a dict of the form
-            {var: value, ...}.
+                samples. Each sample should be a dict of the form
+                {var: value, ...}.
             energies (iterator): An iterable object that yields
-            energies associated with each sample.
-            sample_data (iterator, optional): An iterable object
-            that yields data about each sample as  dict. Default
-            empty dicts.
+                energies associated with each sample.
+                sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. Default
+                empty dicts.
             Q (dict): Defines a Quadratic Unconstrained Binary
-            Optimization problem that can be used to calculate the energy
-            associated with `sample`.
+                Optimization problem that can be used to calculate the energy
+                associated with `sample`.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -508,13 +511,15 @@ class BinaryResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
-    def as_spin(self, offset):
+    def as_spin(self, offset=0, data_copy=False):
         """Converts a BinaryResponse to a SpinResponse.
 
         Args:
             offset (float/int, optional): The energy offset as would
-            be returned by `ising_to_qubo`. The energy offset is
-            applied to each energy in the response.
+                be returned by `ising_to_qubo`. The energy offset is
+                applied to each energy in the response.
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
 
         Returns:
             SpinResponse: A SpinResponse with the samples converted
@@ -530,30 +535,37 @@ class BinaryResponse(TemplateResponse):
         spin_response = SpinResponse()
         spin_response.data = self.data.copy()
 
-        samples = [{v: 2 * val - 1 for v, val in iteritems(sample)} for sample in self.samples()]
-        energies = [energy + offset for energy in self.energies()]
-        sample_data = [data for __, __, data in self.items(data=True)]
+        # the energies are offset by a constant, so the order stays the same. Thus we can
+        # transfer directly.
+        spin_response._samples = [{v: 2 * val - 1 for v, val in iteritems(sample)}
+                                  for sample in self.samples()]
+        spin_response._energies = [energy + offset for energy in self.energies()]
 
-        spin_response.add_samples_from(samples, energies, sample_data)
+        # whether we copy each data, or simply pass the same variable
+        if data_copy:
+            spin_response._sample_data = [data.copy() for __, data in self.samples(data=True)]
+        else:
+            spin_response._sample_data = [data for __, data in self.samples(data=True)]
 
         return spin_response
 
 
 class SpinResponse(TemplateResponse):
+    """TODO"""
     def add_sample(self, sample, energy=None, data={}, h=None, J=None):
         """Loads a sample and associated energy into the response.
 
         Args:
             sample (dict): A sample as would be returned by a discrete
-            model solver. Should be a dict of the form
-            {var: value, ...}. The values should be spin-valued, that is
-            -1 or 1.
+                model solver. Should be a dict of the form
+                {var: value, ...}. The values should be spin-valued, that is
+                -1 or 1.
             energy (float/int, optional): The energy associated with the
-            given sample.
+                given sample.
             data (dict, optional): A dict containing any additional
-            data about the sample. Default empty.
+                data about the sample. Default {}.
             h (dict) and J (dict): Define an Ising problem that can be
-            used to calculate the energy associated with `sample`.
+                used to calculate the energy associated with `sample`.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -563,7 +575,7 @@ class SpinResponse(TemplateResponse):
             TypeError: If `energy` is not an int or float.
             TypeError: If `data` is not a dict.
             ValueError: If any of the values in `sample` are not -1
-            or 1.
+                or 1.
             TypeError: If energy is not provided, h and J must be.
 
         Examples:
@@ -593,15 +605,15 @@ class SpinResponse(TemplateResponse):
 
         Args:
             samples (iterator): An iterable object that yields
-            samples. Each sample should be a dict of the form
-            {var: value, ...}.
+                samples. Each sample should be a dict of the form
+                {var: value, ...}.
             energies (iterator): An iterable object that yields
-            energies associated with each sample.
-            sample_data (iterator, optional): An iterable object
-            that yields data about each sample as  dict. Default
-            empty dicts.
+                energies associated with each sample.
+                sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. Default
+                empty dicts.
             h (dict) and J (dict): Define an Ising problem that can be
-            used to calculate the energy associated with `sample`.
+                used to calculate the energy associated with `sample`.
 
         Notes:
             Solutions are stored in order of energy, lowest first.
@@ -655,13 +667,15 @@ class SpinResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
-    def as_binary(self, offset=0):
+    def as_binary(self, offset=0, data_copy=False):
         """Converts a SpinResponse to a BinaryResponse.
 
         Args:
             offset (float/int, optional): The energy offset as would
-            be returned by `ising_to_qubo`. The energy offset is
-            applied to each energy in the response.
+                be returned by `ising_to_qubo`. The energy offset is
+                applied to each energy in the response.
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
 
         Returns:
             BinaryResponse: A BinaryResponse with the samples converted
@@ -677,10 +691,13 @@ class SpinResponse(TemplateResponse):
         bin_response = BinaryResponse()
         bin_response.data = self.data.copy()
 
-        samples = [{v: (val + 1) / 2 for v, val in iteritems(sample)} for sample in self.samples()]
-        energies = [energy + offset for energy in self.energies()]
-        sample_data = [data for __, __, data in self.items(data=True)]
+        bin_response._samples = [{v: (val + 1) / 2 for v, val in iteritems(sample)}
+                                 for sample in self.samples()]
+        bin_response._energies = [energy + offset for energy in self.energies()]
 
-        bin_response.add_samples_from(samples, energies, sample_data)
+        if data_copy:
+            bin_response._sample_data = [data.copy() for __, data in self.samples(data=True)]
+        else:
+            bin_response._sample_data = [data for __, data in self.samples(data=True)]
 
         return bin_response

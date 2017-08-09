@@ -1,3 +1,8 @@
+"""
+Decorators that provide input checking and format for Ising and QUBO
+functions and methods.
+"""
+
 import sys
 
 from decorator import decorator
@@ -35,7 +40,7 @@ def qubo(Q_arg):
         ValueError: If any of the keys of `Q` are not length 2.
 
     Examples:
-        Decorate function like this:
+    Decorate functions like this::
 
         @qubo(1)
         def sample_qubo(self, Q):
@@ -92,7 +97,7 @@ def ising(h_arg, J_arg):
         ValueError: If the keys of `J` are not of length 2.
 
     Examples:
-        Decorate function like this:
+    Decorate functions like this::
 
         @ising(1, 2)
         def sample_ising(self, h, J):
@@ -160,7 +165,7 @@ def qubo_index_labels(Q_arg):
         to the nodes sorted lexigraphically.
 
     Examples:
-        Decorate function like this:
+    Decorate functions like this::
 
         @qubo_index_labels(1)
         def sample_qubo(self, Q):
@@ -228,7 +233,7 @@ def ising_index_labels(h_arg, J_arg):
         to the nodes sorted lexigraphically.
 
     Examples:
-        Decorate function like this:
+    Decorate functions like this::
 
         @ising_index_labels(1, 2)
         def sample_ising(self, h, J):
