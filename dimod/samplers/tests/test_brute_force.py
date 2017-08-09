@@ -12,7 +12,7 @@ class TestExactSolver(unittest.TestCase, TestSolverAPI):
 
     def test_all_samples(self):
 
-        n = 5
+        n = 10
 
         # create a qubo
         Q = {(v, v): (v % 3) for v in range(n)}
