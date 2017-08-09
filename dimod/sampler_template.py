@@ -1,7 +1,7 @@
 """
 Examples
 --------
-    Define a sampler that only operates on QUBO problems:
+    Define a sampler that operates on QUBO problems:
 
     >>> class MyLinearSampler(dimod.TemplateSampler):
     ...     @dimod.decorators.qubo(1)

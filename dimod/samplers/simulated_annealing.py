@@ -39,7 +39,8 @@ class SimulatedAnnealingSampler(TemplateSampler):
             beta_range (tuple, optional): A 2-tuple defining the
                 beginning and end of the beta schedule (beta is the
                 inverse temperature). The schedule is applied linearly
-                in beta. Default is (.1, 3.33).
+                in beta. Default is chosen based on the total bias associated
+                with each node.
             n_samples (int, optional): Each sample is the result of
                 a single run of the simulated annealing algorithm.
                 sweeps (int, optional): The number of sweeps or steps.

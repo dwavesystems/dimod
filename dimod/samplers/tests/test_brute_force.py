@@ -11,6 +11,7 @@ class TestExactSolver(unittest.TestCase, TestSolverAPI):
         self.sampler = ExactSolver()
 
     def test_all_samples(self):
+        """Check that every sample is included and that they all have the correct energy."""
 
         n = 10
 

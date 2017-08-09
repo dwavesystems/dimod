@@ -31,7 +31,8 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   samplers
+   sampler_template
+   samplers/index
    responses
    decorators
    utilities

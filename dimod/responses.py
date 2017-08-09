@@ -1,4 +1,85 @@
-"""TODO"""
+"""
+Examples:
+    Define an example QUBO. This QUBO is minimized when variable
+    'v0'=1, 'v1'=0, 'v2'=1, 'v3'=0.
+
+    >>> Q = {('v0', 'v0'): -2, ('v0', 'v1'): 2, ('v1', 'v1'): -2,
+    ...      ('v1', 'v2'): 2, ('v2', 'v2'): -2, ('v2', 'v3'): 2,
+    ...      ('v3', 'v3'): -1}
+
+    Let's say that we draw three binary samples from some process and
+    calculate their corresponding energies.
+
+    >>> sample0 = {'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1}
+    >>> sample1 = {'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}  # the minimum
+    >>> sample2 = {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}
+    >>> energy0 = -3.
+    >>> energy1 = -4.
+    >>> energy2 = -1.
+
+    We can now add them to the response either one at a time or in
+    groups. In general adding in batches with `add_samples_from` is
+    faster.
+
+    >>> response = dimod.BinaryResponse()
+    >>> response.add_sample(sample0, energy0)
+    >>> response.add_samples_from([sample1, sample2], [energy1, energy2])
+
+    At this point, the response would normally be returned from the
+    Sampler.
+
+    Once the sampler has returned a response object, there are many
+    ways to get at the data stored in it.
+
+    >>> list(response.samples())
+    '[{'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0},
+      {'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1},
+      {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}]'
+    >>> list(response.energies())
+    '[-4.0, -3.0, -1.0]'
+    >>> list(response.items())
+    '[({'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}, -4.0),
+      ({'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1}, -3.0),
+      ({'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}, -1.0)]'
+
+    One important thing to note is that the samples are stored and
+    returned in order of increasing energy.
+
+    We can also iterate over the samples
+
+    >>> for sample in response:
+    ...     pass
+
+    Or if we only want the lowest energy sample
+
+    >>> sample = next(iter(response))
+    >>> print(sample)
+    '{'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}'
+
+    The response also has a length as expected.
+
+    >>> len(response)
+    '3'
+
+    Now imagine that we want the spin-valued version of the response,
+    we can get it with the `as_spin` method. See `ising_to_qubo` and
+    `qubo_to_ising` for an explanation of offset.
+
+    >>> offset = 2
+    >>> spin_response = response.as_spin(offset)
+    >>> list(spin_response.samples())
+    '[{'v0': 1, 'v1': -1, 'v2': 1, 'v3': -1},
+      {'v0': -1, 'v1': 1, 'v2': -1, 'v3': 1},
+      {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}]'
+
+    Finally imagine that we want integer labels.
+
+    >>> mapping = {'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3}
+    >>> integer_response = response.relabel_samples(mapping)
+    >>> list(integer_response.samples())
+    [{0: 1, 1: 0, 2: 1, 3: 0}, {0: 0, 1: 1, 2: 0, 3: 1}, {0: 1, 1: 1, 2: 1, 3: 1}]
+
+"""
 from __future__ import division
 
 import sys
@@ -389,7 +470,13 @@ def _relabel_inplace(response, mapping):
 
 
 class BinaryResponse(TemplateResponse):
-    """TODO"""
+    """Response object that encodes binary samples.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+            as a dictionary. Default {}.
+
+    """
     def add_sample(self, sample, energy=None, data={}, Q=None):
         """Loads a sample and associated energy into the response.
 
@@ -552,7 +639,14 @@ class BinaryResponse(TemplateResponse):
 
 
 class SpinResponse(TemplateResponse):
-    """TODO"""
+    """Response object that encodes spin-valued samples.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+            as a dictionary. Default {}.
+
+    """
+
     def add_sample(self, sample, energy=None, data={}, h=None, J=None):
         """Loads a sample and associated energy into the response.
 
