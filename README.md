@@ -4,9 +4,11 @@ A shared API for QUBO/Ising/BQP samplers.
 
 ## Included Samplers
 
-* SimulatedAnnealingSampler
-* ExactSolver
-* RandomSampler
+dimod comes with a few samplers that are useful as reference implementations and for unit testing.
+
+* SimulatedAnnealingSampler: A reference implementation of a simulated annealing algorithm.
+* ExactSolver: determines the energy for every possible sample, but is extremely slow.
+* RandomSampler: Generates random samples. Used for testing.
 
 ## Basic Usage
 

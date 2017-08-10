@@ -7,18 +7,7 @@ Overview
 
 dimod
 -----
-
-TODO: Some more description, credits to authors
-
-About D-Wave
-------------
-
-TODO: Boilerplate about D-Wave.
-
-Project Goals
--------------
-
-TODO: ref implementation, etc
+dimod provides a shared API for a large class of Binary Quadratic Program (BQP) samplers. 
 
 Documentation
 -------------

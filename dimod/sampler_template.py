@@ -1,65 +1,97 @@
 """
+The sampler template provides an API that different samplers can use.
+The crux of the API is four methods and a property.
+
+Methods:
+
+- sample_ising
+- sample_qubo
+- sample_structured_ising
+- sample_structured_qubo
+
+Property:
+
+- structure
+
+For many samplers, the `structure` property will be None and the
+structured and unstructured variants of the methods will do the
+same thing. See Structured Samplers section below.
+
+
 Examples
 --------
-    Define a sampler that operates on QUBO problems:
+Define a sampler that operates on QUBO problems:
 
-    >>> class MyLinearSampler(dimod.TemplateSampler):
-    ...     @dimod.decorators.qubo(1)
-    ...     def sample_qubo(self, Q):
-    ...         response = dimod.BinaryResponse()
-    ...
-    ...         sample = {}
-    ...         for (u, v) in Q:
-    ...             if u != v:
-    ...                 continue
-    ...
-    ...             if Q[(u, v)] > 0:
-    ...                 val = 0
-    ...             else:
-    ...                 val = 1
-    ...
-    ...             sample[v] = val
-    ...
-    ...         response.add_sample(sample, Q=Q)
-    ...         return response
+>>> class MyLinearSampler(dimod.TemplateSampler):
+...     @dimod.decorators.qubo(1)
+...     def sample_qubo(self, Q):
+...         response = dimod.BinaryResponse()
+...
+...         sample = {}
+...         for (u, v) in Q:
+...             if u != v:
+...                 raise ValueError()
+...
+...             if Q[(u, v)] > 0:
+...                 val = 0
+...             else:
+...                 val = 1
+...
+...             sample[v] = val
+...
+...         response.add_sample(sample, Q=Q)
+...         return response
 
-    This will now behave as expected
+This will now behave as expected
 
-    >>> Q = {(0, 0): 1, (1, 1): 0}
-    >>> response = MyLinearSampler().sample_qubo(Q)
-    >>> list(response.samples())
-    [{0: 0, 1: 1}]
+>>> Q = {(0, 0): 1, (1, 1): 0}
+>>> response = MyLinearSampler().sample_qubo(Q)
+>>> list(response.samples())
+[{0: 0, 1: 1}]
 
-    Also, by implementing one of the methods, we now can use the others.
+Also, by implementing one of the methods, we now can use the others.
 
-    >>> h = {0: -1, 1: 2}
-    >>> J = {}
-    >>> response = MyLinearSampler().sample_ising(h, J)
-    >>> list(response.samples())
-    [{0: 1, 1: -1}]
+>>> h = {0: -1, 1: 2}
+>>> J = {}
+>>> response = MyLinearSampler().sample_ising(h, J)
+>>> list(response.samples())
+[{0: 1, 1: -1}]
 
-    Similarly for the structured methods.
+Similarly for the structured methods.
 
-    >>> h = {0: -1, 1: 2}
-    >>> J = {}
-    >>> response = MyLinearSampler().sample_structured_ising(h, J)
-    >>> list(response.samples())
-    [{0: 1, 1: -1}]
-    >>> Q = {(0, 0): 1, (1, 1): 0}
-    >>> response = MyLinearSampler().sample_structured_qubo(Q)
-    >>> list(response.samples())
-    [{0: 0, 1: 1}]
+>>> h = {0: -1, 1: 2}
+>>> J = {}
+>>> response = MyLinearSampler().sample_structured_ising(h, J)
+>>> list(response.samples())
+[{0: 1, 1: -1}]
+>>> Q = {(0, 0): 1, (1, 1): 0}
+>>> response = MyLinearSampler().sample_structured_qubo(Q)
+>>> list(response.samples())
+[{0: 0, 1: 1}]
 
-    However, if we assign a structure to our sampler, the structured
-    methods will no longer work.
+However, if we assign a structure to our sampler, the structured
+methods will no longer work.
 
-    >>> sampler = MyLinearSampler()
-    >>> sampler.structure = 'linear'
-    >>> try:
-    ...     sampler.sample_structured_qubo({})
-    ... except NotImplementedError:
-    ...     print('not implemented')
-    'not implemented'
+>>> sampler = MyLinearSampler()
+>>> sampler.structure = 'linear'
+>>> try:
+...     sampler.sample_structured_qubo({})
+... except NotImplementedError:
+...     print('not implemented')
+'not implemented'
+
+Structured Samplers
+-------------------
+
+Some samplers can only operate on a particular problem structure.
+Most commonly this happens when there is a particular problem graph.
+In this case, `sample_structured_ising` and `sample_sturctured_qubo`
+would require the user to provide an Ising problem or QUBO of the
+appropriate structure. `sample_ising` and `sample_qubo` could either
+fail when the structure is not provided, but more commonly would
+make an attempt to change the structure to fit. These sorts of
+embedding techniques are discussed here:
+https://www.dwavesys.com/sites/default/files/Map%20Coloring%20WP2.pdf
 
 """
 

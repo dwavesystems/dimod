@@ -1,7 +1,7 @@
 .. _samplers:
 
-Using the sampler template
-**************************
+Creating dimod samplers
+***********************
 
 .. currentmodule:: dimod
 

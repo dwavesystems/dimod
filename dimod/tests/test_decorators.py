@@ -51,6 +51,8 @@ class TestIndexRelabelling(unittest.TestCase):
         h = {(0, 1): 0, 'b': 0}
         J = {((0, 1), 'b'): -1}
 
+        ising_func(h, J)
+
 
 class TestAPIDecorators(unittest.TestCase):
     def test_qubo_exceptions(self):

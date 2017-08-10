@@ -440,6 +440,10 @@ class MappingError(Exception):
 
 
 def _relabel_copy(response, mapping):
+    """Creates a new response with the variables relabeled according
+    to mapping.
+    """
+
     # make a a new response of the same class
     rl_response = response.__class__()
 
@@ -466,6 +470,8 @@ def _relabel_copy(response, mapping):
 
 
 def _relabel_inplace(response, mapping):
+    """Relabels the variables in place.
+    """
     response = _relabel_copy(response, mapping)
     return
 
