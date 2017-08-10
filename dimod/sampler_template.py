@@ -94,6 +94,7 @@ embedding techniques are discussed here:
 https://www.dwavesys.com/sites/default/files/Map%20Coloring%20WP2.pdf
 
 """
+# we could do a solver that requires a complete graph as an example above...
 
 
 from dimod.decorators import ising, qubo
