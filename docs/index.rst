@@ -9,6 +9,11 @@ dimod
 -----
 dimod provides a shared API for a large class of Binary Quadratic Program (BQP) samplers. 
 
+License
+-------
+
+Released under the Apache License 2.0 (see License).
+
 Documentation
 -------------
 
@@ -25,6 +30,7 @@ Documentation
    responses
    decorators
    utilities
+   license
 
 
 Indices and tables

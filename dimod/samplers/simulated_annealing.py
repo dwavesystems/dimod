@@ -43,7 +43,7 @@ class SimulatedAnnealingSampler(TemplateSampler):
                 with each node.
             n_samples (int, optional): Each sample is the result of
                 a single run of the simulated annealing algorithm.
-                sweeps (int, optional): The number of sweeps or steps.
+            sweeps (int, optional): The number of sweeps or steps.
                 Default is 1000.
 
         Returns:

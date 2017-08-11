@@ -1,4 +1,17 @@
-class TestSolverAPI:
+"""These are generic tests that can be applied to any sampler, this should
+not be run as a unittest.
+
+Example:
+    >>> class TestMySampler(unittest.TestCase, TestSamplerAPI):
+    ...     def __init__(self):
+    ...         self.sampler = MySampler()
+
+    This will run all of the tests in TestSamplerAPI
+
+"""
+
+
+class TestSamplerAPI:
     """Provides a series of generic API tests that all samplers should pass.
     """
 

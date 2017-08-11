@@ -1,11 +1,11 @@
 import unittest
 
 from dimod import RandomSampler
-from dimod.samplers.tests.generic_sampler_tests import TestSolverAPI
+from dimod.samplers.tests.generic_sampler_tests import TestSamplerAPI
 
 
-class TestRandomSampler(unittest.TestCase, TestSolverAPI):
-    # this inherits tests from TestSolverAPI
+class TestRandomSampler(unittest.TestCase, TestSamplerAPI):
+    # this inherits tests from TestSamplerAPI
 
     def setUp(self):
         self.sampler = RandomSampler()

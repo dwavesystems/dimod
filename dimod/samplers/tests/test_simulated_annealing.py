@@ -5,10 +5,10 @@ import random
 
 from dimod import SimulatedAnnealingSampler, ising_energy, qubo_energy
 from dimod.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
-from dimod.samplers.tests.generic_sampler_tests import TestSolverAPI
+from dimod.samplers.tests.generic_sampler_tests import TestSamplerAPI
 
 
-class TestSASampler(unittest.TestCase, TestSolverAPI):
+class TestSASampler(unittest.TestCase, TestSamplerAPI):
     def setUp(self):
         self.sampler = SimulatedAnnealingSampler()
 
