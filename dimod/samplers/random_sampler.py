@@ -26,7 +26,7 @@ class RandomSampler(TemplateSampler):
     """
 
     @qubo(1)
-    def sample_qubo(self, Q, n_samples=10):
+    def sample_qubo(self, Q, num_samples=10):
         """Gives random samples.
 
         Args:
@@ -35,7 +35,7 @@ class RandomSampler(TemplateSampler):
                 QUBO and bias is the quadratic bias associated with u and
                 v. If u == v, then the bias is the linear bias associated
                 with v.
-            n_samples (int, optional): The number of random samples to
+            num_samples (int, optional): The number of random samples to
                 take. Default 10.
 
         Returns:
@@ -47,7 +47,7 @@ class RandomSampler(TemplateSampler):
 
         """
         variables = set().union(*Q)
-        samples = [{v: random.choice((0, 1)) for v in variables} for __ in range(n_samples)]
+        samples = [{v: random.choice((0, 1)) for v in variables} for __ in range(num_samples)]
         response = BinaryResponse()
         response.add_samples_from(samples, Q=Q)
         return response

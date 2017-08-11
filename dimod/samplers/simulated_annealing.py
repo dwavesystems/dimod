@@ -25,7 +25,7 @@ else:
 class SimulatedAnnealingSampler(TemplateSampler):
 
     @ising(1, 2)
-    def sample_ising(self, h, J, beta_range=None, n_samples=10, sweeps=1000):
+    def sample_ising(self, h, J, beta_range=None, num_samples=10, sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
@@ -41,7 +41,7 @@ class SimulatedAnnealingSampler(TemplateSampler):
                 inverse temperature). The schedule is applied linearly
                 in beta. Default is chosen based on the total bias associated
                 with each node.
-            n_samples (int, optional): Each sample is the result of
+            num_samples (int, optional): Each sample is the result of
                 a single run of the simulated annealing algorithm.
             sweeps (int, optional): The number of sweeps or steps.
                 Default is 1000.
@@ -62,16 +62,16 @@ class SimulatedAnnealingSampler(TemplateSampler):
         # input checking
         # h, J are handled by the @ising decorator
         # beta_range, sweeps are handled by ising_simulated_annealing
-        if not isinstance(n_samples, int):
+        if not isinstance(num_samples, int):
             raise TypeError("'samples' should be a positive integer")
-        if n_samples < 1:
+        if num_samples < 1:
             raise ValueError("'samples' should be a positive integer")
 
         # create the response object. Ising returns spin values.
         response = SpinResponse()
 
         # run the simulated annealing algorithm
-        for __ in range(n_samples):
+        for __ in range(num_samples):
             sample, energy = ising_simulated_annealing(h, J, beta_range, sweeps)
             response.add_sample(sample, energy)
 
