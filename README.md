@@ -45,5 +45,5 @@ Compatible with Python 2 and 3.
 
 ## License
 
-TODO
+Released under the Apache License 2.0. See LICENSE.txt
 
