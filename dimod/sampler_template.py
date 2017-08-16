@@ -179,9 +179,12 @@ class TemplateSampler(object):
 
     @qubo(1)
     def sample_structured_qubo(self, Q, **kwargs):
-        """Invokes the sample_qubo method.
+        """If sampler is unstructured, invokes the sample_qubo method, otherwise
+        converts the problem to an Ising problem and invokes the
+        sample_structured_ising method.
 
-        See sample_qubo documentation for more information.
+        See sample_qubo and sample_structured_ising documentation for more
+        information.
 
         Args:
             Q (dict): A dictionary defining the QUBO. Should be of the form
@@ -206,9 +209,12 @@ class TemplateSampler(object):
 
     @ising(1, 2)
     def sample_structured_ising(self, h, J, **kwargs):
-        """Invokes the sample_ising method.
+        """If sampler is unstructured, invokes the sample_ising method, otherwise
+        converts the problem to a QUBO and invokes the sample_structured_qubo
+        method.
 
-        See sample_qubo documentation for more information.
+        See sample_ising and sample_structured_qubo documentation for more
+        information.
 
         Args:
             h (dict/list): The linear terms in the Ising problem. If a
