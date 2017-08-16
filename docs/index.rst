@@ -7,7 +7,9 @@ Overview
 
 dimod
 -----
-dimod provides a shared API for a large class of Binary Quadratic Program (BQP) samplers. 
+dimod provides a shared API for of Binary Quadratic Program (BQP) samplers. Ising problems
+and Quadratic Unconstrained Binary Optimiazation (QUBO) problems are both examples of
+BQP problems.
 
 License
 -------

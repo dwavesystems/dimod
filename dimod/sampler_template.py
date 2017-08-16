@@ -76,8 +76,10 @@ methods will no longer work.
 >>> sampler.structure = 'linear'
 >>> try:
 ...     sampler.sample_structured_qubo({})
-... except NotImplementedError:
-...     print('not implemented')
+... except RecursionError:  # infinite recursion
+...     print('not implemented')  # python3
+... except RuntimeError:
+...     print('not implemented')  # python2
 'not implemented'
 
 Structured Samplers
@@ -195,12 +197,11 @@ class TemplateSampler(object):
         Note:
             This method is inherited from the :obj:`TemplateSampler` base class.
 
-        Raises:
-            NotImplementedError: If the `structure` property is not None.
-
         """
         if self.structure is not None:
-            raise NotImplementedError()
+            h, J, offset = qubo_to_ising(Q)
+            spin_response = self.sample_structured_ising(h, J, **kwargs)
+            return spin_response.as_binary(offset)
         return self.sample_qubo(Q, **kwargs)
 
     @ising(1, 2)
@@ -231,12 +232,11 @@ class TemplateSampler(object):
         Note:
             This method is inherited from the :obj:`TemplateSampler` base class.
 
-        Raises:
-            NotImplementedError: If the `structure` property is not None.
-
         """
         if self.structure is not None:
-            raise NotImplementedError()
+            Q, offset = ising_to_qubo(h, J)
+            binary_response = self.sample_structured_qubo(Q, **kwargs)
+            return binary_response.as_spin(offset)
         return self.sample_ising(h, J, **kwargs)
 
     @property
