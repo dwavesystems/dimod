@@ -1,4 +1,6 @@
-__version__ = '0.1'
+__version__ = '0.1.1'
+__author__ = 'D-Wave Systems Inc.'
+__description__ = 'A shared API for binary quadratic model samplers.'
 
 from dimod.utilities import *
 import dimod.utilities
