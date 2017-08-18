@@ -1,0 +1,7 @@
+*.pyc
+
+build
+dimod.egg-info
+dist
+
+docs/generated
