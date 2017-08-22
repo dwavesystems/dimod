@@ -1,6 +1,6 @@
 # dimod
 
-A shared API for QUBO/Ising/BQP samplers.
+A shared API for QUBO/Ising samplers.
 
 ## Included Samplers
 
