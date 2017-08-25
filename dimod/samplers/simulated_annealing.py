@@ -58,8 +58,8 @@ class SimulatedAnnealingSampler(TemplateSampler):
             [{0: 1, 1: 1}]
 
         Note:
-            This is a reference implementation and not optimized for speed.
-            Therefore this is not an appropriate sampler for benchmarking.
+            This is a reference implementation and not optimized for speed
+            and therefore is not an appropriate sampler for benchmarking.
 
         """
 
