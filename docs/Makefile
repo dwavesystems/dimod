@@ -20,7 +20,7 @@ gh-pages:
 	    git checkout gh-pages && \
 	    git checkout master $(GH_PAGES_SOURCES) && \
 		git reset HEAD
-	cd ..\docs && \
+	cd ../docs && \
 		make html && \
 		mv -fv build/html/* ../
 	cd .. && \
