@@ -18,7 +18,7 @@ help:
 gh-pages:
 	cd .. && \
 	    git checkout gh-pages && \
-	    rm -rf build _sources _static _modules && \
+	    rm -rf build _sources _static _modules generated samplers && \
 	    git checkout master $(GH_PAGES_SOURCES) && \
 		git reset HEAD
 	cd ../docs && \
