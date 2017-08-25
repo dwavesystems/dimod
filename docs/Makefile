@@ -23,7 +23,7 @@ gh-pages:
 		git reset HEAD
 	cd ../docs && \
 		make html && \
-		mv -fv build/html/* ../
+		mv --force build/html/* ../
 	cd .. && \
 		touch .nojekyll && \
 		git add -A && \
