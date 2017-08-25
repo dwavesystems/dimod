@@ -15,7 +15,7 @@ help:
 .PHONY: help Makefile
 
 gh-pages:
-	cd ..
+	cd ..;
 	git checkout gh-pages
 	git checkout master docs dimod LICENSE.txt
 	git reset HEAD
