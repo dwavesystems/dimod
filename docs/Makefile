@@ -7,7 +7,7 @@ SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = dimod
 SOURCEDIR     = .
 BUILDDIR      = build
-GH_PAGES_SOURCES = ../docs ../dimod ../LICENSE.txt
+GH_PAGES_SOURCES = docs dimod LICENSE.txt
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -17,11 +17,11 @@ help:
 
 gh-pages:
 	git checkout gh-pages
-	git checkout master $(GH_PAGES_SOURCES)
+	cd ..;git checkout master $(GH_PAGES_SOURCES)
 	git reset HEAD
 	make html
 	mv -fv build/html/* ../
-	rm -rf $(GH_PAGES_SOURCES)
+	cd ..; rm -rf $(GH_PAGES_SOURCES)
 	cd ..; git add -A; git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages; git checkout master
 
 # Catch-all target: route all unknown targets to Sphinx using the new
