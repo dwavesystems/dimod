@@ -57,6 +57,10 @@ class SimulatedAnnealingSampler(TemplateSampler):
             >>> list(response.samples())
             [{0: 1, 1: 1}]
 
+        Note:
+            This is a reference implementation and not optimized for speed.
+            Therefore this is not an appropriate sampler for benchmarking.
+
         """
 
         # input checking
