@@ -1,5 +1,8 @@
+from __future__ import division
+
 import unittest
 from itertools import groupby
+import itertools
 
 from dimod import ising_to_qubo, qubo_to_ising, ising_energy, qubo_energy
 
@@ -61,32 +64,51 @@ class TestIsingToQubo(unittest.TestCase):
 
     def test_no_zeros(self):
         q, offset = ising_to_qubo({0: 0, 0: 0, 0: 0}, {(0, 0): 0, (4, 5): 0})
-        self.assertEqual(q, {})
+        self.assertEqual(q, {(0, 0): 0.0})
         self.assertEqual(offset, 0)
 
     def test_j_diag(self):
         q, offset = ising_to_qubo({}, {(0, 0): 1, (300, 300): 99})
-        self.assertEqual(q, {})
+        self.assertEqual(q, {(0, 0): 0.0, (300, 300): 0.0})
         self.assertEqual(offset, 100)
 
     def test_typical(self):
         h = {i: v for i, v in enumerate([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4])}
-        j = {(0, 0): -5, (0, 5): 2, (0, 8): 4, (1, 4): -5, (1, 7): 1, (2, 0): 5,
+        j = {(0, 5): 2, (0, 8): 4, (1, 4): -5, (1, 7): 1, (2, 0): 5,
              (2, 1): 4, (3, 0): -1, (3, 6): -3, (3, 8): 3, (4, 0): 2, (4, 7): 3,
-             (4, 9): 3, (5, 1): 3, (6, 5): -4, (6, 6): -5, (6, 7): -4, (7, 1): -4,
+             (4, 9): 3, (5, 1): 3, (6, 5): -4, (6, 7): -4, (7, 1): -4,
              (7, 8): 3, (8, 2): -4, (8, 3): -3, (8, 6): -5, (8, 7): -4, (9, 0): 4,
              (9, 1): -1, (9, 4): -5, (9, 7): 3}
         q, offset = ising_to_qubo(h, j)
-        norm_q = normalized_matrix(q)
-        self.assertEqual(norm_q, {(0, 0): -42, (0, 2): 20, (0, 3): -4, (0, 4): 8,
-                                  (0, 5): 8, (0, 8): 16, (0, 9): 16, (1, 1): -4,
-                                  (1, 2): 16, (1, 4): -20, (1, 5): 12, (1, 7): -12,
-                                  (1, 9): -4, (2, 2): -16, (2, 8): -16, (3, 3): 4,
-                                  (3, 6): -12, (4, 4): 2, (4, 7): 12, (4, 9): -8,
-                                  (5, 5): -2, (5, 6): -16, (6, 6): 34, (6, 7): -16,
-                                  (6, 8): -20, (7, 7): 8, (7, 8): -4, (7, 9): 12,
-                                  (8, 8): 18})
-        self.assertEqual(offset, -8)
+        # norm_q = normalized_matrix(q)
+        ans = {(0, 0): -42, (0, 2): 20, (0, 3): -4, (0, 4): 8,
+               (0, 5): 8, (0, 8): 16, (0, 9): 16, (1, 1): -4,
+               (1, 2): 16, (1, 4): -20, (1, 5): 12, (1, 7): -12,
+               (1, 9): -4, (2, 2): -16, (2, 8): -16, (3, 3): 4,
+               (3, 6): -12, (4, 4): 2, (4, 7): 12, (4, 9): -8,
+               (5, 5): -2, (5, 6): -16, (6, 6): 34, (6, 7): -16,
+               (6, 8): -20, (7, 7): 8, (7, 8): -4, (7, 9): 12,
+               (8, 8): 18}
+        for (u, v), bias in normalized_matrix(q).items():
+            self.assertIn((u, v), ans)
+            self.assertEqual(bias, ans[(u, v)])
+
+        self.assertEqual(offset, 2)
+
+    def test_energy(self):
+        h = {v: v for v in range(0, 100, 2)}
+        h.update({v: -(1 / v) for v in range(1, 100, 2)})
+        J = {(u, v): 2 * (u / 3) + v ** .5 for (u, v) in itertools.combinations(range(100), 2)}
+
+        spin_sample = {v: 1 if v % 2 else -1 for v in h}
+        bin_sample = {v: 1 if v % 2 else 0 for v in h}
+
+        Q, off = ising_to_qubo(h, J)
+
+        ising_en = ising_energy(h, J, spin_sample)
+        qubo_en = qubo_energy(Q, bin_sample)
+
+        self.assertLessEqual(abs(-ising_en + qubo_en + off), 10**-5)
 
 
 class TestQuboToIsing(unittest.TestCase):

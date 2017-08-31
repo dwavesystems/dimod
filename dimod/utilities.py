@@ -11,8 +11,10 @@ __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 PY2 = sys.version_info[0] == 2
 if PY2:
     iteritems = lambda d: d.iteritems()
+    itervalues = lambda d: d.itervalues()
 else:
     iteritems = lambda d: d.items()
+    itervalues = lambda d: d.values()
 
 
 def ising_energy(h, J, sample):
@@ -36,7 +38,7 @@ def ising_energy(h, J, sample):
         No input checking is performed.
 
     """
-    energy = 0
+    energy = 0.
 
     # add the contribution from the linear biases
     for v in h:
@@ -70,7 +72,7 @@ def qubo_energy(Q, sample):
         No input checking is performed.
 
     """
-    energy = 0
+    energy = 0.
 
     for v0, v1 in Q:
         energy += sample[v0] * sample[v1] * Q[(v0, v1)]
@@ -97,24 +99,20 @@ def ising_to_qubo(h, J):
         (dict, float): A dict of the QUBO coefficients. The energy offset.
 
     """
-
-    q = defaultdict(float)
-    offset = 0
-
     # the linear biases are the easiest
-    for v, bias in iteritems(h):
-        q[(v, v)] = 2 * bias
-        offset -= bias
+    q = {(v, v): 2. * bias for v, bias in iteritems(h)}
 
     # next the quadratic biases
     for (u, v), bias in iteritems(J):
-        q[(u, v)] += 4 * bias
-        q[(u, u)] -= 2 * bias
-        q[(v, v)] -= 2 * bias
-        offset += bias
+        if bias == 0.0:
+            continue
+        q[(u, v)] = 4. * bias
+        q[(u, u)] -= 2. * bias
+        q[(v, v)] -= 2. * bias
 
-    # finally convert q to a dict, rather than default dict
-    q = dict((k, v) for k, v in iteritems(q) if v != 0)
+    # finally calculate the offset
+    offset = sum(itervalues(J)) - sum(itervalues(h))
+
     return q, offset
 
 
@@ -141,7 +139,7 @@ def qubo_to_ising(Q):
     """
     h = defaultdict(float)
     j = {}
-    offset = 0
+    offset = 0.
 
     for (i, k), e in iteritems(Q):
         if i == k:
