@@ -137,24 +137,35 @@ def qubo_to_ising(Q):
         The energy offset.
 
     """
-    h = defaultdict(float)
-    j = {}
-    offset = 0.
+    h = {}
+    J = {}
+    linear_offset = 0.0
+    quadratic_offset = 0.0
 
-    for (i, k), e in iteritems(Q):
-        if i == k:
-            # linear biases
-            h[i] += 0.5 * e
-            offset += 0.5 * e
+    for (u, v), bias in iteritems(Q):
+        if u == v:
+            if u in h:
+                h[u] += .5 * bias
+            else:
+                h[u] = .5 * bias
+            linear_offset += bias
+
         else:
-            # quadratic biases
-            j[(i, k)] = 0.25 * e
-            h[i] += 0.25 * e
-            h[k] += 0.25 * e
-            offset += 0.25 * e
+            if bias != 0.0:
+                J[(u, v)] = .25 * bias
 
-    # remove the 0 entries of J
-    h = dict(h)
-    j = dict((k, v) for k, v in iteritems(j) if v != 0)
+            if u in h:
+                h[u] += .25 * bias
+            else:
+                h[u] = .25 * bias
 
-    return h, j, offset
+            if v in h:
+                h[v] += .25 * bias
+            else:
+                h[v] = .25 * bias
+
+            quadratic_offset += bias
+
+    offset = .5 * linear_offset + .25 * quadratic_offset
+
+    return h, J, offset
