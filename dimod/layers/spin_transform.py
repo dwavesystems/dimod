@@ -3,150 +3,188 @@ from __future__ import division
 from random import random
 import sys
 import time
+import itertools
 
+from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
 
-__all__ = ['SpinReversal']
+__all__ = ['SpinTransform']
 
 PY2 = sys.version_info[0] == 2
 if PY2:
     iteritems = lambda d: d.iteritems()
+    range = xrange
+    zip = itertools.izip
 else:
     iteritems = lambda d: d.items()
 
 
-def SpinTransformation(Sampler):
+def SpinTransform(Sampler):
     class _STSampler(Sampler):
         """TODO
         """
+        def __init__(self):
+            Sampler.__init__(self)
+
         @ising(1, 2)
         def sample_ising(self, h, J,
                          num_spin_reversal_transforms=1, spin_reversal_variables=None,
                          **kwargs):
             """TODO
 
+            NB: num runs sampler each time
+
             """
 
-            # first up we want to apply the spins to input h, J
-            h_spin, J_spin, transform = apply_spin_transform(h, J, spin_variables)
+            # dispatch all of the jobs, in case the samples are resolved upon response read.
+            # keep track of which variables were transformed
+            dispatched = []
+            for __ in range(num_spin_reversal_transforms):
+                h_spin, J_spin, transform = \
+                    apply_spin_reversal_transform(h, J, spin_reversal_variables)
 
-            # sample from the transformed h, J
-            response = Sampler.sample_ising(self, h_spin, J_spin, **kwargs)
+                response = Sampler.sample_ising(self, h_spin, J_spin, **kwargs)
 
-            # unapply the transform, the samples are dicts so we can apply
-            # in place, the energy is not affected
-            for sample in response:
-                for v in transform:
-                    sample[v] = -sample[v]
+                dispatched.append((response, transform))
 
-            # store the transformed variables in data for posterity
-            if 'spin_transform_variables' not in response.data:
-                response.data['spin_transform_variables'] = transform
-            else:
-                # there is already a spin_variables field, so let's
-                # make a (hopefully) unique one.
-                response.data['spin_transform_variables_{}'.format(time.time())] = transform
+            # put all of the responses into one
+            st_response = SpinResponse()
 
-            return response
+            for response, transform in dispatched:
+                samples, energies, sample_data = zip(*response.items(data=True))
 
-    #     def sample_structured_ising(self, h, J, spin_variables=None, **kwargs):
-    #         """TODO
+                # flip the bits in the samples
+                st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
 
-    #         """
+                # keep track of which bits were flipped in data
+                st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
 
-    #         # first up we want to apply the spins to input h, J
-    #         h_spin, J_spin, transform = apply_spin_transform(h, J, spin_variables)
+                st_response.add_samples_from(st_samples, energies, st_sample_data)
 
-    #         # sample from the transformed h, J
-    #         response = Sampler.sample_structured_ising(self, h_spin, J_spin, **kwargs)
+                st_response.data.update(response.data)
 
-    #         # unapply the transform, the samples are dicts so we can apply
-    #         # in place, the energy is not affected
-    #         for sample in response:
-    #             for v in transform:
-    #                 sample[v] = -sample[v]
+            return st_response
 
-    #         # store the transformed variables in data for posterity
-    #         if 'spin_transform_variables' not in response.data:
-    #             response.data['spin_transform_variables'] = transform
-    #         else:
-    #             # there is already a spin_variables field, so let's
-    #             # make a (hopefully) unique one.
-    #             response.data['spin_transform_variables_{}'.format(time.time())] = transform
+        @ising(1, 2)
+        def sample_structured_ising(self, h, J,
+                                    num_spin_reversal_transforms=1, spin_reversal_variables=None,
+                                    **kwargs):
+            """TODO
 
-    #         return response
+            NB: num runs sampler each time
 
-    #     def sample_qubo(self, Q, spin_variables=None, **kwargs):
-    #         """TODO
+            """
 
-    #         """
+            # dispatch all of the jobs, in case the samples are resolved upon response read.
+            # keep track of which variables were transformed
+            dispatched = []
+            for __ in range(num_spin_reversal_transforms):
+                h_spin, J_spin, transform = \
+                    apply_spin_reversal_transform(h, J, spin_reversal_variables)
 
-    #         # first up we want to apply the spins to input h, J
-    #         Q_spin, transform, offset = apply_spin_transform_qubo(Q, spin_variables)
+                response = Sampler.sample_structured_ising(self, h_spin, J_spin, **kwargs)
 
-    #         # sample from the transformed h, J
-    #         response = Sampler.sample_qubo(self, Q_spin, **kwargs)
+                dispatched.append((response, transform))
 
-    #         # unapply the transform, the samples are dicts so we can apply
-    #         # in place, the energy is not affected
-    #         for sample in response:
-    #             for v in transform:
-    #                 sample[v] = 1 - sample[v]
+            # put all of the responses into one
+            st_response = SpinResponse()
 
-    #         # also need to update the energy
-    #         response._energies = [en + offset for en in response._energies]
+            for response, transform in dispatched:
+                samples, energies, sample_data = zip(*response.items(data=True))
 
-    #         # store the transformed variables in data for posterity
-    #         if 'spin_transform_variables' not in response.data:
-    #             response.data['spin_transform_variables'] = transform
-    #         else:
-    #             # there is already a spin_variables field, so let's
-    #             # make a (hopefully) unique one.
-    #             response.data['spin_transform_variables_{}'.format(time.time())] = transform
+                # flip the bits in the samples
+                st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
 
-    #         return response
+                # keep track of which bits were flipped in data
+                st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
 
-    #     def sample_structured_qubo(self, Q, spin_variables=None, **kwargs):
-    #         """TODO
+                st_response.add_samples_from(st_samples, energies, st_sample_data)
 
-    #         """
+                st_response.data.update(response.data)
 
-    #         # first up we want to apply the spins to input h, J
-    #         Q_spin, transform, offset = apply_spin_transform_qubo(Q, spin_variables)
+            return st_response
 
-    #         # sample from the transformed h, J
-    #         response = Sampler.sample_structured_qubo(self, Q_spin, **kwargs)
+        @qubo(1)
+        def sample_qubo(self, Q, **kwargs):
+            """TODO
 
-    #         # unapply the transform, the samples are dicts so we can apply
-    #         # in place, the energy is not affected
-    #         for sample in response:
-    #             for v in transform:
-    #                 sample[v] = 1 - sample[v]
 
-    #         # also need to update the energy
-    #         response._energies = [en + offset for en in response._energies]
+            Converts the given QUBO into an Ising problem, then invokes the
+            sample_ising method.
 
-    #         # store the transformed variables in data for posterity
-    #         if 'spin_transform_variables' not in response.data:
-    #             response.data['spin_transform_variables'] = transform
-    #         else:
-    #             # there is already a spin_variables field, so let's
-    #             # make a (hopefully) unique one.
-    #             response.data['spin_transform_variables_{}'.format(time.time())] = transform
+            See sample_ising documentation for more information.
 
-    #         return response
+            Args:
+                Q (dict): A dictionary defining the QUBO. Should be of the form
+                    {(u, v): bias} where u, v are variables and bias is numeric.
+                **kwargs: Any keyword arguments are passed directly to
+                    sample_ising.
 
-    # return _STSampler
+            Returns:
+                :obj:`BinaryResponse`:
+                    A `BinaryResponse`, converted from the `SpinResponse` return
+                    from sample_ising.
+
+            """
+            h, J, offset = qubo_to_ising(Q)
+            spin_response = self.sample_ising(h, J, **kwargs)
+            return spin_response.as_binary(offset)
+
+        @qubo(1)
+        def sample_structured_qubo(self, Q, **kwargs):
+            """TODO
+
+            If sampler is unstructured, invokes the sample_qubo method, otherwise
+            converts the problem to an Ising problem and invokes the
+            sample_structured_ising method.
+
+            See sample_qubo and sample_structured_ising documentation for more
+            information.
+
+            Args:
+                Q (dict): A dictionary defining the QUBO. Should be of the form
+                    {(u, v): bias} where u, v are variables and bias is numeric.
+                **kwargs: Any keyword arguments are passed directly to
+                    sample_ising.
+
+            Returns:
+                :obj:`BinaryResponse`:
+                    A `BinaryResponse`, converted from the `SpinResponse` return
+                    from sample_ising.
+
+            Note:
+                This method is inherited from the :obj:`TemplateSampler` base class.
+
+            """
+            h, J, offset = qubo_to_ising(Q)
+            spin_response = self.sample_structured_ising(h, J, **kwargs)
+            return spin_response.as_binary(offset)
+
+    return _STSampler
+
+
+def _apply_srt_sample_spin(sample, transform):
+    # flips the bits in a spin sample
+    return {v: -s if v in transform else s for v, s in iteritems(sample)}
+
+
+def _apply_srt_sample_data(data, transform):
+    # stores information about the transform in the sample's data field
+    if 'spin_reversal_variables' in data:
+        data['spin_reversal_variables_{}'.format(time.time())] = transform
+    else:
+        data['spin_reversal_variables'] = transform
+    return data
 
 
 def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
-    """Applies spin reveral transforms to an Ising problem.
+    """Applies spin reversal transforms to an Ising problem.
 
     Spin reversal transforms (or "gauge transformations") are applied
-    by flipping the spin of random variables in the Ising problem.
-    We can then sample using the transformed Ising problem and flip
-    the same bits in the resulting sample.
+    by flipping the spin of variables in the Ising problem. We can
+    then sample using the transformed Ising problem and flip the same
+    bits in the resulting sample.
 
     Args:
         h (dict): The linear terms in the Ising problem. Should be of
@@ -162,7 +200,8 @@ def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
             has a 50% chance of having its bit flipped. Default None.
 
     Returns:
-        h_spin (dict): the transformed h, in the same form as `h`.
+        h_spin (dict): the transformed linear biases, in the same
+            form as `h`.
         J_spin (dict): the transformed quadratic biases, in the same
             form as `J`.
         spin_reversal_variables (set): The variables which had their
@@ -200,9 +239,57 @@ def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
     return h_spin, J_spin, transform
 
 
-# def apply_spin_transform_qubo(Q, spin_variables=None):
-#     """TODO"""
-#     h, J, off_ising = qubo_to_ising(Q)
-#     h_spin, J_spin, transform = apply_spin_transform(h, J)
-#     Q_spin, off_qubo = ising_to_qubo(h_spin, J_spin)
-#     return Q_spin, transform, off_ising + off_qubo
+def apply_spin_reversal_transform_qubo(Q, spin_reversal_variables=None):
+    """Applies spin reversal transforms to the Ising formulation of the
+    given QUBO.
+
+    Spin reversal transforms (or "gauge transformations") are applied
+    by flipping the spin of variables in an Ising problem. We can
+    then sample using the transformed Ising problem and flip the same
+    bits in the resulting sample.
+
+    Args:
+        Q (dict): A dictionary defining the QUBO. Should be of the form
+            {(u, v): bias} where u, v are variables and bias is numeric.
+        spin_reversal_variables (iterable, optional): An iterable of
+            variables in the Ising problem. These are the variables
+            that have their spins flipped. If set to None, each variable
+            has a 50% chance of having its bit flipped. Default None.
+
+    Returns:
+        Q_spin (dict): the transformed QUBO, in the same form as `Q`.
+        spin_reversal_variables (set): The variables which had their
+            spins flipped. If `spin_reversal_variables` were provided,
+            then this will be the same.
+        energy_offset (float): The energy offset between the energy
+            defined by `Q` and `Q_spin`.
+
+    Examples:
+        >>> Q = {(0, 0): -1, (0, 1): 1, (1, 1): 1}
+        >>> Q_spin, __, offset = dimod.apply_spin_reversal_transform_qubo(Q, {1})
+        >>> dimod.qubo_energy(Q, {0: 1, 1: 0})
+        -1.0
+        >>> dimod.qubo_energy(Q_spin, {0: 1, 1: 1})
+        -2.0
+        >>> dimod.qubo_energy(Q_spin, {0: 1, 1: 1}) + offset
+        -1.0
+
+    References:
+    .. _KM:
+        Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+            for a quantum annealing platform.
+            https://arxiv.org/abs/1410.2628, 2014.
+
+    """
+
+    # transform to Ising problem
+    h, J, off_ising = qubo_to_ising(Q)
+
+    # apply spin transforms to the Ising
+    h_spin, J_spin, transform = apply_spin_reversal_transform(h, J, spin_reversal_variables)
+
+    # convert back
+    Q_spin, off_qubo = ising_to_qubo(h_spin, J_spin)
+
+    # there may have been a net energy change
+    return Q_spin, transform, off_ising + off_qubo

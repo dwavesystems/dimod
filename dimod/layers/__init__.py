@@ -1,1 +1,1 @@
-from spin_transform import *
+from dimod.layers.spin_transform import *
