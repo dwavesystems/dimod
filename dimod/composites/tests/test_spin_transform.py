@@ -1,5 +1,6 @@
 import unittest
 import itertools
+import random
 
 import dimod
 from dimod.samplers.tests.generic_sampler_tests import TestSamplerAPI
@@ -56,6 +57,19 @@ class TestSpinTransformComposition(unittest.TestCase, TestSamplerAPI):
         # also energy should still be preserved
         for sample, energy in response.items():
             self.assertLessEqual(abs(dimod.qubo_energy(Q, sample) - energy), 10**-5)
+
+        for __, data in response.samples(data=True):
+            self.assertIn('spin_reversal_variables', data)
+
+        response = sampler.sample_structured_ising(h, J, orig_h=h)
+
+        # lowest energy sample should be all -1
+        sample = next(iter(response))
+        self.assertTrue(all(s == -1 for s in sample.values()))
+
+        # also energy should still be preserved
+        for sample, energy in response.items():
+            self.assertLessEqual(abs(dimod.ising_energy(h, J, sample) - energy), 10**-5)
 
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
