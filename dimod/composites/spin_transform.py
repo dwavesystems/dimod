@@ -5,14 +5,16 @@ import sys
 import time
 import itertools
 
+from dimod.sampler_template import TemplateSampler
+from dimod.composite_template import TemplateComposite
 from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
 
 __all__ = ['SpinTransform']
 
-PY2 = sys.version_info[0] == 2
-if PY2:
+_PY2 = sys.version_info[0] == 2
+if _PY2:
     iteritems = lambda d: d.iteritems()
     range = xrange
     zip = itertools.izip
@@ -20,148 +22,95 @@ else:
     iteritems = lambda d: d.items()
 
 
-def SpinTransform(Sampler):
-    class _STSampler(Sampler):
+class SpinTransform(TemplateComposite, TemplateSampler):
+    """TODO
+    """
+    def __init__(self, sampler):
+        TemplateComposite.__init__(self)
+        TemplateSampler.__init__(self)
+
+        self.children.append(sampler)  # TemplateComposite creates children attribute
+        self._child = sampler  # faster access than self.children[0]
+
+    @ising(1, 2)
+    def sample_ising(self, h, J,
+                     num_spin_reversal_transforms=1, spin_reversal_variables=None,
+                     **kwargs):
         """TODO
+
+        NB: num runs sampler each time
+
         """
-        def __init__(self):
-            Sampler.__init__(self)
+        sampler = self._child
 
-        @ising(1, 2)
-        def sample_ising(self, h, J,
-                         num_spin_reversal_transforms=1, spin_reversal_variables=None,
-                         **kwargs):
-            """TODO
+        # dispatch all of the jobs, in case the samples are resolved upon response read.
+        # keep track of which variables were transformed
+        dispatched = []
+        for __ in range(num_spin_reversal_transforms):
+            h_spin, J_spin, transform = \
+                apply_spin_reversal_transform(h, J, spin_reversal_variables)
 
-            NB: num runs sampler each time
+            response = sampler.sample_ising(h_spin, J_spin, **kwargs)
 
-            """
+            dispatched.append((response, transform))
 
-            # dispatch all of the jobs, in case the samples are resolved upon response read.
-            # keep track of which variables were transformed
-            dispatched = []
-            for __ in range(num_spin_reversal_transforms):
-                h_spin, J_spin, transform = \
-                    apply_spin_reversal_transform(h, J, spin_reversal_variables)
+        # put all of the responses into one
+        st_response = SpinResponse()
 
-                response = Sampler.sample_ising(self, h_spin, J_spin, **kwargs)
+        for response, transform in dispatched:
+            samples, energies, sample_data = zip(*response.items(data=True))
 
-                dispatched.append((response, transform))
+            # flip the bits in the samples
+            st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
 
-            # put all of the responses into one
-            st_response = SpinResponse()
+            # keep track of which bits were flipped in data
+            st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
 
-            for response, transform in dispatched:
-                samples, energies, sample_data = zip(*response.items(data=True))
+            st_response.add_samples_from(st_samples, energies, st_sample_data)
 
-                # flip the bits in the samples
-                st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
+            st_response.data.update(response.data)
 
-                # keep track of which bits were flipped in data
-                st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
+        return st_response
 
-                st_response.add_samples_from(st_samples, energies, st_sample_data)
+    @ising(1, 2)
+    def sample_structured_ising(self, h, J,
+                                num_spin_reversal_transforms=1, spin_reversal_variables=None,
+                                **kwargs):
+        """TODO
 
-                st_response.data.update(response.data)
+        NB: num runs sampler each time
 
-            return st_response
+        """
+        sampler = self._child
 
-        @ising(1, 2)
-        def sample_structured_ising(self, h, J,
-                                    num_spin_reversal_transforms=1, spin_reversal_variables=None,
-                                    **kwargs):
-            """TODO
+        # dispatch all of the jobs, in case the samples are resolved upon response read.
+        # keep track of which variables were transformed
+        dispatched = []
+        for __ in range(num_spin_reversal_transforms):
+            h_spin, J_spin, transform = \
+                apply_spin_reversal_transform(h, J, spin_reversal_variables)
 
-            NB: num runs sampler each time
+            response = sampler.sample_structured_ising(h_spin, J_spin, **kwargs)
 
-            """
+            dispatched.append((response, transform))
 
-            # dispatch all of the jobs, in case the samples are resolved upon response read.
-            # keep track of which variables were transformed
-            dispatched = []
-            for __ in range(num_spin_reversal_transforms):
-                h_spin, J_spin, transform = \
-                    apply_spin_reversal_transform(h, J, spin_reversal_variables)
+        # put all of the responses into one
+        st_response = SpinResponse()
 
-                response = Sampler.sample_structured_ising(self, h_spin, J_spin, **kwargs)
+        for response, transform in dispatched:
+            samples, energies, sample_data = zip(*response.items(data=True))
 
-                dispatched.append((response, transform))
+            # flip the bits in the samples
+            st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
 
-            # put all of the responses into one
-            st_response = SpinResponse()
+            # keep track of which bits were flipped in data
+            st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
 
-            for response, transform in dispatched:
-                samples, energies, sample_data = zip(*response.items(data=True))
+            st_response.add_samples_from(st_samples, energies, st_sample_data)
 
-                # flip the bits in the samples
-                st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
+            st_response.data.update(response.data)
 
-                # keep track of which bits were flipped in data
-                st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
-
-                st_response.add_samples_from(st_samples, energies, st_sample_data)
-
-                st_response.data.update(response.data)
-
-            return st_response
-
-        @qubo(1)
-        def sample_qubo(self, Q, **kwargs):
-            """TODO
-
-
-            Converts the given QUBO into an Ising problem, then invokes the
-            sample_ising method.
-
-            See sample_ising documentation for more information.
-
-            Args:
-                Q (dict): A dictionary defining the QUBO. Should be of the form
-                    {(u, v): bias} where u, v are variables and bias is numeric.
-                **kwargs: Any keyword arguments are passed directly to
-                    sample_ising.
-
-            Returns:
-                :obj:`BinaryResponse`:
-                    A `BinaryResponse`, converted from the `SpinResponse` return
-                    from sample_ising.
-
-            """
-            h, J, offset = qubo_to_ising(Q)
-            spin_response = self.sample_ising(h, J, **kwargs)
-            return spin_response.as_binary(offset)
-
-        @qubo(1)
-        def sample_structured_qubo(self, Q, **kwargs):
-            """TODO
-
-            If sampler is unstructured, invokes the sample_qubo method, otherwise
-            converts the problem to an Ising problem and invokes the
-            sample_structured_ising method.
-
-            See sample_qubo and sample_structured_ising documentation for more
-            information.
-
-            Args:
-                Q (dict): A dictionary defining the QUBO. Should be of the form
-                    {(u, v): bias} where u, v are variables and bias is numeric.
-                **kwargs: Any keyword arguments are passed directly to
-                    sample_ising.
-
-            Returns:
-                :obj:`BinaryResponse`:
-                    A `BinaryResponse`, converted from the `SpinResponse` return
-                    from sample_ising.
-
-            Note:
-                This method is inherited from the :obj:`TemplateSampler` base class.
-
-            """
-            h, J, offset = qubo_to_ising(Q)
-            spin_response = self.sample_structured_ising(h, J, **kwargs)
-            return spin_response.as_binary(offset)
-
-    return _STSampler
+        return st_response
 
 
 def _apply_srt_sample_spin(sample, transform):
