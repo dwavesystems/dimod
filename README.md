@@ -41,6 +41,10 @@ See documentation for more examples.
 
 Compatible with Python 2 and 3.
 
+`pip install dimod`
+
+To install from source:
+
 `python setup.py install`
 
 ## License
