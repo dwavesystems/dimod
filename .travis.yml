@@ -4,6 +4,6 @@ python:
   - 2.7
   - nightly
 install:
-  - pip install -r requirements.txt
+  - python setup.py install
 script:
   - pytest
