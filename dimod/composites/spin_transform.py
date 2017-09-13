@@ -1,5 +1,3 @@
-from __future__ import division
-
 from random import random
 import sys
 import time
@@ -290,59 +288,3 @@ def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
     J_spin = {edge: quad_bias(edge) for edge in J}
 
     return h_spin, J_spin, transform
-
-
-def apply_spin_reversal_transform_qubo(Q, spin_reversal_variables=None):
-    """Applies spin reversal transforms to the Ising formulation of the
-    given QUBO.
-
-    Spin reversal transforms (or "gauge transformations") are applied
-    by flipping the spin of variables in an Ising problem. We can
-    then sample using the transformed Ising problem and flip the same
-    bits in the resulting sample.
-
-    Args:
-        Q (dict): A dictionary defining the QUBO. Should be of the form
-            {(u, v): bias} where u, v are variables and bias is numeric.
-        spin_reversal_variables (iterable, optional): An iterable of
-            variables in the Ising problem. These are the variables
-            that have their spins flipped. If set to None, each variable
-            has a 50% chance of having its bit flipped. Default None.
-
-    Returns:
-        Q_spin (dict): the transformed QUBO, in the same form as `Q`.
-        spin_reversal_variables (set): The variables which had their
-            spins flipped. If `spin_reversal_variables` were provided,
-            then this will be the same.
-        energy_offset (float): The energy offset between the energy
-            defined by `Q` and `Q_spin`.
-
-    Examples:
-        >>> Q = {(0, 0): -1, (0, 1): 1, (1, 1): 1}
-        >>> Q_spin, __, offset = dimod.apply_spin_reversal_transform_qubo(Q, {1})
-        >>> dimod.qubo_energy(Q, {0: 1, 1: 0})
-        -1.0
-        >>> dimod.qubo_energy(Q_spin, {0: 1, 1: 1})
-        -2.0
-        >>> dimod.qubo_energy(Q_spin, {0: 1, 1: 1}) + offset
-        -1.0
-
-    References
-    ----------
-    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
-        for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
-        2014.
-
-    """
-
-    # transform to Ising problem
-    h, J, off_ising = qubo_to_ising(Q)
-
-    # apply spin transforms to the Ising
-    h_spin, J_spin, transform = apply_spin_reversal_transform(h, J, spin_reversal_variables)
-
-    # convert back
-    Q_spin, off_qubo = ising_to_qubo(h_spin, J_spin)
-
-    # there may have been a net energy change
-    return Q_spin, transform, off_ising + off_qubo

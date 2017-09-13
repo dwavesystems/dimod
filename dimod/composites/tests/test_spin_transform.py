@@ -7,7 +7,6 @@ from dimod.samplers.tests.generic_sampler_tests import TestSamplerAPI
 
 # import functions and classes we wish to test, from the 'topmost' location
 from dimod.composites.spin_transform import apply_spin_reversal_transform
-from dimod.composites.spin_transform import apply_spin_reversal_transform_qubo
 
 
 class MockSampler(dimod.TemplateSampler):
@@ -24,7 +23,7 @@ class MockSampler(dimod.TemplateSampler):
 class TestSpinTransformComposition(unittest.TestCase, TestSamplerAPI):
 
     def setUp(self):
-        self.sampler = dimod.SpinTransform(MockSampler())
+        self.sampler = dimod.SpinReversalTransform(MockSampler())
 
     def test_spin_transform_composition_basic(self):
         sampler = self.sampler
@@ -118,26 +117,3 @@ class TestSpinTransform(unittest.TestCase):
                 self.assertEqual(bias, -(v + u))
             else:
                 self.assertEqual(bias, v + u)
-
-    def test_qubo(self):
-        Q = {(0, 0): 1, (1, 1): -1, (0, 1): 1}  # minimized for [0, 1]
-
-        Q_spin, transform, offset = apply_spin_reversal_transform_qubo(Q, {1})
-
-        response = dimod.ExactSolver().sample_qubo(Q_spin)
-        sample = next(iter(response))
-
-        self.assertEqual(sample, {0: 0, 1: 0})  # expect 1 to be reversed
-
-        Q.update({(0, 2): .4, (2, 2): 1.6, (3, 4): .1, (0, 4): -.5})
-
-        for __ in range(10):
-            # apply a random transform
-            Q_spin, transform, offset = apply_spin_reversal_transform_qubo(Q)
-
-            sample = next(iter(dimod.ExactSolver().sample_qubo(Q_spin)))
-
-            sample_orig = {v: 1 - s if v in transform else s for v, s in sample.items()}
-
-            self.assertLessEqual(abs(dimod.qubo_energy(Q_spin, sample) -
-                                     dimod.qubo_energy(Q, sample_orig) + offset), 10**-5)
