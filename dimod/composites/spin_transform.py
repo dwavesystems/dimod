@@ -3,7 +3,6 @@ import sys
 import time
 import itertools
 
-from dimod.sampler_template import TemplateSampler
 from dimod.composite_template import TemplateComposite
 from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
@@ -20,7 +19,7 @@ else:
     iteritems = lambda d: d.items()
 
 
-class SpinReversalTransform(TemplateComposite, TemplateSampler):
+class SpinReversalTransform(TemplateComposite):
     """Composite for applying spin reversal transform preprocessing.
 
     Spin reversal transforms (or "gauge transformations") are applied
@@ -62,12 +61,12 @@ class SpinReversalTransform(TemplateComposite, TemplateSampler):
 
     """
     def __init__(self, sampler):
-        TemplateComposite.__init__(self)
-        TemplateSampler.__init__(self)
+        # puts sampler into self.children
+        TemplateComposite.__init__(self, sampler)
 
-        self.children.append(sampler)  # TemplateComposite creates children attribute
         self._child = sampler  # faster access than self.children[0]
 
+        # copy over the structure
         self.structure = sampler.structure
 
     @ising(1, 2)
