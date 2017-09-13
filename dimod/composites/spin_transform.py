@@ -11,7 +11,7 @@ from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
 
-__all__ = ['SpinTransform']
+__all__ = ['SpinReversalTransform']
 
 _PY2 = sys.version_info[0] == 2
 if _PY2:
@@ -22,8 +22,46 @@ else:
     iteritems = lambda d: d.items()
 
 
-class SpinTransform(TemplateComposite, TemplateSampler):
-    """TODO
+class SpinReversalTransform(TemplateComposite, TemplateSampler):
+    """Composite for applying spin reversal transform preprocessing.
+
+    Spin reversal transforms (or "gauge transformations") are applied
+    by flipping the spin of variables in the Ising problem. We can
+    then sample using the transformed Ising problem and flip the same
+    bits in the resulting sample.
+
+    Args:
+        sampler: A dimod sampler object.
+
+    Examples:
+        Composing a sampler.
+
+        >>> base_sampler = dimod.ExactSolver()
+        >>> composed_sampler = dimod.SpinReversalTransform(base_sampler)
+
+        The composed sampler can now be used as a dimod sampler.
+
+        >>> h = {0: -1, 1: 1}
+        >>> response = composed_sampler.sample_ising(h, {})
+        >>> list(response.samples())
+        [{0: 1, 1: -1}, {0: -1, 1: -1}, {0: 1, 1: 1}, {0: -1, 1: 1}]
+
+        The base sampler is also in `children` attribute of the composed
+        sampler.
+
+        >>> base_sampler in composed_sampler.children
+        True
+
+    References
+    ----------
+    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+        for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
+        2014.
+
+    Attributes:
+        children (list): [`sampler`] where `sampler` is the input sampler.
+        structure: Inherited from input `sampler`.
+
     """
     def __init__(self, sampler):
         TemplateComposite.__init__(self)
@@ -31,6 +69,8 @@ class SpinTransform(TemplateComposite, TemplateSampler):
 
         self.children.append(sampler)  # TemplateComposite creates children attribute
         self._child = sampler  # faster access than self.children[0]
+
+        self.structure = sampler.structure
 
     @ising(1, 2)
     def sample_ising(self, h, J,
@@ -157,11 +197,11 @@ def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
             spins flipped. If `spin_reversal_variables` were provided,
             then this will be the same.
 
-    References:
-    .. _KM:
-        Andrew D. King and Catherine C. McGeoch. Algorithm engineering
-            for a quantum annealing platform.
-            https://arxiv.org/abs/1410.2628, 2014.
+    References
+    ----------
+    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+        for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
+        2014.
 
     """
 
@@ -223,11 +263,11 @@ def apply_spin_reversal_transform_qubo(Q, spin_reversal_variables=None):
         >>> dimod.qubo_energy(Q_spin, {0: 1, 1: 1}) + offset
         -1.0
 
-    References:
-    .. _KM:
-        Andrew D. King and Catherine C. McGeoch. Algorithm engineering
-            for a quantum annealing platform.
-            https://arxiv.org/abs/1410.2628, 2014.
+    References
+    ----------
+    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+        for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
+        2014.
 
     """
 

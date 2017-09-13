@@ -30,6 +30,8 @@ Documentation
    sampler_template
    samplers/index
    responses
+   composite_template
+   composites/index
    decorators
    utilities
    license

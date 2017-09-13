@@ -113,6 +113,11 @@ class TemplateSampler(object):
     need only implement the methods that make sense.
 
     See module documentation for examples.
+
+    Attributes:
+        structure: Default None. Left deliberately undefined. Should give
+            information relevent for using the sample_structured_ising
+            and sample_structured_qubo methods.
     """
     def __init__(self):
         self.structure = None
