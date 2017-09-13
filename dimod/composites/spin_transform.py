@@ -76,11 +76,43 @@ class SpinReversalTransform(TemplateComposite, TemplateSampler):
     def sample_ising(self, h, J,
                      num_spin_reversal_transforms=1, spin_reversal_variables=None,
                      **kwargs):
-        """TODO
+        """Applies spin reversal transforms to an Ising problem, then samples
+        using the child sampler's `sample_ising` method.
 
-        NB: num runs sampler each time
+        Args:
+            h (dict/list): The linear terms in the Ising problem. If a
+                dict, should be of the form {v: bias, ...} where v is
+                a variable in the Ising problem, and bias is the linear
+                bias associated with v. If a list, should be of the form
+                [bias, ...] where the indices of the biases are the
+                variables in the Ising problem.
+            J (dict): A dictionary of the quadratic terms in the Ising
+                problem. Should be of the form {(u, v): bias} where u,
+                v are variables in the Ising problem and bias is the
+                quadratic bias associated with u, v.
+            num_spin_reversal_transforms (int, optional): Default 1. The
+                number of different spin reversal transforms to apply to
+                the given Ising problem. Note that the child sampler will
+                be invoked for each spin reversal transform.
+            spin_reversal_variables (iterable, optional): An iterable of
+                variables in the Ising problem. These are the variables
+                that have their spins flipped. If set to None, each variable
+                has a 50% chance of having its bit flipped. Default None.
+            **kwargs: Any other keyword arguments are passed unchanged to
+                the child sampler's `sample_ising` method.
+
+
+        Notes:
+            As noted in the section defining the `num_spin_reversal_transforms`
+            parameter, the child sampler will be invoked for each different
+            spin reversal transform. So if the child sampler accepts a
+            `num_reads` keyword parameter, the total number of reads
+            performed will be `num_reads` * `num_spin_reversal_transforms`.
 
         """
+        if not isinstance(num_spin_reversal_transforms, int):
+            raise TypeError("input `num_spin_reversal_transforms` must be an 'int'")
+
         sampler = self._child
 
         # dispatch all of the jobs, in case the samples are resolved upon response read.
@@ -116,11 +148,43 @@ class SpinReversalTransform(TemplateComposite, TemplateSampler):
     def sample_structured_ising(self, h, J,
                                 num_spin_reversal_transforms=1, spin_reversal_variables=None,
                                 **kwargs):
-        """TODO
+        """Applies spin reversal transforms to an Ising problem, then samples
+        using the child sampler's `sample_structured_ising` method.
 
-        NB: num runs sampler each time
+        Args:
+            h (dict/list): The linear terms in the Ising problem. If a
+                dict, should be of the form {v: bias, ...} where v is
+                a variable in the Ising problem, and bias is the linear
+                bias associated with v. If a list, should be of the form
+                [bias, ...] where the indices of the biases are the
+                variables in the Ising problem.
+            J (dict): A dictionary of the quadratic terms in the Ising
+                problem. Should be of the form {(u, v): bias} where u,
+                v are variables in the Ising problem and bias is the
+                quadratic bias associated with u, v.
+            num_spin_reversal_transforms (int, optional): Default 1. The
+                number of different spin reversal transforms to apply to
+                the given Ising problem. Note that the child sampler will
+                be invoked for each spin reversal transform.
+            spin_reversal_variables (iterable, optional): An iterable of
+                variables in the Ising problem. These are the variables
+                that have their spins flipped. If set to None, each variable
+                has a 50% chance of having its bit flipped. Default None.
+            **kwargs: Any other keyword arguments are passed unchanged to
+                the child sampler's `sample_structured_ising` method.
+
+
+        Notes:
+            As noted in the section defining the `num_spin_reversal_transforms`
+            parameter, the child sampler will be invoked for each different
+            spin reversal transform. So if the child sampler accepts a
+            `num_reads` keyword parameter, the total number of reads
+            performed will be `num_reads` * `num_spin_reversal_transforms`.
 
         """
+        if not isinstance(num_spin_reversal_transforms, int):
+            raise TypeError("input `num_spin_reversal_transforms` must be an 'int'")
+
         sampler = self._child
 
         # dispatch all of the jobs, in case the samples are resolved upon response read.
