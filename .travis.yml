@@ -7,4 +7,4 @@ install:
   - pip install -r requirements.txt
   - pip install .
 script:
-  - pytest
+  - python -m unittest discover
