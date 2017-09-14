@@ -1,5 +1,5 @@
 *.pyc
-
+*.odp
 build
 dimod.egg-info
 dist
