@@ -3,10 +3,10 @@ import unittest
 import itertools
 
 from dimod import ExactSolver, ising_energy, qubo_energy
-from dimod.samplers.tests.generic_sampler_tests import TestSamplerAPI
+from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
 
 
-class TestExactSolver(unittest.TestCase, TestSamplerAPI):
+class TestExactSolver(unittest.TestCase, SamplerAPITest):
     def setUp(self):
         self.sampler = ExactSolver()
 
