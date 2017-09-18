@@ -4,8 +4,6 @@ A collection of utility functions useful for Samplers.
 
 import sys
 
-from collections import defaultdict
-
 __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 
 PY2 = sys.version_info[0] == 2
