@@ -1,10 +1,17 @@
 language: python
 python:
-  - 3.6
-  - 2.7
-  - nightly
+- 3.6
+- 2.7
+- nightly
 install:
-  - pip install -r requirements.txt
-  - pip install .
+- pip install -r requirements.txt
+- pip install .
 script:
-  - python -m unittest discover
+- python -m unittest discover
+deploy:
+  provider: pypi
+  user: oneklc
+  password:
+    secure: gI9CcwkBK3sPE/t8Ldkeh+vLjyZ7gBVkHxF+ft6nlO6blxck8AprQUewCoTQkj2+9hRN0pm0gbDt/sHUJA66ifTw/2/VUBxjpK5EFdC4IjvoBz5zHXI5ubvjqiOnHckCStOfiUFKP+U0uFA3rUGh1O1RL95H1bfT1TGWi9pgFPsB79p0p6eWnJYMgTgx1ESpvTJaF3s3pgIlvsRmlPhXOvDG8p31oo0ZBigwT7LH22+SveYlWfSRNMUKUlq2FlxzeAvvR4uMKbShFGM7De40ffud6oQWwmgLLQG3l6lJNsW1R7YH7mnZ8txvjrUcs8qG4Tfhnhqe1WH+YzhJvtWIlYIxr5tIOHBI2VdPoLaUm3sA61nqbpn+pDxgkL2IYOSxvUfghaGg1xn2ysFPjeqXVOFwfBGOYbqwntupuEjyudbIjUT2TbsqdcauWP2dWJzSFVUfVuKMXgMmUGm6MTrpD7QR2ADMHlAr3zh9rvabqe+aNOlBMujae1WWSXhI9dCiexLfnFDOCNGkYRTBtyggXfinUCb1mKjAV/ykDvsA1xoprY+8/pqhyaeuHmUsRD7aSN1i2jOys7a5DdQUFTPAKtHhYy4xTFhsggzL2kxjdrPrpy/8eC6FPXYOBdGNb0czi1DOTnTPzo8L/FeoSNsWjlyuJGa6wD+/suTmBvZLuHY=
+  on:
+    tags: true
