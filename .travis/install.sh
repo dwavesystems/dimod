@@ -8,18 +8,18 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     case "${TOXENV}" in
         py27)
             # Install some custom Python 2.7 requirements on OS X
-                pip install requirements.txt
+                 pip install -r requirements.txt
             ;;
         py36)
             # Install some custom Python 3.6 requirements on OS X
-                pip install requirements.txt
+                 pip install -r requirements.txt
             ;;
         pynightly)
             # Install some custom Python nightly requirements on OS X
-                pip install requirements.txt
+                 pip install -r requirements.txt
             ;;
 
     esac
 else
-    pip install requirements.txt
+     pip install -r requirements.txt
 fi
