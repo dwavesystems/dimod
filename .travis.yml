@@ -19,7 +19,6 @@ matrix:
           env: TOXENV=py27
           before_install:
             - brew update
-            - brew install python
             - virtualenv env -p python2
             - source env/bin/activate
         - os: osx
