@@ -49,14 +49,18 @@ environment:
 
     # Python 2.6.6 is the latest Python 2.6 with a Windows installer
     # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
-
-    - PYTHON: "C:\\Python266"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python266-x64"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "64"
+# Broken because of set comprehension doesn't exist in 2.6.  dropping support.
+# Error is:
+#     File "dimod\decorators.py", line 199
+#        relabel = {v: idx for idx, v in iteritems(inv_relabel)}
+#                            ^
+#    - PYTHON: "C:\\Python266"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "32"
+#
+#    - PYTHON: "C:\\Python266-x64"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "64"
 
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.0"
