@@ -108,7 +108,7 @@ install:
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "%CMD_IN_ENV% pip install --disable-pip-version-check --user --upgrade pip"
+  - "pip install --disable-pip-version-check --user --upgrade pip"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -126,6 +126,7 @@ test_script:
 
 after_test:
   # If tests are successful, create binary packages for the project.
+  - "%CMD_IN_ENV% pip install wheel setuptools --upgrade --force"
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
   - "%CMD_IN_ENV% python setup.py bdist_wininst"
   - "%CMD_IN_ENV% python setup.py bdist_msi"
