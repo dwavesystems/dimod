@@ -27,12 +27,6 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         # make sure we actully got back 100 samples
         self.assertEqual(len(response0), 10)
 
-        response2 = sampler.sample_structured_ising(h, J, num_samples=10)
-        self.assertEqual(len(response2), 10)
-
-        for sample, energy in response2.items():
-            self.assertEqual(ising_energy(h, J, sample), energy)
-
         Q = {(0, 0): 0, (1, 1): 0, (0, 1): -1}
 
         response4 = sampler.sample_qubo(Q, num_samples=10)
@@ -40,9 +34,6 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
 
         for sample, energy in response4.items():
             self.assertEqual(qubo_energy(Q, sample), energy)
-
-        response6 = sampler.sample_structured_qubo(Q, num_samples=10)
-        self.assertEqual(len(response6), 10)
 
     def test_bug1(self):
         # IN IN OUT AUX

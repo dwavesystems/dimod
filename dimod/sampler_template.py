@@ -21,6 +21,10 @@ Examples
 Define a sampler that operates on QUBO problems:
 
 >>> class MyLinearSampler(dimod.TemplateSampler):
+...     def __init__(self):
+...         dimod.TemplateSampler.__init__(self)
+...         self.structure = 'linear'
+...
 ...     @dimod.decorators.qubo(1)
 ...     def sample_qubo(self, Q):
 ...         response = dimod.BinaryResponse()
@@ -83,9 +87,8 @@ class TemplateSampler(object):
     See module documentation for examples.
 
     Attributes:
-        structure: Default None. Left deliberately undefined. Should give
-            information relevent for using the sample_structured_ising
-            and sample_structured_qubo methods.
+        structure: Default None.
+
     """
     def __init__(self):
         self.structure = None
