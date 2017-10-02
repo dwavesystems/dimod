@@ -1,5 +1,7 @@
 # dimod
 
+[![Build Status](https://travis-ci.org/dwavesystems/dimod.svg?branch=master)](https://travis-ci.org/dwavesystems/dimod)
+
 A shared API for QUBO/Ising samplers.
 
 ## Included Samplers
