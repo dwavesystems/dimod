@@ -17,8 +17,6 @@ TemplateSampler methods
 
    TemplateSampler.sample_ising
    TemplateSampler.sample_qubo
-   TemplateSampler.sample_structured_ising
-   TemplateSampler.sample_structured_qubo
 
 TemplateSampler properties
 --------------------------
