@@ -25,6 +25,9 @@ class RandomSampler(TemplateSampler):
 
     """
 
+    def __init__(self):
+        TemplateSampler.__init__(self)
+
     @qubo(1)
     def sample_qubo(self, Q, num_samples=10):
         """Gives random samples.

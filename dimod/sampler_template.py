@@ -86,9 +86,6 @@ class TemplateSampler(object):
 
     See module documentation for examples.
 
-    Attributes:
-        structure: Default None.
-
     """
     def __init__(self):
         self.structure = None
@@ -155,6 +152,7 @@ class TemplateSampler(object):
 
     @property
     def structure(self):
+        """Structure for the sampler. None for unstructured samplers."""
         return self._structure
 
     @structure.setter
