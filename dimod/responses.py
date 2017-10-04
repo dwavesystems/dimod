@@ -110,17 +110,22 @@ class TemplateResponse(object):
             as a dictionary. Default {}.
 
     Examples:
-        >>> response = TemplateResponse({'name', 'example'})
+        >>> response = TemplateResponse({'name': 'example'})
         >>> print(response.data)
-        '{'name', 'example'}'
+        '{'name': 'example'}'
 
     """
 
-    def __init__(self, data={}):
+    def __init__(self, data=None):
         self._samples = []
         self._energies = []
         self._sample_data = []
-        self.data = data
+        if data is None:
+            self.data = {}
+        elif not isinstance(data, dict):
+            raise TypeError('expected input "data" to be None or a dict')
+        else:
+            self.data = data
 
     def __iter__(self):
         """Iterate over the samples. Use the expression 'for sample in

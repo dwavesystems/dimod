@@ -13,6 +13,9 @@ import dimod.decorators
 from dimod.responses import *
 import dimod.responses
 
+from dimod.responses_matrix import *
+import dimod.responses_matrix
+
 from dimod.sampler_template import *
 
 from dimod.samplers import *
