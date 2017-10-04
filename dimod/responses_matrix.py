@@ -1,11 +1,21 @@
 """
 TODO
 """
+import sys
+import itertools
 
-# from dimod.responses import TemplateResponse
+PY2 = sys.version_info[0] == 2
+if PY2:
+    range = xrange
+    zip = itertools.izip
+    iteritems = lambda d: d.iteritems()
+    itervalues = lambda d: d.itervalues()
+else:
+    iteritems = lambda d: d.items()
+    itervalues = lambda d: d.values()
 
 
-class NumpyResponse():
+class NumpyResponse(object):
     """TODO"""
     def __init__(self, data=None):
         import numpy as np
@@ -24,38 +34,72 @@ class NumpyResponse():
             self.data = data
 
     def samples(self, data=False):
-        raise NotImplementedError
+        if data:
+            return zip(self.samples(), self._sample_data)
+
+        return iter({idx: val for idx, val in enumerate(row)} for row in self._samples)
 
     def energies(self, data=False):
-        raise NotImplementedError
+        if data:
+            return zip(self.energies(), self._sample_data)
+
+        return iter(self._energies)
 
     def items(self, data=False):
-        raise NotImplementedError
+        if data:
+            return zip(self.samples(), self.energies(), self._sample_data)
+
+        return zip(self.samples(), self.energies())
 
     def add_sample(self, sample, energy, data=None):
-        raise NotImplementedError
+        raise NotImplementedError(("To add samples to NumpyResponse, "
+                                   "please use add_samples_from_array"))
 
     def add_samples_from(self, samples, energies, sample_data=None):
-        raise NotImplementedError
+        raise NotImplementedError(("To add samples to NumpyResponse, "
+                                   "please use add_samples_from_array"))
 
     def __str__(self):
-        raise NotImplementedError
+        """Return a string representation of the response.
 
-    def __getitem__(self, sample):
-        raise NotImplementedError
+        Returns:
+            str: A string representation of the graph.
+
+        """
+
+        lines = [self.__repr__(), 'data: {}'.format(self.data)]
+
+        item_n = 0
+        total_n = len(self)
+        for sample, energy, data in self.items(data=True):
+            if item_n > 9 and item_n < total_n - 1:
+                if item_n == 10:
+                    lines.append('...')
+                item_n += 1
+                continue
+
+            lines.append('Item {}:'.format(item_n))
+            lines.append('  sample: {}'.format(sample))
+            lines.append('  energy: {}'.format(energy))
+            lines.append('  data: {}'.format(data))
+
+            item_n += 1
+
+        return '\n'.join(lines)
 
     def __len__(self):
-        raise NotImplementedError
+        num_samples, __ = self._samples.shape
+        return num_samples
 
     def relabel_samples(self, mapping, copy=True):
-        raise NotImplementedError
+        raise NotImplementedError("NumpyResponse does not support arbitrarily labeled variables")
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
         import numpy as np
 
         # # Input checking
         # #   expect samples to be 2darray
-        # #   expect energies to be 1darray or 2d vector
+        # #   expect energies to be 1darray
         # #   expect sample_data to be None or an iterable of dicts
         # if not isinstance(samples, np.ndarray):
         #     raise NotImplementedError  # TODO
@@ -80,12 +124,16 @@ class NumpyResponse():
             self._samples = samples
             self._energies = energies
             self._sample_data = sample_data
-        elif sorted_by_energy:
-            # some samples already in response and the new samples are sorted
-            raise NotImplementedError()
-        elif self._samples is None:
-            # response is empty and new samples are unsorted
-            raise NotImplementedError
         else:
-            # some samples already in response and new are unsorted
-            raise NotImplementedError
+
+            if self._samples is not None:
+                samples = np.concatenate((self._samples, samples), axis=0)
+                energies = np.concatenate((self._energies, energies))
+
+            sample_data = self._sample_data + sample_data
+
+            idxs = np.argsort(energies)
+
+            self._samples = samples[idxs, :]
+            self._energies = energies[idxs]
+            self._sample_data = [sample_data[i] for i in idxs]
