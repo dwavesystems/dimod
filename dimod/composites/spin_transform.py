@@ -1,8 +1,8 @@
 from random import random
-import sys
 import time
 import itertools
 
+from dimod import _PY2
 from dimod.composite_template import TemplateComposite
 from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
@@ -10,7 +10,6 @@ from dimod.utilities import ising_to_qubo, qubo_to_ising
 
 __all__ = ['SpinReversalTransform']
 
-_PY2 = sys.version_info[0] == 2
 if _PY2:
     iteritems = lambda d: d.iteritems()
     range = xrange
@@ -94,7 +93,9 @@ class SpinReversalTransform(TemplateComposite):
             spin_reversal_variables (iterable, optional): An iterable of
                 variables in the Ising problem. These are the variables
                 that have their spins flipped. If set to None, each variable
-                has a 50% chance of having its bit flipped. Default None.
+                has a 50% chance of having its bit flipped. Note that if a
+                variable is in spin_reversal_variables but not in h or J
+                then it will be ignored. Default None.
             **kwargs: Any other keyword arguments are passed unchanged to
                 the child sampler's `sample_ising` method.
 
@@ -120,78 +121,6 @@ class SpinReversalTransform(TemplateComposite):
                 apply_spin_reversal_transform(h, J, spin_reversal_variables)
 
             response = sampler.sample_ising(h_spin, J_spin, **kwargs)
-
-            dispatched.append((response, transform))
-
-        # put all of the responses into one
-        st_response = SpinResponse()
-
-        for response, transform in dispatched:
-            samples, energies, sample_data = zip(*response.items(data=True))
-
-            # flip the bits in the samples
-            st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
-
-            # keep track of which bits were flipped in data
-            st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
-
-            st_response.add_samples_from(st_samples, energies, st_sample_data)
-
-            st_response.data.update(response.data)
-
-        return st_response
-
-    @ising(1, 2)
-    def sample_structured_ising(self, h, J,
-                                num_spin_reversal_transforms=1, spin_reversal_variables=None,
-                                **kwargs):
-        """Applies spin reversal transforms to an Ising problem, then samples
-        using the child sampler's `sample_structured_ising` method.
-
-        Args:
-            h (dict/list): The linear terms in the Ising problem. If a
-                dict, should be of the form {v: bias, ...} where v is
-                a variable in the Ising problem, and bias is the linear
-                bias associated with v. If a list, should be of the form
-                [bias, ...] where the indices of the biases are the
-                variables in the Ising problem.
-            J (dict): A dictionary of the quadratic terms in the Ising
-                problem. Should be of the form {(u, v): bias} where u,
-                v are variables in the Ising problem and bias is the
-                quadratic bias associated with u, v.
-            num_spin_reversal_transforms (int, optional): Default 1. The
-                number of different spin reversal transforms to apply to
-                the given Ising problem. Note that the child sampler will
-                be invoked for each spin reversal transform.
-            spin_reversal_variables (iterable, optional): An iterable of
-                variables in the Ising problem. These are the variables
-                that have their spins flipped. If set to None, each variable
-                has a 50% chance of having its bit flipped. Default None.
-            **kwargs: Any other keyword arguments are passed unchanged to
-                the child sampler's `sample_structured_ising` method.
-
-
-        Notes:
-            As noted in the section defining the `num_spin_reversal_transforms`
-            parameter, the child sampler will be invoked for each different
-            spin reversal transform. So if the child sampler accepts a
-            `num_reads` keyword parameter, the total number of reads
-            performed will be `num_reads` * `num_spin_reversal_transforms`.
-
-        """
-        if not isinstance(num_spin_reversal_transforms, int):
-            raise TypeError("input `num_spin_reversal_transforms` must be an 'int'")
-
-        sampler = self._child
-
-        # dispatch all of the jobs, in case the samples are resolved upon response read.
-        # keep track of which variables were transformed
-        dispatched = []
-        for __ in range(num_spin_reversal_transforms):
-            h_spin, J_spin, transform = \
-                apply_spin_reversal_transform(h, J, spin_reversal_variables)
-
-            response = sampler.sample_structured_ising(h_spin, J_spin, **kwargs)
 
             dispatched.append((response, transform))
 
@@ -247,7 +176,9 @@ def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
         spin_reversal_variables (iterable, optional): An iterable of
             variables in the Ising problem. These are the variables
             that have their spins flipped. If set to None, each variable
-            has a 50% chance of having its bit flipped. Default None.
+            has a 50% chance of having its bit flipped. Note that if a
+            variable is in spin_reversal_variables but not in h or J
+            then it will be ignored. Default None.
 
     Returns:
         h_spin (dict): the transformed linear biases, in the same

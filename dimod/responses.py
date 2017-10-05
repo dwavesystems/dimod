@@ -82,17 +82,16 @@ Examples:
 """
 from __future__ import division
 
-import sys
 import itertools
 import bisect
 
+from dimod import _PY2
 from dimod.decorators import ising, qubo
 from dimod import ising_energy, qubo_energy
 
 __all__ = ['TemplateResponse', 'SpinResponse', 'BinaryResponse']
 
-PY2 = sys.version_info[0] == 2
-if PY2:
+if _PY2:
     range = xrange
     zip = itertools.izip
     iteritems = lambda d: d.iteritems()
@@ -382,42 +381,17 @@ class TemplateResponse(object):
 
         return '\n'.join(lines)
 
-    def __getitem__(self, sample):
-        """Get the energy for the given sample.
-
-        Args:
-            sample (dict): A sample in response.
-
-        Return:
-            float/int: The energy associated with sample.
-
-        Raises:
-            KeyError: If the sample is not in response.
-
-        Notes:
-            dicts are matched by contents, not by reference.
-
-        """
-        try:
-            idx = self._samples.index(sample)
-        except ValueError as e:
-            raise KeyError(e.message)
-
-        return self._energies[idx]
-
     def __len__(self):
         """The number of samples in response."""
         return self._samples.__len__()
 
-    def relabel_samples(self, mapping, copy=True):
+    def relabel_samples(self, mapping):
         """Relabels the variable in the samples.
 
         Args:
             mapping (dict): A dictionary with the old labels as keys
                 and the new labels as values. A partial mapping is
                 allowed.
-            copy (optional): If True, return a copy or if False
-                relabel the samples in place.
 
         Examples:
             >>> response = TemplateResponse()
@@ -429,17 +403,10 @@ class TemplateResponse(object):
             >>> list(new_response.samples())
             [{0: -1, 1: 1}, {0: 1, 1: -1}]
 
-            >>> response.relabel_samples(mapping, copy=False)
-            >>> list(response.samples())
-            [{0: -1, 1: 1}, {0: 1, 1: -1}]
-
         """
 
         try:
-            if copy:
-                return _relabel_copy(self, mapping)
-            else:
-                return _relabel_inplace(self, mapping)
+            return _relabel_copy(self, mapping)
         except MappingError:
             raise ValueError('given mapping does not have unique values.')
 
@@ -469,20 +436,13 @@ def _relabel_copy(response, mapping):
                 new_v = mapping[v]
                 if new_v in rl_sample:
                     raise MappingError
-                rl_sample[mapping[v]] = val
-            if v not in mapping:
+                rl_sample[new_v] = val
+            else:
                 rl_sample[v] = val
         rl_response.add_sample(rl_sample, energy, data)
 
     # return the new object
     return rl_response
-
-
-def _relabel_inplace(response, mapping):
-    """Relabels the variables in place.
-    """
-    response = _relabel_copy(response, mapping)
-    return
 
 
 class BinaryResponse(TemplateResponse):
@@ -534,6 +494,9 @@ class BinaryResponse(TemplateResponse):
                                     Q={(0, 0): -1, (1, 1): 0, (2, 2): 0})
 
         """
+        if not isinstance(sample, dict):
+            raise TypeError("expected 'sample' to be a dict")
+
         # check that the sample is sp]n-valued
         if any(val not in (0, 1) for val in itervalues(sample)):
             raise ValueError('given sample is not binary. Values should be 0 or 1')
@@ -607,6 +570,9 @@ class BinaryResponse(TemplateResponse):
         """
 
         samples = list(samples)
+
+        if not all(isinstance(sample, dict) for sample in samples):
+            raise TypeError("expected each sample in 'samples' to be a dict")
 
         if any(any(val not in (0, 1) for val in itervalues(sample)) for sample in samples):
             raise ValueError('given samples are not binary. Values should be 0 or 1')
@@ -701,7 +667,10 @@ class SpinResponse(TemplateResponse):
             [-1, -1]
 
         """
-        # check that the sample is sp]n-valued
+        if not isinstance(sample, dict):
+            raise TypeError("expected 'sample' to be a dict")
+
+        # check that the sample is spin-valued
         if any(val not in (-1, 1) for val in itervalues(sample)):
             raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
 
@@ -773,6 +742,9 @@ class SpinResponse(TemplateResponse):
         """
 
         samples = list(samples)
+
+        if not all(isinstance(sample, dict) for sample in samples):
+            raise TypeError("expected each sample in 'samples' to be a dict")
 
         if any(any(val not in (-1, 1) for val in itervalues(sample)) for sample in samples):
             raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
