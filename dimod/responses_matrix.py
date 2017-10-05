@@ -18,7 +18,6 @@ else:
 class NumpyResponse(object):
     """TODO"""
     def __init__(self, data=None):
-        import numpy as np
 
         # NumpyResponse stores the samples in a 2d int array, energies in a 1d float array
         # and the sample_data in a list of dicts
@@ -137,3 +136,29 @@ class NumpyResponse(object):
             self._samples = samples[idxs, :]
             self._energies = energies[idxs]
             self._sample_data = [sample_data[i] for i in idxs]
+
+
+class NumpySpinResponse(NumpyResponse):
+    def __init__(self, data=None):
+        NumpyResponse.__init__(self, data)
+
+    def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
+
+        if any(s not in (-1, 1) for s in row for row in samples):
+            raise ValueError("All values in samples should be -1 or 1")
+
+        NumpyResponse.add_samples_from_array(self, samples, energies,
+                                             sample_data, sorted_by_energy)
+
+    def as_binary(self, offset=0.0, data_copy=False):
+        binary_response = NumpyBinaryResponse()
+
+        binary_response._samples = (self._samples + 1) // 2
+        binary_response._energies = self._energies + offset
+
+        if data_copy:
+            binary_response.data = self.data.copy()
+            binary_response._sample_data = [data.copy() for data in self._sample_data]
+        else:
+            binary_response.data = self.data
+            binary_response._sample_data = [data for data in self._sample_data]

@@ -618,7 +618,7 @@ class BinaryResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
-    def as_spin(self, offset=0, data_copy=False):
+    def as_spin(self, offset=0.0, data_copy=False):
         """Converts a BinaryResponse to a SpinResponse.
 
         Args:
@@ -784,7 +784,7 @@ class SpinResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, sample_data)
 
-    def as_binary(self, offset=0, data_copy=False):
+    def as_binary(self, offset=0.0, data_copy=False):
         """Converts a SpinResponse to a BinaryResponse.
 
         Args:
