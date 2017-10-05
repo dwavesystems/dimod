@@ -60,7 +60,7 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
 
-        response = sampler.sample_structured_ising(h, J, orig_h=h)
+        response = sampler.sample_ising(h, J, orig_h=h)
 
         # lowest energy sample should be all -1
         sample = next(iter(response))

@@ -26,6 +26,9 @@ class ExactSolver(TemplateSampler):
 
     """
 
+    def __init__(self):
+        TemplateSampler.__init__(self)
+
     @ising(1, 2)
     @ising_index_labels(1, 2)
     def sample_ising(self, h, J):
