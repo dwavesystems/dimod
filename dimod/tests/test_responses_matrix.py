@@ -79,6 +79,7 @@ class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
             response.add_samples_from_array(np.asarray([[0]]), np.asarray([0.0]), [{}, {}])
 
 
+@unittest.skipUnless(_numpy, "numpy not installed")
 class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
     one = 1
     zero = -1  # spin-valued
@@ -146,6 +147,7 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
             self.assertNotEqual(id(dat), id(dat0))
 
 
+@unittest.skipUnless(_numpy, "numpy not installed")
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
     response_factory = NumpyBinaryResponse
     relabel_allowed = False

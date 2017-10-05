@@ -39,6 +39,8 @@ install:
     
 script:
 - python -m unittest discover
+- pip install numpy
+- python -m unittest discover
 
 deploy:
   provider: pypi
