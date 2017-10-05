@@ -141,7 +141,7 @@ class TemplateResponse(object):
             [{0: 1}, {0: -1}]
 
         """
-        return iter(self._samples)
+        return self.samples()
 
     def samples(self, data=False):
         """Iterator over the samples.

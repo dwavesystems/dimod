@@ -12,13 +12,18 @@ from dimod import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
 class ResponseGenericTests(object):
     one = 1
     zero = 0
+    relabel_allowed = True
 
     def test_empty_object(self):
         response = self.response_factory()
 
-        # should be empty
+        # should all be empty and we should be able to iterate over them
         self.assertEqual(list(response.samples()), [])
         self.assertEqual(list(response.energies()), [])
+        self.assertEqual(list(response.items()), [])
+        self.assertEqual(list(response.samples(data=True)), [])
+        self.assertEqual(list(response.energies(data=True)), [])
+        self.assertEqual(list(response.items(data=True)), [])
         self.assertEqual(len(response), 0)
 
     def test_samples(self):
@@ -75,34 +80,45 @@ class ResponseGenericTests(object):
         self.assertEqual(len(response), 40)
 
     def test_relabel_variables(self):
-
         response = self.response_factory()
 
-        response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
-        response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
+        if not self.relabel_allowed:
+            with self.assertRaises(ValueError):
+                response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
 
-        mapping = {'a': self.one, 'b': 0}
-        rl_response = response.relabel_samples(mapping)
-        response.relabel_samples(mapping)
+            with self.assertRaises(NotImplementedError):
+                response.relabel_samples({})
 
-        mapping = {'a': self.one, 'b': self.one}
-        response = self.response_factory()
+            with self.assertRaises(ValueError):
+                response.add_samples_from([{'a': self.zero, 'b': self.one}], [1],
+                                          sample_data=[{'n': 5}])
 
-        response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
-        response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
-        with self.assertRaises(ValueError):
-            # mapping without unique variables
+        else:
+            response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
+            response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
+
+            mapping = {'a': self.one, 'b': 0}
+            rl_response = response.relabel_samples(mapping)
             response.relabel_samples(mapping)
 
-        # check when we relabel only a subset
-        response = self.response_factory()
-        response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
-        response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
-        rl_response = response.relabel_samples({'a': 'c'})
+            mapping = {'a': self.one, 'b': self.one}
+            response = self.response_factory()
 
-        for sample in rl_response.samples():
-            self.assertIn('c', sample)
-            self.assertIn('b', sample)
+            response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
+            response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
+            with self.assertRaises(ValueError):
+                # mapping without unique variables
+                response.relabel_samples(mapping)
+
+            # check when we relabel only a subset
+            response = self.response_factory()
+            response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
+            response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
+            rl_response = response.relabel_samples({'a': 'c'})
+
+            for sample in rl_response.samples():
+                self.assertIn('c', sample)
+                self.assertIn('b', sample)
 
     def test_setting_data_on_construction(self):
         response = self.response_factory({'name': 'hello'})
@@ -116,7 +132,7 @@ class ResponseGenericTests(object):
         response = self.response_factory()
 
         response.add_sample({0: self.one, 1: self.zero}, 0.0)
-        response.add_sample({0: self.one, 0: self.zero}, -1.)
+        response.add_sample({0: self.one, 1: self.zero}, -1.)
 
         data_ids = set()
         for sample, data in response.samples(data=True):
@@ -145,8 +161,8 @@ class ResponseGenericTests(object):
         response = self.response_factory()
 
         for __ in range(100):
-            response.add_sample({'a': self.zero, 'b': self.one}, 1, data={'n': 5})
-            response.add_sample({'a': self.one, 'b': self.zero}, -1, data={'n': 1})
+            response.add_sample({0: self.zero, 1: self.one}, 1, data={'n': 5})
+            response.add_sample({0: self.one, 1: self.zero}, -1, data={'n': 1})
 
         s = response.__str__()
 

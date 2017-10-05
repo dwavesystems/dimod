@@ -4,7 +4,7 @@ TODO
 import sys
 import itertools
 
-from dimod import BinaryResponse, SpinResponse
+from dimod import BinaryResponse, SpinResponse, TemplateResponse
 
 PY2 = sys.version_info[0] == 2
 if PY2:
@@ -12,12 +12,14 @@ if PY2:
     zip = itertools.izip
     iteritems = lambda d: d.iteritems()
     itervalues = lambda d: d.itervalues()
+    iterkeys = lambda d: d.keys()
 else:
     iteritems = lambda d: d.items()
     itervalues = lambda d: d.values()
+    iterkeys = lambda d: d.keys()
 
 
-class NumpyResponse(object):
+class NumpyResponse(TemplateResponse):
     """TODO"""
     def __init__(self, data=None):
 
@@ -35,60 +37,77 @@ class NumpyResponse(object):
             self.data = data
 
     def samples(self, data=False):
+        if self._samples is None:
+            return iter([])
+
         if data:
             return zip(self.samples(), self._sample_data)
 
         return iter({idx: val for idx, val in enumerate(row)} for row in self._samples)
 
     def energies(self, data=False):
+        if self._samples is None:
+            return iter([])
+
         if data:
             return zip(self.energies(), self._sample_data)
 
         return iter(self._energies)
 
     def items(self, data=False):
+        if self._samples is None:
+            return iter([])
+
         if data:
             return zip(self.samples(), self.energies(), self._sample_data)
 
         return zip(self.samples(), self.energies())
 
     def add_sample(self, sample, energy, data=None):
-        raise NotImplementedError(("To add samples to NumpyResponse, "
-                                   "please use add_samples_from_array"))
+        import numpy as np
+
+        if not isinstance(sample, dict):
+            raise TypeError(("expected 'sample' to be a dict, to add samples from an"
+                             " ndarray use add_samples_from_array"))
+        elif not all(idx in sample for idx in range(len(sample))):
+            raise ValueError("all variables in 'sample' must be integer labeled")
+
+        if data is None:
+            data = {}
+        elif not isinstance(data, dict):
+            raise TypeError("expected input 'data' to be a dict or None.")
+
+        sample = np.asarray([[sample[idx] for idx in range(len(sample))]], dtype=int)
+        energy = np.array([energy], dtype=float)
+        self.add_samples_from_array(sample, energy, [data])
 
     def add_samples_from(self, samples, energies, sample_data=None):
-        raise NotImplementedError(("To add samples to NumpyResponse, "
-                                   "please use add_samples_from_array"))
+        import numpy as np
 
-    def __str__(self):
-        """Return a string representation of the response.
+        samples = list(samples)
+        energies = list(energies)
 
-        Returns:
-            str: A string representation of the graph.
+        if not all(isinstance(sample, dict) for sample in samples):
+            raise TypeError(("expected each sample in 'samples' to be a dict, "
+                             "to add samples from an ndarray use add_samples_from_array"))
+        elif not all(all(idx in sample for idx in range(len(sample))) for sample in samples):
+            raise ValueError("all variables in 'sample' must be integer labeled")
 
-        """
+        if sample_data is None:
+            sample_data = [{} for __ in range(len(samples))]
+        else:
+            sample_data = list(sample_data)
+            if not all(isinstance(data, dict) for data in sample_data):
+                raise TypeError("expected input 'data' to be a dict or None.")
 
-        lines = [self.__repr__(), 'data: {}'.format(self.data)]
-
-        item_n = 0
-        total_n = len(self)
-        for sample, energy, data in self.items(data=True):
-            if item_n > 9 and item_n < total_n - 1:
-                if item_n == 10:
-                    lines.append('...')
-                item_n += 1
-                continue
-
-            lines.append('Item {}:'.format(item_n))
-            lines.append('  sample: {}'.format(sample))
-            lines.append('  energy: {}'.format(energy))
-            lines.append('  data: {}'.format(data))
-
-            item_n += 1
-
-        return '\n'.join(lines)
+        sample = np.asarray([[sample[idx] for idx in range(len(sample))] for sample in samples],
+                            dtype=int)
+        energy = np.asarray(energies, dtype=float)
+        self.add_samples_from_array(sample, energy, sample_data)
 
     def __len__(self):
+        if self._samples is None:
+            return 0
         num_samples, __ = self._samples.shape
         return num_samples
 
@@ -98,14 +117,16 @@ class NumpyResponse(object):
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
         import numpy as np
 
-        # # Input checking
-        # #   expect samples to be 2darray
-        # #   expect energies to be 1darray
-        # #   expect sample_data to be None or an iterable of dicts
-        # if not isinstance(samples, np.ndarray):
-        #     raise NotImplementedError  # TODO
-        # if samples.ndim != 2:
-        #     raise ValueError('expected samples to by a numpy ndarray with 2 dimensions')
+        # check samples
+        if not isinstance(samples, np.ndarray):
+            raise TypeError("expected 'samples' to be a two dimensional ndarray")
+        if samples.ndim != 2:
+            raise ValueError("expected 'samples' to be a two dimensional ndarray")
+
+        if not isinstance(energies, np.ndarray):
+            raise TypeError("expected 'energies' to be a two dimensional ndarray")
+        if energies.ndim != 1:
+            raise ValueError("expected 'energies' to be a two dimensional ndarray")
 
         # assumes dimension 2
         num_samples, num_variables = samples.shape
@@ -146,7 +167,7 @@ class NumpySpinResponse(NumpyResponse):
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
 
-        if any(s not in (-1, 1) for s in row for row in samples):
+        if any(s not in {-1, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
         NumpyResponse.add_samples_from_array(self, samples, energies,
@@ -164,6 +185,8 @@ class NumpySpinResponse(NumpyResponse):
         else:
             binary_response.data = self.data
             binary_response._sample_data = [data for data in self._sample_data]
+
+        return binary_response
 
     def as_dimod_response(self, data_copy=False):
 
@@ -185,7 +208,7 @@ class NumpyBinaryResponse(NumpyResponse):
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
 
-        if any(s not in (0, 1) for s in row for row in samples):
+        if any(s not in {0, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
         NumpyResponse.add_samples_from_array(self, samples, energies,
@@ -203,6 +226,8 @@ class NumpyBinaryResponse(NumpyResponse):
         else:
             spin_response.data = self.data
             spin_response._sample_data = [data for data in self._sample_data]
+
+        return spin_response
 
     def as_dimod_response(self, data_copy=False):
 
