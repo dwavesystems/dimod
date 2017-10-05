@@ -4,6 +4,8 @@ TODO
 import sys
 import itertools
 
+from dimod import BinaryResponse, SpinResponse
+
 PY2 = sys.version_info[0] == 2
 if PY2:
     range = xrange
@@ -162,3 +164,55 @@ class NumpySpinResponse(NumpyResponse):
         else:
             binary_response.data = self.data
             binary_response._sample_data = [data for data in self._sample_data]
+
+    def as_dimod_response(self, data_copy=False):
+
+        if data_copy:
+            response = SpinResponse(self.data.copy())
+            sample_data = [data.copy() for data in self._sample_data]
+        else:
+            response = SpinResponse(self.data)
+            sample_data = list(self._sample_data)
+
+        response.add_samples_from(self.samples(), self.energies(), sample_data)
+
+        return response
+
+
+class NumpyBinaryResponse(NumpyResponse):
+    def __init__(self, data=None):
+        NumpyResponse.__init__(self, data)
+
+    def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
+
+        if any(s not in (0, 1) for s in row for row in samples):
+            raise ValueError("All values in samples should be -1 or 1")
+
+        NumpyResponse.add_samples_from_array(self, samples, energies,
+                                             sample_data, sorted_by_energy)
+
+    def as_spin(self, offset=0.0, data_copy=False):
+        spin_response = NumpySpinResponse()
+
+        spin_response._samples = 2 * self._samples - 1
+        spin_response._energies = self._energies + offset
+
+        if data_copy:
+            spin_response.data = self.data.copy()
+            spin_response._sample_data = [data.copy() for data in self._sample_data]
+        else:
+            spin_response.data = self.data
+            spin_response._sample_data = [data for data in self._sample_data]
+
+    def as_dimod_response(self, data_copy=False):
+
+        if data_copy:
+            response = BinaryResponse(self.data.copy())
+            sample_data = [data.copy() for data in self._sample_data]
+        else:
+            response = BinaryResponse(self.data)
+            sample_data = list(self._sample_data)
+
+        response.add_samples_from(self.samples(), self.energies(), sample_data)
+
+        return response
