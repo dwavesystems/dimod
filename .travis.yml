@@ -50,3 +50,6 @@ deploy:
   distributions: "sdist bdist_wheel"
   on:
     tags: true
+
+after_success:
+- coveralls
