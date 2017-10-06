@@ -42,6 +42,9 @@ script:
 - pip install numpy
 - python -m unittest discover
 
+after_success:
+  - coveralls
+
 deploy:
   provider: pypi
   user: dwtools
@@ -50,6 +53,3 @@ deploy:
   distributions: "sdist bdist_wheel"
   on:
     tags: true
-
-after_success:
-- coveralls

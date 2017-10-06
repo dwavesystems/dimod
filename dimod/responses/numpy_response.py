@@ -30,9 +30,20 @@ if _PY2:
 
 
 class NumpyResponse(TemplateResponse):
-    """TODO"""
-    def __init__(self, data=None):
+    """Serves as a superclass for numpy response objects.
 
+    Differs from the TemplateResponse by storing samples and energies
+    internally in a numpy ndarray.
+
+    All of the access and construction methods work the same as for
+    TemplateResponse derived responses.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+            as a dictionary. Default {}.
+
+    """
+    def __init__(self, data=None):
         # NumpyResponse stores the samples in a 2d int array, energies in a 1d float array
         # and the sample_data in a list of dicts
         self._samples = None
@@ -47,37 +58,98 @@ class NumpyResponse(TemplateResponse):
             self.data = data
 
     def samples(self, data=False):
-        """TODO"""
-        if self._samples is None:
-            return iter([])
+        """Iterator over the samples.
 
+        Args:
+            data (bool, optional): If True, return an iterator
+                over the the samples in a 2-tuple `(sample, data)`.
+                If False return an iterator over the samples.
+                Default False.
+
+        Returns:
+            iterator: If data is False, return an iterator over
+            all samples in response, in order of increasing energy.
+            If data is True, return a 2-tuple (sample, data) in order
+            of increasing sample energy.
+
+        """
         if data:
             return zip(self.samples(), self._sample_data)
+
+        if self._samples is None:
+            return iter([])
 
         return iter({idx: val for idx, val in enumerate(row)} for row in self._samples)
 
     def energies(self, data=False):
-        """TODO"""
-        if self._samples is None:
-            return iter([])
+        """Iterator over the energies.
 
+        Args:
+            data (bool, optional): If True, return an iterator
+                over the the energies in a 2-tuple (energy, data).
+                If False return an iterator over the energies.
+                Default False.
+
+        Returns:
+            iterator: If data is False, return an iterator over
+            all energies in response, in increasing order.
+            If data is True, return a 2-tuple (energy, data) in
+            order of increasing energy.
+
+        """
         if data:
             return zip(self.energies(), self._sample_data)
+
+        if self._samples is None:
+            return iter([])
 
         return iter(self._energies)
 
     def items(self, data=False):
-        """TODO"""
-        if self._samples is None:
-            return iter([])
+        """Iterator over the samples and energies.
 
+        Args:
+            data (bool, optional): If True, return an iterator
+                of 3-tuples (sample, energy, data). If False return
+                an iterator of 2-tuples (sample, energy) over all of
+                the samples and energies. Default False.
+
+        Returns:
+            iterator: If data is False, return an iterator of 2-tuples
+            (sample, energy) over all samples and energies in response
+            in order of increasing energy. If data is True, return an
+            iterator of 3-tuples (sample, energy, data) in order of
+            increasing energy.
+
+        """
         if data:
             return zip(self.samples(), self.energies(), self._sample_data)
+
+        if self._samples is None:
+            return iter([])
 
         return zip(self.samples(), self.energies())
 
     def add_sample(self, sample, energy, data=None):
-        """TODO"""
+        """Loads a sample and associated energy into the response.
+
+        Args:
+            sample (dict): A sample as would be returned by a discrete
+                model solver. Should be a dict of the form
+                {var: value, ...}.
+                energy (float/int): The energy associated with the given
+                sample.
+            data (dict, optional): A dict containing any additional
+                data about the sample. Default empty.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Note:
+            For NumpyResponse objects, it is more efficient to use
+            `add_samples_from_array` method.
+
+        """
         import numpy as np
 
         if not isinstance(sample, dict):
@@ -96,7 +168,27 @@ class NumpyResponse(TemplateResponse):
         self.add_samples_from_array(sample, energy, [data])
 
     def add_samples_from(self, samples, energies, sample_data=None):
-        """TODO"""
+        """Loads samples and associated energies from iterators.
+
+        Args:
+            samples (iterator): An iterable object that yields
+                samples. Each sample should be a dict of the form
+                {var: value, ...}.
+            energies (iterator): An iterable object that yields
+                energies associated with each sample.
+            sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. If
+                None, then each data will be an empty dict. Default
+                None.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        Note:
+            For NumpyResponse objects, it is more efficient to use
+            `add_samples_from_array` method.
+
+        """
         import numpy as np
 
         samples = list(samples)
@@ -121,7 +213,7 @@ class NumpyResponse(TemplateResponse):
         self.add_samples_from_array(sample, energy, sample_data)
 
     def __len__(self):
-        """TODO"""
+        """The number of samples in response."""
         if self._samples is None:
             return 0
         num_samples, __ = self._samples.shape
@@ -176,6 +268,14 @@ class NumpyResponse(TemplateResponse):
             self._samples = samples[idxs, :]
             self._energies = energies[idxs]
             self._sample_data = [sample_data[i] for i in idxs]
+
+    def samples_array(self):
+        """TODO"""
+        return self._samples
+
+    def energies_array(self):
+        """TODO"""
+        return self._energies
 
 
 class NumpySpinResponse(NumpyResponse):
