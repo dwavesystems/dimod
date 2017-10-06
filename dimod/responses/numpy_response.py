@@ -1,13 +1,15 @@
 """
 TODO
 """
-import sys
 import itertools
 
-from dimod import BinaryResponse, SpinResponse, TemplateResponse
+from dimod import _PY2
+from dimod.responses.response import BinaryResponse, SpinResponse, TemplateResponse
 
-PY2 = sys.version_info[0] == 2
-if PY2:
+__all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
+
+
+if _PY2:
     range = xrange
     zip = itertools.izip
     iteritems = lambda d: d.iteritems()

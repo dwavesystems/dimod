@@ -6,6 +6,7 @@ install_requires = ['decorator>=4.1.0']
 extras_require = {'all': ['numpy']}
 
 packages = ['dimod',
+            'dimod.responses',
             'dimod.composites',
             'dimod.samplers']
 
