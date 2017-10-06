@@ -39,6 +39,7 @@ class NumpyResponse(TemplateResponse):
             self.data = data
 
     def samples(self, data=False):
+        """TODO"""
         if self._samples is None:
             return iter([])
 
@@ -48,6 +49,7 @@ class NumpyResponse(TemplateResponse):
         return iter({idx: val for idx, val in enumerate(row)} for row in self._samples)
 
     def energies(self, data=False):
+        """TODO"""
         if self._samples is None:
             return iter([])
 
@@ -57,6 +59,7 @@ class NumpyResponse(TemplateResponse):
         return iter(self._energies)
 
     def items(self, data=False):
+        """TODO"""
         if self._samples is None:
             return iter([])
 
@@ -66,6 +69,7 @@ class NumpyResponse(TemplateResponse):
         return zip(self.samples(), self.energies())
 
     def add_sample(self, sample, energy, data=None):
+        """TODO"""
         import numpy as np
 
         if not isinstance(sample, dict):
@@ -84,6 +88,7 @@ class NumpyResponse(TemplateResponse):
         self.add_samples_from_array(sample, energy, [data])
 
     def add_samples_from(self, samples, energies, sample_data=None):
+        """TODO"""
         import numpy as np
 
         samples = list(samples)
@@ -108,6 +113,7 @@ class NumpyResponse(TemplateResponse):
         self.add_samples_from_array(sample, energy, sample_data)
 
     def __len__(self):
+        """TODO"""
         if self._samples is None:
             return 0
         num_samples, __ = self._samples.shape
@@ -117,6 +123,7 @@ class NumpyResponse(TemplateResponse):
         raise NotImplementedError("NumpyResponse does not support arbitrarily labeled variables")
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
+        """TODO"""
         import numpy as np
 
         # check samples
@@ -164,11 +171,12 @@ class NumpyResponse(TemplateResponse):
 
 
 class NumpySpinResponse(NumpyResponse):
+    """TODO"""
     def __init__(self, data=None):
         NumpyResponse.__init__(self, data)
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
-
+        """TODO"""
         if any(s not in {-1, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
@@ -176,6 +184,7 @@ class NumpySpinResponse(NumpyResponse):
                                              sample_data, sorted_by_energy)
 
     def as_binary(self, offset=0.0, data_copy=False):
+        """TODO"""
         binary_response = NumpyBinaryResponse()
 
         binary_response._samples = (self._samples + 1) // 2
@@ -191,7 +200,7 @@ class NumpySpinResponse(NumpyResponse):
         return binary_response
 
     def as_dimod_response(self, data_copy=False):
-
+        """TODO"""
         if data_copy:
             response = SpinResponse(self.data.copy())
             sample_data = [data.copy() for data in self._sample_data]
@@ -205,11 +214,12 @@ class NumpySpinResponse(NumpyResponse):
 
 
 class NumpyBinaryResponse(NumpyResponse):
+    """TODO"""
     def __init__(self, data=None):
         NumpyResponse.__init__(self, data)
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
-
+        """TODO"""
         if any(s not in {0, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
@@ -217,6 +227,7 @@ class NumpyBinaryResponse(NumpyResponse):
                                              sample_data, sorted_by_energy)
 
     def as_spin(self, offset=0.0, data_copy=False):
+        """TODO"""
         spin_response = NumpySpinResponse()
 
         spin_response._samples = 2 * self._samples - 1
@@ -232,7 +243,7 @@ class NumpyBinaryResponse(NumpyResponse):
         return spin_response
 
     def as_dimod_response(self, data_copy=False):
-
+        """TODO"""
         if data_copy:
             response = BinaryResponse(self.data.copy())
             sample_data = [data.copy() for data in self._sample_data]
