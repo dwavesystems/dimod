@@ -1,6 +1,3 @@
-NumpyResponse
-=============
-
 .. currentmodule:: dimod
 
 .. automodule:: dimod.responses.numpy_response

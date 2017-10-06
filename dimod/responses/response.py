@@ -1,3 +1,15 @@
+"""
+.. _responses:
+
+Responses
+=========
+
+TODO
+
+Response Classes
+----------------
+"""
+
 import itertools
 
 from dimod import _PY2

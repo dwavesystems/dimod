@@ -1,83 +1,102 @@
 """
-Examples:
-    Define an example QUBO. This QUBO is minimized when variable
-    'v0'=1, 'v1'=0, 'v2'=1, 'v3'=0.
+Response API
+============
 
-    >>> Q = {('v0', 'v0'): -2, ('v0', 'v1'): 2, ('v1', 'v1'): -2,
-    ...      ('v1', 'v2'): 2, ('v2', 'v2'): -2, ('v2', 'v3'): 2,
-    ...      ('v3', 'v3'): -1}
+For dimod samplers to be uniform, it is important that they all respond
+in the same way.
 
-    Let's say that we draw three binary samples from some process and
-    calculate their corresponding energies.
+Using a response
+----------------
 
-    >>> sample0 = {'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1}
-    >>> sample1 = {'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}  # the minimum
-    >>> sample2 = {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}
-    >>> energy0 = -3.
-    >>> energy1 = -4.
-    >>> energy2 = -1.
+Let us say that an application uses a the :class:`.ExactSolver` sampler to
+minimize the following Ising problem:
 
-    We can now add them to the response either one at a time or in
-    groups. In general adding in batches with `add_samples_from` is
-    faster.
+>>> h = {'a': 1., 'b': -.5}
+>>> J = {('a', 'b'): -1.}
 
-    >>> response = dimod.BinaryResponse()
-    >>> response.add_sample(sample0, energy0)
-    >>> response.add_samples_from([sample1, sample2], [energy1, energy2])
+The application would include a line of code like:
 
-    At this point, the response would normally be returned from the
-    Sampler.
+>>> response = dimod.ExactSolver().sample_ising(h, J)
 
-    Once the sampler has returned a response object, there are many
-    ways to get at the data stored in it.
+There are now several ways to iterate over the samples provided by
+the sampler.
 
-    >>> list(response.samples())
-    '[{'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0},
-      {'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1},
-      {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}]'
-    >>> list(response.energies())
-    '[-4.0, -3.0, -1.0]'
-    >>> list(response.items())
-    '[({'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}, -4.0),
-      ({'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1}, -3.0),
-      ({'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}, -1.0)]'
+The simplest is to simply iterate:
 
-    One important thing to note is that the samples are stored and
-    returned in order of increasing energy.
+>>> for sample in response:
+...     pass
 
-    We can also iterate over the samples
+The samples can also be accessed using the `samples` method:
 
-    >>> for sample in response:
-    ...     pass
+>>> list(response.samples())
+[{'a': -1, 'b': -1}, {'a': 1, 'b': 1}, {'a': -1, 'b': 1}, {'a': 1, 'b': -1}]
 
-    Or if we only want the lowest energy sample
+Note that the samples are returned in order of increasing energy. The energies
+can also be queried
 
-    >>> sample = next(iter(response))
-    >>> print(sample)
-    '{'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}'
+>>> list(response.energies())
+[-1.5, -0.5, -0.5, 2.5]
 
-    The response also has a length as expected.
+Or both can be iterated over together
 
-    >>> len(response)
-    '3'
+>>> list(response.items())
+[({'a': -1, 'b': -1}, -1.5), ({'a': 1, 'b': 1}, -0.5), ({'a': -1, 'b': 1}, -0.5), ...]
 
-    Now imagine that we want the spin-valued version of the response,
-    we can get it with the `as_spin` method. See `ising_to_qubo` and
-    `qubo_to_ising` for an explanation of offset.
+Finally, if there is a data associated with any of the samples, it can accessed through
+the same methods. The data is returned as a dict.
 
-    >>> offset = 2
-    >>> spin_response = response.as_spin(offset)
-    >>> list(spin_response.samples())
-    '[{'v0': 1, 'v1': -1, 'v2': 1, 'v3': -1},
-      {'v0': -1, 'v1': 1, 'v2': -1, 'v3': 1},
-      {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}]'
+>>> for sample, data in response.samples(data=True):
+...     pass
+>>> for energy, data in response.energies(data=True):
+...     pass
+>>> for sample, energy, data in response.items(data=True):
+...     pass
 
-    Finally imagine that we want integer labels.
+To access the lowest energy sample
 
-    >>> mapping = {'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3}
-    >>> integer_response = response.relabel_samples(mapping)
-    >>> list(integer_response.samples())
-    [{0: 1, 1: 0, 2: 1, 3: 0}, {0: 0, 1: 1, 2: 0, 3: 1}, {0: 1, 1: 1, 2: 1, 3: 1}]
+>>> next(iter(response))
+{'a': -1, 'b': -1}
+
+Finally the response's length is the number of samples
+
+>>> len(response)
+4
+
+
+Instantiating a response
+------------------------
+
+Define an example QUBO. This QUBO is minimized when variable
+'v0'=1, 'v1'=0, 'v2'=1, 'v3'=0.
+
+>>> Q = {('v0', 'v0'): -2, ('v0', 'v1'): 2, ('v1', 'v1'): -2,
+...      ('v1', 'v2'): 2, ('v2', 'v2'): -2, ('v2', 'v3'): 2,
+...      ('v3', 'v3'): -1}
+
+Let's say that we draw three binary samples from some process and
+calculate their corresponding energies.
+
+>>> sample0 = {'v0': 0, 'v1': 1, 'v2': 0, 'v3': 1}
+>>> sample1 = {'v0': 1, 'v1': 0, 'v2': 1, 'v3': 0}  # the minimum
+>>> sample2 = {'v0': 1, 'v1': 1, 'v2': 1, 'v3': 1}
+>>> energy0 = -3.
+>>> energy1 = -4.
+>>> energy2 = -1.
+
+We can now add them to the response either one at a time or in
+groups. In general adding in batches with `add_samples_from` is
+faster.
+
+>>> response = dimod.BinaryResponse()
+>>> response.add_sample(sample0, energy0)
+>>> response.add_samples_from([sample1, sample2], [energy1, energy2])
+
+
+Template Response Class
+-----------------------
+
+The :obj:`.TemplateResponse` can be subclassed to make dimod compliant
+response objects.
 
 """
 from __future__ import division

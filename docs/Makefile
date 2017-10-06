@@ -18,7 +18,6 @@ help:
 clean:
 	-rm -rf build/*
 	-rm -rf generated/*
-	-rm -rf responses/generated/*
 
 gh-pages:
 	cd .. && \

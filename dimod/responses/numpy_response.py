@@ -1,5 +1,20 @@
 """
-TODO
+.. _numpy_responses:
+
+Numpy Responses
+===============
+
+While dimod does not require `numpy <http://www.numpy.org/>`_, in practice many
+implemented samplers use
+numpy to speed up their calculation. These samplers can use :class:`.NumpyResponse`,
+:class:`.NumpySpinResponse`, or :class:`.NumpyBinaryResponse` response types.
+
+The numpy response types have all of the same methods and behaviours as
+:class:`.SpinResponse` and :class:`.BinaryResponse`, but also include
+methods that can access numpy arrays directly.
+
+Numpy Response Classes
+----------------------
 """
 import itertools
 
@@ -12,13 +27,6 @@ __all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
 if _PY2:
     range = xrange
     zip = itertools.izip
-    iteritems = lambda d: d.iteritems()
-    itervalues = lambda d: d.itervalues()
-    iterkeys = lambda d: d.keys()
-else:
-    iteritems = lambda d: d.items()
-    itervalues = lambda d: d.values()
-    iterkeys = lambda d: d.keys()
 
 
 class NumpyResponse(TemplateResponse):

@@ -29,7 +29,6 @@ Documentation
 
    template_sampler
    template_composite
-   template_response
    responses/index
    samplers/index
    composites/index
