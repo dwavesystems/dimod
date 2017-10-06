@@ -41,6 +41,8 @@ Composite layers can also be nested.
 """
 from dimod import TemplateSampler
 
+__all__ = ['TemplateComposite']
+
 
 class TemplateComposite(TemplateSampler):
     """Serves as a template for composites. Not intended to be used directly.
