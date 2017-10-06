@@ -4,8 +4,6 @@
 Included Responses
 ==================
 
-TODO
-
 Responses
 ---------
 
