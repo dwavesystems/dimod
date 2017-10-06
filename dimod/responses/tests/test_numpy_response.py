@@ -7,7 +7,7 @@ except ImportError:
     _numpy = False
 
 from dimod import NumpyResponse, NumpySpinResponse, NumpyBinaryResponse
-from dimod.tests.test_responses import ResponseGenericTests
+from dimod.responses.tests.test_response import ResponseGenericTests
 from dimod import ising_to_qubo, qubo_to_ising, qubo_energy, ising_energy
 
 

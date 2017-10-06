@@ -5,7 +5,7 @@ A random sampler that can be used to unit testing and debugging.
 import sys
 import random
 
-from dimod.sampler_template import TemplateSampler
+from dimod.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo, ising_index_labels
 from dimod.responses import BinaryResponse
 

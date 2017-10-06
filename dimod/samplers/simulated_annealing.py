@@ -7,9 +7,10 @@ import math
 import itertools
 
 from dimod import _PY2
-from dimod import TemplateSampler
+from dimod.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo
-from dimod import ising_energy, qubo_to_ising, SpinResponse
+from dimod.utilities import ising_energy, qubo_to_ising
+from dimod.responses.response import SpinResponse
 
 __all__ = ['SimulatedAnnealingSampler']
 
