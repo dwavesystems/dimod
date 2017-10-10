@@ -36,14 +36,15 @@ matrix:
 install:
     - pip install -r requirements.txt
     - pip install .
+    - pip install codecov
     
 script:
 - python -m unittest discover
 - pip install numpy
-- python -m unittest discover
+- coverage python -m unittest discover
 
 after_success:
-  - coveralls
+  - codecov
 
 deploy:
   provider: pypi
