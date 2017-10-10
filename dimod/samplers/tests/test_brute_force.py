@@ -35,3 +35,9 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
         # let's also double check the enegy
         for sample, energy in response.items():
             self.assertTrue(abs(energy - qubo_energy(Q, sample)) < .000001)
+
+    def test_J_not_triangular(self):
+        response = self.sampler.sample_ising({}, {(0, 1): -1, (1, 0): 1})
+
+        for energy in response.energies():
+            self.assertEqual(energy, 0.0)

@@ -73,6 +73,38 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
 
+    def test_input_checking(self):
+        sampler = self.sampler
+
+        with self.assertRaises(TypeError):
+            sampler.sample_ising({}, {}, num_spin_reversal_transforms=.5)
+
+    def test_double_stack(self):
+
+        # nested spin reversal transforms
+        sampler = dimod.SpinReversalTransform(self.sampler)
+
+        h = {v: .1 for v in range(10)}
+        J = {(u, v): -1. for (u, v) in itertools.combinations(h, 2)}
+
+        response = sampler.sample_ising(h, J, orig_h=h)
+
+        for __, data in response.samples(data=True):
+            self.assertEqual(len(data), 2)  # should be two spin-reversal-transform reports
+
+    def test_multiple_spin_transforms(self):
+        sampler = dimod.SpinReversalTransform(self.sampler)
+
+        h = {v: .1 for v in range(10)}
+        J = {(u, v): -1. for (u, v) in itertools.combinations(h, 2)}
+
+        response = sampler.sample_ising(h, J)
+
+        response2 = sampler.sample_ising(h, J, num_spin_reversal_transforms=2)
+
+        # should be twice as many samples
+        self.assertEqual(len(response2), 2 * len(response))
+
 
 class TestSpinTransform(unittest.TestCase):
     def test_function_typical(self):
@@ -117,3 +149,13 @@ class TestSpinTransform(unittest.TestCase):
                 self.assertEqual(bias, -(v + u))
             else:
                 self.assertEqual(bias, v + u)
+
+    def test_specifying_variables_mismatch(self):
+        # this should do nothing
+        h = {0: 0, 1: 1, 2: 3, 4: 16}
+        transform = {'a', 'b', 'c'}
+
+        h_spin, J_spin, transform = apply_spin_reversal_transform(h, {}, transform)
+
+        self.assertEqual(h, h_spin)
+        self.assertEqual({}, J_spin)

@@ -3,7 +3,7 @@
 
 import sys
 
-from dimod.sampler_template import TemplateSampler
+from dimod.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
 from dimod.responses import SpinResponse
 from dimod.utilities import ising_energy

@@ -1,0 +1,23 @@
+# To combine 2 and 3:
+# >>> coverage erase
+# >>> coverage2 run -a -m unittest discover
+# >>> coverage3 run -a -m unittest discover
+# >>> coverage html
+
+[run]
+# omit virtualenv and test files
+omit = venv/*, */tests/*
+
+[report]
+exclude_lines:
+    pragma: no cover
+
+    # ignore python2/3 stuff
+    iteritems = lambda d: d.items()
+    iteritems = lambda d: d.iteritems() 
+    iterkeys = lambda d: d.keys()
+    iterkeys = lambda d: d.iterkeys()
+    range = xrange
+    zip = itertools.izip
+    itervalues = lambda d: d.itervalues()
+    itervalues = lambda d: d.values()

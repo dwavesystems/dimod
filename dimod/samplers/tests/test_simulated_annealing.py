@@ -49,6 +49,38 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
 
         response = SimulatedAnnealingSampler().sample_ising(h, J, num_samples=100)
 
+    def test_setting_beta_range(self):
+        sampler = self.sampler
+
+        sampler.sample_ising({}, {}, beta_range=(0.1, 1))
+
+    def test_inputchecking(self):
+        sampler = self.sampler
+
+        with self.assertRaises(TypeError):
+            sampler.sample_ising({}, {}, num_samples=[])
+
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({}, {}, num_samples=-7)
+
+        with self.assertRaises(TypeError):
+            sampler.sample_ising({}, {}, num_sweeps=[])
+
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({}, {}, num_sweeps=-7)
+
+        with self.assertRaises(TypeError):
+            sampler.sample_ising({}, {}, beta_range=-7)
+
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({}, {}, beta_range=[-7, 6])
+
+        with self.assertRaises(TypeError):
+            sampler.sample_ising({}, {}, beta_range=[(0,), 6])
+
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({}, {}, beta_range=[7, 1, 6])
+
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
     def test_ising_simulated_annealing_basic(self):

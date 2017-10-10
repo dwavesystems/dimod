@@ -2,15 +2,13 @@
 Decorators that provide input checking and format for Ising and QUBO
 functions and methods.
 """
-
-import sys
-
 from decorator import decorator
+
+from dimod import _PY2
 
 __all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
 
-PY2 = sys.version_info[0] == 2
-if PY2:
+if _PY2:
     range = xrange
     iteritems = lambda d: d.iteritems()
 else:

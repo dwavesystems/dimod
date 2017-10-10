@@ -13,11 +13,14 @@ class TestIndexRelabelling(unittest.TestCase):
 
         # create a dummy function that checks that the nodes
         @qubo_index_labels(0)
-        def qubo_func(Q):
+        def qubo_func(Q, Q_orig=None):
             labels = set().union(*Q)
 
             for idx in range(len(labels)):
                 self.assertIn(idx, labels)
+
+            if Q_orig is not None:
+                self.assertEqual(Q_orig, Q)
 
             # assume that relabel is applied correctly
             return dummyResponse()
@@ -29,6 +32,10 @@ class TestIndexRelabelling(unittest.TestCase):
         # variables with multiple types of label which are unorderable
         Q = {('a', 3): 0, ('b', 'c'): 1}
         qubo_func(Q)
+
+        # if the variables are already index-labelled, shouldn't change
+        Q = {(0, 0): .1, (0, 1): .5, (2, 2): .2}
+        qubo_func(Q, Q_orig=Q)
 
     def test_ising_unorderable(self):
 

@@ -36,9 +36,15 @@ matrix:
 install:
     - pip install -r requirements.txt
     - pip install .
+    - pip install coveralls
     
 script:
 - python -m unittest discover
+- pip install numpy
+- coverage run --source=dimod -m unittest discover
+
+after_success:
+  - coveralls
 
 deploy:
   provider: pypi
