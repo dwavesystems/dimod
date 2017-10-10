@@ -1,7 +1,11 @@
 *.pyc
+*.odp
 
 build
 dimod.egg-info
 dist
 
 docs/generated
+
+*.sublime-project
+*.sublime-workspace

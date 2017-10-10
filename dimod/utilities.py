@@ -4,15 +4,15 @@ A collection of utility functions useful for Samplers.
 
 import sys
 
-from collections import defaultdict
-
 __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 
 PY2 = sys.version_info[0] == 2
 if PY2:
     iteritems = lambda d: d.iteritems()
+    itervalues = lambda d: d.itervalues()
 else:
     iteritems = lambda d: d.items()
+    itervalues = lambda d: d.values()
 
 
 def ising_energy(h, J, sample):
@@ -36,7 +36,7 @@ def ising_energy(h, J, sample):
         No input checking is performed.
 
     """
-    energy = 0
+    energy = 0.
 
     # add the contribution from the linear biases
     for v in h:
@@ -70,7 +70,7 @@ def qubo_energy(Q, sample):
         No input checking is performed.
 
     """
-    energy = 0
+    energy = 0.
 
     for v0, v1 in Q:
         energy += sample[v0] * sample[v1] * Q[(v0, v1)]
@@ -97,24 +97,20 @@ def ising_to_qubo(h, J):
         (dict, float): A dict of the QUBO coefficients. The energy offset.
 
     """
-
-    q = defaultdict(float)
-    offset = 0
-
     # the linear biases are the easiest
-    for v, bias in iteritems(h):
-        q[(v, v)] = 2 * bias
-        offset -= bias
+    q = {(v, v): 2. * bias for v, bias in iteritems(h)}
 
     # next the quadratic biases
     for (u, v), bias in iteritems(J):
-        q[(u, v)] += 4 * bias
-        q[(u, u)] -= 2 * bias
-        q[(v, v)] -= 2 * bias
-        offset += bias
+        if bias == 0.0:
+            continue
+        q[(u, v)] = 4. * bias
+        q[(u, u)] -= 2. * bias
+        q[(v, v)] -= 2. * bias
 
-    # finally convert q to a dict, rather than default dict
-    q = dict((k, v) for k, v in iteritems(q) if v != 0)
+    # finally calculate the offset
+    offset = sum(itervalues(J)) - sum(itervalues(h))
+
     return q, offset
 
 
@@ -139,24 +135,35 @@ def qubo_to_ising(Q):
         The energy offset.
 
     """
-    h = defaultdict(float)
-    j = {}
-    offset = 0
+    h = {}
+    J = {}
+    linear_offset = 0.0
+    quadratic_offset = 0.0
 
-    for (i, k), e in iteritems(Q):
-        if i == k:
-            # linear biases
-            h[i] += 0.5 * e
-            offset += 0.5 * e
+    for (u, v), bias in iteritems(Q):
+        if u == v:
+            if u in h:
+                h[u] += .5 * bias
+            else:
+                h[u] = .5 * bias
+            linear_offset += bias
+
         else:
-            # quadratic biases
-            j[(i, k)] = 0.25 * e
-            h[i] += 0.25 * e
-            h[k] += 0.25 * e
-            offset += 0.25 * e
+            if bias != 0.0:
+                J[(u, v)] = .25 * bias
 
-    # remove the 0 entries of J
-    h = dict(h)
-    j = dict((k, v) for k, v in iteritems(j) if v != 0)
+            if u in h:
+                h[u] += .25 * bias
+            else:
+                h[u] = .25 * bias
 
-    return h, j, offset
+            if v in h:
+                h[v] += .25 * bias
+            else:
+                h[v] = .25 * bias
+
+            quadratic_offset += bias
+
+    offset = .5 * linear_offset + .25 * quadratic_offset
+
+    return h, J, offset
