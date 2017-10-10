@@ -11,7 +11,7 @@ Example:
 """
 
 
-class TestSamplerAPI:
+class SamplerAPITest:
     """Provides a series of generic API tests that all samplers should pass.
     """
 

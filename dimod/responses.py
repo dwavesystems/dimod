@@ -229,7 +229,7 @@ class TemplateResponse(object):
             return zip(self._samples, self._energies, self._sample_data)
         return zip(self._samples, self._energies)
 
-    def add_sample(self, sample, energy, data={}):
+    def add_sample(self, sample, energy, data=None):
         """Loads a sample and associated energy into the response.
 
         Args:
@@ -255,6 +255,10 @@ class TemplateResponse(object):
             >>> response.add_sample({0: 1}, -1, data={'n': 1})
 
         """
+
+        # create a new empty dict
+        if data is None:
+            data = {}
 
         if not isinstance(sample, dict):
             raise TypeError("expected 'sample' to be a dict")
@@ -484,7 +488,7 @@ class BinaryResponse(TemplateResponse):
             as a dictionary. Default {}.
 
     """
-    def add_sample(self, sample, energy=None, data={}, Q=None):
+    def add_sample(self, sample, energy=None, data=None, Q=None):
         """Loads a sample and associated energy into the response.
 
         Args:
@@ -535,6 +539,9 @@ class BinaryResponse(TemplateResponse):
             if Q is None:
                 raise TypeError("most provide 'energy' or 'Q'")
             energy = qubo_energy(Q, sample)
+
+        if data is None:
+            data = {}
 
         TemplateResponse.add_sample(self, sample, energy, data)
 
@@ -654,7 +661,7 @@ class SpinResponse(TemplateResponse):
 
     """
 
-    def add_sample(self, sample, energy=None, data={}, h=None, J=None):
+    def add_sample(self, sample, energy=None, data=None, h=None, J=None):
         """Loads a sample and associated energy into the response.
 
         Args:
@@ -699,6 +706,9 @@ class SpinResponse(TemplateResponse):
             if h is None or J is None:
                 raise TypeError("most provide 'energy' or 'h' and 'J'")
             energy = ising_energy(h, J, sample)
+
+        if data is None:
+            data = {}
 
         TemplateResponse.add_sample(self, sample, energy, data)
 

@@ -24,6 +24,9 @@ else:
 
 class SimulatedAnnealingSampler(TemplateSampler):
 
+    def __init__(self):
+        TemplateSampler.__init__(self)
+
     @ising(1, 2)
     def sample_ising(self, h, J, beta_range=None, num_samples=10, sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
@@ -53,7 +56,7 @@ class SimulatedAnnealingSampler(TemplateSampler):
             >>> sampler = SimulatedAnnealingSampler()
             >>> h = {0: -1, 1: -1}
             >>> J = {(0, 1): -1}
-            >>> response = sampler.sample_ising(h, J, samples=1)
+            >>> response = sampler.sample_ising(h, J, num_samples=1)
             >>> list(response.samples())
             [{0: 1, 1: 1}]
 

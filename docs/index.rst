@@ -28,8 +28,10 @@ Documentation
    :maxdepth: 1
 
    sampler_template
-   samplers/index
+   composite_template
    responses
+   samplers/index
+   composites/index
    decorators
    utilities
    license
