@@ -36,7 +36,7 @@ matrix:
 install:
     - pip install -r requirements.txt
     - pip install .
-    - pip install codecov
+    - pip install coveralls
     
 script:
 - python -m unittest discover
@@ -44,7 +44,7 @@ script:
 - coverage python -m unittest discover
 
 after_success:
-  - codecov
+  - coveralls
 
 deploy:
   provider: pypi
