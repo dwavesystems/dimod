@@ -9,7 +9,7 @@ implemented samplers use
 numpy to speed up their calculation. These samplers can use :class:`.NumpyResponse`,
 :class:`.NumpySpinResponse`, or :class:`.NumpyBinaryResponse` response types.
 
-The numpy response types have all of the same methods and behaviours as
+The numpy response types have all of the same methods and behaviors as
 :class:`.SpinResponse` and :class:`.BinaryResponse`, but also include
 methods that can access numpy arrays directly.
 
@@ -223,7 +223,26 @@ class NumpyResponse(TemplateResponse):
         raise NotImplementedError("NumpyResponse does not support arbitrarily labeled variables")
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
-        """TODO"""
+        """Loads samples and associated energies from numpy arrays.
+
+        Args:
+            samples (:obj:`numpy.ndarray`): An two dimensional numpy array
+                in which each row is a sample.
+            energies (:obj:`numpy.ndarray`): A one dimensional numpy array
+                in which each value is an energy. Must be the same length
+                as `samples`.
+            sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. If
+                None, then each data will be an empty dict. Default
+                None.
+            sorted_by_energy (bool): If True, then the user asserts that
+                `samples` and `energies` are sorted by energy from low to
+                high. This is not checked.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        """
         import numpy as np
 
         # check samples
@@ -270,21 +289,64 @@ class NumpyResponse(TemplateResponse):
             self._sample_data = [sample_data[i] for i in idxs]
 
     def samples_array(self):
-        """TODO"""
+        """Returns the :obj:`numpy.ndarray` containing the samples."""
         return self._samples
 
     def energies_array(self):
-        """TODO"""
+        """Returns the :obj:`numpy.ndarray` containing the energies."""
         return self._energies
 
 
 class NumpySpinResponse(NumpyResponse):
-    """TODO"""
+    """Subclass of :class:`.NumpyResponse` which encodes spin-valued samples.
+
+    Differs from the :class:`.SpinResponse` by storing samples and energies
+    internally in a :obj:`numpy.ndarray`.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+            as a dictionary. Default {}.
+
+    Examples:
+        >>> import numpy as np
+        >>> response = NumpySpinResponse()
+        >>> samples = np.asarray([[-1, -1, 1], [1, 1, -1]], dtype=int)
+        >>> energies = np.asarray([2., -2.], dtype=float)
+        >>> response.add_samples_from_array(samples, energies)
+        >>> response.samples_array()
+        array([[1, 1, -1], [-1, -1, 1]])
+        >>> for sample in response:
+        ...     # still works like a normal response object
+        ...     pass
+
+    """
     def __init__(self, data=None):
         NumpyResponse.__init__(self, data)
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
-        """TODO"""
+        """Loads samples and associated energies from spin-valued numpy arrays.
+
+        Args:
+            samples (:obj:`numpy.ndarray`): An two dimensional numpy array
+                in which each row is a sample. Values should be -1 or 1.
+            energies (:obj:`numpy.ndarray`): A one dimensional numpy array
+                in which each value is an energy. Must be the same length
+                as `samples`.
+            sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. If
+                None, then each data will be an empty dict. Default
+                None.
+            sorted_by_energy (bool): If True, then the user asserts that
+                `samples` and `energies` are sorted by energy from low to
+                high. This is not checked.
+
+        Raises:
+            ValueError: If any values in the samples are not -1 or 1.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        """
         if any(s not in {-1, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
@@ -292,7 +354,26 @@ class NumpySpinResponse(NumpyResponse):
                                              sample_data, sorted_by_energy)
 
     def as_binary(self, offset=0.0, data_copy=False):
-        """TODO"""
+        """Returns the :class:`.NumpyBinaryResponse` version of itself.
+
+        Args:
+            offset (float/int, optional): The energy offset as would
+                be returned by `ising_to_qubo`. The energy offset is
+                applied to each energy in the response.
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
+
+        Returns:
+            NumpyBinaryResponse: A BinaryResponse with the samples converted
+            from spin to binary, the energies updated with `offset` and
+            all of the data transferred directly.
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+
+        """
         binary_response = NumpyBinaryResponse()
 
         binary_response._samples = (self._samples + 1) // 2
@@ -307,8 +388,23 @@ class NumpySpinResponse(NumpyResponse):
 
         return binary_response
 
-    def as_dimod_response(self, data_copy=False):
-        """TODO"""
+    def as_spin_response(self, data_copy=False):
+        """Returns the :class:`.SpinResponse` version of itself.
+
+        Args:
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
+
+        Returns:
+            SpinResponse: A SpinResponse with the same values as the
+                SpinNumpyResponse
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+
+        """
         if data_copy:
             response = SpinResponse(self.data.copy())
             sample_data = [data.copy() for data in self._sample_data]
@@ -322,12 +418,55 @@ class NumpySpinResponse(NumpyResponse):
 
 
 class NumpyBinaryResponse(NumpyResponse):
-    """TODO"""
+    """Subclass of :class:`.NumpyResponse` which encodes binary-valued samples.
+
+    Differs from the :class:`.BinaryResponse` by storing samples and energies
+    internally in a :obj:`numpy.ndarray`.
+
+    Args:
+        data (dict, optional): Data about the response as a whole
+            as a dictionary. Default {}.
+
+    Examples:
+        >>> import numpy as np
+        >>> response = NumpyBinaryResponse()
+        >>> samples = np.asarray([[0, 0, 0], [1, 1, 1]], dtype=int)
+        >>> energies = np.asarray([0., -3.], dtype=float)
+        >>> response.add_samples_from_array(samples, energies)
+        >>> response.samples_array()
+        array([[1, 1, 1], [0, 0, 0]])
+        >>> for sample in response:
+        ...     # still works like a normal response object
+        ...     pass
+
+    """
     def __init__(self, data=None):
         NumpyResponse.__init__(self, data)
 
     def add_samples_from_array(self, samples, energies, sample_data=None, sorted_by_energy=False):
-        """TODO"""
+        """Loads samples and associated energies from binary-valued numpy arrays.
+
+        Args:
+            samples (:obj:`numpy.ndarray`): An two dimensional numpy array
+                in which each row is a sample. Values should be 0 or 1.
+            energies (:obj:`numpy.ndarray`): A one dimensional numpy array
+                in which each value is an energy. Must be the same length
+                as `samples`.
+            sample_data (iterator, optional): An iterable object
+                that yields data about each sample as  dict. If
+                None, then each data will be an empty dict. Default
+                None.
+            sorted_by_energy (bool): If True, then the user asserts that
+                `samples` and `energies` are sorted by energy from low to
+                high. This is not checked.
+
+        Raises:
+            ValueError: If any values in the samples are not 0 or 1.
+
+        Notes:
+            Solutions are stored in order of energy, lowest first.
+
+        """
         if any(s not in {0, 1} for s in samples.flat):
             raise ValueError("All values in samples should be -1 or 1")
 
@@ -335,7 +474,26 @@ class NumpyBinaryResponse(NumpyResponse):
                                              sample_data, sorted_by_energy)
 
     def as_spin(self, offset=0.0, data_copy=False):
-        """TODO"""
+        """Returns the :class:`.NumpySpinResponse` version of itself.
+
+        Args:
+            offset (float/int, optional): The energy offset as would
+                be returned by `qubo_to_ising`. The energy offset is
+                applied to each energy in the response.
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
+
+        Returns:
+            NumpySpinResponse: A SpinResponse with the samples converted
+            from binary to spin, the energies updated with `offset` and
+            all of the data transferred directly.
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+
+        """
         spin_response = NumpySpinResponse()
 
         spin_response._samples = 2 * self._samples - 1
@@ -350,8 +508,23 @@ class NumpyBinaryResponse(NumpyResponse):
 
         return spin_response
 
-    def as_dimod_response(self, data_copy=False):
-        """TODO"""
+    def as_binary_response(self, data_copy=False):
+        """Returns the :class:`.BinaryResponse` version of itself.
+
+        Args:
+            data_copy (bool, optional): Whether to create a copy
+                of each data dict. Default False.
+
+        Returns:
+            BinaryResponse: A BinaryResponse with the same values as the
+                BinaryNumpyResponse
+
+        Notes:
+            Only information stored in `data` property and as would be
+            returned by `samples(data=True)` is transferred.
+
+
+        """
         if data_copy:
             response = BinaryResponse(self.data.copy())
             sample_data = [data.copy() for data in self._sample_data]

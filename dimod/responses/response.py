@@ -4,7 +4,8 @@
 Responses
 =========
 
-TODO
+The :class:`BinaryResponse` and :class:`SpinResponse` are the main response
+types for dimod samplers. Both are subclasses of the :class:`.TemplateResponse`.
 
 Response Classes
 ----------------
