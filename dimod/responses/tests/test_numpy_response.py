@@ -126,7 +126,7 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
         with self.assertRaises(TypeError):
             response.add_samples_from([{0: 1}])  # neither energy nor h, J
 
-    def test_as_dimod_response(self):
+    def test_as_spin_response(self):
         response = self.response_factory()
 
         num_samples = 100
@@ -136,12 +136,12 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
 
         response.add_samples_from_array(samples, energies)
 
-        dimod_response = response.as_dimod_response()
+        dimod_response = response.as_spin_response()
 
         for s, t in zip(response, dimod_response):
             self.assertEqual(s, t)
 
-        dimod_response = response.as_dimod_response(data_copy=True)
+        dimod_response = response.as_spin_response(data_copy=True)
         for (__, dat), (__, dat0) in zip(response.samples(data=True),
                                          dimod_response.samples(data=True)):
             self.assertNotEqual(id(dat), id(dat0))
@@ -195,7 +195,7 @@ class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
         with self.assertRaises(TypeError):
             response.add_samples_from([{0: 0}])  # neither energy nor Q
 
-    def test_as_dimod_response(self):
+    def test_as_binary_response(self):
         response = self.response_factory()
 
         num_samples = 100
@@ -205,12 +205,12 @@ class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
 
         response.add_samples_from_array(samples, energies)
 
-        dimod_response = response.as_dimod_response()
+        dimod_response = response.as_binary_response()
 
         for s, t in zip(response, dimod_response):
             self.assertEqual(s, t)
 
-        dimod_response = response.as_dimod_response(data_copy=True)
+        dimod_response = response.as_binary_response(data_copy=True)
         for (__, dat), (__, dat0) in zip(response.samples(data=True),
                                          dimod_response.samples(data=True)):
             self.assertNotEqual(id(dat), id(dat0))
