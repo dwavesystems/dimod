@@ -27,9 +27,9 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   sampler_template
-   composite_template
-   responses
+   template_sampler
+   template_composite
+   responses/index
    samplers/index
    composites/index
    decorators

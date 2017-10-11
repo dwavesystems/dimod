@@ -1,6 +1,6 @@
 """
 The sampler template provides an API that different samplers can use.
-The crux of the API is four methods and a property.
+The crux of the API are two methods and a property.
 
 Methods:
 
