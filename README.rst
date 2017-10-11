@@ -2,9 +2,7 @@ dimod
 =====
 
 .. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
-
 .. image:: https://ci.appveyor.com/api/projects/status/kfhg35q12fa0lux8?svg=true
-
 .. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
 
 
