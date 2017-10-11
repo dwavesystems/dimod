@@ -2,9 +2,13 @@ dimod
 =====
 
 .. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
-.. image:: https://ci.appveyor.com/api/projects/status/kfhg35q12fa0lux8?svg=true
-.. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
+    :target: https://travis-ci.org/dwavesystems/dimod
 
+.. image:: https://ci.appveyor.com/api/projects/status/kfhg35q12fa0lux8?svg=true
+    :target: https://ci.appveyor.com/project/arcondello/dimod
+
+.. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
+    :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
 
 A shared API for QUBO/Ising samplers.
 
