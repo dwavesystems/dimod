@@ -1,10 +1,19 @@
-# dimod
+dimod
+=====
 
-[![Build Status](https://travis-ci.org/dwavesystems/dimod.svg?branch=master)](https://travis-ci.org/dwavesystems/dimod)
+.. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
+    :target: https://travis-ci.org/dwavesystems/dimod
+
+.. image:: https://ci.appveyor.com/api/projects/status/kfhg35q12fa0lux8?svg=true
+    :target: https://ci.appveyor.com/project/arcondello/dimod
+
+.. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
+    :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
 
 A shared API for QUBO/Ising samplers.
 
-## Included Samplers
+Included Samplers
+-----------------
 
 dimod comes with a few samplers that are useful as reference implementations and for unit testing.
 
@@ -12,7 +21,8 @@ dimod comes with a few samplers that are useful as reference implementations and
 * ExactSolver: determines the energy for every possible sample, but is extremely slow.
 * RandomSampler: Generates random samples. Used for testing.
 
-## Basic Usage
+Basic Usage
+-----------
 
 ```python
 >>> import dimod
@@ -39,17 +49,23 @@ The response object returned has many ways to access the information
 
 See documentation for more examples.
 
-## Install
+Install
+-------
 
 Compatible with Python 2 and 3.
 
 `pip install dimod`
 
+To install with optional components
+
+`pip install dimod[all]`
+
 To install from source:
 
 `python setup.py install`
 
-## License
+License
+-------
 
 Released under the Apache License 2.0. See LICENSE.txt
 
