@@ -9,3 +9,8 @@ docs/generated
 
 *.sublime-project
 *.sublime-workspace
+
+venv/
+
+.coverage
+htmlcov/

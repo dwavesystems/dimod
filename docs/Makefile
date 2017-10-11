@@ -15,6 +15,10 @@ help:
 
 .PHONY: help Makefile
 
+clean:
+	-rm -rf build/*
+	-rm -rf generated/*
+
 gh-pages:
 	cd .. && \
 	    git checkout gh-pages && \
