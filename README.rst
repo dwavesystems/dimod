@@ -59,7 +59,7 @@ To install with optional components
 
 To install with optional components
 
-`pip install dimod[all]`
+>>> pip install dimod[all]
 
 To install from source:
 
