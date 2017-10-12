@@ -146,6 +146,44 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
                                          dimod_response.samples(data=True)):
             self.assertNotEqual(id(dat), id(dat0))
 
+    def test_sample_array_and_energy_array(self):
+
+        # first try loading them up by matrices
+        samples = np.asarray([[-1, -1, -1, -1],
+                              [1, 1, 1, 1],
+                              [-1, 1, -1, 1]])
+
+        h = {0: 1, 1: -1, 2: 1, 3: 1}
+        J = {(0, 2): -1, (2, 3): 1, (0, 2): .25}
+
+        energies = np.asarray([ising_energy(h, J, row) for row in samples])
+
+        response = self.response_factory()
+        response.add_samples_from_array(samples, energies)
+
+        r_samples = response.samples_array()
+        r_energies = response.energies_array()
+
+        # assert that samples are sorted by energy and that they agree
+        for idx, row in enumerate(r_samples):
+            self.assertEqual(ising_energy(h, J, row), r_energies[idx])
+
+        for idx in range(len(r_energies) - 1):
+            self.assertLessEqual(r_energies[idx], r_energies[idx + 1])
+        self.assertEqual(r_samples.ndim, 2)
+        self.assertEqual(r_energies.ndim, 1)
+
+        # test the empty case
+        response = self.response_factory()
+        r_samples = response.samples_array()
+        r_energies = response.energies_array()
+
+        self.assertIsInstance(r_energies, np.ndarray)
+        self.assertIsInstance(r_samples, np.ndarray)
+
+        self.assertEqual(r_samples.ndim, 2)
+        self.assertEqual(r_energies.ndim, 1)
+
 
 @unittest.skipUnless(_numpy, "numpy not installed")
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):

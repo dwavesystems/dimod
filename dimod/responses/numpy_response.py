@@ -290,11 +290,23 @@ class NumpyResponse(TemplateResponse):
 
     def samples_array(self):
         """Returns the :obj:`numpy.ndarray` containing the samples."""
-        return self._samples
+        import numpy as np
+
+        samples = self._samples
+        if samples is None:
+            return np.empty((0, 0), dtype=int)
+        else:
+            return samples
 
     def energies_array(self):
         """Returns the :obj:`numpy.ndarray` containing the energies."""
-        return self._energies
+        import numpy as np
+
+        energies = self._energies
+        if energies is None:
+            return np.empty((0,), dtype=float)
+        else:
+            return energies
 
 
 class NumpySpinResponse(NumpyResponse):
