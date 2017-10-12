@@ -57,10 +57,6 @@ To install with optional components
 
 >>> pip install dimod[all]
 
-To install with optional components
-
->>> pip install dimod[all]
-
 To install from source:
 
 >>> python setup.py install
