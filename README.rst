@@ -49,17 +49,17 @@ See documentation for more examples.
 Install
 -------
 
-Compatible with Python 2 and 3.
+Compatible with Python 2 and 3::
 
-$ pip install dimod
+    $ pip install dimod
 
-To install with optional components
+To install with optional components::
 
-$ pip install dimod[all]
+    $ pip install dimod[all]
 
-To install from source:
+To install from source::
 
-$ python setup.py install
+    $ python setup.py install
 
 License
 -------
