@@ -207,7 +207,7 @@ def qubo_index_labels(Q_arg):
         response = f(*newargs, **kw)
 
         # the returned response will need to be relabelled with inv_relabel
-        return response.relabel_samples(inv_relabel, copy=True)
+        return response.relabel_samples(inv_relabel)
 
     return _qubo_index_labels
 
