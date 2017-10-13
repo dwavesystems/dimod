@@ -51,15 +51,21 @@ Install
 
 Compatible with Python 2 and 3.
 
->>> pip install dimod
+.. code-block:: bash
+
+pip install dimod
 
 To install with optional components
 
->>> pip install dimod[all]
+.. code-block:: bash
+
+pip install dimod[all]
 
 To install from source:
 
->>> python setup.py install
+.. code-block:: bash
+
+python setup.py install
 
 License
 -------
