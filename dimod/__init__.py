@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sys
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'D-Wave Systems Inc.'
 __authoremail__ = 'acondello@dwavesys.com'
 __description__ = 'A shared API for binary quadratic model samplers.'
