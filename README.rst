@@ -15,11 +15,16 @@ A shared API for QUBO/Ising samplers.
 Included Samplers
 -----------------
 
-dimod comes with a few samplers that are useful as reference implementations and for unit testing.
+dimod comes with a few `samplers`_ that are useful as reference implementations and for unit testing.
 
-* SimulatedAnnealingSampler: A reference implementation of a simulated annealing algorithm.
-* ExactSolver: determines the energy for every possible sample, but is extremely slow.
-* RandomSampler: Generates random samples. Used for testing.
+* `SimulatedAnnealingSampler`_: A reference implementation of a simulated annealing algorithm.
+* `ExactSolver`_: determines the energy for every possible sample, but is extremely slow.
+* `RandomSampler`_: Generates random samples. Used for testing.
+
+.. _samplers: dimod/samplers
+.. _SimulatedAnnealingSampler: dimod/samplers/simulated_annealing.py
+.. _ExactSolver: dimod/samplers/brute_force.py
+.. _RandomSampler: dimod/samplers/random_sampler.py
 
 Basic Usage
 -----------
@@ -64,5 +69,7 @@ To install from source::
 License
 -------
 
-Released under the Apache License 2.0. See LICENSE.txt
+Released under the Apache License 2.0. See `LICENSE.txt`_
+
+.. _LICENSE.txt: LICENSE.txt
 
