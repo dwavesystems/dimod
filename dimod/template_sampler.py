@@ -1,6 +1,6 @@
 """
 The sampler template provides an API that different samplers can use.
-The crux of the API are two methods and a property.
+The main features of the API are two methods and a property.
 
 Methods:
 
@@ -11,9 +11,9 @@ Property:
 
 - structure
 
-Some samplers will only function on binary quadratic models with specific
+Some samplers function only on binary quadratic models with specific
 structures. These samplers should have information in the `structure`
-property. See Structured Samplers section below.
+property. See :ref:`structured_samplers` section below.
 
 
 Examples
@@ -44,14 +44,14 @@ Define a sampler that operates on QUBO problems:
 ...         response.add_sample(sample, Q=Q)
 ...         return response
 
-This will now behave as expected
+This sampler returns 0/1-valued solutions, as expected for QUBO problems.
 
 >>> Q = {(0, 0): 1, (1, 1): 0}
 >>> response = MyLinearSampler().sample_qubo(Q)
 >>> list(response.samples())
 [{0: 0, 1: 1}]
 
-Also, by implementing one of the methods, we now can use the others.
+By implementing one of the methods, we now can use others; here is the response for an Ising problem.
 
 >>> h = {0: -1, 1: 2}
 >>> J = {}
@@ -60,11 +60,13 @@ Also, by implementing one of the methods, we now can use the others.
 [{0: 1, 1: -1}]
 
 
+.. _structured_samplers:
+
 Structured Samplers
 -------------------
 
 Some samplers can only operate on a particular problem structure.
-Most commonly this happens when there is a particular problem graph.
+Most commonly, this happens when there is a particular problem graph.
 In this case, the `structure` property will not be None.
 
 """
@@ -80,11 +82,11 @@ __all__ = ['TemplateSampler']
 class TemplateSampler(object):
     """Serves as a template for samplers. Not intended to be used directly.
 
-    The methods as provided are self-referential, trying to invoke them
-    directly will lead to an infinite recursion. This is done so that users
-    need only implement the methods that make sense.
+    The methods as provided are self-referential; trying to invoke them
+    directly leads to infinite recursion. Users need implement only those methods
+    that make sense.
 
-    See module documentation for examples.
+    See the module documentation for examples.
 
     """
     def __init__(self):
@@ -92,7 +94,7 @@ class TemplateSampler(object):
 
     @qubo(1)
     def sample_qubo(self, Q, **kwargs):
-        """Converts the given QUBO into an Ising problem, then invokes the
+        """Converts the given QUBO problem into an Ising problem, then invokes the
         sample_ising method.
 
         See sample_ising documentation for more information.
@@ -118,7 +120,7 @@ class TemplateSampler(object):
 
     @ising(1, 2)
     def sample_ising(self, h, J, **kwargs):
-        """Converts the given Ising problem into a QUBO, then invokes the
+        """Converts the given Ising problem into a QUBO problem, then invokes the
         sample_qubo method.
 
         See sample_qubo documentation for more information.
