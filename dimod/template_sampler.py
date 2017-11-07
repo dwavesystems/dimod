@@ -104,7 +104,7 @@ class TemplateSampler(object):
                 sample_ising.
 
         Returns:
-            :obj:`BinaryResponse`:
+            :obj:`.BinaryResponse`:
                 A `BinaryResponse`, converted from the `SpinResponse` return
                 from sample_ising.
 
@@ -138,7 +138,7 @@ class TemplateSampler(object):
                 sample_qubo.
 
         Returns:
-            :obj:`SpinResponse`:
+            :obj:`.SpinResponse`:
                 A `SpinResponse`, converted from the `BinaryResponse`
                 return from sample_ising.
 

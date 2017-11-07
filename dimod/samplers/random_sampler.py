@@ -42,7 +42,7 @@ class RandomSampler(TemplateSampler):
                 take. Default 10.
 
         Returns:
-            :obj:`BinaryResponse`
+            :obj:`.BinaryResponse`
 
         Notes:
             For each variable in each sample, the value is chosen by a coin
