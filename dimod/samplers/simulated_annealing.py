@@ -61,8 +61,8 @@ class SimulatedAnnealingSampler(TemplateSampler):
             [{0: 1, 1: 1}]
 
         Note:
-            This is a reference implementation and not optimized for speed
-            and therefore is not an appropriate sampler for benchmarking.
+            This is a reference implementation, not optimized for speed
+            and therefore not an appropriate sampler for benchmarking.
 
         """
 
@@ -158,7 +158,7 @@ def ising_simulated_annealing(h, J, beta_range=None, num_sweeps=1000):
         adj[n0].add(n1)
         adj[n1].add(n0)
 
-    # we will use a vertex coloring the the graph and update the nodes by color. A quick
+    # we will use a vertex coloring for the graph and update the nodes by color. A quick
     # greedy coloring will be sufficient.
     __, colors = greedy_coloring(adj)
 
@@ -168,8 +168,8 @@ def ising_simulated_annealing(h, J, beta_range=None, num_sweeps=1000):
     # there are exactly as many betas as sweeps
     for beta in betas:
 
-        # we want to know the gain in energy for flipping each of the spins
-        # we can calculate all of the linear terms simultaneously
+        # we want to know the gain in energy for flipping each of the spins.
+        # We can calculate all of the linear terms simultaneously
         energy_diff_h = {v: -2 * spins[v] * h[v] for v in h}
 
         # for each color, do updates
@@ -216,7 +216,7 @@ def greedy_coloring(adj):
         dict: the colors {color: [node, ...], ...}
 
     Note:
-        This is a greedy heuristic, the resulting coloring is not
+        This is a greedy heuristic: the resulting coloring is not
         necessarily minimal.
 
     """
