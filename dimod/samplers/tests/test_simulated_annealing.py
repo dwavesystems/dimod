@@ -111,8 +111,8 @@ class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
 
     def test_ising_simulated_annealing_sample_quality(self):
         # because simulated annealing has randomness, we cannot
-        # really test that it finds the solution. So instead we
-        # note that it should return better than average solutions
+        # really test that it finds the solution. Instead we
+        # note that it should return better-than-average solutions,
         # so if we test the returned energy against the energy of
         # 100 random samples, it should do better than the average
         nV = 100  # number of variables in h,J
@@ -140,7 +140,7 @@ class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
 
         adj = {node: set() for node in range(N)}
 
-        # add randomly approximately 5% of the edges
+        # randomly add approximately 5% of the edges
         for u, v in itertools.combinations(range(N), 2):
             if random.random() < .05:
                 adj[u].add(v)

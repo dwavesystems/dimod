@@ -1,5 +1,5 @@
 """
-A random sampler that can be used to unit testing and debugging.
+A random sampler that can be used for unit testing and debugging.
 """
 
 import sys
