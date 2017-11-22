@@ -4,15 +4,10 @@ import random
 
 import networkx as nx
 import dwave_networkx as dnx
+import dimod
 
 import dwave_embedding_utilities as eutil
 from dwave_embedding_utilities import _embedding_to_chain
-
-try:
-    import dimod
-    _dimod = True
-except ImportError:
-    _dimod = False
 
 
 class TestTargetToSource(unittest.TestCase):
@@ -205,7 +200,6 @@ class TestUnembedding(unittest.TestCase):
             self.assertEqual(set(sample), {'a', 'b'})  # maps to source vars
             self.assertTrue(all(bias in (-1, 1) for bias in sample.values()))
 
-    @unittest.skipUnless(_dimod, "requires dimod")
     def test_typical_dimod_response(self):
         """unembed should be compatible with the dimod response object"""
         nodes = range(10)
@@ -246,7 +240,6 @@ class TestUnembedding(unittest.TestCase):
         self.assertEqual(source0['a'], -1)
         self.assertEqual(source1['a'], +1)
 
-    @unittest.skipUnless(_dimod, "requires dimod")
     def test_majority_vote_with_dimod(self):
         sample0 = {0: -1, 1: -1, 2: +1}
         sample1 = {0: +1, 1: -1, 2: +1}
@@ -289,7 +282,6 @@ class TestUnembedding(unittest.TestCase):
         self.assertEqual(len(source_samples), 1)
         self.assertEqual(source_samples, [{'a': -1, 'b': +1}])
 
-    @unittest.skipUnless(_dimod, "requires dimod")
     def test_discard_with_dimod(self):
         sample0 = {0: -1, 1: -1, 2: +1}
         sample1 = {0: +1, 1: -1, 2: +1}

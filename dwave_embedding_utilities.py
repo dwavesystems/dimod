@@ -25,6 +25,10 @@ else:
 
 __all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising_to_components',
            'unembed_samples', 'discard', 'majority_vote', 'weighted_random', 'energy_minimization']
+__version__ = '0.1.0'
+__author__ = 'D-Wave Systems Inc.'
+__description__ = 'Utilities to manage embedding for the D-Wave System'
+__authoremail__ = 'acondello@dwavesys.com'
 
 
 def target_to_source(target_adjacency, embedding):
