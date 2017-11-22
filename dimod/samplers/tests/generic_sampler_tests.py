@@ -1,4 +1,4 @@
-"""These are generic tests that can be applied to any sampler, this should
+"""These are generic tests that can be applied to any sampler. This should
 not be run as a unittest.
 
 Example:
