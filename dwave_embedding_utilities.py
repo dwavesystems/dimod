@@ -83,7 +83,7 @@ def target_to_source(target_adjacency, embedding):
     return adj
 
 
-def embed_ising_to_components(linear, quadratic, embedding, adjacency, chain_strength=1.0):
+def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
     """Embeds a logical Ising problem onto another graph via an embedding.
 
     Args:
@@ -116,7 +116,7 @@ def embed_ising_to_components(linear, quadratic, embedding, adjacency, chain_str
         >>> source_quadratic = {('a', 'b'): -1}
         >>> embedding = {'a': [0, 1], 'b': [2]}
         >>> target_adjacency = {0: {1, 2}, 1: {0, 2}, 2: {0, 1}}
-        >>> target_linear, target_quadratic, chain_quadratic = embed_ising_to_components(
+        >>> target_linear, target_quadratic, chain_quadratic = embed_ising(
         ...     source_linear, source_quadratic, embedding, target_adjacency)
         >>> target_linear
         {0: 0.5, 1: 0.5, 2: 1.0}
@@ -196,22 +196,20 @@ def _embedding_to_chain(chain_variables, adjacency, chain_strength):
     """
     chain = {}  # we will be adding the edges that make the chain here
 
-    chain_variables = set(chain_variables)  # we want fast querying
-
     # do a breadth first search
     seen = set()
-    nextlevel = {next(iter(chain_variables))}
-    while nextlevel:
-        thislevel = nextlevel
-        nextlevel = set()
-        for v in thislevel:
+    next_level = {next(iter(chain_variables))}
+    while next_level:
+        this_level = next_level
+        next_level = set()
+        for v in this_level:
             if v not in seen:
                 seen.add(v)
 
                 for u in adjacency[v]:
                     if u not in chain_variables:
                         continue
-                    nextlevel.add(u)
+                    next_level.add(u)
                     if u != v and (u, v) not in chain:
                         chain[(v, u)] = -chain_strength
 

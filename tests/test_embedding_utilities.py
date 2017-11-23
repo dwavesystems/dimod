@@ -59,7 +59,7 @@ class TestApplyEmbedding(unittest.TestCase):
         embedding = {}
         adjacency = {}
 
-        he, Je, Jc = eutil.embed_ising_to_components(h, J, embedding, adjacency)
+        he, Je, Jc = eutil.embed_ising(h, J, embedding, adjacency)
 
         self.assertFalse(he)
         self.assertFalse(Je)
@@ -75,7 +75,7 @@ class TestApplyEmbedding(unittest.TestCase):
         adj = {0: {1}, 1: {0, 2}, 2: {1}}
 
         with self.assertRaises(ValueError):
-            eutil.embed_ising_to_components(h, j, embeddings, adj)
+            eutil.embed_ising(h, j, embeddings, adj)
 
     def test__embedding_to_chain(self):
         """Test that when given a chain, the returned Jc uses all
@@ -115,7 +115,7 @@ class TestApplyEmbedding(unittest.TestCase):
         adj.add_edges_from({(0, 1), (1, 2), (2, 3), (3, 4)})
 
         with self.assertRaises(ValueError):
-            eutil.embed_ising_to_components(h, j, embeddings, adj)
+            eutil.embed_ising(h, j, embeddings, adj)
 
     def test_embed_h_embedding_mismatch(self):
         """there is not a mapping in embedding for every var in h"""
@@ -126,7 +126,7 @@ class TestApplyEmbedding(unittest.TestCase):
         adj.add_edges_from({(0, 1), (1, 2)})
 
         with self.assertRaises(ValueError):
-            eutil.embed_ising_to_components(h, j, embedding, adj)
+            eutil.embed_ising(h, j, embedding, adj)
 
     def test_embed_j_index_too_large(self):
         """j references a variable not mentioned in embedding"""
@@ -137,7 +137,7 @@ class TestApplyEmbedding(unittest.TestCase):
         adj.add_edges_from({(0, 1), (1, 2)})
 
         with self.assertRaises(ValueError):
-            eutil.embed_ising_to_components(h, j, embedding, adj)
+            eutil.embed_ising(h, j, embedding, adj)
 
     def test_embed_typical(self):
         h = {0: 1, 1: 10}
@@ -151,7 +151,7 @@ class TestApplyEmbedding(unittest.TestCase):
         expected_j0 = {(0, 1): 3, (0, 2): -4, (0, 3): -4, (1, 2): 15}
         expected_jc = {(2, 3): -1}
 
-        h0, j0, jc = eutil.embed_ising_to_components(h, j, embeddings, adj)
+        h0, j0, jc = eutil.embed_ising(h, j, embeddings, adj)
         self.assertEqual(h0, expected_h0)
         self.assertEqual(j0, expected_j0)
         self.assertEqual(jc, expected_jc)
@@ -166,15 +166,15 @@ class TestApplyEmbedding(unittest.TestCase):
         adjacency = {0: {1}, 1: {0}}
 
         with self.assertRaises(ValueError):
-            eutil.embed_ising_to_components(h, J, embedding, adjacency)
+            eutil.embed_ising(h, J, embedding, adjacency)
 
     def test_docstring_examples(self):
         logical_h = {'a': 1, 'b': 1}
         logical_J = {('a', 'b'): -1}
         embedding = {'a': [0, 1], 'b': [2]}
         adjacency = {0: {1, 2}, 1: {0, 2}, 2: {0, 1}}
-        emb_h, emb_J, chain_J = eutil.embed_ising_to_components(logical_h, logical_J,
-                                                                embedding, adjacency)
+        emb_h, emb_J, chain_J = eutil.embed_ising(logical_h, logical_J,
+                                                  embedding, adjacency)
         self.assertEqual(emb_h, {0: 0.5, 1: 0.5, 2: 1.0})
         self.assertEqual(emb_J, {(0, 2): -0.5, (1, 2): -0.5})
         self.assertEqual(chain_J, {(0, 1): -1.0})
