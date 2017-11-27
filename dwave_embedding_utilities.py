@@ -5,6 +5,72 @@ D-Wave Embedding Utilities
 This package provides functions that map samples between a source graph
 and a target graph.
 
+Terminology
+-----------
+
+**model** - A collection of variables with associated linear and
+quadratic biases. Sometimes referred to in other projects as a **problem**.
+In this project all models are expected to be spin-valued - that is the
+variables in the model can be -1 or 1.
+
+**graph** - A collection of nodes and edges. A graph can be derived
+from a model; a node for each variable and an edge for each pair
+of variables with a non-zero quadratic bias.
+
+**source** - The model or induced graph that we wish to embed. Sometimes
+referred to in other projects as the **logical** graph/model.
+
+**target** - Embedding attempts to create a target model from a target
+graph. The process of embedding takes a source model, derives the source
+graph, maps the source graph to the target graph, then derives the target
+model. Sometimes referred to in other projects at the **embedded** graph/model.
+
+**chain** - A collection of nodes or variables in the target graph/model
+that we want to act like a single node/variable.
+
+**chain strength** - The magnitude of the negative quadratic bias applied
+between variables within a chain.
+
+Examples
+--------
+
+Imagine that we have a sampler which is structured as a 4-cycle graph.
+
+.. code-block:: python
+
+    import networkx as nx
+    target_graph = nx.cycle_graph(4)
+    # target_graph = {0: {1, 3}, 1: {0, 2}, 2: {1, 3}, 3: {0, 2}}  # equivalent
+
+We have a model on a 3-cycle that we wish to embed.
+
+.. code-block:: python
+
+    source_linear = {'a': 0., 'b': 0., 'c': 0.}
+    source_quadratic = {('a', 'b'): 1., ('b', 'c'): 1., ('a', 'c'): 1.}
+
+Finally, we have an embedding that maps a 3-cycle to a 4-cycle. In this
+case we want variables 1, 2 in the target to behave as a single variable.
+
+.. code-block:: python
+
+    embedding = {'a': {0}, 'b': {1, 2}, 'c': {3}}
+
+To get the target model, use the :method:`embed_ising` function.
+
+.. code-block:: python
+
+    target_linear, target_quadratic, chain_quadratic = embed_ising(
+        source_linear, source_quadratic, embedding, target_graph)
+
+Say that we sample from the target model using some sampler, we can then
+umembed the samples using :method:`unembed_samples`.
+
+.. code-block:: python
+
+    samples = {0: -1, 1: -1, 2: 1, 3: 1}
+    source_samples = unembed_samples(samples, embedding)
+
 """
 from __future__ import division, absolute_import
 
@@ -16,15 +82,24 @@ import sys
 _PY2 = sys.version_info[0] == 2
 if _PY2:
     range = xrange
-    iteritems = lambda d: d.iteritems()
-    itervalues = lambda d: d.itervalues()
     zip = itertools.izip
-else:
-    iteritems = lambda d: d.items()
-    itervalues = lambda d: d.values()
 
-__all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising_to_components',
-           'unembed_samples', 'discard', 'majority_vote', 'weighted_random', 'energy_minimization']
+    def iteritems(d):
+        return d.iteritems()
+
+    def itervalues(d):
+        return d.itervalues()
+else:
+    def iteritems(d):
+        return d.items()
+
+    def itervalues(d):
+        return d.values()
+
+__all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising',
+           'unembed_samples',
+           'discard', 'majority_vote', 'weighted_random', 'minimize_energy']
+
 __version__ = '0.1.0'
 __author__ = 'D-Wave Systems Inc.'
 __description__ = 'Utilities to manage embedding for the D-Wave System'
@@ -84,18 +159,18 @@ def target_to_source(target_adjacency, embedding):
 
 
 def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
-    """Embeds a logical Ising problem onto another graph via an embedding.
+    """Embeds a logical Ising model onto another graph via an embedding.
 
     Args:
         linear (dict): The linear biases to be embedded. Should be a dict of
-            the form {v: bias, ...} where v is a variable in the source problem
+            the form {v: bias, ...} where v is a variable in the source model
             and bias is the linear bias associated with v.
         quadratic (dict): The quadratic biases to be embedded. Should be a dict
             of the form {(u, v): bias, ...} where u, v are variables in the
-            source problem and bias is the quadratic bias associated with (u, v).
+            source model and bias is the quadratic bias associated with (u, v).
         embedding (dict): The mapping from the source graph to the target graph.
             Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            source model and s is a variable in the target model.
         adjacency (dict/:class:`networkx.Graph`): The adjacency dict of the target
             graph. Should be a dict of the form {s: Ns, ...} where s is a variable
             in the target graph and Ns is the set of neighbours of s.
@@ -229,7 +304,7 @@ def chain_break_frequency(samples, embedding):
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
             Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            source model and s is a variable in the target model.
 
     Returns:
         dict: The frequency of chain breaks in the form {v: f, ...} where v
@@ -250,17 +325,20 @@ def chain_break_frequency(samples, embedding):
     return {v: counts[v] / total for v in embedding}
 
 
-def unembed_samples(samples, embedding, method=None, **method_args):
+def unembed_samples(samples, embedding, chain_break_method=None, **method_args):
     """Return samples over the variables in the source graph.
 
     Args:
         samples (iterable): An iterable of samples where each sample
             is a dict of the form {v: val, ...} where v is a variable
-            in the target graph and val is the associated value as
+            in the target model and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            Should be of the form {v: {s, ...}, ...} where v is a node in the
+            source graph and s is a node in the target graph.
+        chain_break_method (function, optional): The method used to resolve chain
+            breaks. Default is :method:`majority_vote`.
+        method_args**: Additional keyword args are passed to the chain_break_method.
 
     Returns:
         list: A list of unembedded samples. Each sample is a dict of the form
@@ -268,12 +346,12 @@ def unembed_samples(samples, embedding, method=None, **method_args):
             is the value associated with the variable.
 
     """
-    if method is None:
+    if chain_break_method is None:
         if 'linear' in method_args or 'quadratic' in method_args:
-            method = minimize_energy
+            chain_break_method = minimize_energy
         else:
-            method = majority_vote
-    return list(itertools.chain(*(method(sample, embedding, **method_args) for sample in samples)))
+            chain_break_method = majority_vote
+    return list(itertools.chain(*(chain_break_method(sample, embedding, **method_args) for sample in samples)))
 
 
 def discard(sample, embedding):
@@ -284,8 +362,8 @@ def discard(sample, embedding):
             a variable in the target graph and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            Should be of the form {v: {s, ...}, ...} where v is a node in the
+            source graph and s is a node in the target graph.
 
     Yields:
         dict: The unembedded sample is no chains were broken.
@@ -312,8 +390,8 @@ def majority_vote(sample, embedding):
             a variable in the target graph and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            Should be of the form {v: {s, ...}, ...} where v is a node in the
+            source graph and s is a node in the target graph.
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
@@ -341,8 +419,8 @@ def weighted_random(sample, embedding):
             a variable in the target graph and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            Should be of the form {v: {s, ...}, ...} where v is a node in the
+            source graph and s is a node in the target graph.
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
@@ -370,8 +448,14 @@ def minimize_energy(sample, embedding, linear=None, quadratic=None):
             a variable in the target graph and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source problem and s is a variable in the target problem.
+            Should be of the form {v: {s, ...}, ...} where v is a node in the
+            source graph and s is a node in the target graph.
+        linear (dict): The linear biases of the source model. Should be a dict of
+            the form {v: bias, ...} where v is a variable in the source model
+            and bias is the linear bias associated with v.
+        quadratic (dict): The quadratic biases of the source model. Should be a dict
+            of the form {(u, v): bias, ...} where u, v are variables in the
+            source model and bias is the quadratic bias associated with (u, v).
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value

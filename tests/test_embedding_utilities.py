@@ -233,7 +233,7 @@ class TestUnembedding(unittest.TestCase):
         embedding = {'a': {0, 1, 2}}
 
         # specify that majority vote should be used
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.majority_vote)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.majority_vote)
 
         source0, source1 = source_samples
 
@@ -252,7 +252,7 @@ class TestUnembedding(unittest.TestCase):
         response.add_samples_from(samples, (0 for __ in samples))
 
         # specify that majority vote should be used
-        source_samples = eutil.unembed_samples(response, embedding, method=eutil.majority_vote)
+        source_samples = eutil.unembed_samples(response, embedding, chain_break_method=eutil.majority_vote)
 
         source0, source1 = source_samples
 
@@ -267,7 +267,7 @@ class TestUnembedding(unittest.TestCase):
         embedding = {'a': {0, 1, 2}}
 
         # specify that majority vote should be used
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.discard)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.discard)
 
         # no samples should be returned because they are all broken
         self.assertEqual(len(source_samples), 0)
@@ -276,7 +276,7 @@ class TestUnembedding(unittest.TestCase):
         embedding = {'a': {0, 1}, 'b': {2}}
 
         # specify that majority vote should be used
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.discard)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.discard)
 
         # only the first sample should be returned
         self.assertEqual(len(source_samples), 1)
@@ -295,7 +295,7 @@ class TestUnembedding(unittest.TestCase):
         response.add_samples_from(samples, (0 for __ in samples))
 
         # specify that majority vote should be used
-        source_samples = eutil.unembed_samples(response, embedding, method=eutil.discard)
+        source_samples = eutil.unembed_samples(response, embedding, chain_break_method=eutil.discard)
 
         # only the first sample should be returned
         self.assertEqual(len(source_samples), 1)
@@ -310,12 +310,12 @@ class TestUnembedding(unittest.TestCase):
 
         # minimize energy requires `linear` and `quadratic` keyword args
         with self.assertRaises(TypeError):
-            eutil.unembed_samples(samples, embedding, method=eutil.minimize_energy)
+            eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy)
 
         linear = {'a': -1, 'b': 0, 'c': 0}
         quadratic = {}
 
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.minimize_energy,
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
                                                linear=linear, quadratic=quadratic)
 
         source0, source1 = source_samples
@@ -329,7 +329,7 @@ class TestUnembedding(unittest.TestCase):
         linear = {'a': 1, 'b': 0, 'c': 0}
         quadratic = {('a', 'b'): -5}
 
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.minimize_energy,
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
                                                linear=linear, quadratic=quadratic)
 
         source0, source1 = source_samples
@@ -348,7 +348,7 @@ class TestUnembedding(unittest.TestCase):
 
         quadratic = {('a', 'b'): -1, ('b', 'c'): 1}
 
-        source_samples = eutil.unembed_samples(samples, embedding, method=eutil.minimize_energy,
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
                                                quadratic=quadratic)
 
         source, = source_samples
