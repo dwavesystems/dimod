@@ -97,6 +97,7 @@ else:
         return d.values()
 
 __all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising',
+           'edgelist_to_adjacency',
            'unembed_samples',
            'discard', 'majority_vote', 'weighted_random', 'minimize_energy']
 
@@ -110,9 +111,9 @@ def target_to_source(target_adjacency, embedding):
     """Derive the source adjacency from an embedding and target adjacency.
 
     Args:
-        target_adjacency (dict/:class:`networkx.Graph`): A dict where the
-            keys are the nodes in the source graph and the values are sets
-            of nodes in the target graph.
+        target_adjacency (dict/:class:`networkx.Graph`): A dict of the form
+            {v: Nv, ...} where v is a node in the target graph and Nv is the
+            neighbors of v as an iterable. This can also be a networkx graph.
         embedding (dict): A mapping from a source graph to a target graph.
 
 
@@ -525,3 +526,28 @@ def _most_common(iterable):
     """Returns the most common element in `iterable`."""
     data = Counter(iterable)
     return max(data, key=data.__getitem__)
+
+
+def edgelist_to_adjacency(edgelist):
+    """Converts an iterator of edges to an adjacency dict.
+
+    Args:
+        edgelist (iterable): An iterator over 2-tuples where
+            each 2-tuple is an edge.
+
+    Returns:
+        dict: The adjacency dict. A dict of the form {v: Nv, ...} where
+            v is a node in a graph and Nv is the neighbors of v as an set.
+
+    """
+    adj = dict()
+    for u, v in edgelist:
+        if u in adj:
+            adj[u].add(v)
+        else:
+            adj[u] = {v}
+        if v in adj:
+            adj[v].add(u)
+        else:
+            adj[v] = {u}
+    return adj
