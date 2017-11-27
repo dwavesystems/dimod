@@ -179,12 +179,13 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
             to create chains.
 
     Returns:
-        target_linear: A dict of the form {s: bias, ...} where s is a node in
-            the target graph and bias is the associated linear bias.
-        target_quadratic: A dict of the form {(s, t): bias, ...} where (s, t) is
-            an edge in the target graph and bias is the associated.
-            quadratic bias.
-        chain_quadratic: A dict of the form {(s, t): -chain_strength, ...} which
+        dict: The linear biases of the target problem. In the form {s: bias, ...}
+            where s is a node in the target graph and bias is the associated linear bias.
+        dict: The quadratic biases of the target problem. A dict of the form
+            {(s, t): bias, ...} where (s, t) is an edge in the target graph and bias is
+            the associated quadratic bias.
+        dict: The quadratic biases that induce the variables in the target problem to 
+            act as one. A dict of the form {(s, t): -chain_strength, ...} which
             is the quadratic biases associated with the chains.
 
     Examples:
