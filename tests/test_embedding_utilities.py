@@ -354,3 +354,24 @@ class TestUnembedding(unittest.TestCase):
         source, = source_samples
 
         self.assertEqual(source, {'b': -1, 'c': +1, 'a': -1})
+
+
+class Testedgelist_to_adjacency(unittest.TestCase):
+    def test_typical(self):
+        graph = nx.barbell_graph(17, 8)
+
+        edgelist = set(graph.edges())
+
+        adj = eutil.edgelist_to_adjacency(edgelist)
+
+        # test that they're equal
+        for u, v in edgelist:
+            self.assertIn(u, adj)
+            self.assertIn(v, adj)
+            self.assertIn(u, adj[v])
+            self.assertIn(v, adj[u])
+
+        for u in adj:
+            for v in adj[u]:
+                self.assertTrue((u, v) in edgelist or (v, u) in edgelist)
+                self.assertFalse((u, v) in edgelist and (v, u) in edgelist)
