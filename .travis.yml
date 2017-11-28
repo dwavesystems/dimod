@@ -50,7 +50,7 @@ deploy:
   provider: pypi
   user: "dwtools"
   password:
-    secure: ""
+    secure: "TUoBIPYNymbG337m1D1bTYGdzNrV6FGRKu0tiNYSvWoBhFeCgaV6SSlqNjnGZe99tPjotHRZbjVRtMjdccxzvidHjn9vqKFTBEo0iFEuRaKiQ7oWI9gKc9U67LOa8NJu8QCqiYuNqR1qKYVqKicTV3gUwpjxOXvmP82KrluthTllpPs6KnjzxIU1C04plBAz6+lN84UvaidKnngHV6SOC9/slO1kkS+X+ASLRXk1EHiOyxyd4Xjgoqh2XwxvmqLKcqxYTibr8Q46SL9Egedzdx4f+4mBVht93UrkXpubLqxoBoeGUWNaayMG/BINyz2m3NzYWlMjeN2Nb7mk+2FelKDY3KngVKVwRxtYFJv5GAkEt2x9vEVt1zDBqG6h38BN+8zWzuhGJcbxiQ9wFchyjVmMNqt03MmfrJWUrXepEEPoSsjnFs+TFQL74SXQ8UQocrT9Ftdz4R2PA0ed533NcommGVRCHFI8WOj7KBQ1KeOUeFmizK6HsZAouJfbUrdUZVNme3hgB3+eGUQJhi32sSjY1qiMGIJG8OfIzG7mzpOTUcJ/AevvV2OwIQoNns52pn6Q4Fd5QvjL7C86LEl+WETTuIfqH7u6Q+Ko3NLlY9nCEYHMdnqJ2XnX7+jhfibcdWF+ydIUCxr5w7Pg5N+S/oDBWBK82UDzNQCjEqVNnS4="
   distributions: "sdist bdist_wheel"
   on:
     tags: true
