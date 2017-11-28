@@ -7,9 +7,9 @@ This package provides utilities for mapping between source and target models.
 Install
 -------
 
-```bash
-pip install dwave_embedding_utilities
-```
+Compatible with Python 2 and 3::
+
+    $ pip install dwave_embedding_utilities
 
 License
 -------
