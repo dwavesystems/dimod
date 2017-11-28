@@ -153,8 +153,26 @@ class TestApplyEmbedding(unittest.TestCase):
 
         h0, j0, jc = eutil.embed_ising(h, j, embeddings, adj)
         self.assertEqual(h0, expected_h0)
-        self.assertEqual(j0, expected_j0)
-        self.assertEqual(jc, expected_jc)
+
+        # check j0
+        for (u, v), bias in j0.items():
+            self.assertTrue((u, v) in expected_j0 or (v, u) in expected_j0)
+            self.assertFalse((u, v) in expected_j0 and (v, u) in expected_j0)
+
+            if (u, v) in expected_j0:
+                self.assertEqual(expected_j0[(u, v)], bias)
+            else:
+                self.assertEqual(expected_j0[(v, u)], bias)
+
+        # check jc
+        for (u, v), bias in jc.items():
+            self.assertTrue((u, v) in expected_jc or (v, u) in expected_jc)
+            self.assertFalse((u, v) in expected_jc and (v, u) in expected_jc)
+
+            if (u, v) in expected_jc:
+                self.assertEqual(expected_jc[(u, v)], bias)
+            else:
+                self.assertEqual(expected_jc[(v, u)], bias)
 
     def test_embedding_not_in_adj(self):
         """embedding refers to a variable not in the adjacency"""
