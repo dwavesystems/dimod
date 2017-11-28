@@ -56,7 +56,7 @@ case we want variables 1, 2 in the target to behave as a single variable.
 
     embedding = {'a': {0}, 'b': {1, 2}, 'c': {3}}
 
-To get the target model, use the :method:`embed_ising` function.
+To get the target model, use the :func:`embed_ising` function.
 
 .. code-block:: python
 
@@ -64,7 +64,7 @@ To get the target model, use the :method:`embed_ising` function.
         source_linear, source_quadratic, embedding, target_graph)
 
 Say that we sample from the target model using some sampler, we can then
-umembed the samples using :method:`unembed_samples`.
+umembed the samples using :func:`unembed_samples`.
 
 .. code-block:: python
 
@@ -179,12 +179,16 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
             to create chains.
 
     Returns:
-        dict: The linear biases of the target problem. In the form {s: bias, ...}
+        (dict, dict, dict): A 3-tuple containing:
+
+            dict: The linear biases of the target problem. In the form {s: bias, ...}
             where s is a node in the target graph and bias is the associated linear bias.
-        dict: The quadratic biases of the target problem. A dict of the form
+
+            dict: The quadratic biases of the target problem. A dict of the form
             {(s, t): bias, ...} where (s, t) is an edge in the target graph and bias is
             the associated quadratic bias.
-        dict: The quadratic biases that induce the variables in the target problem to 
+
+            dict: The quadratic biases that induce the variables in the target problem to
             act as one. A dict of the form {(s, t): -chain_strength, ...} which
             is the quadratic biases associated with the chains.
 
@@ -310,8 +314,8 @@ def chain_break_frequency(samples, embedding):
 
     Returns:
         dict: The frequency of chain breaks in the form {v: f, ...} where v
-            is a variable in the source graph and frequency is the fraction
-            of chains that were broken as a float.
+        is a variable in the source graph and frequency is the fraction
+        of chains that were broken as a float.
 
     """
     counts = {v: 0 for v in embedding}
@@ -344,8 +348,8 @@ def unembed_samples(samples, embedding, chain_break_method=None, **method_args):
 
     Returns:
         list: A list of unembedded samples. Each sample is a dict of the form
-            {v: val, ...} where v is a variable in the source graph and val
-            is the value associated with the variable.
+        {v: val, ...} where v is a variable in the source graph and val
+        is the value associated with the variable.
 
     """
     if chain_break_method is None:
@@ -397,7 +401,7 @@ def majority_vote(sample, embedding):
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
-            is chosen to match the most common value in the chain.
+        is chosen to match the most common value in the chain.
 
     """
     unembeded = {}
@@ -426,8 +430,8 @@ def weighted_random(sample, embedding):
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
-            is chosen randomly, weighted by the frequency of the values
-            within the chain.
+        is chosen randomly, weighted by the frequency of the values
+        within the chain.
 
     """
     unembeded = {}
@@ -461,7 +465,7 @@ def minimize_energy(sample, embedding, linear=None, quadratic=None):
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
-            is chosen to minimize the energy relative to its neighbors.
+        is chosen to minimize the energy relative to its neighbors.
 
     """
     if linear is None and quadratic is None:
@@ -538,7 +542,7 @@ def edgelist_to_adjacency(edgelist):
 
     Returns:
         dict: The adjacency dict. A dict of the form {v: Nv, ...} where
-            v is a node in a graph and Nv is the neighbors of v as an set.
+        v is a node in a graph and Nv is the neighbors of v as an set.
 
     """
     adj = dict()
