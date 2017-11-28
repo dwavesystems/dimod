@@ -1,0 +1,3 @@
+[run]
+# omit virtualenv and test files
+omit = venv/*, */tests/*
