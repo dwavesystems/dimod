@@ -126,7 +126,7 @@ def target_to_source(target_adjacency, embedding):
 
     """
     # the nodes in the source adjacency are just the keys of the embedding
-    adj = {v: set() for v in embedding}
+    source_adjacency = {v: set() for v in embedding}
 
     # we need the mapping from each node in the target to its source node
     reverse_embedding = {}
@@ -153,26 +153,26 @@ def target_to_source(target_adjacency, embedding):
             if m == n:
                 continue
 
-            adj[n].add(m)
-            adj[m].add(n)
+            source_adjacency[n].add(m)
+            source_adjacency[m].add(n)
 
-    return adj
+    return source_adjacency
 
 
-def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
+def embed_ising(source_linear, source_quadratic, embedding, target_adjacency, chain_strength=1.0):
     """Embeds a logical Ising model onto another graph via an embedding.
 
     Args:
-        linear (dict): The linear biases to be embedded. Should be a dict of
+        source_linear (dict): The linear biases to be embedded. Should be a dict of
             the form {v: bias, ...} where v is a variable in the source model
             and bias is the linear bias associated with v.
-        quadratic (dict): The quadratic biases to be embedded. Should be a dict
+        source_quadratic (dict): The quadratic biases to be embedded. Should be a dict
             of the form {(u, v): bias, ...} where u, v are variables in the
             source model and bias is the quadratic bias associated with (u, v).
         embedding (dict): The mapping from the source graph to the target graph.
             Should be of the form {v: {s, ...}, ...} where v is a variable in the
             source model and s is a variable in the target model.
-        adjacency (dict/:class:`networkx.Graph`): The adjacency dict of the target
+        target_adjacency (dict/:class:`networkx.Graph`): The adjacency dict of the target
             graph. Should be a dict of the form {s: Ns, ...} where s is a variable
             in the target graph and Ns is the set of neighbours of s.
         chain_strength (float, optional): The quadratic bias that should be used
@@ -210,8 +210,8 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
 
     # ok, let's begin with the linear biases.
     # we spread the value of h evenly over the chain
-    emb_h = {v: 0. for v in adjacency}
-    for v, bias in iteritems(linear):
+    target_linear = {v: 0. for v in target_adjacency}
+    for v, bias in iteritems(source_linear):
         try:
             chain_variables = embedding[v]
         except KeyError:
@@ -221,14 +221,14 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
 
         for s in chain_variables:
             try:
-                emb_h[s] += b
+                target_linear[s] += b
             except KeyError:
-                raise ValueError('chain variable {} not in adjacency'.format(s))
+                raise ValueError('chain variable {} not in target_adjacency'.format(s))
 
     # next up the quadratic biases.
     # We spread the quadratic biases evenly over the edges
-    emb_J = {}
-    for (u, v), bias in iteritems(quadratic):
+    target_quadratic = {}
+    for (u, v), bias in iteritems(source_quadratic):
         edges = set()
 
         if u not in embedding:
@@ -239,10 +239,10 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
         for s in embedding[u]:
             for t in embedding[v]:
                 try:
-                    if s in adjacency[t] and (t, s) not in edges:
+                    if s in target_adjacency[t] and (t, s) not in edges:
                         edges.add((s, t))
                 except KeyError:
-                    raise ValueError('chain variable {} not in adjacency'.format(s))
+                    raise ValueError('chain variable {} not in target_adjacency'.format(s))
 
         if not edges:
             raise ValueError("no edges in target graph between source variables {}, {}".format(u, v))
@@ -252,19 +252,19 @@ def embed_ising(linear, quadratic, embedding, adjacency, chain_strength=1.0):
         # in some cases the logical J can have (u, v) and (v, u) as inputs, so make
         # sure we are not doubling them up with our choice of ordering
         for s, t in edges:
-            if (s, t) in emb_J:
-                emb_J[(s, t)] += b
-            elif (t, s) in emb_J:
-                emb_J[(t, s)] += b
+            if (s, t) in target_quadratic:
+                target_quadratic[(s, t)] += b
+            elif (t, s) in target_quadratic:
+                target_quadratic[(t, s)] += b
             else:
-                emb_J[(s, t)] = b
+                target_quadratic[(s, t)] = b
 
     # finally we need to connect the nodes in the chains
-    chain_J = {}
+    chain_quadratic = {}
     for chain_variables in itervalues(embedding):
-        chain_J.update(_embedding_to_chain(chain_variables, adjacency, chain_strength))
+        chain_quadratic.update(_embedding_to_chain(chain_variables, target_adjacency, chain_strength))
 
-    return emb_h, emb_J, chain_J
+    return target_linear, target_quadratic, chain_quadratic
 
 
 def _embedding_to_chain(chain_variables, adjacency, chain_strength):
@@ -545,14 +545,14 @@ def edgelist_to_adjacency(edgelist):
         v is a node in a graph and Nv is the neighbors of v as an set.
 
     """
-    adj = dict()
+    adjacency = dict()
     for u, v in edgelist:
-        if u in adj:
-            adj[u].add(v)
+        if u in adjacency:
+            adjacency[u].add(v)
         else:
-            adj[u] = {v}
-        if v in adj:
-            adj[v].add(u)
+            adjacency[u] = {v}
+        if v in adjacency:
+            adjacency[v].add(u)
         else:
-            adj[v] = {u}
-    return adj
+            adjacency[v] = {u}
+    return adjacency
