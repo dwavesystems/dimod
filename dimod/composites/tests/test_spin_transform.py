@@ -105,6 +105,12 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
         # should be twice as many samples
         self.assertEqual(len(response2), 2 * len(response))
 
+    def test_kwarg_propogation_composite(self):
+        sampler = dimod.SpinReversalTransform(self.sampler)
+
+        # kwargs should have propogated through, correctness is tested elsewhere
+        self.assertIn('orig_h', sampler.accepted_kwargs)
+
 
 class TestSpinTransform(unittest.TestCase):
     def test_function_typical(self):
