@@ -9,6 +9,7 @@ Example:
     This will run all of the tests in TestSamplerAPI
 
 """
+import dimod
 
 
 class SamplerAPITest:
@@ -60,3 +61,8 @@ class SamplerAPITest:
         for var in variables:
             for soln in response:
                 self.assertIn(var, soln)
+
+    def test_arg_propogation(self):
+        self.assertIsInstance(self.sampler.accepted_kwargs, dict)
+        for name, param in self.sampler.accepted_kwargs.items():
+            self.assertIsInstance(param, dimod.SamplerKeywordArg)

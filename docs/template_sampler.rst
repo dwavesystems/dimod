@@ -17,6 +17,7 @@ TemplateSampler methods
 
    TemplateSampler.sample_ising
    TemplateSampler.sample_qubo
+   TemplateSampler.my_kwargs
 
 TemplateSampler properties
 --------------------------
@@ -25,4 +26,5 @@ TemplateSampler properties
    :toctree: generated/
 
    TemplateSampler.structure
+   TemplateSampler.accepted_kwargs
    

@@ -1,8 +1,6 @@
 """An exact solver that calculates the energy of all possible samples.
 """
-
-import sys
-
+from dimod import _PY2
 from dimod.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
 from dimod.responses import SpinResponse
@@ -10,7 +8,7 @@ from dimod.utilities import ising_energy
 
 __all__ = ['ExactSolver']
 
-if sys.version_info[0] == 2:
+if _PY2:
     range = xrange
     iteritems = lambda d: d.iteritems()
 else:
