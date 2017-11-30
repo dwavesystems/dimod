@@ -17,9 +17,13 @@ __all__ = ['SimulatedAnnealingSampler']
 
 if _PY2:
     range = xrange
-    itervalues = lambda d: d.itervalues()
+
+    def itervalues(d):
+        return d.itervalues()
+
 else:
-    itervalues = lambda d: d.values()
+    def itervalues(d):
+        return d.values()
 
 
 class SimulatedAnnealingSampler(TemplateSampler):

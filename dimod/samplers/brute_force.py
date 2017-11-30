@@ -10,9 +10,13 @@ __all__ = ['ExactSolver']
 
 if _PY2:
     range = xrange
-    iteritems = lambda d: d.iteritems()
+
+    def iteritems(d):
+        return d.iteritems()
+
 else:
-    iteritems = lambda d: d.items()
+    def iteritems(d):
+        return d.items()
 
 
 class ExactSolver(TemplateSampler):
