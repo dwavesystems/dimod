@@ -1,8 +1,6 @@
-"""A exact solver that calculates the energy of all possible samples.
+"""An exact solver that calculates the energy of all possible samples.
 """
-
-import sys
-
+from dimod import _PY2
 from dimod.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
 from dimod.responses import SpinResponse
@@ -10,11 +8,15 @@ from dimod.utilities import ising_energy
 
 __all__ = ['ExactSolver']
 
-if sys.version_info[0] == 2:
+if _PY2:
     range = xrange
-    iteritems = lambda d: d.iteritems()
+
+    def iteritems(d):
+        return d.iteritems()
+
 else:
-    iteritems = lambda d: d.items()
+    def iteritems(d):
+        return d.items()
 
 
 class ExactSolver(TemplateSampler):
@@ -76,7 +78,7 @@ class ExactSolver(TemplateSampler):
         response.add_sample(sample.copy(), energy)
 
         # now we iterate, flipping one bit at a time until we have
-        # traversed all samples. This is a gray code.
+        # traversed all samples. This is a Gray code.
         # https://en.wikipedia.org/wiki/Gray_code
         for i in range(1, 1 << len(h)):
             v = _ffs(i)

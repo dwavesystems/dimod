@@ -10,9 +10,13 @@ __all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
 
 if _PY2:
     range = xrange
-    iteritems = lambda d: d.iteritems()
+
+    def iteritems(d):
+        return d.iteritems()
+
 else:
-    iteritems = lambda d: d.items()
+    def iteritems(d):
+        return d.items()
 
 
 def qubo(Q_arg):
