@@ -7,7 +7,7 @@ class SamplerKeywordArg(object):
         type_annotation (str): The keyword type as a string.
         classinfo (type): The expected type of the parameter.
 
-    Parameters:
+    Attributes:
         name (str): The keyword argument's name.
         type_annotation (str): The keyword type as a string.
         classinfo (type): The expected type of the parameter.
