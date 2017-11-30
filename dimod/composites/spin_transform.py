@@ -11,11 +11,14 @@ from dimod.utilities import ising_to_qubo, qubo_to_ising
 __all__ = ['SpinReversalTransform']
 
 if _PY2:
-    iteritems = lambda d: d.iteritems()
     range = xrange
     zip = itertools.izip
+
+    def iteritems(d):
+        return d.iteritems()
 else:
-    iteritems = lambda d: d.items()
+    def iteritems(d):
+        return d.items()
 
 
 class SpinReversalTransform(TemplateComposite):
