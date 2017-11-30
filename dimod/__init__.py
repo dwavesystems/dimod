@@ -24,4 +24,7 @@ import dimod.responses
 from dimod.utilities import *
 import dimod.utilities
 
+from dimod.keyword_arguments import *
+import dimod.keyword_arguments
+
 import dimod.decorators
