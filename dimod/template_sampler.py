@@ -69,9 +69,11 @@ In this case, the `structure` property will not be None.
 
 """
 # we could do a solver that requires a complete graph as an example above...
+import inspect
 
-
+from dimod import _PY2
 from dimod.decorators import ising, qubo
+from dimod.keyword_arguments import SamplerKeywordArg
 from dimod.utilities import qubo_to_ising, ising_to_qubo
 
 __all__ = ['TemplateSampler']
@@ -158,3 +160,69 @@ class TemplateSampler(object):
     @structure.setter
     def structure(self, struct):
         self._structure = struct
+
+    @property
+    def accepted_kwargs(self):
+        """dict[str: :class:`.SamplerKeywordArg`]: The keyword arguments
+        accepted by the `sample_ising` and `sample_qubo` methods for this
+        sampler.
+        """
+        return self.my_kwargs()
+
+    def my_kwargs(self):
+        """The keyword arguments accepted by the sampler or the highest
+        composite layer.
+
+        Returns:
+            dict[str: :class:`.SamplerKeywordArg`]: The keyword arguments
+            accepted by the `sample_ising` and `sample_qubo` methods for this
+            sampler or the top-level composite layer. For all accepted keyword
+            arguments see `accepted_kwargs`.
+
+        Note:
+            This method is inherited from the :obj:`.TemplateSampler` base class.
+
+        """
+        if _PY2:
+            # we need to use getargspec in python 2
+            ising_spec = inspect.getargspec(self.sample_ising)
+            qubo_spec = inspect.getargspec(self.sample_qubo)
+
+            kwargs = {}
+            for name in ising_spec.args:
+                if name == 'self':
+                    continue
+                if name == 'h':
+                    kwargs[name] = SamplerKeywordArg(name, 'dict[hashable, numeric]', dict)
+                elif name == 'J':
+                    kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
+                else:
+                    kwargs[name] = SamplerKeywordArg(name)
+            for name in qubo_spec.args:
+                if name == 'self':
+                    continue
+                if name == 'Q':
+                    kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
+                else:
+                    kwargs[name] = SamplerKeywordArg(name)
+        else:
+            # in python 3 we can use signature
+            ising_sig = inspect.signature(self.sample_ising)
+            qubo_sig = inspect.signature(self.sample_qubo)
+
+            kwargs = {}
+            for name, param in qubo_sig.parameters.items():
+                if param.kind == param.POSITIONAL_OR_KEYWORD:
+                    if name == 'Q':
+                        kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
+                    else:
+                        kwargs[name] = SamplerKeywordArg(name)
+            for name, param in ising_sig.parameters.items():
+                if param.kind == param.POSITIONAL_OR_KEYWORD:
+                    if name == 'h':
+                        kwargs[name] = SamplerKeywordArg(name, 'dict[hashable, numeric]', dict)
+                    elif name == 'J':
+                        kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
+                    else:
+                        kwargs[name] = SamplerKeywordArg(name)
+        return kwargs

@@ -57,3 +57,15 @@ class TemplateComposite(TemplateSampler):
     def __init__(self, *samplers):
         TemplateSampler.__init__(self)
         self.children = list(samplers)
+
+    @property
+    def accepted_kwargs(self):
+        """dict[str: :class:`.SamplerKeywordArg`]: The keyword arguments
+        accepted by the `sample_ising` and `sample_qubo` methods for this
+        sampler.
+        """
+        kwargs = {}
+        for child in self.children:
+            kwargs.update(child.accepted_kwargs)
+        kwargs.update(self.my_kwargs())
+        return kwargs
