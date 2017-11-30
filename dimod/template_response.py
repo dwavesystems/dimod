@@ -113,11 +113,18 @@ __all__ = ['TemplateResponse']
 if _PY2:
     range = xrange
     zip = itertools.izip
-    iteritems = lambda d: d.iteritems()
-    itervalues = lambda d: d.itervalues()
+
+    def iteritems(d):
+        return d.iteritems()
+
+    def itervalues(d):
+        return d.itervalues()
 else:
-    iteritems = lambda d: d.items()
-    itervalues = lambda d: d.values()
+    def iteritems(d):
+        return d.items()
+
+    def itervalues(d):
+        return d.values()
 
 
 class TemplateResponse(object):

@@ -2,17 +2,22 @@
 A collection of utility functions useful for Samplers.
 """
 
-import sys
+from dimod import _PY2
 
 __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 
-PY2 = sys.version_info[0] == 2
-if PY2:
-    iteritems = lambda d: d.iteritems()
-    itervalues = lambda d: d.itervalues()
+if _PY2:
+    def iteritems(d):
+        return d.iteritems()
+
+    def itervalues(d):
+        return d.itervalues()
 else:
-    iteritems = lambda d: d.items()
-    itervalues = lambda d: d.values()
+    def iteritems(d):
+        return d.items()
+
+    def itervalues(d):
+        return d.values()
 
 
 def ising_energy(h, J, sample):

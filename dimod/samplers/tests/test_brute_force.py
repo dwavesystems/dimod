@@ -11,7 +11,7 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
         self.sampler = ExactSolver()
 
     def test_all_samples(self):
-        """Check that every sample is included and that they all have the correct energy."""
+        """Check that every sample is included and has the correct energy."""
 
         n = 10
 
@@ -41,3 +41,9 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
 
         for energy in response.energies():
             self.assertEqual(energy, 0.0)
+
+    def test_keyword_propogation_brute_force(self):
+        sampler = self.sampler
+
+        # no extra args
+        self.assertEqual(set(sampler.accepted_kwargs), {'h', 'J', 'Q'})
