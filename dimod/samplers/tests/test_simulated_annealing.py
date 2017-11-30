@@ -81,6 +81,12 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         with self.assertRaises(ValueError):
             sampler.sample_ising({}, {}, beta_range=[7, 1, 6])
 
+    def test_keyword_propogation_random_sampler(self):
+        sampler = self.sampler
+
+        # no extra args
+        self.assertEqual(set(sampler.accepted_kwargs), {'h', 'J', 'Q', 'num_samples', 'beta_range', 'num_sweeps'})
+
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
     def test_ising_simulated_annealing_basic(self):

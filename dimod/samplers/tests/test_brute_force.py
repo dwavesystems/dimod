@@ -41,3 +41,9 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
 
         for energy in response.energies():
             self.assertEqual(energy, 0.0)
+
+    def test_keyword_propogation_brute_force(self):
+        sampler = self.sampler
+
+        # no extra args
+        self.assertEqual(set(sampler.accepted_kwargs), {'h', 'J', 'Q'})
