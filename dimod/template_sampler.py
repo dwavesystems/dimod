@@ -192,7 +192,7 @@ class TemplateSampler(object):
             for name in ising_spec.args:
                 if name == 'self':
                     continue
-                if name == 'h':
+                elif name == 'h':
                     kwargs[name] = SamplerKeywordArg(name, 'dict[hashable, numeric]', dict)
                 elif name == 'J':
                     kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
@@ -201,7 +201,7 @@ class TemplateSampler(object):
             for name in qubo_spec.args:
                 if name == 'self':
                     continue
-                if name == 'Q':
+                elif name == 'Q':
                     kwargs[name] = SamplerKeywordArg(name, 'dict[(hashable, hashable), numeric]', dict)
                 else:
                     kwargs[name] = SamplerKeywordArg(name)
