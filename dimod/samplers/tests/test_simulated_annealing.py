@@ -3,14 +3,14 @@ import unittest
 import itertools
 import random
 
-from dimod import SimulatedAnnealingSampler, ising_energy, qubo_energy
-from dimod.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
+import dimod
 from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
+from dimod.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
 class TestSASampler(unittest.TestCase, SamplerAPITest):
     def setUp(self):
-        self.sampler = SimulatedAnnealingSampler()
+        self.sampler = dimod.SimulatedAnnealingSampler()
 
     def test_basic(self):
 
@@ -22,7 +22,7 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         response0 = sampler.sample_ising(h, J, num_samples=10)
 
         for sample, energy in response0.items():
-            self.assertEqual(ising_energy(h, J, sample), energy)
+            self.assertEqual(dimod.ising_energy(sample, h, J), energy)
 
         # make sure we actully got back 100 samples
         self.assertEqual(len(response0), 10)
@@ -33,7 +33,7 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         self.assertEqual(len(response4), 10)
 
         for sample, energy in response4.items():
-            self.assertEqual(qubo_energy(Q, sample), energy)
+            self.assertEqual(dimod.qubo_energy(sample, Q), energy)
 
     def test_bug1(self):
         # IN IN OUT AUX
@@ -47,7 +47,7 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         h[5] = 0
         h[6] = .1
 
-        response = SimulatedAnnealingSampler().sample_ising(h, J, num_samples=100)
+        response = dimod.SimulatedAnnealingSampler().sample_ising(h, J, num_samples=100)
 
     def test_setting_beta_range(self):
         sampler = self.sampler
@@ -130,7 +130,7 @@ class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
             if random.random() < .05:
                 J[(u, v)] = random.uniform(-1, 1)
 
-        random_energies = [ising_energy(h, J, {v: random.choice((-1, 1)) for v in h})
+        random_energies = [dimod.ising_energy({v: random.choice((-1, 1)) for v in h}, h, J)
                            for __ in range(nS)]
 
         average_energy = sum(random_energies) / float(nS)

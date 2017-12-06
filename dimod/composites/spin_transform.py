@@ -131,19 +131,29 @@ class SpinReversalTransform(TemplateComposite):
         st_response = SpinResponse()
 
         for response, transform in dispatched:
-            samples, energies, sample_data = zip(*response.items(data=True))
 
-            # flip the bits in the samples
-            st_samples = (_apply_srt_sample_spin(sample, transform) for sample in samples)
+            # NB: this acts on the data in the response in-place
+            data_iter = _iter_transform_data(response, transform)
 
-            # keep track of which bits were flipped in data
-            st_sample_data = (_apply_srt_sample_data(dat, transform) for dat in sample_data)
-
-            st_response.add_samples_from(st_samples, energies, st_sample_data)
-
-            st_response.data.update(response.data)
+            st_response.add_data_from(data_iter)
+            st_response.info.update(response.info)
 
         return st_response
+
+
+def _iter_transform_data(response, transform):
+    """iterate through the response's data, applying the transform to the samples
+    and recording which variables were transformed.
+
+    We can act on the data in-place because we will not be using this response in
+    the future.
+    """
+    for datum in response.data():
+        datum['sample'] = _apply_srt_sample_spin(datum['sample'], transform)
+
+        _apply_srt_sample_data(datum, transform)
+
+        yield datum
 
 
 def _apply_srt_sample_spin(sample, transform):

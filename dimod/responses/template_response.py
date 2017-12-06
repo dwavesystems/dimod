@@ -2,13 +2,12 @@
 Response API
 ============
 
-For dimod samplers to be uniform, it is important that they all respond
-in the same way.
+It is important that all dimod samplers respond in the same way.
 
-Using a response
-----------------
+Reading from a dimod response
+-----------------------------
 
-Let us say that an application uses a the :class:`.ExactSolver` sampler to
+Let us say that an application uses the :class:`.ExactSolver` sampler to
 minimize the following Ising problem:
 
 >>> h = {'a': 1., 'b': -.5}
@@ -95,66 +94,80 @@ faster.
 Template Response Class
 -----------------------
 
-The :obj:`.TemplateResponse` can be subclassed to make dimod compliant
+The :class:`.TemplateResponse` can be subclassed to make dimod compliant
 response objects.
 
 """
 from __future__ import division
 
+import warnings
 import itertools
-import bisect
+
+from numbers import Number
 
 from dimod import _PY2
 from dimod.decorators import ising, qubo
+from dimod.exceptions import MappingError
 from dimod.utilities import ising_energy, qubo_energy
 
 __all__ = ['TemplateResponse']
 
 if _PY2:
-    range = xrange
     zip = itertools.izip
+    zip_longest = itertools.izip_longest
 
     def iteritems(d):
         return d.iteritems()
-
-    def itervalues(d):
-        return d.itervalues()
 else:
+    zip_longest = itertools.zip_longest
+
     def iteritems(d):
         return d.items()
-
-    def itervalues(d):
-        return d.values()
 
 
 class TemplateResponse(object):
     """Serves as a superclass for response objects.
 
     Args:
-        data (dict, optional): Data about the response as a whole
-            as a dictionary. Default {}.
+        todo
+
+    Attributes:
+        todo
 
     Examples:
         >>> response = TemplateResponse({'name': 'example'})
-        >>> print(response.data)
-        '{'name': 'example'}'
+        >>> response.data
+        {'name': 'example'}
 
     """
 
-    def __init__(self, data=None):
-        self._samples = []
-        self._energies = []
-        self._sample_data = []
-        if data is None:
-            self.data = {}
-        elif not isinstance(data, dict):
-            raise TypeError('expected input "data" to be None or a dict')
+    def __init__(self, info=None):
+
+        # each sample is stored as a dict in _sample_data
+        self.datalist = []
+        self._sorted_datalist = []
+
+        if info is None:
+            self.info = {}
+        elif not isinstance(info, dict):
+            raise TypeError("expected 'info' input to be a dict")
         else:
-            self.data = data
+            self.info = info
+
+    @property
+    def sorted_datalist(self):
+        """todo"""
+        if len(self.datalist) != len(self._sorted_datalist):
+            # sorting will be faster when the list is partially sorted, so just add the new
+            # samples onto the end of our previously sorted list
+            data = self._sorted_datalist
+            data.extend(self.datalist[len(data):])
+
+            self._sorted_datalist.sort(key=lambda d: d['energy'])
+        return self._sorted_datalist
 
     def __iter__(self):
-        """Iterate over the samples. Use the expression 'for sample in
-        response'.
+        """Iterate over the samples.
 
         Returns:
             iterator: An iterator over all samples in the response,
@@ -167,67 +180,42 @@ class TemplateResponse(object):
             [{0: 1}, {0: -1}]
 
         """
-        return self.samples()
+        return iter(self.samples())
 
     def samples(self, data=False):
-        """Iterator over the samples.
-
-        Args:
-            data (bool, optional): If True, return an iterator
-                over the the samples in a 2-tuple `(sample, data)`.
-                If False return an iterator over the samples.
-                Default False.
-
-        Returns:
-            iterator: If data is False, return an iterator over
-            all samples in response, in order of increasing energy.
-            If data is True, return a 2-tuple (sample, data) in order
-            of increasing sample energy.
-
-        Examples:
-            >>> response = TemplateResponse()
-            >>> response.add_sample({0: -1}, 1, data={'n': 5})
-            >>> response.add_sample({0: 1}, -1, data={'n': 1})
-            >>> list(response.samples())
-            [{0: 1}, {0: -1}]
-            >>> list(response.samples(data=True))
-            [({0: 1}, {'n': 1}), ({0: -1}, {'n': 5})]
-
-        """
+        """todo"""
         if data:
-            # in PY2, we have overloaded zip with izip
-            return zip(self._samples, self._sample_data)
-        return iter(self._samples)
+            return zip(self.data(keys=['sample']), self.data())
+        return self.data(keys=['sample'])
 
     def energies(self, data=False):
-        """Iterator over the energies.
-
-        Args:
-            data (bool, optional): If True, return an iterator
-                over the the energies in a 2-tuple (energy, data).
-                If False return an iterator over the energies.
-                Default False.
-
-        Returns:
-            iterator: If data is False, return an iterator over
-            all energies in response, in increasing order.
-            If data is True, return a 2-tuple (energy, data) in
-            order of increasing energy.
-
-        Examples:
-            >>> response = TemplateResponse()
-            >>> response.add_sample({0: -1}, 1, data={'n': 5})
-            >>> response.add_sample({0: 1}, -1, data={'n': 1})
-            >>> list(response.energies())
-            [-1, 1]
-            >>> list(response.energies(data=True))
-            [(-1, {'n': 1}), (1, {'n': 5})]
-
-        """
+        """todo"""
         if data:
-            # in PY2, we have overloaded zip with izip
-            return zip(self._energies, self._sample_data)
-        return iter(self._energies)
+            return zip(self.data(keys=['energy']), self.data())
+        return self.data(keys=['energy'])
+
+    def data(self, keys=[], ordered_by_energy=True):
+        """todo"""
+        # by default samples are ordered by energy low-to-high
+        if ordered_by_energy:
+            data = self.sorted_datalist
+        else:
+            data = self.datalist
+
+        if not keys:
+            for datum in data:
+                yield datum
+        else:
+            try:
+                if len(keys) > 1:
+                    for datum in data:
+                        yield tuple(datum[key] for key in keys)
+                else:
+                    key, = keys
+                    for datum in data:
+                        yield datum[key]
+            except KeyError:
+                raise KeyError("at least one key in 'keys' is not present in every datum")
 
     def items(self, data=False):
         """Iterator over the samples and energies.
@@ -255,54 +243,37 @@ class TemplateResponse(object):
             [({0: 1}, -1, {'n': 1}), ({0: -1}, 1, {'n': 5})]
 
         """
+        warnings.warn("'items' will be depreciated in dimod 1.0.0", DeprecationWarning)
         if data:
-            return zip(self._samples, self._energies, self._sample_data)
-        return zip(self._samples, self._energies)
+            return zip(self.samples(), self.energies(), self.data())
+        return zip(self.samples(), self.energies())
 
-    def add_sample(self, sample, energy, data=None):
+    def add_sample(self, sample, energy, num_occurences=1, **kwargs):
         """Loads a sample and associated energy into the response.
 
         Args:
             sample (dict): A sample as would be returned by a discrete
                 model solver. Should be a dict of the form
                 {var: value, ...}.
-                energy (float/int): The energy associated with the given
+            energy (number): The energy associated with the given
                 sample.
-            data (dict, optional): A dict containing any additional
-                data about the sample. Default empty.
-
-        Notes:
-            Solutions are stored in order of energy, lowest first.
-
-        Raises:
-            TypeError: If `sample` is not a dict.
-            TypeError: If `energy` is not an int or float.
-            TypeError: If `data` is not a dict.
+            num_occurences (int): The number of times the sample occurred.
+            **kwargs
 
         Examples:
             >>> response = TemplateResponse()
             >>> response.add_sample({0: -1}, 1)
-            >>> response.add_sample({0: 1}, -1, data={'n': 1})
+            >>> response.add_sample({0: 1}, -1, num_occurences=1)
 
         """
 
-        # create a new empty dict
-        if data is None:
-            data = {}
+        kwargs['sample'] = sample
+        kwargs['energy'] = energy
+        kwargs['num_occurences'] = num_occurences
 
-        if not isinstance(sample, dict):
-            raise TypeError("expected 'sample' to be a dict")
-        if not isinstance(energy, (float, int)):
-            raise TypeError("expected 'energy' to be numeric")
-        if not isinstance(data, dict):
-            raise TypeError("expected 'data' to be a dict")
+        self.add_data_from((kwargs,))
 
-        idx = bisect.bisect(self._energies, energy)
-        self._samples.insert(idx, sample)
-        self._energies.insert(idx, energy)
-        self._sample_data.insert(idx, data)
-
-    def add_samples_from(self, samples, energies, sample_data=None):
+    def add_samples_from(self, samples, energies, num_occurences=1, **kwargs):
         """Loads samples and associated energies from iterators.
 
         Args:
@@ -311,73 +282,65 @@ class TemplateResponse(object):
                 {var: value, ...}.
             energies (iterator): An iterable object that yields
                 energies associated with each sample.
-            sample_data (iterator, optional): An iterable object
-                that yields data about each sample as  dict. If
-                None, then each data will be an empty dict. Default
-                None.
+            todo
 
-        Notes:
-            Solutions are stored in order of energy, lowest first.
-
-        Raises:
-            TypeError: If any `sample` in `samples` is not a dict.
-            TypeError: If any `energy`  in `energies` is not an int
-            or float.
-            TypeError: If any `data` in `sample_data` is not a dict.
 
         Examples:
-            >>> samples = [{0: -1}, {0: 1}, {0: -1}]
-            >>> energies = [1, -1, 1]
-            >>> sample_data = [{'t': .2}, {'t': .5}, {'t': .1}]
-
-            >>> response = TemplateResponse()
-            >>> response.add_samples_from(samples, energies)
-            >>> list(response.samples())
-            [{0: 1}, {0: -1}, {0: -1}]
-
-            >>> response = TemplateResponse()
-            >>> response.add_samples_from(samples, energies, sample_data)
-            >>> list(response.samples())
-            [{0: 1}, {0: -1}, {0: -1}]
-
-            >>> items = [({0: -1}, -1), ({0: -1}, 1)]
-            >>> response = TemplateResponse()
-            >>> response.add_samples_from(*zip(*items))
-            >>> list(response.samples())
-            [{0: 1}, {0: -1}]
+            todo
 
         """
+        stop = object()  # signals that the two iterables are different lengths
+        try:
+            zipped = zip_longest(samples, energies, fillvalue=stop)
+        except TypeError:
+            raise TypeError("both 'samples' and 'energies' must be iterable")
 
-        N = len(self)  # current number of samples
+        def _iter_datum():
+            # construct the data dict by adding sample and energy
+            for sample, energy in zipped:
+                if energy == stop and sample != stop:
+                    raise ValueError("'samples' is longer than 'energies', expected to be the same length")
+                elif sample == stop and energy != stop:
+                    raise ValueError("'energies' is longer than 'samples', expected to be the same length")
 
-        samples = list(samples)
-        energies = list(energies)
+                datum = {'sample': sample, 'energy': energy, 'num_occurences': num_occurences}
+                datum.update(**kwargs)
+                yield datum
 
-        if not all(isinstance(sample, dict) for sample in samples):
-            raise TypeError("expected each sample in 'samples' to be a dict")
-        if not all(isinstance(energy, (float, int)) for energy in energies):
-            raise TypeError("expected each energy in 'energies' to be numeric")
+        self.add_data_from(_iter_datum())
 
-        if sample_data is None:
-            sample_data = [{} for __ in energies]
-        else:
-            sample_data = list(sample_data)
-            if not all(isinstance(data, dict) for data in sample_data):
-                raise TypeError("expected sample_data to be an iterator of dicts")
+    def add_data_from(self, data):
+        """todo"""
+        def _check_iter():
+            for datum in data:
+                # iterate over each datum and do type checking
+                if not isinstance(datum, dict):
+                    raise TypeError("each datum in 'data' should be a dict")
 
-        if N > 0:
-            # if we already have samples, concatenate
-            samples += self._samples
-            energies += self._energies
-            sample_data += self._sample_data
+                # sample
+                if 'sample' not in datum:
+                    raise ValueError("each datum in 'data' must include a 'sample' key with a dict value")
+                if not isinstance(datum['sample'], dict):
+                    raise TypeError("expected 'sample' to be a dict")
 
-        # order the new lists by energy
-        order = sorted(range(len(energies)), key=energies.__getitem__)
+                # energy
+                if 'energy' not in datum:
+                    raise ValueError("each datum in 'data' must include an 'energy' key with a numeric value")
+                if not isinstance(datum['energy'], Number):
+                    raise TypeError("expected 'energy' to be a number")
 
-        # replace the stored samples/energies with the new list
-        self._samples = [samples[i] for i in order]
-        self._energies = [energies[i] for i in order]
-        self._sample_data = [sample_data[i] for i in order]
+                # num_occurences, default = 1
+                if 'num_occurences' in datum:
+                    if not isinstance(datum['num_occurences'], int):
+                        raise TypeError("expected 'num_occurences' to be a positive int")
+                    if datum['num_occurences'] <= 0:
+                        raise ValueError("expected 'num_occurences' to be a positive int")
+                else:
+                    datum['num_occurences'] = 1
+
+                yield datum
+
+        self.datalist.extend(_check_iter())
 
     def __str__(self):
         """Return a string representation of the response.
@@ -386,38 +349,31 @@ class TemplateResponse(object):
             str: A string representation of the graph.
 
         """
+        lines = [self.__repr__(), 'info: {}'.format(self.info)]
 
-        lines = [self.__repr__(), 'data: {}'.format(self.data)]
-
-        item_n = 0
-        total_n = len(self)
-        for sample, energy, data in self.items(data=True):
-            if item_n > 9 and item_n < total_n - 1:
-                if item_n == 10:
-                    lines.append('...')
-                item_n += 1
-                continue
-
-            lines.append('Item {}:'.format(item_n))
-            lines.append('  sample: {}'.format(sample))
-            lines.append('  energy: {}'.format(energy))
-            lines.append('  data: {}'.format(data))
-
-            item_n += 1
+        if len(self) > 10:
+            data = self.data()
+            for __ in range(10):
+                lines.append('{}'.format(next(data)))
+            lines.append('... ({} total)'.format(len(self)))
+        else:
+            lines.extend('{}'.format(datum) for datum in self.data())
 
         return '\n'.join(lines)
 
     def __len__(self):
         """The number of samples in response."""
-        return self._samples.__len__()
+        return len(self.datalist)
 
-    def relabel_samples(self, mapping):
-        """Relabels the variable in the samples.
+    def relabel_samples(self, mapping, copy=True):
+        """Return a new response object with the samples relabeled.
 
         Args:
-            mapping (dict): A dictionary with the old labels as keys
+            mapping (dict[hashable, hashable]): A dictionary with the old labels as keys
                 and the new labels as values. A partial mapping is
                 allowed.
+            copy (bool, optional): If copy is True, the datum are copied, if false
+                then they will be the same objects.
 
         Examples:
             >>> response = TemplateResponse()
@@ -431,41 +387,69 @@ class TemplateResponse(object):
 
         """
 
-        try:
-            return _relabel_copy(self, mapping)
-        except MappingError:
-            raise ValueError('given mapping does not have unique values.')
+        # get a new response of the same type as self
+        if copy:
+            response = self.__class__(self.info.copy())
+        else:
+            response = self.__class__(self.info)
 
+        def _change_sample_iter():
+            for self_datum in self.data():
+                if copy:
+                    # copy the field so they don't point to the same object
+                    datum = self_datum.copy()
+                else:
+                    datum = self_datum
 
-class MappingError(Exception):
-    """mapping causes conflicting values in samples"""
+                sample = datum['sample']
 
+                try:
+                    new_sample = {mapping[v]: val for v, val in iteritems(sample)}
+                except KeyError:
+                    for v in sample:
+                        if v not in mapping:
+                            raise KeyError("no mapping for sample variable '{}'".format(v))
 
-def _relabel_copy(response, mapping):
-    """Creates a new response with the variables relabeled according
-    to mapping.
-    """
+                if len(new_sample) != len(sample):
+                    raise MappingError("mapping contains repeated keys")
 
-    # make a a new response of the same class
-    rl_response = response.__class__()
+                datum['sample'] = new_sample
 
-    # copy over the data
-    rl_response.data = response.data
+                yield datum
 
-    # for each sample, energy, data in self, relabel the sample
-    # and add to the new response. Missing labels are kept the
-    # same.
-    for sample, energy, data in response.items(data=True):
-        rl_sample = {}
-        for v, val in iteritems(sample):
-            if v in mapping:
-                new_v = mapping[v]
-                if new_v in rl_sample:
-                    raise MappingError
-                rl_sample[new_v] = val
-            else:
-                rl_sample[v] = val
-        rl_response.add_sample(rl_sample, energy, data)
+        response.add_data_from(_change_sample_iter())
 
-    # return the new object
-    return rl_response
+        if 'relabelings_applied' in response.info:
+            response.info['relabelings_applied'].append(mapping)
+        else:
+            response.info['relabelings_applied'] = [mapping]
+
+        return response
+
+    def cast(self, response_class, varmap=None, offset=0.0, copy=True):
+        """TODO"""
+        if copy:
+            response = response_class(self.info.copy())
+        else:
+            response = response_class(self.info)
+
+        # the energies are offset by a constant, so the order stays the same. Thus we can
+        # transfer directly.
+        def _iter_datum():
+            for self_datum in self.data():
+                if copy:
+                    datum = self_datum.copy()
+                else:
+                    datum = self_datum
+
+                # convert the samples
+                if varmap is not None:
+                    datum['sample'] = {v: varmap[val] for v, val in iteritems(datum['sample'])}
+                if offset != 0.0:
+                    datum['energy'] += offset
+
+                yield datum
+
+        response.add_data_from(_iter_datum())
+
+        return response
