@@ -10,7 +10,7 @@ from dimod import _PY2
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_energy, qubo_to_ising
-from dimod.responses.response import SpinResponse
+from dimod.responses.type_response import SpinResponse
 
 __all__ = ['SimulatedAnnealingSampler']
 

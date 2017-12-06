@@ -3,7 +3,7 @@
 from dimod import _PY2
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
-from dimod.responses import SpinResponse
+from dimod.responses.type_response import SpinResponse
 from dimod.utilities import ising_energy
 
 __all__ = ['ExactSolver']
