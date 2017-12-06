@@ -4,7 +4,7 @@ A random sampler that can be used for unit testing and debugging.
 import random
 
 from dimod import _PY2
-from dimod.template_sampler import TemplateSampler
+from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo, ising_index_labels
 from dimod.responses import BinaryResponse
 
