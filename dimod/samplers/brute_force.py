@@ -1,7 +1,7 @@
 """An exact solver that calculates the energy of all possible samples.
 """
 from dimod import _PY2
-from dimod.template_sampler import TemplateSampler
+from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
 from dimod.responses import SpinResponse
 from dimod.utilities import ising_energy

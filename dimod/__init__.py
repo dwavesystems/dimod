@@ -9,15 +9,12 @@ __description__ = 'A shared API for binary quadratic model samplers.'
 
 _PY2 = sys.version_info[0] == 2
 
-from dimod.template_sampler import *
 from dimod.samplers import *
 import dimod.samplers
 
-from dimod.template_composite import *
 from dimod.composites import *
 import dimod.composites
 
-from dimod.template_response import *
 from dimod.responses import *
 import dimod.responses
 
@@ -28,3 +25,6 @@ from dimod.keyword_arguments import *
 import dimod.keyword_arguments
 
 import dimod.decorators
+
+from dimod.exceptions import *
+import dimod.exceptions

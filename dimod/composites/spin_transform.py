@@ -3,7 +3,7 @@ import time
 import itertools
 
 from dimod import _PY2
-from dimod.template_composite import TemplateComposite
+from dimod.composites.template_composite import TemplateComposite
 from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
