@@ -74,7 +74,7 @@ class ExactSolver(TemplateSampler):
 
         # generate the first sample and add it to the response
         sample = {v: -1 for v in h}
-        energy = ising_energy(h, J, sample)
+        energy = ising_energy(sample, h, J)
         response.add_sample(sample.copy(), energy)
 
         # now we iterate, flipping one bit at a time until we have
