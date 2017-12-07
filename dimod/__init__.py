@@ -28,3 +28,6 @@ import dimod.decorators
 
 from dimod.exceptions import *
 import dimod.exceptions
+
+from dimod.vartypes import *
+import dimod.vartypes

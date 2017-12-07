@@ -8,19 +8,23 @@ import dimod
 
 
 class ResponseGenericTests(object):
-    one = 1
-    zero = 0
-
-    def test_empty_object(self):
+    """Provides tests that should pass for any dimod Response.
+    unittests for a response object should inherit from this class.
+    """
+    def test_empty_response(self):
         response = self.response_factory()
 
-        # should all be empty and we should be able to iterate over them
+        # there are three methods that return an iterator, when dumped into a list
+        # they should all be empty
         self.assertEqual(list(response.samples()), [])
         self.assertEqual(list(response.energies()), [])
-        self.assertEqual(list(response.items()), [])
-        self.assertEqual(list(response.samples(data=True)), [])
-        self.assertEqual(list(response.energies(data=True)), [])
-        self.assertEqual(list(response.items(data=True)), [])
+        self.assertEqual(list(response.data()), [])
+
+        # response itself should also be able to be dumped to a list, iterating over
+        # the samples
+        self.assertEqual(list(response), [])
+
+        # finally an empty response should have length 0
         self.assertEqual(len(response), 0)
 
     def test_samples(self):
@@ -51,7 +55,7 @@ class ResponseGenericTests(object):
         response = self.response_factory()
         response.add_sample({0: self.zero}, 1, n=5)
         response.add_sample({0: self.one}, -1, n=5)
-        self.assertEqual(list(response.items()), [({0: self.one}, -1), ({0: self.zero}, 1)])
+        self.assertEqual(list(response.data(keys=['sample', 'energy'])), [({0: self.one}, -1), ({0: self.zero}, 1)])
 
     def test_add_samples_from(self):
         """There are several different ways that responses can be added."""
@@ -248,7 +252,7 @@ class ResponseGenericTests(object):
             self.assertIsInstance(datum, dict)
             self.assertEqual(set(datum), {'energy', 'sample', 'num_occurences', 'sample_idx', 'neg_sample_idx'})
 
-            # idx shiould be equal
+            # idx should be equal
             self.assertEqual(datum['sample_idx'], idx)
             self.assertEqual(datum['neg_sample_idx'], -idx)
 
@@ -258,7 +262,7 @@ class ResponseGenericTests(object):
             self.assertGreaterEqual(energy, last_energy)
             last_energy = energy
 
-        # iterating over doulble keys
+        # iterating over double keys
         i = 0
         for idx, nidx in response.data(keys=['sample_idx', 'neg_sample_idx'], ordered_by_energy=False):
             self.assertEqual(idx, -nidx)
@@ -268,11 +272,34 @@ class ResponseGenericTests(object):
 
 class TestTemplateResponse(unittest.TestCase, ResponseGenericTests):
     """Tests on the TemplateResponse"""
-    response_factory = dimod.TemplateResponse
+    def setUp(self):
+        self.response_factory = dimod.TemplateResponse
+        self.zero = 0
+        self.one = 1
+
+    def test_setting_vartype(self):
+        # should be set to undefined
+        response = dimod.TemplateResponse()
+        self.assertIs(response.vartype, dimod.VARTYPES.UNDEFINED)
+
+        # set to a specific one
+        response = dimod.TemplateResponse(vartype=dimod.VARTYPES.SPIN)
+        self.assertIs(response.vartype, dimod.VARTYPES.SPIN)
+
+        # set to a specific one by accepted variable types
+        response = dimod.TemplateResponse(vartype={-1, 1})
+        self.assertIs(response.vartype, dimod.VARTYPES.SPIN)
+
+        # set to a specific one by name
+        response = dimod.TemplateResponse(vartype='BINARY')
+        self.assertIs(response.vartype, dimod.VARTYPES.BINARY)
 
 
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
-    response_factory = dimod.BinaryResponse
+    def setUp(self):
+        self.response_factory = dimod.BinaryResponse
+        self.zero = 0
+        self.one = 1
 
     def test_as_spin(self):
         response = self.response_factory()
@@ -293,7 +320,7 @@ class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
         spin_response = response.as_spin(-offset)
 
         # check that the energies are correcct
-        for sample, energy in spin_response.items():
+        for sample, energy in spin_response.data(keys=['sample', 'energy']):
             self.assertEqual(dimod.ising_energy(sample, h, J), energy)
 
         # make a new spin response
@@ -319,9 +346,10 @@ class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
 
 
 class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
-    one = 1
-    zero = -1  # spin-valued
-    response_factory = dimod.SpinResponse
+    def setUp(self):
+        self.response_factory = dimod.SpinResponse
+        self.zero = -1
+        self.one = 1
 
     def test_add_sample_hJ(self):
         # add_sample with no energy specified, but h, J given
@@ -359,10 +387,10 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
         response.add_samples_from([sample0, sample1, sample2], h=h, J=J)
 
         bin_response = response.as_binary(-1 * offset)
-        for sample, energy in bin_response.items():
+        for sample, energy in bin_response.data(keys=['sample', 'energy']):
             self.assertEqual(dimod.qubo_energy(sample, Q), energy)
 
-        bin_response = response.as_binary(-1 * offset, copy=True)
+        bin_response = response.as_binary(-1 * offset)
         data_ids = {id(data) for __, data in response.samples(data=True)}
         for __, data in bin_response.samples(data=True):
             self.assertNotIn(id(data), data_ids)
@@ -370,6 +398,7 @@ class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
     def test_input_checking(self):
         response = self.response_factory()
 
+        # binary value for sample
         with self.assertRaises(ValueError):
             response.add_sample({0: 0}, 0.0)
 

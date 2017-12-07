@@ -24,8 +24,9 @@ from dimod import _PY2
 from dimod.exceptions import MappingError
 from dimod.responses.template_response import TemplateResponse
 from dimod.responses.type_response import BinaryResponse, SpinResponse
+from dimod.vartypes import VARTYPES
 
-# __all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
+__all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
 
 
 if _PY2:
@@ -46,10 +47,10 @@ class NumpyResponse(TemplateResponse):
         todo
 
     """
-    def __init__(self, info=None):
+    def __init__(self, info=None, vartype=VARTYPES.UNDEFINED):
         import numpy as np
 
-        TemplateResponse.__init__(self, info)
+        TemplateResponse.__init__(self, info=info, vartype=vartype)
         # self.datalist = []  # we overwrite this property with our own getter/setter
         # self.sorted_datalist = []  # this is a @property inherited from TemplateResponse
 
@@ -79,7 +80,7 @@ class NumpyResponse(TemplateResponse):
                 datum['energy'] = self.energy_array[idx]
 
             if 'num_occurences' not in datum:
-                datum['num_occurences'] = self.num_occurences_array[idx]
+                datum['num_occurences'] = int(self.num_occurences_array[idx])
 
         return self._datalist
 
@@ -120,10 +121,15 @@ class NumpyResponse(TemplateResponse):
         """
         import numpy as np
 
+        valid_sample_bias = self.vartype.value
+
         if not isinstance(sample_array, np.ndarray):
             raise TypeError("expected 'sample_array' to be a two dimensional ndarray")
         if sample_array.ndim != 2:
             raise ValueError("expected 'sample_array' to be a two dimensional ndarray")
+        if valid_sample_bias is not None:
+            if any(s not in valid_sample_bias for s in sample_array.flat):
+                ValueError("invalid sample bias, expected to be in {}".format(valid_sample_bias))
 
         num_samples, num_variables = sample_array.shape
 
@@ -178,6 +184,7 @@ class NumpyResponse(TemplateResponse):
         datalist = []
 
         variable_labels = self.variable_labels
+
         for datum in data:
             # iterate over each datum and do type checking
             if not isinstance(datum, dict):
@@ -186,8 +193,10 @@ class NumpyResponse(TemplateResponse):
             # sample
             if 'sample' not in datum:
                 raise ValueError("each datum in 'data' must include a 'sample' key with a dict value")
-            if not isinstance(datum['sample'], dict):
+            sample = datum['sample']
+            if not isinstance(sample, dict):
                 raise TypeError("expected 'sample' to be a dict")
+            # checking against vartype is done in add_samples_from_array
 
             # energy
             if 'energy' not in datum:
@@ -205,7 +214,6 @@ class NumpyResponse(TemplateResponse):
                 datum['num_occurences'] = 1
 
             # add sample to a list of lists
-            sample = datum['sample']
             if variable_labels is None:
                 if len(self) != 0:
                     raise RuntimeError("internal error - variable_labels should only be unset with no samples")
@@ -253,6 +261,21 @@ class NumpyResponse(TemplateResponse):
                 self.variable_labels = [mapping[v] for v in self.variable_labels]
             return self
 
+
+class NumpySpinResponse(NumpyResponse):
+    def __init__(self, info=None, vartype=VARTYPES.SPIN):
+        NumpyResponse.__init__(self, info=info, vartype=vartype)
+
+    def as_binary(self, offset):
+        raise NotImplementedError
+
+
+class NumpyBinaryResponse(NumpyResponse):
+    def __init__(self, info=None, vartype=VARTYPES.BINARY):
+        NumpyResponse.__init__(self, info=info, vartype=vartype)
+
+    def as_spin(self, offset, copy=True):
+        return self.cast(SpinResponse, varmap={0: -1, 1: 1}, offset=offset, copy=copy)
 
 # class NumpySpinResponse(NumpyResponse):
 #     """Subclass of :class:`.NumpyResponse` which encodes spin-valued samples.

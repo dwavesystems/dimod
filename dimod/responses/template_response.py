@@ -36,11 +36,6 @@ can also be queried
 >>> list(response.energies())
 [-1.5, -0.5, -0.5, 2.5]
 
-Or both can be iterated over together
-
->>> list(response.items())
-[({'a': -1, 'b': -1}, -1.5), ({'a': 1, 'b': 1}, -0.5), ({'a': -1, 'b': 1}, -0.5), ...]
-
 Finally, if there is a data associated with any of the samples, it can accessed through
 the same methods. The data is returned as a dict.
 
@@ -106,9 +101,8 @@ import itertools
 from numbers import Number
 
 from dimod import _PY2
-from dimod.decorators import ising, qubo
 from dimod.exceptions import MappingError
-from dimod.utilities import ising_energy, qubo_energy
+from dimod.vartypes import VARTYPES
 
 __all__ = ['TemplateResponse']
 
@@ -118,30 +112,42 @@ if _PY2:
 
     def iteritems(d):
         return d.iteritems()
+
+    def itervalues(d):
+        return d.itervalues()
 else:
     zip_longest = itertools.zip_longest
 
     def iteritems(d):
         return d.items()
 
+    def itervalues(d):
+        return d.values()
+
 
 class TemplateResponse(object):
     """Serves as a superclass for response objects.
 
     Args:
-        todo
-
-    Attributes:
-        todo
+        info (dict): Information about the response as a whole.
+        vartype (:class:`.VARTYPES`): The values that the variables in
+            each sample can take. See :class:`.VARTYPES`.
 
     Examples:
-        >>> response = TemplateResponse({'name': 'example'})
-        >>> response.data
+        >>> response = dimod.TemplateResponse({'name': 'example'})
+        >>> response.info
         {'name': 'example'}
+
+    Attributes:
+        datalist (list[dict]): The data in order of insertion. Each datum
+            in data is a dict containing 'sample', 'energy', and
+            'num_occurences' keys as well an any other information added
+            on insert. This attribute should be treated as read-only, as
+            changing it can break the response's internal logic.
 
     """
 
-    def __init__(self, info=None):
+    def __init__(self, info=None, vartype=VARTYPES.UNDEFINED):
 
         # each sample is stored as a dict in _sample_data
         self.datalist = []
@@ -154,9 +160,20 @@ class TemplateResponse(object):
         else:
             self.info = info
 
+        # set the vartype
+        if vartype in VARTYPES:
+            self.vartype = vartype
+        elif isinstance(vartype, str):
+            self.vartype = VARTYPES[vartype]
+        else:
+            self.vartype = VARTYPES(vartype)
+
     @property
     def sorted_datalist(self):
-        """todo"""
+        """list[dict]: The data in order of energy, low-to-high. The datum
+        stored in sorted_datalist are the same as in datalist. This list
+        is generated on the first read after an insertion to the response.
+        """
         if len(self.datalist) != len(self._sorted_datalist):
             # sorting will be faster when the list is partially sorted, so just add the new
             # samples onto the end of our previously sorted list
@@ -183,26 +200,86 @@ class TemplateResponse(object):
         return iter(self.samples())
 
     def samples(self, data=False):
-        """todo"""
+        """An iterator over the samples.
+
+        Args:
+            data (bool, optional): Default False. If True,
+                returns an iterator of 2-tuples, (sample, datum).
+
+        Yields:
+            dict: The samples, in order of energy low-to-high.
+
+            If data=True, yields 2-tuple (sample, datum). Where
+            datum is the data associated with the given sample.
+
+        Examples:
+            >>> response = TemplateResponse()
+            >>> response.add_samples_from([{0: -1}, {0: 1}], [1, -1])
+            >>> list(response.samples())
+            [{0: 1}, {0: -1}]
+
+        """
         if data:
             return zip(self.data(keys=['sample']), self.data())
         return self.data(keys=['sample'])
 
     def energies(self, data=False):
-        """todo"""
+        """An iterator over the energies.
+
+        Args:
+            data (bool, optional): Default False. If True,
+                returns an iterator of 2-tuples, (sample, datum).
+
+        Yields:
+            number: The energies, from low-to-high.
+
+            If data=True, yields 2-tuple (energy, datum). Where
+            datum is the data associated with the given energy.
+
+        """
         if data:
             return zip(self.data(keys=['energy']), self.data())
         return self.data(keys=['energy'])
 
-    def data(self, keys=[], ordered_by_energy=True):
-        """todo"""
+    def data(self, keys=None, ordered_by_energy=True):
+        """An iterator over the data.
+
+        Args:
+            keys (list, optional). Default None. If keys
+                are provided, data yields a tuple of the
+                values associated with each key in each
+                datum.
+            ordered_by_energy (bool, optional): Default True.
+                If True, the datum (or tuples) are yielded in
+                order energy, low-to-high. If False, they are
+                yielded in order of insertion.
+
+        Yields:
+            dict: The datum stored in response.
+
+            If keys are provided, returns a tuple (see parameter
+            description above and example below).
+
+        Examples:
+            >>> response = dimod.TemplateResponse()
+            >>> response.add_samples_from([{0: -1}, {0: 1}], [1, -1])
+            >>> list(response.data())
+            [{'energy': -1, 'num_occurences': 1, 'sample': {0: 1}},
+             {'energy': 1, 'num_occurences': 1, 'sample': {0: -1}}]
+            >>> for sample in response.data(keys=['sample']):
+            ...     pass
+            >>> for sample, num_occurences in response.data(keys=['sample', 'num_occurences']):
+            ...     pass
+
+
+        """
         # by default samples are ordered by energy low-to-high
         if ordered_by_energy:
             data = self.sorted_datalist
         else:
             data = self.datalist
 
-        if not keys:
+        if keys is None:
             for datum in data:
                 yield datum
         else:
@@ -242,6 +319,10 @@ class TemplateResponse(object):
             >>> list(response.items(data=True))
             [({0: 1}, -1, {'n': 1}), ({0: -1}, 1, {'n': 5})]
 
+        Note:
+            Depreciation Warning: This method of access is being depreciated.
+            it can be replaced by `response.data(keys=['sample', 'energy'])`
+
         """
         warnings.warn("'items' will be depreciated in dimod 1.0.0", DeprecationWarning)
         if data:
@@ -261,9 +342,12 @@ class TemplateResponse(object):
             **kwargs
 
         Examples:
-            >>> response = TemplateResponse()
+            >>> response = dimod.TemplateResponse()
             >>> response.add_sample({0: -1}, 1)
-            >>> response.add_sample({0: 1}, -1, num_occurences=1)
+            >>> response.add_sample({0: 1}, -1, sample_idx=1)
+            >>> list(response.data())
+            [{'energy': -1, 'num_occurences': 1, 'sample': {0: 1}, 'sample_idx': 1},
+             {'energy': 1, 'num_occurences': 1, 'sample': {0: -1}}]
 
         """
 
@@ -282,11 +366,17 @@ class TemplateResponse(object):
                 {var: value, ...}.
             energies (iterator): An iterable object that yields
                 energies associated with each sample.
-            todo
+            num_occurences (int): Default 1. The number of times the sample
+                occurred. This is applied to each sample.
+            **kwargs
 
 
         Examples:
-            todo
+            >>> response = dimod.TemplateResponse()
+            >>> response.add_samples_from([{0: -1}, {0: 1}], [1, -1], dataval='test')
+            >>> list(response.data())
+            [{'dataval': 'test', 'energy': -1, 'num_occurences': 1, 'sample': {0: 1}},
+             {'dataval': 'test', 'energy': 1, 'num_occurences': 1, 'sample': {0: -1}}]
 
         """
         stop = object()  # signals that the two iterables are different lengths
@@ -310,7 +400,22 @@ class TemplateResponse(object):
         self.add_data_from(_iter_datum())
 
     def add_data_from(self, data):
-        """todo"""
+        """Loads data into the response.
+
+        Args:
+            data (iterable[dict]): An iterable of datum. Each datum is a
+                dict. The datum must contain 'sample' and 'energy' keys
+                with dict and number values respectively.
+
+        Examples:
+            >>> response = dimod.TemplateResponse
+            >>> response.add_data_from([{'energy': -1, 'num_occurences': 1, 'sample': {0: 1}},
+                                        {'energy': 1, 'num_occurences': 1, 'sample': {0: -1}}])
+
+        """
+
+        valid_sample_val = self.vartype.value
+
         def _check_iter():
             for datum in data:
                 # iterate over each datum and do type checking
@@ -320,8 +425,11 @@ class TemplateResponse(object):
                 # sample
                 if 'sample' not in datum:
                     raise ValueError("each datum in 'data' must include a 'sample' key with a dict value")
-                if not isinstance(datum['sample'], dict):
+                sample = datum['sample']
+                if not isinstance(sample, dict):
                     raise TypeError("expected 'sample' to be a dict")
+                if valid_sample_val is not None and any(val not in valid_sample_val for val in itervalues(sample)):
+                    raise ValueError("expected the biases of 'sample' to be in {}".format(valid_sample_val))
 
                 # energy
                 if 'energy' not in datum:
@@ -365,15 +473,13 @@ class TemplateResponse(object):
         """The number of samples in response."""
         return len(self.datalist)
 
-    def relabel_samples(self, mapping, copy=True):
+    def relabel_samples(self, mapping):
         """Return a new response object with the samples relabeled.
 
         Args:
             mapping (dict[hashable, hashable]): A dictionary with the old labels as keys
                 and the new labels as values. A partial mapping is
                 allowed.
-            copy (bool, optional): If copy is True, the datum are copied, if false
-                then they will be the same objects.
 
         Examples:
             >>> response = TemplateResponse()
@@ -388,18 +494,12 @@ class TemplateResponse(object):
         """
 
         # get a new response of the same type as self
-        if copy:
-            response = self.__class__(self.info.copy())
-        else:
-            response = self.__class__(self.info)
+        response = self.__class__(self.info.copy())
 
         def _change_sample_iter():
             for self_datum in self.data():
-                if copy:
-                    # copy the field so they don't point to the same object
-                    datum = self_datum.copy()
-                else:
-                    datum = self_datum
+                # copy the field so they don't point to the same object
+                datum = self_datum.copy()
 
                 sample = datum['sample']
 
@@ -426,21 +526,27 @@ class TemplateResponse(object):
 
         return response
 
-    def cast(self, response_class, varmap=None, offset=0.0, copy=True):
-        """TODO"""
-        if copy:
-            response = response_class(self.info.copy())
-        else:
-            response = response_class(self.info)
+    def cast(self, response_class, varmap=None, offset=0.0):
+        """Casts the response to a different type of dimod response.
+
+        Args:
+            response_class (type): A dimod response class.
+            varmap (dict, optional): A dict mapping a change in sample
+                values. If not provided samples are not changed.
+            offset (number, optional): Default 0.0. The energy offset
+                to apply to all of the energies in the response.
+
+        Returns:
+            response_class: A dimod response.
+
+        """
+        response = response_class(self.info.copy())
 
         # the energies are offset by a constant, so the order stays the same. Thus we can
         # transfer directly.
         def _iter_datum():
             for self_datum in self.data():
-                if copy:
-                    datum = self_datum.copy()
-                else:
-                    datum = self_datum
+                datum = self_datum.copy()
 
                 # convert the samples
                 if varmap is not None:

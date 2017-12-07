@@ -12,7 +12,10 @@ from dimod.responses.tests.test_response import ResponseGenericTests
 
 @unittest.skipUnless(_numpy, "numpy not installed")
 class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
-    response_factory = dimod.NumpyResponse
+    def setUp(self):
+        self.response_factory = dimod.NumpyResponse
+        self.one = 1
+        self.zero = 0
 
     def test_response_creation_concatenation(self):
         num_samples = 100
@@ -77,11 +80,10 @@ class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
 
 
 # @unittest.skipUnless(_numpy, "numpy not installed")
-# class TestSpinResponse(unittest.TestCase, ResponseGenericTests):
+# class TestSpinResponse(TestNumpyResponse):
 #     one = 1
 #     zero = -1  # spin-valued
-#     response_factory = NumpySpinResponse
-#     relabel_allowed = False
+#     response_factory = dimod.NumpySpinResponse
 
 #     def test_as_binary(self):
 
@@ -92,7 +94,7 @@ class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
 #         sample1 = {0: 1, 1: -1}
 #         sample2 = {0: 1, 1: 1}
 
-#         Q, offset = ising_to_qubo(h, J)
+#         Q, offset = dimod.ising_to_qubo(h, J)
 
 #         response = self.response_factory()
 #         response.add_samples_from([sample0, sample1, sample2], [ising_energy(h, J, sample0),
@@ -145,69 +147,29 @@ class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
 
 
 # @unittest.skipUnless(_numpy, "numpy not installed")
-# class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
-#     response_factory = NumpyBinaryResponse
-#     relabel_allowed = False
+# class TestBinaryResponse(TestNumpyResponse):
+#     response_factory = dimod.NumpyBinaryResponse
 
 #     def test_as_spin(self):
-#         # add_sample with no energy specified, but Q given
-
-#         Q = {(0, 0): -1, (0, 1): 1, (1, 1): -1}
-
-#         sample0 = {0: 0, 1: 1}
-#         sample1 = {0: 1, 1: 1}
-#         sample2 = {0: 0, 1: 0}
-
-#         h, J, offset = qubo_to_ising(Q)
-
 #         response = self.response_factory()
-#         response.add_samples_from([sample0, sample1, sample2], [qubo_energy(Q, sample0),
-#                                                                 qubo_energy(Q, sample1),
-#                                                                 qubo_energy(Q, sample2)])
 
-#         response.add_sample(sample0, qubo_energy(Q, sample0))
+#         # set up a BQM and some samples
+#         Q = {(0, 0): -1, (0, 1): 1, (1, 1): -1}
+#         h, J, offset = dimod.qubo_to_ising(Q)
 
-#         spin_response = response.as_spin(-1 * offset)
+#         samples = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0], [1, 1, 1]], dtype=int)
+#         energies = np.array([dimod.qubo_energy(row, Q) for row in samples])
+#         response.add_samples_from_array(samples, energies)
 
+#         # cast to spin
+#         spin_response = response.as_spin(-offset)
+
+#         # check that the energies are correcct
 #         for sample, energy in spin_response.items():
-#             self.assertEqual(ising_energy(h, J, sample), energy)
+#             self.assertEqual(dimod.ising_energy(sample, h, J), energy)
 
-#         spin_response = response.as_spin(-1 * offset, data_copy=True)
+#         # make a new spin response
+#         spin_response = response.as_spin(offset)
 #         data_ids = {id(data) for __, data in response.samples(data=True)}
 #         for __, data in spin_response.samples(data=True):
 #             self.assertNotIn(id(data), data_ids)
-
-#     def test_input_checking(self):
-#         response = self.response_factory()
-
-#         with self.assertRaises(ValueError):
-#             response.add_sample({0: -1}, 0.0)
-
-#         with self.assertRaises(TypeError):
-#             response.add_sample({0: 0})  # neither energy nor Q
-
-#         with self.assertRaises(ValueError):
-#             response.add_samples_from([{0: -1}], [0.0])
-
-#         with self.assertRaises(TypeError):
-#             response.add_samples_from([{0: 0}])  # neither energy nor Q
-
-#     def test_as_binary_response(self):
-#         response = self.response_factory()
-
-#         num_samples = 100
-#         num_variables = 200
-#         samples = np.triu(np.ones((num_samples, num_variables)))
-#         energies = np.zeros((num_samples,))
-
-#         response.add_samples_from_array(samples, energies)
-
-#         dimod_response = response.as_binary_response()
-
-#         for s, t in zip(response, dimod_response):
-#             self.assertEqual(s, t)
-
-#         dimod_response = response.as_binary_response(data_copy=True)
-#         for (__, dat), (__, dat0) in zip(response.samples(data=True),
-#                                          dimod_response.samples(data=True)):
-#             self.assertNotEqual(id(dat), id(dat0))
