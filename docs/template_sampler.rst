@@ -5,7 +5,7 @@ Creating dimod samplers
 
 .. currentmodule:: dimod
 
-.. automodule:: dimod.template_sampler
+.. automodule:: dimod.samplers.template_sampler
 
 TemplateSampler methods
 -----------------------
