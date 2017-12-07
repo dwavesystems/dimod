@@ -79,97 +79,66 @@ class TestNumpyResponse(unittest.TestCase, ResponseGenericTests):
             response.add_samples_from_array(np.asarray([[0]]), np.asarray([0.0]), datalist=[{}, {}])
 
 
-# @unittest.skipUnless(_numpy, "numpy not installed")
-# class TestSpinResponse(TestNumpyResponse):
-#     one = 1
-#     zero = -1  # spin-valued
-#     response_factory = dimod.NumpySpinResponse
+@unittest.skipUnless(_numpy, "numpy not installed")
+class TestSpinResponse(TestNumpyResponse):
+    def setUp(self):
+        self.one = 1
+        self.zero = -1  # spin-valued
+        self.response_factory = dimod.NumpySpinResponse
 
-#     def test_as_binary(self):
+    def test_as_binary(self):
 
-#         h = {0: 0, 1: 0}
-#         J = {(0, 1): 1}
+        h = {0: 0, 1: 0}
+        J = {(0, 1): 1}
 
-#         sample0 = {0: -1, 1: 1}
-#         sample1 = {0: 1, 1: -1}
-#         sample2 = {0: 1, 1: 1}
+        sample0 = {0: -1, 1: 1}
+        sample1 = {0: 1, 1: -1}
+        sample2 = {0: 1, 1: 1}
 
-#         Q, offset = dimod.ising_to_qubo(h, J)
+        Q, offset = dimod.ising_to_qubo(h, J)
 
-#         response = self.response_factory()
-#         response.add_samples_from([sample0, sample1, sample2], [ising_energy(h, J, sample0),
-#                                                                 ising_energy(h, J, sample1),
-#                                                                 ising_energy(h, J, sample2)])
+        response = self.response_factory()
+        response.add_samples_from([sample0, sample1, sample2], [dimod.ising_energy(sample0, h, J),
+                                                                dimod.ising_energy(sample1, h, J),
+                                                                dimod.ising_energy(sample2, h, J)])
 
-#         bin_response = response.as_binary(-1 * offset)
-#         for sample, energy in bin_response.items():
-#             self.assertEqual(qubo_energy(Q, sample), energy)
+        bin_response = response.as_binary(-1 * offset)
+        for sample, energy in bin_response.items():
+            self.assertEqual(dimod.qubo_energy(sample, Q), energy)
 
-#         bin_response = response.as_binary(-1 * offset, data_copy=True)
-#         data_ids = {id(data) for __, data in response.samples(data=True)}
-#         for __, data in bin_response.samples(data=True):
-#             self.assertNotIn(id(data), data_ids)
-
-#     def test_input_checking(self):
-#         response = self.response_factory()
-
-#         with self.assertRaises(ValueError):
-#             response.add_sample({0: 0}, 0.0)
-
-#         with self.assertRaises(TypeError):
-#             response.add_sample({0: 1})  # neither energy nor h, J
-
-#         with self.assertRaises(ValueError):
-#             response.add_samples_from([{0: 0}], [0.0])
-
-#         with self.assertRaises(TypeError):
-#             response.add_samples_from([{0: 1}])  # neither energy nor h, J
-
-#     def test_as_spin_response(self):
-#         response = self.response_factory()
-
-#         num_samples = 100
-#         num_variables = 200
-#         samples = np.triu(np.ones((num_samples, num_variables))) * 2 - 1
-#         energies = np.zeros((num_samples,))
-
-#         response.add_samples_from_array(samples, energies)
-
-#         dimod_response = response.as_spin_response()
-
-#         for s, t in zip(response, dimod_response):
-#             self.assertEqual(s, t)
-
-#         dimod_response = response.as_spin_response(data_copy=True)
-#         for (__, dat), (__, dat0) in zip(response.samples(data=True),
-#                                          dimod_response.samples(data=True)):
-#             self.assertNotEqual(id(dat), id(dat0))
+        bin_response = response.as_binary(-1 * offset)
+        data_ids = {id(data) for __, data in response.samples(data=True)}
+        for __, data in bin_response.samples(data=True):
+            self.assertNotIn(id(data), data_ids)
 
 
-# @unittest.skipUnless(_numpy, "numpy not installed")
-# class TestBinaryResponse(TestNumpyResponse):
-#     response_factory = dimod.NumpyBinaryResponse
+@unittest.skipUnless(_numpy, "numpy not installed")
+class TestBinaryResponse(TestNumpyResponse):
+    def setUp(self):
+        self.response_factory = dimod.NumpyBinaryResponse
+        self.zero = 0
+        self.one = 1
 
-#     def test_as_spin(self):
-#         response = self.response_factory()
+    def test_as_spin_array(self):
+        response = self.response_factory()
 
-#         # set up a BQM and some samples
-#         Q = {(0, 0): -1, (0, 1): 1, (1, 1): -1}
-#         h, J, offset = dimod.qubo_to_ising(Q)
+        # set up a BQM and some samples
+        Q = {(0, 0): -1, (0, 1): 1, (1, 1): -1}
+        h, J, offset = dimod.qubo_to_ising(Q)
 
-#         samples = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0], [1, 1, 1]], dtype=int)
-#         energies = np.array([dimod.qubo_energy(row, Q) for row in samples])
-#         response.add_samples_from_array(samples, energies)
+        samples = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0], [1, 1, 1]], dtype=int)
+        energies = np.array([dimod.qubo_energy(row, Q) for row in samples])
+        response.add_samples_from_array(samples, energies)
 
-#         # cast to spin
-#         spin_response = response.as_spin(-offset)
+        # cast to spin
+        spin_response = response.as_spin(-offset)
 
-#         # check that the energies are correcct
-#         for sample, energy in spin_response.items():
-#             self.assertEqual(dimod.ising_energy(sample, h, J), energy)
+        # check that the energies are correcct
+        for sample, energy in spin_response.items():
+            self.assertEqual(dimod.ising_energy(sample, h, J), energy)
 
-#         # make a new spin response
-#         spin_response = response.as_spin(offset)
-#         data_ids = {id(data) for __, data in response.samples(data=True)}
-#         for __, data in spin_response.samples(data=True):
-#             self.assertNotIn(id(data), data_ids)
+        # make a new spin response
+        spin_response = response.as_spin(offset)
+        data_ids = {id(data) for __, data in response.samples(data=True)}
+        for __, data in spin_response.samples(data=True):
+            self.assertNotIn(id(data), data_ids)
