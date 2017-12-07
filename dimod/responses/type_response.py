@@ -16,6 +16,7 @@ import itertools
 from dimod import _PY2
 from dimod.responses.template_response import TemplateResponse
 from dimod.utilities import qubo_energy, ising_energy
+from dimod.vartypes import VARTYPES
 
 __all__ = ['BinaryResponse', 'SpinResponse']
 
@@ -40,6 +41,9 @@ class BinaryResponse(TemplateResponse):
         todo
 
     """
+    def __init__(self, info=None):
+        TemplateResponse.__init__(self, info=info, vartype=VARTYPES.BINARY)
+
     def add_sample(self, sample, energy=None, num_occurences=1, Q=None, **kwargs):
         """Loads a sample and associated energy into the response.
 
@@ -75,8 +79,8 @@ class BinaryResponse(TemplateResponse):
         # check that the sample is spin-valued
         if not isinstance(sample, dict):
             raise TypeError("expected input 'sample' to be a dict")
-        elif any(val not in (0, 1) for val in itervalues(sample)):
-            raise ValueError('given sample is not binary. Values should be 0 or 1')
+        # elif any(val not in (0, 1) for val in itervalues(sample)):
+        #     raise ValueError('given sample is not binary. Values should be 0 or 1')
 
         # if energy is not provided, but Q is, then we can calculate
         # the energy for the sample.
@@ -149,7 +153,7 @@ class BinaryResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, num_occurences=num_occurences, **kwargs)
 
-    def as_spin(self, offset=0.0, copy=True):
+    def as_spin(self, offset=0.0):
         """Converts a BinaryResponse to a SpinResponse.
 
         Args:
@@ -170,7 +174,7 @@ class BinaryResponse(TemplateResponse):
             returned by `samples(data=True)` is transferred.
 
         """
-        return self.cast(SpinResponse, varmap={0: -1, 1: 1}, offset=offset, copy=copy)
+        return self.cast(SpinResponse, varmap={0: -1, 1: 1}, offset=offset)
 
 
 class SpinResponse(TemplateResponse):
@@ -181,6 +185,8 @@ class SpinResponse(TemplateResponse):
             as a dictionary. Default {}.
 
     """
+    def __init__(self, info=None):
+        TemplateResponse.__init__(self, info=info, vartype=VARTYPES.SPIN)
 
     def add_sample(self, sample, energy=None, num_occurences=1, h=None, J=None, **kwargs):
         """Loads a sample and associated energy into the response.
@@ -210,10 +216,6 @@ class SpinResponse(TemplateResponse):
         """
         if not isinstance(sample, dict):
             raise TypeError("expected 'sample' to be a dict")
-
-        # check that the sample is spin-valued
-        if any(val not in (-1, 1) for val in itervalues(sample)):
-            raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
 
         # if energy is not provided, but h, J are, then we can calculate
         # the energy for the sample.
@@ -275,9 +277,6 @@ class SpinResponse(TemplateResponse):
         if not all(isinstance(sample, dict) for sample in samples):
             raise TypeError("expected each sample in 'samples' to be a dict")
 
-        if any(any(val not in (-1, 1) for val in itervalues(sample)) for sample in samples):
-            raise ValueError('given sample is not spin-valued. Values should be -1 or 1')
-
         if energies is None:
             if h is None or J is None:
                 raise TypeError("most provide 'energy' or 'h' and 'J'")
@@ -285,7 +284,7 @@ class SpinResponse(TemplateResponse):
 
         TemplateResponse.add_samples_from(self, samples, energies, num_occurences=num_occurences, **kwargs)
 
-    def as_binary(self, offset=0.0, copy=True):
+    def as_binary(self, offset=0.0):
         """Converts a SpinResponse to a BinaryResponse.
 
         Args:
@@ -305,4 +304,4 @@ class SpinResponse(TemplateResponse):
             returned by `samples(data=True)` is transferred.
 
         """
-        return self.cast(BinaryResponse, varmap={-1: 0, 1: 1}, offset=offset, copy=copy)
+        return self.cast(BinaryResponse, varmap={-1: 0, 1: 1}, offset=offset)
