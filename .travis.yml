@@ -29,9 +29,6 @@ matrix:
             - brew install python3
             - virtualenv env -p python3
             - source env/bin/activate
-        - os: osx
-          language: generic
-          env: TOXENV=pynightly
 
 install:
     - pip install dwave_networkx
