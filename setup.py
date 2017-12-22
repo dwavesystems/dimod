@@ -1,10 +1,24 @@
-from setuptools import setup, find_packages
+from __future__ import absolute_import
 
-from dimod import __version__, __author__, __description__, __authoremail__
+import sys
+from setuptools import setup
 
-install_requires = ['decorator>=4.1.0', 'enum34']
+_PY2 = sys.version_info.major == 2
 
-extras_require = {'all': ['numpy']}
+# add __version__, __author__, __authoremail__, __description__ to this namespace
+# equivalent to:
+if _PY2:
+    execfile("./dimod/package_info.py")
+else:
+    exec(open("./dimod/package_info.py").read())
+
+install_requires = ['decorator>=4.1.0',
+                    'enum34']
+
+tests_require = ['numpy']
+extras_require = {'tests': tests_require,
+                  'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
+                  'all': ['numpy']}
 
 packages = ['dimod',
             'dimod.responses',
@@ -23,4 +37,5 @@ setup(
     packages=packages,
     install_requires=install_requires,
     extras_require=extras_require,
+    tests_require=tests_require
 )
