@@ -34,13 +34,12 @@ matrix:
           env: TOXENV=pynightly
 
 install:
-    - pip install -r requirements.txt
     - pip install .
     - pip install coveralls
     
 script:
 - python -m unittest discover
-- pip install numpy
+- pip install .[all]
 - coverage run --source=dimod -m unittest discover
 
 after_success:

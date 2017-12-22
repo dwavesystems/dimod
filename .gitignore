@@ -10,7 +10,7 @@ docs/generated
 *.sublime-project
 *.sublime-workspace
 
-venv/
+venv*/
 
 .coverage
 htmlcov/

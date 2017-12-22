@@ -2,11 +2,6 @@ from __future__ import absolute_import
 
 import sys
 
-__version__ = '0.4.0'
-__author__ = 'D-Wave Systems Inc.'
-__authoremail__ = 'acondello@dwavesys.com'
-__description__ = 'A shared API for binary quadratic model samplers.'
-
 _PY2 = sys.version_info[0] == 2
 
 from dimod.samplers import *
