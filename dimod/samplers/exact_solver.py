@@ -1,4 +1,8 @@
-"""An exact solver that calculates the energy of all possible samples.
+"""
+ExactSolver
+-----------
+
+An exact solver that calculates the energy of all possible samples.
 """
 from dimod import _PY2
 from dimod.samplers.template_sampler import TemplateSampler
