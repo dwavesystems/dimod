@@ -133,7 +133,6 @@ after_test:
   - "%CMD_IN_ENV% pip install wheel setuptools --upgrade --force"
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
   - "%CMD_IN_ENV% python setup.py bdist_wininst"
-  - "%CMD_IN_ENV% python setup.py bdist_msi"
   - ps: "ls dist"
 
 artifacts:
