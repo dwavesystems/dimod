@@ -280,19 +280,19 @@ class TestTemplateResponse(unittest.TestCase, ResponseGenericTests):
     def test_setting_vartype(self):
         # should be set to undefined
         response = dimod.TemplateResponse()
-        self.assertIs(response.vartype, dimod.VARTYPES.UNDEFINED)
+        self.assertIs(response.vartype, dimod.Vartype.UNDEFINED)
 
         # set to a specific one
-        response = dimod.TemplateResponse(vartype=dimod.VARTYPES.SPIN)
-        self.assertIs(response.vartype, dimod.VARTYPES.SPIN)
+        response = dimod.TemplateResponse(vartype=dimod.Vartype.SPIN)
+        self.assertIs(response.vartype, dimod.Vartype.SPIN)
 
         # set to a specific one by accepted variable types
         response = dimod.TemplateResponse(vartype={-1, 1})
-        self.assertIs(response.vartype, dimod.VARTYPES.SPIN)
+        self.assertIs(response.vartype, dimod.Vartype.SPIN)
 
         # set to a specific one by name
         response = dimod.TemplateResponse(vartype='BINARY')
-        self.assertIs(response.vartype, dimod.VARTYPES.BINARY)
+        self.assertIs(response.vartype, dimod.Vartype.BINARY)
 
 
 class TestBinaryResponse(unittest.TestCase, ResponseGenericTests):
