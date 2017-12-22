@@ -2,13 +2,13 @@ import unittest
 
 import itertools
 
-from dimod import ExactSolver, ising_energy, qubo_energy
+import dimod
 from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
 
 
 class TestExactSolver(unittest.TestCase, SamplerAPITest):
     def setUp(self):
-        self.sampler = ExactSolver()
+        self.sampler = dimod.ExactSolver()
 
     def test_all_samples(self):
         """Check that every sample is included and has the correct energy."""
@@ -34,7 +34,7 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
 
         # let's also double check the enegy
         for sample, energy in response.items():
-            self.assertTrue(abs(energy - qubo_energy(Q, sample)) < .000001)
+            self.assertTrue(abs(energy - dimod.qubo_energy(sample, Q)) < .000001)
 
     def test_J_not_triangular(self):
         response = self.sampler.sample_ising({}, {(0, 1): -1, (1, 0): 1})

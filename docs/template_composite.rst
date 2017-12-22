@@ -5,7 +5,7 @@ Composing samplers
 
 .. currentmodule:: dimod
 
-.. automodule:: dimod.template_composite
+.. automodule:: dimod.composites.composite_template
 
 .. figure:: _static/composing_samplers.png
     :alt: dimod sampler composition pattern.
