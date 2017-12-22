@@ -24,7 +24,7 @@ from dimod import _PY2
 from dimod.exceptions import MappingError
 from dimod.responses.template_response import TemplateResponse
 from dimod.responses.type_response import BinaryResponse, SpinResponse
-from dimod.vartypes import VARTYPES
+from dimod.vartypes import Vartype
 
 __all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
 
@@ -45,8 +45,8 @@ class NumpyResponse(TemplateResponse):
 
     Args:
         info (dict): Information about the response as a whole.
-        vartype (:class:`.VARTYPES`): The values that the variables in
-            each sample can take. See :class:`.VARTYPES`.
+        vartype (:class:`.Vartype`): The values that the variables in
+            each sample can take. See :class:`.Vartype`.
 
     Examples:
         >>> response = dimod.NumpyResponse({'name': 'example'})
@@ -54,7 +54,7 @@ class NumpyResponse(TemplateResponse):
         {'name': 'example'}
 
     """
-    def __init__(self, info=None, vartype=VARTYPES.UNDEFINED):
+    def __init__(self, info=None, vartype=Vartype.UNDEFINED):
         import numpy as np
 
         TemplateResponse.__init__(self, info=info, vartype=vartype)
@@ -299,10 +299,10 @@ class NumpySpinResponse(NumpyResponse):
 
     Args:
         info (dict): Information about the response as a whole.
-        vartype (:class:`.VARTYPES`): The values that the variables in
-            each sample can take. See :class:`.VARTYPES`.
+        vartype (:class:`.Vartype`): The values that the variables in
+            each sample can take. See :class:`.Vartype`.
     """
-    def __init__(self, info=None, vartype=VARTYPES.SPIN):
+    def __init__(self, info=None, vartype=Vartype.SPIN):
         NumpyResponse.__init__(self, info=info, vartype=vartype)
 
     def as_binary(self, offset):
@@ -320,10 +320,10 @@ class NumpyBinaryResponse(NumpyResponse):
 
     Args:
         info (dict): Information about the response as a whole.
-        vartype (:class:`.VARTYPES`): The values that the variables in
-            each sample can take. See :class:`.VARTYPES`.
+        vartype (:class:`.Vartype`): The values that the variables in
+            each sample can take. See :class:`.Vartype`.
     """
-    def __init__(self, info=None, vartype=VARTYPES.BINARY):
+    def __init__(self, info=None, vartype=Vartype.BINARY):
         NumpyResponse.__init__(self, info=info, vartype=vartype)
 
     def as_spin(self, offset):

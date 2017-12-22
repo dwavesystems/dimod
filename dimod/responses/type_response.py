@@ -16,7 +16,7 @@ import itertools
 from dimod import _PY2
 from dimod.responses.template_response import TemplateResponse
 from dimod.utilities import qubo_energy, ising_energy
-from dimod.vartypes import VARTYPES
+from dimod.vartypes import Vartype
 
 __all__ = ['BinaryResponse', 'SpinResponse']
 
@@ -42,7 +42,7 @@ class BinaryResponse(TemplateResponse):
 
     """
     def __init__(self, info=None):
-        TemplateResponse.__init__(self, info=info, vartype=VARTYPES.BINARY)
+        TemplateResponse.__init__(self, info=info, vartype=Vartype.BINARY)
 
     def add_sample(self, sample, energy=None, num_occurences=1, Q=None, **kwargs):
         """Loads a sample and associated energy into the response.
@@ -186,7 +186,7 @@ class SpinResponse(TemplateResponse):
 
     """
     def __init__(self, info=None):
-        TemplateResponse.__init__(self, info=info, vartype=VARTYPES.SPIN)
+        TemplateResponse.__init__(self, info=info, vartype=Vartype.SPIN)
 
     def add_sample(self, sample, energy=None, num_occurences=1, h=None, J=None, **kwargs):
         """Loads a sample and associated energy into the response.
