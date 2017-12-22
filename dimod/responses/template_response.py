@@ -102,7 +102,7 @@ from numbers import Number
 
 from dimod import _PY2
 from dimod.exceptions import MappingError
-from dimod.vartypes import VARTYPES
+from dimod.vartypes import Vartype
 
 __all__ = ['TemplateResponse']
 
@@ -130,8 +130,8 @@ class TemplateResponse(object):
 
     Args:
         info (dict): Information about the response as a whole.
-        vartype (:class:`.VARTYPES`): The values that the variables in
-            each sample can take. See :class:`.VARTYPES`.
+        vartype (:class:`.Vartype`): The values that the variables in
+            each sample can take. See :class:`.Vartype`.
 
     Examples:
         >>> response = dimod.TemplateResponse({'name': 'example'})
@@ -147,7 +147,7 @@ class TemplateResponse(object):
 
     """
 
-    def __init__(self, info=None, vartype=VARTYPES.UNDEFINED):
+    def __init__(self, info=None, vartype=Vartype.UNDEFINED):
 
         # each sample is stored as a dict in _sample_data
         self.datalist = []
@@ -161,12 +161,12 @@ class TemplateResponse(object):
             self.info = info
 
         # set the vartype
-        if vartype in VARTYPES:
+        if vartype in Vartype:
             self.vartype = vartype
         elif isinstance(vartype, str):
-            self.vartype = VARTYPES[vartype]
+            self.vartype = Vartype[vartype]
         else:
-            self.vartype = VARTYPES(vartype)
+            self.vartype = Vartype(vartype)
 
     @property
     def sorted_datalist(self):
