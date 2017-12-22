@@ -1,6 +1,8 @@
 """
-A reference implementation of a simulated annealing sampler using the dimod API.
+SimulatedAnnealingSampler
+-------------------------
 
+A reference implementation of a simulated annealing sampler using the dimod API.
 """
 import random
 import math
@@ -27,7 +29,8 @@ else:
 
 
 class SimulatedAnnealingSampler(TemplateSampler):
-
+    """A simple simulated annealing sampler.
+    """
     def __init__(self):
         TemplateSampler.__init__(self)
 

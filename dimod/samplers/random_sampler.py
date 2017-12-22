@@ -1,4 +1,7 @@
 """
+RandomSampler
+-------------
+
 A random sampler that can be used for unit testing and debugging.
 """
 import random

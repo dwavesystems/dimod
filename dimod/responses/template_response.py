@@ -1,6 +1,6 @@
 """
-Response API
-============
+dimod Response
+==============
 
 It is important that all dimod samplers respond in the same way.
 
