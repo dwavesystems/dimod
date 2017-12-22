@@ -26,3 +26,5 @@ import dimod.exceptions
 
 from dimod.vartypes import *
 import dimod.vartypes
+
+from dimod.package_info import *
