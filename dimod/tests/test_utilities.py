@@ -17,14 +17,14 @@ class TestIsingEnergy(unittest.TestCase):
         h = {0: -.5, 1: 0, 2: 1, 3: -.5}
         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
 
-        en0 = min(ising_energy(h, J, {0: -1, 1: -1, 2: -1, 3: -1}),
-                  ising_energy(h, J, {0: -1, 1: -1, 2: -1, 3: 1}))
-        en1 = min(ising_energy(h, J, {0: 1, 1: -1, 2: -1, 3: -1}),
-                  ising_energy(h, J, {0: 1, 1: -1, 2: -1, 3: 1}))
-        en2 = min(ising_energy(h, J, {0: -1, 1: 1, 2: -1, 3: -1}),
-                  ising_energy(h, J, {0: -1, 1: 1, 2: -1, 3: 1}))
-        en3 = min(ising_energy(h, J, {0: 1, 1: 1, 2: 1, 3: -1}),
-                  ising_energy(h, J, {0: 1, 1: 1, 2: 1, 3: 1}))
+        en0 = min(ising_energy({0: -1, 1: -1, 2: -1, 3: -1}, h, J),
+                  ising_energy({0: -1, 1: -1, 2: -1, 3: +1}, h, J))
+        en1 = min(ising_energy({0: +1, 1: -1, 2: -1, 3: -1}, h, J),
+                  ising_energy({0: +1, 1: -1, 2: -1, 3: +1}, h, J))
+        en2 = min(ising_energy({0: -1, 1: +1, 2: -1, 3: -1}, h, J),
+                  ising_energy({0: -1, 1: +1, 2: -1, 3: +1}, h, J))
+        en3 = min(ising_energy({0: +1, 1: +1, 2: +1, 3: -1}, h, J),
+                  ising_energy({0: +1, 1: +1, 2: +1, 3: +1}, h, J))
 
         self.assertEqual(en0, en1)
         self.assertEqual(en0, en2)
@@ -42,14 +42,14 @@ class TestQuboEnergy(unittest.TestCase):
         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
         Q, __ = ising_to_qubo(h, J)
 
-        en0 = min(qubo_energy(Q, {0: 0, 1: 0, 2: 0, 3: 0}),
-                  qubo_energy(Q, {0: 0, 1: 0, 2: 0, 3: 1}))
-        en1 = min(qubo_energy(Q, {0: 1, 1: 0, 2: 0, 3: 0}),
-                  qubo_energy(Q, {0: 1, 1: 0, 2: 0, 3: 1}))
-        en2 = min(qubo_energy(Q, {0: 0, 1: 1, 2: 0, 3: 0}),
-                  qubo_energy(Q, {0: 0, 1: 1, 2: 0, 3: 1}))
-        en3 = min(qubo_energy(Q, {0: 1, 1: 1, 2: 1, 3: 0}),
-                  qubo_energy(Q, {0: 1, 1: 1, 2: 1, 3: 1}))
+        en0 = min(qubo_energy({0: 0, 1: 0, 2: 0, 3: 0}, Q),
+                  qubo_energy({0: 0, 1: 0, 2: 0, 3: 1}, Q))
+        en1 = min(qubo_energy({0: 1, 1: 0, 2: 0, 3: 0}, Q),
+                  qubo_energy({0: 1, 1: 0, 2: 0, 3: 1}, Q))
+        en2 = min(qubo_energy({0: 0, 1: 1, 2: 0, 3: 0}, Q),
+                  qubo_energy({0: 0, 1: 1, 2: 0, 3: 1}, Q))
+        en3 = min(qubo_energy({0: 1, 1: 1, 2: 1, 3: 0}, Q),
+                  qubo_energy({0: 1, 1: 1, 2: 1, 3: 1}, Q))
 
         self.assertEqual(en0, en1)
         self.assertEqual(en0, en2)
@@ -105,10 +105,20 @@ class TestIsingToQubo(unittest.TestCase):
 
         Q, off = ising_to_qubo(h, J)
 
-        ising_en = ising_energy(h, J, spin_sample)
-        qubo_en = qubo_energy(Q, bin_sample)
+        ising_en = ising_energy(spin_sample, h, J)
+        qubo_en = qubo_energy(bin_sample, Q)
 
-        self.assertLessEqual(abs(-ising_en + qubo_en + off), 10**-5)
+        self.assertAlmostEqual(ising_en, qubo_en + off)
+
+    def test_offset_propogation(self):
+        h = {v: 1 / (v + 1) for v in range(10)}
+        J = {(u, v): 2 * (u / 3) + v ** .5 for (u, v) in itertools.combinations(range(10), 2)}
+
+        Q, offset = ising_to_qubo(h, J)
+
+        Q, offset2 = ising_to_qubo(h, J, offset=3)
+
+        self.assertAlmostEqual(offset + 3, offset2)
 
 
 class TestQuboToIsing(unittest.TestCase):
@@ -141,6 +151,47 @@ class TestQuboToIsing(unittest.TestCase):
                                   (5, 8): -0.75, (6, 7): -1.75, (7, 8): 0.25,
                                   (7, 9): -0.75})
         self.assertEqual(offset, -0.25)
+
+
+class TestUtilitiesIntegration(unittest.TestCase):
+    def test_start_from_binary(self):
+        h = {i: v for i, v in enumerate([-5, -4, -3, -2, -1, 0, 1, 2, 3, 4])}
+        j = {(0, 5): 2, (0, 8): 4, (1, 4): -5, (1, 7): 1, (2, 0): 5,
+             (2, 1): 4, (3, 0): -1, (3, 6): -3, (3, 8): 3, (4, 0): 2, (4, 7): 3,
+             (4, 9): 3, (5, 1): 3, (6, 5): -4, (6, 7): -4, (7, 1): -4,
+             (7, 8): 3, (8, 2): -4, (8, 3): -3, (8, 6): -5, (8, 7): -4, (9, 0): 4,
+             (9, 1): -1, (9, 4): -5, (9, 7): 3}
+        ioff = 1.7
+
+        q, qoff = ising_to_qubo(h, j, ioff)
+
+        bin_sample = {}
+        ising_sample = {}
+        for v in h:
+            bin_sample[v] = 1
+            ising_sample[v] = 1
+
+        self.assertAlmostEqual(ising_energy(ising_sample, h, j, ioff),
+                               qubo_energy(bin_sample, q, qoff))
+
+    def test_start_from_spin(self):
+        Q = {(0, 0): 4, (0, 3): 5, (0, 5): 4, (1, 1): 5, (1, 6): 1, (1, 7): -2,
+             (1, 9): -3, (3, 0): -2, (3, 1): 2, (4, 5): 4, (4, 8): 2, (4, 9): -1,
+             (5, 1): 2, (5, 6): -5, (5, 8): -4, (6, 0): 1, (6, 5): 2, (6, 6): -4,
+             (6, 7): -2, (7, 0): -2, (7, 5): -3, (7, 6): -5, (7, 7): -3, (7, 8): 1,
+             (8, 0): 2, (8, 5): 1, (9, 7): -3}
+        qoff = 1.3
+
+        h, J, ioff = qubo_to_ising(Q, qoff)
+
+        bin_sample = {}
+        ising_sample = {}
+        for v in h:
+            bin_sample[v] = 0
+            ising_sample[v] = -1
+
+        self.assertAlmostEqual(ising_energy(ising_sample, h, J, ioff),
+                               qubo_energy(bin_sample, Q, qoff))
 
 
 def normalized_matrix(mat):

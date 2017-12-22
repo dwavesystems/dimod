@@ -40,7 +40,7 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
 
         # also energy should still be preserved
         for sample, energy in response.items():
-            self.assertLessEqual(abs(dimod.ising_energy(h, J, sample) - energy), 10**-5)
+            self.assertLessEqual(abs(dimod.ising_energy(sample, h, J) - energy), 10**-5)
 
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
@@ -55,7 +55,7 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
 
         # also energy should still be preserved
         for sample, energy in response.items():
-            self.assertLessEqual(abs(dimod.qubo_energy(Q, sample) - energy), 10**-5)
+            self.assertLessEqual(abs(dimod.qubo_energy(sample, Q) - energy), 10**-5)
 
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
@@ -68,7 +68,7 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
 
         # also energy should still be preserved
         for sample, energy in response.items():
-            self.assertLessEqual(abs(dimod.ising_energy(h, J, sample) - energy), 10**-5)
+            self.assertLessEqual(abs(dimod.ising_energy(sample, h, J) - energy), 10**-5)
 
         for __, data in response.samples(data=True):
             self.assertIn('spin_reversal_variables', data)
@@ -90,7 +90,8 @@ class TestSpinTransformComposition(unittest.TestCase, SamplerAPITest):
         response = sampler.sample_ising(h, J, orig_h=h)
 
         for __, data in response.samples(data=True):
-            self.assertEqual(len(data), 2)  # should be two spin-reversal-transform reports
+            # should be two spin-reversal-transform reports in addition to the three other fields
+            self.assertEqual(len(data), 5)
 
     def test_multiple_spin_transforms(self):
         sampler = dimod.SpinReversalTransform(self.sampler)

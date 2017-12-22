@@ -7,10 +7,10 @@ import math
 import itertools
 
 from dimod import _PY2
-from dimod.template_sampler import TemplateSampler
+from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo
-from dimod.utilities import ising_energy, qubo_to_ising
-from dimod.responses.response import SpinResponse
+from dimod.utilities import ising_energy
+from dimod.responses.type_response import SpinResponse
 
 __all__ = ['SimulatedAnnealingSampler']
 
@@ -204,7 +204,7 @@ def ising_simulated_annealing(h, J, beta_range=None, num_sweeps=1000):
                     # flip the variable in the spins
                     spins[v] *= -1
 
-    return spins, ising_energy(h, J, spins)
+    return spins, ising_energy(spins, h, J)
 
 
 def greedy_coloring(adj):

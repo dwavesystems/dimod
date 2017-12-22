@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 
 from dimod import __version__, __author__, __description__, __authoremail__
 
-install_requires = ['decorator>=4.1.0']
+install_requires = ['decorator>=4.1.0', 'enum34']
+
 extras_require = {'all': ['numpy']}
 
 packages = ['dimod',

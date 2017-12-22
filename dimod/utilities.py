@@ -20,7 +20,7 @@ else:
         return d.values()
 
 
-def ising_energy(h, J, sample):
+def ising_energy(sample, h, J, offset=0.0):
     """Calculate the Ising energy of the given sample.
 
     H(s) = sum_i h_i * s_i + sum_(i, j) J_(i,j) * s_i * s_j
@@ -28,11 +28,12 @@ def ising_energy(h, J, sample):
     https://en.wikipedia.org/wiki/Ising_model
 
     Args:
-        h: The linear biases in a dict of the form {var: bias, ...}.
-        J: The quadratic biases in a dict of the form
-        {(var0, var1): bias, ...}.
-        sample: A dict of spins of the form {var: spin, ...} where
-        each spin is either -1 or 1.
+        sample: A dict of spins of the form {v: spin, ...} where
+            each spin is either -1 or 1.
+        h: The linear biases in a dict of the form {v: bias, ...}.
+        J: The quadratic biases in a dict of the form {(u, v): bias, ...}.
+        offset (numeric, optional): The constant offset to be applied
+            to the energy. Default 0.
 
     Returns:
         float: The induced energy.
@@ -41,20 +42,18 @@ def ising_energy(h, J, sample):
         No input checking is performed.
 
     """
-    energy = 0.
-
     # add the contribution from the linear biases
     for v in h:
-        energy += h[v] * sample[v]
+        offset += h[v] * sample[v]
 
     # add the contribution from the quadratic biases
     for v0, v1 in J:
-        energy += J[(v0, v1)] * sample[v0] * sample[v1]
+        offset += J[(v0, v1)] * sample[v0] * sample[v1]
 
-    return energy
+    return offset
 
 
-def qubo_energy(Q, sample):
+def qubo_energy(sample, Q, offset=0.0):
     """Calculate the quadratic polynomial value of the given sample
     to a quadratic unconstrained binary optimization (QUBO) problem.
 
@@ -63,10 +62,12 @@ def qubo_energy(Q, sample):
     https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
 
     Args:
-        Q: A dict of the QUBO coefficients of the form
-        {(var0, var1): coeff, ...}
         sample: A dict of binary variables of the form
-        {var: bin, ...} where each bin is either 0 or 1.
+            {v: bin, ...} where each bin is either 0 or 1.
+        Q: A dict of the QUBO coefficients of the form
+            {(u, v): coeff, ...}
+        offset (numeric, optional): The constant offset to be applied
+            to the energy. Default 0.
 
     Returns:
         float: The induced energy.
@@ -75,15 +76,13 @@ def qubo_energy(Q, sample):
         No input checking is performed.
 
     """
-    energy = 0.
-
     for v0, v1 in Q:
-        energy += sample[v0] * sample[v1] * Q[(v0, v1)]
+        offset += sample[v0] * sample[v1] * Q[(v0, v1)]
 
-    return energy
+    return offset
 
 
-def ising_to_qubo(h, J):
+def ising_to_qubo(h, J, offset=0.0):
     """Converts an Ising problem to a QUBO problem.
 
     Map an Ising model defined over -1/+1 variables to a binary quadratic
@@ -97,9 +96,15 @@ def ising_to_qubo(h, J):
     Args:
         h (dict): A dict of the linear coefficients of the Ising problem.
         J (dict): A dict of the quadratic coefficients of the Ising problem.
+        offset (numeric, optional): The constant offset to be applied
+            to the energy. Default 0.
 
     Returns:
-        (dict, float): A dict of the QUBO coefficients. The energy offset.
+        (dict, float): A 2-tuple containing:
+
+            dict: the QUBO coefficients.
+
+            float: The new energy offset.
 
     """
     # the linear biases are the easiest
@@ -114,12 +119,12 @@ def ising_to_qubo(h, J):
         q[(v, v)] -= 2. * bias
 
     # finally calculate the offset
-    offset = sum(itervalues(J)) - sum(itervalues(h))
+    offset += sum(itervalues(J)) - sum(itervalues(h))
 
     return q, offset
 
 
-def qubo_to_ising(Q):
+def qubo_to_ising(Q, offset=0.0):
     """Converts a QUBO problem to an Ising problem.
 
     Map a binary quadratic program x' * Q * x defined over 0/1 variables to
@@ -132,12 +137,17 @@ def qubo_to_ising(Q):
 
     Args:
         Q: A dict of the QUBO coefficients.
+        offset (numeric, optional): The constant offset to be applied
+            to the energy. Default 0.
 
     Returns:
-        (dict, dict, float):
-        A dict of the linear coefficients of the Ising problem.
-        A dict of the quadratic coefficients of the Ising problem.
-        The energy offset.
+        (dict, dict, float): A 3-tuple containing:
+
+            dict: the linear coefficients of the Ising problem.
+
+            dict: the quadratic coefficients of the Ising problem.
+
+            float: The new energy offset.
 
     """
     h = {}
@@ -169,6 +179,6 @@ def qubo_to_ising(Q):
 
             quadratic_offset += bias
 
-    offset = .5 * linear_offset + .25 * quadratic_offset
+    offset += .5 * linear_offset + .25 * quadratic_offset
 
     return h, J, offset
