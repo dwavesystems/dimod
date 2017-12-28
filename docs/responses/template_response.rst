@@ -1,6 +1,6 @@
 .. currentmodule:: dimod
 
-.. automodule:: dimod.template_response
+.. automodule:: dimod.responses.template_response
 
 .. autoclass:: TemplateResponse
     :members:

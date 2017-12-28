@@ -2,19 +2,8 @@
 
 .. _contents:
 
-Overview
-========
-
-dimod
------
-dimod provides a shared API for of Binary Quadratic Program (BQP) samplers. Ising problems
-and Quadratic Unconstrained Binary Optimiazation (QUBO) problems are both examples of
-BQP problems.
-
-License
--------
-
-Released under the Apache License 2.0 (see License).
+.. include:: ../README.rst
+  :start-after: inclusion-marker-do-not-remove
 
 Documentation
 -------------
@@ -27,11 +16,12 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   template_sampler
-   template_composite
-   responses/index
-   samplers/index
-   composites/index
+   dimod_samplers
+   included_samplers
+   dimod_composites
+   included_composites
+   dimod_responses
+   included_responses
    decorators
    utilities
    license
