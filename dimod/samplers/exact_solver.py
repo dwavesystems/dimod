@@ -1,9 +1,13 @@
-"""An exact solver that calculates the energy of all possible samples.
+"""
+ExactSolver
+-----------
+
+An exact solver that calculates the energy of all possible samples.
 """
 from dimod import _PY2
-from dimod.template_sampler import TemplateSampler
+from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
-from dimod.responses import SpinResponse
+from dimod.responses.type_response import SpinResponse
 from dimod.utilities import ising_energy
 
 __all__ = ['ExactSolver']
@@ -74,7 +78,7 @@ class ExactSolver(TemplateSampler):
 
         # generate the first sample and add it to the response
         sample = {v: -1 for v in h}
-        energy = ising_energy(h, J, sample)
+        energy = ising_energy(sample, h, J)
         response.add_sample(sample.copy(), energy)
 
         # now we iterate, flipping one bit at a time until we have

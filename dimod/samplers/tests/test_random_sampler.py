@@ -1,6 +1,6 @@
 import unittest
 
-from dimod import RandomSampler
+import dimod
 from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
 
 
@@ -8,7 +8,7 @@ class TestRandomSampler(unittest.TestCase, SamplerAPITest):
     # this inherits tests from TestSamplerAPI
 
     def setUp(self):
-        self.sampler = RandomSampler()
+        self.sampler = dimod.RandomSampler()
 
     def test_keyword_propogation_random_sampler(self):
         sampler = self.sampler

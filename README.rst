@@ -1,6 +1,3 @@
-dimod
-=====
-
 .. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
     :target: https://travis-ci.org/dwavesystems/dimod
 
@@ -10,24 +7,24 @@ dimod
 .. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
     :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
 
+.. inclusion-marker-do-not-remove
+
+dimod
+=====
+
 A shared API for QUBO/Ising samplers.
 
 Included Samplers
 -----------------
 
-dimod comes with a few `samplers`_ that are useful as reference implementations and for unit testing.
+dimod comes with a few samplers that are useful as reference implementations and for unit testing.
 
-* `SimulatedAnnealingSampler`_: A reference implementation of a simulated annealing algorithm.
-* `ExactSolver`_: determines the energy for every possible sample, but is extremely slow.
-* `RandomSampler`_: Generates random samples. Used for testing.
+* SimulatedAnnealingSampler: A reference implementation of a simulated annealing algorithm.
+* ExactSolver: determines the energy for every possible sample, but is extremely slow.
+* RandomSampler: Generates random samples. Used for testing.
 
-.. _samplers: dimod/samplers
-.. _SimulatedAnnealingSampler: dimod/samplers/simulated_annealing.py
-.. _ExactSolver: dimod/samplers/brute_force.py
-.. _RandomSampler: dimod/samplers/random_sampler.py
-
-Basic Usage
------------
+Example Usage
+-------------
 
 >>> import dimod
 >>> sampler = dimod.SimulatedAnnealingSampler()
@@ -51,20 +48,26 @@ The response object returned has many ways to access the information
 
 See documentation for more examples.
 
-Install
--------
+Installation
+------------
 
-Compatible with Python 2 and 3::
+Compatible with Python 2 and 3:
 
-    $ pip install dimod
+.. code-block:: bash
 
-To install with optional components::
+    pip install dimod
 
-    $ pip install dimod[all]
+To install with optional components:
 
-To install from source::
+.. code-block:: bash
 
-    $ python setup.py install
+    pip install dimod[all]
+
+To install from source:
+
+.. code-block:: bash
+
+    python setup.py install
 
 License
 -------

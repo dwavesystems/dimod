@@ -1,4 +1,7 @@
 """
+dimod Samplers
+==============
+
 The sampler template provides an API that different samplers can use.
 The crux of the API are two methods and a property.
 
@@ -58,14 +61,6 @@ Also, by implementing one of the methods, we now can use the others.
 >>> response = MyLinearSampler().sample_ising(h, J)
 >>> list(response.samples())
 [{0: 1, 1: -1}]
-
-
-Structured Samplers
--------------------
-
-Some samplers can only operate on a particular problem structure.
-Most commonly this happens when there is a particular problem graph.
-In this case, the `structure` property will not be None.
 
 """
 # we could do a solver that requires a complete graph as an example above...
