@@ -12,8 +12,8 @@ if _PY2:
 else:
     exec(open("./dimod/package_info.py").read())
 
-install_requires = ['decorator>=4.1.0',
-                    'enum34']
+install_requires = ['decorator==4.1.2',
+                    'enum34==1.1.6']
 
 tests_require = ['numpy']
 extras_require = {'tests': tests_require,
