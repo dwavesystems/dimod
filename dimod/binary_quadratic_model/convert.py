@@ -80,7 +80,7 @@ def to_ising(model):
     if model.vartype != model.BINARY:
         raise RuntimeError('converting from unknown vartype')
 
-    return model._binary_to_spin()
+    return model.binary_to_spin(model.linear, model.quadratic, model.offset)
 
 
 def to_qubo(model):
@@ -108,7 +108,7 @@ def to_qubo(model):
     if model.vartype != model.SPIN:
         raise RuntimeError('converting from unknown vartype')
 
-    linear, quadratic, offset = model._spin_to_binary()
+    linear, quadratic, offset = model.spin_to_binary(model.linear, model.quadratic, model.offset)
 
     quadratic.update({(v, v): bias for v, bias in iteritems(linear)})
 
