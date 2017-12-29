@@ -268,7 +268,7 @@ class BinaryQuadraticModel(object):
 
         Returns:
             :class:`.BinaryQuadraticModel`: A BinaryQuadraticModel with the
-            variables relabelled. If copy=False, returns itself.
+            variables relabeled. If copy=False, returns itself.
 
         Examples:
             >>> model = pm.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=pm.SPIN)
@@ -380,6 +380,15 @@ class BinaryQuadraticModel(object):
                 else:
                     raise RuntimeError("something went wrong in relabel")
 
+            # update the spin/binary version of self
+            try:
+                if self.vartype is Vartype.SPIN and self._binary is not None:
+                    self._binary.relabel_variables(mapping, copy=False)
+                elif self.vartype is Vartype.BINARY and self._spin is not None:
+                    self._spin.relabel_variables(mapping, copy=False)
+            except AttributeError:
+                pass
+
             return self
 
     def copy(self):
@@ -477,3 +486,41 @@ class BinaryQuadraticModel(object):
         offset += .5 * linear_offset + .25 * quadratic_offset
 
         return h, J, offset
+
+    @property
+    def spin(self):
+        try:
+            spin = self._spin
+            if spin is not None:
+                return spin
+        except AttributeError:
+            pass
+
+        if self.vartype is Vartype.SPIN:
+            self._spin = spin = self
+        else:
+            self._spin = spin = self.change_vartype(Vartype.SPIN)
+
+            # we also want to go ahead and set spin.binary to refer back to self
+            spin._binary = self
+
+        return spin
+
+    @property
+    def binary(self):
+        try:
+            binary = self._binary
+            if binary is not None:
+                return binary
+        except AttributeError:
+            pass
+
+        if self.vartype is Vartype.BINARY:
+            self._binary = binary = self
+        else:
+            self._binary = binary = self.change_vartype(Vartype.BINARY)
+
+            # we also want to go ahead and set binary.spin to refer back to self
+            binary._spin = self
+
+        return binary
