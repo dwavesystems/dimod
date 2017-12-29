@@ -422,20 +422,19 @@ class BinaryQuadraticModel(object):
             return self.copy()
 
         if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
-            linear, quadratic, offset = self._spin_to_binary()
+            linear, quadratic, offset = self.spin_to_binary(self.linear, self.quadratic, self.offset)
             return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.BINARY)
         elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
-            linear, quadratic, offset = self._binary_to_spin()
+            linear, quadratic, offset = self.binary_to_spin(self.linear, self.quadratic, self.offset)
             return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.SPIN)
         else:
             raise RuntimeError("something has gone wrong. unknown vartype conversion.")  # pragma: no cover
 
-    def _spin_to_binary(self):
+    @staticmethod
+    def spin_to_binary(linear, quadratic, offset):
         """convert linear, quadratic, and offset from spin to binary.
         Does no checking of vartype. Copies all of the values into new objects.
         """
-        linear = self.linear
-        quadratic = self.quadratic
 
         # the linear biases are the easiest
         new_linear = {v: 2. * bias for v, bias in iteritems(linear)}
@@ -448,11 +447,12 @@ class BinaryQuadraticModel(object):
             new_linear[v] -= 2. * bias
 
         # finally calculate the offset
-        offset = self.offset + sum(itervalues(quadratic)) - sum(itervalues(linear))
+        offset += sum(itervalues(quadratic)) - sum(itervalues(linear))
 
         return new_linear, new_quadratic, offset
 
-    def _binary_to_spin(self):
+    @staticmethod
+    def binary_to_spin(linear, quadratic, offset):
         """convert linear, quadratic and offset from binary to spin.
         Does no checking of vartype. Copies all of the values into new objects.
         """
@@ -460,9 +460,6 @@ class BinaryQuadraticModel(object):
         J = {}
         linear_offset = 0.0
         quadratic_offset = 0.0
-
-        linear = self.linear
-        quadratic = self.quadratic
 
         for u, bias in iteritems(linear):
             h[u] = .5 * bias
@@ -477,6 +474,6 @@ class BinaryQuadraticModel(object):
 
             quadratic_offset += bias
 
-        offset = self.offset + .5 * linear_offset + .25 * quadratic_offset
+        offset += .5 * linear_offset + .25 * quadratic_offset
 
         return h, J, offset
