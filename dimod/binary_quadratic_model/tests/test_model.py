@@ -2,7 +2,11 @@ import unittest
 import random
 import itertools
 
-import networkx as nx
+try:
+    import networkx as nx
+    _networkx = True
+except ImportError:
+    _networkx = False
 
 import dimod
 
@@ -360,8 +364,102 @@ class TestBinaryQuadraticModel(unittest.TestCase):
             self.assertAlmostEqual(model.energy(spin_sample),
                                    new_model.energy(binary_sample))
 
+    def test_spin_property_self(self):
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = -1.4
+        vartype = dimod.SPIN
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        self.assertIs(model, model.spin)
+
+    def test_spin_property_self(self):
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = -1.4
+        vartype = dimod.BINARY
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        self.assertIs(model, model.binary)
+
+    def test_binary_model_spin_property(self):
+        # create a binary model
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = -1.4
+        vartype = dimod.BINARY
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        # get a new spin-model from binary
+        spin_model = model.change_vartype(dimod.SPIN)
+
+        # this spin model should be equal to model.spin
+        self.assertEqual(model.spin, spin_model)
+
+        # we don't want to make the spin model anew each time, so make sure they
+        # are the same object
+        self.assertEqual(model.spin, model.spin)  # should always be equal
+        self.assertEqual(id(model.spin), id(model.spin))  # should always refer to the same object
+
+        # make sure that model.spin.binary == model
+        self.assertEqual(model.spin.binary, model)
+        self.assertEqual(id(model.spin.binary), id(model))
+
+    def test_spin_model_binary_property(self):
+        # create a binary model
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = -1.4
+        vartype = dimod.SPIN
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        binary_model = model.change_vartype(dimod.BINARY)
+
+        self.assertEqual(model.binary, binary_model)
+
+        self.assertEqual(model.binary, model.binary)  # should always be equal
+        self.assertEqual(id(model.binary), id(model.binary))  # should always refer to the same object
+
+        self.assertEqual(model.binary.spin, model)
+        self.assertEqual(id(model.binary.spin), id(model))
+
+    def spin_property_relabel(self):
+        # create a spin model
+        linear = {v: .1 * v for v in range(-5, 5)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.SPIN
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        # get the binary version
+        binary_model = model.binary
+
+        # change a variable label in place
+        model.relabel_variables({0: 'a'}, copy=False)
+
+        self.assertIn('a', binary_model.linear)
+        self.assertNotIn(0, binary_model.linear)
+
+    def binary_property_relabel(self):
+        # create a spin model
+        linear = {v: .1 * v for v in range(-5, 5)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.BINARY
+        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        # get the spin version
+        spin_model = model.spin
+
+        # change a variable label in place
+        model.relabel_variables({0: 'a'}, copy=False)
+
+        self.assertIn('a', spin_model.linear)
+        self.assertNotIn(0, spin_model.linear)
+
 
 class TestConvert(unittest.TestCase):
+    @unittest.skipUnless(_networkx, "No networkx installed")
     def test_to_networkx_graph(self):
         graph = nx.barbell_graph(7, 6)
 
