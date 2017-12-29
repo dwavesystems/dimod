@@ -7,6 +7,9 @@
 .. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
     :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
 
+.. image:: https://readthedocs.org/projects/dimod/badge/?version=latest
+    :target: http://dimod.readthedocs.io/en/latest/?badge=latest
+
 .. inclusion-marker-do-not-remove
 
 dimod
