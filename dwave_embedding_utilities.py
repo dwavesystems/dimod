@@ -99,9 +99,10 @@ else:
 __all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising',
            'edgelist_to_adjacency',
            'unembed_samples',
-           'discard', 'majority_vote', 'weighted_random', 'minimize_energy']
+           'discard', 'majority_vote', 'weighted_random', 'minimize_energy',
+           'chain_to_quadratic']
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __author__ = 'D-Wave Systems Inc.'
 __description__ = 'Utilities to manage embedding for the D-Wave System'
 __authoremail__ = 'acondello@dwavesys.com'
@@ -261,25 +262,42 @@ def embed_ising(source_linear, source_quadratic, embedding, target_adjacency, ch
 
     # finally we need to connect the nodes in the chains
     chain_quadratic = {}
-    for chain_variables in itervalues(embedding):
-        chain_quadratic.update(_embedding_to_chain(chain_variables, target_adjacency, chain_strength))
+    for chain in itervalues(embedding):
+        chain_quadratic.update(chain_to_quadratic(chain, target_adjacency, chain_strength))
 
     return target_linear, target_quadratic, chain_quadratic
 
 
-def _embedding_to_chain(chain_variables, adjacency, chain_strength):
-    """Converts an embedding into a chain while checking connected.
-    chain_variables is an iterable of nodes that define the chain
-    adjacency is a dict of sets
-    chain_strength is numeric
+def chain_to_quadratic(chain, target_adjacency, chain_strength):
+    """Determine the quadratic biases that induce the given chain.
 
-    returned chain is an edge dict {(u, v): -chain_strength, ...}
+    Args:
+        chain (set/list/tuple):
+            The variables that make up a chain.
+
+        target_adjacency (dict/:class:`networkx.Graph`):
+            The adjacency dict of the target graph.
+            Should be a dict of the form {s: Ns, ...} where s is a variable
+            in the target graph and Ns is the set of neighbours of s.
+
+        chain_strength (float):
+            The quadratic bias that should be used to create chains.
+
+    Returns:
+        dict[edge, float]: The quadratic biases that induce the given chain.
+
+    Examples:
+        >>> chain = {1, 2}
+        >>> target_adjacency = {0: {1, 2}, 1: {0, 2}, 2: {0, 1}}
+        >>> chain_to_quadratic(chain, target_adjacency, 1)
+        {(1, 2): -1}
+
     """
-    chain = {}  # we will be adding the edges that make the chain here
+    quadratic = {}  # we will be adding the edges that make the chain here
 
     # do a breadth first search
     seen = set()
-    next_level = {next(iter(chain_variables))}
+    next_level = {next(iter(chain))}
     while next_level:
         this_level = next_level
         next_level = set()
@@ -287,17 +305,17 @@ def _embedding_to_chain(chain_variables, adjacency, chain_strength):
             if v not in seen:
                 seen.add(v)
 
-                for u in adjacency[v]:
-                    if u not in chain_variables:
+                for u in target_adjacency[v]:
+                    if u not in chain:
                         continue
                     next_level.add(u)
-                    if u != v and (u, v) not in chain:
-                        chain[(v, u)] = -chain_strength
+                    if u != v and (u, v) not in quadratic:
+                        quadratic[(v, u)] = -chain_strength
 
-    if len(chain_variables) != len(seen):
-        raise ValueError('{} does not form a connected chain'.format(chain_variables))
+    if len(chain) != len(seen):
+        raise ValueError('{} is not a connected chain'.format(chain))
 
-    return chain
+    return quadratic
 
 
 def chain_break_frequency(samples, embedding):

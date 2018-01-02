@@ -10,6 +10,7 @@ Functions
 .. autofunction:: target_to_source
 .. autofunction:: chain_break_frequency
 .. autofunction:: edgelist_to_adjacency
+.. autofunction:: chain_to_quadratic
 .. autofunction:: unembed_samples
 
 Chain Break Methods
