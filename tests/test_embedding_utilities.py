@@ -7,7 +7,6 @@ import dwave_networkx as dnx
 import dimod
 
 import dwave_embedding_utilities as eutil
-from dwave_embedding_utilities import _embedding_to_chain
 
 
 class TestTargetToSource(unittest.TestCase):
@@ -77,7 +76,7 @@ class TestApplyEmbedding(unittest.TestCase):
         with self.assertRaises(ValueError):
             eutil.embed_ising(h, j, embeddings, adj)
 
-    def test__embedding_to_chain(self):
+    def test_chain_to_quadratic(self):
         """Test that when given a chain, the returned Jc uses all
         available edges."""
         chain_variables = set(range(5))
@@ -87,7 +86,7 @@ class TestApplyEmbedding(unittest.TestCase):
         for v, neighbors in adjacency.items():
             neighbors.remove(v)
 
-        Jc = _embedding_to_chain(chain_variables, adjacency, 1.0)
+        Jc = eutil.chain_to_quadratic(chain_variables, adjacency, 1.0)
 
         for u, v in itertools.combinations(chain_variables, 2):
             self.assertFalse((u, v) in Jc and (v, u) in Jc)
@@ -98,7 +97,7 @@ class TestApplyEmbedding(unittest.TestCase):
         # now try a cycle
         adjacency = {v: {(v + 1) % 5, (v - 1) % 5} for v in chain_variables}
 
-        Jc = _embedding_to_chain(chain_variables, adjacency, 1.0)
+        Jc = eutil.chain_to_quadratic(chain_variables, adjacency, 1.0)
 
         for u in adjacency:
             for v in adjacency[u]:

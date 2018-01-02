@@ -91,7 +91,7 @@ todo_include_todos = True
 
 modindex_common_prefix = ['dwave_embedding_utilities.']
 
-doctest_global_setup = "import dwave_embedding_utilities as emb"
+doctest_global_setup = "from dwave_embedding_utilities import *"
 
 
 # -- Options for HTML output ----------------------------------------------
