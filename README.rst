@@ -1,8 +1,8 @@
 .. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
     :target: https://travis-ci.org/dwavesystems/dimod
 
-.. image:: https://ci.appveyor.com/api/projects/status/kfhg35q12fa0lux8?svg=true
-    :target: https://ci.appveyor.com/project/arcondello/dimod
+.. image:: https://ci.appveyor.com/api/projects/status/2oc8vrxxh15ecgo1?svg=true
+    :target: https://ci.appveyor.com/project/dwave-adtt/dimod
 
 .. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
     :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
