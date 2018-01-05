@@ -26,3 +26,7 @@ class TestSamplerKeywordArg(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             num_samples_kwarg = SamplerKeywordArg(100, 'int', int)
+
+    def test_unicode(self):
+        # should allow
+        SamplerKeywordArg(u'hello', 'str', str)

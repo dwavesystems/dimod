@@ -21,11 +21,11 @@ class SamplerKeywordArg(object):
     # if you can get it to work then please do!
 
     def __init__(self, name, type_annotation='', classinfo=object):
-        if not isinstance(name, str):
-            raise TypeError("expected input 'name' to be a str.")
+        if not isinstance(name, (str, unicode)):
+            raise TypeError("expected input `name` to be str, recieved {}.".format(type(name)))
         self.name = name
 
-        if not isinstance(type_annotation, str):
+        if not isinstance(type_annotation, (str, unicode)):
             raise TypeError("expected input 'type_annotation' to be a str.")
         self.type_annotation = type_annotation
 
