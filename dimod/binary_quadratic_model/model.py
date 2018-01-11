@@ -132,6 +132,10 @@ class BinaryQuadraticModel(object):
 
     def __init__(self, linear, quadratic, offset, vartype):
         # make sure that we are dealing with a known vartype.
+        self.linear = {}
+        self.quadratic = {}
+        self.adj = {}
+
         try:
             if isinstance(vartype, str):
                 vartype = Vartype[vartype]
@@ -145,45 +149,9 @@ class BinaryQuadraticModel(object):
                              "Vartype.BINARY, 'BINARY', or {0, 1}."))
         self.vartype = vartype
 
-        # We want the linear terms to be a dict.
-        # The keys are the variables and the values are the linear biases.
-        # Model is deliberately agnostic to the type of the variable names
-        # and the biases.
-        if not isinstance(linear, dict):
-            raise TypeError("expected `linear` to be a dict")
-        self.linear = linear
-
-        # We want quadratic to be a dict.
-        # The keys should be 2-tuples of the form (u, v) where both u and v
-        # are in linear.
-        # We are agnostic to the type of the bias.
-        if not isinstance(quadratic, dict):
-            raise TypeError("expected `quadratic` to be a dict")
-        try:
-            if not all(u in linear and v in linear for u, v in quadratic):
-                raise ValueError("each u, v in `quadratic` must also be in `linear`")
-        except ValueError:
-            raise ValueError("keys of `quadratic` must be 2-tuples")
-        self.quadratic = quadratic
-
-        # Build the adjacency. For each (u, v), bias in quadratic, we want:
-        #    adj[u][v] == adj[v][u] == bias
-        self.adj = adj = {v: {} for v in linear}
-        for (u, v), bias in iteritems(quadratic):
-            if u == v:
-                raise ValueError("bias ({}, {}) in `quadratic` is a linear bias".format(u, v))
-
-            if v in adj[u]:
-                raise ValueError(("`quadratic` must be upper triangular. "
-                                  "That is if (u, v) in `quadratic`, (v, u) not in quadratic"))
-            else:
-                adj[u][v] = bias
-
-            if u in adj[v]:
-                raise ValueError(("`quadratic` must be upper triangular. "
-                                  "That is if (u, v) in `quadratic`, (v, u) not in quadratic"))
-            else:
-                adj[v][u] = bias
+        # add linear, quadratic
+        self.add_variables_from(linear)
+        self.add_interactions_from(quadratic)
 
         # we will also be agnostic to the offset type, the user can determine what makes sense
         self.offset = offset
@@ -212,48 +180,166 @@ class BinaryQuadraticModel(object):
         """The length is number of variables."""
         return len(self.linear)
 
-    def energy(self, sample):
-        """Determines the energy of the given sample.
+##################################################################################################
+# vartype properties
+##################################################################################################
 
-        The energy is calculated:
+    # @property
+    # def spin(self):
+    #     try:
+    #         spin = self._spin
+    #         if spin is not None:
+    #             return spin
+    #     except AttributeError:
+    #         pass
 
-        >>> energy = model.offset  # doctest: +SKIP
-        >>> for v in model:  # doctest: +SKIP
-        ...     energy += model.linear[v] * sample[v]
-        >>> for u, v in model.quadratic:  # doctest: +SKIP
-        ...     energy += model.quadratic[(u, v)] * sample[u] * sample[v]
+    #     if self.vartype is Vartype.SPIN:
+    #         self._spin = spin = self
+    #     else:
+    #         self._spin = spin = self.change_vartype(Vartype.SPIN)
 
-        Or equivalently, let us define:
+    #         # we also want to go ahead and set spin.binary to refer back to self
+    #         spin._binary = self
 
-            :code:`sample[v]` as :math:`s_v`
+    #     return spin
 
-            :code:`model.linear[v]` as :math:`h_v`
+    # @property
+    # def binary(self):
+    #     try:
+    #         binary = self._binary
+    #         if binary is not None:
+    #             return binary
+    #     except AttributeError:
+    #         pass
 
-            :code:`model.quadratic[(u, v)]` as :math:`J_{u,v}`
+    #     if self.vartype is Vartype.BINARY:
+    #         self._binary = binary = self
+    #     else:
+    #         self._binary = binary = self.change_vartype(Vartype.BINARY)
 
-            :code:`model.offset` as :math:`c`
+    #         # we also want to go ahead and set binary.spin to refer back to self
+    #         binary._spin = self
 
-        then,
+    #     return binary
 
-        .. math::
+###################################################################################################
+# update methods
+###################################################################################################
 
-            E(\mathbf{s}) = \sum_v h_v s_v + \sum_{u,v} J_{u,v} s_u s_v + c
+    def add_variable(self, v, bias, vartype=None):
+        """todo"""
+        linear = self.linear
 
-        Args:
-            sample (dict): The sample. The keys should be the variables and
-                the values should be the value associated with each variable.
+        if v in linear:
+            linear[v] += bias
+        else:
+            linear[v] = bias
+            self.adj[v] = {}
 
-        Returns:
-            float: The energy.
+    def add_variables_from(self, linear):
+        """todo"""
+        # We want the linear terms to be a dict.
+        # The keys are the variables and the values are the linear biases.
+        # Model is deliberately agnostic to the type of the variable names
+        # and the biases.
+        if not isinstance(linear, dict):
+            raise TypeError("expected `linear` to be a dict")
 
-        """
+        for v, bias in iteritems(linear):
+            self.add_variable(v, bias)
+
+    def add_interaction(self, u, v, bias):
+        """todo"""
+        if u == v:
+            raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
+
         linear = self.linear
         quadratic = self.quadratic
+        adj = self.adj
 
-        en = self.offset
-        en += sum(linear[v] * sample[v] for v in linear)
-        en += sum(quadratic[(u, v)] * sample[u] * sample[v] for u, v in quadratic)
-        return en
+        if u not in linear:
+            linear[u] = 0.
+            adj[u] = {}
+        if v not in linear:
+            linear[v] = 0.
+            adj[v] = {}
+
+        if (v, u) in quadratic:
+            quadratic[(v, u)] += bias
+            adj[u][v] += bias
+            adj[v][u] += bias
+        elif (u, v) in quadratic:
+            quadratic[(u, v)] += bias
+            adj[u][v] += bias
+            adj[v][u] += bias
+        else:
+            quadratic[(u, v)] = bias
+            adj[u][v] = bias
+            adj[v][u] = bias
+
+    def add_interactions_from(self, quadratic):
+        """todo"""
+        # We want quadratic to be a dict.
+        # The keys should be 2-tuples of the form (u, v) where both u and v
+        # are in linear.
+        # We are agnostic to the type of the bias.
+        if isinstance(quadratic, dict):
+            for (u, v), bias in iteritems(quadratic):
+                self.add_interaction(u, v, bias)
+        else:
+            try:
+                for u, v, bias in quadratic:
+                    self.add_interaction(u, v, bias)
+            except TypeError:
+                raise TypeError("expected 'quadratic' to be a dict or an iterable of 3-tuples.")
+
+    def remove_variable(self, v):
+        """todo"""
+        linear = self.linear
+        if v in linear:
+            del linear[v]
+        else:
+            # nothing to remove
+            return
+
+        quadratic = self.quadratic
+        adj = self.adj
+
+        for u in adj[v]:
+            if (u, v) in quadratic:
+                del quadratic[(u, v)]
+            else:
+                del quadratic[(v, u)]
+
+            del adj[u][v]
+
+        del adj[v]
+
+    def remove_variables_from(self, variables):
+        """todo"""
+        for v in variabels:
+            self.remove_variable(v)
+
+    def remove_interaction(u, v):
+        """todo"""
+        quadratic = self.quadratic
+        adj = self.adj
+        if (u, v) in quadratic:
+            del quadratic[(u, v)]
+        if (v, u) in quadratic:
+            del quadratic[(v, u)]
+
+        del adj[v][u]
+        del adj[u][v]
+
+    def remove_interactions_from(interactions):
+        """todo"""
+        for u, v in interactions:
+            self.remove_interaction(u, v)
+
+###################################################################################################
+# transformations
+###################################################################################################
 
     def relabel_variables(self, mapping, copy=True):
         """Relabel the variables according to the given mapping.
@@ -391,15 +477,6 @@ class BinaryQuadraticModel(object):
 
             return self
 
-    def copy(self):
-        """Create a copy of the BinaryQuadraticModel.
-
-        Returns:
-            :class:`.BinaryQuadraticModel`
-
-        """
-        return BinaryQuadraticModel(self.linear.copy(), self.quadratic.copy(), self.offset, vartype=self.vartype)
-
     def change_vartype(self, vartype):
         """Creates a new BinaryQuadraticModel with the given vartype.
 
@@ -487,40 +564,59 @@ class BinaryQuadraticModel(object):
 
         return h, J, offset
 
-    @property
-    def spin(self):
-        try:
-            spin = self._spin
-            if spin is not None:
-                return spin
-        except AttributeError:
-            pass
+###################################################################################################
+# Methods
+###################################################################################################
 
-        if self.vartype is Vartype.SPIN:
-            self._spin = spin = self
-        else:
-            self._spin = spin = self.change_vartype(Vartype.SPIN)
+    def copy(self):
+        """Create a copy of the BinaryQuadraticModel.
 
-            # we also want to go ahead and set spin.binary to refer back to self
-            spin._binary = self
+        Returns:
+            :class:`.BinaryQuadraticModel`
 
-        return spin
+        """
+        # new objects are constructed for each, so we just need to pass them in
+        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype)
 
-    @property
-    def binary(self):
-        try:
-            binary = self._binary
-            if binary is not None:
-                return binary
-        except AttributeError:
-            pass
+    def energy(self, sample):
+        """Determines the energy of the given sample.
 
-        if self.vartype is Vartype.BINARY:
-            self._binary = binary = self
-        else:
-            self._binary = binary = self.change_vartype(Vartype.BINARY)
+        The energy is calculated:
 
-            # we also want to go ahead and set binary.spin to refer back to self
-            binary._spin = self
+        >>> energy = model.offset  # doctest: +SKIP
+        >>> for v in model:  # doctest: +SKIP
+        ...     energy += model.linear[v] * sample[v]
+        >>> for u, v in model.quadratic:  # doctest: +SKIP
+        ...     energy += model.quadratic[(u, v)] * sample[u] * sample[v]
 
-        return binary
+        Or equivalently, let us define:
+
+            :code:`sample[v]` as :math:`s_v`
+
+            :code:`model.linear[v]` as :math:`h_v`
+
+            :code:`model.quadratic[(u, v)]` as :math:`J_{u,v}`
+
+            :code:`model.offset` as :math:`c`
+
+        then,
+
+        .. math::
+
+            E(\mathbf{s}) = \sum_v h_v s_v + \sum_{u,v} J_{u,v} s_u s_v + c
+
+        Args:
+            sample (dict): The sample. The keys should be the variables and
+                the values should be the value associated with each variable.
+
+        Returns:
+            float: The energy.
+
+        """
+        linear = self.linear
+        quadratic = self.quadratic
+
+        en = self.offset
+        en += sum(linear[v] * sample[v] for v in linear)
+        en += sum(quadratic[(u, v)] * sample[u] * sample[v] for u, v in quadratic)
+        return en
