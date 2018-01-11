@@ -433,47 +433,12 @@ class BinaryQuadraticModel(object):
 
                 new = mapping[old]
 
-                # acting on all of these in-place
-                linear[new] = linear[old]
-                adj[new] = adj[old]
-                for u in adj[old]:
-                    adj[u][new] = adj[u][old]
-                    del adj[u][old]
+                # get the new interactions that need to be added
+                new_interactions = [(new, v, adj[old][v]) for v in adj[old]]
 
-                del linear[old]
-                del adj[old]
-
-            # now rebuild quadratic
-            for old_u, old_v in list(quadratic):
-                if old_u not in mapping:
-                    if old_v not in mapping:
-                        # no remap needed
-                        continue
-                    new_u = old_u
-                else:
-                    new_u = mapping[old_u]
-                if old_v not in mapping:
-                    new_v = old_v
-                else:
-                    new_v = mapping[old_v]
-
-                if (old_v, old_u) in quadratic:
-                    quadratic[(new_v, new_u)] = quadratic[(old_v, old_u)]
-                    del quadratic[(old_v, old_u)]
-                elif (old_u, old_v) in quadratic:
-                    quadratic[(new_u, new_v)] = quadratic[(old_u, old_v)]
-                    del quadratic[(old_u, old_v)]
-                else:
-                    raise RuntimeError("something went wrong in relabel")
-
-            # update the spin/binary version of self
-            try:
-                if self.vartype is Vartype.SPIN and self._binary is not None:
-                    self._binary.relabel_variables(mapping, copy=False)
-                elif self.vartype is Vartype.BINARY and self._spin is not None:
-                    self._spin.relabel_variables(mapping, copy=False)
-            except AttributeError:
-                pass
+                self.add_variable(new, linear[old])
+                self.add_interactions_from(new_interactions)
+                self.remove_variable(old)
 
             return self
 
