@@ -1,6 +1,7 @@
 [run]
 # omit virtualenv and test files
 omit = venv/*, */tests/*
+source=dimod
 
 [report]
 exclude_lines:
