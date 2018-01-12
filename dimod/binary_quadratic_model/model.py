@@ -2,9 +2,11 @@
 BinaryQuadraticModel
 --------------------
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import itertools
+
+from numbers import Number
 
 from dimod import _PY2
 from dimod.vartypes import Vartype
@@ -131,11 +133,12 @@ class BinaryQuadraticModel(object):
     BINARY = Vartype.BINARY
 
     def __init__(self, linear, quadratic, offset, vartype):
-        # make sure that we are dealing with a known vartype.
         self.linear = {}
         self.quadratic = {}
         self.adj = {}
+        self.offset = offset  # we are agnostic to type, though generally should behave like a number
 
+        # make sure that we are dealing with a known vartype.
         try:
             if isinstance(vartype, str):
                 vartype = Vartype[vartype]
@@ -152,9 +155,6 @@ class BinaryQuadraticModel(object):
         # add linear, quadratic
         self.add_variables_from(linear)
         self.add_interactions_from(quadratic)
-
-        # we will also be agnostic to the offset type, the user can determine what makes sense
-        self.offset = offset
 
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
@@ -186,6 +186,7 @@ class BinaryQuadraticModel(object):
 
     # @property
     # def spin(self):
+    #     """todo"""
     #     try:
     #         spin = self._spin
     #         if spin is not None:
@@ -196,7 +197,7 @@ class BinaryQuadraticModel(object):
     #     if self.vartype is Vartype.SPIN:
     #         self._spin = spin = self
     #     else:
-    #         self._spin = spin = self.change_vartype(Vartype.SPIN)
+    #         self._counterpart = self._spin = spin = self.change_vartype(Vartype.SPIN)
 
     #         # we also want to go ahead and set spin.binary to refer back to self
     #         spin._binary = self
@@ -205,6 +206,7 @@ class BinaryQuadraticModel(object):
 
     # @property
     # def binary(self):
+    #     """todo"""
     #     try:
     #         binary = self._binary
     #         if binary is not None:
@@ -215,7 +217,7 @@ class BinaryQuadraticModel(object):
     #     if self.vartype is Vartype.BINARY:
     #         self._binary = binary = self
     #     else:
-    #         self._binary = binary = self.change_vartype(Vartype.BINARY)
+    #         self._counterpart = self._binary = binary = self.change_vartype(Vartype.BINARY)
 
     #         # we also want to go ahead and set binary.spin to refer back to self
     #         binary._spin = self
@@ -228,15 +230,29 @@ class BinaryQuadraticModel(object):
 
     def add_variable(self, v, bias, vartype=None):
         """todo"""
-        linear = self.linear
 
+        # handle the case that a different vartype is provided
+        if vartype is not None and vartype is not self.vartype:
+            if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
+                # convert from binary to spin
+                self.add_offset(bias / 2.)
+                bias /= 2.
+            elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
+                # convert from spin to binary
+                self.add_offset(-bias)
+                bias *= 2.
+            else:
+                raise ValueError("unknown vartype")
+
+        # add the variable to linear and adj
+        linear = self.linear
         if v in linear:
             linear[v] += bias
         else:
             linear[v] = bias
             self.adj[v] = {}
 
-    def add_variables_from(self, linear):
+    def add_variables_from(self, linear, vartype=None):
         """todo"""
         # We want the linear terms to be a dict.
         # The keys are the variables and the values are the linear biases.
@@ -246,12 +262,28 @@ class BinaryQuadraticModel(object):
             raise TypeError("expected `linear` to be a dict")
 
         for v, bias in iteritems(linear):
-            self.add_variable(v, bias)
+            self.add_variable(v, bias, vartype=vartype)
 
-    def add_interaction(self, u, v, bias):
+    def add_interaction(self, u, v, bias, vartype=None):
         """todo"""
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
+
+        if vartype is not None and vartype is not self.vartype:
+            if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
+                # convert from binary to spin
+                bias /= 4.
+                self.add_offset(bias)
+                self.add_variable(u, bias)
+                self.add_variable(v, bias)
+            elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
+                # convert from spin to binary
+                self.add_offset(bias)
+                self.add_variable(u, -2. * bias)
+                self.add_variable(v, -2. * bias)
+                bias *= 4.
+            else:
+                raise ValueError("unknown vartype")
 
         linear = self.linear
         quadratic = self.quadratic
@@ -277,7 +309,7 @@ class BinaryQuadraticModel(object):
             adj[u][v] = bias
             adj[v][u] = bias
 
-    def add_interactions_from(self, quadratic):
+    def add_interactions_from(self, quadratic, vartype=None):
         """todo"""
         # We want quadratic to be a dict.
         # The keys should be 2-tuples of the form (u, v) where both u and v
@@ -285,11 +317,11 @@ class BinaryQuadraticModel(object):
         # We are agnostic to the type of the bias.
         if isinstance(quadratic, dict):
             for (u, v), bias in iteritems(quadratic):
-                self.add_interaction(u, v, bias)
+                self.add_interaction(u, v, bias, vartype=vartype)
         else:
             try:
                 for u, v, bias in quadratic:
-                    self.add_interaction(u, v, bias)
+                    self.add_interaction(u, v, bias, vartype=vartype)
             except TypeError:
                 raise TypeError("expected 'quadratic' to be a dict or an iterable of 3-tuples.")
 
@@ -336,6 +368,10 @@ class BinaryQuadraticModel(object):
         """todo"""
         for u, v in interactions:
             self.remove_interaction(u, v)
+
+    def add_offset(self, offset):
+        """todo"""
+        self.offset += offset
 
 ###################################################################################################
 # transformations
@@ -480,6 +516,30 @@ class BinaryQuadraticModel(object):
             return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.SPIN)
         else:
             raise RuntimeError("something has gone wrong. unknown vartype conversion.")  # pragma: no cover
+
+    def scale(self, scalar):
+        """todo"""
+        if not isinstance(scalar, Number):
+            raise TypeError("expected scalar to be a Number")
+
+        linear = self.linear
+        for v in linear:
+            linear[v] *= scalar
+
+        quadratic = self.quadratic
+        for edge in quadratic:
+            quadratic[edge] *= scalar
+
+        adj = self.adj
+        for u in adj:
+            for v in adj[u]:
+                adj[u][v] *= scalar
+
+        self.offset *= scalar
+
+##################################################################################################
+# static method
+##################################################################################################
 
     @staticmethod
     def spin_to_binary(linear, quadratic, offset):
