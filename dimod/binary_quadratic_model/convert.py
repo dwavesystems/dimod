@@ -113,3 +113,21 @@ def to_qubo(model):
     quadratic.update({(v, v): bias for v, bias in iteritems(linear)})
 
     return quadratic, offset
+
+
+def to_numpy_array(model):
+    """todo"""
+    import numpy as np
+
+    mat = np.zeros((len(model), len(model)), dtype=float)
+
+    for v, bias in iteritems(model.binary.linear):
+        mat[v, v] = bias
+
+    for (u, v), bias in iteritems(model.binary.quadratic):
+        if u < v:
+            mat[u, v] = bias
+        else:
+            mat[v, u] = bias
+
+    return mat
