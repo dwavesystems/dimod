@@ -184,45 +184,45 @@ class BinaryQuadraticModel(object):
 # vartype properties
 ##################################################################################################
 
-    # @property
-    # def spin(self):
-    #     """todo"""
-    #     try:
-    #         spin = self._spin
-    #         if spin is not None:
-    #             return spin
-    #     except AttributeError:
-    #         pass
+    @property
+    def spin(self):
+        """todo"""
+        try:
+            spin = self._spin
+            if spin is not None:
+                return spin
+        except AttributeError:
+            pass
 
-    #     if self.vartype is Vartype.SPIN:
-    #         self._spin = spin = self
-    #     else:
-    #         self._counterpart = self._spin = spin = self.change_vartype(Vartype.SPIN)
+        if self.vartype is Vartype.SPIN:
+            self._spin = spin = self
+        else:
+            self._counterpart = self._spin = spin = self.change_vartype(Vartype.SPIN)
 
-    #         # we also want to go ahead and set spin.binary to refer back to self
-    #         spin._binary = self
+            # we also want to go ahead and set spin.binary to refer back to self
+            spin._binary = self
 
-    #     return spin
+        return spin
 
-    # @property
-    # def binary(self):
-    #     """todo"""
-    #     try:
-    #         binary = self._binary
-    #         if binary is not None:
-    #             return binary
-    #     except AttributeError:
-    #         pass
+    @property
+    def binary(self):
+        """todo"""
+        try:
+            binary = self._binary
+            if binary is not None:
+                return binary
+        except AttributeError:
+            pass
 
-    #     if self.vartype is Vartype.BINARY:
-    #         self._binary = binary = self
-    #     else:
-    #         self._counterpart = self._binary = binary = self.change_vartype(Vartype.BINARY)
+        if self.vartype is Vartype.BINARY:
+            self._binary = binary = self
+        else:
+            self._counterpart = self._binary = binary = self.change_vartype(Vartype.BINARY)
 
-    #         # we also want to go ahead and set binary.spin to refer back to self
-    #         binary._spin = self
+            # we also want to go ahead and set binary.spin to refer back to self
+            binary._spin = self
 
-    #     return binary
+        return binary
 
 ###################################################################################################
 # update methods
@@ -251,6 +251,11 @@ class BinaryQuadraticModel(object):
         else:
             linear[v] = bias
             self.adj[v] = {}
+
+        try:
+            self._counterpart.add_variable(v, bias, vartype=self.vartype)
+        except AttributeError:
+            pass
 
     def add_variables_from(self, linear, vartype=None):
         """todo"""
@@ -311,13 +316,13 @@ class BinaryQuadraticModel(object):
                 bias *= 4.
             else:
                 raise ValueError("unknown vartype")
-
-        if u not in linear:
-            linear[u] = 0.
-            adj[u] = {}
-        if v not in linear:
-            linear[v] = 0.
-            adj[v] = {}
+        else:
+            if u not in linear:
+                linear[u] = 0.
+                adj[u] = {}
+            if v not in linear:
+                linear[v] = 0.
+                adj[v] = {}
 
         if (v, u) in quadratic:
             quadratic[(v, u)] += bias
@@ -331,6 +336,11 @@ class BinaryQuadraticModel(object):
             quadratic[(u, v)] = bias
             adj[u][v] = bias
             adj[v][u] = bias
+
+        try:
+            self._counterpart.add_interaction(u, v, bias, vartype=self.vartype)
+        except AttributeError:
+            pass
 
     def add_interactions_from(self, quadratic, vartype=None):
         """todo"""
@@ -370,6 +380,11 @@ class BinaryQuadraticModel(object):
 
         del adj[v]
 
+        try:
+            self._counterpart.remove_variable(v)
+        except AttributeError:
+            pass
+
     def remove_variables_from(self, variables):
         """todo"""
         for v in variabels:
@@ -387,6 +402,11 @@ class BinaryQuadraticModel(object):
         del adj[v][u]
         del adj[u][v]
 
+        try:
+            self._counterpart.remove_interaction(u, v)
+        except AttributeError:
+            pass
+
     def remove_interactions_from(interactions):
         """todo"""
         for u, v in interactions:
@@ -395,6 +415,36 @@ class BinaryQuadraticModel(object):
     def add_offset(self, offset):
         """todo"""
         self.offset += offset
+
+        try:
+            self._counterpart.add_offset(offset)
+        except AttributeError:
+            pass
+
+    def scale(self, scalar):
+        """todo"""
+        if not isinstance(scalar, Number):
+            raise TypeError("expected scalar to be a Number")
+
+        linear = self.linear
+        for v in linear:
+            linear[v] *= scalar
+
+        quadratic = self.quadratic
+        for edge in quadratic:
+            quadratic[edge] *= scalar
+
+        adj = self.adj
+        for u in adj:
+            for v in adj[u]:
+                adj[u][v] *= scalar
+
+        self.offset *= scalar
+
+        try:
+            self._counterpart.scale(scalar)
+        except AttributeError:
+            pass
 
 ###################################################################################################
 # transformations
@@ -539,26 +589,6 @@ class BinaryQuadraticModel(object):
             return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.SPIN)
         else:
             raise RuntimeError("something has gone wrong. unknown vartype conversion.")  # pragma: no cover
-
-    def scale(self, scalar):
-        """todo"""
-        if not isinstance(scalar, Number):
-            raise TypeError("expected scalar to be a Number")
-
-        linear = self.linear
-        for v in linear:
-            linear[v] *= scalar
-
-        quadratic = self.quadratic
-        for edge in quadratic:
-            quadratic[edge] *= scalar
-
-        adj = self.adj
-        for u in adj:
-            for v in adj[u]:
-                adj[u][v] *= scalar
-
-        self.offset *= scalar
 
 ##################################################################################################
 # static method
