@@ -417,39 +417,111 @@ class TestBinaryQuadraticModel(unittest.TestCase):
     #     self.assertEqual(model.binary.spin, model)
     #     self.assertEqual(id(model.binary.spin), id(model))
 
-    def spin_property_relabel(self):
-        # create a spin model
-        linear = {v: .1 * v for v in range(-5, 5)}
-        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
-        offset = 1.2
+    # def test_spin_property_relabel(self):
+    #     # create a spin model
+    #     linear = {v: .1 * v for v in range(-5, 5)}
+    #     quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+    #     offset = 1.2
+    #     vartype = dimod.SPIN
+    #     model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+    #     # get the binary version
+    #     binary_model = model.binary
+
+    #     # change a variable label in place
+    #     model.relabel_variables({0: 'a'}, copy=False)
+
+    #     self.assertIn('a', binary_model.linear)
+    #     self.assertNotIn(0, binary_model.linear)
+
+    # def test_binary_property_relabel(self):
+    #     # create a spin model
+    #     linear = {v: .1 * v for v in range(-5, 5)}
+    #     quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+    #     offset = 1.2
+    #     vartype = dimod.BINARY
+    #     model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+    #     # get the spin version
+    #     spin_model = model.spin
+
+    #     # change a variable label in place
+    #     model.relabel_variables({0: 'a'}, copy=False)
+
+    #     self.assertIn('a', spin_model.linear)
+    #     self.assertNotIn(0, spin_model.linear)
+
+    def test_add_variables_from(self):
+        linear = {'a': .5, 'b': -.5}
+        offset = 0.0
         vartype = dimod.SPIN
-        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
-        # get the binary version
-        binary_model = model.binary
+        # create an empty model then add linear
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, vartype)
+        bqm.add_variables_from(linear)
 
-        # change a variable label in place
-        model.relabel_variables({0: 'a'}, copy=False)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel(linear, {}, 0.0, vartype))
 
-        self.assertIn('a', binary_model.linear)
-        self.assertNotIn(0, binary_model.linear)
+    def test_add_variable(self):
+        # add a single value
+        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+        bqm.add_variable('a', .5)
+        self.assertEqual(bqm.linear['a'], .5)
 
-    def binary_property_relabel(self):
-        # create a spin model
-        linear = {v: .1 * v for v in range(-5, 5)}
-        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
-        offset = 1.2
-        vartype = dimod.BINARY
-        model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+        # add a single variable of a different type
+        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+        bqm.add_variable('a', .5, vartype=dimod.BINARY)
 
-        # get the spin version
-        spin_model = model.spin
+        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), -1)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -.5)
 
-        # change a variable label in place
-        model.relabel_variables({0: 'a'}, copy=False)
+        # and again
+        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
+        bqm.add_variable('a', .4, vartype=dimod.SPIN)
 
-        self.assertIn('a', spin_model.linear)
-        self.assertNotIn(0, spin_model.linear)
+        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -.4)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -.6)
+
+    def test_add_variables(self):
+
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+        bqm.add_variables_from({'a': 1, 'b': 1}, vartype=dimod.BINARY)
+
+        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), 0)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), 2)
+
+    def test_add_interaction(self):
+
+        # spin-to-binary
+        bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {}, 0.0, dimod.BINARY)
+        bqm.add_interaction('a', 'b', -1, vartype=dimod.SPIN)  # add a chain link
+
+        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -1)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -1)
+
+        # binary-to-spin
+        bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {}, 0.0, dimod.SPIN)
+        bqm.add_interaction('a', 'b', -1, vartype=dimod.BINARY)  # add a chain link
+
+        self.assertEqual(bqm.energy({'a': +1, 'b': +1}), -1)
+        self.assertEqual(bqm.energy({'a': -1, 'b': +1}), 0)
+        self.assertEqual(bqm.energy({'a': +1, 'b': -1}), 0)
+        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), 0)
+
+    # def test_add_variable_counterpart(self):
+
+    #     bqm = dimod.BinaryQuadraticModel({'a': 1.}, {}, 0, dimod.SPIN)
+
+    #     self.assertEqual(bqm.energy({'a': -1}), bqm.binary.energy({'a': 0}))
+
+    #     bqm.add_variables_from({'a': .5, 'b': -2})
+    #     self.assertEqual(bqm.linear, {'a': 1.5, 'b': -2})
+
+    #     self.assertEqual(bqm.energy({'a': -1, 'b': -1}), bqm.binary.energy({'a': 0, 'b': 0}))
+    #     self.assertEqual(bqm.energy({'a': +1, 'b': -1}), bqm.binary.energy({'a': 1, 'b': 0}))
+    #     self.assertEqual(bqm.energy({'a': -1, 'b': +1}), bqm.binary.energy({'a': 0, 'b': 1}))
+    #     self.assertEqual(bqm.energy({'a': +1, 'b': +1}), bqm.binary.energy({'a': 1, 'b': 1}))
+
 
 
 class TestConvert(unittest.TestCase):
@@ -548,14 +620,3 @@ class TestConvert(unittest.TestCase):
 
             # and the energy of the model
             self.assertAlmostEqual(energy, model.energy(spin_sample))
-
-    def test_add_variables_from(self):
-        linear = {'a': .5, 'b': -.5}
-        offset = 0.0
-        vartype = dimod.SPIN
-
-        # create an empty model then add linear
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, vartype)
-        bqm.add_variables_from(linear)
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel(linear, {}, 0.0, vartype))
