@@ -235,11 +235,11 @@ class BinaryQuadraticModel(object):
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
-                self.add_offset(bias / 2.)
                 bias /= 2.
+                self.offset += bias
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
-                self.add_offset(-bias)
+                self.offset -= bias
                 bias *= 2.
             else:
                 raise ValueError("unknown vartype")
@@ -269,25 +269,48 @@ class BinaryQuadraticModel(object):
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
 
+        linear = self.linear
+        quadratic = self.quadratic
+        adj = self.adj
+
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
                 bias /= 4.
-                self.add_offset(bias)
-                self.add_variable(u, bias)
-                self.add_variable(v, bias)
+
+                self.offset += bias
+
+                if u in linear:
+                    linear[u] += bias
+                else:
+                    linear[u] = bias
+                    self.adj[u] = {}
+
+                if v in linear:
+                    linear[v] += bias
+                else:
+                    linear[v] = bias
+                    self.adj[v] = {}
+
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
-                self.add_offset(bias)
-                self.add_variable(u, -2. * bias)
-                self.add_variable(v, -2. * bias)
+                self.offset += bias
+
+                if u in linear:
+                    linear[u] += -2. * bias
+                else:
+                    linear[u] = -2. * bias
+                    self.adj[u] = {}
+
+                if v in linear:
+                    linear[v] += -2. * bias
+                else:
+                    linear[v] = -2. * bias
+                    self.adj[v] = {}
+
                 bias *= 4.
             else:
                 raise ValueError("unknown vartype")
-
-        linear = self.linear
-        quadratic = self.quadratic
-        adj = self.adj
 
         if u not in linear:
             linear[u] = 0.
