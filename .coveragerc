@@ -6,3 +6,4 @@ source=dimod
 [report]
 exclude_lines:
     pragma: no cover
+    RuntimeError

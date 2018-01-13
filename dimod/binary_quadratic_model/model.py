@@ -144,8 +144,10 @@ class BinaryQuadraticModel(object):
                 vartype = Vartype[vartype]
             else:
                 vartype = Vartype(vartype)
+
             if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError
+                raise ValueError  # this gets caught
+
         except (ValueError, KeyError):
             raise TypeError(("expected input vartype to be one of: "
                              "Vartype.SPIN, 'SPIN', {-1, 1}, "
@@ -159,22 +161,22 @@ class BinaryQuadraticModel(object):
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
 
-    def __eq__(self, model):
-        """Model is equal if linear, quadratic, offset and vartype are all equal."""
-        if not isinstance(model, BinaryQuadraticModel):
+    def __eq__(self, bqm):
+        """Model is equal if and only if linear, adj, offset and vartype are all equal."""
+        if not isinstance(bqm, BinaryQuadraticModel):
             return False
 
-        if self.vartype == model.vartype:
-            return all([self.linear == model.linear,
-                        self.adj == model.adj,  # adj is invariant of edge order, so check that instead of quadratic
-                        self.offset == model.offset])
+        if self.vartype == bqm.vartype:
+            return all([self.linear == bqm.linear,
+                        self.adj == bqm.adj,  # adj is invariant of edge order, so check that instead of quadratic
+                        self.offset == bqm.offset])
         else:
             # different vartypes are not equal
             return False
 
-    def __ne__(self, model):
-        """Inversion of equality"""
-        return not self.__eq__(model)
+    def __ne__(self, bqm):
+        """Inversion of equality."""
+        return not self.__eq__(bqm)
 
     def __len__(self):
         """The length is number of variables."""
@@ -229,7 +231,36 @@ class BinaryQuadraticModel(object):
 ###################################################################################################
 
     def add_variable(self, v, bias, vartype=None):
-        """todo"""
+        """Add a variable v and its bias.
+
+        Args:
+            v (variable):
+                A variable can be any python object that could be used as a key of a dict.
+
+            bias (bias):
+                The linear bias associated with v. If v already is in the model, the bias is added
+                to the existing linear bias. Many methods and functions expect bias to be a number
+                but this is not explicitly checked.
+
+            vartype (:class:`.Vartype`, optional, default=None):
+                The vartype of the given bias. If None will be the same vartype as the binary
+                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+                :class:`.Vartype.BINARY`.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_variable('a', .5)
+            >>> bqm.linear
+            {'a': .5}
+
+            Variables that already exist have their bias added.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'b': -1}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_variable('b', .5)
+            >>> bqm.linear
+            {'b': -.5}
+
+        """
 
         # handle the case that a different vartype is provided
         if vartype is not None and vartype is not self.vartype:
@@ -258,19 +289,81 @@ class BinaryQuadraticModel(object):
             pass
 
     def add_variables_from(self, linear, vartype=None):
-        """todo"""
-        # We want the linear terms to be a dict.
-        # The keys are the variables and the values are the linear biases.
-        # Model is deliberately agnostic to the type of the variable names
-        # and the biases.
-        if not isinstance(linear, dict):
-            raise TypeError("expected `linear` to be a dict")
+        """Add linear biases.
 
-        for v, bias in iteritems(linear):
-            self.add_variable(v, bias, vartype=vartype)
+        Args:
+            linear (dict[variable, bias]/iterable[(variable, bias)]):
+                A collection of linear biases. If a dict, the keys should be variables in the
+                binary quadratic model and the values should be biases. Otherwise should be
+                an iterable of (variable, bias) pairs. The variables can be any python object
+                that could be used as a key in a dict. Many methods and functions expect the biases
+                to be numbers but this is not explicitly checked.
+                If any of the variables already exist in the model, their bias is added to the
+                existing linear bias.
+
+            vartype (:class:`.Vartype`, optional, default=None):
+                The vartype of the given bias. If None will be the same vartype as the binary
+                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+                :class:`.Vartype.BINARY`.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_variables_from({'a': .5, 'b': -1.})
+            >>> bqm.linear
+            {'a': .5, 'b': -1.}
+
+            Variables that already exist have their bias added.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'b': -1.}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_variables_from({'a': .5, 'b': -1.})
+            >>> bqm.linear
+            {'a': .5, 'b': -2.}
+
+        """
+        if isinstance(linear, dict):
+            for v, bias in iteritems(linear):
+                self.add_variable(v, bias, vartype=vartype)
+        else:
+            try:
+                for v, bias in linear:
+                    self.add_variable(v, bias, vartype=vartype)
+            except TypeError:
+                raise TypeError("expected 'linear' to be a dict or an iterable of 2-tuples.")
 
     def add_interaction(self, u, v, bias, vartype=None):
-        """todo"""
+        """Add a variable interaction and its quadratic bias.
+
+        Args:
+            v (variable):
+                A variable can be any python object that could be used as a key of a dict.
+
+            u (variable):
+                A variable can be any python object that could be used as a key of a dict.
+
+            bias (bias):
+                The quadratic bias associated with u, v. If u, v already is in the model, the bias
+                is added to the existing quadratic bias. Many methods and functions expect bias to
+                be a number but this is not explicitly checked.
+
+            vartype (:class:`.Vartype`, optional, default=None):
+                The vartype of the given bias. If None will be the same vartype as the binary
+                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+                :class:`.Vartype.BINARY`.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_interaction('a', 'b', -.5)
+            >>> bqm.quadratic
+            {('a', 'b'): -.5}
+
+            Variables that already exist have their bias added.
+
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
+            >>> bqm.add_interaction('a', 'b', -.5)
+            >>> bqm.quadratic
+            {('b', 'a'): -1.}
+
+        """
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
 
@@ -343,11 +436,37 @@ class BinaryQuadraticModel(object):
             pass
 
     def add_interactions_from(self, quadratic, vartype=None):
-        """todo"""
-        # We want quadratic to be a dict.
-        # The keys should be 2-tuples of the form (u, v) where both u and v
-        # are in linear.
-        # We are agnostic to the type of the bias.
+        """Add quadratic biases.
+
+        Args:
+            quadratic (dict[(variable, variable), bias]/iterable[(variable, variable, bias)]):
+                Variables that have an interaction and their quadratic bias. If a dict, the keys
+                should be 2-tuples of the variables and the values should be their corresponding
+                bias. Can also be an iterable of 3-tuples. Each interaction in quadratic should be
+                unique - that is if `(u, v)` is a key in quadratic, then `(v, u)` should not be.
+                The variables can be any python object that could be used as a key in a dict.
+                Many methods and functions expect the biases to be numbers but this is not
+                explicitly checked.
+
+            vartype (:class:`.Vartype`, optional, default=None):
+                The vartype of the given bias. If None will be the same vartype as the binary
+                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+                :class:`.Vartype.BINARY`.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm.add_interactions_from({('a', 'b'): -.5})
+            >>> bqm.quadratic
+            {('a', 'b'): -.5}
+
+            Variables that already exist have their bias added.
+
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
+            >>> bqm.add_interactions_from({('a', 'b'): -.5})
+            >>> bqm.quadratic
+            {('b', 'a'): -1.}
+
+        """
         if isinstance(quadratic, dict):
             for (u, v), bias in iteritems(quadratic):
                 self.add_interaction(u, v, bias, vartype=vartype)
@@ -359,7 +478,22 @@ class BinaryQuadraticModel(object):
                 raise TypeError("expected 'quadratic' to be a dict or an iterable of 3-tuples.")
 
     def remove_variable(self, v):
-        """todo"""
+        """Remove the variable v and all of its interactions.
+
+        Args:
+            v (variable):
+                A variable in the binary quadratic model.
+
+        Notes:
+            If the given variable is not in the binary quadratic model, this function does nothing.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 1., 'b': 2.}, {}, 0.0, dimod.SPIN)
+            >>> bqm.remove_variable('a')
+            >>> bqm.linear
+            {'b': 2.}
+
+        """
         linear = self.linear
         if v in linear:
             del linear[v]
@@ -381,39 +515,111 @@ class BinaryQuadraticModel(object):
         del adj[v]
 
         try:
-            self._counterpart.remove_variable(v)
+            # invalidates counterpart
+            del self._counterpart
+            if hasattr(self, '_binary'):
+                del self._binary
+            if hasattr(self, '_spin'):
+                del self._spin
         except AttributeError:
             pass
 
     def remove_variables_from(self, variables):
-        """todo"""
-        for v in variabels:
+        """Remove the given variables and all of their interactions.
+
+        Args:
+            variables(iterable):
+                A collection of variables to be removed from the binary quadratic model.
+
+        Notes:
+            If any variable is not in the binary quadratic model, it is ignored.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 1., 'b': 2., 'c': 3.}, {}, 0.0, dimod.SPIN)
+            >>> bqm.remove_variables_from(['a', 'c'])
+            >>> bqm.linear
+            {'b': 2.}
+
+        """
+        for v in variables:
             self.remove_variable(v)
 
-    def remove_interaction(u, v):
-        """todo"""
+    def remove_interaction(self, u, v):
+        """Remove the interaction between u, v.
+
+        Args:
+            u (variable):
+                A variable in the binary quadratic model that has an interaction with v.
+
+            v (variable):
+                A variable in the binary quadratic model that has an interaction with u.
+
+        Notes:
+            Any interaction not in the binary quadratic model is ignored.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
+            >>> bqm.remove_interaction('b', 'c')
+            >>> bqm.quadratic
+            {('a', 'b'): -1}
+            >>> bqm.remove_interaction('a', 'c')  # not an interaction, so ignored
+            >>> bqm.quadratic
+            {('a', 'b'): -1}
+
+        """
         quadratic = self.quadratic
         adj = self.adj
+
+        try:
+            del adj[v][u]
+        except KeyError:
+            return  # no interaction with that name
+        del adj[u][v]
+
         if (u, v) in quadratic:
             del quadratic[(u, v)]
         if (v, u) in quadratic:
             del quadratic[(v, u)]
 
-        del adj[v][u]
-        del adj[u][v]
-
         try:
-            self._counterpart.remove_interaction(u, v)
+            # invalidates counterpart
+            del self._counterpart
+            if hasattr(self, '_binary'):
+                del self._binary
+            if hasattr(self, '_spin'):
+                del self._spin
         except AttributeError:
             pass
 
-    def remove_interactions_from(interactions):
-        """todo"""
+    def remove_interactions_from(self, interactions):
+        """Remove all of the given interactions from the binary quadratic model.
+
+        Args:
+            interactions (iterable[[variable, variable]]):
+                A collections of interactions. Each interaction should be a 2-tuple of variables
+                in the binary quadratic model.
+
+        Notes:
+            Any interaction not in the binary quadratic model is ignored.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
+            >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
+            >>> bqm.quadratic
+            {('a', 'b'): -1}
+
+        """
         for u, v in interactions:
             self.remove_interaction(u, v)
 
     def add_offset(self, offset):
-        """todo"""
+        """Add given value to the offset.
+
+        Args:
+            offset (number):
+                A value to be added to the constant energy offset for the binary quadratic model.
+
+        """
         self.offset += offset
 
         try:
@@ -421,8 +627,36 @@ class BinaryQuadraticModel(object):
         except AttributeError:
             pass
 
+    def remove_offset(self):
+        """Set the binary quadratic model's offset to zero.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 1.3, dimod.SPIN)
+            >>> bqm.remove_offset()
+            >>> bqm.offset
+            0.0
+
+        """
+        self.add_offset(-self.offset)
+
     def scale(self, scalar):
-        """todo"""
+        """Multiply all of the biases and the offset by the given scalar.
+
+        Args:
+            scalar (number):
+                The value to scale the energy range of the binary quadratic model by.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2, 'b': 2}, {('a', 'b'): -1}, 1., dimod.SPIN)
+            >>> bqm.scale(.5)
+            >>> bqm.linear
+            {'a': -1., 'b': 1.}
+            >>> bqm.quadratic
+            {('a', 'b'): -.5}
+            >>> bqm.offset
+            .5
+
+        """
         if not isinstance(scalar, Number):
             raise TypeError("expected scalar to be a Number")
 
@@ -445,6 +679,171 @@ class BinaryQuadraticModel(object):
             self._counterpart.scale(scalar)
         except AttributeError:
             pass
+
+    def fix_variable(self, v, value):
+        """Fix the value of a variable in the binary quadratic model and remove it.
+
+        Args:
+            v (variable):
+                A variable in the binary quadratic model that has an interaction with u.
+
+            value (int):
+                The value assigned to the variable, must match the :class:`.Vartype` of the binary
+                quadratic model.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -.5}, {}, 0.0, dimod.SPIN)
+            >>> bqm.fix_variable('a', -1)
+            >>> bqm.offset
+            .5
+            >>> bqm.linear
+            {}
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0.}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.fix_variable('a', -1)
+            >>> bqm.offset
+            .5
+            >>> bqm.linear
+            {'b': 1}
+            >>> bqm.quadratic
+            {}
+
+        Notes:
+            Acts on the binary quadratic model in place.
+
+        """
+        adj = self.adj
+        linear = self.linear
+
+        if value not in self.vartype.value:
+            raise ValueError("expected value to be in {}, received {} instead".format(self.vartype.value, value))
+
+        removed_interactions = []
+        for u in adj[v]:
+            self.add_variable(u, value * adj[v][u])
+            removed_interactions.append((u, v))
+        self.remove_interactions_from(removed_interactions)
+
+        self.add_offset(value * linear[v])
+        self.remove_variable(v)
+
+    def flip_variable(self, v):
+        """Flips a single variable v.
+
+        Args:
+            v (variable):
+                A variable in the binary quadratic model.
+
+        Notes:
+            If v is not in the binary quadratic model then it is ignored.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
+            >>> original = bqm.copy()
+            >>> bqm.flip_variable('a')
+            >>> bqm.energy({'a': -1}) == bqm.energy({'a': 1})
+            True
+
+        """
+        adj = self.adj
+        linear = self.linear
+        quadratic = self.quadratic
+
+        if v not in adj:
+            return
+
+        if self.vartype is Vartype.SPIN:
+            # in this case we just multiply by -1
+            linear[v] *= -1.
+            for u in adj[v]:
+                adj[v][u] *= -1.
+                adj[u][v] *= -1.
+
+                if (u, v) in quadratic:
+                    quadratic[(u, v)] *= -1.
+                elif (v, u) in quadratic:
+                    quadratic[(v, u)] *= -1.
+                else:
+                    raise RuntimeError("quadratic is missing an interaction")
+
+        elif self.vartype is Vartype.BINARY:
+            self.offset += linear[v]
+            linear[v] *= -1
+
+            for u in adj[v]:
+                bias = adj[v][u]
+
+                adj[v][u] *= -1.
+                adj[u][v] *= -1.
+
+                linear[u] += bias
+
+                if (u, v) in quadratic:
+                    quadratic[(u, v)] *= -1.
+                elif (v, u) in quadratic:
+                    quadratic[(v, u)] *= -1.
+                else:
+                    raise RuntimeError("quadratic is missing an interaction")
+
+        else:
+            raise RuntimeError("Unexpected vartype")
+
+        try:
+            self._counterpart.flip_variable(v)
+        except AttributeError:
+            pass
+
+    def update(self, bqm):
+        """Update with the values from another binary quadratic model.
+
+        Args:
+            bqm (:class:`.BinaryQuadraticModel`):
+                A binary quadratic model. All of the biases are added to self.
+
+        """
+        self.add_variables_from(bqm.linear, vartype=bqm.vartype)
+        self.add_interactions_from(bqm.quadratic, vartype=bqm.vartype)
+        self.add_offset(bqm.offset)
+
+    def contract_variables(self, u, v):
+        """Asserts u, v are the same variable.
+
+        The resulting variable will be labeled as 'u'.
+
+        Args:
+            u (variable):
+                A variable in the binary quadratic model.
+
+            v (variable):
+                A variable in the binary quadratic model.
+
+        """
+        adj = self.adj
+
+        if u not in adj:
+            raise ValueError("{} is not a variable in the binary quadratic model".format(u))
+        if v not in adj:
+            raise ValueError("{} is not a variable in the binary quadratic model".format(v))
+
+        # if there is an interaction between u, v it becomes linear for u
+        if v in adj[u]:
+            if self.vartype is Vartype.BINARY:
+                self.add_variable(u, adj[u][v])
+            elif self.vartype is Vartype.SPIN:
+                self.add_offset(adj[u][v])
+            else:
+                raise RuntimeError("unexpected vartype")
+            self.remove_interaction(u, v)
+
+        # all of the interactions that v has become interactions for u
+        neighbors = list(adj[v])
+        for w in neighbors:
+            self.add_interaction(u, w, adj[v][w])
+            self.remove_interaction(v, w)
+
+        # finally remove v
+        self.remove_variable(v)
+
 
 ###################################################################################################
 # transformations
@@ -571,7 +970,7 @@ class BinaryQuadraticModel(object):
             else:
                 vartype = Vartype(vartype)
             if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError
+                raise ValueError  # pragma: no cover
         except (ValueError, KeyError):
             raise TypeError(("expected input vartype to be one of: "
                              "Vartype.SPIN, 'SPIN', {-1, 1}, "
@@ -588,7 +987,7 @@ class BinaryQuadraticModel(object):
             linear, quadratic, offset = self.binary_to_spin(self.linear, self.quadratic, self.offset)
             return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.SPIN)
         else:
-            raise RuntimeError("something has gone wrong. unknown vartype conversion.")  # pragma: no cover
+            raise RuntimeError("something has gone wrong. unknown vartype conversion.")
 
 ##################################################################################################
 # static method
