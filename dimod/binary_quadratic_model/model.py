@@ -1,6 +1,6 @@
 """
 BinaryQuadraticModel
---------------------
+====================
 """
 from __future__ import absolute_import, division
 
@@ -35,34 +35,34 @@ else:
 class BinaryQuadraticModel(object):
     """Encodes a binary quadratic model.
 
-    Binary quadratic models are the superclass that contains Ising models
-    and QUBOs.
+    Binary quadratic model is the superclass that contains the `Ising model`_ and the QUBO_.
 
-    The energy of a binary quadratic model is given by:
+    .. _Ising model: https://en.wikipedia.org/wiki/Ising_model
+    .. _QUBO: https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
 
     Args:
-        linear (dict):
-            The linear biases as a dict. The keys should be the
-            variables of the binary quadratic model. The values should be
-            the linear bias associated with each variable.
+        linear (dict[variable, bias]):
+            The linear biases as a dict.
+            The keys should be the variables of the binary quadratic model. A variable can be any
+            python object that can be used as the key of a dictionary.
+            The values should be the linear bias associated with each variable. Biases are generally
+            a number but this is not explicitly checked.
 
-        quadratic (dict):
-            The quadratic biases as a dict. The keys should
-            be 2-tuples of variables. The values should be the quadratic
-            bias associated with interaction of variables.
-            Each interaction in quadratic should be unique - that is if
-            `(u, v)` is a key in quadratic, then `(v, u)` should
-            not be.
+        quadratic (dict[(variable, variable), bias]):
+            The quadratic biases as a dict.
+            The keys should be 2-tuples of variables.  A variable can be any python object that can
+            be used as the key of a dictionary. A pair of variables is called an interaction.
+            The values should be the quadratic bias associated with the interaction. Biases are
+            generally a number but this is not explicitly checked.
+            Interactions that are not unique are added.
 
         offset (number):
-            The energy offset associated with the model. Any type input
-            is allowed, but many applications that use BinaryQuadraticModel
-            will assume that offset is a number.
+            The constant energy offset associated with the binary quadratic model. Any type input is
+            allowed, but many applications will assume that offset is a number.
             See :meth:`.BinaryQuadraticModel.energy`
 
         vartype (:class:`.Vartype`/str/set):
-            The variable type desired for the penalty model.
-            Accepted input values:
+            The variable type desired for the penalty model. Accepted input values:
             :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
@@ -78,16 +78,14 @@ class BinaryQuadraticModel(object):
         ...                                 pm.SPIN)
 
     Attributes:
-        linear (dict):
-            The linear biases as a dict. The keys are the
-            variables of the binary quadratic model. The values are
-            the linear biases associated with each variable.
+        linear (dict[variable, bias]):
+            The linear biases as a dict. The keys are the variables of the binary quadratic model.
+            The values are the linear biases associated with each variable.
 
-        quadratic (dict):
-            The quadratic biases as a dict. The keys are 2-tuples of variables.
-            Each 2-tuple represents an interaction between two variables in the
-            model. The values are the quadratic biases associated with each
-            interaction.
+        quadratic (dict[(variable, variable), bias]):
+            The quadratic biases as a dict. The keys are 2-tuples of variables. Each 2-tuple
+            represents an interaction between two variables in the model. The values are the
+            quadratic biases associated with each interaction.
 
         offset (number):
             The energy offset associated with the model. Same type as given
@@ -106,21 +104,21 @@ class BinaryQuadraticModel(object):
             Examples:
                 If we create a BinaryQuadraticModel with a single interaction
 
-                >>> model = pm.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, pm.SPIN)
+                >>> bqm = pm.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, pm.SPIN)
 
                 Then we can see the neighbors of each variable
 
-                >>> model.adj['a']
+                >>> bqm.adj['a']
                 {'b': -1}
-                >>> model.adj['b']
+                >>> bqm.adj['b']
                 {'a': -1}
 
                 In this way if we know that there is an interaction between :code:`'a', 'b'`
                 we can easily find the quadratic bias
 
-                >>> model.adj['a']['b']
+                >>> bqm.adj['a']['b']
                 -1
-                >>> model.adj['b']['a']
+                >>> bqm.adj['b']['a']
                 -1
 
         SPIN (:class:`.Vartype`): An alias for :class:`.Vartype.SPIN` for easier access.
@@ -188,7 +186,46 @@ class BinaryQuadraticModel(object):
 
     @property
     def spin(self):
-        """todo"""
+        """:class:`.BinaryQuadraticModel`: The spin-valued version of the binary quadratic model.
+
+        This property allows the user to access the biases for the appropriate vartype without
+        needing to check the given binary quadratic model.
+
+        Examples:
+            Create a spin-valued binary quadratic model. In this case the :attr:`.spin` attribute
+            refers back to itself.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.spin is bqm
+            True
+
+            For a binary-valued binary quadratic model, it's spin-valued counterpart will be built
+            the first time the :attr:`.spin` property is accessed and subsequent reads will use
+            it.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
+            >>> bqm.spin.linear
+            {'a': 0, 'b': 0}
+            >>> bqm.spin.quadratic
+            {('a', 'b'): -.25}
+            >>> bqm.spin.offset
+            .25
+
+            The energy will correspond.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
+            >>> bqm.energy({'a': 0, 'b': 1})
+            .5
+            >>> bqm.spin.energy({'a': -1, 'b': +1})
+            .5
+
+        Note:
+            Methods like :meth:`.add_variable`, :meth:`.add_variables_from`,
+            :meth:`.add_interaction`, etc. should only be used on the base model.
+
+        """
+        # NB: The existence of the _spin property implies that it is up to date, methods that
+        # invalidate it will erase the property
         try:
             spin = self._spin
             if spin is not None:
@@ -208,7 +245,46 @@ class BinaryQuadraticModel(object):
 
     @property
     def binary(self):
-        """todo"""
+        """:class:`.BinaryQuadraticModel`: The binary-valued version of the binary quadratic model.
+
+        This property allows the user to access the biases for the appropriate vartype without
+        needing to check the given binary quadratic model.
+
+        Examples:
+            Create a binary-valued binary quadratic model. In this case the :attr:`.binary` attribute
+            refers back to itself.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
+            >>> bqm.binary is bqm
+            True
+
+            For a spin-valued binary quadratic model, it's binary-valued counterpart will be built
+            the first time the :attr:`.binary` property is accessed and subsequent reads will use
+            it.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.binary.linear
+            {'a': 2.0, 'b': 2.0}
+            >>> bqm.binary.quadratic
+            {('a', 'b'): -4.0}
+            >>> bqm.binary.offset
+            -1.0
+
+            The energy will correspond.
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.binary.energy({'a': 0, 'b': 1})
+            1.0
+            >>> bqm.energy({'a': -1, 'b': +1})
+            1.0
+
+        Note:
+            Methods like :meth:`.add_variable`, :meth:`.add_variables_from`,
+            :meth:`.add_interaction`, etc. should only be used on the base model.
+
+        """
+        # NB: The existence of the _binary property implies that it is up to date, methods that
+        # invalidate it will erase the property
         try:
             binary = self._binary
             if binary is not None:
@@ -517,9 +593,9 @@ class BinaryQuadraticModel(object):
         try:
             # invalidates counterpart
             del self._counterpart
-            if hasattr(self, '_binary'):
+            if self.vartype is not Vartype.BINARY and hasattr(self, '_binary'):
                 del self._binary
-            if hasattr(self, '_spin'):
+            elif self.vartype is not Vartype.SPIN and hasattr(self, '_spin'):
                 del self._spin
         except AttributeError:
             pass
@@ -578,15 +654,15 @@ class BinaryQuadraticModel(object):
 
         if (u, v) in quadratic:
             del quadratic[(u, v)]
-        if (v, u) in quadratic:
+        else:
             del quadratic[(v, u)]
 
         try:
             # invalidates counterpart
             del self._counterpart
-            if hasattr(self, '_binary'):
+            if self.vartype is not Vartype.BINARY and hasattr(self, '_binary'):
                 del self._binary
-            if hasattr(self, '_spin'):
+            elif self.vartype is not Vartype.SPIN and hasattr(self, '_spin'):
                 del self._spin
         except AttributeError:
             pass
@@ -806,7 +882,7 @@ class BinaryQuadraticModel(object):
         self.add_offset(bqm.offset)
 
     def contract_variables(self, u, v):
-        """Asserts u, v are the same variable.
+        """Enforces u, v are the same variable.
 
         The resulting variable will be labeled as 'u'.
 
@@ -855,7 +931,7 @@ class BinaryQuadraticModel(object):
         Args:
             mapping (dict): a dict mapping the current variable labels
                 to new ones. If an incomplete mapping is provided,
-                variables will keep their labels
+                unmapped variables will keep their labels
             copy (bool, default): If True, return a copy of BinaryQuadraticModel
                 with the variables relabeled, otherwise apply the relabeling in
                 place.

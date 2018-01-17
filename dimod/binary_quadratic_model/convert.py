@@ -1,3 +1,11 @@
+"""
+Conversion functions
+--------------------
+
+These functions convert the :class:`.BinaryQuadraticModel` to other datatypes.
+
+"""
+
 from dimod import _PY2
 from dimod.binary_quadratic_model.model import BinaryQuadraticModel
 from dimod.vartypes import Vartype
@@ -188,7 +196,8 @@ def to_numpy_array(bqm, variable_order=None):
 
         variable_order (list, optional):
             If variable_order is provided, the rows/columns of the numpy array are indexed by
-            the variables in variable_order.
+            the variables in variable_order. If any variables are included in variable_order that
+            are not in `bqm`, they will be included in the matrix.
 
     Returns:
         :class:`numpy.ndarray`: The binary quadratic model as a matrix. The matrix has binary
@@ -200,11 +209,10 @@ def to_numpy_array(bqm, variable_order=None):
 
         .. math::
 
-            x^T Q x
+            E(x) = x^T Q x
 
 
         The offset is dropped when converting to a numpy matrix.
-
 
     """
     import numpy as np
@@ -258,7 +266,8 @@ def from_numpy_array(mat, variable_order=None, offset=0.0, interactions=[]):
 
         variable_order (list, optional):
             If variable_order is provided, provides the labels for the variables in the binary
-            quadratic program.
+            quadratic program, otherwise the row/column indices will be used. If variable_order
+            is longer than the matrix, the extra values are ignored.
 
         offset (optional, default=0.0):
             The constant offset for the binary quadratic program.
