@@ -12,10 +12,11 @@ if _PY2:
 else:
     exec(open("./dimod/package_info.py").read())
 
-install_requires = ['decorator>=4.1.0',
-                    'enum34']
+install_requires = ['decorator==4.1.2',
+                    'enum34==1.1.6']
 
-tests_require = ['numpy']
+tests_require = ['numpy==1.13.3',
+                 'networkx==2.0']
 extras_require = {'tests': tests_require,
                   'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
                   'all': ['numpy']}
