@@ -165,3 +165,62 @@ class TestConvert(unittest.TestCase):
         M = dimod.to_numpy_array(bqm, ['a', 'c', 'b'])
 
         self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
+
+    @unittest.skipUnless(_numpy, "numpy is not installed")
+    def test_from_numpy_array(self):
+
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
+
+        variable_order = ['a', 'c', 'b']
+
+        M = dimod.to_numpy_array(bqm, variable_order=variable_order)
+
+        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        # zero-interactions get ignored unless provided in interactions
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
+        variable_order = ['a', 'c', 'b']
+        M = dimod.to_numpy_array(bqm, variable_order=variable_order)
+
+        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order)
+
+        self.assertNotIn(('a', 'b'), new_bqm.quadratic)
+        self.assertNotIn(('b', 'a'), new_bqm.quadratic)
+
+        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order, interactions=quadratic)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        M = np.asarray([[0, 1], [0, 0]])
+        bqm = dimod.from_numpy_array(M)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
+
+    def test_from_qubo(self):
+        Q = {('a', 'a'): 1, ('a', 'b'): -1}
+        bqm = dimod.from_qubo(Q)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({'a': 1}, {('a', 'b'): -1}, 0.0, dimod.BINARY))
+
+    def test_from_ising(self):
+        h = {'a': 1}
+        J = {('a', 'b'): -1}
+
+        bqm = dimod.from_ising(h, J)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({'a': 1}, {('a', 'b'): -1}, 0.0, dimod.SPIN))
+
+        #
+
+        # h list
+        h = [-1, 1]
+        J = {(0, 1): 1}
+        bqm = dimod.from_ising(h, J, offset=1)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))

@@ -1,19 +1,22 @@
 from dimod import _PY2
+from dimod.binary_quadratic_model.model import BinaryQuadraticModel
 from dimod.vartypes import Vartype
+
+__all__ = ['to_networkx_graph',
+           'to_ising',
+           'to_qubo',
+           'to_numpy_array',
+           'from_ising',
+           'from_qubo',
+           'from_numpy_array']
 
 if _PY2:
     def iteritems(d):
         return d.iteritems()
 
-    def itervalues(d):
-        return d.itervalues()
-
 else:
     def iteritems(d):
         return d.items()
-
-    def itervalues(d):
-        return d.values()
 
 
 def to_networkx_graph(bqm, node_attribute_name='bias', edge_attribute_name='bias'):
@@ -96,6 +99,31 @@ def to_ising(bqm):
     return bqm.spin.linear, bqm.spin.quadratic, bqm.spin.offset
 
 
+def from_ising(h, J, offset=0.0):
+    """Build a binary quadratic model from an Ising problem.
+
+
+    Args:
+        h (dict[variable, bias]/list[bias]):
+            The linear biases of the Ising problem. If a list, the indices of the list are treated
+            as the variable labels.
+
+        J (dict[(variable, variable), bias]):
+            The quadratic biases of the Ising problem.
+
+        offset (optional, default=0.0):
+            The constant offset applied to the model.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    """
+    if isinstance(h, list):
+        h = dict(enumerate(h))
+
+    return BinaryQuadraticModel(h, J, offset, Vartype.SPIN)
+
+
 def to_qubo(bqm):
     """Converts the binary quadratic model into the (Q, offset) QUBO format.
 
@@ -123,6 +151,31 @@ def to_qubo(bqm):
         qubo[edge] = bias
 
     return qubo, bqm.binary.offset
+
+
+def from_qubo(Q, offset=0.0):
+    """Build a binary quadratic model from a qubo.
+
+    Args:
+        Q (dict):
+            The qubo coefficients.
+
+        offset (optional, default=0.0):
+            The constant offset applied to the model.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    """
+    linear = {}
+    quadratic = {}
+    for (u, v), bias in iteritems(Q):
+        if u == v:
+            linear[u] = bias
+        else:
+            quadratic[(u, v)] = bias
+
+    return BinaryQuadraticModel(linear, quadratic, offset, Vartype.BINARY)
 
 
 def to_numpy_array(bqm, variable_order=None):
@@ -194,3 +247,50 @@ def to_numpy_array(bqm, variable_order=None):
                 mat[iv, iu] = bias
 
     return mat
+
+
+def from_numpy_array(mat, variable_order=None, offset=0.0, interactions=[]):
+    """Build a binary quadratic model from a numpy array.
+
+    Args:
+        mat (:class:`numpy.ndarray`):
+            A square numpy matrix. The coefficients of a qubo.
+
+        variable_order (list, optional):
+            If variable_order is provided, provides the labels for the variables in the binary
+            quadratic program.
+
+        offset (optional, default=0.0):
+            The constant offset for the binary quadratic program.
+
+        interactions (iterable, optional, default=[]):
+            Any additional 0.0-bias interactions to be added to the binary quadratic model.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    """
+    import numpy as np
+
+    if mat.ndim != 2:
+        raise ValueError("expected input mat to be a square matrix")  # pragma: no cover
+
+    num_row, num_col = mat.shape
+    if num_col != num_row:
+        raise ValueError("expected input mat to be a square matrix")  # pragma: no cover
+
+    if variable_order is None:
+        variable_order = list(range(num_row))
+
+    bqm = BinaryQuadraticModel({}, {}, offset, Vartype.BINARY)
+
+    for (row, col), bias in np.ndenumerate(mat):
+        if row == col:
+            bqm.add_variable(variable_order[row], bias)
+        elif bias:
+            bqm.add_interaction(variable_order[row], variable_order[col], bias)
+
+    for u, v in interactions:
+        bqm.add_interaction(u, v, 0.0)
+
+    return bqm
