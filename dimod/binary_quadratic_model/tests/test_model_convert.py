@@ -10,6 +10,12 @@ try:
 except ImportError:
     _networkx = False
 
+try:
+    import numpy as np
+    _numpy = True
+except ImportError:
+    _numpy = False
+
 
 class TestConvert(unittest.TestCase):
     @unittest.skipUnless(_networkx, "No networkx installed")
@@ -107,3 +113,55 @@ class TestConvert(unittest.TestCase):
 
             # and the energy of the model
             self.assertAlmostEqual(energy, model.energy(spin_sample))
+
+    @unittest.skipUnless(_numpy, "numpy is not installed")
+    def test_to_numpy_array(self):
+        # integer-indexed, binary bqm
+        linear = {v: v * .01 for v in range(10)}
+        quadratic = {(v, u): u * v * .01 for u, v in itertools.combinations(linear, 2)}
+        quadratic[(0, 1)] = quadratic[(1, 0)]
+        del quadratic[(1, 0)]
+        offset = 1.2
+        vartype = dimod.BINARY
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+
+        M = dimod.to_numpy_array(bqm)
+
+        self.assertTrue(np.array_equal(M, np.triu(M)))  # upper triangular
+
+        for (row, col), bias in np.ndenumerate(M):
+            if row == col:
+                self.assertEqual(bias, linear[row])
+            else:
+                self.assertTrue((row, col) in quadratic or (col, row) in quadratic)
+                self.assertFalse((row, col) in quadratic and (col, row) in quadratic)
+
+                if row > col:
+                    self.assertEqual(bias, 0)
+                else:
+                    if (row, col) in quadratic:
+                        self.assertEqual(quadratic[(row, col)], bias)
+                    else:
+                        self.assertEqual(quadratic[(col, row)], bias)
+
+        #
+
+        # integer-indexed, not contiguous
+        bqm = dimod.BinaryQuadraticModel({}, {(0, 3): -1}, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            M = dimod.to_numpy_array(bqm)
+
+        #
+
+        # string-labeled, variable_order provided
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            dimod.to_numpy_array(bqm, ['a', 'c'])  # incomplete variable order
+
+        M = dimod.to_numpy_array(bqm, ['a', 'c', 'b'])
+
+        self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
