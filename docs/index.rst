@@ -22,6 +22,7 @@ Documentation
    included_composites
    dimod_responses
    included_responses
+   binary_quadratic_model
    decorators
    utilities
    license
