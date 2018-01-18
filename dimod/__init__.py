@@ -30,4 +30,4 @@ import dimod.vartypes
 from dimod.binary_quadratic_model import *
 import dimod.binary_quadratic_model
 
-from dimod.package_info import *
+from dimod.package_info import __version__, __author__, __authoremail__, __description__
