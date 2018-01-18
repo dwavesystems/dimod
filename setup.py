@@ -24,7 +24,8 @@ extras_require = {'tests': tests_require,
 packages = ['dimod',
             'dimod.responses',
             'dimod.composites',
-            'dimod.samplers']
+            'dimod.samplers',
+            'dimod.binary_quadratic_model']
 
 setup(
     name='dimod',
