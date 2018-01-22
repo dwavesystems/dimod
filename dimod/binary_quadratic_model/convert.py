@@ -6,7 +6,7 @@ These functions convert the :class:`.BinaryQuadraticModel` to other datatypes.
 
 """
 
-from dimod import _PY2
+from dimod.compatibility23 import iteritems
 from dimod.binary_quadratic_model.model import BinaryQuadraticModel
 from dimod.vartypes import Vartype
 
@@ -19,14 +19,6 @@ __all__ = ['to_networkx_graph',
            'from_qubo',
            'from_numpy_matrix',
            'from_pandas_dataframe']
-
-if _PY2:
-    def iteritems(d):
-        return d.iteritems()
-
-else:
-    def iteritems(d):
-        return d.items()
 
 
 def to_networkx_graph(bqm, node_attribute_name='bias', edge_attribute_name='bias'):

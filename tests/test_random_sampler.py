@@ -1,7 +1,7 @@
 import unittest
 
 import dimod
-from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
+from tests.generic_sampler_tests import SamplerAPITest
 
 
 class TestRandomSampler(unittest.TestCase, SamplerAPITest):

@@ -3,7 +3,7 @@ import unittest
 import itertools
 
 import dimod
-from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
+from tests.generic_sampler_tests import SamplerAPITest
 
 
 class TestExactSolver(unittest.TestCase, SamplerAPITest):
