@@ -122,6 +122,7 @@ install:
 
 build_script:
   # Build the compiled extension
+  - "%CMD_IN_ENV% pip install -r requirements.txt"
   - "%CMD_IN_ENV% pip install ."
 
 test_script:
