@@ -20,18 +20,12 @@ import itertools
 
 from numbers import Number
 
-from dimod import _PY2
 from dimod.exceptions import MappingError
 from dimod.responses.template_response import TemplateResponse
 from dimod.responses.type_response import BinaryResponse, SpinResponse
 from dimod.vartypes import Vartype
 
 __all__ = ['NumpyResponse', 'NumpySpinResponse', 'NumpyBinaryResponse']
-
-
-if _PY2:
-    range = xrange
-    zip = itertools.izip
 
 
 class NumpyResponse(TemplateResponse):

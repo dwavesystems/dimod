@@ -4,19 +4,9 @@ functions and methods.
 """
 from decorator import decorator
 
-from dimod import _PY2
+from dimod.compatibility23 import range_, iteritems
 
 __all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
-
-if _PY2:
-    range = xrange
-
-    def iteritems(d):
-        return d.iteritems()
-
-else:
-    def iteritems(d):
-        return d.items()
 
 
 def qubo(Q_arg):
@@ -188,7 +178,7 @@ def qubo_index_labels(Q_arg):
 
         # if the nodes are already index labeled from (0, n-1) then we are already
         # done
-        if all(idx in nodes for idx in range(len(nodes))):
+        if all(idx in nodes for idx in range_(len(nodes))):
             return f(*args, **kw)
 
         # let's relabel them, sorting the node labels lexicographically.
@@ -258,7 +248,7 @@ def ising_index_labels(h_arg, J_arg):
 
         # if the nodes are already index labeled from (0, n-1) then we are already
         # done
-        if all(idx in nodes for idx in range(len(nodes))):
+        if all(idx in nodes for idx in range_(len(nodes))):
             return f(*args, **kw)
 
         # let's relabel them, sorting the node labels lexicographically.

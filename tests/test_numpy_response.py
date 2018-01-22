@@ -7,7 +7,7 @@ except ImportError:
     _numpy = False
 
 import dimod
-from dimod.responses.tests.test_response import ResponseGenericTests
+from tests.test_response import ResponseGenericTests
 
 
 @unittest.skipUnless(_numpy, "numpy not installed")
