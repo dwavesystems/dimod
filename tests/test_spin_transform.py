@@ -3,7 +3,7 @@ import itertools
 import random
 
 import dimod
-from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
+from tests.generic_sampler_tests import SamplerAPITest
 
 # import functions and classes we wish to test, from the 'topmost' location
 from dimod.composites.spin_transform import apply_spin_reversal_transform

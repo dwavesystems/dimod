@@ -4,7 +4,7 @@ import itertools
 import random
 
 import dimod
-from dimod.samplers.tests.generic_sampler_tests import SamplerAPITest
+from tests.generic_sampler_tests import SamplerAPITest
 from dimod.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
