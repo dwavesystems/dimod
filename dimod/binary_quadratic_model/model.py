@@ -1171,5 +1171,5 @@ class BinaryQuadraticModel(object):
 
         en = self.offset
         en += sum(linear[v] * sample[v] for v in linear)
-        en += sum(quadratic[(u, v)] * sample[u] * sample[v] for u, v in quadratic)
+        en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
         return en

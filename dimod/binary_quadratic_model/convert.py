@@ -13,10 +13,12 @@ from dimod.vartypes import Vartype
 __all__ = ['to_networkx_graph',
            'to_ising',
            'to_qubo',
-           'to_numpy_array',
+           'to_numpy_matrix',
+           'to_pandas_dataframe',
            'from_ising',
            'from_qubo',
-           'from_numpy_array']
+           'from_numpy_matrix',
+           'from_pandas_dataframe']
 
 if _PY2:
     def iteritems(d):
@@ -186,7 +188,7 @@ def from_qubo(Q, offset=0.0):
     return BinaryQuadraticModel(linear, quadratic, offset, Vartype.BINARY)
 
 
-def to_numpy_array(bqm, variable_order=None):
+def to_numpy_matrix(bqm, variable_order=None):
     """Return the binary quadratic model as a matrix.
 
     Args:
@@ -200,7 +202,7 @@ def to_numpy_array(bqm, variable_order=None):
             are not in `bqm`, they will be included in the matrix.
 
     Returns:
-        :class:`numpy.ndarray`: The binary quadratic model as a matrix. The matrix has binary
+        :class:`numpy.matrix`: The binary quadratic model as a matrix. The matrix has binary
         vartype.
 
     Notes:
@@ -254,14 +256,14 @@ def to_numpy_array(bqm, variable_order=None):
             else:
                 mat[iv, iu] = bias
 
-    return mat
+    return np.asmatrix(mat)
 
 
-def from_numpy_array(mat, variable_order=None, offset=0.0, interactions=[]):
-    """Build a binary quadratic model from a numpy array.
+def from_numpy_matrix(mat, variable_order=None, offset=0.0, interactions=[]):
+    """Build a binary quadratic model from a numpy matrix.
 
     Args:
-        mat (:class:`numpy.ndarray`):
+        mat (:class:`numpy.matrix`):
             A square numpy matrix. The coefficients of a qubo.
 
         variable_order (list, optional):
@@ -298,6 +300,76 @@ def from_numpy_array(mat, variable_order=None, offset=0.0, interactions=[]):
             bqm.add_variable(variable_order[row], bias)
         elif bias:
             bqm.add_interaction(variable_order[row], variable_order[col], bias)
+
+    for u, v in interactions:
+        bqm.add_interaction(u, v, 0.0)
+
+    return bqm
+
+
+def to_pandas_dataframe(bqm):
+    """Return the binary quadratic model as a pandas DataFrame.
+
+    Args:
+        bqm (:class:`.BinaryQuadraticModel`):
+            A binary quadratic model. Should either be index-labeled from 0 to N-1 or variable_order
+            should be provided.
+
+    Returns:
+        :class:`pandas.DataFrame`: The binary quadratic model as a DataFrame. The DataFrame has
+        binary vartype. The rows and columns are labeled by the variables in the binary quadratic
+        model.
+
+    Notes:
+        The DataFrame representation of a binary quadratic model only makes sense for binary models.
+        For a binary sample x, the energy of the model is given by:
+
+        .. math::
+
+            E(x) = x^T Q x
+
+
+        The offset is dropped when converting to a pandas DataFrame.
+
+    """
+    import pandas as pd
+
+    try:
+        variable_order = sorted(bqm.linear)
+    except TypeError:
+        variable_order = list(bqm.linear)
+
+    return pd.DataFrame(to_numpy_matrix(bqm, variable_order=variable_order),
+                        index=variable_order,
+                        columns=variable_order)  # let it choose its own datatype
+
+
+def from_pandas_dataframe(bqm_df, offset=0.0, interactions=[]):
+    """Build a binary quadratic model from a pandas dataframe.
+
+    Args:
+        bqm_df (:class:`pandas.DataFrame`):
+            A pandas dataframe. The row and column indices should be that variables of the binary
+            quadratic program. The values should be the coefficients of a qubo.
+
+        offset (optional, default=0.0):
+            The constant offset for the binary quadratic program.
+
+        interactions (iterable, optional, default=[]):
+            Any additional 0.0-bias interactions to be added to the binary quadratic model.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    """
+    bqm = BinaryQuadraticModel({}, {}, offset, Vartype.BINARY)
+
+    for u, row in bqm_df.iterrows():
+        for v, bias in row.iteritems():
+            if u == v:
+                bqm.add_variable(u, bias)
+            elif bias:
+                bqm.add_interaction(u, v, bias)
 
     for u, v in interactions:
         bqm.add_interaction(u, v, 0.0)

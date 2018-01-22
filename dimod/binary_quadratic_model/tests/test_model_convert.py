@@ -16,6 +16,12 @@ try:
 except ImportError:
     _numpy = False
 
+try:
+    import pandas as pd
+    _pandas = True
+except ImportError:
+    _pandas = False
+
 
 class TestConvert(unittest.TestCase):
     @unittest.skipUnless(_networkx, "No networkx installed")
@@ -115,7 +121,7 @@ class TestConvert(unittest.TestCase):
             self.assertAlmostEqual(energy, model.energy(spin_sample))
 
     @unittest.skipUnless(_numpy, "numpy is not installed")
-    def test_to_numpy_array(self):
+    def test_to_numpy_matrix(self):
         # integer-indexed, binary bqm
         linear = {v: v * .01 for v in range(10)}
         quadratic = {(v, u): u * v * .01 for u, v in itertools.combinations(linear, 2)}
@@ -125,7 +131,7 @@ class TestConvert(unittest.TestCase):
         vartype = dimod.BINARY
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
-        M = dimod.to_numpy_array(bqm)
+        M = dimod.to_numpy_matrix(bqm)
 
         self.assertTrue(np.array_equal(M, np.triu(M)))  # upper triangular
 
@@ -150,7 +156,7 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({}, {(0, 3): -1}, 0.0, dimod.BINARY)
 
         with self.assertRaises(ValueError):
-            M = dimod.to_numpy_array(bqm)
+            M = dimod.to_numpy_matrix(bqm)
 
         #
 
@@ -160,14 +166,14 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
 
         with self.assertRaises(ValueError):
-            dimod.to_numpy_array(bqm, ['a', 'c'])  # incomplete variable order
+            dimod.to_numpy_matrix(bqm, ['a', 'c'])  # incomplete variable order
 
-        M = dimod.to_numpy_array(bqm, ['a', 'c', 'b'])
+        M = dimod.to_numpy_matrix(bqm, ['a', 'c', 'b'])
 
         self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
 
     @unittest.skipUnless(_numpy, "numpy is not installed")
-    def test_from_numpy_array(self):
+    def test_from_numpy_matrix(self):
 
         linear = {'a': -1}
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
@@ -175,9 +181,9 @@ class TestConvert(unittest.TestCase):
 
         variable_order = ['a', 'c', 'b']
 
-        M = dimod.to_numpy_array(bqm, variable_order=variable_order)
+        M = dimod.to_numpy_matrix(bqm, variable_order=variable_order)
 
-        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order)
+        new_bqm = dimod.from_numpy_matrix(M, variable_order=variable_order)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -188,21 +194,21 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
         variable_order = ['a', 'c', 'b']
-        M = dimod.to_numpy_array(bqm, variable_order=variable_order)
+        M = dimod.to_numpy_matrix(bqm, variable_order=variable_order)
 
-        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order)
+        new_bqm = dimod.from_numpy_matrix(M, variable_order=variable_order)
 
         self.assertNotIn(('a', 'b'), new_bqm.quadratic)
         self.assertNotIn(('b', 'a'), new_bqm.quadratic)
 
-        new_bqm = dimod.from_numpy_array(M, variable_order=variable_order, interactions=quadratic)
+        new_bqm = dimod.from_numpy_matrix(M, variable_order=variable_order, interactions=quadratic)
 
         self.assertEqual(bqm, new_bqm)
 
         #
 
         M = np.asarray([[0, 1], [0, 0]])
-        bqm = dimod.from_numpy_array(M)
+        bqm = dimod.from_numpy_matrix(M)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
 
     def test_from_qubo(self):
@@ -224,3 +230,47 @@ class TestConvert(unittest.TestCase):
         J = {(0, 1): 1}
         bqm = dimod.from_ising(h, J, offset=1)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))
+
+    @unittest.skipUnless(_pandas, "pandas is not installed")
+    @unittest.skipUnless(_numpy, "numpy is not installed")
+    def test_to_pandas_dataframe(self):
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
+
+        bqm_df = dimod.to_pandas_dataframe(bqm)
+
+        for config in itertools.product((0, 1), repeat=3):
+            sample = dict(zip('abc', config))
+            sample_series = pd.Series(sample)
+
+            self.assertAlmostEqual(bqm.energy(sample), sample_series.dot(bqm_df.dot(sample_series)))
+
+        bqm_new = dimod.from_pandas_dataframe(bqm_df, interactions=quadratic)
+
+        self.assertAlmostEqual(bqm.linear, bqm_new.linear)
+        for u in bqm.adj:
+            for v in bqm.adj[u]:
+                self.assertAlmostEqual(bqm.adj[u][v], bqm_new.adj[u][v])
+
+        #
+
+        # unlike var names
+        linear = {'a': -1, 16: 0.}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
+
+        bqm_df = dimod.to_pandas_dataframe(bqm)
+
+        for config in itertools.product((0, 1), repeat=4):
+            sample = dict(zip(['a', 'b', 'c', 16], config))
+            sample_series = pd.Series(sample)
+
+            self.assertAlmostEqual(bqm.energy(sample), sample_series.dot(bqm_df.dot(sample_series)))
+
+        bqm_new = dimod.from_pandas_dataframe(bqm_df, interactions=quadratic)
+
+        self.assertAlmostEqual(bqm.linear, bqm_new.linear)
+        for u in bqm.adj:
+            for v in bqm.adj[u]:
+                self.assertAlmostEqual(bqm.adj[u][v], bqm_new.adj[u][v])
