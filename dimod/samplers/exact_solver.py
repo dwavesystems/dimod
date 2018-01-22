@@ -4,23 +4,13 @@ ExactSolver
 
 An exact solver that calculates the energy of all possible samples.
 """
-from dimod import _PY2
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
 from dimod.responses.type_response import SpinResponse
 from dimod.utilities import ising_energy
+from dimod.compatibility23 import iteritems
 
 __all__ = ['ExactSolver']
-
-if _PY2:
-    range = xrange
-
-    def iteritems(d):
-        return d.iteritems()
-
-else:
-    def iteritems(d):
-        return d.items()
 
 
 class ExactSolver(TemplateSampler):

@@ -100,29 +100,11 @@ import itertools
 
 from numbers import Number
 
-from dimod import _PY2
+from dimod.compatibility23 import itervalues, iteritems, zip_longest
 from dimod.exceptions import MappingError
 from dimod.vartypes import Vartype
 
 __all__ = ['TemplateResponse']
-
-if _PY2:
-    zip = itertools.izip
-    zip_longest = itertools.izip_longest
-
-    def iteritems(d):
-        return d.iteritems()
-
-    def itervalues(d):
-        return d.itervalues()
-else:
-    zip_longest = itertools.zip_longest
-
-    def iteritems(d):
-        return d.items()
-
-    def itervalues(d):
-        return d.values()
 
 
 class TemplateResponse(object):

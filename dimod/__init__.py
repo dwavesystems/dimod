@@ -2,8 +2,6 @@ from __future__ import absolute_import
 
 import sys
 
-_PY2 = sys.version_info[0] == 2
-
 from dimod.samplers import *
 import dimod.samplers
 
