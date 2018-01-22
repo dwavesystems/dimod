@@ -2,23 +2,13 @@ from random import random
 import time
 import itertools
 
-from dimod import _PY2
+from dimod.compatibility23 import iteritems
 from dimod.composites.template_composite import TemplateComposite
 from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
 
 __all__ = ['SpinReversalTransform']
-
-if _PY2:
-    range = xrange
-    zip = itertools.izip
-
-    def iteritems(d):
-        return d.iteritems()
-else:
-    def iteritems(d):
-        return d.items()
 
 
 class SpinReversalTransform(TemplateComposite):

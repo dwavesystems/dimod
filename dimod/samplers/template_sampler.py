@@ -66,7 +66,7 @@ Also, by implementing one of the methods, we now can use the others.
 # we could do a solver that requires a complete graph as an example above...
 import inspect
 
-from dimod import _PY2
+from dimod.compatibility23 import _PY2
 from dimod.decorators import ising, qubo
 from dimod.keyword_arguments import SamplerKeywordArg
 from dimod.utilities import qubo_to_ising, ising_to_qubo

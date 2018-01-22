@@ -13,25 +13,12 @@ Response Classes
 
 import itertools
 
-from dimod import _PY2
+from dimod.compatibility23 import itervalues, iteritems
 from dimod.responses.template_response import TemplateResponse
 from dimod.utilities import qubo_energy, ising_energy
 from dimod.vartypes import Vartype
 
 __all__ = ['BinaryResponse', 'SpinResponse']
-
-if _PY2:
-    def iteritems(d):
-        return d.iteritems()
-
-    def itervalues(d):
-        return d.itervalues()
-else:
-    def iteritems(d):
-        return d.items()
-
-    def itervalues(d):
-        return d.values()
 
 
 class BinaryResponse(TemplateResponse):

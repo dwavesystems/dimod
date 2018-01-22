@@ -8,28 +8,8 @@ import itertools
 
 from numbers import Number
 
-from dimod import _PY2
+from dimod.compatibility23 import itervalues, iteritems, iterkeys
 from dimod.vartypes import Vartype
-
-if _PY2:
-    def iteritems(d):
-        return d.iteritems()
-
-    def itervalues(d):
-        return d.itervalues()
-
-    def iterkeys(d):
-        return d.iterkeys()
-
-else:
-    def iteritems(d):
-        return d.items()
-
-    def itervalues(d):
-        return d.values()
-
-    def iterkeys(d):
-        return d.keys()
 
 
 class BinaryQuadraticModel(object):
