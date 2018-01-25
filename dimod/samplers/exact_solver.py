@@ -6,7 +6,7 @@ An exact solver that calculates the energy of all possible samples.
 """
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, ising_index_labels
-from dimod.responses.type_response import SpinResponse
+# from dimod.responses.type_response import SpinResponse
 from dimod.utilities import ising_energy
 from dimod.compatibility23 import iteritems
 
