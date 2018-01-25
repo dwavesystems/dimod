@@ -12,7 +12,7 @@ from dimod.compatibility23 import itervalues
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_energy
-from dimod.responses.type_response import SpinResponse
+# from dimod.responses.type_response import SpinResponse
 
 __all__ = ['SimulatedAnnealingSampler']
 

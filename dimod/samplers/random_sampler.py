@@ -8,7 +8,7 @@ import random
 
 from dimod.samplers.template_sampler import TemplateSampler
 from dimod.decorators import ising, qubo, ising_index_labels
-from dimod.responses.type_response import BinaryResponse
+# from dimod.responses.type_response import BinaryResponse
 from dimod.compatibility23 import iteritems
 
 __all__ = ['RandomSampler']
