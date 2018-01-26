@@ -7,7 +7,7 @@ These functions convert the :class:`.BinaryQuadraticModel` to other datatypes.
 """
 
 from dimod.compatibility23 import iteritems
-from dimod.binary_quadratic_model.model import BinaryQuadraticModel
+from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.vartypes import Vartype
 
 __all__ = ['to_networkx_graph',
