@@ -4,7 +4,7 @@ import itertools
 
 from dimod.compatibility23 import iteritems
 from dimod.composites.template_composite import TemplateComposite
-from dimod.responses import SpinResponse, BinaryResponse
+# from dimod.responses import SpinResponse, BinaryResponse
 from dimod.decorators import ising, qubo
 from dimod.utilities import ising_to_qubo, qubo_to_ising
 

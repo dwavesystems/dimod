@@ -42,7 +42,7 @@ class BinaryQuadraticModel(object):
             See :meth:`.BinaryQuadraticModel.energy`
 
         vartype (:class:`.Vartype`/str/set):
-            The variable type desired for the penalty model. Accepted input values:
+            The variable type desired for the binary quadratic model. Accepted input values:
             :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 

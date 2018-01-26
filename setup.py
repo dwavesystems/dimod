@@ -19,7 +19,7 @@ extras_require = {'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
                   'all': ['numpy>=1.14.0', 'pandas>=0.22.0', 'networkx>=2.0']}
 
 packages = ['dimod',
-            'dimod.responses',
+            'dimod.response',
             'dimod.composites',
             'dimod.samplers',
             'dimod.binary_quadratic_model']
