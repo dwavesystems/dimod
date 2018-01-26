@@ -12,7 +12,7 @@ from dimod.vartypes import Vartype
 try:
     import dwave_micro_client as microclient
 except ImportError:  # pragma: no cover
-    pass
+    microclient = None
 
 __all__ = ['Response']
 
