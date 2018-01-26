@@ -1,17 +1,3 @@
-"""These are generic tests that can be applied to any sampler. This should
-not be run as a unittest.
-
-Example:
-    >>> class TestMySampler(unittest.TestCase, TestSamplerAPI):
-    ...     def __init__(self):
-    ...         self.sampler = MySampler()
-
-    This will run all of the tests in TestSamplerAPI
-
-"""
-import dimod
-
-
 class SamplerAPITest:
     """Provides a series of generic API tests that all samplers should pass.
     """
