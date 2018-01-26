@@ -8,8 +8,8 @@ import dimod.samplers
 from dimod.composites import *
 import dimod.composites
 
-from dimod.responses import *
-import dimod.responses
+from dimod.response import *
+import dimod.response
 
 from dimod.utilities import *
 import dimod.utilities
@@ -27,5 +27,7 @@ import dimod.vartypes
 
 from dimod.binary_quadratic_model import *
 import dimod.binary_quadratic_model
+
+import dimod.test
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
