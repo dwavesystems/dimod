@@ -4,3 +4,7 @@ class InvalidComposition(Exception):
 
 class MappingError(Exception):
     """mapping causes conflicting values in samples"""
+
+
+class InvalidSampler(Exception):
+    """Raised when trying to use Sampler as a sampler"""
