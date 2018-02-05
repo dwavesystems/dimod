@@ -4,16 +4,20 @@ ExactSolver
 
 An exact solver that calculates the energy of all possible samples.
 """
-from dimod.samplers.template_sampler import TemplateSampler
-from dimod.decorators import ising, ising_index_labels
-# from dimod.responses.type_response import SpinResponse
-from dimod.utilities import ising_energy
-from dimod.compatibility23 import iteritems
+import itertools
+
+import numpy as np
+
+from dimod.binary_quadratic_model_convert import to_numpy_matrix
+from dimod.classes.sampler import Sampler
+from dimod.decorators import bqm_index_labels
+from dimod.response import Response
+from dimod.vartypes import Vartype
 
 __all__ = ['ExactSolver']
 
 
-class ExactSolver(TemplateSampler):
+class ExactSolver(Sampler):
     """A simple exact solver, intended for testing and debugging.
 
     Notes:
@@ -21,75 +25,86 @@ class ExactSolver(TemplateSampler):
         variables.
 
     """
+    def __init__(self, default_sample_kwargs=None):
+        Sampler.__init__(self, default_sample_kwargs)
 
-    def __init__(self):
-        TemplateSampler.__init__(self)
+    @bqm_index_labels
+    def sample(self, bqm):
+        M = to_numpy_matrix(bqm.binary)
 
-    @ising(1, 2)
-    @ising_index_labels(1, 2)
-    def sample_ising(self, h, J):
-        """Solves the Ising problem exactly.
+        X = np.asarray(list(itertools.product((False, True), repeat=len(bqm))), dtype='bool')
+        energies = np.fromiter((x.dot(M).dot(x.transpose()) for x in X), dtype=np.float, count=-1) + bqm.binary.offset
 
-        Args:
-            h (dict/list): The linear terms in the Ising problem. If a
-                dict, should be of the form {v: bias, ...} where v is
-                a variable in the Ising problem, and bias is the linear
-                bias associated with v. If a list, should be of the form
-                [bias, ...] where the indices of the biases are the
-                variables in the Ising problem.
-            J (dict): A dictionary of the quadratic terms in the Ising
-                problem. Should be of the form {(u, v): bias} where u,
-                v are variables in the Ising problem and bias is the
-                quadratic bias associated with u, v.
+        response = Response(Vartype.BINARY)
+        response.add_samples_from(X, energies)
 
-        Returns:
-            :obj:`SpinResponse`
-
-        Notes:
-            Becomes slow for problems with 18 or more variables.
-
-        """
-
-        # it will be convenient to have J in a nested-dict form.
-        adjJ = {v: {} for v in h}
-        for (u, v), bias in iteritems(J):
-            if v not in adjJ[u]:
-                adjJ[u][v] = bias
-            else:
-                adjJ[u][v] += bias
-
-            if u not in adjJ[v]:
-                adjJ[v][u] = bias
-            else:
-                adjJ[v][u] += bias
-
-        # initialize the response
-        response = SpinResponse()
-
-        # generate the first sample and add it to the response
-        sample = {v: -1 for v in h}
-        energy = ising_energy(sample, h, J)
-        response.add_sample(sample.copy(), energy)
-
-        # now we iterate, flipping one bit at a time until we have
-        # traversed all samples. This is a Gray code.
-        # https://en.wikipedia.org/wiki/Gray_code
-        for i in range(1, 1 << len(h)):
-            v = _ffs(i)
-
-            # flip the bit in the sample
-            sample[v] *= -1
-
-            # get the energy difference
-            quad_diff = sum(adjJ[v][u] * sample[u] for u in adjJ[v])
-
-            # calculate the new energy as a difference from the old
-            energy += 2 * sample[v] * (h[v] + quad_diff)
-
-            response.add_sample(sample.copy(), energy)
         return response
 
+#     @ising(1, 2)
+#     @ising_index_labels(1, 2)
+#     def sample_ising(self, h, J):
+#         """Solves the Ising problem exactly.
 
-def _ffs(x):
-    """Gets the index of the least significant set bit of x."""
-    return (x & -x).bit_length() - 1
+#         Args:
+#             h (dict/list): The linear terms in the Ising problem. If a
+#                 dict, should be of the form {v: bias, ...} where v is
+#                 a variable in the Ising problem, and bias is the linear
+#                 bias associated with v. If a list, should be of the form
+#                 [bias, ...] where the indices of the biases are the
+#                 variables in the Ising problem.
+#             J (dict): A dictionary of the quadratic terms in the Ising
+#                 problem. Should be of the form {(u, v): bias} where u,
+#                 v are variables in the Ising problem and bias is the
+#                 quadratic bias associated with u, v.
+
+#         Returns:
+#             :obj:`SpinResponse`
+
+#         Notes:
+#             Becomes slow for problems with 18 or more variables.
+
+#         """
+
+#         # it will be convenient to have J in a nested-dict form.
+#         adjJ = {v: {} for v in h}
+#         for (u, v), bias in iteritems(J):
+#             if v not in adjJ[u]:
+#                 adjJ[u][v] = bias
+#             else:
+#                 adjJ[u][v] += bias
+
+#             if u not in adjJ[v]:
+#                 adjJ[v][u] = bias
+#             else:
+#                 adjJ[v][u] += bias
+
+#         # initialize the response
+#         response = SpinResponse()
+
+#         # generate the first sample and add it to the response
+#         sample = {v: -1 for v in h}
+#         energy = ising_energy(sample, h, J)
+#         response.add_sample(sample.copy(), energy)
+
+#         # now we iterate, flipping one bit at a time until we have
+#         # traversed all samples. This is a Gray code.
+#         # https://en.wikipedia.org/wiki/Gray_code
+#         for i in range(1, 1 << len(h)):
+#             v = _ffs(i)
+
+#             # flip the bit in the sample
+#             sample[v] *= -1
+
+#             # get the energy difference
+#             quad_diff = sum(adjJ[v][u] * sample[u] for u in adjJ[v])
+
+#             # calculate the new energy as a difference from the old
+#             energy += 2 * sample[v] * (h[v] + quad_diff)
+
+#             response.add_sample(sample.copy(), energy)
+#         return response
+
+
+# def _ffs(x):
+#     """Gets the index of the least significant set bit of x."""
+#     return (x & -x).bit_length() - 1
