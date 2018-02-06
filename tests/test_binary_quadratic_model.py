@@ -98,8 +98,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         self.assertEqual(dimod.BinaryQuadraticModel(linear, quadratic, offset, 'BINARY').vartype, dimod.BINARY)
 
-        with self.assertRaises(TypeError):
-            dimod.BinaryQuadraticModel(linear, quadratic, offset, dimod.Vartype.UNDEFINED)
 
     def test_construction_quadratic(self):
         linear = {v: v * .01 for v in range(10)}

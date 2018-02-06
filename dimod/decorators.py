@@ -28,8 +28,7 @@ def bqm_index_labels(f):
         response = f(sampler, bqm.relabel_variables(mapping, copy=True), **kwargs)
 
         # unapply the relabeling
-        raise NotImplementedError
-        return response
+        return response.relabel_variables(inverse_mapping, copy=False)
 
     return _index_label
 
@@ -38,15 +37,15 @@ def patch_sample_kwargs(f):
     """todo
 
     """
-    def _patch_kwargs(sampler, *args, **kwargs):
+    def new_f(sampler, *args, **kwargs):
         if sampler.default_sample_kwargs:
             default_kwargs = sampler.default_sample_kwargs
             default_kwargs.update(kwargs)  # overwrite with provided
             return f(sampler, *args, **default_kwargs)
         else:
             return f(sampler, *args, **kwargs)
-
-    return _patch_kwargs
+    new_f.__name__ = f.__name__
+    return new_f
 
 
 def vartype_argument(arg_idx):
