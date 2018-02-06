@@ -26,9 +26,6 @@ class ExactSolver(Sampler):
         variables.
 
     """
-    def __init__(self, default_sample_kwargs=None):
-        Sampler.__init__(self, default_sample_kwargs)
-
     @bqm_index_labels
     def sample(self, bqm):
         M = to_numpy_matrix(bqm.binary)
