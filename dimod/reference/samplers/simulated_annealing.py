@@ -4,27 +4,26 @@ SimulatedAnnealingSampler
 
 A reference implementation of a simulated annealing sampler using the dimod API.
 """
-# import random
-# import math
-# import itertools
+import random
+import math
 
-# from dimod.compatibility23 import itervalues
-# from dimod.samplers.template_sampler import TemplateSampler
-# from dimod.decorators import ising, qubo
-# from dimod.utilities import ising_energy
-# from dimod.responses.type_response import SpinResponse
+from dimod.compatibility23 import itervalues
+from dimod.classes.sampler import Sampler
+from dimod.response import Response
+from dimod.utilities import ising_energy
+from dimod.vartypes import Vartype
 
 __all__ = ['SimulatedAnnealingSampler']
 
 
-class SimulatedAnnealingSampler(TemplateSampler):
+class SimulatedAnnealingSampler(Sampler):
     """A simple simulated annealing sampler.
     """
-    def __init__(self):
-        TemplateSampler.__init__(self)
+    def __init__(self, default_sample_kwargs=None):
+        Sampler.__init__(self, default_sample_kwargs)
+        self.sample_kwargs = {'num_reads': []}
 
-    @ising(1, 2)
-    def sample_ising(self, h, J, beta_range=None, num_samples=10, num_sweeps=1000):
+    def sample_ising(self, h, J, beta_range=None, num_reads=10, num_sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
@@ -40,7 +39,7 @@ class SimulatedAnnealingSampler(TemplateSampler):
                 inverse temperature). The schedule is applied linearly
                 in beta. Default is chosen based on the total bias associated
                 with each node.
-            num_samples (int, optional): Each sample is the result of
+            num_reads (int, optional): Each sample is the result of
                 a single run of the simulated annealing algorithm.
             num_sweeps (int, optional): The number of sweeps or steps.
                 Default is 1000.
@@ -52,7 +51,7 @@ class SimulatedAnnealingSampler(TemplateSampler):
             >>> sampler = SimulatedAnnealingSampler()
             >>> h = {0: -1, 1: -1}
             >>> J = {(0, 1): -1}
-            >>> response = sampler.sample_ising(h, J, num_samples=1)
+            >>> response = sampler.sample_ising(h, J, num_reads=1)
             >>> list(response.samples())
             [{0: 1, 1: 1}]
 
@@ -65,16 +64,16 @@ class SimulatedAnnealingSampler(TemplateSampler):
         # input checking
         # h, J are handled by the @ising decorator
         # beta_range, sweeps are handled by ising_simulated_annealing
-        if not isinstance(num_samples, int):
+        if not isinstance(num_reads, int):
             raise TypeError("'samples' should be a positive integer")
-        if num_samples < 1:
+        if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
 
         # create the response object. Ising returns spin values.
-        response = SpinResponse()
+        response = Response(Vartype.SPIN)
 
         # run the simulated annealing algorithm
-        for __ in range(num_samples):
+        for __ in range(num_reads):
             sample, energy = ising_simulated_annealing(h, J, beta_range, num_sweeps)
             response.add_sample(sample, energy)
 

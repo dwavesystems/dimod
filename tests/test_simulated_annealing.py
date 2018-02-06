@@ -4,13 +4,14 @@ import itertools
 import random
 
 import dimod
-from tests.generic_sampler_tests import SamplerAPITest
-from dimod.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
+from dimod.test import SamplerAPITest
+from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
 class TestSASampler(unittest.TestCase, SamplerAPITest):
     def setUp(self):
         self.sampler = dimod.SimulatedAnnealingSampler()
+        self.sampler_factory = dimod.SimulatedAnnealingSampler
 
     def test_basic(self):
 
@@ -19,9 +20,9 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         h = {0: -.5, 1: 0, 2: 1, 3: -.5}
         J = {(0, 2): -1, (1, 2): -1, (0, 3): .5, (1, 3): -1}
 
-        response0 = sampler.sample_ising(h, J, num_samples=10)
+        response0 = sampler.sample_ising(h, J, num_reads=10)
 
-        for sample, energy in response0.items():
+        for sample, energy in response0.data(['sample', 'energy']):
             self.assertEqual(dimod.ising_energy(sample, h, J), energy)
 
         # make sure we actully got back 100 samples
@@ -29,10 +30,10 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
 
         Q = {(0, 0): 0, (1, 1): 0, (0, 1): -1}
 
-        response4 = sampler.sample_qubo(Q, num_samples=10)
+        response4 = sampler.sample_qubo(Q, num_reads=10)
         self.assertEqual(len(response4), 10)
 
-        for sample, energy in response4.items():
+        for sample, energy in response4.data(['sample', 'energy']):
             self.assertEqual(dimod.qubo_energy(sample, Q), energy)
 
     def test_bug1(self):
@@ -47,7 +48,7 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         h[5] = 0
         h[6] = .1
 
-        response = dimod.SimulatedAnnealingSampler().sample_ising(h, J, num_samples=100)
+        response = dimod.SimulatedAnnealingSampler().sample_ising(h, J, num_reads=100)
 
     def test_setting_beta_range(self):
         sampler = self.sampler
@@ -58,10 +59,10 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
         sampler = self.sampler
 
         with self.assertRaises(TypeError):
-            sampler.sample_ising({}, {}, num_samples=[])
+            sampler.sample_ising({}, {}, num_reads=[])
 
         with self.assertRaises(ValueError):
-            sampler.sample_ising({}, {}, num_samples=-7)
+            sampler.sample_ising({}, {}, num_reads=-7)
 
         with self.assertRaises(TypeError):
             sampler.sample_ising({}, {}, num_sweeps=[])
@@ -80,12 +81,6 @@ class TestSASampler(unittest.TestCase, SamplerAPITest):
 
         with self.assertRaises(ValueError):
             sampler.sample_ising({}, {}, beta_range=[7, 1, 6])
-
-    def test_keyword_propogation_random_sampler(self):
-        sampler = self.sampler
-
-        # no extra args
-        self.assertEqual(set(sampler.accepted_kwargs), {'h', 'J', 'Q', 'num_samples', 'beta_range', 'num_sweeps'})
 
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
