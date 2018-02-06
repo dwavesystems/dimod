@@ -30,12 +30,12 @@ class Sampler(object):
             if bqm.vartype is Vartype.SPIN:
                 Q, offset = to_qubo(bqm)
                 response = self.sample_qubo(Q, **sample_kwargs)
-                response.change_vartype(Vartype.SPIN, offset)
+                response.change_vartype(Vartype.SPIN, offset, copy=False)
                 return response
             elif bqm.vartype is Vartype.BINARY:
                 h, J, offset = to_ising(bqm)
                 response = self.sample_ising(h, J, **sample_kwargs)
-                response.change_vartype(Vartype.BINARY, offset)
+                response.change_vartype(Vartype.BINARY, offset, copy=False)
                 return response
             else:
                 raise RuntimeError("binary quadratic model has an unknown vartype")
@@ -52,7 +52,7 @@ class Sampler(object):
         """todo"""
         bqm = from_ising(h, J)
         response = self.sample(bqm, **sample_kwargs)
-        response.change_vartype(Vartype.SPIN)
+        response.change_vartype(Vartype.SPIN, copy=False)
         return response
 
     @patch_sample_kwargs
@@ -60,5 +60,5 @@ class Sampler(object):
         """todo"""
         bqm = from_qubo(Q)
         response = self.sample(bqm, **sample_kwargs)
-        response.change_vartype(Vartype.BINARY)
+        response.change_vartype(Vartype.BINARY, copy=False)
         return response
