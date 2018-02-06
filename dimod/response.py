@@ -429,3 +429,12 @@ class Response(object):
             self.df_data['energy'] += offset
 
         return self
+
+    def relabel_variables(self, mapping, copy=True):
+        """todo
+        """
+        if copy:
+            return self.df_samples.rename(mapping, axis='columns', inplace=False)
+        else:
+            self.df_samples.rename(mapping, axis='columns', inplace=True)
+            return self
