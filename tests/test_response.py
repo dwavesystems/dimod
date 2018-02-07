@@ -150,6 +150,17 @@ class TestResponse(unittest.TestCase):
         for datum in response.data(['sample', 'num_spin_up'], sample_type=pd.Series):
             self.assertTrue(datum.sample.equals(pd.Series({'a': +1, 'b': +1}, dtype=object)))
 
+        #
+
+        # references a found bug
+        response = dimod.Response(dimod.SPIN)
+        response.add_sample({0: -1, 4: 1}, energy=0.0, num_occurences=1)
+
+        for sample, energy in response.data(['sample', 'energy']):
+            # there should be only one
+            self.assertEqual(sample, {0: -1, 4: 1})
+            self.assertEqual(energy, 0.0)
+
     def test_change_vartype_inplace(self):
         response = dimod.Response(dimod.SPIN)
         bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
