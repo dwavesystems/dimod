@@ -6,33 +6,33 @@ Vartype is an enumeration of the valid types of binary variables
 for binary quadratic models.
 
 Examples:
-    >>> vartype = pm.Vartype.SPIN
+    >>> vartype = dimod.Vartype.SPIN
     >>> print(vartype)
     Vartype.SPIN
-    >>> isinstance(vartype, pm.Vartype)
+    >>> isinstance(vartype, dimod.Vartype)
     True
 
     Access can also be by value or name.
 
-    >>> print(pm.Vartype({0, 1}))
+    >>> print(dimod.Vartype({0, 1}))
     Vartype.BINARY
-    >>> print(pm.Vartype['SPIN'])
+    >>> print(dimod.Vartype['SPIN'])
     Vartype.SPIN
 
     To check correctness, use the `.value` parameter.
 
     >>> sample = {'u': -1, 'v': 1}
-    >>> vartype = pm.Vartype.SPIN
+    >>> vartype = dimod.Vartype.SPIN
     >>> all(val in vartype.value for val in sample.values())
     True
 
     The different Vartypes are also in the main namespace
     for easy access.
 
-    >>> vartype = pm.SPIN
+    >>> vartype = dimod.SPIN
     >>> print(vartype)
     Vartype.SPIN
-    >>> vartype = pm.BINARY
+    >>> vartype = dimod.BINARY
     >>> print(vartype)
     Vartype.BINARY
 
