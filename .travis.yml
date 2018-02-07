@@ -14,10 +14,10 @@ matrix:
           sudo: required
           python: "3.6"
           env: TOXENV=py36
-        - os: linux
-          sudo: required
-          python: "nightly"
-          env: TOXENV=pynightly
+        # - os: linux
+        #   sudo: required
+        #   python: "nightly"
+        #   env: TOXENV=pynightly
         - os: osx
           language: generic
           env: TOXENV=py27
