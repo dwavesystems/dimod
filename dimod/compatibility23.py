@@ -39,4 +39,7 @@ else:
 
     zip_longest = itertools.zip_longest
 
-    RecursionError_ = RecursionError
+    if sys.version_info.minor > 4:
+        RecursionError_ = RecursionError
+    else:
+        RecursionError_ = RuntimeError
