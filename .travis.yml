@@ -6,10 +6,12 @@ matrix:
           sudo: required
           python: "2.7"
           env: TOXENV=py27
+          deploy:
         - os: linux
           sudo: required
           python: "3.5"
           env: TOXENV=py35
+          deploy:
         - os: linux
           sudo: required
           python: "3.6"
@@ -25,6 +27,7 @@ matrix:
             - brew update
             - virtualenv env -p python2
             - source env/bin/activate
+          deploy:
         - os: osx
           language: generic
           env: TOXENV=py36
@@ -33,6 +36,7 @@ matrix:
             - brew install python3
             - virtualenv env -p python3
             - source env/bin/activate
+          deploy:
 
 install:
     - pip install -r requirements.txt
