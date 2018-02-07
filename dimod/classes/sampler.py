@@ -18,6 +18,7 @@ class Sampler(object):
     """
     def __init__(self):
         self.sample_kwargs = {}
+        self.properties = {}
 
     def sample(self, bqm, **sample_kwargs):
         """todo"""
