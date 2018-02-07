@@ -9,6 +9,7 @@ import itertools
 from numbers import Number
 
 from dimod.compatibility23 import itervalues, iteritems, iterkeys
+from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 
 
@@ -110,26 +111,12 @@ class BinaryQuadraticModel(object):
     SPIN = Vartype.SPIN
     BINARY = Vartype.BINARY
 
+    @vartype_argument(4)
     def __init__(self, linear, quadratic, offset, vartype):
         self.linear = {}
         self.quadratic = {}
         self.adj = {}
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
-
-        # make sure that we are dealing with a known vartype.
-        try:
-            if isinstance(vartype, str):
-                vartype = Vartype[vartype]
-            else:
-                vartype = Vartype(vartype)
-
-            if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError  # this gets caught
-
-        except (ValueError, KeyError):
-            raise TypeError(("expected input vartype to be one of: "
-                             "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                             "Vartype.BINARY, 'BINARY', or {0, 1}."))
         self.vartype = vartype
 
         # add linear, quadratic
@@ -216,7 +203,7 @@ class BinaryQuadraticModel(object):
         if self.vartype is Vartype.SPIN:
             self._spin = spin = self
         else:
-            self._counterpart = self._spin = spin = self.change_vartype(Vartype.SPIN)
+            self._counterpart = self._spin = spin = self.change_vartype(Vartype.SPIN, inplace=False)
 
             # we also want to go ahead and set spin.binary to refer back to self
             spin._binary = self
@@ -275,7 +262,7 @@ class BinaryQuadraticModel(object):
         if self.vartype is Vartype.BINARY:
             self._binary = binary = self
         else:
-            self._counterpart = self._binary = binary = self.change_vartype(Vartype.BINARY)
+            self._counterpart = self._binary = binary = self.change_vartype(Vartype.BINARY, inplace=False)
 
             # we also want to go ahead and set binary.spin to refer back to self
             binary._spin = self
@@ -905,31 +892,32 @@ class BinaryQuadraticModel(object):
 # transformations
 ###################################################################################################
 
-    def relabel_variables(self, mapping, copy=True):
+    def relabel_variables(self, mapping, inplace=True):
         """Relabel the variables according to the given mapping.
 
         Args:
-            mapping (dict): a dict mapping the current variable labels
-                to new ones. If an incomplete mapping is provided,
-                unmapped variables will keep their labels
-            copy (bool, default): If True, return a copy of BinaryQuadraticModel
-                with the variables relabeled, otherwise apply the relabeling in
-                place.
+            mapping (dict):
+                A dict mapping the current variable labels to new ones. If an incomplete mapping is
+                provided unmapped variables will keep their labels
+
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place, otherwise a new binary
+                quadratic model is returned.
 
         Returns:
-            :class:`.BinaryQuadraticModel`: A BinaryQuadraticModel with the
-            variables relabeled. If copy=False, returns itself.
+            :class:`.BinaryQuadraticModel`: A BinaryQuadraticModel with the variables relabeled.
+            If inplace=True, returns itself.
 
         Examples:
             >>> model = pm.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=pm.SPIN)
-            >>> new_model = model.relabel_variables({0: 'a'})
-            >>> new_model.quadratic
-            {('a', 1): -1}
-            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, copy=False)
+            >>> model.relabel_variables({0: 'a'})
             >>> model.quadratic
+            {('a', 1): -1}
+
+            >>> model = pm.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=pm.SPIN)
+            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)
+            >>> new_model.quadratic
             {('a', 'b'): -1}
-            >>> new_model is model
-            True
 
         """
         try:
@@ -943,12 +931,7 @@ class BinaryQuadraticModel(object):
                 raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
                                   "the existing variable of the same name").format(v))
 
-        if copy:
-            return BinaryQuadraticModel({mapping.get(v, v): bias for v, bias in iteritems(self.linear)},
-                                        {(mapping.get(u, u), mapping.get(v, v)): bias
-                                         for (u, v), bias in iteritems(self.quadratic)},
-                                        self.offset, self.vartype)
-        else:
+        if inplace:
             shared = old_labels & new_labels
             if shared:
                 # in this case relabel to a new intermediate labeling, then map from the intermediate
@@ -982,8 +965,8 @@ class BinaryQuadraticModel(object):
                         old_to_intermediate[old] = new
                         # don't need to add it to intermediate_to_new because it is a self-label
 
-                self.relabel_variables(old_to_intermediate, copy=False)
-                self.relabel_variables(intermediate_to_new, copy=False)
+                self.relabel_variables(old_to_intermediate, inplace=True)
+                self.relabel_variables(intermediate_to_new, inplace=True)
                 return self
 
             linear = self.linear
@@ -1005,8 +988,14 @@ class BinaryQuadraticModel(object):
                 self.remove_variable(old)
 
             return self
+        else:
+            return BinaryQuadraticModel({mapping.get(v, v): bias for v, bias in iteritems(self.linear)},
+                                        {(mapping.get(u, u), mapping.get(v, v)): bias
+                                         for (u, v), bias in iteritems(self.quadratic)},
+                                        self.offset, self.vartype)
 
-    def change_vartype(self, vartype):
+    @vartype_argument(1)
+    def change_vartype(self, vartype, inplace=True):
         """Creates a new BinaryQuadraticModel with the given vartype.
 
         Args:
@@ -1015,35 +1004,49 @@ class BinaryQuadraticModel(object):
                 :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place, otherwise a new binary
+                quadratic model is returned.
+
         Returns:
             :class:`.BinaryQuadraticModel`. A new BinaryQuadraticModel with
             vartype matching input 'vartype'.
 
         """
-        try:
-            if isinstance(vartype, str):
-                vartype = Vartype[vartype]
-            else:
-                vartype = Vartype(vartype)
-            if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError  # pragma: no cover
-        except (ValueError, KeyError):
-            raise TypeError(("expected input vartype to be one of: "
-                             "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                             "Vartype.BINARY, 'BINARY', or {0, 1}."))
 
-        # vartype matches so we are done
+        if not inplace:
+            # create a new model of the appropriate type, then add self's biases to it
+            new_model = BinaryQuadraticModel({}, {}, 0.0, vartype)
+
+            new_model.add_variables_from(self.linear, vartype=self.vartype)
+            new_model.add_interactions_from(self.quadratic, vartype=self.vartype)
+            new_model.add_offset(self.offset)
+
+            return new_model
+
+        # in this case we are doing things in-place, if the desired vartype matches self.vartype,
+        # then we don't need to do anything
         if vartype is self.vartype:
-            return self.copy()
+            return self
 
         if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
             linear, quadratic, offset = self.spin_to_binary(self.linear, self.quadratic, self.offset)
-            return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.BINARY)
         elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
             linear, quadratic, offset = self.binary_to_spin(self.linear, self.quadratic, self.offset)
-            return BinaryQuadraticModel(linear, quadratic, offset, vartype=Vartype.SPIN)
         else:
             raise RuntimeError("something has gone wrong. unknown vartype conversion.")
+
+        # drop everything
+        for v in linear:
+            self.remove_variable(v)
+        self.add_offset(-self.offset)
+
+        self.vartype = vartype
+        self.add_variables_from(linear)
+        self.add_interactions_from(quadratic)
+        self.add_offset(offset)
+
+        return self
 
 ##################################################################################################
 # static method

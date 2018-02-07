@@ -162,23 +162,23 @@ class TestResponse(unittest.TestCase):
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
 
-        response.change_vartype(dimod.SPIN, copy=False)  # should do nothing
+        response.change_vartype(dimod.SPIN)  # should do nothing
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
 
-        response.change_vartype(dimod.BINARY, copy=False)  # change to binary
+        response.change_vartype(dimod.BINARY)  # change to binary
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.binary.energy(sample), energy)
 
-        response.change_vartype(dimod.SPIN, copy=False)  # change to back to spin
+        response.change_vartype(dimod.SPIN)  # change to back to spin
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.spin.energy(sample), energy)
 
         # finally change with an offset
-        response.change_vartype(dimod.BINARY, offset=1, copy=False)
+        response.change_vartype(dimod.BINARY, offset=1)
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.binary.energy(sample) + 1, energy)
 
@@ -194,7 +194,7 @@ class TestResponse(unittest.TestCase):
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
 
-        response_copy = response.change_vartype(dimod.SPIN)  # should do nothing
+        response_copy = response.change_vartype(dimod.SPIN, inplace=False)  # should do nothing
 
         self.assertIsNot(response, response_copy)
 

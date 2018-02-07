@@ -61,7 +61,7 @@ class ExactSolver(Sampler):
         response.add_samples_from(np.asarray(samples), energies)
 
         # finally make sure the response matches the given vartype, in-place.
-        response.change_vartype(bqm.vartype, copy=False)
+        response.change_vartype(bqm.vartype)
 
         return response
 
