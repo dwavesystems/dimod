@@ -6,6 +6,7 @@ from collections import namedtuple
 
 import pandas as pd
 
+from dimod.decorators import vartype_argument
 from dimod.compatibility23 import iteritems
 from dimod.vartypes import Vartype
 
@@ -31,24 +32,12 @@ class Response(object):
 
     """
 
+    @vartype_argument(1)
     def __init__(self, vartype):
         # the response object keeps two dataframes, these are kept index-linked so that they can
         # be joined
         self.df_samples = pd.DataFrame(dtype='int8')
         self.df_data = pd.DataFrame(columns=['energy'])
-
-        try:    # pragma: no cover
-            if isinstance(vartype, str):
-                vartype = Vartype[vartype]
-            else:
-                vartype = Vartype(vartype)
-
-            if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError  # this gets caught
-        except (ValueError, KeyError):    # pragma: no cover
-            raise TypeError(("expected input vartype to be one of: "
-                             "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                             "Vartype.BINARY, 'BINARY', or {0, 1}."))
         self.vartype = vartype
 
         # we also store a list of futures that are awaiting read
@@ -396,7 +385,14 @@ class Response(object):
         for idx, row in df_merged.iterrows():
             yield _pack(_values(row))
 
-    def change_vartype(self, vartype, offset=0.0):
+    def copy(self):
+        """Returns a copy of the response."""
+        response = Response(self.vartype)
+        response.add_samples_from(self.df_samples.copy(deep=True), **self.df_data.copy(deep=True).to_dict())
+        return response
+
+    @vartype_argument(1)
+    def change_vartype(self, vartype, offset=0.0, copy=True):
         """Change the response's vartype in-place.
 
         Args:
@@ -408,23 +404,17 @@ class Response(object):
             offset (float, optional, default=0.0):
                 The constant offset that is added to the energies.
 
-        """
-        try:    # pragma: no cover
-            if isinstance(vartype, str):
-                vartype = Vartype[vartype]
-            else:
-                vartype = Vartype(vartype)
+            copy (bool, optional, default=True):
+                If True, return a copy of Response with the vartype changed, otherwise the
+                Response is changed in-place.
 
-            if not (vartype is Vartype.SPIN or vartype is Vartype.BINARY):
-                raise ValueError  # this gets caught
-        except (ValueError, KeyError):    # pragma: no cover
-            raise TypeError(("expected input vartype to be one of: "
-                             "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                             "Vartype.BINARY, 'BINARY', or {0, 1}."))
+        """
+
+        if copy:
+            return self.copy().change_vartype(vartype, offset=offset, copy=False)
 
         if vartype is self.vartype:
-            # don't need to do anything
-            return
+            return self
 
         if vartype is Vartype.SPIN and self.vartype is Vartype.BINARY:
             self.df_samples = 2 * self.df_samples - 1
@@ -432,8 +422,19 @@ class Response(object):
         elif vartype is Vartype.BINARY and self.vartype is Vartype.SPIN:
             self.df_samples = (self.df_samples + 1) // 2
             self.vartype = vartype
-        else:  # pragma: no cover
+        else:
             raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
 
         if offset:
             self.df_data['energy'] += offset
+
+        return self
+
+    def relabel_variables(self, mapping, copy=True):
+        """todo
+        """
+        if copy:
+            return self.df_samples.rename(mapping, axis='columns', inplace=False)
+        else:
+            self.df_samples.rename(mapping, axis='columns', inplace=True)
+            return self

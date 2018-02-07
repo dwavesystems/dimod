@@ -150,7 +150,7 @@ class TestResponse(unittest.TestCase):
         for datum in response.data(['sample', 'num_spin_up'], sample_type=pd.Series):
             self.assertTrue(datum.sample.equals(pd.Series({'a': +1, 'b': +1}, dtype=object)))
 
-    def test_change_vartype(self):
+    def test_change_vartype_inplace(self):
         response = dimod.Response(dimod.SPIN)
         bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
         samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
@@ -162,25 +162,44 @@ class TestResponse(unittest.TestCase):
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
 
-        response.change_vartype(dimod.SPIN)  # should do nothing
+        response.change_vartype(dimod.SPIN, copy=False)  # should do nothing
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
 
-        response.change_vartype(dimod.BINARY)  # change to binary
+        response.change_vartype(dimod.BINARY, copy=False)  # change to binary
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.binary.energy(sample), energy)
 
-        response.change_vartype(dimod.SPIN)  # change to back to spin
+        response.change_vartype(dimod.SPIN, copy=False)  # change to back to spin
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.spin.energy(sample), energy)
 
         # finally change with an offset
-        response.change_vartype(dimod.BINARY, offset=1)
+        response.change_vartype(dimod.BINARY, offset=1, copy=False)
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.binary.energy(sample) + 1, energy)
+
+    def test_change_vartype_copy(self):
+        response = dimod.Response(dimod.SPIN)
+        bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+        samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
+                   {'a': +1, 'b': +1}, {'a': -1, 'b': -1}]
+        energies = [bqm.energy(sample) for sample in samples]
+
+        response.add_samples_from(samples, energies)
+
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertAlmostEqual(bqm.energy(sample), energy)
+
+        response_copy = response.change_vartype(dimod.SPIN)  # should do nothing
+
+        self.assertIsNot(response, response_copy)
+
+        for sample, energy in response_copy.data(['sample', 'energy']):
+            self.assertAlmostEqual(bqm.energy(sample), energy)
 
     @mock.patch('dimod.response.microclient')
     def test_add_samples_future(self, __):

@@ -1,54 +1,38 @@
+import dimod
+
+
 class SamplerAPITest:
     """Provides a series of generic API tests that all samplers should pass.
     """
+    def test_instantiation(self):
+        sampler = self.sampler_factory()
 
-    def test_single_node_qubo(self):
-        """Create a QUBO that has only a single variable."""
+        # check that is has all of the expected attritubes
+        self.assertTrue(hasattr(sampler, 'sample'), "sampler must have a 'sample' method")
+        self.assertTrue(callable(sampler.sample), "sampler must have a 'sample' method")
 
-        sampler = self.sampler
+        self.assertTrue(hasattr(sampler, 'sample_ising'), "sampler must have a 'sample_ising' method")
+        self.assertTrue(callable(sampler.sample_ising), "sampler must have a 'sample_ising' method")
 
-        Q = {(0, 0): 1}
-        variables = [0]
+        self.assertTrue(hasattr(sampler, 'sample_qubo'), "sampler must have a 'sample_qubo' method")
+        self.assertTrue(callable(sampler.sample_qubo), "sampler must have a 'sample_qubo' method")
 
-        response = sampler.sample_qubo(Q)
+        self.assertTrue(hasattr(sampler, 'sample_kwargs'), "sampler must have a 'sample_kwargs' property")
 
-        self.check_response_form(response, variables)
+    def test_sample_response_form(self):
+        sampler = self.sampler_factory()
 
-    def test_single_node_ising(self):
-        sampler = self.sampler
+        bqm = dimod.BinaryQuadraticModel({'b': 2}, {('a', 'b'): -1.}, 1.0, dimod.SPIN)
 
-        h = {0: -1}
-        J = {}
-        variables = [0]
+        response = sampler.sample(bqm)
 
-        response = sampler.sample_ising(h, J)
-        self.check_response_form(response, variables)
+        self.assertIs(response.vartype, bqm.vartype, "response's vartype does not match the bqm's vartype")
 
-    def test_single_edge_qubo(self):
-        sampler = self.sampler
+        for sample in response:
+            self.assertIsInstance(sample, dict, "'for sample in response', each sample should be a dict")
+            for v, value in sample.items():
+                self.assertIn(v, bqm.linear, 'sample contains a variable not in the given bqm')
+                self.assertIn(value, bqm.vartype.value, 'sample contains a value not of the correct type')
 
-        Q = {(0, 0): 0, (1, 1): 0, (0, 1): 1}
-        variables = [0, 1]
-
-        response = sampler.sample_qubo(Q)
-        self.check_response_form(response, variables)
-
-    def test_single_edge_ising(self):
-        sampler = self.sampler
-
-        h = {0: 0, 1: 1}
-        J = {(0, 1): 1}
-        variables = [0, 1]
-
-        response = sampler.sample_ising(h, J)
-        self.check_response_form(response, variables)
-
-    def check_response_form(self, response, variables):
-        for var in variables:
-            for soln in response:
-                self.assertIn(var, soln)
-
-    def test_arg_propogation(self):
-        self.assertIsInstance(self.sampler.accepted_kwargs, dict)
-        for name, param in self.sampler.accepted_kwargs.items():
-            self.assertIsInstance(param, dimod.SamplerKeywordArg)
+                for v in bqm.linear:
+                    self.assertIn(v, sample)

@@ -4,49 +4,45 @@ RandomSampler
 
 A random sampler that can be used for unit testing and debugging.
 """
-import random
+import numpy as np
+import pandas as pd
 
-from dimod.samplers.template_sampler import TemplateSampler
-from dimod.decorators import ising, qubo, ising_index_labels
-# from dimod.responses.type_response import BinaryResponse
-from dimod.compatibility23 import iteritems
+from dimod.classes.sampler import Sampler
+from dimod.response import Response
 
 __all__ = ['RandomSampler']
 
 
-class RandomSampler(TemplateSampler):
+class RandomSampler(Sampler):
     """Gives random samples.
 
     Note that this sampler is intended for testing.
 
     """
+    def __init__(self, default_sample_kwargs=None):
+        Sampler.__init__(self, default_sample_kwargs)
+        self.sample_kwargs = {'num_reads': []}
 
-    def __init__(self):
-        TemplateSampler.__init__(self)
-
-    @qubo(1)
-    def sample_qubo(self, Q, num_samples=10):
+    def sample(self, bqm, num_reads=10):
         """Gives random samples.
 
         Args:
-            Q (dict): Q dict of the QUBO biases. Should be a dict of the
-                form {(u, v): bias, ...} where u, v are variables in the
-                QUBO and bias is the quadratic bias associated with u and
-                v. If u == v, then the bias is the linear bias associated
-                with v.
-            num_samples (int, optional): The number of random samples to
-                take. Default 10.
+            todo
 
         Returns:
-            :obj:`BinaryResponse`
+            :obj:`.Response`: The vartype will match the given binary quadratic model.
 
         Notes:
-            For each variable in each sample, the value is chosen by a coin
-            flip.
+            For each variable in each sample, the value is chosen by a coin flip.
 
         """
-        variables = set().union(*Q)
-        samples = [{v: random.choice((0, 1)) for v in variables} for __ in range(num_samples)]
-        response = BinaryResponse()
-        response.add_samples_from(samples, Q=Q)
+        values = np.asarray(list(bqm.vartype.value), dtype='int8')
+        samples = np.random.choice(values, (num_reads, len(bqm)))
+        df_samples = pd.DataFrame(samples, columns=bqm.linear)
+
+        energies = [bqm.energy(sample) for idx, sample in df_samples.iterrows()]
+
+        response = Response(bqm.vartype)
+        response.add_samples_from(df_samples, energies)
+
         return response

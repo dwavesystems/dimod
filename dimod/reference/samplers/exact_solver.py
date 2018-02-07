@@ -4,16 +4,21 @@ ExactSolver
 
 An exact solver that calculates the energy of all possible samples.
 """
-from dimod.samplers.template_sampler import TemplateSampler
-from dimod.decorators import ising, ising_index_labels
-# from dimod.responses.type_response import SpinResponse
-from dimod.utilities import ising_energy
-from dimod.compatibility23 import iteritems
+import itertools
+
+import numpy as np
+
+from dimod.binary_quadratic_model_convert import to_numpy_matrix
+from dimod.classes.sampler import Sampler
+from dimod.compatibility23 import zip_
+from dimod.decorators import bqm_index_labels
+from dimod.response import Response
+from dimod.vartypes import Vartype
 
 __all__ = ['ExactSolver']
 
 
-class ExactSolver(TemplateSampler):
+class ExactSolver(Sampler):
     """A simple exact solver, intended for testing and debugging.
 
     Notes:
@@ -21,72 +26,43 @@ class ExactSolver(TemplateSampler):
         variables.
 
     """
+    @bqm_index_labels
+    def sample(self, bqm):
+        M = to_numpy_matrix(bqm.binary)
 
-    def __init__(self):
-        TemplateSampler.__init__(self)
+        sample = np.zeros((len(bqm),), dtype=bool)
 
-    @ising(1, 2)
-    @ising_index_labels(1, 2)
-    def sample_ising(self, h, J):
-        """Solves the Ising problem exactly.
-
-        Args:
-            h (dict/list): The linear terms in the Ising problem. If a
-                dict, should be of the form {v: bias, ...} where v is
-                a variable in the Ising problem, and bias is the linear
-                bias associated with v. If a list, should be of the form
-                [bias, ...] where the indices of the biases are the
-                variables in the Ising problem.
-            J (dict): A dictionary of the quadratic terms in the Ising
-                problem. Should be of the form {(u, v): bias} where u,
-                v are variables in the Ising problem and bias is the
-                quadratic bias associated with u, v.
-
-        Returns:
-            :obj:`SpinResponse`
-
-        Notes:
-            Becomes slow for problems with 18 or more variables.
-
-        """
-
-        # it will be convenient to have J in a nested-dict form.
-        adjJ = {v: {} for v in h}
-        for (u, v), bias in iteritems(J):
-            if v not in adjJ[u]:
-                adjJ[u][v] = bias
-            else:
-                adjJ[u][v] += bias
-
-            if u not in adjJ[v]:
-                adjJ[v][u] = bias
-            else:
-                adjJ[v][u] += bias
-
-        # initialize the response
-        response = SpinResponse()
-
-        # generate the first sample and add it to the response
-        sample = {v: -1 for v in h}
-        energy = ising_energy(sample, h, J)
-        response.add_sample(sample.copy(), energy)
+        response = Response(Vartype.BINARY)
 
         # now we iterate, flipping one bit at a time until we have
         # traversed all samples. This is a Gray code.
         # https://en.wikipedia.org/wiki/Gray_code
-        for i in range(1, 1 << len(h)):
-            v = _ffs(i)
+        def iter_samples():
+            sample = np.zeros((len(bqm)), dtype=bool)
+            energy = 0.0
 
-            # flip the bit in the sample
-            sample[v] *= -1
+            yield sample.copy(), energy
 
-            # get the energy difference
-            quad_diff = sum(adjJ[v][u] * sample[u] for u in adjJ[v])
+            for i in range(1, 1 << len(bqm)):
+                v = _ffs(i)
 
-            # calculate the new energy as a difference from the old
-            energy += 2 * sample[v] * (h[v] + quad_diff)
+                # flip the bit in the sample
+                sample[v] = not sample[v]
 
-            response.add_sample(sample.copy(), energy)
+                # for now just calculate the energy, but there is a more clever way by calculating
+                # the energy delta for the single bit flip, don't have time, pull requests
+                # appreciated!
+                energy = sample.dot(M).dot(sample.transpose())
+
+                yield sample.copy(), float(energy) + bqm.offset
+
+        samples, energies = zip_(*iter_samples())
+
+        response.add_samples_from(np.asarray(samples), energies)
+
+        # finally make sure the response matches the given vartype, in-place.
+        response.change_vartype(bqm.vartype, copy=False)
+
         return response
 
 

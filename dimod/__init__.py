@@ -19,9 +19,6 @@ import dimod.decorators
 from dimod.exceptions import *
 import dimod.exceptions
 
-from dimod.keyword_arguments import *
-import dimod.keyword_arguments
-
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
 from dimod.response import *
