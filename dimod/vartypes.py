@@ -39,7 +39,7 @@ Examples:
 """
 import enum
 
-__all__ = ['Vartype', 'SPIN', 'BINARY', 'UNDEFINED']
+__all__ = ['Vartype', 'SPIN', 'BINARY']
 
 
 class Vartype(enum.Enum):
@@ -50,14 +50,10 @@ class Vartype(enum.Enum):
             is the variables of the model are either -1 or 1.
         BINARY (:class:`.Vartype`): The vartype for binary models. That is
             the variables of the model are either 0 or 1.
-        UNDEFINED (:class:`.Vartype`): For models with an undefined or unknown
-            set of variables.
 
     """
     SPIN = frozenset({-1, 1})
     BINARY = frozenset({0, 1})
-    UNDEFINED = None
 
 SPIN = Vartype.SPIN
 BINARY = Vartype.BINARY
-UNDEFINED = Vartype.UNDEFINED

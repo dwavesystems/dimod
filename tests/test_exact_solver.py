@@ -3,17 +3,18 @@ import unittest
 import itertools
 
 import dimod
-from tests.generic_sampler_tests import SamplerAPITest
+from dimod.test import SamplerAPITest
 
 
 class TestExactSolver(unittest.TestCase, SamplerAPITest):
     def setUp(self):
         self.sampler = dimod.ExactSolver()
+        self.sampler_factory = dimod.ExactSolver
 
     def test_all_samples(self):
         """Check that every sample is included and has the correct energy."""
 
-        n = 10
+        n = 4
 
         # create a qubo
         Q = {(v, v): (v % 3) for v in range(n)}
@@ -21,6 +22,8 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
         Q[(3, n - 2)] = -.26666666
 
         response = self.sampler.sample_qubo(Q)
+
+        # print(response)
 
         self.assertEqual(len(response), 2**n, "incorrect number of samples returned")
 
@@ -32,18 +35,6 @@ class TestExactSolver(unittest.TestCase, SamplerAPITest):
         for tpl in itertools.product((0, 1), repeat=n):
             self.assertIn(tpl, sample_tuples)
 
-        # let's also double check the enegy
-        for sample, energy in response.items():
-            self.assertTrue(abs(energy - dimod.qubo_energy(sample, Q)) < .000001)
-
-    def test_J_not_triangular(self):
-        response = self.sampler.sample_ising({}, {(0, 1): -1, (1, 0): 1})
-
-        for energy in response.energies():
-            self.assertEqual(energy, 0.0)
-
-    def test_keyword_propogation_brute_force(self):
-        sampler = self.sampler
-
-        # no extra args
-        self.assertEqual(set(sampler.accepted_kwargs), {'h', 'J', 'Q'})
+        # let's also double check the energy
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertAlmostEqual(energy, dimod.qubo_energy(sample, Q))
