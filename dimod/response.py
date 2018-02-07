@@ -358,7 +358,7 @@ class Response(object):
         if name is None:
             # yielding a tuple
             def _pack(values):
-                return tuple([*values])
+                return tuple(values)
         else:
             # yielding a named tuple
             SampleTuple = namedtuple(name, fields)
