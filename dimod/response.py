@@ -392,7 +392,7 @@ class Response(object):
         return response
 
     @vartype_argument(1)
-    def change_vartype(self, vartype, offset=0.0, copy=True):
+    def change_vartype(self, vartype, offset=0.0, inplace=True):
         """Change the response's vartype in-place.
 
         Args:
@@ -404,14 +404,14 @@ class Response(object):
             offset (float, optional, default=0.0):
                 The constant offset that is added to the energies.
 
-            copy (bool, optional, default=True):
-                If True, return a copy of Response with the vartype changed, otherwise the
-                Response is changed in-place.
+            inplace (bool, optional, default=True):
+                If True Response is changed in-place, otherwise return a copy of Response with the
+                vartype changed.
 
         """
 
-        if copy:
-            return self.copy().change_vartype(vartype, offset=offset, copy=False)
+        if not inplace:
+            return self.copy().change_vartype(vartype, offset=offset)
 
         if vartype is self.vartype:
             return self
@@ -430,11 +430,11 @@ class Response(object):
 
         return self
 
-    def relabel_variables(self, mapping, copy=True):
+    def relabel_variables(self, mapping, inplace=True):
         """todo
         """
-        if copy:
-            return self.df_samples.rename(mapping, axis='columns', inplace=False)
-        else:
+        if inplace:
             self.df_samples.rename(mapping, axis='columns', inplace=True)
             return self
+        else:
+            return self.df_samples.rename(mapping, axis='columns', inplace=False)
