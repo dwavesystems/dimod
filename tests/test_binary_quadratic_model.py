@@ -889,7 +889,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         mapping = {0: 'a', 1: 'b'}
-        newmodel = model.relabel_variables(mapping)
+        newmodel = model.relabel_variables(mapping, inplace=False)
 
         # check that new model is the same as old model
         linear = {'a': .5, 'b': 1.3}
@@ -908,7 +908,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         mapping = {0: 'a', 1: 'b'}
-        newmodel = model.relabel_variables(mapping, copy=True)
+        newmodel = model.relabel_variables(mapping, inplace=False)
         self.assertNotEqual(id(model), id(newmodel))
         self.assertNotEqual(id(model.linear), id(newmodel.linear))
         self.assertNotEqual(id(model.quadratic), id(newmodel.quadratic))
@@ -930,7 +930,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         mapping = {0: 'a', 1: 'b'}
-        newmodel = model.relabel_variables(mapping, copy=False)
+        newmodel = model.relabel_variables(mapping)
         self.assertEqual(id(model), id(newmodel))
         self.assertEqual(id(model.linear), id(newmodel.linear))
         self.assertEqual(id(model.quadratic), id(newmodel.quadratic))
@@ -955,10 +955,10 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         partial_overlap_mapping = {v: -v for v in linear}  # has variables mapped to other old labels
 
         # construct a test model by using copy
-        testmodel = model.relabel_variables(partial_overlap_mapping, copy=True)
+        testmodel = model.relabel_variables(partial_overlap_mapping, inplace=False)
 
         # now apply in place
-        model.relabel_variables(partial_overlap_mapping, copy=False)
+        model.relabel_variables(partial_overlap_mapping, inplace=True)
 
         # should have stayed the same
         self.assertEqual(testmodel, model)
@@ -974,7 +974,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         identity_mapping = {v: v for v in linear}
 
-        model.relabel_variables(identity_mapping, copy=False)
+        model.relabel_variables(identity_mapping, inplace=True)
 
         # should have stayed the same
         self.assertEqual(old_model, model)
@@ -988,7 +988,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         mapping = {0: 'a', 1: 'b'}  # partial mapping
-        newmodel = model.relabel_variables(mapping, copy=True)
+        newmodel = model.relabel_variables(mapping, inplace=False)
 
         newlinear = linear.copy()
         newlinear['a'] = newlinear[0]
@@ -1012,7 +1012,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         del newlinear[1]
 
         mapping = {0: 'a', 1: 'b'}  # partial mapping
-        model.relabel_variables(mapping, copy=False)
+        model.relabel_variables(mapping, inplace=True)
 
         self.assertEqual(newlinear, model.linear)
 
@@ -1044,6 +1044,11 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertEqual(bqm, new_bqm)
 
     def test_change_vartype(self):
+
+        #
+        # copy
+        #
+
         linear = {0: 1, 1: -1, 2: .5}
         quadratic = {(0, 1): .5, (1, 2): 1.5}
         offset = 1.4
@@ -1051,12 +1056,12 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         # should not change
-        new_model = bqm.change_vartype(dimod.BINARY)
+        new_model = bqm.change_vartype(dimod.BINARY, inplace=False)
         self.assertEqual(bqm, new_model)
         self.assertNotEqual(id(bqm), id(new_model))
 
         # change vartype
-        new_model = bqm.change_vartype(dimod.SPIN)
+        new_model = bqm.change_vartype(dimod.SPIN, inplace=False)
 
         # check all of the energies
         for spins in itertools.product((-1, 1), repeat=len(linear)):
@@ -1073,12 +1078,12 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         # should not change
-        new_model = bqm.change_vartype(dimod.SPIN)
+        new_model = bqm.change_vartype(dimod.SPIN, inplace=False)
         self.assertEqual(bqm, new_model)
         self.assertNotEqual(id(bqm), id(new_model))
 
         # change vartype
-        new_model = bqm.change_vartype(dimod.BINARY)
+        new_model = bqm.change_vartype(dimod.BINARY, inplace=False)
 
         # check all of the energies
         for spins in itertools.product((-1, 1), repeat=len(linear)):
@@ -1090,6 +1095,61 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             bqm.change_vartype('BOOLEAN')
+
+        #
+        # in place
+        #
+
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = 1.4
+        vartype = dimod.BINARY
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+        original_bqm = bqm.copy()
+
+        # should not change
+        new_model = bqm.change_vartype(dimod.BINARY)
+        self.assertEqual(bqm, new_model)
+        self.assertEqual(id(bqm), id(new_model))
+
+        new_model = bqm.change_vartype(dimod.BINARY, inplace=True)
+        self.assertEqual(bqm, new_model)
+        self.assertEqual(id(bqm), id(new_model))
+
+        # change vartype
+        bqm.change_vartype(dimod.SPIN)
+
+        # check all of the energies
+        for spins in itertools.product((-1, 1), repeat=len(linear)):
+            spin_sample = {v: spins[v] for v in linear}
+            binary_sample = {v: (spins[v] + 1) // 2 for v in linear}
+
+            self.assertAlmostEqual(bqm.energy(spin_sample),
+                                   original_bqm.energy(binary_sample))
+
+        # SPIN model
+        linear = {0: 1, 1: -1, 2: .5}
+        quadratic = {(0, 1): .5, (1, 2): 1.5}
+        offset = -1.4
+        vartype = dimod.SPIN
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+        original_bqm = bqm.copy()
+
+        # should not change
+        new_model = bqm.change_vartype(dimod.SPIN)
+        self.assertEqual(bqm, new_model)
+        self.assertEqual(id(bqm), id(new_model))
+
+        # change vartype
+        bqm.change_vartype(dimod.BINARY)
+
+        # check all of the energies
+        for spins in itertools.product((-1, 1), repeat=len(linear)):
+            spin_sample = {v: spins[v] for v in linear}
+            binary_sample = {v: (spins[v] + 1) // 2 for v in linear}
+
+            self.assertAlmostEqual(original_bqm.energy(spin_sample),
+                                   bqm.energy(binary_sample))
 
     def test_spin_property(self):
         linear = {0: 1, 1: -1, 2: .5}
@@ -1110,7 +1170,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
         # get a new spin-model from binary
-        spin_model = model.change_vartype(dimod.SPIN)
+        spin_model = model.change_vartype(dimod.SPIN, inplace=False)
 
         # this spin model should be equal to model.spin
         self.assertEqual(model.spin, spin_model)
@@ -1142,7 +1202,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         vartype = dimod.SPIN
         model = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
 
-        binary_model = model.change_vartype(dimod.BINARY)
+        binary_model = model.change_vartype(dimod.BINARY, inplace=False)
 
         self.assertEqual(model.binary, binary_model)
 
@@ -1162,7 +1222,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = model.binary
 
         # change a variable label in place
-        model.relabel_variables({0: 'a'}, copy=False)
+        model.relabel_variables({0: 'a'})
 
         self.assertIn('a', model.binary.linear)
         self.assertNotIn(0, model.binary.linear)
@@ -1177,7 +1237,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = model.spin
 
         # change a variable label in place
-        model.relabel_variables({0: 'a'}, copy=False)
+        model.relabel_variables({0: 'a'})
 
         self.assertIn('a', model.spin.linear)
         self.assertNotIn(0, model.spin.linear)
