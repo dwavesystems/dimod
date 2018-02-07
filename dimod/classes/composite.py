@@ -56,6 +56,3 @@ class Composite(Sampler):
         for kwarg in removed_kwargs:
             if kwarg in self.sample_kwargs:
                 del self.sample_kwargs[kwarg]
-
-    def sample(self, bqm, **kwargs):
-        return self.child.sample(bqm, **kwargs)
