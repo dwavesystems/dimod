@@ -372,9 +372,9 @@ class Response(object):
                 if field == 'sample':
                     # if 'sample' is requested, dump the full sample into the appropriate type
                     if sample_type is dict:
-                        yield row[variables].to_dict()
+                        yield row.loc[variables].to_dict()
                     elif sample_type is pd.Series:
-                        yield row[variables]
+                        yield row.loc[variables]
                     else:  # pragma: no cover
                         raise ValueError("sample_type should be dict or pandas.Series")
                 else:
