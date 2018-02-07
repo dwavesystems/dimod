@@ -42,33 +42,20 @@ Composite layers can also be nested.
 >>> composed_sampler_nested = dimod.SpinReversalTransform(composed_sampler_es)
 
 """
-from dimod import TemplateSampler
+from dimod.classes.sampler import Sampler
 
-__all__ = ['TemplateComposite']
+__all__ = ['Composite']
 
 
-class TemplateComposite(TemplateSampler):
-    """Serves as a template for composites. Not intended to be used directly.
+class Composite(Sampler):
+    def __init__(self, child, added_kwargs={}, removed_kwargs={}):
+        Sampler.__init__(self)
+        self.child = child
+        self.sample_kwargs = child.sample_kwargs.copy()
+        self.sample_kwargs.update(added_kwargs)
+        for kwarg in removed_kwargs:
+            if kwarg in self.sample_kwargs:
+                del self.sample_kwargs[kwarg]
 
-    Args:
-        *samplers: child sampler(s) of the composite.
-
-    Attributes:
-        children (list): A list of child samplers or child composed samplers.
-
-    """
-    def __init__(self, *samplers):
-        TemplateSampler.__init__(self)
-        self.children = list(samplers)
-
-    @property
-    def accepted_kwargs(self):
-        """dict[str: :class:`.SamplerKeywordArg`]: The keyword arguments
-        accepted by the `sample_ising` and `sample_qubo` methods for this
-        sampler.
-        """
-        kwargs = {}
-        for child in self.children:
-            kwargs.update(child.accepted_kwargs)
-        kwargs.update(self.my_kwargs())
-        return kwargs
+    def sample(self, bqm, **kwargs):
+        return self.child.sample(bqm, **kwargs)

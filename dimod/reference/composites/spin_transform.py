@@ -2,16 +2,18 @@ from random import random
 import time
 import itertools
 
-from dimod.compatibility23 import iteritems
-from dimod.composites.template_composite import TemplateComposite
-# from dimod.responses import SpinResponse, BinaryResponse
-from dimod.decorators import ising, qubo
-from dimod.utilities import ising_to_qubo, qubo_to_ising
+from dimod.classes.composite import Composite
+# from dimod.compatibility23 import iteritems
+# from dimod.composites.template_composite import TemplateComposite
+from dimod.response import Response
+from dimod.vartypes import Vartype
+# from dimod.decorators import ising, qubo
+# from dimod.utilities import ising_to_qubo, qubo_to_ising
 
 __all__ = ['SpinReversalTransform']
 
 
-class SpinReversalTransform(TemplateComposite):
+class SpinReversalTransform(Composite):
     """Composite for applying spin reversal transform preprocessing.
 
     Spin reversal transforms (or "gauge transformations") are applied
@@ -52,172 +54,205 @@ class SpinReversalTransform(TemplateComposite):
         structure: Inherited from input `sampler`.
 
     """
-    def __init__(self, sampler):
-        # puts sampler into self.children
-        TemplateComposite.__init__(self, sampler)
 
-        self._child = sampler  # faster access than self.children[0]
+    def __init__(self, child, default_sample_kwargs=None):
+        Composite.__init__(self, child,
+                           added_kwargs={'num_spin_reversal_transforms': [],
+                                         'spin_reversal_variables': []})
+        if default_sample_kwargs is not None:
+            self.default_sample_kwargs = default_sample_kwargs
+        else:
+            self.default_sample_kwargs = {}
 
-        # copy over the structure
-        self.structure = sampler.structure
+    def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
 
-    @ising(1, 2)
-    def sample_ising(self, h, J,
-                     num_spin_reversal_transforms=1, spin_reversal_variables=None,
-                     **kwargs):
-        """Applies spin reversal transforms to an Ising problem, then samples
-        using the child sampler's `sample_ising` method.
+        # make a main response
+        response = Response(bqm.vartype)
 
-        Args:
-            h (dict/list): The linear terms in the Ising problem. If a
-                dict, should be of the form {v: bias, ...} where v is
-                a variable in the Ising problem, and bias is the linear
-                bias associated with v. If a list, should be of the form
-                [bias, ...] where the indices of the biases are the
-                variables in the Ising problem.
-            J (dict): A dictionary of the quadratic terms in the Ising
-                problem. Should be of the form {(u, v): bias} where u,
-                v are variables in the Ising problem and bias is the
-                quadratic bias associated with u, v.
-            num_spin_reversal_transforms (int, optional): Default 1. The
-                number of different spin reversal transforms to apply to
-                the given Ising problem. Note that the child sampler will
-                be invoked for each spin reversal transform.
-            spin_reversal_variables (iterable, optional): An iterable of
-                variables in the Ising problem. These are the variables
-                that have their spins flipped. If set to None, each variable
-                has a 50% chance of having its bit flipped. Note that if a
-                variable is in spin_reversal_variables but not in h or J
-                then it will be ignored. Default None.
-            **kwargs: Any other keyword arguments are passed unchanged to
-                the child sampler's `sample_ising` method.
-
-
-        Notes:
-            As noted in the section defining the `num_spin_reversal_transforms`
-            parameter, the child sampler will be invoked for each different
-            spin reversal transform. So if the child sampler accepts a
-            `num_reads` keyword parameter, the total number of reads
-            performed will be `num_reads` * `num_spin_reversal_transforms`.
-
-        """
-        if not isinstance(num_spin_reversal_transforms, int):
-            raise TypeError("input `num_spin_reversal_transforms` must be an 'int'")
-
-        sampler = self._child
-
-        # dispatch all of the jobs, in case the samples are resolved upon response read.
-        # keep track of which variables were transformed
-        dispatched = []
         for __ in range(num_spin_reversal_transforms):
-            h_spin, J_spin, transform = \
-                apply_spin_reversal_transform(h, J, spin_reversal_variables)
+            if spin_reversal_variables is None:
+                # apply spin transform to each variable with 50% chance
+                transform = list(v for v in bqm.linear if random() > .5)
+            else:
+                transform = list(spin_reversal_variables)
 
-            response = sampler.sample_ising(h_spin, J_spin, **kwargs)
+            flipped_bqm = bqm.copy()
 
-            dispatched.append((response, transform))
+            for v in transform:
+                flipped_bqm.flip_variable(v)
 
-        # put all of the responses into one
-        st_response = SpinResponse()
+            flipped_response = self.child.sample(bqm, **kwargs)
 
-        for response, transform in dispatched:
+            data_kwargs = flipped_response.df_data.to_dict('list')
+            if 'spin_reversal_variables' in data_kwargs:
+                data_kwargs['spin_reversal_variables_{}'.format(time.time())] = [transform] * len(flipped_response)
+            else:
+                data_kwargs['spin_reversal_variables'] = [transform] * len(flipped_response)
 
-            # NB: this acts on the data in the response in-place
-            data_iter = _iter_transform_data(response, transform)
+            if bqm.vartype is Vartype.SPIN:
+                flipped_response.df_samples[transform] = -1 * flipped_response.df_samples[transform]
+            else:
+                flipped_response.df_samples[transform] = 1 - flipped_response.df_samples[transform]
 
-            st_response.add_data_from(data_iter)
-            st_response.info.update(response.info)
+            response.add_samples_from(flipped_response.df_samples, **data_kwargs)
 
-        return st_response
+        return response
+
+    # def sample_ising(self, h, J,
+    #                  num_spin_reversal_transforms=1, spin_reversal_variables=None,
+    #                  **kwargs):
+    #     """Applies spin reversal transforms to an Ising problem, then samples
+    #     using the child sampler's `sample_ising` method.
+
+    #     Args:
+    #         h (dict/list): The linear terms in the Ising problem. If a
+    #             dict, should be of the form {v: bias, ...} where v is
+    #             a variable in the Ising problem, and bias is the linear
+    #             bias associated with v. If a list, should be of the form
+    #             [bias, ...] where the indices of the biases are the
+    #             variables in the Ising problem.
+    #         J (dict): A dictionary of the quadratic terms in the Ising
+    #             problem. Should be of the form {(u, v): bias} where u,
+    #             v are variables in the Ising problem and bias is the
+    #             quadratic bias associated with u, v.
+    #         num_spin_reversal_transforms (int, optional): Default 1. The
+    #             number of different spin reversal transforms to apply to
+    #             the given Ising problem. Note that the child sampler will
+    #             be invoked for each spin reversal transform.
+    #         spin_reversal_variables (iterable, optional): An iterable of
+    #             variables in the Ising problem. These are the variables
+    #             that have their spins flipped. If set to None, each variable
+    #             has a 50% chance of having its bit flipped. Note that if a
+    #             variable is in spin_reversal_variables but not in h or J
+    #             then it will be ignored. Default None.
+    #         **kwargs: Any other keyword arguments are passed unchanged to
+    #             the child sampler's `sample_ising` method.
+
+    #     Notes:
+    #         As noted in the section defining the `num_spin_reversal_transforms`
+    #         parameter, the child sampler will be invoked for each different
+    #         spin reversal transform. So if the child sampler accepts a
+    #         `num_reads` keyword parameter, the total number of reads
+    #         performed will be `num_reads` * `num_spin_reversal_transforms`.
+
+    #     """
+    #     if not isinstance(num_spin_reversal_transforms, int):
+    #         raise TypeError("input `num_spin_reversal_transforms` must be an 'int'")
+
+    #     sampler = self._child
+
+    #     # dispatch all of the jobs, in case the samples are resolved upon response read.
+    #     # keep track of which variables were transformed
+    #     dispatched = []
+    #     for __ in range(num_spin_reversal_transforms):
+    #         h_spin, J_spin, transform = \
+    #             apply_spin_reversal_transform(h, J, spin_reversal_variables)
+
+    #         response = sampler.sample_ising(h_spin, J_spin, **kwargs)
+
+    #         dispatched.append((response, transform))
+
+    #     # put all of the responses into one
+    #     st_response = SpinResponse()
+
+    #     for response, transform in dispatched:
+
+    #         # NB: this acts on the data in the response in-place
+    #         data_iter = _iter_transform_data(response, transform)
+
+    #         st_response.add_data_from(data_iter)
+    #         st_response.info.update(response.info)
+
+    #     return st_response
 
 
-def _iter_transform_data(response, transform):
-    """iterate through the response's data, applying the transform to the samples
-    and recording which variables were transformed.
+# def _iter_transform_data(response, transform):
+#     """iterate through the response's data, applying the transform to the samples
+#     and recording which variables were transformed.
 
-    We can act on the data in-place because we will not be using this response in
-    the future.
-    """
-    for datum in response.data():
-        datum['sample'] = _apply_srt_sample_spin(datum['sample'], transform)
+#     We can act on the data in-place because we will not be using this response in
+#     the future.
+#     """
+#     for datum in response.data():
+#         datum['sample'] = _apply_srt_sample_spin(datum['sample'], transform)
 
-        _apply_srt_sample_data(datum, transform)
+#         _apply_srt_sample_data(datum, transform)
 
-        yield datum
-
-
-def _apply_srt_sample_spin(sample, transform):
-    # flips the bits in a spin sample
-    return {v: -s if v in transform else s for v, s in iteritems(sample)}
+#         yield datum
 
 
-def _apply_srt_sample_data(data, transform):
-    # stores information about the transform in the sample's data field
-    if 'spin_reversal_variables' in data:
-        data['spin_reversal_variables_{}'.format(time.time())] = transform
-    else:
-        data['spin_reversal_variables'] = transform
-    return data
+# def _apply_srt_sample_spin(sample, transform):
+#     # flips the bits in a spin sample
+#     return {v: -s if v in transform else s for v, s in iteritems(sample)}
 
 
-def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
-    """Applies spin reversal transforms to an Ising problem.
+# def _apply_srt_sample_data(data, transform):
+#     # stores information about the transform in the sample's data field
+#     if 'spin_reversal_variables' in data:
+#         data['spin_reversal_variables_{}'.format(time.time())] = transform
+#     else:
+#         data['spin_reversal_variables'] = transform
+#     return data
 
-    Spin reversal transforms (or "gauge transformations") are applied
-    by flipping the spin of variables in the Ising problem. We can
-    then sample using the transformed Ising problem and flip the same
-    bits in the resulting sample.
 
-    Args:
-        h (dict): The linear terms in the Ising problem. Should be of
-            the form {v: bias, ...} where v is a variable in the Ising
-            problem, and bias is the linear bias associated with v.
-        J (dict): A dictionary of the quadratic terms in the Ising
-            problem. Should be of the form {(u, v): bias} where u,
-            v are variables in the Ising problem and bias is the
-            quadratic bias associated with u, v.
-        spin_reversal_variables (iterable, optional): An iterable of
-            variables in the Ising problem. These are the variables
-            that have their spins flipped. If set to None, each variable
-            has a 50% chance of having its bit flipped. Note that if a
-            variable is in spin_reversal_variables but not in h or J
-            then it will be ignored. Default None.
+# def apply_spin_reversal_transform(h, J, spin_reversal_variables=None):
+#     """Applies spin reversal transforms to an Ising problem.
 
-    Returns:
-        h_spin (dict): the transformed linear biases, in the same
-            form as `h`.
-        J_spin (dict): the transformed quadratic biases, in the same
-            form as `J`.
-        spin_reversal_variables (set): The variables which had their
-            spins flipped. If `spin_reversal_variables` were provided,
-            then this will be the same.
+#     Spin reversal transforms (or "gauge transformations") are applied
+#     by flipping the spin of variables in the Ising problem. We can
+#     then sample using the transformed Ising problem and flip the same
+#     bits in the resulting sample.
 
-    References
-    ----------
-    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
-        for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
-        2014.
+#     Args:
+#         h (dict): The linear terms in the Ising problem. Should be of
+#             the form {v: bias, ...} where v is a variable in the Ising
+#             problem, and bias is the linear bias associated with v.
+#         J (dict): A dictionary of the quadratic terms in the Ising
+#             problem. Should be of the form {(u, v): bias} where u,
+#             v are variables in the Ising problem and bias is the
+#             quadratic bias associated with u, v.
+#         spin_reversal_variables (iterable, optional): An iterable of
+#             variables in the Ising problem. These are the variables
+#             that have their spins flipped. If set to None, each variable
+#             has a 50% chance of having its bit flipped. Note that if a
+#             variable is in spin_reversal_variables but not in h or J
+#             then it will be ignored. Default None.
 
-    """
+#     Returns:
+#         h_spin (dict): the transformed linear biases, in the same
+#             form as `h`.
+#         J_spin (dict): the transformed quadratic biases, in the same
+#             form as `J`.
+#         spin_reversal_variables (set): The variables which had their
+#             spins flipped. If `spin_reversal_variables` were provided,
+#             then this will be the same.
 
-    if spin_reversal_variables is None:
-        # apply spin transform to each variable with 50% chance
-        transform = set(v for v in h if random() > .5)
-    else:
-        transform = set(spin_reversal_variables)
+#     References
+#     ----------
+#     .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+#         for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
+#         2014.
 
-    # apply spins transform to the linear biases
-    h_spin = {v: -bias if v in transform else bias for v, bias in iteritems(h)}
+#     """
 
-    # apply spins transform to the quadratic biases
-    def quad_bias(edge):
-        u, v = edge
-        bias = J[edge]
-        if u in transform:
-            bias = -bias
-        if v in transform:
-            bias = -bias
-        return bias
-    J_spin = {edge: quad_bias(edge) for edge in J}
+#     if spin_reversal_variables is None:
+#         # apply spin transform to each variable with 50% chance
+#         transform = set(v for v in h if random() > .5)
+#     else:
+#         transform = set(spin_reversal_variables)
 
-    return h_spin, J_spin, transform
+#     # apply spins transform to the linear biases
+#     h_spin = {v: -bias if v in transform else bias for v, bias in iteritems(h)}
+
+#     # apply spins transform to the quadratic biases
+#     def quad_bias(edge):
+#         u, v = edge
+#         bias = J[edge]
+#         if u in transform:
+#             bias = -bias
+#         if v in transform:
+#             bias = -bias
+#         return bias
+#     J_spin = {edge: quad_bias(edge) for edge in J}
+
+#     return h_spin, J_spin, transform
