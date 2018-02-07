@@ -21,7 +21,9 @@ class SimulatedAnnealingSampler(Sampler):
     """
     def __init__(self):
         Sampler.__init__(self)
-        self.sample_kwargs = {'num_reads': []}
+        self.sample_kwargs = {'num_reads': [],
+                              'beta_range': [],
+                              'num_sweeps': []}
 
     def sample_ising(self, h, J, beta_range=None, num_reads=10, num_sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
