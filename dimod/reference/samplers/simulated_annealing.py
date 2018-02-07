@@ -19,8 +19,8 @@ __all__ = ['SimulatedAnnealingSampler']
 class SimulatedAnnealingSampler(Sampler):
     """A simple simulated annealing sampler.
     """
-    def __init__(self, default_sample_kwargs=None):
-        Sampler.__init__(self, default_sample_kwargs)
+    def __init__(self):
+        Sampler.__init__(self)
         self.sample_kwargs = {'num_reads': []}
 
     def sample_ising(self, h, J, beta_range=None, num_reads=10, num_sweeps=1000):
