@@ -8,16 +8,28 @@ class SamplerAPITest:
         sampler = self.sampler_factory()
 
         # check that is has all of the expected attritubes
-        self.assertTrue(hasattr(sampler, 'sample'), "sampler must have a 'sample' method")
-        self.assertTrue(callable(sampler.sample), "sampler must have a 'sample' method")
+        self.assertTrue(hasattr(sampler, 'sample'),
+                        "sampler must have a 'sample' method")
+        self.assertTrue(callable(sampler.sample),
+                        "sampler must have a 'sample' method")
 
-        self.assertTrue(hasattr(sampler, 'sample_ising'), "sampler must have a 'sample_ising' method")
-        self.assertTrue(callable(sampler.sample_ising), "sampler must have a 'sample_ising' method")
+        self.assertTrue(hasattr(sampler, 'sample_ising'),
+                        "sampler must have a 'sample_ising' method")
+        self.assertTrue(callable(sampler.sample_ising),
+                        "sampler must have a 'sample_ising' method")
 
-        self.assertTrue(hasattr(sampler, 'sample_qubo'), "sampler must have a 'sample_qubo' method")
-        self.assertTrue(callable(sampler.sample_qubo), "sampler must have a 'sample_qubo' method")
+        self.assertTrue(hasattr(sampler, 'sample_qubo'),
+                        "sampler must have a 'sample_qubo' method")
+        self.assertTrue(callable(sampler.sample_qubo),
+                        "sampler must have a 'sample_qubo' method")
 
-        self.assertTrue(hasattr(sampler, 'sample_kwargs'), "sampler must have a 'sample_kwargs' property")
+        self.assertTrue(hasattr(sampler, 'sample_kwargs'),
+                        "sampler must have a 'sample_kwargs' property")
+
+        self.assertTrue(hasattr(sampler, 'properties'),
+                        "sampler must have a 'properties' property")
+        self.assertTrue(isinstance(sampler.properties, dict),
+                        "sampler's 'properties' property should be a dict")
 
     def test_sample_response_form(self):
         sampler = self.sampler_factory()

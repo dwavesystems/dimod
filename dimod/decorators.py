@@ -33,21 +33,6 @@ def bqm_index_labels(f):
     return _index_label
 
 
-def patch_sample_kwargs(f):
-    """todo
-
-    """
-    def new_f(sampler, *args, **kwargs):
-        if sampler.default_sample_kwargs:
-            default_kwargs = sampler.default_sample_kwargs
-            default_kwargs.update(kwargs)  # overwrite with provided
-            return f(sampler, *args, **default_kwargs)
-        else:
-            return f(sampler, *args, **kwargs)
-    new_f.__name__ = f.__name__
-    return new_f
-
-
 def vartype_argument(arg_idx):
     """todo"""
     def _vartype_arg(f):
