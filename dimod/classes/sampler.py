@@ -5,6 +5,7 @@ dimod Sampler API
 """
 
 from dimod.binary_quadratic_model_convert import to_qubo, to_ising, from_qubo, from_ising
+from dimod.compatibility23 import RecursionError_
 from dimod.decorators import patch_sample_kwargs
 from dimod.exceptions import InvalidSampler
 from dimod.vartypes import Vartype
@@ -39,13 +40,10 @@ class Sampler(object):
                 return response
             else:
                 raise RuntimeError("binary quadratic model has an unknown vartype")
-        except RecursionError:
+        except RecursionError_:
             msg = ("A RecursionError has been occured. This most often happens when trying to use "
                    "the Sampler base class as a sampler.")
             raise InvalidSampler(msg)
-        except RuntimeError as err:
-            # in python 2 RecursionError is RuntimeError
-            raise NotImplementedError
 
     @patch_sample_kwargs
     def sample_ising(self, h, J, **sample_kwargs):

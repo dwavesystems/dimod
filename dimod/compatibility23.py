@@ -20,6 +20,8 @@ if _PY2:
 
     zip_longest = itertools.izip_longest
 
+    RecursionError_ = RuntimeError
+
 else:
 
     range_ = range
@@ -36,3 +38,5 @@ else:
         return iter(d.keys())
 
     zip_longest = itertools.zip_longest
+
+    RecursionError_ = RecursionError
