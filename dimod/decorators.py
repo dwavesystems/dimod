@@ -25,10 +25,10 @@ def bqm_index_labels(f):
             inverse_mapping = dict(enumerate(linear))
         mapping = {v: i for i, v in iteritems(inverse_mapping)}
 
-        response = f(sampler, bqm.relabel_variables(mapping, copy=True), **kwargs)
+        response = f(sampler, bqm.relabel_variables(mapping, inplace=False), **kwargs)
 
         # unapply the relabeling
-        return response.relabel_variables(inverse_mapping, copy=False)
+        return response.relabel_variables(inverse_mapping, inplace=True)
 
     return _index_label
 
@@ -53,7 +53,10 @@ def vartype_argument(arg_idx):
     def _vartype_arg(f):
         def new_f(*args, **kwargs):
 
-            vartype = args[arg_idx]
+            try:
+                vartype = args[arg_idx]
+            except IndexError:
+                vartype = kwargs['vartype']
 
             if isinstance(vartype, Vartype):
                 # we don't need to do anything
