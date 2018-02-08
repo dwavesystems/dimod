@@ -379,7 +379,7 @@ class Response(object):
                         raise ValueError("sample_type should be dict or pandas.Series")
                 else:
                     # if not 'sample', just return the value as-is (this also works for variables)
-                    yield row[field]
+                    yield row.loc[field]
 
         # finally the main loop
         for idx, row in df_merged.iterrows():
