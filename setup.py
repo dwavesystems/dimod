@@ -23,6 +23,7 @@ extras_require = {'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
 
 packages = ['dimod',
             'dimod.classes',
+            'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
             'dimod.test']
