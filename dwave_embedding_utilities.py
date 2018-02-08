@@ -222,7 +222,10 @@ def embed_ising(source_linear, source_quadratic, embedding, target_adjacency, ch
             # if our embedding doesn't deal with this variable, assume it's an isolated vertex and embed it to one of
             # the unused variables. if this turns out to not be an isolated vertex, it will be caught below when
             # handling quadratic biases
-            embedding[v] = {unused.pop()}
+            try:
+                embedding[v] = {unused.pop()}
+            except KeyError:
+                raise ValueError('no embedding provided for source variable {}'.format(v))
             chain_variables = embedding[v]
 
         b = bias / len(chain_variables)
