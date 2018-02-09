@@ -1,9 +1,8 @@
 """
-dimod Sampler API
-=================
+Sampler
+=======
 
 """
-
 from dimod.binary_quadratic_model_convert import to_qubo, to_ising, from_qubo, from_ising
 from dimod.compatibility23 import RecursionError_
 from dimod.exceptions import InvalidSampler
