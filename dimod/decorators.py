@@ -2,6 +2,7 @@
 
 """
 from dimod.compatibility23 import iteritems
+from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
 
@@ -31,6 +32,31 @@ def bqm_index_labels(f):
         return response.relabel_variables(inverse_mapping, inplace=True)
 
     return _index_label
+
+
+def bqm_structured(f):
+    """todo
+
+    makes sure bqm has the appropriate structure
+    """
+    def new_f(sampler, bqm, **kwargs):
+        try:
+            structure = sampler.structure
+        except AttributeError:
+            if isinstance(sampler, Structured):
+                raise RuntimeError("something is wrong with the structured sampler")
+            else:
+                raise TypeError("sampler does not have a structure property")
+
+        if not all(v in structure.adjacency for v in bqm.linear):
+            # todo: better error message
+            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
+        if not all(u in structure.adjacency[v] for u, v in bqm.quadratic):
+            # todo: better error message
+            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
+
+        return sampler.sample(bqm, **kwargs)
+    return new_f
 
 
 def vartype_argument(arg_idx):
