@@ -12,7 +12,7 @@ import dimod
 class MockSampler(unittest.TestCase, dimod.test.CompositeAPITest):
     def setUp(self):
         self.sampler_factories = [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]
-        self.composite_factory = dimod.SpinReversalTransform
+        self.composite_factory = dimod.SpinReversalTransformComposite
 
 #     def sample_ising(self, h, J, orig_h=None):
 
