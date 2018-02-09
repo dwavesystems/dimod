@@ -9,10 +9,10 @@ import dimod
 # from dimod.composites.spin_transform import apply_spin_reversal_transform
 
 
-class MockSampler(unittest.TestCase, dimod.test.CompositeAPITest):
+class TestSpinTransformComposite(unittest.TestCase, dimod.test.CompositeAPITest):
     def setUp(self):
         self.sampler_factories = [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]
-        self.composite_factory = dimod.SpinReversalTransform
+        self.composite_factory = dimod.SpinReversalTransformComposite
 
 #     def sample_ising(self, h, J, orig_h=None):
 

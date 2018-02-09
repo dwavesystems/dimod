@@ -47,9 +47,8 @@ from dimod.classes.sampler import Sampler
 __all__ = ['Composite']
 
 
-class Composite(Sampler):
+class Composite():
     def __init__(self, child, added_kwargs={}, removed_kwargs={}):
-        Sampler.__init__(self)
         self.child = child
         self.sample_kwargs = child.sample_kwargs.copy()
         self.sample_kwargs.update(added_kwargs)
