@@ -9,7 +9,7 @@ Creating a Structured Sampler
 
 A simple example of a structured sampler is one that only has two variables and one interaction.
 
->>> class TwoVariables(dimod.Sampler, dimod.Structured):
+>>> class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
 ...     def __init__(self):
 ...         dimod.Sampler()
 ...         dimod.Structured(self, [0, 1], [(0, 1)])
@@ -19,7 +19,7 @@ methods), but it is sufficient to demonstrate accessing the properties.
 
 First the structure is made a property of the sampler and it can be accessed appropriately.
 
->>> sampler = TwoVariables()
+>>> sampler = TwoVariablesSampler()
 >>> sampler.structure
 Structure([0, 1], [(0, 1)], {0: {1}, 1: {0}})  # namedtuple
 >>> sampler.structure.nodelist
@@ -31,7 +31,7 @@ Structure([0, 1], [(0, 1)], {0: {1}, 1: {0}})  # namedtuple
 
 Each of these components are also stored as properties of the sampler.
 
->>> sampler = TwoVariables()
+>>> sampler = TwoVariablesSampler()
 >>> sampler.properties
 {'structure': Structure([0, 1], [(0, 1)], {0: {1}, 1: {0}}),
  'nodelist': [0, 1],
@@ -41,7 +41,7 @@ Each of these components are also stored as properties of the sampler.
  If you want the structure of the given problem to be checked against the sampler's structure, you
  can enforce this with a decorator.
 
->>> class TwoVariables(dimod.Sampler, dimod.Structured):
+>>> class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
 ...     def __init__(self):
 ...         dimod.Sampler()
 ...         dimod.Structured(self, [0, 1], [(0, 1)])

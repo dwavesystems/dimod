@@ -10,7 +10,7 @@ import dimod
 #
 
 
-class TwoVariables(dimod.Sampler, dimod.Structured):
+class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
     def __init__(self):
         dimod.Sampler.__init__(self)
         dimod.Structured.__init__(self, [0, 1], [(0, 1)])
@@ -29,11 +29,11 @@ class TwoVariables(dimod.Sampler, dimod.Structured):
 
 class TestTwoVariables(unittest.TestCase, dimod.test.SamplerAPITest):
     def setUp(self):
-        self.sampler = TwoVariables()
-        self.sampler_factory = TwoVariables
+        self.sampler = TwoVariablesSampler()
+        self.sampler_factory = TwoVariablesSampler
 
     def test_acceptable_bqms(self):
-        sampler = TwoVariables()
+        sampler = TwoVariablesSampler()
 
         response = sampler.sample_ising({0: -1}, {})
 
