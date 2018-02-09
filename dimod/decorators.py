@@ -42,20 +42,21 @@ def bqm_structured(f):
     def new_f(sampler, bqm, **kwargs):
         try:
             structure = sampler.structure
+            adjacency = structure.adjacency
         except AttributeError:
             if isinstance(sampler, Structured):
                 raise RuntimeError("something is wrong with the structured sampler")
             else:
                 raise TypeError("sampler does not have a structure property")
 
-        if not all(v in structure.adjacency for v in bqm.linear):
+        if not all(v in adjacency for v in bqm.linear):
             # todo: better error message
             raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
-        if not all(u in structure.adjacency[v] for u, v in bqm.quadratic):
+        if not all(u in adjacency[v] for u, v in bqm.quadratic):
             # todo: better error message
             raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
 
-        return sampler.sample(bqm, **kwargs)
+        return f(sampler, bqm, **kwargs)
     return new_f
 
 
