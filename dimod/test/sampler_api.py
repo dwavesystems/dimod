@@ -36,7 +36,10 @@ class SamplerAPITest:
 
         bqm = dimod.BinaryQuadraticModel({'b': 2}, {('a', 'b'): -1.}, 1.0, dimod.SPIN)
 
-        response = sampler.sample(bqm)
+        try:
+            response = sampler.sample(bqm)
+        except dimod.exceptions.BinaryQuadraticModelValueError:
+            return  # the sampler has responded that it cannot handle the give bqm
 
         self.assertIs(response.vartype, bqm.vartype, "response's vartype does not match the bqm's vartype")
 

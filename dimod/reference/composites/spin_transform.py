@@ -3,17 +3,14 @@ import time
 import itertools
 
 from dimod.classes.composite import Composite
-# from dimod.compatibility23 import iteritems
-# from dimod.composites.template_composite import TemplateComposite
+from dimod.classes.sampler import Sampler
 from dimod.response import Response
 from dimod.vartypes import Vartype
-# from dimod.decorators import ising, qubo
-# from dimod.utilities import ising_to_qubo, qubo_to_ising
 
-__all__ = ['SpinReversalTransform']
+__all__ = ['SpinReversalTransformComposite']
 
 
-class SpinReversalTransform(Composite):
+class SpinReversalTransformComposite(Sampler, Composite):
     """Composite for applying spin reversal transform preprocessing.
 
     Spin reversal transforms (or "gauge transformations") are applied
@@ -28,7 +25,7 @@ class SpinReversalTransform(Composite):
         Composing a sampler.
 
         >>> base_sampler = dimod.ExactSolver()
-        >>> composed_sampler = dimod.SpinReversalTransform(base_sampler)
+        >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
 
         The composed sampler can now be used as a dimod sampler.
 
@@ -56,6 +53,7 @@ class SpinReversalTransform(Composite):
     """
 
     def __init__(self, child, default_sample_kwargs=None):
+        Sampler.__init__(self)
         Composite.__init__(self, child,
                            added_kwargs={'num_spin_reversal_transforms': [],
                                          'spin_reversal_variables': []})
