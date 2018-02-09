@@ -25,17 +25,11 @@ class SimulatedAnnealingSampler(Sampler):
                               'beta_range': [],
                               'num_sweeps': []}
 
-    def sample_ising(self, h, J, beta_range=None, num_reads=10, num_sweeps=1000):
+    def sample(self, bqm, beta_range=None, num_reads=10, num_sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
-            h (dict): A dictionary of the linear biases in the Ising
-                problem. Should be of the form {v: bias, ...} for each
-                variable v in the Ising problem.
-            J (dict): A dictionary of the quadratic biases in the Ising
-                problem. Should be a dict of the form {(u, v): bias, ...}
-                for each edge (u, v) in the Ising problem. If J[(u, v)] and
-                J[(v, u)] exist then the biases are added.
+            todo
             beta_range (tuple, optional): A 2-tuple defining the
                 beginning and end of the beta schedule (beta is the
                 inverse temperature). The schedule is applied linearly
@@ -47,7 +41,7 @@ class SimulatedAnnealingSampler(Sampler):
                 Default is 1000.
 
         Returns:
-            :obj:`SpinResponse`
+            :obj:`Response`
 
         Examples:
             >>> sampler = SimulatedAnnealingSampler()
@@ -76,8 +70,8 @@ class SimulatedAnnealingSampler(Sampler):
 
         # run the simulated annealing algorithm
         for __ in range(num_reads):
-            sample, energy = ising_simulated_annealing(h, J, beta_range, num_sweeps)
-            response.add_sample(sample, energy)
+            sample, energy = ising_simulated_annealing(bqm.linear, bqm.quadratic, beta_range, num_sweeps)
+            response.add_sample(sample, bqm.offset + energy)
 
         return response
 
