@@ -413,6 +413,9 @@ class Response(object):
         if not inplace:
             return self.copy().change_vartype(vartype, offset=offset)
 
+        if offset:
+            self.df_data['energy'] += offset
+
         if vartype is self.vartype:
             return self
 
@@ -424,9 +427,6 @@ class Response(object):
             self.vartype = vartype
         else:
             raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
-
-        if offset:
-            self.df_data['energy'] += offset
 
         return self
 
