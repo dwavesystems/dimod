@@ -80,7 +80,7 @@ class Structured():
             nodelist = list(nodelist)
 
         if sort_edges:
-            edgelist = sorted(sorted(edge) for edge in edgelist)
+            edgelist = sorted(tuple(sorted(edge)) for edge in edgelist)
         elif not isinstance(edgelist, list):
             edgelist = list(edgelist)
 
