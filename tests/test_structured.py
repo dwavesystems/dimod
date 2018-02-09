@@ -38,3 +38,10 @@ class TestTwoVariables(unittest.TestCase, dimod.test.SamplerAPITest):
         response = sampler.sample_ising({0: -1}, {})
 
         self.assertEqual(len(response), 2)
+
+    def test_example(self):
+        sampler = TwoVariablesSampler()
+
+        self.assertEqual(sampler.structure.nodelist, [0, 1])
+        self.assertEqual(sampler.structure.edgelist, [(0, 1)])
+        self.assertEqual(sampler.structure.adjacency, {0: {1}, 1: {0}})
