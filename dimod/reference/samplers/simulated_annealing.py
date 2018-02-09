@@ -7,6 +7,7 @@ A reference implementation of a simulated annealing sampler using the dimod API.
 import random
 import math
 
+from dimod.binary_quadratic_model_convert import to_ising
 from dimod.compatibility23 import itervalues
 from dimod.classes.sampler import Sampler
 from dimod.response import Response
@@ -68,10 +69,12 @@ class SimulatedAnnealingSampler(Sampler):
         # create the response object. Ising returns spin values.
         response = Response(Vartype.SPIN)
 
+        h, J, offset = to_ising(bqm)
+
         # run the simulated annealing algorithm
         for __ in range(num_reads):
-            sample, energy = ising_simulated_annealing(bqm.linear, bqm.quadratic, beta_range, num_sweeps)
-            response.add_sample(sample, bqm.offset + energy)
+            sample, energy = ising_simulated_annealing(h, J, beta_range, num_sweeps)
+            response.add_sample(sample, energy + offset)
 
         return response
 
