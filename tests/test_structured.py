@@ -1,4 +1,5 @@
 import unittest
+import itertools
 
 import dimod
 
@@ -19,7 +20,7 @@ class TwoVariables(dimod.Sampler, dimod.Structured):
         # All bqm's passed in will be a subgraph of the sampler's structure
         variable_list = list(bqm.linear)
         response = dimod.Response(bqm.vartype)
-        for values in itertools.product(bqm.vartype.value, len(bqm)):
+        for values in itertools.product(bqm.vartype.value, repeat=len(bqm)):
             sample = dict(zip(variable_list, values))
             energy = bqm.energy(sample)
             response.add_sample(sample, energy)
@@ -30,3 +31,10 @@ class TestTwoVariables(unittest.TestCase, dimod.test.SamplerAPITest):
     def setUp(self):
         self.sampler = TwoVariables()
         self.sampler_factory = TwoVariables
+
+    def test_acceptable_bqms(self):
+        sampler = TwoVariables()
+
+        response = sampler.sample_ising({0: -1}, {})
+
+        self.assertEqual(len(response), 2)
