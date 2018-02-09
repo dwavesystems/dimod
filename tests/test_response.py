@@ -246,3 +246,39 @@ class TestResponse(unittest.TestCase):
 
         # now try to read from it
         self.assertEqual(len(response), 110)
+
+    def test_retrieving_additional_fields(self):
+
+        response = dimod.Response(dimod.SPIN)
+
+        response.add_sample({'a': 1, 'b': -1}, 1.3, num_occurences=1)
+
+        for sample, num_occurences in response.data(['sample', 'num_occurences']):
+            self.assertEqual(sample, {'a': 1, 'b': -1})
+            self.assertEqual(num_occurences, 1)
+
+        response.add_sample({'a': 1, 'b': -1}, 1.3, num_occurences=1)
+
+        self.assertEqual(len(response), 2)
+        for sample, num_occurences in response.data(['sample', 'num_occurences']):
+            self.assertEqual(sample, {'a': 1, 'b': -1})
+            self.assertEqual(num_occurences, 1)
+
+        #
+        # index-labelled
+        #
+
+        response = dimod.Response(dimod.BINARY)
+
+        response.add_sample({0: 1, 4: 0}, 1.3, num_occurences=1)
+
+        for sample, num_occurences in response.data(['sample', 'num_occurences']):
+            self.assertEqual(sample, {0: 1, 4: 0})
+            self.assertEqual(num_occurences, 1)
+
+        response.add_sample({0: 1, 4: 0}, 1.3, num_occurences=1)
+
+        self.assertEqual(len(response), 2)
+        for sample, num_occurences in response.data(['sample', 'num_occurences']):
+            self.assertEqual(sample, {0: 1, 4: 0})
+            self.assertEqual(num_occurences, 1)
