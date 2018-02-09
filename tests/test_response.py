@@ -22,7 +22,8 @@ class MockFuture():
     def __init__(self, waittime, variables, num_reads):
         self.end_time = time.time() + waittime
 
-        self.samples = [[1] * len(variables) for __ in range(num_reads)]
+        self.samples = [[1 if v in variables else 3 for v in range(max(variables) + 1)]
+                        for __ in range(num_reads)]
         self.energies = [sum([.1 * v for v in variables])] * num_reads
         self.occurrences = [1] * num_reads
 

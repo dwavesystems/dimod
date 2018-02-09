@@ -4,6 +4,7 @@
 """
 from collections import namedtuple
 
+import numpy as np
 import pandas as pd
 
 from dimod.decorators import vartype_argument
@@ -260,7 +261,16 @@ class Response(object):
     def _add_future(self, future):
         """Add the samples from a single future. Note that future is expected to be done."""
         # construct a dataframe from the future
-        samples = pd.DataFrame(future.samples, columns=future.solver.nodes, dtype='int8')
+        nodes = future.solver.nodes
+        samples = future.samples
+
+        if isinstance(samples, np.ndarray):
+            samples = future.samples[:, nodes]
+        else:
+            samples = [[sample[v] for v in nodes] for sample in samples]
+        samples = pd.DataFrame(samples, columns=nodes, dtype='int8')
+
+        print(samples)
 
         self.add_samples_from(samples, future.energies, num_occurrences=future.occurrences)
 
