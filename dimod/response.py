@@ -270,8 +270,6 @@ class Response(object):
             samples = [[sample[v] for v in nodes] for sample in samples]
         samples = pd.DataFrame(samples, columns=nodes, dtype='int8')
 
-        print(samples)
-
         self.add_samples_from(samples, future.energies, num_occurrences=future.occurrences)
 
     def samples(self, sample_type=dict, sorted_by_energy=True):
