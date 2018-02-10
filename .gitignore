@@ -11,6 +11,8 @@ docs/generated
 *.sublime-workspace
 
 venv*/
+env/
+.env/
 
 .coverage
 htmlcov/
