@@ -1,6 +1,8 @@
 """todo
 
 """
+from functools import wraps
+
 from dimod.compatibility23 import iteritems
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
@@ -8,8 +10,9 @@ from dimod.vartypes import Vartype
 
 def bqm_index_labels(f):
     """todo
-
     """
+
+    @wraps(f)
     def _index_label(sampler, bqm, **kwargs):
         if not hasattr(bqm, 'linear'):
             raise TypeError('expected input to be a BinaryQuadraticModel')
@@ -39,6 +42,8 @@ def bqm_structured(f):
 
     makes sure bqm has the appropriate structure
     """
+
+    @wraps(f)
     def new_f(sampler, bqm, **kwargs):
         try:
             structure = sampler.structure
@@ -57,14 +62,16 @@ def bqm_structured(f):
             raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
 
         return f(sampler, bqm, **kwargs)
+
     return new_f
 
 
 def vartype_argument(arg_idx):
     """todo"""
-    def _vartype_arg(f):
-        def new_f(*args, **kwargs):
 
+    def _vartype_arg(f):
+        @wraps(f)
+        def new_f(*args, **kwargs):
             try:
                 vartype = args[arg_idx]
             except IndexError:
@@ -89,6 +96,7 @@ def vartype_argument(arg_idx):
             new_args[arg_idx] = vartype
 
             return f(*new_args, **kwargs)
-        new_f.__name__ = f.__name__
+
         return new_f
+
     return _vartype_arg
