@@ -3,30 +3,33 @@
 .. _contents:
 
 .. include:: ../README.rst
-  :start-after: inclusion-marker-do-not-remove
+  :start-after: index-start-marker
+  :end-before: index-end-marker
 
 Documentation
 -------------
 
 .. only:: html
 
-    :Release: |version|
-    :Date: |today|
+  :Release: |version|
+  :Date: |today|
 
 .. toctree::
-   :maxdepth: 1
+  :maxdepth: 1
 
-   dimod_samplers
-   included_samplers
-   dimod_composites
-   included_composites
-   dimod_responses
-   included_responses
-   binary_quadratic_model
-   decorators
-   utilities
-   license
+  reference/index
+  installation
+  license
+  bibliography
 
+.. toctree::
+  :caption: D-Wave's Ocean Software
+  :maxdepth: 1
+
+  dwave
+  ocean
+  contributing
+  glossary
 
 Indices and tables
 ------------------
