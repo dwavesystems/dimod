@@ -8,3 +8,5 @@ Reference Documentation
 
 .. toctree::
    :maxdepth: 2
+
+   binary_quadratic_model
