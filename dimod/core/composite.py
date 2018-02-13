@@ -42,7 +42,7 @@ Composite layers can also be nested.
 >>> composed_sampler_nested = dimod.SpinReversalTransform(composed_sampler_es)
 
 """
-from dimod.classes.sampler import Sampler
+from dimod.core.sampler import Sampler
 
 __all__ = ['Composite']
 

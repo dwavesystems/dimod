@@ -9,7 +9,7 @@ import itertools
 import numpy as np
 
 from dimod.binary_quadratic_model_convert import to_numpy_matrix
-from dimod.classes.sampler import Sampler
+from dimod.core.sampler import Sampler
 from dimod.compatibility23 import zip_
 from dimod.decorators import bqm_index_labels
 from dimod.response import Response
