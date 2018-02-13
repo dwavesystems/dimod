@@ -7,7 +7,7 @@ A random sampler that can be used for unit testing and debugging.
 import numpy as np
 import pandas as pd
 
-from dimod.classes.sampler import Sampler
+from dimod.core.sampler import Sampler
 from dimod.response import Response
 
 __all__ = ['RandomSampler']
