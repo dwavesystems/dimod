@@ -86,7 +86,7 @@ todo_include_todos = True
 
 modindex_common_prefix = ['dimod.']
 
-doctest_global_setup = ""
+doctest_global_setup = "import dimod"
 
 
 # -- Options for HTML output ----------------------------------------------
