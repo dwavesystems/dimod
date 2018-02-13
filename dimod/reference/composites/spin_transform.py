@@ -2,8 +2,8 @@ from random import random
 import time
 import itertools
 
-from dimod.classes.composite import Composite
-from dimod.classes.sampler import Sampler
+from dimod.core.composite import Composite
+from dimod.core.sampler import Sampler
 from dimod.response import Response
 from dimod.vartypes import Vartype
 
