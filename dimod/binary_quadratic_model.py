@@ -126,22 +126,22 @@ class BinaryQuadraticModel(object):
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
 
-    def __eq__(self, bqm):
+    def __eq__(self, other):
         """Model is equal if and only if linear, adj, offset and vartype are all equal."""
-        if not isinstance(bqm, BinaryQuadraticModel):
+        if not isinstance(other, BinaryQuadraticModel):
             return False
 
-        if self.vartype == bqm.vartype:
-            return all([self.linear == bqm.linear,
-                        self.adj == bqm.adj,  # adj is invariant of edge order, so check that instead of quadratic
-                        self.offset == bqm.offset])
+        if self.vartype == other.vartype:
+            return all([self.linear == other.linear,
+                        self.adj == other.adj,  # adj is invariant of edge order, so check that instead of quadratic
+                        self.offset == other.offset])
         else:
             # different vartypes are not equal
             return False
 
-    def __ne__(self, bqm):
+    def __ne__(self, other):
         """Inversion of equality."""
-        return not self.__eq__(bqm)
+        return not self.__eq__(other)
 
     def __len__(self):
         """The length is number of variables."""
