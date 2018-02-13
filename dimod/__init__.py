@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-from dimod.classes import *
-import dimod.classes
+from dimod.core import *
+import dimod.core
 
 from dimod.reference import *
 import dimod.reference

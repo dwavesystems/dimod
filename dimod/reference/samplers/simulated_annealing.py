@@ -9,7 +9,7 @@ import math
 
 from dimod.binary_quadratic_model_convert import to_ising
 from dimod.compatibility23 import itervalues
-from dimod.classes.sampler import Sampler
+from dimod.core.sampler import Sampler
 from dimod.response import Response
 from dimod.utilities import ising_energy
 from dimod.vartypes import Vartype

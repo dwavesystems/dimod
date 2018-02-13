@@ -1,6 +1,6 @@
-from dimod.classes.sampler import Sampler
-from dimod.classes.composite import Composite
-from dimod.classes.structured import Structured
+from dimod.core.sampler import Sampler
+from dimod.core.composite import Composite
+from dimod.core.structured import Structured
 from dimod.decorators import bqm_structured
 
 
