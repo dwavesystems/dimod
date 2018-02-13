@@ -1,7 +1,7 @@
 .. _bqm:
 
-.. automodule:: dimod.binary_quadratic_model.model
+.. automodule:: dimod.binary_quadratic_model
     :members:
 
-.. automodule:: dimod.binary_quadratic_model.convert
+.. automodule:: dimod.binary_quadratic_model_convert
     :members:
