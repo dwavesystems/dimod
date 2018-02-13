@@ -10,7 +10,7 @@ help:
 
 clean:
 	-rm -rf build/*
-	-rm -rf generated/*
+	-rm -rf reference/generated
 
 .PHONY: help Makefile
 
