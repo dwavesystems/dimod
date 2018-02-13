@@ -1,6 +1,7 @@
 """
-BinaryQuadraticModel
-====================
+
+todo - describe Ising, QUBO and BQM
+
 """
 from __future__ import absolute_import, division
 

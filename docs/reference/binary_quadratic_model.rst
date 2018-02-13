@@ -61,3 +61,19 @@ Change Vartype
    :toctree: generated/
 
    BinaryQuadraticModel.change_vartype
+
+Copy
+----
+
+.. autosummary::
+   :toctree: generated/
+
+   BinaryQuadraticModel.copy
+
+Energy
+------
+
+.. autosummary::
+   :toctree: generated/
+
+   BinaryQuadraticModel.energy

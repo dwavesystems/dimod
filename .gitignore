@@ -5,7 +5,8 @@ build
 dimod.egg-info
 dist
 
-docs/generated
+docs/generated/
+docs/reference/generated
 
 *.sublime-project
 *.sublime-workspace
