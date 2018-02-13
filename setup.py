@@ -22,7 +22,7 @@ extras_require = {'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
                   'all': ['networkx>=2.0<3.0']}
 
 packages = ['dimod',
-            'dimod.classes',
+            'dimod.core',
             'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
