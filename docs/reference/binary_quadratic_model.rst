@@ -77,3 +77,23 @@ Energy
    :toctree: generated/
 
    BinaryQuadraticModel.energy
+
+Conversion Functions
+====================
+
+.. automodule:: dimod.binary_quadratic_model_convert
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   from_ising
+   from_numpy_matrix
+   from_qubo
+   from_pandas_dataframe
+   to_ising
+   to_networkx_graph
+   to_numpy_matrix
+   to_qubo
+   to_pandas_dataframe
