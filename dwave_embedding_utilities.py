@@ -76,7 +76,7 @@ from __future__ import division, absolute_import
 
 import itertools
 import random
-from collections import Counter
+from collections import Counter, defaultdict
 import sys
 
 _PY2 = sys.version_info[0] == 2
@@ -359,7 +359,7 @@ def chain_break_frequency(samples, embedding):
     return {v: counts[v] / total for v in embedding}
 
 
-def unembed_samples(samples, embedding, chain_break_method=None, **method_args):
+def unembed_samples(samples, embedding, chain_break_method=None):
     """Return samples over the variables in the source graph.
 
     Args:
@@ -372,7 +372,6 @@ def unembed_samples(samples, embedding, chain_break_method=None, **method_args):
             source graph and s is a node in the target graph.
         chain_break_method (function, optional): The method used to resolve chain
             breaks. Default is :method:`majority_vote`.
-        method_args**: Additional keyword args are passed to the chain_break_method.
 
     Returns:
         list: A list of unembedded samples. Each sample is a dict of the form
@@ -381,11 +380,8 @@ def unembed_samples(samples, embedding, chain_break_method=None, **method_args):
 
     """
     if chain_break_method is None:
-        if 'linear' in method_args or 'quadratic' in method_args:
-            chain_break_method = minimize_energy
-        else:
-            chain_break_method = majority_vote
-    return list(itertools.chain(*(chain_break_method(sample, embedding, **method_args) for sample in samples)))
+        chain_break_method = majority_vote
+    return list(itertools.chain(*(chain_break_method(sample, embedding) for sample in samples)))
 
 
 def discard(sample, embedding):
@@ -474,78 +470,82 @@ def weighted_random(sample, embedding):
     yield unembeded
 
 
-def minimize_energy(sample, embedding, linear=None, quadratic=None):
-    """Determines the sample values by minimizing the local energy.
+class MinimizeEnergy(object):
+    def __init__(self, linear=None, quadratic=None):
+        """Determines the sample values by minimizing the local energy.
 
-    Args:
+        Args:
+            linear (dict): The linear biases of the source model. Should be a dict of
+                the form {v: bias, ...} where v is a variable in the source model
+                and bias is the linear bias associated with v.
+            quadratic (dict): The quadratic biases of the source model. Should be a dict
+                of the form {(u, v): bias, ...} where u, v are variables in the
+                source model and bias is the quadratic bias associated with (u, v).
+        """
+        if linear is None and quadratic is None:
+            raise TypeError("the minimize_energy method requires `linear` and `quadratic` keyword arguments")
+        elif linear is None:
+            self._linear = defaultdict(float)
+        elif quadratic is None:
+            self._quadratic = {}
+
+    def __call__(self, sample, embedding):
+        """
+        Args:
         sample (dict): A sample of the form {v: val, ...} where v is
             a variable in the target graph and val is the associated value as
             determined by a binary quadratic model sampler.
         embedding (dict): The mapping from the source graph to the target graph.
             Should be of the form {v: {s, ...}, ...} where v is a node in the
             source graph and s is a node in the target graph.
-        linear (dict): The linear biases of the source model. Should be a dict of
-            the form {v: bias, ...} where v is a variable in the source model
-            and bias is the linear bias associated with v.
-        quadratic (dict): The quadratic biases of the source model. Should be a dict
-            of the form {(u, v): bias, ...} where u, v are variables in the
-            source model and bias is the quadratic bias associated with (u, v).
 
-    Yields:
-        dict: The unembedded sample. When there is a chain break, the value
-        is chosen to minimize the energy relative to its neighbors.
+        Yields:
+            dict: The unembedded sample. When there is a chain break, the value
+            is chosen to minimize the energy relative to its neighbors.
+        """
+        unembeded = {}
+        broken = {}  # keys are the broken source variables, values are the energy contributions
 
-    """
-    if linear is None and quadratic is None:
-        raise TypeError("the minimize_energy method requires `linear` and `quadratic` keyword arguments")
-    elif linear is None:
-        linear = {v: 0. for v in embedding}
-    elif quadratic is None:
-        quadratic = {}
+        vartype = set(itervalues(sample))
+        if len(vartype) > 2:
+            raise ValueError("sample has more than two different values")
 
-    unembeded = {}
-    broken = {}  # keys are the broken source variables, values are the energy contributions
+        # first establish the values of all of the unbroken chains
+        for v, chain in iteritems(embedding):
+            vals = [sample[u] for u in chain]
 
-    vartype = set(itervalues(sample))
-    if len(vartype) > 2:
-        raise ValueError("sample has more than two different values")
+            if _all_equal(vals):
+                unembeded[v] = vals.pop()
+            else:
+                broken[v] = self._linear[v]  # broken tracks the linear energy
 
-    # first establish the values of all of the unbroken chains
-    for v, chain in iteritems(embedding):
-        vals = [sample[u] for u in chain]
+        # now, we want to determine the energy for each of the broken variable
+        # as much as we can
+        for (u, v), bias in iteritems(self._quadratic):
+            if u in unembeded and v in broken:
+                broken[v] += unembeded[u] * bias
+            elif v in unembeded and u in broken:
+                broken[u] += unembeded[v] * bias
 
-        if _all_equal(vals):
-            unembeded[v] = vals.pop()
-        else:
-            broken[v] = linear[v]  # broken tracks the linear energy
+        # in order of energy contribution, pick spins for the broken variables
+        while broken:
+            v = max(broken, key=lambda u: abs(broken[u]))  # biggest energy contribution
 
-    # now, we want to determine the energy for each of the broken variable
-    # as much as we can
-    for (u, v), bias in iteritems(quadratic):
-        if u in unembeded and v in broken:
-            broken[v] += unembeded[u] * bias
-        elif v in unembeded and u in broken:
-            broken[u] += unembeded[v] * bias
+            # get the value from vartypes that minimizes the energy
+            val = min(vartype, key=lambda b: broken[v] * b)
 
-    # in order of energy contribution, pick spins for the broken variables
-    while broken:
-        v = max(broken, key=lambda u: abs(broken[u]))  # biggest energy contribution
+            # set that value and remove it from broken
+            unembeded[v] = val
+            del broken[v]
 
-        # get the value from vartypes that minimizes the energy
-        val = min(vartype, key=lambda b: broken[v] * b)
+            # add v's energy contribution to all of the nodes it is connected to
+            for u in broken:
+                if (u, v) in self._quadratic:
+                    broken[u] += val * self._quadratic[(u, v)]
+                if (v, u) in self._quadratic:
+                    broken[u] += val * self._quadratic[(v, u)]
 
-        # set that value and remove it from broken
-        unembeded[v] = val
-        del broken[v]
-
-        # add v's energy contribution to all of the nodes it is connected to
-        for u in broken:
-            if (u, v) in quadratic:
-                broken[u] += val * quadratic[(u, v)]
-            if (v, u) in quadratic:
-                broken[u] += val * quadratic[(v, u)]
-
-    yield unembeded
+        yield unembeded
 
 
 def _all_equal(iterable):
