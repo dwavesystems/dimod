@@ -112,7 +112,7 @@ class BinaryQuadraticModel(object):
     SPIN = Vartype.SPIN
     BINARY = Vartype.BINARY
 
-    @vartype_argument()
+    @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype):
         self.linear = {}
         self.quadratic = {}
@@ -995,7 +995,7 @@ class BinaryQuadraticModel(object):
                                          for (u, v), bias in iteritems(self.quadratic)},
                                         self.offset, self.vartype)
 
-    @vartype_argument()
+    @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
         """Creates a new BinaryQuadraticModel with the given vartype.
 
