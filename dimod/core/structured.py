@@ -1,6 +1,4 @@
 """
-Structured
-==========
 
 A structured sampler can only sample from binary quadratic models with a specific graph.
 

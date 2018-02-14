@@ -11,3 +11,4 @@ Reference Documentation
 
    introduction
    binary_quadratic_model
+   samplers
