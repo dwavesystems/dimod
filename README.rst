@@ -10,49 +10,33 @@
 .. image:: https://readthedocs.org/projects/dimod/badge/?version=latest
     :target: http://dimod.readthedocs.io/en/latest/?badge=latest
 
-.. inclusion-marker-do-not-remove
+.. index-start-marker
 
 dimod
 =====
 
 A shared API for QUBO/Ising samplers.
 
-Included Samplers
------------------
+This project is part of `D-Wave's open source software stack <http://dw-docs.readthedocs.io/en/latest/>`_.
 
-dimod comes with a few samplers that are useful as reference implementations and for unit testing.
+Motivation
+----------
 
-* SimulatedAnnealingSampler: A reference implementation of a simulated annealing algorithm.
-* ExactSolver: determines the energy for every possible sample, but is extremely slow.
-* RandomSampler: Generates random samples. Used for testing.
+todo
 
 Example Usage
 -------------
 
->>> import dimod
->>> sampler = dimod.SimulatedAnnealingSampler()
->>> Q = {(0, 0): 1, (1, 1): 1, (0, 1): -1}
->>> response = sampler.sample_qubo(Q)
->>> h = {0: 1, 1 : 1}
->>> J = {(0, 1): -1}
->>> spin_response = sampler.sample_ising(h, J)
+todo
 
-The response object returned has many ways to access the information
+.. index-end-marker
 
->>> list(response)  # your results might vary
-[{0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 0.0, 1: 1.0}, {0: 0.0, 1: 1.0}, {0: 1.0, 1: 1.0}]
->>> list(response.samples())
-[{0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 0.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 1.0, 1: 0.0}, {0: 0.0, 1: 1.0}, {0: 0.0, 1: 1.0}, {0: 1.0, 1: 1.0}]
->>> list(response.energies())
-[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0]
->>> list(response.items())  # samples and energies
-[({0: 0.0, 1: 0.0}, 0.0), ({0: 0.0, 1: 0.0}, 0.0), ({0: 0.0, 1: 0.0}, 0.0), ({0: 0.0, 1: 0.0}, 0.0), ({0: 0.0, 1: 0.0}, 0.0), ({0: 1.0, 1: 0.0}, 1.0), ({0: 1.0, 1: 0.0}, 1.0), ({0: 0.0, 1: 1.0}, 1.0), ({0: 0.0, 1: 1.0}, 1.0), ({0: 1.0, 1: 1.0}, 1.0)]
-
-
-See documentation for more examples.
+See the documentation for more examples.
 
 Installation
 ------------
+
+.. installation-start-marker
 
 Compatible with Python 2 and 3:
 
@@ -70,12 +54,17 @@ To install from source:
 
 .. code-block:: bash
 
+    pip install -r requirements.txt
     python setup.py install
+
+.. installation-end-marker
 
 License
 -------
 
-Released under the Apache License 2.0. See `LICENSE.txt`_
+Released under the Apache License 2.0. See LICENSE file.
 
-.. _LICENSE.txt: LICENSE.txt
+Contribution
+------------
 
+See CONTRIBUTING.rst file.

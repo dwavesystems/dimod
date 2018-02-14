@@ -1,6 +1,7 @@
 """
-BinaryQuadraticModel
-====================
+
+todo - describe Ising, QUBO and BQM
+
 """
 from __future__ import absolute_import, division
 
@@ -53,10 +54,10 @@ class BinaryQuadraticModel(object):
         will assume that they are numeric.
 
     Examples:
-        >>> model = pm.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
+        >>> model = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
         ...                                 {(0, 1): .5, (1, 2): 1.5},
         ...                                 1.4,
-        ...                                 pm.SPIN)
+        ...                                 dimod.SPIN)
 
     Attributes:
         linear (dict[variable, bias]):
@@ -85,7 +86,7 @@ class BinaryQuadraticModel(object):
             Examples:
                 If we create a BinaryQuadraticModel with a single interaction
 
-                >>> bqm = pm.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, pm.SPIN)
+                >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
 
                 Then we can see the neighbors of each variable
 
@@ -172,9 +173,9 @@ class BinaryQuadraticModel(object):
 
             >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
             >>> bqm.spin.linear
-            {'a': 0, 'b': 0}
+            {'a': 0.0, 'b': 0.0}
             >>> bqm.spin.quadratic
-            {('a', 'b'): -.25}
+            {('a', 'b'): -0.25}
             >>> bqm.spin.offset
             .25
 
@@ -182,9 +183,9 @@ class BinaryQuadraticModel(object):
 
             >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
             >>> bqm.energy({'a': 0, 'b': 1})
-            .5
+            0.5
             >>> bqm.spin.energy({'a': -1, 'b': +1})
-            .5
+            0.5
 
         Note:
             Methods like :meth:`.add_variable`, :meth:`.add_variables_from`,
@@ -294,14 +295,14 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variable('a', .5)
             >>> bqm.linear
-            {'a': .5}
+            {'a': 0.5}
 
             Variables that already exist have their bias added.
 
             >>> bqm = dimod.BinaryQuadraticModel({'b': -1}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variable('b', .5)
             >>> bqm.linear
-            {'b': -.5}
+            {'b': -0.5}
 
         """
 
@@ -353,14 +354,14 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
             >>> bqm.linear
-            {'a': .5, 'b': -1.}
+            {'a': 0.5, 'b': -1.0}
 
             Variables that already exist have their bias added.
 
             >>> bqm = dimod.BinaryQuadraticModel({'b': -1.}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
             >>> bqm.linear
-            {'a': .5, 'b': -2.}
+            {'a': 0.5, 'b': -2.0}
 
         """
         if isinstance(linear, dict):
@@ -397,14 +398,14 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_interaction('a', 'b', -.5)
             >>> bqm.quadratic
-            {('a', 'b'): -.5}
+            {('a', 'b'): -0.5}
 
             Variables that already exist have their bias added.
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
             >>> bqm.add_interaction('a', 'b', -.5)
             >>> bqm.quadratic
-            {('b', 'a'): -1.}
+            {('b', 'a'): -1.0}
 
         """
         if u == v:
@@ -500,14 +501,14 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
             >>> bqm.quadratic
-            {('a', 'b'): -.5}
+            {('a', 'b'): -0.5}
 
             Variables that already exist have their bias added.
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
             >>> bqm.quadratic
-            {('b', 'a'): -1.}
+            {('b', 'a'): -1.0}
 
         """
         if isinstance(quadratic, dict):
@@ -534,7 +535,7 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({'a': 1., 'b': 2.}, {}, 0.0, dimod.SPIN)
             >>> bqm.remove_variable('a')
             >>> bqm.linear
-            {'b': 2.}
+            {'b': 2.0}
 
         """
         linear = self.linear
@@ -581,7 +582,7 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({'a': 1., 'b': 2., 'c': 3.}, {}, 0.0, dimod.SPIN)
             >>> bqm.remove_variables_from(['a', 'c'])
             >>> bqm.linear
-            {'b': 2.}
+            {'b': 2.0}
 
         """
         for v in variables:
@@ -601,13 +602,13 @@ class BinaryQuadraticModel(object):
             Any interaction not in the binary quadratic model is ignored.
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interaction('b', 'c')
             >>> bqm.quadratic
-            {('a', 'b'): -1}
+            {('a', 'b'): -1.0}
             >>> bqm.remove_interaction('a', 'c')  # not an interaction, so ignored
             >>> bqm.quadratic
-            {('a', 'b'): -1}
+            {('a', 'b'): -1.0}
 
         """
         quadratic = self.quadratic
@@ -649,7 +650,7 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
             >>> bqm.quadratic
-            {('a', 'b'): -1}
+            {('a', 'b'): -1.0}
 
         """
         for u, v in interactions:
@@ -690,14 +691,14 @@ class BinaryQuadraticModel(object):
                 The value to scale the energy range of the binary quadratic model by.
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -2, 'b': 2}, {('a', 'b'): -1}, 1., dimod.SPIN)
-            >>> bqm.scale(.5)
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm.scale(0.5)
             >>> bqm.linear
-            {'a': -1., 'b': 1.}
+            {'a': -1.0, 'b': 1.0}
             >>> bqm.quadratic
-            {('a', 'b'): -.5}
+            {('a', 'b'): -0.5}
             >>> bqm.offset
-            .5
+            0.5
 
         """
         if not isinstance(scalar, Number):
@@ -784,7 +785,7 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
             >>> original = bqm.copy()
             >>> bqm.flip_variable('a')
-            >>> bqm.energy({'a': -1}) == bqm.energy({'a': 1})
+            >>> original.energy({'a': -1}) == bqm.energy({'a': 1})
             True
 
         """
@@ -909,12 +910,12 @@ class BinaryQuadraticModel(object):
             If inplace=True, returns itself.
 
         Examples:
-            >>> model = pm.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=pm.SPIN)
+            >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> model.relabel_variables({0: 'a'})
             >>> model.quadratic
             {('a', 1): -1}
 
-            >>> model = pm.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=pm.SPIN)
+            >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)
             >>> new_model.quadratic
             {('a', 'b'): -1}
