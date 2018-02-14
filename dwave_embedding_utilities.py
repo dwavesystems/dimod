@@ -209,6 +209,9 @@ def embed_ising(source_linear, source_quadratic, embedding, target_adjacency, ch
 
     """
 
+    # store variables in the target graph that the embedding hasn't used
+    unused = {v for v in target_adjacency} - set().union(*embedding.values())
+
     # ok, let's begin with the linear biases.
     # we spread the value of h evenly over the chain
     target_linear = {v: 0. for v in target_adjacency}
@@ -216,7 +219,14 @@ def embed_ising(source_linear, source_quadratic, embedding, target_adjacency, ch
         try:
             chain_variables = embedding[v]
         except KeyError:
-            raise ValueError('no embedding provided for source variable {}'.format(v))
+            # if our embedding doesn't deal with this variable, assume it's an isolated vertex and embed it to one of
+            # the unused variables. if this turns out to not be an isolated vertex, it will be caught below when
+            # handling quadratic biases
+            try:
+                embedding[v] = {unused.pop()}
+            except KeyError:
+                raise ValueError('no embedding provided for source variable {}'.format(v))
+            chain_variables = embedding[v]
 
         b = bias / len(chain_variables)
 
