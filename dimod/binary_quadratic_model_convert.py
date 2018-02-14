@@ -1,9 +1,5 @@
 """
-Conversion functions
---------------------
-
 These functions convert the :class:`.BinaryQuadraticModel` to other datatypes.
-
 """
 
 from dimod.compatibility23 import iteritems
