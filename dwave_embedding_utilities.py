@@ -484,10 +484,8 @@ class MinimizeEnergy(object):
         """
         if linear is None and quadratic is None:
             raise TypeError("the minimize_energy method requires `linear` and `quadratic` keyword arguments")
-        elif linear is None:
-            self._linear = defaultdict(float)
-        elif quadratic is None:
-            self._quadratic = {}
+        self._linear = linear if linear is not None else defaultdict(float)
+        self._quadratic = quadratic if quadratic is not None else dict()
 
     def __call__(self, sample, embedding):
         """
