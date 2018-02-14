@@ -33,7 +33,7 @@ class Response(object):
 
     """
 
-    @vartype_argument(1)
+    @vartype_argument()
     def __init__(self, vartype):
         # the response object keeps two dataframes, these are kept index-linked so that they can
         # be joined
@@ -399,7 +399,7 @@ class Response(object):
         response.add_samples_from(self.df_samples.copy(deep=True), **self.df_data.copy(deep=True).to_dict())
         return response
 
-    @vartype_argument(1)
+    @vartype_argument()
     def change_vartype(self, vartype, offset=0.0, inplace=True):
         """Change the response's vartype in-place.
 
