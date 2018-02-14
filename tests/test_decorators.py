@@ -1,125 +1,79 @@
 import unittest
+from operator import itemgetter
 
-# from dimod.decorators import *
-
-
-# class dummyResponse:
-#     def relabel_samples(self, relabel, copy=True):
-#         return None
+from dimod.vartypes import SPIN, BINARY
+from dimod.decorators import vartype_argument
 
 
-# class TestIndexRelabelling(unittest.TestCase):
-#     def test_qubo_unorderable(self):
+class TestVartypeArgument(unittest.TestCase):
+    def test_single_explicit_arg(self):
+        @vartype_argument('x')
+        def f(x):
+            return x
 
-#         # create a dummy function that checks that the nodes
-#         @qubo_index_labels(0)
-#         def qubo_func(Q, Q_orig=None):
-#             labels = set().union(*Q)
+        self.assertEqual(f(SPIN), SPIN)
+        self.assertEqual(f(BINARY), BINARY)
+        self.assertEqual(f('SPIN'), SPIN)
+        self.assertEqual(f(x='SPIN'), SPIN)
+        self.assertRaises(TypeError, f, 'x')
+        self.assertRaises(TypeError, f, x='x')
+        self.assertRaises(RuntimeError, f)
 
-#             for idx in range(len(labels)):
-#                 self.assertIn(idx, labels)
+    def test_multiple_explicit_args(self):
+        @vartype_argument('x', 'y')
+        def f(x, y):
+            return x, y
 
-#             if Q_orig is not None:
-#                 self.assertEqual(Q_orig, Q)
+        self.assertEqual(f(SPIN, BINARY), (SPIN, BINARY))
+        self.assertEqual(f('SPIN', 'BINARY'), (SPIN, BINARY))
+        self.assertEqual(f(y='BINARY', x='SPIN'), (SPIN, BINARY))
+        self.assertRaises(TypeError, f, 'x', 'y')
+        self.assertRaises(TypeError, f, x='x', y='SPIN')
+        self.assertRaises(RuntimeError, f)
 
-#             # assume that relabel is applied correctly
-#             return dummyResponse()
+    def test_kwargs(self):
+        @vartype_argument('x', 'y')
+        def f(**kwargs):
+            return itemgetter('x', 'y')(kwargs)
 
-#         # variables with the same type of labels
-#         Q = {('a', 'b'): 0, ('b', 'c'): 1}
-#         qubo_func(Q)
+        self.assertEqual(f(x=SPIN, y=BINARY), (SPIN, BINARY))
+        self.assertRaises(RuntimeError, f)
+        self.assertRaises(RuntimeError, f, x=SPIN)
+        self.assertRaises(TypeError, f, x='x', y='SPIN')
 
-#         # variables with multiple types of label which are unorderable
-#         Q = {('a', 3): 0, ('b', 'c'): 1}
-#         qubo_func(Q)
+    def test_explicit_with_kwargs(self):
+        @vartype_argument('x', 'y')
+        def f(x, **kwargs):
+            return x, kwargs.pop('y')
 
-#         # if the variables are already index-labelled, shouldn't change
-#         Q = {(0, 0): .1, (0, 1): .5, (2, 2): .2}
-#         qubo_func(Q, Q_orig=Q)
+        self.assertEqual(f('SPIN', y='BINARY'), (SPIN, BINARY))
+        self.assertEqual(f(y='BINARY', x='SPIN'), (SPIN, BINARY))
+        self.assertRaises(RuntimeError, f)
+        self.assertRaises(RuntimeError, f, x=SPIN)
+        self.assertRaises(TypeError, f, x='x', y='SPIN')
 
-#     def test_ising_unorderable(self):
+    def test_default_argname(self):
+        @vartype_argument()
+        def f(vartype):
+            return vartype
 
-#         # create dummy function that checks the nodes
-#         @ising_index_labels(0, 1)
-#         def ising_func(h, J):
-#             labels = set().union(*J) | set(h)
+        self.assertEqual(f('SPIN'), SPIN)
+        self.assertEqual(f(vartype='SPIN'), SPIN)
+        self.assertRaises(TypeError, f, 'invalid')
+        self.assertRaises(TypeError, f, None)
 
-#             for idx in range(len(labels)):
-#                 self.assertIn(idx, labels)
+    def test_argname_mismatch(self):
+        @vartype_argument()
+        def f(x=None):
+            return x
 
-#             # assume that relabel is applied correctly
-#             return dummyResponse()
+        self.assertRaises(RuntimeError, f)
+        self.assertRaises(RuntimeError, f, x=SPIN)
 
-#         h = {'a': 0, 'b': 1}
-#         J = {('a', 'c'): .5}
-#         ising_func(h, J)
+        @vartype_argument('vartype')
+        def g(x=None):
+            return x
 
-#         # unorderable labels
-#         h = {(0, 1): 0, 'b': 0}
-#         J = {((0, 1), 'b'): -1}
-
-#         ising_func(h, J)
-
-
-# class TestAPIDecorators(unittest.TestCase):
-#     def test_qubo_exceptions(self):
-
-#         @qubo(0)
-#         def qubo_func(Q):
-#             pass
-
-#         # not dict should raise a TypeError
-#         for q in [[], (), 0, 0.]:
-#             with self.assertRaises(TypeError):
-#                 qubo_func(q)
-
-#         # bad edges should raise a typeerror
-#         Q = {7: 8}
-#         with self.assertRaises(TypeError):
-#             qubo_func(Q)
-
-#         # bad edge length should raise a valueerror
-#         Q = {(0, 1, 2): 8}
-#         with self.assertRaises(ValueError):
-#             qubo_func(Q)
-
-#     def test_ising_exceptions(self):
-
-#         @ising(0, 1)
-#         def ising_func(h, J):
-#             pass
-
-#         # not dict should raise a TypeError
-#         h = {}
-#         for J in [[], (), 0, 0.]:
-#             with self.assertRaises(TypeError):
-#                 ising_func(h, J)
-
-#         J = {}
-#         for h in [0, 0.]:
-#             with self.assertRaises(TypeError):
-#                 ising_func(h, J)
-
-#         # bad edges should raise a typeerror
-#         h = {}
-#         J = {7: 8}
-#         with self.assertRaises(TypeError):
-#             ising_func(h, J)
-
-#         # bad edge length should raise a valueerror
-#         h = {}
-#         J = {(0, 1, 2): 8}
-#         with self.assertRaises(ValueError):
-#             ising_func(h, J)
-
-#     def test_ising_h_change(self):
-
-#         @ising(0, 1)
-#         def ising_func(h, J):
-#             self.assertTrue(isinstance(h, dict))
-
-#             for u, v in J:
-#                 self.assertIn(u, h)
-#                 self.assertIn(v, h)
-
-#         ising_func([], {(0, 1): 1})
+        self.assertRaises(RuntimeError, g)
+        self.assertRaises(RuntimeError, g, x=SPIN)
+        self.assertRaises(TypeError, g, vartype=SPIN)
