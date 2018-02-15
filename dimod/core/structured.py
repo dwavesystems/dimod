@@ -66,7 +66,7 @@ from collections import namedtuple
 Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
 
 
-class Structured():
+class Structured(object):
     """todo
 
     """

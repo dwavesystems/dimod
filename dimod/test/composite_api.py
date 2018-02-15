@@ -1,13 +1,9 @@
-from unittest import TextTestRunner
-
 import dimod
 
-from dimod.test import SamplerAPITest
-
-__all__ = ['CompositeAPITest']
+__all__ = ['CompositeAPITestCaseMixin']
 
 
-class CompositeAPITest:
+class CompositeAPITestCaseMixin(object):
     def test_instantiation(self):
         for sampler_factory in self.sampler_factories:
             sampler = self.composite_factory(sampler_factory())
