@@ -1,7 +1,9 @@
 import dimod
 
+__all__ = ['SamplerAPITestCaseMixin']
 
-class SamplerAPITest:
+
+class SamplerAPITestCaseMixin(object):
     """Provides a series of generic API tests that all samplers should pass.
     """
     def test_instantiation(self):

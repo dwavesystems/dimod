@@ -3,7 +3,7 @@ import unittest
 import dimod
 
 
-class MockSampler(unittest.TestCase, dimod.test.CompositeAPITest):
+class MockSampler(unittest.TestCase, dimod.test.CompositeAPITestCaseMixin):
     def setUp(self):
         self.sampler_factories = [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]
 

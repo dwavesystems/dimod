@@ -27,7 +27,7 @@ class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
         return response
 
 
-class TestTwoVariables(unittest.TestCase, dimod.test.SamplerAPITest):
+class TestTwoVariables(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
     def setUp(self):
         self.sampler = TwoVariablesSampler()
         self.sampler_factory = TwoVariablesSampler

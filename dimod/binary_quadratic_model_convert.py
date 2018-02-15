@@ -247,7 +247,7 @@ def to_numpy_matrix(bqm, variable_order=None):
     return np.asmatrix(mat)
 
 
-def from_numpy_matrix(mat, variable_order=None, offset=0.0, interactions=[]):
+def from_numpy_matrix(mat, variable_order=None, offset=0.0, interactions=None):
     """Build a binary quadratic model from a numpy matrix.
 
     Args:
@@ -280,6 +280,9 @@ def from_numpy_matrix(mat, variable_order=None, offset=0.0, interactions=[]):
 
     if variable_order is None:
         variable_order = list(range(num_row))
+
+    if interactions is None:
+        interactions = []
 
     bqm = BinaryQuadraticModel({}, {}, offset, Vartype.BINARY)
 
@@ -332,7 +335,7 @@ def to_pandas_dataframe(bqm):
                         columns=variable_order)  # let it choose its own datatype
 
 
-def from_pandas_dataframe(bqm_df, offset=0.0, interactions=[]):
+def from_pandas_dataframe(bqm_df, offset=0.0, interactions=None):
     """Build a binary quadratic model from a pandas dataframe.
 
     Args:
@@ -350,6 +353,9 @@ def from_pandas_dataframe(bqm_df, offset=0.0, interactions=[]):
         :class:`.BinaryQuadraticModel`
 
     """
+    if interactions is None:
+        interactions = []
+
     bqm = BinaryQuadraticModel({}, {}, offset, Vartype.BINARY)
 
     for u, row in bqm_df.iterrows():
