@@ -9,7 +9,7 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 clean:
-	-rm -rf build/*
+	-rm -rf build/
 	-rm -rf reference/generated
 
 .PHONY: help Makefile
