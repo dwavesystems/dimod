@@ -1,10 +1,9 @@
 import unittest
 
 import dimod
-from dimod.test import SamplerAPITest
 
 
-class TestRandomSampler(unittest.TestCase, SamplerAPITest):
+class TestRandomSampler(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
     def setUp(self):
         self.sampler = dimod.RandomSampler()
         self.sampler_factory = dimod.RandomSampler

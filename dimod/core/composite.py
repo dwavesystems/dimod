@@ -20,7 +20,7 @@ from dimod.core.sampler import Sampler
 __all__ = ['Composite']
 
 
-class Composite():
+class Composite(object):
     """todo"""
     def __init__(self, child, added_kwargs=None, removed_kwargs=None):
         if added_kwargs is None:
