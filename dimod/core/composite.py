@@ -22,7 +22,11 @@ __all__ = ['Composite']
 
 class Composite():
     """todo"""
-    def __init__(self, child, added_kwargs={}, removed_kwargs={}):
+    def __init__(self, child, added_kwargs=None, removed_kwargs=None):
+        if added_kwargs is None:
+            added_kwargs = {}
+        if removed_kwargs is None:
+            removed_kwargs = {}
         self.child = child
         self.sample_kwargs = child.sample_kwargs.copy()
         self.sample_kwargs.update(added_kwargs)
