@@ -4,11 +4,10 @@ import itertools
 import random
 
 import dimod
-from dimod.test import SamplerAPITest
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
-class TestSASampler(unittest.TestCase, SamplerAPITest):
+class TestSASampler(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
     def setUp(self):
         self.sampler = dimod.SimulatedAnnealingSampler()
         self.sampler_factory = dimod.SimulatedAnnealingSampler

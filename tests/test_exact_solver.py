@@ -1,12 +1,10 @@
 import unittest
-
 import itertools
 
 import dimod
-from dimod.test import SamplerAPITest
 
 
-class TestExactSolver(unittest.TestCase, SamplerAPITest):
+class TestExactSolver(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
     def setUp(self):
         self.sampler = dimod.ExactSolver()
         self.sampler_factory = dimod.ExactSolver

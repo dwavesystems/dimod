@@ -9,7 +9,7 @@ import dimod
 # from dimod.composites.spin_transform import apply_spin_reversal_transform
 
 
-class TestSpinTransformComposite(unittest.TestCase, dimod.test.CompositeAPITest):
+class TestSpinTransformComposite(unittest.TestCase, dimod.test.CompositeAPITestCaseMixin):
     def setUp(self):
         self.sampler_factories = [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]
         self.composite_factory = dimod.SpinReversalTransformComposite
