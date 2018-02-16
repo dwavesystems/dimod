@@ -1,6 +1,4 @@
 [run]
 # omit virtualenv and test files
 omit = venv/*, */tests/*
-
-[source]
-dwave_embedding_utilities
+source=dwave_embedding_utilities
