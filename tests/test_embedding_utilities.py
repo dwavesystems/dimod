@@ -325,15 +325,11 @@ class TestUnembedding(unittest.TestCase):
 
         embedding = {'a': {0, 1}, 'b': {2}, 'c': {3}}
 
-        # minimize energy requires `linear` and `quadratic` keyword args
-        with self.assertRaises(TypeError):
-            eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy)
-
         linear = {'a': -1, 'b': 0, 'c': 0}
         quadratic = {}
 
-        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
-                                               linear=linear, quadratic=quadratic)
+        chain_break_method = eutil.MinimizeEnergy(linear=linear, quadratic=quadratic)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=chain_break_method)
 
         source0, source1 = source_samples
 
@@ -346,8 +342,8 @@ class TestUnembedding(unittest.TestCase):
         linear = {'a': 1, 'b': 0, 'c': 0}
         quadratic = {('a', 'b'): -5}
 
-        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
-                                               linear=linear, quadratic=quadratic)
+        chain_break_method = eutil.MinimizeEnergy(linear=linear, quadratic=quadratic)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=chain_break_method)
 
         source0, source1 = source_samples
 
@@ -365,8 +361,8 @@ class TestUnembedding(unittest.TestCase):
 
         quadratic = {('a', 'b'): -1, ('b', 'c'): 1}
 
-        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=eutil.minimize_energy,
-                                               quadratic=quadratic)
+        chain_break_method = eutil.MinimizeEnergy(quadratic=quadratic)
+        source_samples = eutil.unembed_samples(samples, embedding, chain_break_method=chain_break_method)
 
         source, = source_samples
 
