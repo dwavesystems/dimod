@@ -125,7 +125,7 @@ def vartype_argument(*args_names):
                     arg_idx = argspec.args.index(arg_name)
                     vartype = args[arg_idx]
                 except (ValueError, IndexError):
-                    raise RuntimeError('vartype argument missing')
+                    raise TypeError('vartype argument missing')
 
             if isinstance(vartype, Vartype):
                 return
