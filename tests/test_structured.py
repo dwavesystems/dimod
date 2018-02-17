@@ -19,11 +19,15 @@ class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
     def sample(self, bqm):
         # All bqm's passed in will be a subgraph of the sampler's structure
         variable_list = list(bqm.linear)
-        response = dimod.Response(bqm.vartype)
+        samples = []
+        energies = []
         for values in itertools.product(bqm.vartype.value, repeat=len(bqm)):
             sample = dict(zip(variable_list, values))
-            energy = bqm.energy(sample)
-            response.add_sample(sample, energy)
+            samples.append(sample)
+            energies.append(bqm.energy(sample))
+
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, vartype=bqm.vartype)
+
         return response
 
 

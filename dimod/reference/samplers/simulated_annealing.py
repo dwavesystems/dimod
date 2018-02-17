@@ -66,16 +66,18 @@ class SimulatedAnnealingSampler(Sampler):
         if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
 
-        # create the response object. Ising returns spin values.
-        response = Response(Vartype.SPIN)
-
         h, J, offset = to_ising(bqm)
 
         # run the simulated annealing algorithm
+        samples = []
+        energies = []
         for __ in range(num_reads):
             sample, energy = ising_simulated_annealing(h, J, beta_range, num_sweeps)
-            response.add_sample(sample, energy + offset)
+            samples.append(sample)
+            energies.append(energy)
 
+        response = Response.from_dicts(samples, {'energy': energies}, vartype=Vartype.SPIN)
+        response.change_vartype(bqm.vartype, {'energy': offset}, inplace=True)
         return response
 
 

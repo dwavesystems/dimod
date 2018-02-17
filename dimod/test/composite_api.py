@@ -1,3 +1,5 @@
+from collections import Mapping
+
 import dimod
 
 __all__ = ['CompositeAPITestCaseMixin']
@@ -34,7 +36,7 @@ class CompositeAPITestCaseMixin(object):
             self.assertIs(response.vartype, bqm.vartype, "response's vartype does not match the bqm's vartype")
 
             for sample in response:
-                self.assertIsInstance(sample, dict, "'for sample in response', each sample should be a dict")
+                self.assertIsInstance(sample, Mapping, "'for sample in response', each sample should be a dict")
                 for v, value in sample.items():
                     self.assertIn(v, bqm.linear, 'sample contains a variable not in the given bqm')
                     self.assertIn(value, bqm.vartype.value, 'sample contains a value not of the correct type')

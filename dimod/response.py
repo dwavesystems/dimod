@@ -1,324 +1,370 @@
-"""TODO:
-    - module level docstring
-    - examples in Response
-"""
-from collections import namedtuple
+"""todo"""
+from collections import Mapping, Iterable, Sized, namedtuple
+import itertools
 
 import numpy as np
-import pandas as pd
 
+from dimod.compatibility23 import itervalues
 from dimod.decorators import vartype_argument
-from dimod.compatibility23 import iteritems
 from dimod.vartypes import Vartype
-
-try:
-    import dwave_micro_client as microclient
-except ImportError:  # pragma: no cover
-    microclient = None
 
 __all__ = ['Response']
 
 
-class Response(object):
-    """Encodes a response from a dimod sampler.
-
-    Args:
-        vartype (:class:`.Vartype`/str/set):
-            The variable type desired for the response. Accepted input values:
-            :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-
-    Attributes:
-        vartype (:class:`.Vartype`): The variable type of the response.
-
-    """
+class Response(Iterable, Sized):
+    """todo"""
 
     @vartype_argument('vartype')
-    def __init__(self, vartype):
-        # the response object keeps two dataframes, these are kept index-linked so that they can
-        # be joined
-        self.df_samples = pd.DataFrame(dtype='int8')
-        self.df_data = pd.DataFrame(columns=['energy'])
+    def __init__(self, samples_matrix, data_vectors, vartype, info=None, variable_labels=None):
+        # Constructor is opinionated about the samples_matrix type, it should be a numpy matrix
+        if not isinstance(samples_matrix, np.matrix):
+            raise TypeError("expected 'samples_matrix' to be a numpy matrix")
+        elif samples_matrix.dtype != np.int8:
+            # cast to int8
+            samples_matrix = samples_matrix.astype(np.int8)
+
+        self._samples_matrix = samples_matrix
+        num_samples, num_variables = samples_matrix.shape
+
+        if not isinstance(data_vectors, dict):
+            raise TypeError("expected 'data_vectors' to be a dict")
+        if 'energy' not in data_vectors:
+            raise ValueError("energy must be provided")
+        else:
+            data_vectors['energy'] = np.asarray(data_vectors['energy'])
+        for vector in data_vectors.values():
+            # todo - check that is a vector and that has the right length
+            if isinstance(vector, (np.ndarray, list)):
+                if len(vector) != num_samples:
+                    raise ValueError(("expected data vector {} to be a vector of length {}"
+                                      "").format(vector, num_samples))
+            else:
+                raise TypeError("expected data vector {} to be a list of numpy array".format(vector))
+        self._data_vectors = data_vectors
+
+        # vartype is checked by the decorator
         self.vartype = vartype
 
-        # we also store a list of futures that are awaiting read
+        if info is None:
+            info = {}
+        elif not isinstance(info, dict):
+            raise TypeError("expected 'info' to be a dict.")
+        else:
+            info = dict(info)  # make a shallow copy
+        self.info = info
+
+        if variable_labels is None:
+            self.variable_labels = None
+            self.label_to_idx = None
+        else:
+            self.variable_labels = variable_labels = list(variable_labels)
+            if len(variable_labels) != num_variables:
+                raise ValueError("variable_labels' length must match the number of variables in samples_matrix")
+
+            self.label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
+
         self._futures = []
 
     def __len__(self):
         """The number of samples."""
-        return self.df_samples.shape[0]
+        num_samples, num_variables = self.samples_matrix.shape
+        return num_samples
 
     def __iter__(self):
-        """Iterate over the samples as dicts from low energy to high."""
-        return self.samples()
+        """Iterate over the samples, low energy to high."""
+        return self.samples(sorted_by='energy')
 
     def __str__(self):
-        return self.merged(sorted_by_energy=False).__str__()  # pragma: no cover
-
-    @property
-    def df_samples(self):
-        """:class:`pandas.DataFrame`: The samples. Should be treated as read-only."""
-        # if there are any waiting futures, process them now
-        if self._futures:
-            self._add_samples_future()
-
-        return self._samples
-
-    @df_samples.setter
-    def df_samples(self, df_samples):
-        self._samples = df_samples
-
-    @property
-    def df_data(self):
-        """:class:`pandas.DataFrame`: The data. Should be treated as read-only."""
-        # if there are any waiting futures, process them now
-        if self._futures:
-            self._add_samples_future()
-
-        return self._data
-
-    @df_data.setter
-    def df_data(self, df_data):
-        self._data = df_data
-
-    def merged(self, sorted_by_energy=True):
-        """Returns the dataframe created by joining `.df_samples` and `.df_data`.
-
-        Args:
-            sorted_by_energy (bool, optional, default=True):
-                Whether the samples should be returned in order of increasing energy or in the order
-                they were added to the response.
-
-        Returns:
-            :class:`pandas.DataFrame`: The joined `.df_samples` and `.df_data`. If there are name
-            conflicts, the data column will have '_data' prepended to it.
-
-        """
-        if sorted_by_energy:
-            return self.df_samples.merge(self.df_data, how='right',
-                                         left_index=True, right_index=True,
-                                         suffixes=['', '_data'])
+        if self.variable_labels is None:
+            return self.samples_matrix.__str__()
         else:
-            return self.df_samples.merge(self.df_data, how='left',
-                                         left_index=True, right_index=True,
-                                         suffixes=['', '_data'])
+            raise NotImplementedError
+
+    ##############################################################################################
+    # Properties
+    ##############################################################################################
+
+    @property
+    def samples_matrix(self):
+        """todo"""
+        if self._futures:
+            self._from_futures()
+
+        return self._samples_matrix
+
+    @samples_matrix.setter
+    def samples_matrix(self, mat):
+        self._samples_matrix = mat
+
+    @property
+    def data_vectors(self):
+        """todo"""
+        if self._futures:
+            self._from_futures()
+
+        return self._data_vectors
 
     def done(self):
-        """True if all of the futures added to the response have arrived."""
+        """todo"""
         return all(future.done() for future in self._futures)
 
-    def add_sample(self, sample, energy, **kwargs):
-        """Add a sample to the response.
+    ##############################################################################################
+    # Construction and updates
+    ##############################################################################################
+
+    @classmethod
+    def from_matrix(cls, samples, data_vectors, vartype=None, info=None, variable_labels=None):
+        """Build a Response from an array-like object.
 
         Args:
-            sample (dict/:class:`pandas.Series`/list):
-                A single sample as a dict or a pandas Series. If a dict, the keys should be the
-                variables and the values are their value. If a Series or list, the index should be
-                the variables and the data should be their value.
+            samples (array_like/string):
+                As for :func:`numpy.matrix`. See Notes.
 
-            energy (number):
-                The energy of the given sample.
+            data_vectors (dict[str, array_like]):
+                Misc data about the object
 
-            **kwargs:
-                Additional keywords will store additional data about the sample. See examples.
-
-        Examples:
-            >>> response = dimod.Response(dimod.SPIN)
-            >>> response.add_sample({'a': -1, 'b': +1}, 1.)
-            >>> print(response)
-               a  b energy
-            0 -1  1      1
-            >>> response.add_sample({'a': +1, 'b': +1}, -1., num_spin_up=2)
-            >>> print(response)
-               a  b  energy  num_spin_up
-            0 -1  1     1.0          NaN
-            1  1  1    -1.0          2.0
-
-            The sample can also be a :class:`pandas.Series` or a list.
-
-            >>> response = dimod.Response(dimod.SPIN)
-            >>> response.add_sample(pd.Series([-1, +1]), 1)
-            >>> print(response)
-               0  1 energy
-            0  0  1      1
-            >>> response.add_sample([+1, +1], -1)
-            >>> print(response)
-               0  1 energy
-            0 -1  1      1
-            1  1  1     -1
-
-        See also:
-            add_samples_from
+            todo
 
         Notes:
-            Very little input checking is performed in the interests of speed. It is up to the
-            dimod sampler or composite that is populating the response to ensure correct
-            variable labels and correct variable types.
+            SciPy defines array_like in the following way: "In general, numerical data arranged in
+            an array-like structure in Python can be converted to arrays through the use of the
+            array() function. The most obvious examples are lists and tuples. See the documentation
+            for array() for details for its use. Some objects may support the array-protocol and
+            allow conversion to arrays this way. A simple way to find out if the object can be
+            converted to a numpy array using array() is simply to try it interactively and see if it
+            works! (The Python Way)." [array_like]_
+
+        References:
+        .. [array_like] Docs.scipy.org. (2018). Array creation - NumPy v1.14 Manual. [online]
+            Available at: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+            [Accessed 16 Feb. 2018].
 
         """
-        self.add_samples_from([sample], [energy], **{key: [val] for key, val in iteritems(kwargs)})
+        samples_matrix = np.matrix(samples, dtype=np.int8)
 
-    def add_samples_from(self, samples, energy, **kwargs):
-        """Add a collection of samples to the response.
+        if vartype is None:
+            vartype = infer_vartype(samples_matrix)
+
+        response = cls(samples_matrix, data_vectors=data_vectors,
+                       vartype=vartype, info=info, variable_labels=variable_labels)
+
+        return response
+
+    @classmethod
+    def from_dicts(cls, samples, data_vectors, vartype=None, info=None):
+        """Build a Response from an iterable of dicts.
 
         Args:
-            samples (list[dict]/:class:`pandas.DataFrame`/:class:`numpy.ndarray`/list[list]):
-                A collection of samples.
-                A single sample as a dict, row of a pandas DataFrame, row of numpy array or a list.
-                If a dict, the keys should be the variables and the values are their value.
-                If a row or list, the index should be the variables and the data should be their
-                value.
+            samples (iterable[dict]):
+                An iterable of samples where each sample is a dictionary (or Mapping).
 
-            energy (iterable):
-                An iterable of energies, one for each sample.
+            todo
 
-            **kwargs:
-                Additional keywords will store additional data about the sample. See examples.
+        """
+
+        samples = iter(samples)
+
+        # get the first sample
+        first_sample = next(samples)
+
+        try:
+            variable_labels = sorted(first_sample)
+        except TypeError:
+            # unlike types cannot be sorted in python3
+            variable_labels = list(first_sample)
+        num_variables = len(variable_labels)
+
+        def _iter_samples():
+            yield np.fromiter((first_sample[v] for v in variable_labels),
+                              count=num_variables, dtype=np.int8)
+
+            try:
+                for sample in samples:
+                    yield np.fromiter((sample[v] for v in variable_labels),
+                                      count=num_variables, dtype=np.int8)
+            except KeyError:
+                msg = ("Each dict in 'samples' must have the same keys.")
+                raise ValueError(msg)
+
+        samples_matrix = np.matrix(np.stack(list(_iter_samples())))
+
+        return cls.from_matrix(samples_matrix, data_vectors=data_vectors, vartype=vartype,
+                               info=info, variable_labels=variable_labels)
+
+    @classmethod
+    def from_pandas(cls, samples_df, data_vectors, vartype=None, info=None):
+        """todo
+        """
+        import pandas as pd
+
+        variable_labels = list(samples_df.columns)
+        samples_matrix = samples_df.as_matrix(columns=variable_labels)
+
+        if isinstance(data_vectors, pd.DataFrame):
+            raise NotImplementedError("support for DataFrame data_vectors is forthcoming")
+
+        return cls.from_matrix(samples_matrix, data_vectors, vartype=vartype, info=info,
+                               variable_labels=variable_labels)
+
+    @classmethod
+    def from_futures(cls):
+        """NotImplemented"""
+        # concurrent.futures.as_completed
+        raise NotImplementedError
+
+    def update(self, *other_responses):
+        """todo"""
+
+        # make sure all of the other responses are the appropriate vartype. We could cast them but
+        # that would effect the energies so it is best to happen outside of this function.
+        vartype = self.vartype
+        for response in other_responses:
+            if vartype is not response.vartype:
+                raise ValueError("can only update with responses of matching vartype")
+
+        # make sure that the variable labels are consistent
+        variable_labels = self.variable_labels
+        if variable_labels is None:
+            __, num_variables = self.samples_matrix.shape
+            variable_labels = list(range(num_variables))
+            # in this case we need to allow for either None or variable_labels
+            if not all(response.variable_labels is None or response.variable_labels == variable_labels):
+                raise ValueError("cannot update responses with unlike variable labels")
+        else:
+            if not all(response.variable_labels == variable_labels for response in other_responses):
+                raise ValueError("cannot update responses with unlike variable labels")
+
+        # concatenate all of the matrices
+        matrices = [self.samples_matrix]
+        matrices.extend([response.samples_matrix for response in other_responses])
+        self.samples_matrix = np.concatenate(matrices)
+
+        # group all of the data vectors
+        for key in self.data_vectors:
+            vectors = [self.data_vectors[key]]
+            vectors.extend(response.data_vectors[key] for response in other_responses)
+            self.data_vectors[key] = np.concatenate(vectors)
+
+        # finally update the response info
+        for response in other_responses:
+            self.info.update(response.info)
+
+    ###############################################################################################
+    # Transformations and Copies
+    ###############################################################################################
+
+    def copy(self):
+        return self.from_matrix(self.samples_matrix, self.data_vectors,
+                                vartype=self.vartype, info=self.info,
+                                variable_labels=self.variable_labels)
+
+    @vartype_argument('vartype')
+    def change_vartype(self, vartype, data_vector_offsets=None, inplace=True):
+        if not inplace:
+            return self.copy().change_vartype(vartype, data_vector_offsets=data_vector_offsets, inplace=True)
+
+        if data_vector_offsets is not None:
+            for key in data_vector_offsets:
+                self.data_vectors[key] += data_vector_offsets[key]
+
+        if vartype is self.vartype:
+            return self
+
+        if vartype is Vartype.SPIN and self.vartype is Vartype.BINARY:
+            self.samples_matrix = 2 * self.samples_matrix - 1
+            self.vartype = vartype
+        elif vartype is Vartype.BINARY and self.vartype is Vartype.SPIN:
+            self.samples_matrix = (self.samples_matrix + 1) // 2
+            self.vartype = vartype
+        else:
+            raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
+
+        return self
+
+    def relabel_variables(self, mapping, inplace=True):
+        """Relabel the variables according to the given mapping.
+
+        Args:
+            mapping (dict):
+                A dict mapping the current variable labels to new ones. If an incomplete mapping is
+                provided unmapped variables will keep their labels
+
+            inplace (bool, optional, default=True):
+                If True, the response is updated in-place, otherwise a new response is returned.
+
+        Returns:
+            :class:`.Response`: A response with the variables relabeled. If inplace=True, returns
+            itself.
 
         Examples:
-            >>> response = dimod.Response(dimod.BINARY)
-            >>> samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0}, {'a': 0, 'b': 0}]
-            >>> energies = [1, 0, 0]
-            >>> response.add_samples_from(samples, energies)
-            >>> print(response)
-               a  b energy
-            0  0  1      1
-            1  1  0      0
-            2  0  0      0
-            >>> samples_df = pd.DataFrame(samples)
-            >>> response.add_samples_from(samples_df, energies)
-               a  b energy
-            0  0  1      1
-            1  1  0      0
-            2  0  0      0
-            3  0  1      1
-            4  1  0      0
-            5  0  0      0
+            .. code-block:: python
 
-        See also:
-            add_sample
+                response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
+                response.relabel_variables({'a': 0})
 
-        Notes:
-            Very little input checking is performed in the interests of speed. It is up to the
-            dimod sampler or composite that is populating the response to ensure correct
-            variable labels and correct variable types.
+            .. code-block:: python
+
+                response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
+                new_response = response.relabel_variables({'a': 0}, inplace=False)
 
         """
-        # determine indices for the new data
-        num_samples = self._samples.shape[0]
-        new_indices = list(range(num_samples, num_samples + len(samples)))
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
 
-        # create new samples dataframe from the given samples
-        if isinstance(samples, pd.DataFrame):
-            new_df_samples = samples.rename(index={idx: v for idx, v in enumerate(new_indices)})
+        # we need labels
+        if self.variable_labels is None:
+            __, num_variables = self.samples_matrix.shape
+            self.variable_labels = list(range(num_variables))
+
+        try:
+            old_labels = set(mapping)
+            new_labels = set(itervalues(mapping))
+        except TypeError:
+            raise ValueError("mapping targets must be hashable objects")
+
+        for v in new_labels:
+            if v in self.variable_labels and v not in old_labels:
+                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
+                                  "the existing variable of the same name").format(v))
+
+        shared = old_labels & new_labels
+        if shared:
+            old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
+
+            self.relabel_variables(old_to_intermediate, inplace=True)
+            self.relabel_variables(intermediate_to_new, inplace=True)
+            return self
+
+        self.variable_labels = variable_labels = [mapping.get(v, v) for v in self.variable_labels]
+        self.label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
+        return self
+
+    ###############################################################################################
+    # Viewing a Response
+    ###############################################################################################
+
+    def samples(self, sorted_by='energy'):
+        """todo"""
+        if sorted_by is None:
+            order = np.arange(len(self))
         else:
-            new_df_samples = pd.DataFrame(samples, index=new_indices, dtype='int8')
+            order = np.argsort(self.data_vectors[sorted_by])
 
-        # create the new data dataframe from energies and kwargs
-        kwargs['energy'] = energy
-        new_df_data = pd.DataFrame(kwargs, index=new_indices)
+        samples = self.samples_matrix
+        label_mapping = self.label_to_idx
+        for idx in order:
+            yield SampleView(idx, samples, label_mapping)
 
-        # append the new dataframe to our existing samples, act on the actual objects, not their
-        # getter versions
-        self._samples = self._samples.append(new_df_samples)
-        self._data = self._data.append(new_df_data)
-
-        # we keep df_data sorted by energy
-        self._data.sort_values('energy', inplace=True)
-
-    def add_samples_future(self, future):
-        """Add samples from a micro client Future.
-
-        Args:
-            future (:class:`dwave_micro_client.Future`):
-                A Future from the dwave_micro_client.
-
-        """
-        self._futures.append(future)
-
-    def _add_samples_future(self):
-        """The main logic of add_samples_future. However, the samples only get loaded the first time
-        the response is read, at which case this method is invoked.
-        """
-        futures = self._futures
-
-        while futures:
-            # wait for at least one future to be done
-            microclient.Future.wait_multiple(futures, min_done=1)
-            waiting = []
-
-            for future in futures:
-                if future.done():
-                    # we have a response! add it to datalist
-                    self._add_future(future)
-                else:
-                    waiting.append(future)
-
-            futures = waiting
-
-        self._futures = futures  # reset to 0
-
-    def _add_future(self, future):
-        """Add the samples from a single future. Note that future is expected to be done."""
-        # construct a dataframe from the future
-        nodes = future.solver.nodes
-        samples = future.samples
-
-        if isinstance(samples, np.ndarray):
-            samples = future.samples[:, nodes]
-        else:
-            samples = [[sample[v] for v in nodes] for sample in samples]
-        samples = pd.DataFrame(samples, columns=nodes, dtype='int8')
-
-        self.add_samples_from(samples, future.energies, num_occurrences=future.occurrences)
-
-    def samples(self, sample_type=dict, sorted_by_energy=True):
-        """Iterate over the samples in the response.
-
-        Args:
-            sample_type (type, optional, default=dict):
-                The requested type for the returned sample. Either dict or :class:`pd.Series`.
-
-            sorted_by_energy (bool, optional, default=True):
-                Whether the samples should be returned in order of increasing energy or in the order
-                they were added to the response.
-
-        Yields:
-            A sample from the response. The type is determined by sample_type.
-
-        Examples:
-            >>> response = dimod.Response(dimod.BINARY)
-            >>> samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0}, {'a': 0, 'b': 0}]
-            >>> energies = [-1, 0, 1]
-            >>> list(response.samples())
-            [{'a': 0, 'b': 1}, {'a': 1, 'b': 0}, {'a': 0, 'b': 0}]
-
-        """
-        variables = self.df_samples.columns
-        if sample_type is dict:
-            for idx, sample_row in self.merged(sorted_by_energy=sorted_by_energy).iterrows():
-                yield sample_row.loc[variables].to_dict()
-        elif sample_type is pd.Series:
-            for idx, sample_row in self.merged(sorted_by_energy=sorted_by_energy).iterrows():
-                yield sample_row.loc[variables]
-        else:
-            raise ValueError("sample_type should be dict or pandas.Series")  # pragma: no cover
-
-    def data(self, fields=None, sample_type=dict, sorted_by_energy=True, name='Sample'):
+    def data(self, fields=None, sorted_by='energy', name='Sample'):
         """Iterate over the data in the response.
 
         Args:
             fields (list, optional, default=None):
                 If specified, the yielded tuples will only include the values in fields.
-                A special field name 'sample' can be used to aggregate the samples.
+                A special field name 'sample' can be used to view the samples.
 
-            sample_type (type, optional, default=dict):
-                If 'sample' is a requested field, specifies the requested type for the returned
-                sample. Either dict or :class:`pd.Series`.
-
-            sorted_by_energy (bool, optional, default=True):
-                Whether the data should be returned in order of increasing energy or in the order
-                it was added to the response.
+            sorted_by:
+                todo
 
             name (str/None, optional, default='Sample'):
                 The name of the yielded namedtuples or None to yield regular tuples.
@@ -328,41 +374,42 @@ class Response(object):
             'fields'.
 
         Examples:
-            >>> response = dimod.Response(dimod.BINARY)
-            >>> samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0}, {'a': 0, 'b': 0}]
-            >>> energies = [-1, 0, 1]
-            >>> response.add_samples_from(samples, energies)
-            >>> for datum in response.data():
-            ...     print(datum)
-            ...
-            Sample(sample={'b': 1, 'a': 0}, energy=-1)
-            Sample(sample={'b': 0, 'a': 1}, energy=0)
-            Sample(sample={'b': 0, 'a': 0}, energy=1)
+            .. code-block:: python
+                :linenos:
 
-            >>> response = dimod.Response(dimod.BINARY)
-            >>> response.add_sample({'a': +1, 'b': +1}, -1, num_spin_up=2)
-            >>> for datum in response.data():
-            ...     print(datum)
-            ...
-            Sample(sample={'a': 1, 'b': 1}, energy=-1, num_spin_up=2.0)
+                samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0}, {'a': 0, 'b': 0}]
+                energies = [-1.0, 0.0, 1.0]
+                response = dimod.Response.from_dicts(samples,
+                                                     {'energy': energies},
+                                                     vartype=dimod.BINARY)
+                for datum in response.data():
+                    print(datum)
 
-            >>> response = dimod.Response(dimod.BINARY)
-            >>> response.add_sample({'a': +1, 'b': +1}, -1, num_spin_up=2)
-            >>> for datum in response.data(['sample', 'num_spin_up'], name=None):
-            ...     print(datum)
-            ...
-            ({'a': 1, 'b': 1}, 2)
+            .. code-block:: python
+                :linenos:
+
+                samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1}, {'a': -1, 'b': -1}]
+                energies = [-1.0, 0.0, 1.0]
+                num_spin_up = [1, 1, 0]
+                response = dimod.Response.from_dicts(samples,
+                                                    {'energy': energies, 'num_spin_up': num_spin_up},
+                                                    vartype=dimod.SPIN)
+                for datum in response.data():
+                    print(datum)
+
+                for datum in response.data(['num_spin_up', 'energy']):
+                    print(datum)
 
         """
-
         if fields is None:
             fields = ['sample']
-            fields.extend(self.df_data.columns)
+            fields.extend(self.data_vectors)
 
-        variables = self.df_samples.columns
-        df_merged = self.merged(sorted_by_energy=sorted_by_energy)
+        if sorted_by is None:
+            order = np.arange(len(self))
+        else:
+            order = np.argsort(self.data_vectors[sorted_by])
 
-        # first we handle the possible yield types
         if name is None:
             # yielding a tuple
             def _pack(values):
@@ -374,75 +421,84 @@ class Response(object):
             def _pack(values):
                 return SampleTuple(*values)
 
-        # we also create a function to parse the rows into the form we want.
-        def _values(row):
+        samples = self.samples_matrix
+        label_mapping = self.label_to_idx
+        data_vectors = self.data_vectors
+
+        def _values(idx):
             for field in fields:
                 if field == 'sample':
-                    # if 'sample' is requested, dump the full sample into the appropriate type
-                    if sample_type is dict:
-                        yield row.loc[variables].to_dict()
-                    elif sample_type is pd.Series:
-                        yield row.loc[variables]
-                    else:  # pragma: no cover
-                        raise ValueError("sample_type should be dict or pandas.Series")
+                    yield SampleView(idx, samples, label_mapping)
                 else:
-                    # if not 'sample', just return the value as-is (this also works for variables)
-                    yield row.loc[field]
+                    yield data_vectors[field][idx]
 
-        # finally the main loop
-        for idx, row in df_merged.iterrows():
-            yield _pack(_values(row))
+        for idx in order:
+            yield _pack(_values(idx))
 
-    def copy(self):
-        """Returns a copy of the response."""
-        response = Response(self.vartype)
-        response.add_samples_from(self.df_samples.copy(deep=True), **self.df_data.copy(deep=True).to_dict())
-        return response
 
-    @vartype_argument('vartype')
-    def change_vartype(self, vartype, offset=0.0, inplace=True):
-        """Change the response's vartype in-place.
+class SampleView(Mapping):
+    """View each row of the samples matrix as if it was a dict."""
+    def __init__(self, idx, samples, label_mapping=None):
+        self.label_mapping = label_mapping
+        self.idx = idx
+        self.samples = samples
 
-        Args:
-            vartype (:class:`.Vartype`/str/set):
-                The variable type desired for the response. Accepted input values:
-                :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+    def __getitem__(self, key):
+        if self.label_mapping is not None:
+            key = self.label_mapping[key]
 
-            offset (float, optional, default=0.0):
-                The constant offset that is added to the energies.
+        return int(self.samples[self.idx, key])
 
-            inplace (bool, optional, default=True):
-                If True Response is changed in-place, otherwise return a copy of Response with the
-                vartype changed.
+    def __iter__(self):
+        # iterate over the variables
+        return self.label_mapping.__iter__()
 
-        """
+    def __len__(self):
+        num_samples, num_variables = self.samples.shape
+        return num_variables
 
-        if not inplace:
-            return self.copy().change_vartype(vartype, offset=offset)
-
-        if offset:
-            self.df_data['energy'] += offset
-
-        if vartype is self.vartype:
-            return self
-
-        if vartype is Vartype.SPIN and self.vartype is Vartype.BINARY:
-            self.df_samples = 2 * self.df_samples - 1
-            self.vartype = vartype
-        elif vartype is Vartype.BINARY and self.vartype is Vartype.SPIN:
-            self.df_samples = (self.df_samples + 1) // 2
-            self.vartype = vartype
+    def __str__(self):
+        if self.label_mapping is None:
+            return ' '.join(str(v) for v in self.samples[self.idx].tolist()[0])
         else:
-            raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
+            raise NotImplementedError
 
-        return self
+    def __repr__(self):
+        """Represents itself as as a dictionary"""
+        return dict(self).__repr__()
 
-    def relabel_variables(self, mapping, inplace=True):
-        """todo
-        """
-        if inplace:
-            self.df_samples.rename(mapping, axis='columns', inplace=True)
-            return self
+
+def infer_vartype(samples_matrix):
+    """Try to determine the Vartype of the samples matrix based on its values.
+
+    Args:
+        samples_matrix (:object:`numpy.ndarray`):
+            An array or matrix of samples.
+
+    Returns:
+        :class:`.Vartype`
+
+    Raises:
+        ValueError: If the matrix is all ones, contains values other than -1, 1, 0 or contains more
+        than two unique values.
+
+    """
+    ones_matrix = samples_matrix == 1
+
+    if np.all(ones_matrix):
+        msg = ("ambiguous vartype - an empty samples_matrix or one where all the values "
+               "are all 1 must have the vartype specified by setting vartype=dimod.SPIN or "
+               "vartype=dimod.BINARY.")
+        raise ValueError(msg)
+
+    if np.all(ones_matrix + (samples_matrix == 0)):
+        return Vartype.BINARY
+    elif np.all(ones_matrix + (samples_matrix == -1)):
+        return Vartype.SPIN
+    else:
+        sample_vals = set(int(v) for v in np.nditer(samples_matrix)) - {-1, 1, 0}
+        if sample_vals:
+            msg = ("samples_matrix includes unknown values {}").format(sample_vals)
         else:
-            return self.df_samples.rename(mapping, axis='columns', inplace=False)
+            msg = ("samples_matrix includes both -1 and 0 values")
+        raise ValueError(msg)
