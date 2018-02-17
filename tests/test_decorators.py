@@ -77,3 +77,12 @@ class TestVartypeArgument(unittest.TestCase):
         self.assertRaises(TypeError, g)
         self.assertRaises(TypeError, g, x=SPIN)
         self.assertRaises(TypeError, g, vartype=SPIN)
+
+    def test_arg_with_default_value(self):
+        @vartype_argument('vartype')
+        def f(vartype='SPIN'):
+            return vartype
+
+        self.assertEqual(f(), SPIN)
+        self.assertEqual(f('BINARY'), BINARY)
+        self.assertEqual(f(vartype='BINARY'), BINARY)
