@@ -67,12 +67,12 @@ def bqm_structured(f):
     return new_f
 
 
-def vartype_argument(*args_names):
+def vartype_argument(*arg_names):
     """Ensures the wrapped function receives valid vartype argument(s). One
     or more argument names can be specified (as a list of string arguments).
 
     Args:
-        *args_name (list of string arguments, optional, default='vartype'):
+        *arg_names (list[str], argument names, optional, default='vartype'):
             The names of the constrained arguments in function decorated.
 
     Returns:
@@ -109,23 +109,17 @@ def vartype_argument(*args_names):
         constrained by :func:`vartype_argument`, or it can use a keyword arguments `dict`.
     """
     # by default, constrain only one argument, the 'vartype`
-    if not args_names:
-        args_names = ['vartype']
+    if not arg_names:
+        arg_names = ['vartype']
 
     def _vartype_arg(f):
         argspec = inspect.getargspec(f)
 
-        def _enforce_single_arg(arg_name, args, kwargs):
+        def _enforce_single_arg(name, args, kwargs):
             try:
-                # look in keyword arguments first
-                vartype = kwargs[arg_name]
+                vartype = kwargs[name]
             except KeyError:
-                # then try in function's explicit argument names list
-                try:
-                    arg_idx = argspec.args.index(arg_name)
-                    vartype = args[arg_idx]
-                except (ValueError, IndexError):
-                    raise TypeError('vartype argument missing')
+                raise TypeError('vartype argument missing')
 
             if isinstance(vartype, Vartype):
                 return
@@ -141,17 +135,25 @@ def vartype_argument(*args_names):
                                  "Vartype.SPIN, 'SPIN', {-1, 1}, "
                                  "Vartype.BINARY, 'BINARY', or {0, 1}."))
 
-            if arg_name in kwargs:
-                kwargs[arg_name] = vartype
-            else:
-                args[arg_idx] = vartype
+            kwargs[name] = vartype
 
         @wraps(f)
         def new_f(*args, **kwargs):
-            args = list(args)
-            for arg_name in args_names:
-                _enforce_single_arg(arg_name, args, kwargs)
-            return f(*args, **kwargs)
+            # bound actual f arguments (including defaults) to f argument names
+            # (note: if call arguments don't match actual function signature,
+            # we'll fail here with the standard `TypeError`)
+            bound_args = inspect.getcallargs(f, *args, **kwargs)
+
+            # `getcallargs` doesn't merge additional positional/keyword arguments,
+            # so do it manually
+            final_args = list(bound_args.pop(argspec.varargs, ()))
+            final_kwargs = bound_args.pop(argspec.keywords, {})
+
+            final_kwargs.update(bound_args)
+            for name in arg_names:
+                _enforce_single_arg(name, final_args, final_kwargs)
+
+            return f(*final_args, **final_kwargs)
 
         return new_f
 
