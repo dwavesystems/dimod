@@ -7,10 +7,13 @@ Creating a Structured Sampler
 
 A simple example of a structured sampler is one that only has two variables and one interaction.
 
->>> class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-...     def __init__(self):
-...         dimod.Sampler()
-...         dimod.Structured(self, [0, 1], [(0, 1)])
+.. code-block:: python
+    :linenos:
+
+    class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
+        def __init__(self):
+            dimod.Sampler()
+            dimod.Structured(self, [0, 1], [(0, 1)])
 
 This sampler as constructed won't work (because we have not overwritten any of the sample
 methods), but it is sufficient to demonstrate accessing the properties.
@@ -39,21 +42,28 @@ Each of these components are also stored as properties of the sampler.
  If you want the structure of the given problem to be checked against the sampler's structure, you
  can enforce this with a decorator.
 
->>> class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-...     def __init__(self):
-...         dimod.Sampler()
-...         dimod.Structured(self, [0, 1], [(0, 1)])
-...
-...     @dimod.decorators.bqm_structured
-...     def sample(self, bqm):
-...         # All bqm's passed in will be a subgraph of the sampler's structure
-...         variable_list = list(bqm.linear)
-...         response = dimod.Response(bqm.vartype)
-...         for values in itertools.product(bqm.vartype.value, len(bqm)):
-...             sample = dict(zip(variable_list, values))
-...             energy = bqm.energy(sample)
-...             response.add_sample(sample, energy)
-...         return response
+.. code-block:: python
+    :linenos:
+
+    class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
+        def __init__(self):
+            dimod.Sampler.__init__(self)
+            dimod.Structured.__init__(self, [0, 1], [(0, 1)])
+
+        @dimod.decorators.bqm_structured
+        def sample(self, bqm):
+            # All bqm's passed in will be a subgraph of the sampler's structure
+            variable_list = list(bqm.linear)
+            samples = []
+            energies = []
+            for values in itertools.product(bqm.vartype.value, repeat=len(bqm)):
+                sample = dict(zip(variable_list, values))
+                samples.append(sample)
+                energies.append(bqm.energy(sample))
+
+            response = dimod.Response.from_dicts(samples, {'energy': energies}, vartype=bqm.vartype)
+
+            return response
 
 Creating a Structured Composite
 -------------------------------

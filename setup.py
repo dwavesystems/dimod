@@ -15,11 +15,9 @@ else:
     exec(open(os.path.join(".", "dimod", "package_info.py")).read())
 
 install_requires = ['enum34>=1.1.6<2.0.0',
-                    'numpy>=1.14.0<2.0.0',
-                    'pandas>=0.22.0<0.23.0']
+                    'numpy>=1.14.0<2.0.0']
 
-extras_require = {'docs': ['sphinx', 'sphinx_rtd_theme', 'recommonmark'],
-                  'all': ['networkx>=2.0<3.0']}
+extras_require = {'all': ['networkx>=2.0<3.0', 'pandas>=0.22.0<0.23.0']}
 
 packages = ['dimod',
             'dimod.core',

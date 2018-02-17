@@ -3,7 +3,6 @@ import random
 import itertools
 
 import numpy as np
-import pandas as pd
 
 import dimod
 
@@ -12,6 +11,12 @@ try:
     _networkx = True
 except ImportError:
     _networkx = False
+
+try:
+    import pandas as pd
+    _pandas = True
+except ImportError:
+    _pandas = False
 
 
 class TestConvert(unittest.TestCase):
@@ -220,6 +225,7 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.from_ising(h, J, offset=1)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))
 
+    @unittest.skipUnless(_pandas, "No pandas installed")
     def test_to_pandas_dataframe(self):
         linear = {'a': -1}
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
