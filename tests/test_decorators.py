@@ -17,7 +17,7 @@ class TestVartypeArgument(unittest.TestCase):
         self.assertEqual(f(x='SPIN'), SPIN)
         self.assertRaises(TypeError, f, 'x')
         self.assertRaises(TypeError, f, x='x')
-        self.assertRaises(RuntimeError, f)
+        self.assertRaises(TypeError, f)
 
     def test_multiple_explicit_args(self):
         @vartype_argument('x', 'y')
@@ -29,7 +29,7 @@ class TestVartypeArgument(unittest.TestCase):
         self.assertEqual(f(y='BINARY', x='SPIN'), (SPIN, BINARY))
         self.assertRaises(TypeError, f, 'x', 'y')
         self.assertRaises(TypeError, f, x='x', y='SPIN')
-        self.assertRaises(RuntimeError, f)
+        self.assertRaises(TypeError, f)
 
     def test_kwargs(self):
         @vartype_argument('x', 'y')
@@ -37,8 +37,8 @@ class TestVartypeArgument(unittest.TestCase):
             return itemgetter('x', 'y')(kwargs)
 
         self.assertEqual(f(x=SPIN, y=BINARY), (SPIN, BINARY))
-        self.assertRaises(RuntimeError, f)
-        self.assertRaises(RuntimeError, f, x=SPIN)
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, x=SPIN)
         self.assertRaises(TypeError, f, x='x', y='SPIN')
 
     def test_explicit_with_kwargs(self):
@@ -48,8 +48,8 @@ class TestVartypeArgument(unittest.TestCase):
 
         self.assertEqual(f('SPIN', y='BINARY'), (SPIN, BINARY))
         self.assertEqual(f(y='BINARY', x='SPIN'), (SPIN, BINARY))
-        self.assertRaises(RuntimeError, f)
-        self.assertRaises(RuntimeError, f, x=SPIN)
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, x=SPIN)
         self.assertRaises(TypeError, f, x='x', y='SPIN')
 
     def test_default_argname(self):
@@ -67,13 +67,22 @@ class TestVartypeArgument(unittest.TestCase):
         def f(x=None):
             return x
 
-        self.assertRaises(RuntimeError, f)
-        self.assertRaises(RuntimeError, f, x=SPIN)
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, x=SPIN)
 
         @vartype_argument('vartype')
         def g(x=None):
             return x
 
-        self.assertRaises(RuntimeError, g)
-        self.assertRaises(RuntimeError, g, x=SPIN)
+        self.assertRaises(TypeError, g)
+        self.assertRaises(TypeError, g, x=SPIN)
         self.assertRaises(TypeError, g, vartype=SPIN)
+
+    def test_arg_with_default_value(self):
+        @vartype_argument('vartype')
+        def f(vartype='SPIN'):
+            return vartype
+
+        self.assertEqual(f(), SPIN)
+        self.assertEqual(f('BINARY'), BINARY)
+        self.assertEqual(f(vartype='BINARY'), BINARY)
