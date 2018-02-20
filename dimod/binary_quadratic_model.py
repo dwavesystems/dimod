@@ -5,12 +5,11 @@ todo - describe Ising, QUBO and BQM
 """
 from __future__ import absolute_import, division
 
-import itertools
-
 from numbers import Number
 
 from dimod.compatibility23 import itervalues, iteritems, iterkeys
 from dimod.decorators import vartype_argument
+from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
 
@@ -922,7 +921,7 @@ class BinaryQuadraticModel(object):
 
         """
         try:
-            old_labels = set(iterkeys(mapping))
+            old_labels = set(mapping)
             new_labels = set(itervalues(mapping))
         except TypeError:
             raise ValueError("mapping targets must be hashable objects")
@@ -935,36 +934,7 @@ class BinaryQuadraticModel(object):
         if inplace:
             shared = old_labels & new_labels
             if shared:
-                # in this case relabel to a new intermediate labeling, then map from the intermediate
-                # labeling to the desired labeling
-
-                # counter will be used to generate the intermediate labels, as an easy optimization
-                # we start the counter with a high number because often variables are labeled by
-                # integers starting from 0
-                counter = itertools.count(2 * len(self))
-
-                old_to_intermediate = {}
-                intermediate_to_new = {}
-
-                for old, new in iteritems(mapping):
-                    if old == new:
-                        # we can remove self-labels
-                        continue
-
-                    if old in new_labels or new in old_labels:
-
-                        # try to get a new unique label
-                        lbl = next(counter)
-                        while lbl in new_labels or lbl in old_labels:
-                            lbl = next(counter)
-
-                        # add it to the mapping
-                        old_to_intermediate[old] = lbl
-                        intermediate_to_new[lbl] = new
-
-                    else:
-                        old_to_intermediate[old] = new
-                        # don't need to add it to intermediate_to_new because it is a self-label
+                old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
 
                 self.relabel_variables(old_to_intermediate, inplace=True)
                 self.relabel_variables(intermediate_to_new, inplace=True)

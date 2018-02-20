@@ -1,6 +1,7 @@
 """
 A collection of utility functions useful for Samplers.
 """
+import itertools
 
 from dimod.compatibility23 import iteritems, itervalues
 
@@ -169,3 +170,61 @@ def qubo_to_ising(Q, offset=0.0):
     offset += .5 * linear_offset + .25 * quadratic_offset
 
     return h, J, offset
+
+
+def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
+    """Resolve a self-labeling conflict by creating an intermediate labeling.
+
+    Args:
+        mapping (dict):
+            A dict mapping the current variable labels to new ones.
+
+        old_labels (set, optional, default=None):
+            The keys of mapping. Can be passed in for performance reasons. These are not checked.
+
+        new_labels (set, optional, default=None):
+            The values of mapping. Can be passed in for performance reasons. These are not checked.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            dict: A map from the keys of mapping to an intermediate labeling
+
+            dict: A map from the intermediate labeling to the values of mapping.
+
+    """
+
+    if old_labels is None:
+        old_labels = set(mapping)
+    if new_labels is None:
+        new_labels = set(itervalues(mapping))
+
+    # counter will be used to generate the intermediate labels, as an easy optimization
+    # we start the counter with a high number because often variables are labeled by
+    # integers starting from 0
+    counter = itertools.count(2 * len(mapping))
+
+    old_to_intermediate = {}
+    intermediate_to_new = {}
+
+    for old, new in iteritems(mapping):
+        if old == new:
+            # we can remove self-labels
+            continue
+
+        if old in new_labels or new in old_labels:
+
+            # try to get a new unique label
+            lbl = next(counter)
+            while lbl in new_labels or lbl in old_labels:
+                lbl = next(counter)
+
+            # add it to the mapping
+            old_to_intermediate[old] = lbl
+            intermediate_to_new[lbl] = new
+
+        else:
+            old_to_intermediate[old] = new
+            # don't need to add it to intermediate_to_new because it is a self-label
+
+    return old_to_intermediate, intermediate_to_new
