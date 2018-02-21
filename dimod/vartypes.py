@@ -1,9 +1,5 @@
 """
-Vartype
---------
-
-Vartype is an enumeration of the valid types of binary variables
-for binary quadratic models.
+Vartype is an enumeration of the valid types for variables in a binary quadratic models.
 
 Examples:
     >>> vartype = dimod.Vartype.SPIN
