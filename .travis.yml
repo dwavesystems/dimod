@@ -2,11 +2,6 @@ language: python
 
 matrix:
     include:
-        - os: linux
-          sudo: required
-          python: "2.7"
-          env: TOXENV=py27
-          deploy:
         # - os: linux
         #   sudo: required
         #   python: "nightly"
@@ -15,6 +10,7 @@ matrix:
           sudo: required
           python: "3.6"
           env: TOXENV=py36
+          deploy:
         - os: linux
           sudo: required
           python: "3.5"
@@ -25,13 +21,10 @@ matrix:
           python: "3.4"
           env: TOXENV=py34
           deploy:
-        - os: osx
-          language: generic
+        - os: linux
+          sudo: required
+          python: "2.7"
           env: TOXENV=py27
-          before_install:
-            - brew update
-            - virtualenv env -p python2
-            - source env/bin/activate
           deploy:
         - os: osx
           language: generic
@@ -42,9 +35,24 @@ matrix:
             - virtualenv env -p python3
             - source env/bin/activate
           deploy:
+        - os: osx
+          language: generic
+          env: TOXENV=py27
+          before_install:
+            - brew update
+            - virtualenv env -p python2
+            - source env/bin/activate
+          deploy:
+        - os: linux
+          sudo: required
+          python: "3.6"
+          env: TOXENV=py36
+          install:
+              - pip install -r requirements.txt
+              - pip install .
 
 install:
-    - pip install -r requirements.txt
+    - pip install -r requirements_test.txt
     - pip install .
     
 script:
