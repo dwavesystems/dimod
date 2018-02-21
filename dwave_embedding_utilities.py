@@ -102,7 +102,7 @@ __all__ = ['target_to_source', 'chain_break_frequency', 'embed_ising',
            'discard', 'majority_vote', 'weighted_random', 'minimize_energy',
            'chain_to_quadratic']
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __author__ = 'D-Wave Systems Inc.'
 __description__ = 'Utilities to manage embedding for the D-Wave System'
 __authoremail__ = 'acondello@dwavesys.com'
