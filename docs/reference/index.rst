@@ -14,3 +14,5 @@ Reference Documentation
    samplers
    response
    vartypes
+   exceptions
+   utilities
