@@ -12,3 +12,7 @@ Reference Documentation
    introduction
    binary_quadratic_model
    samplers
+   response
+   vartypes
+   exceptions
+   utilities
