@@ -32,8 +32,6 @@ class ExactSolver(Sampler):
 
         sample = np.zeros((len(bqm),), dtype=bool)
 
-        response = Response(Vartype.BINARY)
-
         # now we iterate, flipping one bit at a time until we have
         # traversed all samples. This is a Gray code.
         # https://en.wikipedia.org/wiki/Gray_code
@@ -58,7 +56,7 @@ class ExactSolver(Sampler):
 
         samples, energies = zip_(*iter_samples())
 
-        response.add_samples_from(np.asarray(samples), energies)
+        response = Response.from_matrix(np.asarray(samples), {'energy': energies})
 
         # finally make sure the response matches the given vartype, in-place.
         response.change_vartype(bqm.vartype)

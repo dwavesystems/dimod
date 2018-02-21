@@ -5,10 +5,9 @@ RandomSampler
 A random sampler that can be used for unit testing and debugging.
 """
 import numpy as np
-import pandas as pd
 
 from dimod.core.sampler import Sampler
-from dimod.response import Response
+from dimod.response import Response, SampleView
 
 __all__ = ['RandomSampler']
 
@@ -38,11 +37,10 @@ class RandomSampler(Sampler):
         """
         values = np.asarray(list(bqm.vartype.value), dtype='int8')
         samples = np.random.choice(values, (num_reads, len(bqm)))
-        df_samples = pd.DataFrame(samples, columns=bqm.linear)
+        variable_labels = list(bqm.linear)
+        label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
 
-        energies = [bqm.energy(sample) for idx, sample in df_samples.iterrows()]
+        energies = [bqm.energy(SampleView(idx, samples, label_to_idx)) for idx in range(num_reads)]
 
-        response = Response(bqm.vartype)
-        response.add_samples_from(df_samples, energies)
-
-        return response
+        return Response.from_matrix(samples, {'energy': energies},
+                                    vartype=bqm.vartype, variable_labels=variable_labels)

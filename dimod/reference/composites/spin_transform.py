@@ -63,11 +63,11 @@ class SpinReversalTransformComposite(Sampler, Composite):
             self.default_sample_kwargs = {}
 
     def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
-
+        """todo"""
         # make a main response
-        response = Response(bqm.vartype)
+        response = None
 
-        for __ in range(num_spin_reversal_transforms):
+        for ii in range(num_spin_reversal_transforms):
             if spin_reversal_variables is None:
                 # apply spin transform to each variable with 50% chance
                 transform = list(v for v in bqm.linear if random() > .5)
@@ -81,18 +81,17 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
             flipped_response = self.child.sample(bqm, **kwargs)
 
-            data_kwargs = flipped_response.df_data.to_dict('list')
-            if 'spin_reversal_variables' in data_kwargs:
-                data_kwargs['spin_reversal_variables_{}'.format(time.time())] = [transform] * len(flipped_response)
-            else:
-                data_kwargs['spin_reversal_variables'] = [transform] * len(flipped_response)
+            tf_idxs = [flipped_response.label_to_idx[v] for v in flipped_response.variable_labels]
 
             if bqm.vartype is Vartype.SPIN:
-                flipped_response.df_samples[transform] = -1 * flipped_response.df_samples[transform]
+                flipped_response.samples_matrix[:, tf_idxs] = -1 * flipped_response.samples_matrix[:, tf_idxs]
             else:
-                flipped_response.df_samples[transform] = 1 - flipped_response.df_samples[transform]
+                flipped_response.samples_matrix[:, tf_idxs] = 1 - flipped_response.samples_matrix[:, tf_idxs]
 
-            response.add_samples_from(flipped_response.df_samples, **data_kwargs)
+            if response is None:
+                response = flipped_response
+            else:
+                response.update(flipped_response)
 
         return response
 
