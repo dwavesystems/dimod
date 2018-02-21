@@ -24,50 +24,54 @@ class BinaryQuadraticModel(object):
 
     Args:
         linear (dict[variable, bias]):
-            The linear biases as a dict.
-            The keys should be the variables of the binary quadratic model. A variable can be any
-            python object that can be used as the key of a dictionary.
-            The values should be the linear bias associated with each variable. Biases are generally
-            a number but this is not explicitly checked.
+            Linear biases as a dict, where keys are the variables of
+            the binary quadratic model and values the linear biases associated
+            with these variables.
+            A variable can be any python object that is valid as a dictionary key.
+            Biases are generally numbers but this is not explicitly checked.
 
         quadratic (dict[(variable, variable), bias]):
-            The quadratic biases as a dict.
-            The keys should be 2-tuples of variables.  A variable can be any python object that can
-            be used as the key of a dictionary. A pair of variables is called an interaction.
-            The values should be the quadratic bias associated with the interaction. Biases are
-            generally a number but this is not explicitly checked.
+            Quadratic biases as a dict, where keys are
+            2-tuples of variables and values the quadratic biases associated
+            with the pair of variables (the interaction).
+            A variable can be any python object that is valid as a dictionary key.
+            Biases are generally numbers but this is not explicitly checked.
             Interactions that are not unique are added.
 
         offset (number):
-            The constant energy offset associated with the binary quadratic model. Any type input is
-            allowed, but many applications will assume that offset is a number.
-            See :meth:`.BinaryQuadraticModel.energy`
+            Constant energy offset associated with the binary quadratic model.
+            Any input type is allowed, but many applications assume that offset is a number.
+            See :meth:`.BinaryQuadraticModel.energy`.
 
         vartype (:class:`.Vartype`/str/set):
             The variable type desired for the binary quadratic model. Accepted input values:
-            :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
     Notes:
-        The BinaryQuadraticModel does not enforce types on the biases
-        and the offset, but most applications that use BinaryQuadraticModel
-        will assume that they are numeric.
+        The BinaryQuadraticModel class does not enforce types on biases
+        and offsets, but most applications that use the BinaryQuadraticModel
+        class assume that they are numeric.
 
     Examples:
+        This example creates a model with three spin variables.
+
         >>> model = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
-        ...                                 {(0, 1): .5, (1, 2): 1.5},
-        ...                                 1.4,
-        ...                                 dimod.SPIN)
+        ...                                    {(0, 1): .5, (1, 2): 1.5},
+        ...                                    1.4,
+        ...                                    dimod.SPIN)
 
     Attributes:
         linear (dict[variable, bias]):
-            The linear biases as a dict. The keys are the variables of the binary quadratic model.
-            The values are the linear biases associated with each variable.
+            Linear biases as a dict, where keys are the variables of
+            the binary quadratic model and values the linear biases associated
+            with these variables.
 
         quadratic (dict[(variable, variable), bias]):
-            The quadratic biases as a dict. The keys are 2-tuples of variables. Each 2-tuple
-            represents an interaction between two variables in the model. The values are the
-            quadratic biases associated with each interaction.
+            Quadratic biases as a dict, where keys are 2-tuples of variables, which
+            represent an interaction between the two variables, and values
+            are the quadratic biases associated with the interactions.
 
         offset (number):
             The energy offset associated with the model. Same type as given
@@ -77,35 +81,41 @@ class BinaryQuadraticModel(object):
             The model's type. One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
 
         adj (dict):
-            Encodes the interactions of the model in nested dicts. The keys of adj
-            are the variables of the model and the values are neighbor-dicts.
-            For a node `v`, the keys of the neighbor-dict associated with `v` are
-            the neighbors of `v` and for each `u` in the neighbor-dict the value
-            associated with `u` is the quadratic bias associated with `u, v`.
+            The model's interactions as nested dicts.
+            In graphic representation, where variables are nodes and interactions
+            are edges or adjacencies, keys of the outer dict (`adj`) are all
+            the model's nodes (e.g. `v`) and values are the inner dicts. For the
+            inner dict associated with outer-key/node 'v', keys are all the nodes
+            adjacent to `v` (e.g. `u`) and values are quadratic biases associated
+            with the pair of inner and outer keys (`u, v`).
 
             Examples:
-                If we create a BinaryQuadraticModel with a single interaction
+               This example creates an instance of the BinaryQuadraticModel()
+               class for the K4 complete graph, where the nodes have biases
+               set equal to their sequential labels and interactions are the
+               concatenations of the node pairs (e.g., 23 for u,v = 2,3).
 
-                >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+               >>> import dimod
+               >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
+               >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
+               ....             (2, 3): 23, (2, 4): 24,
+               ....             (3, 4): 34}
+               >>> offset = 0.0
+               >>> vt = dimod.BINARY
+               >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
+               >>> bqm_k4.adj.viewitems()   # Show all adjacencies
+               dict_items([(1, {2: 12, 3: 13, 4: 14}),
+                           (2, {1: 12, 3: 23, 4: 24}),
+                           (3, {1: 13, 2: 23, 4: 34}),
+                           (4, {1: 14, 2: 24, 3: 34})])
+               >>> bqm_k4.adj[2]            # Show adjacencies for node 2
+               {1: 12, 3: 23, 4: 24}
+               >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
+               23
 
-                Then we can see the neighbors of each variable
+        SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
 
-                >>> bqm.adj['a']
-                {'b': -1}
-                >>> bqm.adj['b']
-                {'a': -1}
-
-                In this way if we know that there is an interaction between :code:`'a', 'b'`
-                we can easily find the quadratic bias
-
-                >>> bqm.adj['a']['b']
-                -1
-                >>> bqm.adj['b']['a']
-                -1
-
-        SPIN (:class:`.Vartype`): An alias for :class:`.Vartype.SPIN` for easier access.
-
-        BINARY (:class:`.Vartype`): An alias for :class:`.Vartype.BINARY` for easier access.
+        BINARY (:class:`.Vartype`): An alias of :class:`.Vartype.BINARY` for easier access.
 
     """
 
