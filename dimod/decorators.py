@@ -4,7 +4,7 @@
 import inspect
 from functools import wraps
 
-from dimod.compatibility23 import iteritems
+from dimod.compatibility23 import iteritems, getargspec
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
@@ -113,7 +113,7 @@ def vartype_argument(*arg_names):
         arg_names = ['vartype']
 
     def _vartype_arg(f):
-        argspec = inspect.getargspec(f)
+        argspec = getargspec(f)
 
         def _enforce_single_arg(name, args, kwargs):
             try:
