@@ -11,16 +11,7 @@ Overview
 
 .. currentmodule:: dimod
 .. autoclass:: Response
-
-
-Properties
-==========
-
-.. autosummary::
-   :toctree: generated/
-
-   Response.samples_matrix
-   Response.data_vectors
+   :members: samples_matrix, data_vectors
 
 Methods
 =======
@@ -40,10 +31,10 @@ Constructing or updating a Response
 .. autosummary::
    :toctree: generated/
 
-   Response.from_matrix
    Response.from_dicts
-   Response.from_pandas
    Response.from_futures
+   Response.from_matrix
+   Response.from_pandas
    Response.update
 
 Transformations
@@ -62,3 +53,11 @@ Copy
    :toctree: generated/
 
    Response.copy
+
+Done
+----
+
+.. autosummary::
+   :toctree: generated/
+
+   Response.done
