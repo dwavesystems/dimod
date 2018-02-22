@@ -163,38 +163,27 @@ class BinaryQuadraticModel(object):
 
     @property
     def spin(self):
-        """:class:`.BinaryQuadraticModel`: The spin-valued version of the binary quadratic model.
+        """:class:`.BinaryQuadraticModel`: An instance of the Ising model subclass
+        of the :class:`.BinaryQuadraticModel` superclass, corresponding to
+        a binary quadratic model with spins as its variables.
 
-        This property allows the user to access the biases for the appropriate vartype without
-        needing to check the given binary quadratic model.
+        Enables access to biases for the spin-valued binary quadratic model
+        regardless of the vartype set when the model was created.
+        If the model was created with the :attr:`.binary` vartype,
+        the Ising model subclass is instantiated upon the first use of the
+        :attr:`.spin` property and used in any subsequent reads.
 
         Examples:
-            Create a spin-valued binary quadratic model. In this case the :attr:`.spin` attribute
-            refers back to itself.
+            This example creates a QUBO model and uses the :attr:`.spin` property
+            to instantiate the corresponding Ising model.
 
-            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-            >>> bqm.spin is bqm
+            >>> import dimod
+            >>> bqm_qubo = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)
+            >>> bqm_spin = bqm_qubo.spin
+            >>> bqm_spin
+            BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, Vartype.SPIN)
+            >>> bqm_spin.spin is bqm_spin
             True
-
-            For a binary-valued binary quadratic model, it's spin-valued counterpart will be built
-            the first time the :attr:`.spin` property is accessed and subsequent reads will use
-            it.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-            >>> bqm.spin.linear
-            {'a': 0.0, 'b': 0.0}
-            >>> bqm.spin.quadratic
-            {('a', 'b'): -0.25}
-            >>> bqm.spin.offset
-            .25
-
-            The energy will correspond.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-            >>> bqm.energy({'a': 0, 'b': 1})
-            0.5
-            >>> bqm.spin.energy({'a': -1, 'b': +1})
-            0.5
 
         Note:
             Methods like :meth:`.add_variable`, :meth:`.add_variables_from`,
@@ -222,38 +211,27 @@ class BinaryQuadraticModel(object):
 
     @property
     def binary(self):
-        """:class:`.BinaryQuadraticModel`: The binary-valued version of the binary quadratic model.
+        """:class:`.BinaryQuadraticModel`: An instance of the QUBO model subclass
+        of the :class:`.BinaryQuadraticModel` superclass, corresponding to
+        a binary quadratic model with binary variables.
 
-        This property allows the user to access the biases for the appropriate vartype without
-        needing to check the given binary quadratic model.
+       Enables access to biases for the binary-valued binary quadratic model
+       regardless of the vartype set when the model was created.
+       If the model was created with the :attr:`.spin` vartype,
+       the QUBO model subclass is instantiated upon the first use of the
+       :attr:`.binary` property and used in any subsequent reads.
 
-        Examples:
-            Create a binary-valued binary quadratic model. In this case the :attr:`.binary` attribute
-            refers back to itself.
+       Examples:
+           This example creates an Ising model and uses the :attr:`.binary` property
+           to instantiate the corresponding QUBO model.
 
-            >>> bqm = dimod.BinaryQuadraticModel({'a': .5, 'b': .5}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-            >>> bqm.binary is bqm
-            True
-
-            For a spin-valued binary quadratic model, it's binary-valued counterpart will be built
-            the first time the :attr:`.binary` property is accessed and subsequent reads will use
-            it.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-            >>> bqm.binary.linear
-            {'a': 2.0, 'b': 2.0}
-            >>> bqm.binary.quadratic
-            {('a', 'b'): -4.0}
-            >>> bqm.binary.offset
-            -1.0
-
-            The energy will correspond.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-            >>> bqm.binary.energy({'a': 0, 'b': 1})
-            1.0
-            >>> bqm.energy({'a': -1, 'b': +1})
-            1.0
+           >>> import dimod
+           >>> bqm_spin = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
+           >>> bqm_qubo = bqm_spin.binary
+           >>> bqm_qubo
+           BinaryQuadraticModel({0: -1.0, 1: -1.0}, {(0, 1): 2.0}, 0.0, Vartype.BINARY)
+           >>> bqm_qubo.binary is bqm_qubo
+           True
 
         Note:
             Methods like :meth:`.add_variable`, :meth:`.add_variables_from`,
