@@ -293,7 +293,7 @@ class BinaryQuadraticModel(object):
 
             bias (bias):
                 Linear bias associated with v. If v is already in the model, this value is added
-                to its current linear bias. Many methods and functions expect bias to be a number
+                to its current linear bias. Many methods and functions expect `bias` to be a number
                 but this is not explicitly checked.
 
             vartype (:class:`.Vartype` (optional, default None)):
@@ -400,10 +400,10 @@ class BinaryQuadraticModel(object):
 
             bias (bias):
                 Quadratic bias associated with u, v. If u, v is already in the model, this value
-                is added to the current quadratic bias. Many methods and functions expect bias to
+                is added to the current quadratic bias. Many methods and functions expect `bias` to
                 be a number but this is not explicitly checked.
 
-            vartype (:class:`.Vartype`, optional, default=None):
+            vartype (:class:`.Vartype` (optional, default None)):
                 Vartype of the given bias. If None, the vartype of the binary
                 quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
@@ -503,9 +503,9 @@ class BinaryQuadraticModel(object):
                 A collection of variables that have an interaction and their quadratic
                 bias to add to the model. If a dict, keys are 2-tuples of variables
                 in the binary quadratic model and values are their corresponding
-                bias. Alternatively, an iterable of 3-tuples. Each interaction in quadratic should be
+                bias. Alternatively, an iterable of 3-tuples. Each interaction in `quadratic` should be
                 unique; that is, if `(u, v)` is a key, `(v, u)` should not be.
-                Variables can be any python object that is a valid dict key
+                Variables can be any python object that is a valid dict key.
                 Many methods and functions expect the biases to be numbers but this is not
                 explicitly checked.
 
