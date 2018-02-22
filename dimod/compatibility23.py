@@ -43,10 +43,10 @@ else:
 
     zip_longest = itertools.zip_longest
 
+    _ArgSpec = namedtuple('ArgSpec', ('args', 'varargs', 'keywords', 'defaults'))
+
     def getargspec(f):
-        ArgSpec = namedtuple('ArgSpec', ('args', 'varargs', 'keywords', 'defaults'))
-
-        # FullArgSpec(args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations)
         argspec = inspect.getfullargspec(f)
+        # FullArgSpec(args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations)
 
-        return ArgSpec(argspec.args, argspec.varargs, argspec.varkw, argspec.defaults)
+        return _ArgSpec(argspec.args, argspec.varargs, argspec.varkw, argspec.defaults)
