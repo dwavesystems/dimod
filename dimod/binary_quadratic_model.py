@@ -311,7 +311,7 @@ class BinaryQuadraticModel(object):
             {0: 0.0, 1: 1.0}
             >>> bqm.add_variable(2, 2.0, vartype=dimod.SPIN)        # Add a new variable
             >>> bqm.add_variable(1, 0.33, vartype=dimod.SPIN)
-            >>> bqm.add_variable(0, 0.33, vartype=dimod.BINARY)     # The binary value is converted to the spin value
+            >>> bqm.add_variable(0, 0.33, vartype=dimod.BINARY)     # Binary value is converted to spin value
             >>> bqm.linear
             {0: 0.165, 1: 1.33, 2: 2.0}
 
@@ -365,7 +365,7 @@ class BinaryQuadraticModel(object):
         Examples:
             This example creates creates an empty Ising model, adds two variables,
             and subsequently adds to the bias of the one while adding a new, third,
-            variable. 
+            variable.
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
@@ -387,37 +387,41 @@ class BinaryQuadraticModel(object):
                 raise TypeError("expected 'linear' to be a dict or an iterable of 2-tuples.")
 
     def add_interaction(self, u, v, bias, vartype=None):
-        """Add a variable interaction and its quadratic bias.
+        """Add a variable interaction and/or its quadratic bias to a binary quadratic model.
 
         Args:
             v (variable):
-                A variable can be any python object that could be used as a key of a dict.
+                One of the pair of variables to add to the model. Can be any python object
+                that is a valid dict key.
 
             u (variable):
-                A variable can be any python object that could be used as a key of a dict.
+                One of the pair of variables to add to the model. Can be any python object
+                that is a valid dict key.
 
             bias (bias):
-                The quadratic bias associated with u, v. If u, v already is in the model, the bias
-                is added to the existing quadratic bias. Many methods and functions expect bias to
+                Quadratic bias associated with u, v. If u, v is already in the model, this value
+                is added to the current quadratic bias. Many methods and functions expect bias to
                 be a number but this is not explicitly checked.
 
             vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the given bias. If None will be the same vartype as the binary
-                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+                Vartype of the given bias. If None, the vartype of the binary
+                quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-            >>> bqm.add_interaction('a', 'b', -.5)
-            >>> bqm.quadratic
-            {('a', 'b'): -0.5}
+            This example creates an Ising model with two variables, adds a third,
+            adds to the bias of the initial interaction, and creates
+            a new interaction.
 
-            Variables that already exist have their bias added.
-
-            >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
-            >>> bqm.add_interaction('a', 'b', -.5)
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> bqm.quadratic
-            {('b', 'a'): -1.0}
+            {(0, 1): 0.5}
+            >>> bqm.add_interaction(0, 2, 2)        # Add new variable 2
+            >>> bqm.add_interaction(0, 1, .25)
+            >>> bqm.add_interaction(1, 2, .25, vartype=dimod.BINARY)     # Binary value is converted to spin value
+            >>> bqm.quadratic
+            {(0, 1): 0.75, (0, 2): 2, (1, 2): 0.0625}
 
         """
         if u == v:
@@ -492,35 +496,37 @@ class BinaryQuadraticModel(object):
             pass
 
     def add_interactions_from(self, quadratic, vartype=None):
-        """Add quadratic biases.
+        """Add variable interactions and/or quadratic biases to a binary quadratic model.
 
         Args:
             quadratic (dict[(variable, variable), bias]/iterable[(variable, variable, bias)]):
-                Variables that have an interaction and their quadratic bias. If a dict, the keys
-                should be 2-tuples of the variables and the values should be their corresponding
-                bias. Can also be an iterable of 3-tuples. Each interaction in quadratic should be
-                unique - that is if `(u, v)` is a key in quadratic, then `(v, u)` should not be.
-                The variables can be any python object that could be used as a key in a dict.
+                A collection of variables that have an interaction and their quadratic
+                bias to add to the model. If a dict, keys are 2-tuples of variables
+                in the binary quadratic model and values are their corresponding
+                bias. Alternatively, an iterable of 3-tuples. Each interaction in quadratic should be
+                unique; that is, if `(u, v)` is a key, `(v, u)` should not be.
+                Variables can be any python object that is a valid dict key
                 Many methods and functions expect the biases to be numbers but this is not
                 explicitly checked.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the given bias. If None will be the same vartype as the binary
-                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+            vartype (:class:`.Vartype` (optional, default None)):
+                Vartype of the given bias. If None, the vartype of the binary
+                quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
 
         Examples:
+            This example creates creates an empty Ising model, adds an interaction
+            for two variables, adds to its bias while adding a new variable,
+            then adds another interaction.
+
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
             >>> bqm.quadratic
             {('a', 'b'): -0.5}
-
-            Variables that already exist have their bias added.
-
-            >>> bqm = dimod.BinaryQuadraticModel({}, {('b', 'a'): -.5}, 0.0, dimod.SPIN)
-            >>> bqm.add_interactions_from({('a', 'b'): -.5})
+            >>> bqm.add_interactions_from({('a', 'b'): -.5, ('a', 'c'): 2})
+            >>> bqm.add_interactions_from({('b', 'c'): 2}, vartype=dimod.BINARY)   # Binary value is converted to spin value
             >>> bqm.quadratic
-            {('b', 'a'): -1.0}
+            {('a', 'b'): -1.0, ('a', 'c'): 2, ('b', 'c'): 0.5}
 
         """
         if isinstance(quadratic, dict):
@@ -669,11 +675,21 @@ class BinaryQuadraticModel(object):
             self.remove_interaction(u, v)
 
     def add_offset(self, offset):
-        """Add given value to the offset.
+        """Add value `offset` to the current offset of a binary quadratic model.
 
         Args:
             offset (number):
-                A value to be added to the constant energy offset for the binary quadratic model.
+                Value to be added to the constant energy offset of the binary quadratic model.
+
+        Examples:
+
+            This example creates an Ising model with an offset of -0.5 then
+            add to it.
+
+            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
+            >>> bqm.add_offset(1.0)
+            >>> bqm.offset
+            0.5
 
         """
         self.offset += offset
