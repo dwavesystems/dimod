@@ -284,34 +284,36 @@ class BinaryQuadraticModel(object):
 ###################################################################################################
 
     def add_variable(self, v, bias, vartype=None):
-        """Add a variable v and its bias.
+        """Add variable v and/or its bias to a binary quadratic model.
 
         Args:
             v (variable):
-                A variable can be any python object that could be used as a key of a dict.
+                The variable to add to the model. Can be any python object
+                that is a valid dict key.
 
             bias (bias):
-                The linear bias associated with v. If v already is in the model, the bias is added
-                to the existing linear bias. Many methods and functions expect bias to be a number
+                Linear bias associated with v. If v is already in the model, this value is added
+                to its current linear bias. Many methods and functions expect bias to be a number
                 but this is not explicitly checked.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the given bias. If None will be the same vartype as the binary
-                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+            vartype (:class:`.Vartype` (optional, default None)):
+                Vartype of the given bias. If None, the vartype of the binary
+                quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-            >>> bqm.add_variable('a', .5)
-            >>> bqm.linear
-            {'a': 0.5}
+            This example creates an Ising model with two variables, adds a third,
+            and adds to the linear biases of the initial two.
 
-            Variables that already exist have their bias added.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'b': -1}, {}, 0.0, dimod.SPIN)
-            >>> bqm.add_variable('b', .5)
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> bqm.linear
-            {'b': -0.5}
+            {0: 0.0, 1: 1.0}
+            >>> bqm.add_variable(2, 2.0, vartype=dimod.SPIN)        # Add a new variable
+            >>> bqm.add_variable(1, 0.33, vartype=dimod.SPIN)
+            >>> bqm.add_variable(0, 0.33, vartype=dimod.BINARY)     # The binary value is converted to the spin value
+            >>> bqm.linear
+            {0: 0.165, 1: 1.33, 2: 2.0}
 
         """
 
@@ -342,35 +344,36 @@ class BinaryQuadraticModel(object):
             pass
 
     def add_variables_from(self, linear, vartype=None):
-        """Add linear biases.
+        """Add variables and/or linear biases to a binary quadratic model.
 
         Args:
             linear (dict[variable, bias]/iterable[(variable, bias)]):
-                A collection of linear biases. If a dict, the keys should be variables in the
-                binary quadratic model and the values should be biases. Otherwise should be
-                an iterable of (variable, bias) pairs. The variables can be any python object
-                that could be used as a key in a dict. Many methods and functions expect the biases
+                A collection of variables and their linear biases to add to the model.
+                If a dict, keys are variables in the binary quadratic model and
+                values are biases. Alternatively, an iterable of (variable, bias) pairs.
+                Variables can be any python object that is a valid dict key.
+                Many methods and functions expect the biases
                 to be numbers but this is not explicitly checked.
-                If any of the variables already exist in the model, their bias is added to the
-                existing linear bias.
+                If any variable already exists in the model, its bias is added to
+                the variable's current linear bias.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the given bias. If None will be the same vartype as the binary
-                quadratic model. If given, should be :class:`.Vartype.SPIN` or
+            vartype (:class:`.Vartype` (optional, default None)):
+                Vartype of the given bias. If None, the vartype of the binary
+                quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
 
         Examples:
+            This example creates creates an empty Ising model, adds two variables,
+            and subsequently adds to the bias of the one while adding a new, third,
+            variable. 
+
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
             >>> bqm.linear
             {'a': 0.5, 'b': -1.0}
-
-            Variables that already exist have their bias added.
-
-            >>> bqm = dimod.BinaryQuadraticModel({'b': -1.}, {}, 0.0, dimod.SPIN)
-            >>> bqm.add_variables_from({'a': .5, 'b': -1.})
+            >>> bqm.add_variables_from({'b': -1., 'c': 2.0})
             >>> bqm.linear
-            {'a': 0.5, 'b': -2.0}
+            {'a': 0.5, 'b': -2.0, 'c': 2.0}
 
         """
         if isinstance(linear, dict):
