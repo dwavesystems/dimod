@@ -121,10 +121,8 @@ class Response(Iterable, Sized):
         return self.samples(sorted_by='energy')
 
     def __str__(self):
-        if self.variable_labels is None:
-            return self.samples_matrix.__str__()
-        else:
-            raise NotImplementedError
+        # developer note: it would be nice if the variable labels (if present could be printed)
+        return self.samples_matrix.__str__()
 
     ##############################################################################################
     # Properties
@@ -355,7 +353,7 @@ class Response(Iterable, Sized):
 
         """
         # concurrent.futures.as_completed
-        raise NotImplementedError
+        raise NotImplementedError("support for python Future objects is forthcoming")
 
     def update(self, *other_responses):
         """Add other responses' values to the response.
