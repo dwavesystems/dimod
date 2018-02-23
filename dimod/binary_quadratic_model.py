@@ -825,11 +825,33 @@ class BinaryQuadraticModel(object):
             pass
 
     def update(self, bqm):
-        """Update with the values from another binary quadratic model.
+        """Update one binary quadratic model from another.
 
         Args:
             bqm (:class:`.BinaryQuadraticModel`):
-                A binary quadratic model. All of the biases are added to self.
+                The updating binary quadratic model. Any variables in the updating 
+                model are added to the updated model. Values of biases and the offset
+                in the updating model are added to the corresponding values in
+                the updated model.
+
+        Examples:
+           This example creates two binary quadratic models and updates the first
+           from the second.
+
+           >>> import dimod
+           >>> linear = {1: 1, 2: 2}
+           >>> quadratic = {(1, 2): 12}
+           >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+           >>> linear2 = {2: 0.25, 3: 0.35}
+           >>> quadratic2 = {(2, 3): 23}
+           >>> bqm2 = dimod.BinaryQuadraticModel(linear2, quadratic2, 0.75, dimod.SPIN)
+           >>> bqm.update(bqm2)
+           >>> bqm.linear
+           {1: 1, 2: 2.25, 3: 0.35}
+           >>> bqm.quadratic
+           {(1, 2): 12, (2, 3): 23}
+           >>> bqm.offset
+           1.25
 
         """
         self.add_variables_from(bqm.linear, vartype=bqm.vartype)
