@@ -516,7 +516,7 @@ class BinaryQuadraticModel(object):
                 The variable to be removed from the binary quadratic model.
 
         Notes:
-            If the given variable is not in the binary quadratic model, this function does nothing.
+            If the specified variable is not in the binary quadratic model, this function does nothing.
 
         Examples:
             This example creates an Ising model and then removes one variable.
@@ -562,8 +562,7 @@ class BinaryQuadraticModel(object):
             pass
 
     def remove_variables_from(self, variables):
-        """Remove variables `variables` and all of their interactions from
-        a binary quadratic model.
+        """Remove specified variables and all of their interactions from a binary quadratic model.
 
         Args:
             variables(iterable):
@@ -588,7 +587,7 @@ class BinaryQuadraticModel(object):
             self.remove_variable(v)
 
     def remove_interaction(self, u, v):
-        """Remove the interaction between u, v from a binary quadratic model.
+        """Remove interaction of variables u, v from a binary quadratic model.
 
         Args:
             u (variable):
@@ -603,7 +602,7 @@ class BinaryQuadraticModel(object):
             Any interaction not in the binary quadratic model is ignored.
 
         Examples:
-            This example creates an Ising model with three variables and interactions
+            This example creates an Ising model with three variables that has interactions
             between two, and then removes an interaction.
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
@@ -640,17 +639,20 @@ class BinaryQuadraticModel(object):
             pass
 
     def remove_interactions_from(self, interactions):
-        """Remove all of the given interactions from the binary quadratic model.
+        """Remove all specified interactions from the binary quadratic model.
 
         Args:
             interactions (iterable[[variable, variable]]):
-                A collections of interactions. Each interaction should be a 2-tuple of variables
+                A collection of interactions. Each interaction should be a 2-tuple of variables
                 in the binary quadratic model.
 
         Notes:
             Any interaction not in the binary quadratic model is ignored.
 
         Examples:
+            This example creates an Ising model with three variables that has interactions
+            between two, and then removes an interaction.
+
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
             >>> bqm.quadratic
@@ -679,6 +681,9 @@ class BinaryQuadraticModel(object):
         """Set the binary quadratic model's offset to zero.
 
         Examples:
+            This example creates an Ising model with a positive energy offset, and
+            then removes it.
+             
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 1.3, dimod.SPIN)
             >>> bqm.remove_offset()
             >>> bqm.offset
