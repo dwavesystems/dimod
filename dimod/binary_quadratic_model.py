@@ -274,7 +274,7 @@ class BinaryQuadraticModel(object):
                 to its current linear bias. Many methods and functions expect `bias` to be a number
                 but this is not explicitly checked.
 
-            vartype (:class:`.Vartype` (optional, default None)):
+            vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
                 quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
@@ -335,7 +335,7 @@ class BinaryQuadraticModel(object):
                 If any variable already exists in the model, its bias is added to
                 the variable's current linear bias.
 
-            vartype (:class:`.Vartype` (optional, default None)):
+            vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
                 quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
@@ -365,7 +365,7 @@ class BinaryQuadraticModel(object):
                 raise TypeError("expected 'linear' to be a dict or an iterable of 2-tuples.")
 
     def add_interaction(self, u, v, bias, vartype=None):
-        """Add a variable interaction and/or its quadratic bias to a binary quadratic model.
+        """Add an interaction and/or quadratic bias to a binary quadratic model.
 
         Args:
             v (variable):
@@ -381,7 +381,7 @@ class BinaryQuadraticModel(object):
                 is added to the current quadratic bias. Many methods and functions expect `bias` to
                 be a number but this is not explicitly checked.
 
-            vartype (:class:`.Vartype` (optional, default None)):
+            vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
                 quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
@@ -474,7 +474,7 @@ class BinaryQuadraticModel(object):
             pass
 
     def add_interactions_from(self, quadratic, vartype=None):
-        """Add variable interactions and/or quadratic biases to a binary quadratic model.
+        """Add interactions and/or quadratic biases to a binary quadratic model.
 
         Args:
             quadratic (dict[(variable, variable), bias]/iterable[(variable, variable, bias)]):
@@ -487,7 +487,7 @@ class BinaryQuadraticModel(object):
                 Many methods and functions expect the biases to be numbers but this is not
                 explicitly checked.
 
-            vartype (:class:`.Vartype` (optional, default None)):
+            vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
                 quadratic model is used. Valid values are :class:`.Vartype.SPIN` or
                 :class:`.Vartype.BINARY`.
@@ -672,7 +672,7 @@ class BinaryQuadraticModel(object):
             self.remove_interaction(u, v)
 
     def add_offset(self, offset):
-        """Add value `offset` to the current offset of a binary quadratic model.
+        """Add specified value to the offset of a binary quadratic model.
 
         Args:
             offset (number):
@@ -680,8 +680,8 @@ class BinaryQuadraticModel(object):
 
         Examples:
 
-            This example creates an Ising model with an offset of -0.5 then
-            add to it.
+            This example creates an Ising model with an offset of -0.5 and then
+            adds to it.
 
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> bqm.add_offset(1.0)
