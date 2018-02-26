@@ -1,22 +1,22 @@
 class InvalidComposition(Exception):
-    """Used for compositions of samplers that are invalid"""
+    """Raised for compositions of samplers that are invalid"""
 
 
 class MappingError(Exception):
-    """mapping causes conflicting values in samples"""
+    """Raised when mapping causes conflicting values in samples"""
 
 
 class InvalidSampler(Exception):
-    """Raised when trying to use Sampler as a sampler"""
+    """Raised when trying to use the specified sampler as a sampler"""
 
 
 class BinaryQuadraticModelValueError(ValueError):
-    """Raised when a sampler cannot handle a specific bqm"""
+    """Raised when a sampler cannot handle a specified binary quadratic model"""
 
 
 class BinaryQuadraticModelSizeError(BinaryQuadraticModelValueError):
-    """Raised when the bqm has too many variables"""
+    """Raised when the binary quadratic model has too many variables"""
 
 
 class BinaryQuadraticModelStructureError(BinaryQuadraticModelValueError):
-    """Raised when the BQM does not fit the sampler"""
+    """Raised when the binary quadratic model does not fit the sampler"""
