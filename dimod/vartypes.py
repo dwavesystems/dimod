@@ -1,29 +1,9 @@
 """
-Vartype is an enumeration of the valid types for variables in a binary quadratic models.
+Enumeration of valid variable types for binary quadratic models.
 
 Examples:
-    >>> vartype = dimod.Vartype.SPIN
-    >>> print(vartype)
-    Vartype.SPIN
-    >>> isinstance(vartype, dimod.Vartype)
-    True
-
-    Access can also be by value or name.
-
-    >>> print(dimod.Vartype({0, 1}))
-    Vartype.BINARY
-    >>> print(dimod.Vartype['SPIN'])
-    Vartype.SPIN
-
-    To check correctness, use the `.value` parameter.
-
-    >>> sample = {'u': -1, 'v': 1}
-    >>> vartype = dimod.Vartype.SPIN
-    >>> all(val in vartype.value for val in sample.values())
-    True
-
-    The different Vartypes are also in the main namespace
-    for easy access.
+    This example shows easy access to different Vartypes, which are in the main
+    namespace.
 
     >>> vartype = dimod.SPIN
     >>> print(vartype)
@@ -31,6 +11,25 @@ Examples:
     >>> vartype = dimod.BINARY
     >>> print(vartype)
     Vartype.BINARY
+    >>> vartype = dimod.Vartype.SPIN
+    >>> print(vartype)
+    Vartype.SPIN
+    >>> isinstance(vartype, dimod.Vartype)
+    True
+
+    This example shows access by value or name.
+
+    >>> print(dimod.Vartype({0, 1}))
+    Vartype.BINARY
+    >>> print(dimod.Vartype['SPIN'])
+    Vartype.SPIN
+
+    This example uses the `.value` parameter to validate.
+
+    >>> sample = {'u': -1, 'v': 1}
+    >>> vartype = dimod.Vartype.SPIN
+    >>> all(val in vartype.value for val in sample.values())
+    True
 
 """
 import enum
@@ -42,10 +41,10 @@ class Vartype(enum.Enum):
     """An :py:class:`~enum.Enum` over the types of variables for the binary quadratic model.
 
     Attributes:
-        SPIN (:class:`.Vartype`): The vartype for spin-valued models. That
-            is the variables of the model are either -1 or 1.
-        BINARY (:class:`.Vartype`): The vartype for binary models. That is
-            the variables of the model are either 0 or 1.
+        SPIN (:class:`.Vartype`): Vartype for spin-valued models; variables of
+           the model are either -1 or 1.
+        BINARY (:class:`.Vartype`): Vartype for binary models; variables of the
+           model are either 0 or 1.
 
     """
     SPIN = frozenset({-1, 1})
