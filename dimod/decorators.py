@@ -8,6 +8,8 @@ from dimod.compatibility23 import iteritems, getargspec
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
+__all__ = ['bqm_index_labels', 'bqm_structured', 'mixinmethod', 'vartype_argument']
+
 
 def bqm_index_labels(f):
     """todo
@@ -65,6 +67,24 @@ def bqm_structured(f):
         return f(sampler, bqm, **kwargs)
 
     return new_f
+
+
+def mixinmethod(method):
+    """Marks a method as being a mixin.
+
+    Adds the 'mixin' attribute with value True to the decorated function.
+
+    Examples:
+        >>> @mixinmethod
+        >>> def f():
+        ...     pass
+        >>> f.mixin
+        True
+
+    """
+    # NB: decorator name was chosen to be consistent with @classmethod and @staticmethod
+    method.mixin = True
+    return method
 
 
 def vartype_argument(*arg_names):
