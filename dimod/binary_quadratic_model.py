@@ -712,13 +712,17 @@ class BinaryQuadraticModel(object):
         self.add_offset(-self.offset)
 
     def scale(self, scalar):
-        """Multiply all of the biases and the offset by the given scalar.
+        """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
         Args:
             scalar (number):
-                The value to scale the energy range of the binary quadratic model by.
+                Value by which to scale the energy range of the binary quadratic model.
 
         Examples:
+
+            This example creates a binary quadratic model and then scales it to half
+            the original energy range.
+
             >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
             >>> bqm.scale(0.5)
             >>> bqm.linear
@@ -753,17 +757,22 @@ class BinaryQuadraticModel(object):
             pass
 
     def fix_variable(self, v, value):
-        """Fix the value of a variable in the binary quadratic model and remove it.
+        """Fix the value of a variable and remove it from a binary quadratic model.
 
         Args:
             v (variable):
-                A variable in the binary quadratic model that has an interaction with u.
+                Variable in the binary quadratic model to be fixed.
 
             value (int):
-                The value assigned to the variable, must match the :class:`.Vartype` of the binary
+                Value assigned to the variable. Values must match the :class:`.Vartype` of the binary
                 quadratic model.
 
         Examples:
+
+            This example creates a binary quadratic model with one variable and fixes
+            its value.
+
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -.5}, {}, 0.0, dimod.SPIN)
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
@@ -771,6 +780,10 @@ class BinaryQuadraticModel(object):
             >>> bqm.linear
             {}
 
+            This example creates a binary quadratic model with two variables and fixes
+            the value of one.
+
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0.}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
@@ -779,9 +792,6 @@ class BinaryQuadraticModel(object):
             {'b': 1}
             >>> bqm.quadratic
             {}
-
-        Notes:
-            Acts on the binary quadratic model in place.
 
         """
         adj = self.adj
@@ -800,21 +810,21 @@ class BinaryQuadraticModel(object):
         self.remove_variable(v)
 
     def flip_variable(self, v):
-        """Flips a single variable v.
+        """Flips variable v in a binary quadratic model.
 
         Args:
             v (variable):
-                A variable in the binary quadratic model.
-
-        Notes:
-            If v is not in the binary quadratic model then it is ignored.
+                Variable in the binary quadratic model. If v is not in the binary
+                quadratic model, it is ignored.
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
-            >>> original = bqm.copy()
-            >>> bqm.flip_variable('a')
-            >>> original.energy({'a': -1}) == bqm.energy({'a': 1})
-            True
+            This example creates a binary quadratic model with two variables and inverts the value of one.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
+            >>> bqm.flip_variable(1)
+            >>> bqm
+            BinaryQuadraticModel({1: -1.0, 2: 2}, {(1, 2): -0.5}, 0.5, Vartype.SPIN)
 
         """
         adj = self.adj
@@ -900,16 +910,36 @@ class BinaryQuadraticModel(object):
         self.add_offset(bqm.offset)
 
     def contract_variables(self, u, v):
-        """Enforces u, v are the same variable.
+        """Enforces u, v being the same variable in a binary quadratic model.
 
-        The resulting variable will be labeled as 'u'.
+        The resulting variable is labeled 'u'. Values of interactions between `v` and
+        variables that `u` interacts with are added to the corresponding interactions
+        of `u`.
 
         Args:
             u (variable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
 
             v (variable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
+
+        Examples:
+           This example creates a binary quadratic model representing the K4 complete graph
+           and contracts node (variable) 3 into node 2. The interactions between
+           3 and its neighbors 1 and 4 are added to the corresponding interactions
+           between 2 and those same neighbors.
+
+           >>> import dimod
+           >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
+           >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
+           ...              (2, 3): 23, (2, 4): 24,
+           ...              (3, 4): 34}
+           >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+           >>> bqm.contract_variables(2, 3)
+           >>> bqm.linear
+           {1: 1, 2: 2, 4: 4}
+           >>> bqm.quadratic
+           {(1, 2): 25, (1, 4): 14, (2, 4): 58}
 
         """
         adj = self.adj
@@ -944,15 +974,15 @@ class BinaryQuadraticModel(object):
 ###################################################################################################
 
     def relabel_variables(self, mapping, inplace=True):
-        """Relabel the variables according to the given mapping.
+        """Relabel variables of a binary quadratic model as specified by mapping.
 
         Args:
             mapping (dict):
-                A dict mapping the current variable labels to new ones. If an incomplete mapping is
-                provided unmapped variables will keep their labels
+                Dict mapping current variable labels to new ones. If an incomplete mapping is
+                provided, unmapped variables retain their current labels.
 
             inplace (bool, optional, default=True):
-                If True, the binary quadratic model is updated in-place, otherwise a new binary
+                If True, the binary quadratic model is updated in-place; otherwise, a new binary
                 quadratic model is returned.
 
         Returns:
@@ -960,11 +990,17 @@ class BinaryQuadraticModel(object):
             If inplace=True, returns itself.
 
         Examples:
+            This example creates a binary quadratic model with two variables and relables one.
+
+            >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> model.relabel_variables({0: 'a'})
-            >>> model.quadratic
-            {('a', 1): -1}
+            BinaryQuadraticModel({1: 1.0, 'a': 0.0}, {('a', 1): -1}, 0.0, Vartype.SPIN)
 
+            This example creates a binary quadratic model with two variables and returns a new
+            model with relabled variables.
+
+            >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)
             >>> new_model.quadratic
