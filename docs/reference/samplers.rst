@@ -4,16 +4,13 @@
 Samplers and Composites
 =======================
 
-Creating a dimod Sampler
-========================
-
 .. automodule:: dimod.core.sampler
 
 .. currentmodule:: dimod
 .. autoclass:: Sampler
 
-Methods
--------
+Mixin Methods
+-------------
 
 .. autosummary::
    :toctree: generated/

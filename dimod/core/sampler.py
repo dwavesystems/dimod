@@ -39,10 +39,17 @@ Ising problem.
 We decide that this function is useful enough that we wish to create a dimod sampler from it. This
 can be done simply by using the :class:`.Sampler` abstract base class (ABC_).
 
+.. _ABC: https://docs.python.org/3.6/library/abc.html#module-abc
+
 .. code-block:: python
-    :linenos:
 
     class LinearIsingSampler(dimod.Sampler):
+
+        def sample_ising(self, h, J):
+            sample = linear_ising(h, J)
+            energy = dimod.ising_energy(sample, h, J)
+            return dimod.Response.from_dicts([sample], {'energy': [energy]})
+
         @property
         def properties(self):
             return dict()
@@ -51,15 +58,40 @@ can be done simply by using the :class:`.Sampler` abstract base class (ABC_).
         def parameters(self):
             return dict()
 
-        def sample_ising(self, h, J):
+We know we need to implement :meth:`sample_ising`, :attr:`properties` and :attr:`parameters` by
+consulting the above table. The advantage of using the :class:`.Sampler` is that we get the other
+sample methods 'for free' as mixins.
+
+>>> sampler = LinearIsingSampler()
+>>> response = sampler.sample_ising({'a': -1}, {})  # implemented
+>>> response = sampler.sample_qubo({('a', 'a'): 1})  # mixin
+>>> response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # mixin
+
+In this case, because the sampler is so simple, we chose to have both :attr:`properties` and
+:attr:`parameters` return empty dicts, but we could instantiate a more complex version.
+
+.. code-block:: python
+
+    class FancyLinearIsingSampler(dimod.Sampler):
+        def __init__(self):
+            self._properties = {'description': 'a simple sampler that only considers the linear terms'}
+            self._parameters = {'verbose': []}
+
+        def sample_ising(self, h, J, verbose=False):
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
+            if verbose:
+                print(sample)
             return dimod.Response.from_dicts([sample], {'energy': [energy]})
 
-Now
+        @property
+        def properties(self):
+            return self._properties
 
+        @property
+        def parameters(self):
+            return self._parameters
 
-.. _ABC: https://docs.python.org/3.6/library/abc.html#module-abc
 
 """
 from dimod.binary_quadratic_model_convert import to_qubo, to_ising, from_qubo, from_ising
@@ -77,7 +109,7 @@ class Sampler:
     """The abstract base class for dimod Samplers.
 
     Provides the method :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
-    :meth:`~.Sampler.sample_qubo` assuming that one has been overwritten.
+    :meth:`~.Sampler.sample_qubo` assuming that one has been implemented.
 
     """
 
@@ -91,8 +123,7 @@ class Sampler:
 
     @abc.samplemixinmethod
     def sample(self, bqm, **parameters):
-        """todo"""
-        # self._ensure_finite_cycle('sample')
+        """Samples from the given bqm using the instantiated sample method."""
         if bqm.vartype is Vartype.SPIN:
             Q, offset = to_qubo(bqm)
             response = self.sample_qubo(Q, **parameters)
@@ -108,8 +139,7 @@ class Sampler:
 
     @abc.samplemixinmethod
     def sample_ising(self, h, J, **parameters):
-        """todo"""
-        # self._ensure_finite_cycle('sample_ising')
+        """Samples from the given Ising model using the instantiated sample method."""
         bqm = from_ising(h, J)
         response = self.sample(bqm, **parameters)
         response.change_vartype(Vartype.SPIN)
@@ -117,8 +147,7 @@ class Sampler:
 
     @abc.samplemixinmethod
     def sample_qubo(self, Q, **parameters):
-        """todo"""
-        # self._ensure_finite_cycle('sample_qubo')
+        """Samples from the given QUBO using the instantiated sample method."""
         bqm = from_qubo(Q)
         response = self.sample(bqm, **parameters)
         response.change_vartype(Vartype.BINARY)
