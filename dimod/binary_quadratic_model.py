@@ -1018,21 +1018,32 @@ class BinaryQuadraticModel(object):
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
-        """Creates a new BinaryQuadraticModel with the given vartype.
+        """Create a BinaryQuadraticModel with the specified vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set, optional):
-                The variable type desired for the penalty model. Accepted input values:
+                Variable type for the changed model. Accepted input values:
                 :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             inplace (bool, optional, default=True):
-                If True, the binary quadratic model is updated in-place, otherwise a new binary
+                If True, the binary quadratic model is updated in-place; otherwise, a new binary
                 quadratic model is returned.
 
         Returns:
             :class:`.BinaryQuadraticModel`. A new BinaryQuadraticModel with
             vartype matching input 'vartype'.
+
+        Examples:
+            This example creates an Ising model and then creates a QUBO from it.
+
+            >>> import dimod
+            >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
+            >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
+            >>> bqm_spin
+            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
+            >>> bqm_qubo
+            BinaryQuadraticModel({1: 1.0, 2: 3.0}, {(1, 2): 2.0}, -2.0, Vartype.BINARY)
 
         """
 
@@ -1127,19 +1138,40 @@ class BinaryQuadraticModel(object):
 ###################################################################################################
 
     def copy(self):
-        """Create a copy of the BinaryQuadraticModel.
+        """Create a copy of a BinaryQuadraticModel.
 
         Returns:
             :class:`.BinaryQuadraticModel`
+
+        Examples:
+            This example creates a binary quadratic model and copies it.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
+            >>> bqm2 = bqm.copy()
+            >>> bqm2
+            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
 
         """
         # new objects are constructed for each, so we just need to pass them in
         return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype)
 
     def energy(self, sample):
-        """Determines the energy of the given sample.
+        """Determine the energy of the specified sample of a binary quadratic model.
 
-        The energy is calculated:
+        Energy of a sample for a binary quadratic model is defined as a sum, offset
+        by the constant energy offset associated with the binary quadratic model, of
+        the sample multipled by the linear bias of the variable and
+        all its interactions; that is,
+
+        .. math::
+
+            E(\mathbf{s}) = \sum_v h_v s_v + \sum_{u,v} J_{u,v} s_u s_v + c
+
+        where :math:`s_v` is the sample, :math:`h_v` is the linear bias, :math:`J_{u,v}`
+        the quadratic bias (interactions), and :math:`c` the energy offset.
+
+        Code for the energy calculation might look like the following:
 
         >>> energy = model.offset  # doctest: +SKIP
         >>> for v in model:  # doctest: +SKIP
@@ -1147,28 +1179,24 @@ class BinaryQuadraticModel(object):
         >>> for u, v in model.quadratic:  # doctest: +SKIP
         ...     energy += model.quadratic[(u, v)] * sample[u] * sample[v]
 
-        Or equivalently, let us define:
-
-            :code:`sample[v]` as :math:`s_v`
-
-            :code:`model.linear[v]` as :math:`h_v`
-
-            :code:`model.quadratic[(u, v)]` as :math:`J_{u,v}`
-
-            :code:`model.offset` as :math:`c`
-
-        then,
-
-        .. math::
-
-            E(\mathbf{s}) = \sum_v h_v s_v + \sum_{u,v} J_{u,v} s_u s_v + c
-
         Args:
-            sample (dict): The sample. The keys should be the variables and
-                the values should be the value associated with each variable.
+            sample (dict):
+                Sample for which to calculate the energy as a dict. Keys are variables
+                and values are the value associated with each variable.
 
         Returns:
             float: The energy.
+
+        Examples:
+            This example creates a binary quadratic model and returns the energies for
+            a couple of samples.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 1}, {(1, 2): 1}, 0.5, dimod.SPIN)
+            >>> bqm.energy({1: -1, 2: -1})
+            -0.5
+            >>> bqm.energy({1: 1, 2: 1})
+            3.5
 
         """
         linear = self.linear
