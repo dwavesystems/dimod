@@ -81,8 +81,6 @@ Energy
 Conversion Functions
 ====================
 
-.. automodule:: dimod.binary_quadratic_model_convert
-
 .. currentmodule:: dimod
 
 .. autosummary::
