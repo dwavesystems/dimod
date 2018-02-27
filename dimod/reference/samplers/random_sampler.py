@@ -18,9 +18,12 @@ class RandomSampler(Sampler):
     Note that this sampler is intended for testing.
 
     """
+    properties = None
+    parameters = None
+
     def __init__(self):
-        Sampler.__init__(self)
-        self.sample_kwargs = {'num_reads': []}
+        self.parameters = {'num_reads': []}
+        self.properties = {}
 
     def sample(self, bqm, num_reads=10):
         """Gives random samples.
