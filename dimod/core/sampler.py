@@ -95,10 +95,14 @@ class Sampler:
 
     @abc.abstractproperty  # for python2 compatibility
     def parameters(self):
+        """dict: Should be a dict where the keys are the keyword parameters accepted by the sample
+        methods. The values should be lists of the properties relevent to the parameter.
+        """
         pass
 
     @abc.abstractproperty  # for python2 compatibility
     def properties(self):
+        """dict: Should be a dict containing any additional information about the sampler."""
         pass
 
     @abc.samplemixinmethod
