@@ -2,53 +2,27 @@
 
 A structured sampler can only sample from binary quadratic models with a specific graph.
 
-Creating a Structured Sampler
------------------------------
-
-A simple example of a structured sampler is one that only has two variables and one interaction.
+A simple example of a structured sampler is one that can only sample from a binary quadratic model
+with two variables and one interaction
 
 .. code-block:: python
-    :linenos:
 
     class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-        def __init__(self):
-            dimod.Sampler()
-            dimod.Structured(self, [0, 1], [(0, 1)])
+        @property
+        def nodelist(self):
+            return [0, 1]
 
-This sampler as constructed won't work (because we have not overwritten any of the sample
-methods), but it is sufficient to demonstrate accessing the properties.
+        @property
+        def edgelist(self):
+            return [(0, 1)]
 
-First the structure is made a property of the sampler and it can be accessed appropriately.
+        @property
+        def properties(self):
+            return dict()
 
->>> sampler = TwoVariablesSampler()
->>> sampler.structure
-Structure([0, 1], [(0, 1)], {0: {1}, 1: {0}})  # namedtuple
->>> sampler.structure.nodelist
-[0, 1]
->>> sampler.structure.edgelist
-[(0, 1)]
->>> sampler.structure.adjacency
-{0: {1}, 1: {0}}
-
-Each of these components are also stored as properties of the sampler.
-
->>> sampler = TwoVariablesSampler()
->>> sampler.properties
-{'structure': Structure([0, 1], [(0, 1)], {0: {1}, 1: {0}}),
- 'nodelist': [0, 1],
- 'edgelist': [(0, 1)],
- 'adjacency': {0: {1}, 1: {0}}}}
-
- If you want the structure of the given problem to be checked against the sampler's structure, you
- can enforce this with a decorator.
-
-.. code-block:: python
-    :linenos:
-
-    class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-        def __init__(self):
-            dimod.Sampler.__init__(self)
-            dimod.Structured.__init__(self, [0, 1], [(0, 1)])
+        @property
+        def parameters(self):
+            return dict()
 
         @dimod.decorators.bqm_structured
         def sample(self, bqm):
@@ -65,45 +39,78 @@ Each of these components are also stored as properties of the sampler.
 
             return response
 
-Creating a Structured Composite
--------------------------------
+By consulting the table above, we know that we need to implement the :attr:`~.Structured.nodelist`
+and :attr:`~.Structured.edgelist` properties. By doing so we can access the
+:attr:`~.Structured.structure` and :attr:`~.Structured.adjacency` properties. As well as any method
+or properties required by the :class:`.Sampler` abstract base class.
 
-todo
+An additional benefit of the :class:`.Structured` abstract base class is the
+:obj:`~.bqm_structured` decorator which will check the given binary quadratic model for the correct
+structure.
 
 """
 from collections import namedtuple
 
-Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
+from dimod.compatibility23 import add_metaclass
+
+import dimod.abc as abc
+
+__all__ = ['Structured']
+
+_Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
 
 
-class Structured(object):
-    """todo
+@add_metaclass(abc.ABCMeta)
+class Structured:
+    """The abstract base class for dimod Structured samplers.
+
+    Provides the :attr:`.Structured.adjacency` and :attr:`.Structured.structure` properties.
 
     """
-    def __init__(self, nodelist, edgelist, sort_nodes=True, sort_edges=True):
+    @abc.abstractproperty
+    def nodelist(self):
+        """list: Should be a list of the nodes/variables allowed by the sampler."""
+        pass
 
-        if sort_nodes:
-            nodelist = sorted(nodelist)
-        elif not isinstance(nodelist, list):
-            nodelist = list(nodelist)
+    @abc.abstractproperty
+    def edgelist(self):
+        """list[(node, node)]: Should be a list of the edges/interactions allowed by the sampler.
+        Each edge/interaction should be a 2-tuple.
+        """
+        pass
 
-        if sort_edges:
-            edgelist = sorted(tuple(sorted(edge)) for edge in edgelist)
-        elif not isinstance(edgelist, list):
-            edgelist = list(edgelist)
+    @property
+    def adjacency(self):
+        """dict[variable, set]: The adjacency structure.
 
-        adjacency = {v: set() for v in nodelist}
-        for u, v in edgelist:
-            if v in adjacency[u]:
-                raise ValueError("Each edge in edgelist must be unique")
-            adjacency[u].add(v)
-            adjacency[v].add(u)
+        Examples:
 
-        self.structure = Structure(nodelist, edgelist, adjacency)
-        try:
-            self.properties['structure'] = self.structure
-            self.properties['nodelist'] = nodelist
-            self.properties['edgelist'] = edgelist
-            self.properties['adjacency'] = adjacency
-        except AttributeError:
-            raise
+            >>> class StructuredObject(dimod.Structured):
+            ...     @property
+            ...      def nodelist(self):
+            ...         return [0, 1, 2]
+            ...
+            ...     @property
+            ...     def edgelist(self):
+            ...         return [(0, 1), (1, 2)]
+            >>> test_obj = StructuredObject()
+            >>> for u, v in test_obj.edgelist:
+            ...     assert u in test_obj.adjacency[v]
+            ...     assert v in test_obj.adjacency[u]
+
+        """
+        if not hasattr(self, '_adjacency'):
+            adjacency = {v: set() for v in self.nodelist}
+            for u, v in self.edgelist:
+                if v in adjacency[u]:
+                    raise ValueError("Each edge in edgelist must be unique")
+                adjacency[u].add(v)
+                adjacency[v].add(u)
+            self._adjacency = adjacency
+            return adjacency
+        return self._adjacency
+
+    @property
+    def structure(self):
+        """A :class:`~collections.namedtuple` :samp:`Structure(nodelist, edgelist, adjacency)`"""
+        return _Structure(self.nodelist, self.edgelist, self.adjacency)
