@@ -1,24 +1,4 @@
 """
-
-.. list-table::
-    :header-rows: 1
-
-    *   - ABC
-        - Inherits from
-        - Abstract Properties
-        - Abstract Methods
-        - Mixins
-    *   - :class:`.Sampler`
-        -
-        - :attr:`~Sampler.parameters`, :attr:`~Sampler.properties`
-        - one of
-          :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
-        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
-
-
-Creating a dimod Sampler
-========================
-
 We expect developers will wish to create new dimod samplers. Here we will provide an example of how
 to do so.
 
