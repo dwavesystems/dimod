@@ -20,11 +20,14 @@ __all__ = ['SimulatedAnnealingSampler']
 class SimulatedAnnealingSampler(Sampler):
     """A simple simulated annealing sampler.
     """
+    properties = None
+    parameters = None
+
     def __init__(self):
-        Sampler.__init__(self)
-        self.sample_kwargs = {'num_reads': [],
-                              'beta_range': [],
-                              'num_sweeps': []}
+        self.parameters = {'num_reads': [],
+                           'beta_range': [],
+                           'num_sweeps': []}
+        self.properties = {}
 
     def sample(self, bqm, beta_range=None, num_reads=10, num_sweeps=1000):
         """Sample from low-energy spin states using simulated annealing.
