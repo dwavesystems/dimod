@@ -8,6 +8,8 @@ from dimod.compatibility23 import iteritems, getargspec
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
+__all__ = ['bqm_index_labels', 'bqm_structured', 'mixinmethod', 'vartype_argument']
+
 
 def bqm_index_labels(f):
     """todo
