@@ -14,7 +14,7 @@ included methods and parameters. In this way complex samplers
 can be constructed.
 
 Because an instantiated composite with its children is a 'composed sampler', dimod includes the
-:class:`.ComposedSampler` abstract base class, which inherits its abstract methods and propertiees
+:class:`.ComposedSampler` abstract base class, which inherits its abstract methods and properties
 as well as its mixins from :class:`.Sampler` and :class:`.Composite`.
 
 """
@@ -23,7 +23,7 @@ from dimod.core.sampler import Sampler
 
 import dimod.abc as abc
 
-__all__ = ['Composite']
+__all__ = ['Composite', 'ComposedSampler']
 
 
 @add_metaclass(abc.ABCMeta)
@@ -70,5 +70,5 @@ class Composite:
 
 
 class ComposedSampler(Sampler, Composite):
-    """todo"""
+    """Inherits from :class:`.Sampler` and :class:`.Composite`."""
     pass

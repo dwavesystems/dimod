@@ -97,6 +97,10 @@ Mixin Properties
 
    Composite.child
 
+.. currentmodule:: dimod
+.. autoclass:: ComposedSampler
+
+
 
 Creating a Structured Sampler
 =============================
