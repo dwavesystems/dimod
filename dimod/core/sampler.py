@@ -1,7 +1,7 @@
 """
 todo - describe how to use the dimod sampler template
 """
-from dimod.binary_quadratic_model_convert import to_qubo, to_ising, from_qubo, from_ising
+from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.vartypes import Vartype
 
@@ -12,6 +12,7 @@ class Sampler(object):
     """todo
 
     """
+
     def __init__(self):
         self.sample_kwargs = {}
         self.properties = {}
@@ -32,12 +33,12 @@ class Sampler(object):
         """todo"""
         self._ensure_finite_cycle('sample')
         if bqm.vartype is Vartype.SPIN:
-            Q, offset = to_qubo(bqm)
+            Q, offset = bqm.to_qubo()
             response = self.sample_qubo(Q, **sample_kwargs)
             response.change_vartype(Vartype.SPIN, offset)
             return response
         elif bqm.vartype is Vartype.BINARY:
-            h, J, offset = to_ising(bqm)
+            h, J, offset = bqm.to_ising()
             response = self.sample_ising(h, J, **sample_kwargs)
             response.change_vartype(Vartype.BINARY, offset)
             return response
@@ -47,7 +48,7 @@ class Sampler(object):
     def sample_ising(self, h, J, **sample_kwargs):
         """todo"""
         self._ensure_finite_cycle('sample_ising')
-        bqm = from_ising(h, J)
+        bqm = BinaryQuadraticModel.from_ising(h, J)
         response = self.sample(bqm, **sample_kwargs)
         response.change_vartype(Vartype.SPIN)
         return response
@@ -55,7 +56,7 @@ class Sampler(object):
     def sample_qubo(self, Q, **sample_kwargs):
         """todo"""
         self._ensure_finite_cycle('sample_qubo')
-        bqm = from_qubo(Q)
+        bqm = BinaryQuadraticModel.from_qubo(Q)
         response = self.sample(bqm, **sample_kwargs)
         response.change_vartype(Vartype.BINARY)
         return response

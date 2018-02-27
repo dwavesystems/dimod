@@ -7,7 +7,6 @@ A reference implementation of a simulated annealing sampler using the dimod API.
 import random
 import math
 
-from dimod.binary_quadratic_model_convert import to_ising
 from dimod.compatibility23 import itervalues
 from dimod.core.sampler import Sampler
 from dimod.response import Response
@@ -66,7 +65,7 @@ class SimulatedAnnealingSampler(Sampler):
         if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
 
-        h, J, offset = to_ising(bqm)
+        h, J, offset = bqm.to_ising()
 
         # run the simulated annealing algorithm
         samples = []

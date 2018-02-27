@@ -8,7 +8,6 @@ import itertools
 
 import numpy as np
 
-from dimod.binary_quadratic_model_convert import to_numpy_matrix
 from dimod.core.sampler import Sampler
 from dimod.compatibility23 import zip_
 from dimod.decorators import bqm_index_labels
@@ -28,7 +27,7 @@ class ExactSolver(Sampler):
     """
     @bqm_index_labels
     def sample(self, bqm):
-        M = to_numpy_matrix(bqm.binary)
+        M = bqm.binary.to_numpy_matrix()
 
         sample = np.zeros((len(bqm),), dtype=bool)
 

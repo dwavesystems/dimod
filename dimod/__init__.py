@@ -11,9 +11,6 @@ import dimod.test
 from dimod.binary_quadratic_model import *
 import dimod.binary_quadratic_model
 
-from dimod.binary_quadratic_model_convert import *
-import dimod.binary_quadratic_model_convert as bqm_convert
-
 import dimod.decorators
 
 from dimod.exceptions import *
