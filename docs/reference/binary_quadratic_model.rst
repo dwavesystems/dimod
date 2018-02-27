@@ -78,20 +78,18 @@ Energy
 
    BinaryQuadraticModel.energy
 
-Conversion Functions
-====================
-
-.. currentmodule:: dimod
+Converting to other types
+-------------------------
 
 .. autosummary::
    :toctree: generated/
 
-   from_ising
-   from_numpy_matrix
-   from_qubo
-   from_pandas_dataframe
-   to_ising
-   to_networkx_graph
-   to_numpy_matrix
-   to_qubo
-   to_pandas_dataframe
+   BinaryQuadraticModel.from_ising
+   BinaryQuadraticModel.from_numpy_matrix
+   BinaryQuadraticModel.from_qubo
+   BinaryQuadraticModel.from_pandas_dataframe
+   BinaryQuadraticModel.to_ising
+   BinaryQuadraticModel.to_networkx_graph
+   BinaryQuadraticModel.to_numpy_matrix
+   BinaryQuadraticModel.to_qubo
+   BinaryQuadraticModel.to_pandas_dataframe
