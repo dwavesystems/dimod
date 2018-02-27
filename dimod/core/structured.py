@@ -69,10 +69,14 @@ class Structured:
     """
     @abc.abstractproperty
     def nodelist(self):
+        """list: Should be a list of the nodes/variables allowed by the sampler."""
         pass
 
     @abc.abstractproperty
     def edgelist(self):
+        """list[(node, node)]: Should be a list of the edges/interactions allowed by the sampler.
+        Each edge/interaction should be a 2-tuple.
+        """
         pass
 
     @property
