@@ -74,8 +74,8 @@ In this case, because the sampler is so simple, we chose to have both :attr:`pro
 
 
 """
-from dimod.binary_quadratic_model_convert import to_qubo, to_ising, from_qubo, from_ising
 from dimod.compatibility23 import add_metaclass
+from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.vartypes import Vartype
 
@@ -109,12 +109,12 @@ class Sampler:
     def sample(self, bqm, **parameters):
         """Samples from the given bqm using the instantiated sample method."""
         if bqm.vartype is Vartype.SPIN:
-            Q, offset = to_qubo(bqm)
+            Q, offset = bqm.to_qubo()
             response = self.sample_qubo(Q, **parameters)
             response.change_vartype(Vartype.SPIN, offset)
             return response
         elif bqm.vartype is Vartype.BINARY:
-            h, J, offset = to_ising(bqm)
+            h, J, offset = bqm.to_ising()
             response = self.sample_ising(h, J, **parameters)
             response.change_vartype(Vartype.BINARY, offset)
             return response
@@ -124,7 +124,7 @@ class Sampler:
     @abc.samplemixinmethod
     def sample_ising(self, h, J, **parameters):
         """Samples from the given Ising model using the instantiated sample method."""
-        bqm = from_ising(h, J)
+        bqm = BinaryQuadraticModel.from_ising(h, J)
         response = self.sample(bqm, **parameters)
         response.change_vartype(Vartype.SPIN)
         return response
@@ -132,7 +132,7 @@ class Sampler:
     @abc.samplemixinmethod
     def sample_qubo(self, Q, **parameters):
         """Samples from the given QUBO using the instantiated sample method."""
-        bqm = from_qubo(Q)
+        bqm = BinaryQuadraticModel.from_qubo(Q)
         response = self.sample(bqm, **parameters)
         response.change_vartype(Vartype.BINARY)
         return response
