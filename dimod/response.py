@@ -77,6 +77,7 @@ class Response(Iterable, Sized):
         if 'energy' not in data_vectors:
             raise ValueError("energy must be provided")
         else:
+            data_vectors = data_vectors.copy()  # shallow copy
             data_vectors['energy'] = np.asarray(data_vectors['energy'])
         for vector in data_vectors.values():
             # todo - check that is a vector and that has the right length
