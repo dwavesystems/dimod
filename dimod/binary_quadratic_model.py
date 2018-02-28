@@ -7,7 +7,8 @@ from __future__ import absolute_import, division
 
 from numbers import Number
 
-from dimod.compatibility23 import itervalues, iteritems, iterkeys
+from six import itervalues, iteritems, iterkeys
+
 from dimod.decorators import vartype_argument
 from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
