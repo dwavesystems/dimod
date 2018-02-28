@@ -4,7 +4,9 @@
 import inspect
 from functools import wraps
 
-from dimod.compatibility23 import iteritems, getargspec
+from six import iteritems
+
+from dimod.compatibility23 import getargspec
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
