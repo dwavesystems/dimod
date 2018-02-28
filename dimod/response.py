@@ -20,8 +20,8 @@ from collections import Mapping, Iterable, Sized, namedtuple
 import itertools
 
 import numpy as np
+from six import itervalues
 
-from dimod.compatibility23 import itervalues
 from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 

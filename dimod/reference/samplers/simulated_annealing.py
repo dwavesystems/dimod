@@ -7,7 +7,8 @@ A reference implementation of a simulated annealing sampler using the dimod API.
 import random
 import math
 
-from dimod.compatibility23 import itervalues
+from six import itervalues
+
 from dimod.core.sampler import Sampler
 from dimod.response import Response
 from dimod.utilities import ising_energy

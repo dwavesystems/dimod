@@ -3,7 +3,7 @@ Utility functions useful for samplers.
 """
 import itertools
 
-from dimod.compatibility23 import iteritems, itervalues
+from six import iteritems, itervalues
 
 __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 

@@ -7,9 +7,9 @@ An exact solver that calculates the energy of all possible samples.
 import itertools
 
 import numpy as np
+from six.moves import zip
 
 from dimod.core.sampler import Sampler
-from dimod.compatibility23 import zip_
 from dimod.decorators import bqm_index_labels
 from dimod.response import Response
 from dimod.vartypes import Vartype
@@ -60,7 +60,7 @@ class ExactSolver(Sampler):
 
                 yield sample.copy(), float(energy) + bqm.offset
 
-        samples, energies = zip_(*iter_samples())
+        samples, energies = zip(*iter_samples())
 
         response = Response.from_matrix(np.asarray(samples), {'energy': energies})
 

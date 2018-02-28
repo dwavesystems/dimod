@@ -74,7 +74,8 @@ In this case, because the sampler is so simple, we chose to have both :attr:`pro
 
 
 """
-from dimod.compatibility23 import add_metaclass
+from six import add_metaclass
+
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.vartypes import Vartype
