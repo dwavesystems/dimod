@@ -1,3 +1,5 @@
+from __future__ import division
+
 import unittest
 
 from collections import OrderedDict
@@ -14,8 +16,19 @@ except ImportError:
     _pandas = False
 
 
-def sample_qubo(num_reads, num_variables=2000):
-    return np.matrix(np.random.randint(0, 2, size=(num_reads, num_variables), dtype='int8'))
+def iter_spins(avg=.4):
+    """infinite iterator that yields samples converging to the expected average"""
+
+    yield 1
+
+    total = 1
+    count = 1
+
+    while True:
+        val = 1 if total / count <= avg else -1
+        total += val
+        count += 1
+        yield val
 
 
 class TestResponse(unittest.TestCase):
@@ -39,6 +52,18 @@ class TestResponse(unittest.TestCase):
 
         npt.assert_equal(samples_matrix, response.samples_matrix)
         npt.assert_allclose(energies, response.data_vectors['energy'])
+
+    def test_data_vector_copy(self):
+        samples_matrix = np.matrix([[0, 1, 0, 1],
+                                    [1, 0, 1, 0],
+                                    [0, 0, 0, 0],
+                                    [1, 1, 1, 1]])
+        energies = np.asarray([2, 2, 0, 4], dtype=float)
+
+        data_vectors = {'energy': energies}
+        response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
+
+        self.assertIsNot(response.data_vectors, data_vectors)
 
     def test_instantiation_without_energy(self):
         samples_matrix = np.matrix([[0, 1, 0, 1],
@@ -140,6 +165,39 @@ class TestResponse(unittest.TestCase):
         self.assertEqual(len(response0), 4)
         for vector in response0.data_vectors.values():
             self.assertEqual(len(vector), 4)
+
+    def test_update_energy(self):
+
+        spingen = iter(iter_spins())
+
+        h = {v: v * .2 for v in range(8)}
+        J = {(u, u + 1): .3 * u * (u + 1) for u in range(7)}
+
+        samples = [{v: next(spingen) for v in range(8)}
+                   for __ in range(10)]
+        energies = [dimod.ising_energy(sample, h, J) for sample in samples]
+
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, vartype=dimod.SPIN)
+
+        # first make sure that all the energies are good
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))
+
+        # now do a bunch of updates
+        for __ in range(10):
+            samples = [{v: next(spingen) for v in range(8)}
+                       for __ in range(10)]
+            energies = [dimod.ising_energy(sample, h, J) for sample in samples]
+
+            new_response = dimod.Response.from_dicts(samples, {'energy': energies}, vartype=dimod.SPIN)
+
+            response.update(new_response)
+
+        self.assertEqual(len(response), 110)
+
+        # and check again
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))
 
     ###############################################################################################
     # Viewing a Response
