@@ -18,7 +18,8 @@ Because an instantiated composite with its children is a 'composed sampler', dim
 as well as its mixins from :class:`.Sampler` and :class:`.Composite`.
 
 """
-from dimod.compatibility23 import add_metaclass
+from six import add_metaclass
+
 from dimod.core.sampler import Sampler
 
 import dimod.abc as abc

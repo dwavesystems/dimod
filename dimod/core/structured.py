@@ -51,7 +51,7 @@ structure.
 """
 from collections import namedtuple
 
-from dimod.compatibility23 import add_metaclass
+from six import add_metaclass
 
 import dimod.abc as abc
 
