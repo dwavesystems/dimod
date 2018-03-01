@@ -18,6 +18,7 @@ Examples
 """
 from collections import Mapping, Iterable, Sized, namedtuple
 import itertools
+import concurrent.futures
 
 import numpy as np
 from six import itervalues
@@ -133,7 +134,7 @@ class Response(Iterable, Sized):
     def samples_matrix(self):
         """:obj:`numpy.matrix`: The numpy int8 matrix containing the samples."""
         if self._futures:
-            self._from_futures()
+            self.from_futures()
 
         return self._samples_matrix
 
@@ -147,7 +148,7 @@ class Response(Iterable, Sized):
         data labels and the values should each be a vector of the same length as sample_matrix.
         """
         if self._futures:
-            self._from_futures()
+            self.from_futures()
 
         return self._data_vectors
 
@@ -346,15 +347,31 @@ class Response(Iterable, Sized):
                                variable_labels=variable_labels)
 
     @classmethod
-    def from_futures(cls):
-        """Build a response from :obj:`~concurrent.futures.Future` objects.
-
-        Note:
-            Not yet implemented.
-
+    def from_futures(cls, futures):
+        """Build a response from :obj:`~concurrent.futures.Future`-like objects.
         """
-        # concurrent.futures.as_completed
-        raise NotImplementedError("support for python Future objects is forthcoming")
+        if not futures:
+            raise ValueError("Empty list of futures given")
+
+        # `dwave.cloud.qpu.computation.Future` is not yet interchangeable with
+        # `concurrent.futures.Future`, so we need to detect the kind of future
+        # we're dealing with.
+        if hasattr(futures[0], 'as_completed'):
+            as_completed = futures[0].as_completed
+        else:
+            as_completed = concurrent.futures.as_completed
+
+        # combine all samples from all futures into a single response
+        combined_response = None
+        for future in as_completed(futures):
+            result = future.result()
+            response = cls.from_matrix(samples=result['samples'],
+                                       data_vectors={'energy': result['energies']})
+            if combined_response is None:
+                combined_response = response
+            else:
+                combined_response.update(response)
+        return combined_response
 
     def update(self, *other_responses):
         """Add other responses' values to the response.
