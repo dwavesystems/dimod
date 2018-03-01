@@ -112,12 +112,12 @@ class Sampler:
         if bqm.vartype is Vartype.SPIN:
             Q, offset = bqm.to_qubo()
             response = self.sample_qubo(Q, **parameters)
-            response.change_vartype(Vartype.SPIN, offset)
+            response.change_vartype(Vartype.SPIN, data_vector_offsets={'energy': offset})
             return response
         elif bqm.vartype is Vartype.BINARY:
             h, J, offset = bqm.to_ising()
             response = self.sample_ising(h, J, **parameters)
-            response.change_vartype(Vartype.BINARY, offset)
+            response.change_vartype(Vartype.BINARY, data_vector_offsets={'energy': offset})
             return response
         else:
             raise RuntimeError("binary quadratic model has an unknown vartype")
@@ -127,7 +127,6 @@ class Sampler:
         """Samples from the given Ising model using the instantiated sample method."""
         bqm = BinaryQuadraticModel.from_ising(h, J)
         response = self.sample(bqm, **parameters)
-        response.change_vartype(Vartype.SPIN)
         return response
 
     @abc.samplemixinmethod
@@ -135,5 +134,4 @@ class Sampler:
         """Samples from the given QUBO using the instantiated sample method."""
         bqm = BinaryQuadraticModel.from_qubo(Q)
         response = self.sample(bqm, **parameters)
-        response.change_vartype(Vartype.BINARY)
         return response
