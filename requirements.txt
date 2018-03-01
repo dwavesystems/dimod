@@ -2,6 +2,6 @@ enum34==1.1.6
 numpy==1.14.0
 
 mock==2.0.0
-six==1.10
+six==1.11
 coverage
 coveralls
