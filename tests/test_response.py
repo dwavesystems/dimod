@@ -1,6 +1,7 @@
 from __future__ import division
 
 import unittest
+import concurrent.futures
 
 from collections import OrderedDict
 
@@ -198,6 +199,36 @@ class TestResponse(unittest.TestCase):
         # and check again
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))
+
+    def test_from_futures(self):
+        def _futures():
+            for __ in range(2):
+                future = concurrent.futures.Future()
+
+                future.set_result({'samples': [-1, -1, 1], 'energies': [.5]})
+
+                yield future
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN)
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, np.matrix([[-1, -1, 1], [-1, -1, 1]]))
+
+    def test_from_futures_column_subset(self):
+        def _futures():
+            for __ in range(2):
+                future = concurrent.futures.Future()
+
+                future.set_result({'samples': [-1, -1, 1], 'energies': [.5]})
+
+                yield future
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, sample_columns=[0, 2])
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, np.matrix([[-1, 1], [-1, 1]]))
 
     ###############################################################################################
     # Viewing a Response

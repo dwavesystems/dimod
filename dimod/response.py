@@ -111,7 +111,9 @@ class Response(Iterable, Sized):
 
             self.label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
 
+        # will store any pending Future objects
         self._futures = []
+        self._future_sample_columns = None
 
     def __len__(self):
         """The number of samples."""
@@ -134,7 +136,7 @@ class Response(Iterable, Sized):
     def samples_matrix(self):
         """:obj:`numpy.matrix`: The numpy int8 matrix containing the samples."""
         if self._futures:
-            self.from_futures()
+            self._resolve_futures()
 
         return self._samples_matrix
 
@@ -148,7 +150,7 @@ class Response(Iterable, Sized):
         data labels and the values should each be a vector of the same length as sample_matrix.
         """
         if self._futures:
-            self.from_futures()
+            self._resolve_futures()
 
         return self._data_vectors
 
@@ -347,11 +349,48 @@ class Response(Iterable, Sized):
                                variable_labels=variable_labels)
 
     @classmethod
-    def from_futures(cls, futures):
+    def from_futures(cls, futures, vartype, info=None, variable_labels=None,
+                     sample_columns=None):
         """Build a response from :obj:`~concurrent.futures.Future`-like objects.
+
+        Args:
+            futures (iterable):
+                An iterable :obj:`~concurrent.futures.Future`-like objects.
+
+            vartype (:class:`.Vartype`):
+                The vartype of the response.
+
+            info (dict, optional, default=None):
+                A dict containing information about the response as a whole.
+
+            variable_labels (list, optional, default=None):
+                Maps (by index) variable labels to the columns of the samples matrix.
+
+            sample_columns (array-like, optional, default=None):
+                The columns of the returned samples to use once the Future has been resolved.
+
+        Returns:
+            :obj:`.Response`
+
+        Notes:
+            The future objects are read on the first read of :attr:`.Response.samples_matrix` or
+            :attr:`.Response.data_vectors`.
+
         """
+        response = Response(np.matrix(np.empty((0, 0))),
+                            {'energy': []}, vartype=vartype, info=info,
+                            variable_labels=variable_labels)
+        response._futures = list(futures)
+        response._future_sample_columns = sample_columns
+        return response
+
+    def _resolve_futures(self):
+        # parse the Futures stored by from_futures
+        futures = self._futures
+
         if not futures:
-            raise ValueError("Empty list of futures given")
+            # empty list, therefore done
+            return
 
         # `dwave.cloud.qpu.computation.Future` is not yet interchangeable with
         # `concurrent.futures.Future`, so we need to detect the kind of future
@@ -361,17 +400,23 @@ class Response(Iterable, Sized):
         else:
             as_completed = concurrent.futures.as_completed
 
+        # reset the current futures
+        self._futures = []
+
         # combine all samples from all futures into a single response
-        combined_response = None
         for future in as_completed(futures):
             result = future.result()
-            response = cls.from_matrix(samples=result['samples'],
-                                       data_vectors={'energy': result['energies']})
-            if combined_response is None:
-                combined_response = response
-            else:
-                combined_response.update(response)
-        return combined_response
+
+            samples = np.matrix(result['samples'])
+
+            if self._future_sample_columns is not None:
+                samples = samples[:, self._future_sample_columns]
+
+            response = self.__class__.from_matrix(samples, data_vectors={'energy': result['energies']},
+                                                  vartype=self.vartype)
+            self.update(response)
+
+        self._future_sample_columns = None
 
     def update(self, *other_responses):
         """Add other responses' values to the response.
@@ -396,15 +441,19 @@ class Response(Iterable, Sized):
             __, num_variables = self.samples_matrix.shape
             variable_labels = list(range(num_variables))
             # in this case we need to allow for either None or variable_labels
-            if not all(response.variable_labels is None or response.variable_labels == variable_labels):
+            if not all(response.variable_labels is None or response.variable_labels == variable_labels
+                       for response in other_responses):
                 raise ValueError("cannot update responses with unlike variable labels")
         else:
             if not all(response.variable_labels == variable_labels for response in other_responses):
                 raise ValueError("cannot update responses with unlike variable labels")
 
         # concatenate all of the matrices
-        matrices = [self.samples_matrix]
-        matrices.extend([response.samples_matrix for response in other_responses])
+        if any(self.samples_matrix.shape):
+            matrices = [self.samples_matrix]
+            matrices.extend([response.samples_matrix for response in other_responses])
+        else:
+            matrices = [response.samples_matrix for response in other_responses]
         self.samples_matrix = np.concatenate(matrices)
 
         # group all of the data vectors
