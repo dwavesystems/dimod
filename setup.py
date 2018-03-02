@@ -18,7 +18,8 @@ install_requires = ['enum34>=1.1.6,<2.0.0',
                     'numpy>=1.14.0,<2.0.0',
                     'six>=1.10,<2.0']
 
-extras_require = {'all': ['networkx>=2.0,<3.0', 'pandas>=0.22.0,<0.23.0']}
+extras_require = {'all': ['networkx>=2.0,<3.0', 'pandas>=0.22.0,<0.23.0'],
+                  ':python_version == "2.7"': ['futures']}
 
 packages = ['dimod',
             'dimod.core',
