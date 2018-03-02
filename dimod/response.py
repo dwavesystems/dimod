@@ -21,7 +21,7 @@ import itertools
 import concurrent.futures
 
 import numpy as np
-from six import itervalues
+from six import itervalues, iteritems
 
 from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
@@ -107,11 +107,14 @@ class Response(Iterable, Sized):
         else:
             self.variable_labels = variable_labels = list(variable_labels)
             if len(variable_labels) != num_variables:
-                raise ValueError("variable_labels' length must match the number of variables in samples_matrix")
+                msg = ("variable_labels' length must match the number of columns in "
+                       "samples_matrix, {} labels, matrix has {} columns".format(len(variable_labels), num_variables))
+                raise ValueError(msg)
 
             self.label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
 
-        self._futures = []
+        # will store any pending Future objects and data about them
+        self._futures = {}
 
     def __len__(self):
         """The number of samples."""
@@ -134,7 +137,7 @@ class Response(Iterable, Sized):
     def samples_matrix(self):
         """:obj:`numpy.matrix`: The numpy int8 matrix containing the samples."""
         if self._futures:
-            self.from_futures()
+            self._resolve_futures(**self._futures)
 
         return self._samples_matrix
 
@@ -148,7 +151,7 @@ class Response(Iterable, Sized):
         data labels and the values should each be a vector of the same length as sample_matrix.
         """
         if self._futures:
-            self.from_futures()
+            self._resolve_futures(**self._futures)
 
         return self._data_vectors
 
@@ -347,31 +350,170 @@ class Response(Iterable, Sized):
                                variable_labels=variable_labels)
 
     @classmethod
-    def from_futures(cls, futures):
+    def from_futures(cls, futures, vartype, num_variables,
+                     samples_key='samples', data_vector_keys=None,
+                     info_keys=None, variable_labels=None, active_variables=None):
         """Build a response from :obj:`~concurrent.futures.Future`-like objects.
+
+        Args:
+            futures (iterable):
+                An iterable :obj:`~concurrent.futures.Future`-like objects. It is expected
+                that :meth:`~concurrent.futures.Future.result` will return a dict.
+
+            vartype (:class:`.Vartype`):
+                The vartype of the response.
+
+            num_variables (int):
+                The number of variables each sample will have.
+
+            samples_key (hashable, optional, default='samples'):
+                The key of the result dict that contains the samples. The samples are expected
+                to be array-like.
+
+            data_vector_keys (iterable/mapping, optional, default=None):
+                A mapping from the keys of the result dict to :attr:`Response.data_vectors`. If
+                None, ['energy'] is assumed to be a key in the result dict and will map the the
+                'energy' data vector.
+
+            info_keys (iterable/mapping, optional, default=None):
+                A mapping from the keys of the result dict to :attr:`Response.info`.
+                If None, info will be empty.
+
+            variable_labels (list, optional, default=None):
+                Maps (by index) variable labels to the columns of the samples matrix.
+
+            active_variables (array-like, optional, default=None):
+                Specify which columns of the result's samples should be used. If variable_labels is
+                not provided then the variable_labels will be set to match active_variables
+
+        Returns:
+            :obj:`.Response`
+
+        Examples:
+            .. code-block:: python
+
+                from concurrent.futures import Future
+
+                future = Future()
+
+                # load the future into response
+                response = dimod.Response.from_futures((future,), dimod.BINARY, 3)
+
+                future.set_result({'samples': [0, 1, 0], 'energy': [1]})
+
+                # now read from the response
+                matrix = response.samples_matrix
+
+            .. code-block:: python
+
+                from concurrent.futures import Future
+
+                future = Future()
+
+                # load the future into response
+                response = dimod.Response.from_futures((future,), dimod.BINARY, 3,
+                                                       active_variables=[0, 1, 3])
+
+                future.set_result({'samples': [0, 1, 3, 0], 'energy': [1]})
+
+                # now read from the response, this matrix
+                matrix = response.samples_matrix
+
+            .. code-block:: python
+
+                from concurrent.futures import Future
+
+                future = Future()
+
+                # load the future into response
+                response = dimod.Response.from_futures((future,), dimod.BINARY, 3,
+                                                       data_vector_keys={'en': 'energy'})
+
+                future.set_result({'samples': [0, 1, 0], 'en': [1]})
+
+                # now read from the response
+                matrix = response.samples_matrix
+
+        Notes:
+            The future objects are read on the first read of :attr:`.Response.samples_matrix` or
+            :attr:`.Response.data_vectors`.
+
         """
-        if not futures:
-            raise ValueError("Empty list of futures given")
+
+        if data_vector_keys is None:
+            data_vector_keys = {'energy': 'energy'}
+        elif isinstance(data_vector_keys, Mapping):
+            data_vector_keys = dict(data_vector_keys)
+        else:
+            data_vector_keys = {key: key for key in data_vector_keys}  # identity mapping
+
+        if info_keys is None:
+            info_keys = {}
+        elif isinstance(info_keys, Mapping):
+            info_keys = dict(info_keys)
+        else:
+            info_keys = {key: key for key in info_keys}
+
+        # now initialize self with a 0 samples, but the correct number of variables/labels/etc
+        empty_samples_matrix = np.matrix(np.empty((0, num_variables), dtype=np.int8))
+
+        empty_data_vectors = {key: [] for key in itervalues(data_vector_keys)}
+
+        if active_variables is not None:
+            if variable_labels is None:
+                variable_labels = active_variables
+            elif len(variable_labels) != len(active_variables):
+                raise ValueError("active_variables and variable_labels should have the same length")
+
+
+        # let Response parse vartype, variable_labels. We also want to start with an empty info
+        response = Response(samples_matrix=empty_samples_matrix, data_vectors=empty_data_vectors,
+                            vartype=vartype, variable_labels=variable_labels)
+
+        # now dump all of the remaining information into the _futures
+        response._futures = {'futures': futures,
+                             'samples_key': samples_key,
+                             'data_vector_keys': data_vector_keys,
+                             'info_keys': info_keys,
+                             'variable_labels': variable_labels,
+                             'active_variables': active_variables}
+
+        return response
+
+    def _resolve_futures(self, futures, samples_key, data_vector_keys, info_keys,
+                         variable_labels, active_variables):
+
+        # first reset the futures to avoid recursion errors
+        self._futures = {}
 
         # `dwave.cloud.qpu.computation.Future` is not yet interchangeable with
         # `concurrent.futures.Future`, so we need to detect the kind of future
         # we're dealing with.
+        futures = list(futures)  # if generator
         if hasattr(futures[0], 'as_completed'):
             as_completed = futures[0].as_completed
         else:
             as_completed = concurrent.futures.as_completed
 
         # combine all samples from all futures into a single response
-        combined_response = None
         for future in as_completed(futures):
             result = future.result()
-            response = cls.from_matrix(samples=result['samples'],
-                                       data_vectors={'energy': result['energies']})
-            if combined_response is None:
-                combined_response = response
-            else:
-                combined_response.update(response)
-        return combined_response
+
+            # first get the samples matrix and filter out any inactive variables
+            samples = np.matrix(result[samples_key], dtype=np.int8)
+            if active_variables is not None:
+                samples = samples[:, active_variables]
+
+            # next get the data vectors
+            data_vectors = {key: result[source_key] for source_key, key in iteritems(data_vector_keys)}
+
+            # and the info
+            info = {key: result[source_key] for source_key, key in iteritems(info_keys)}
+
+            # now get the appropriate response
+            response = self.__class__.from_matrix(samples, data_vectors=data_vectors, info=info,
+                                                  vartype=self.vartype, variable_labels=variable_labels)
+            self.update(response)
 
     def update(self, *other_responses):
         """Add other responses' values to the response.
@@ -396,7 +538,8 @@ class Response(Iterable, Sized):
             __, num_variables = self.samples_matrix.shape
             variable_labels = list(range(num_variables))
             # in this case we need to allow for either None or variable_labels
-            if not all(response.variable_labels is None or response.variable_labels == variable_labels):
+            if not all(response.variable_labels is None or response.variable_labels == variable_labels
+                       for response in other_responses):
                 raise ValueError("cannot update responses with unlike variable labels")
         else:
             if not all(response.variable_labels == variable_labels for response in other_responses):
