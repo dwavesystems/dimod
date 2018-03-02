@@ -1,6 +1,7 @@
 from __future__ import division
 
 import unittest
+import concurrent.futures
 
 from collections import OrderedDict
 
@@ -198,6 +199,86 @@ class TestResponse(unittest.TestCase):
         # and check again
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))
+
+    def test_from_futures(self):
+        def _futures():
+            for __ in range(2):
+                future = concurrent.futures.Future()
+
+                future.set_result({'samples': [-1, -1, 1], 'energy': [.5]})
+
+                yield future
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=3)
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, np.matrix([[-1, -1, 1], [-1, -1, 1]]))
+
+    def test_from_futures_column_subset(self):
+        def _futures():
+            for __ in range(2):
+                future = concurrent.futures.Future()
+
+                future.set_result({'samples': [-1, -1, 1], 'energy': [.5]})
+
+                yield future
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=2,
+                                               active_variables=[0, 2])
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, np.matrix([[-1, 1], [-1, 1]]))
+
+    def test_from_futures_typical(self):
+        result = {'occurrences': [1],
+                  'active_variables': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                                       18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+                                       33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+                                       48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
+                                       63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+                                       78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                                       93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
+                                       106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+                                       118, 119, 120, 121, 122, 123, 124, 125, 126, 127],
+                  'num_occurrences': [1],
+                  'num_variables': 128,
+                  'format': 'qp',
+                  'timing': {},
+                  'solutions': [[1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1,
+                                 1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1,
+                                 -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1]],
+                  'energies': [-704.0],
+                  'samples': [[1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                               -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1,
+                               1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                               -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1,
+                               1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1,
+                               -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1,
+                               1, 1, 1, 1, 1, 1, -1, -1, -1, -1]]}
+
+        future = concurrent.futures.Future()
+
+        response = dimod.Response.from_futures([future],
+                                               vartype=dimod.SPIN,
+                                               num_variables=result['num_variables'],
+                                               samples_key='samples',
+                                               data_vector_keys={'energies': 'energy',
+                                                                 'occurrences': 'occurrences'},
+                                               info_keys=['timing'],
+                                               variable_labels=result['active_variables'],
+                                               active_variables=result['active_variables'])
+
+        future.set_result(result)
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, result['samples'])
 
     ###############################################################################################
     # Viewing a Response
