@@ -170,7 +170,7 @@ def ising_to_qubo(h, J, offset=0.0):
         >>> import dimod
         >>> h = {1: 1, 2: 1}
         >>> J = {(1, 2): 1}
-        >>> dimod.ising_to_qubo(h, J, 0.5)
+        >>> dimod.ising_to_qubo(h, J, 0.5)  # doctest: +SKIP
         ({(1, 1): 0.0, (1, 2): 4.0, (2, 2): 0.0}, -0.5)
 
     """

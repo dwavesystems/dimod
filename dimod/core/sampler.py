@@ -42,10 +42,12 @@ We know we need to implement :meth:`sample_ising`, :attr:`properties` and :attr:
 consulting the above table. The advantage of using the :class:`.Sampler` is that we get the other
 sample methods 'for free' as mixins.
 
->>> sampler = LinearIsingSampler()
->>> response = sampler.sample_ising({'a': -1}, {})  # implemented
->>> response = sampler.sample_qubo({('a', 'a'): 1})  # mixin
->>> response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # mixin
+.. code-block:: python
+
+    sampler = LinearIsingSampler()
+    response = sampler.sample_ising({'a': -1}, {})  # implemented
+    response = sampler.sample_qubo({('a', 'a'): 1})  # mixin
+    response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # mixin
 
 In this case, because the sampler is so simple, we chose to have both :attr:`properties` and
 :attr:`parameters` return empty dicts, but we could instantiate a more complex version.

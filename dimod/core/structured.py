@@ -87,7 +87,7 @@ class Structured:
 
             >>> class StructuredObject(dimod.Structured):
             ...     @property
-            ...      def nodelist(self):
+            ...     def nodelist(self):
             ...         return [0, 1, 2]
             ...
             ...     @property

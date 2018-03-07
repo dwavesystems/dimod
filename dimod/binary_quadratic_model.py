@@ -98,12 +98,12 @@ class BinaryQuadraticModel(object):
                >>> import dimod
                >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
                >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
-               ....             (2, 3): 23, (2, 4): 24,
-               ....             (3, 4): 34}
+               ...              (2, 3): 23, (2, 4): 24,
+               ...              (3, 4): 34}
                >>> offset = 0.0
                >>> vt = dimod.BINARY
                >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
-               >>> bqm_k4.adj.viewitems()   # Show all adjacencies
+               >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
                dict_items([(1, {2: 12, 3: 13, 4: 14}),
                            (2, {1: 12, 3: 23, 4: 24}),
                            (3, {1: 13, 2: 23, 4: 34}),
@@ -351,7 +351,7 @@ class BinaryQuadraticModel(object):
             >>> bqm.linear
             {'a': 0.5, 'b': -1.0}
             >>> bqm.add_variables_from({'b': -1., 'c': 2.0})
-            >>> bqm.linear
+            >>> bqm.linear  # doctest: +SKIP
             {'a': 0.5, 'b': -2.0, 'c': 2.0}
 
         """
@@ -399,7 +399,7 @@ class BinaryQuadraticModel(object):
             >>> bqm.add_interaction(0, 2, 2)        # Add new variable 2
             >>> bqm.add_interaction(0, 1, .25)
             >>> bqm.add_interaction(1, 2, .25, vartype=dimod.BINARY)     # Binary value is converted to spin value
-            >>> bqm.quadratic
+            >>> bqm.quadratic  # doctest: +SKIP
             {(0, 1): 0.75, (0, 2): 2, (1, 2): 0.0625}
 
         """
@@ -504,7 +504,7 @@ class BinaryQuadraticModel(object):
             {('a', 'b'): -0.5}
             >>> bqm.add_interactions_from({('a', 'b'): -.5, ('a', 'c'): 2})
             >>> bqm.add_interactions_from({('b', 'c'): 2}, vartype=dimod.BINARY)   # Binary value is converted to spin value
-            >>> bqm.quadratic
+            >>> bqm.quadratic  # doctest: +SKIP
             {('a', 'b'): -1.0, ('a', 'c'): 2, ('b', 'c'): 0.5}
 
         """
@@ -532,8 +532,8 @@ class BinaryQuadraticModel(object):
             This example creates an Ising model and then removes one variable.
 
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0, 2: 2.0},
-            .....                                {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
-            .....                                -0.5, dimod.SPIN)
+            ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
+            ...                                  -0.5, dimod.SPIN)
             >>> bqm.remove_variable(0)
             >>> bqm.linear
             {1: 1.0, 2: 2.0}
@@ -584,8 +584,8 @@ class BinaryQuadraticModel(object):
             among all of them, and then removes two variables.
 
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0, 2: 2.0},
-            .....                                {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
-            .....                                -0.5, dimod.SPIN)
+            ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
+            ...                                  -0.5, dimod.SPIN)
             >>> bqm.remove_variables_from([0, 1])
             >>> bqm.linear
             {2: 2.0}
@@ -663,7 +663,7 @@ class BinaryQuadraticModel(object):
             This example creates an Ising model with three variables that has interactions
             between two, and then removes an interaction.
 
-            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1, ('b', 'c'): 1}, 0.0, dimod.SPIN)
+            >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
             >>> bqm.quadratic
             {('a', 'b'): -1.0}
@@ -777,7 +777,7 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -.5}, {}, 0.0, dimod.SPIN)
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
-            .5
+            0.5
             >>> bqm.linear
             {}
 
@@ -788,9 +788,9 @@ class BinaryQuadraticModel(object):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0.}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
-            .5
+            0.5
             >>> bqm.linear
-            {'b': 1}
+            {'b': 1.0}
             >>> bqm.quadratic
             {}
 
