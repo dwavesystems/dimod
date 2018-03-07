@@ -26,10 +26,8 @@ Example Usage
 This example constructs a simple QUBO and converts it to Ising format.
 
 >>> import dimod
->>> bqm_qubo = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)
->>> bqm_ising = dimod.to_qubo(bqm_qubo)
->>> bqm_ising
-({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5)
+>>> bqm = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)  # QUBO
+>>> bqm_ising = bqm.to_qubo()
 
 .. index-end-marker
 
