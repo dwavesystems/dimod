@@ -4,7 +4,7 @@ import itertools
 import dimod
 
 
-class TestExactSolver(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
+class TestExactSolver(unittest.TestCase):
     def setUp(self):
         self.sampler = dimod.ExactSolver()
         self.sampler_factory = dimod.ExactSolver

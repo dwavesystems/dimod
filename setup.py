@@ -26,7 +26,7 @@ packages = ['dimod',
             'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
-            'dimod.test']
+            'dimod.testing']
 
 setup(
     name='dimod',
