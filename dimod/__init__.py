@@ -6,7 +6,7 @@ import dimod.core
 from dimod.reference import *
 import dimod.reference
 
-import dimod.test
+import dimod.testing
 
 from dimod.binary_quadratic_model import *
 import dimod.binary_quadratic_model

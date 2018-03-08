@@ -7,7 +7,7 @@ import dimod
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
-class TestSASampler(unittest.TestCase, dimod.test.SamplerAPITestCaseMixin):
+class TestSASampler(unittest.TestCase):
     def setUp(self):
         self.sampler = dimod.SimulatedAnnealingSampler()
         self.sampler_factory = dimod.SimulatedAnnealingSampler
