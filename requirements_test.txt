@@ -1,5 +1,0 @@
--r requirements.txt
--r docs/requirements.txt
-
-networkx==2.0
-pandas==0.22.0
