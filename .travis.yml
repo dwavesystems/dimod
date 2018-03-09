@@ -52,10 +52,10 @@ matrix:
               - pip install -r requirements.txt
               - pip install .
           script:
-              - coverage run -m unittest discover
+              - python -m unittest discover
 
 install:
-    - pip install -r requirements_test.txt
+    - pip install -r tests/requirements.txt
     - pip install .
     
 script:
