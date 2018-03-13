@@ -280,6 +280,51 @@ class TestResponse(unittest.TestCase):
 
         npt.assert_equal(matrix, result['samples'])
 
+    def test_from_futures_extra_keys(self):
+        def _futures():
+            for __ in range(2):
+                future = concurrent.futures.Future()
+
+                future.set_result({'samples': [-1, -1, 1], 'energy': [.5]})
+
+                yield future
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=2,
+                                               active_variables=[0, 2],
+                                               data_vector_keys={'energy', 'other'},
+                                               info_keys=['other'])
+
+        matrix = response.samples_matrix
+
+        npt.assert_equal(matrix, np.matrix([[-1, 1], [-1, 1]]))
+
+        #
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=2,
+                                               active_variables=[0, 2],
+                                               data_vector_keys={'energy', 'other'},
+                                               info_keys=['other'],
+                                               ignore_extra_keys=False)
+
+        with self.assertRaises(ValueError):
+            matrix = response.samples_matrix
+
+        #
+
+        response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=2,
+                                               active_variables=[0, 2],
+                                               data_vector_keys={'energy'},
+                                               info_keys=['other'],
+                                               ignore_extra_keys=False)
+
+        with self.assertRaises(ValueError):
+            matrix = response.samples_matrix
+
+    def test_empty(self):
+        response = dimod.Response.empty(dimod.SPIN)
+        self.assertFalse(response)
+        self.assertIs(response.vartype, dimod.SPIN)
+
     ###############################################################################################
     # Viewing a Response
     ###############################################################################################

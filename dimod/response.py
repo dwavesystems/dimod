@@ -350,9 +350,17 @@ class Response(Iterable, Sized):
                                variable_labels=variable_labels)
 
     @classmethod
+    def empty(cls, vartype):
+        empty_samples_matrix = np.matrix(np.empty((0, 0), dtype=np.int8))
+        empty_data_vectors = {'energy': []}
+        return cls(samples_matrix=empty_samples_matrix, data_vectors=empty_data_vectors,
+                   vartype=vartype)
+
+    @classmethod
     def from_futures(cls, futures, vartype, num_variables,
                      samples_key='samples', data_vector_keys=None,
-                     info_keys=None, variable_labels=None, active_variables=None):
+                     info_keys=None, variable_labels=None, active_variables=None,
+                     ignore_extra_keys=True):
         """Build a response from :obj:`~concurrent.futures.Future`-like objects.
 
         Args:
@@ -385,6 +393,11 @@ class Response(Iterable, Sized):
             active_variables (array-like, optional, default=None):
                 Specify which columns of the result's samples should be used. If variable_labels is
                 not provided then the variable_labels will be set to match active_variables
+
+            ignore_extra_keys (bool, optional, default=True):
+                If True, keys given in `data_vector_keys` and `info_keys` but that are not in
+                :meth:`~concurrent.futures.Future.result` will be ignored. If False, extra keys
+                will cause a ValueError.
 
         Returns:
             :obj:`.Response`
@@ -454,21 +467,13 @@ class Response(Iterable, Sized):
         else:
             info_keys = {key: key for key in info_keys}
 
-        # now initialize self with a 0 samples, but the correct number of variables/labels/etc
-        empty_samples_matrix = np.matrix(np.empty((0, num_variables), dtype=np.int8))
-
-        empty_data_vectors = {key: [] for key in itervalues(data_vector_keys)}
-
         if active_variables is not None:
             if variable_labels is None:
                 variable_labels = active_variables
             elif len(variable_labels) != len(active_variables):
                 raise ValueError("active_variables and variable_labels should have the same length")
 
-
-        # let Response parse vartype, variable_labels. We also want to start with an empty info
-        response = Response(samples_matrix=empty_samples_matrix, data_vectors=empty_data_vectors,
-                            vartype=vartype, variable_labels=variable_labels)
+        response = cls.empty(vartype)
 
         # now dump all of the remaining information into the _futures
         response._futures = {'futures': futures,
@@ -476,12 +481,13 @@ class Response(Iterable, Sized):
                              'data_vector_keys': data_vector_keys,
                              'info_keys': info_keys,
                              'variable_labels': variable_labels,
-                             'active_variables': active_variables}
+                             'active_variables': active_variables,
+                             'ignore_extra_keys': ignore_extra_keys}
 
         return response
 
     def _resolve_futures(self, futures, samples_key, data_vector_keys, info_keys,
-                         variable_labels, active_variables):
+                         variable_labels, active_variables, ignore_extra_keys):
 
         # first reset the futures to avoid recursion errors
         self._futures = {}
@@ -497,18 +503,40 @@ class Response(Iterable, Sized):
 
         # combine all samples from all futures into a single response
         for future in as_completed(futures):
-            result = future.result()
+            result = dict(future.result())  # create a shallow copy
 
             # first get the samples matrix and filter out any inactive variables
-            samples = np.matrix(result[samples_key], dtype=np.int8)
+            samples = np.matrix(result.pop(samples_key), dtype=np.int8)
             if active_variables is not None:
                 samples = samples[:, active_variables]
 
             # next get the data vectors
-            data_vectors = {key: result[source_key] for source_key, key in iteritems(data_vector_keys)}
-
-            # and the info
-            info = {key: result[source_key] for source_key, key in iteritems(info_keys)}
+            if ignore_extra_keys:
+                data_vectors = {}
+                for source_key, key in iteritems(data_vector_keys):
+                    try:
+                        data_vectors[key] = result[source_key]
+                    except KeyError:
+                        pass
+                info = {}
+                for source_key, key in iteritems(info_keys):
+                    try:
+                        info[key] = result[source_key]
+                    except KeyError:
+                        pass
+            else:
+                data_vectors = {}
+                for source_key, key in iteritems(data_vector_keys):
+                    try:
+                        data_vectors[key] = result[source_key]
+                    except KeyError:
+                        raise ValueError("data vector key '{}' not in Future.result()".format(key))
+                info = {}
+                for source_key, key in iteritems(info_keys):
+                    try:
+                        info[key] = result[source_key]
+                    except KeyError:
+                        raise ValueError("info key '{}' not in Future.result()".format(key))
 
             # now get the appropriate response
             response = self.__class__.from_matrix(samples, data_vectors=data_vectors, info=info,
@@ -524,13 +552,29 @@ class Response(Iterable, Sized):
                 dimensions, matching data_vector keys and identical variable labels.
 
         """
-
         # make sure all of the other responses are the appropriate vartype. We could cast them but
         # that would effect the energies so it is best to happen outside of this function.
         vartype = self.vartype
         for response in other_responses:
             if vartype is not response.vartype:
-                raise ValueError("can only update with responses of matching vartype")
+                raise ValueError("can only update with responses of matching vartype base")
+
+        # if self is empty, then we are done
+        if not self:
+            other_responses = list(other_responses)
+
+            response = other_responses.pop()
+
+            self.samples_matrix = response.samples_matrix
+            self.data_vectors.update(response.data_vectors)
+            self.info.update(response.info)
+            self.variable_labels = response.variable_labels
+            self.label_to_idx = response.label_to_idx
+
+            if other_responses:
+                self.update(*other_responses)
+
+            return
 
         # make sure that the variable labels are consistent
         variable_labels = self.variable_labels
