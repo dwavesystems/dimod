@@ -280,6 +280,11 @@ class TestResponse(unittest.TestCase):
 
         npt.assert_equal(matrix, result['samples'])
 
+    def test_empty(self):
+        response = dimod.Response.empty(dimod.SPIN)
+        self.assertFalse(response)
+        self.assertIs(response.vartype, dimod.SPIN)
+
     ###############################################################################################
     # Viewing a Response
     ###############################################################################################
