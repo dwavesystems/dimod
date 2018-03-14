@@ -435,6 +435,39 @@ class TestResponse(unittest.TestCase):
         response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
         new_response = response.relabel_variables({'a': 0}, inplace=False)
 
+    def test_partial_relabel_inplace(self):
+        mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
+
+        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
+
+        new_response = response.relabel_variables(mapping, inplace=False)
+
+        for new_sample, sample in zip(new_response, response):
+            for v, val in sample.items():
+                self.assertIn(mapping[v], new_sample)
+                self.assertEqual(new_sample[mapping[v]], val)
+
+            self.assertEqual(len(sample), len(new_sample))
+
+    def test_partial_relabel(self):
+
+        mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
+
+        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
+        response2 = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
+
+        response.relabel_variables(mapping, inplace=True)
+
+        for new_sample, sample in zip(response, response2):
+            for v, val in sample.items():
+                self.assertIn(mapping[v], new_sample)
+                self.assertEqual(new_sample[mapping[v]], val)
+
+            self.assertEqual(len(sample), len(new_sample))
+
+
+
+
     ##############################################################################################
     # Other
     ##############################################################################################

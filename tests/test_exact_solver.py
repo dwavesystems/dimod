@@ -102,3 +102,24 @@ class TestExactSolver(unittest.TestCase):
         # check their energies
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(energy, dimod.qubo_energy(sample, Q))
+
+    def test_sample_mixed_labels(self):
+        h = {'3': 0.6669921875, 4: -2.0, 5: -1.334375, 6: 0.0, 7: -2.0, '1': 1.3328125,
+             '2': -1.3330078125, '0': -0.666796875}
+        J = {(5, '2'): 1.0, (7, '0'): 0.9998046875, (4, '0'): 0.9998046875, ('3', 4): 0.9998046875,
+             (7, '1'): -1.0, (5, '1'): 0.6671875, (6, '2'): 1.0, ('3', 6): 0.6671875,
+             (7, '2'): 0.9986328125, (5, '0'): -1.0, ('3', 5): -0.6671875, ('3', 7): 0.998828125,
+             (4, '1'): -1.0, (6, '0'): -0.3328125, (4, '2'): 1.0, (6, '1'): 0.0}
+
+        response = dimod.ExactSolver().sample_ising(h, J)
+
+        # every possible conbination should be present
+        self.assertEqual(len(response), 2**len(h))
+        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**len(h), len(h)))
+
+        # confirm vartype
+        self.assertIs(response.vartype, dimod.SPIN)
+
+        # check their energies
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))

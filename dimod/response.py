@@ -24,6 +24,7 @@ import numpy as np
 from six import itervalues, iteritems
 
 from dimod.decorators import vartype_argument
+from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
 __all__ = ['Response']
