@@ -848,6 +848,9 @@ class SampleView(Mapping):
 
     def __iter__(self):
         # iterate over the variables
+        if self.label_mapping is None:
+            num_samples, num_variables = self.samples.shape
+            return iter(range(num_variables))
         return self.label_mapping.__iter__()
 
     def __len__(self):

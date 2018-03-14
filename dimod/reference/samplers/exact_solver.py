@@ -35,6 +35,10 @@ class ExactSolver(Sampler):
     @bqm_index_labels
     def sample(self, bqm):
         M = bqm.binary.to_numpy_matrix()
+        off = bqm.binary.offset
+
+        if M.shape == (0, 0):
+            return Response.empty(bqm.vartype)
 
         sample = np.zeros((len(bqm),), dtype=bool)
 
@@ -45,7 +49,7 @@ class ExactSolver(Sampler):
             sample = np.zeros((len(bqm)), dtype=bool)
             energy = 0.0
 
-            yield sample.copy(), energy
+            yield sample.copy(), energy + off
 
             for i in range(1, 1 << len(bqm)):
                 v = _ffs(i)
@@ -58,14 +62,15 @@ class ExactSolver(Sampler):
                 # appreciated!
                 energy = sample.dot(M).dot(sample.transpose())
 
-                yield sample.copy(), float(energy) + bqm.offset
+                yield sample.copy(), float(energy) + off
 
         samples, energies = zip(*iter_samples())
 
-        response = Response.from_matrix(np.asarray(samples), {'energy': energies})
+        response = Response.from_matrix(np.matrix(samples, dtype='int8'), {'energy': energies},
+                                        vartype=Vartype.BINARY)
 
-        # finally make sure the response matches the given vartype, in-place.
-        response.change_vartype(bqm.vartype)
+        # make sure the response matches the given vartype, in-place.
+        response.change_vartype(bqm.vartype, inplace=True)
 
         return response
 
