@@ -37,7 +37,7 @@ ABCs.
     *   - :class:`.Sampler`
         -
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`
-        - one of
+        - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
     *   - :class:`.Structured`
@@ -53,7 +53,7 @@ ABCs.
     *   - :class:`.ComposedSampler`
         - :class:`.Sampler`, :class:`.Composite`
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`, :attr:`~.Composite.children`
-        - one of
+        - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
           :attr:`~.Composite.child`
