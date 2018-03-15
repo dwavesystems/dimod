@@ -1329,7 +1329,7 @@ class BinaryQuadraticModel(object):
 
         Args:
             h (dict[variable, bias]/list[bias]):
-                Linear biases of the Ising problem. If a list, list indices are used
+                Linear biases of the Ising problem. If a list, the list's indices are used
                 as variable labels.
 
             J (dict[(variable, variable), bias]):
@@ -1347,8 +1347,8 @@ class BinaryQuadraticModel(object):
             >>> import dimod
             >>> h = {1: 1, 2: 2, 3: 3, 4: 4}
             >>> J = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
-            ...              (2, 3): 23, (2, 4): 24,
-            ...              (3, 4): 34}
+            ...      (2, 3): 23, (2, 4): 24,
+            ...      (3, 4): 34}
             >>> model = dimod.BinaryQuadraticModel.from_ising(h, J, offset = 0.0)
             >>> model
             BinaryQuadraticModel({1: 1, 2: 2, 3: 3, 4: 4}, {(1, 2): 12, (1, 3): 13, (1, 4): 14, (2, 3): 23, (3, 4): 34, (2, 4): 24}, 0.0, Vartype.SPIN)
@@ -1360,17 +1360,27 @@ class BinaryQuadraticModel(object):
         return cls(h, J, offset, Vartype.SPIN)
 
     def to_qubo(self):
-        """Convert the binary quadratic model into the (Q, offset) QUBO format.
+        """Convert a binary quadratic model to QUBO format.
 
-        If the binary quadratic model's vartype is not binary, it is converted.
+        If the binary quadratic model's vartype is not binary, values are converted.
 
         Returns:
-            tuple: A 2-tuple:
+            tuple: A 2-tuple of the form (`biases`, `offset`) where `biases` is a dict
+            where keys are pairs of variables and values are the associated linear or
+            quadratic bias and `offset` is a number that represents the constant offset
+            of the binary quadratic model.
 
-                dict: The qubo biases. A dict where the keys are pairs of variables and the values
-                are the associated linear or quadratic bias.
+        Examples:
+            This example converts a binary quadratic model with spin variables to QUBO format
+            with binary variables.
 
-                number: The offset.
+            >>> import dimod
+            >>> model = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
+            ...                                    {(0, 1): .5, (1, 2): 1.5},
+            ...                                    1.4,
+            ...                                    dimod.SPIN)
+            >>> model.to_qubo()
+            ({(0, 0): 1.0, (0, 1): 2.0, (1, 1): -6.0, (1, 2): 6.0, (2, 2): -2.0}, 2.9)
 
         """
         qubo = {}
@@ -1441,6 +1451,22 @@ class BinaryQuadraticModel(object):
 
             The offset is dropped when converting to a NumPy matrix.
 
+        Examples:
+            This example converts a binary quadratic model to NumPy matrix format while
+            ordering variables and adding one.
+
+            >>> import dimod
+            >>> import numpy as np
+            >>> model = dimod.BinaryQuadraticModel({'a': 1, 'b': -1, 'c': .5},
+            ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
+            ...                                    1.4,
+            ...                                    dimod.BINARY)
+            >>> model.to_numpy_matrix(variable_order=['d', 'c', 'b', 'a'])
+            matrix([[ 0. ,  0. ,  0. ,  0. ],
+                    [ 0. ,  0.5,  1.5,  0. ],
+                    [ 0. ,  0. , -1. ,  0.5],
+                    [ 0. ,  0. ,  0. ,  1. ]])
+
         """
         import numpy as np
 
@@ -1497,7 +1523,7 @@ class BinaryQuadraticModel(object):
                 If `variable_order` is longer than the matrix, extra values are ignored.
 
             offset (optional, default=0.0):
-                Constant offset for the binary quadratic program.
+                Constant offset for the binary quadratic model.
 
             interactions (iterable, optional, default=[]):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
@@ -1506,7 +1532,9 @@ class BinaryQuadraticModel(object):
             :class:`.BinaryQuadraticModel`
 
         Examples:
-            This example creates a binary quadratic model from a QUBO in NumPy format.
+            This example creates a binary quadratic model from a QUBO in NumPy format while
+            adding an interaction with a new variable ('f'), ignoring an extra variable
+            ('g'), and setting an offset.
 
             >>> import dimod
             >>> import numpy as np
@@ -1515,9 +1543,22 @@ class BinaryQuadraticModel(object):
             ...               [0, 0, 3, 14, 15],
             ...               [0, 0, 0, 4, 0],
             ...               [0, 0, 0, 0, 5]]).astype(np.float32)
-            >>> model = dimod.BinaryQuadraticModel.from_numpy_matrix(Q)
+            >>> model = dimod.BinaryQuadraticModel.from_numpy_matrix(Q,
+            ...         variable_order = ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+            ...         offset = 2.5,
+            ...         interactions = {('a', 'f')})
             >>> model.linear
-            {0: 1.0, 1: 2.0, 2: 3.0, 3: 4.0, 4: 5.0}
+            {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': 4.0, 'e': 5.0, 'f': 0.0}
+            >>> model.quadratic
+            {('a', 'd'): 10.0,
+             ('a', 'e'): 11.0,
+             ('a', 'f'): 0.0,
+             ('b', 'd'): 12.0,
+             ('b', 'e'): 13.0,
+             ('c', 'd'): 14.0,
+             ('c', 'e'): 15.0}
+            >>> model.offset
+            2.5
 
         """
         import numpy as np
@@ -1549,7 +1590,7 @@ class BinaryQuadraticModel(object):
         return bqm
 
     def to_pandas_dataframe(self):
-        """Return the binary quadratic model as a pandas DataFrame.
+        """Convert a binary quadratic model to pandas DataFrame format.
 
         Returns:
             :class:`pandas.DataFrame`: The binary quadratic model as a DataFrame. The DataFrame has
@@ -1566,6 +1607,20 @@ class BinaryQuadraticModel(object):
 
 
             The offset is dropped when converting to a pandas DataFrame.
+
+        Examples:
+            This example converts a binary quadratic model to pandas DataFrame format.
+
+            >>> import dimod
+            >>> model = dimod.BinaryQuadraticModel({'a': 1, 'b': -1, 'c': .5},
+            ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
+            ...                                    1.4,
+            ...                                    dimod.BINARY)
+            >>> model.to_pandas_dataframe()
+                 a    b    c
+            a  1.0  0.5  0.0
+            b  0.0 -1.0  1.5
+            c  0.0  0.0  0.5
 
         """
         import pandas as pd
@@ -1590,7 +1645,7 @@ class BinaryQuadraticModel(object):
                 values are QUBO coefficients.
 
             offset (optional, default=0.0):
-                Constant offset for the binary quadratic program.
+                Constant offset for the binary quadratic model.
 
             interactions (iterable, optional, default=[]):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
@@ -1599,19 +1654,27 @@ class BinaryQuadraticModel(object):
             :class:`.BinaryQuadraticModel`
 
         Examples:
-            This example creates a binary quadratic model from a QUBO in pandas DataFrame format.
+            This example creates a binary quadratic model from a QUBO in pandas DataFrame format
+            while adding an interaction and setting a constant offset.
 
             >>> import dimod
-            >>> import numpy as np
             >>> import pandas as pd
             >>> pd_qubo = pd.DataFrame(data={0: [-1, 0], 1: [2, -1]})
             >>> pd_qubo
                0  1
             0 -1  2
             1  0 -1
-            >>> model = dimod.BinaryQuadraticModel.from_pandas_dataframe(pd_qubo, offset = 0.0)
-            >>> model
-            BinaryQuadraticModel({0: -1, 1: -1.0}, {(0, 1): 2}, 0.0, Vartype.BINARY)
+            >>> model = dimod.BinaryQuadraticModel.from_pandas_dataframe(pd_qubo,
+            ...         offset = 2.5,
+            ...         interactions = {(0,2), (1,2)})
+            >>> model.linear
+            {0: -1, 1: -1.0, 2: 0.0}
+            >>> model.quadratic
+            {(0, 1): 2, (0, 2): 0.0, (1, 2): 0.0}
+            >>> model.offset
+            2.5
+            >>> model.vartype
+            <Vartype.BINARY: frozenset([0, 1])>
 
         """
         if interactions is None:
