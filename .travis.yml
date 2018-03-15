@@ -32,7 +32,7 @@ matrix:
           before_install:
             - brew update
             - brew upgrade python
-            - pip install virtualenv
+            - pip3 install virtualenv
             - virtualenv env -p python
             - source env/bin/activate
           deploy:
