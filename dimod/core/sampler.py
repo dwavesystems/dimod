@@ -1,9 +1,15 @@
 """
-We expect developers will wish to create new dimod samplers. Here we will provide an example of how
-to do so.
+The :class:`.Sampler` abstract base class (`ABC <https://docs.python.org/3.6/library/abc.html#module-abc>`_\ )
+helps developers create new dimod samplers.
 
-Imagine that we have a function which returns the sample which minimizes the linear terms of the
-Ising problem.
+The new dimod sampler must define a subclass of :class:`.Sampler` that implements
+abstract properties :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties`
+and one of the abstract methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
+or :meth:`~.Sampler.sample_qubo`. The :class:`.Sampler` class provides the complementary
+methods as mixins and ensures consistent responses.
+
+For example, the following steps show how to easily create a dimod sampler based on a simple function that,
+for an Ising problem, returns the sample that minimizes the linear terms:
 
 .. code-block:: python
 
@@ -16,10 +22,9 @@ Ising problem.
                 sample[v] = -1
         return sample
 
-We decide that this function is useful enough that we wish to create a dimod sampler from it. This
-can be done simply by using the :class:`.Sampler` abstract base class (ABC_).
-
-.. _ABC: https://docs.python.org/3.6/library/abc.html#module-abc
+Using the :class:`.Sampler` class to create a dimod sampler from this function, it is
+sufficient to implement a single method (in this case the :meth:`sample_ising` is
+implemented).
 
 .. code-block:: python
 
@@ -38,19 +43,18 @@ can be done simply by using the :class:`.Sampler` abstract base class (ABC_).
         def parameters(self):
             return dict()
 
-We know we need to implement :meth:`sample_ising`, :attr:`properties` and :attr:`parameters` by
-consulting the above table. The advantage of using the :class:`.Sampler` is that we get the other
-sample methods 'for free' as mixins.
+The :class:`.Sampler` ABC provides the other sample methods "for free"
+as mixins.
 
 .. code-block:: python
 
     sampler = LinearIsingSampler()
-    response = sampler.sample_ising({'a': -1}, {})  # implemented
-    response = sampler.sample_qubo({('a', 'a'): 1})  # mixin
-    response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # mixin
+    response = sampler.sample_ising({'a': -1}, {})  # Implemented by class LinearIsingSampler
+    response = sampler.sample_qubo({('a', 'a'): 1})  # Mixin provided by Sampler class
+    response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # Mixin provided by Sampler class
 
-In this case, because the sampler is so simple, we chose to have both :attr:`properties` and
-:attr:`parameters` return empty dicts, but we could instantiate a more complex version.
+Below is a more complex version of the same sampler, where the :attr:`properties` and
+:attr:`parameters` properties return non-empty dicts.
 
 .. code-block:: python
 
@@ -89,28 +93,77 @@ __all__ = ['Sampler']
 
 @add_metaclass(abc.SamplerABCMeta)
 class Sampler:
-    """The abstract base class for dimod Samplers.
+    """Abstract base class for dimod samplers.
 
-    Provides the method :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
-    :meth:`~.Sampler.sample_qubo` assuming that one has been implemented.
+    Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
+    :meth:`~.Sampler.sample_qubo` assuming at least one is implemented.
 
     """
 
     @abc.abstractproperty  # for python2 compatibility
     def parameters(self):
-        """dict: Should be a dict where the keys are the keyword parameters accepted by the sample
-        methods. The values should be lists of the properties relevent to the parameter.
+        """dict: A dict where keys are the keyword parameters accepted by the sampler
+        methods and values are lists of the properties relevent to each parameter.
+
+        Examples:
+            This example adds a 'verbose' parameter to an Ising sampler.
+
+            .. code-block:: python
+
+                class IsingSampler(dimod.Sampler):
+                    def __init__(self):
+                        self._parameters = {'verbose': []}
+
+                    def sample_ising(self, h, J, verbose=False):
+                        sample = linear_ising(h, J) # Implemented elsewhere
+                        energy = dimod.ising_energy(sample, h, J)
+                        if verbose:
+                            print(sample)
+                        return dimod.Response.from_dicts([sample], {'energy': [energy]})
+
+                    @property
+                    def properties(self):
+                        return dict()
+
+                    @property
+                    def parameters(self):
+                        return self._parameters
+
         """
         pass
 
     @abc.abstractproperty  # for python2 compatibility
     def properties(self):
-        """dict: Should be a dict containing any additional information about the sampler."""
+        """dict: A dict containing any additional information about the sampler.
+
+        Examples:
+            This example adds a 'description' property to an Ising sampler.
+
+            .. code-block:: python
+
+                class IsingSampler(dimod.Sampler):
+                    def __init__(self):
+                        self._properties = {'description': 'an example Ising sampler'}
+
+                    def sample_ising(self, h, J):
+                        sample = linear_ising(h, J) # Implemented elsewhere
+                        energy = dimod.ising_energy(sample, h, J)
+                        return dimod.Response.from_dicts([sample], {'energy': [energy]})
+
+                    @property
+                    def properties(self):
+                        return self._properties
+
+                    @property
+                    def parameters(self):
+                        return dict()
+
+        """
         pass
 
     @abc.samplemixinmethod
     def sample(self, bqm, **parameters):
-        """Samples from the given bqm using the instantiated sample method."""
+        """Samples from a binary quadratic model using the instantiated sample method."""
         if bqm.vartype is Vartype.SPIN:
             Q, offset = bqm.to_qubo()
             response = self.sample_qubo(Q, **parameters)
