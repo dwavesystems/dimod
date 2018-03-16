@@ -61,23 +61,53 @@ illustrative purposes, and converts the reduced-variables model to QUBO formulat
     >>> bqm_no3_qubo.quadratic
     {(1, 2): 100.0, (1, 4): 56.0, (2, 4): 232.0}
     >>> bqm_no3_qubo.offset
-    113.5  
+    113.5
 
 
 Samplers and Composites
 -----------------------
 
-A sampler is a process that samples from low energy states in models defined by an Ising
-equation or a QUBO problem.
+*Samplers* are processes that sample from low energy states of a problem’s objective function.
+A binary quadratic model (BQM) sampler samples from low energy states in models such
+as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
+(QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
+sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
+BQM sampler method.
 
-Samplers used with Ocean software are expected to have a ‘sample_qubo’ and ‘sample_ising’ method
-and return an iterable of samples, in order of increasing energy.
+*Composed samplers* apply pre- and/or post-processing to binary quadratic programs without
+changing the underlying sampler implementation by layering composite patterns on the
+sampler. For example, a composed sampler might add spin transformations when sampling
+from the D-Wave system.
 
-A composite is a transformation applied to a sample. A composed sampler applies the
-transformation to a sampler's samples.
+*Structured samplers* are restricted to sampling only binary quadratic models defined
+on a specific graph.
 
-The dimod API provides utilities for constructing new samplers and composed samplers
-with standard input and response formats.
+You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
+providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),
+consistent responses, etc.
 
 Example
 ~~~~~~~
+
+This example creates a dimod sampler by implementing a single method (in this example
+the :meth:`sample_ising` method).
+
+.. code-block:: python
+
+    class LinearIsingSampler(dimod.Sampler):
+
+        def sample_ising(self, h, J):
+            sample = linear_ising(h, J)  # Defined elsewhere
+            energy = dimod.ising_energy(sample, h, J)
+            return dimod.Response.from_dicts([sample], {'energy': [energy]})
+
+        @property
+        def properties(self):
+            return dict()
+
+        @property
+        def parameters(self):
+            return dict()
+
+The :class:`.Sampler` ABC provides the other sample methods "for free"
+as mixins.
