@@ -1,30 +1,16 @@
 """
 The :class:`.Sampler` abstract base class (`ABC <https://docs.python.org/3.6/library/abc.html#module-abc>`_\ )
-helps developers create new dimod samplers.
+helps you create new dimod samplers.
 
-The new dimod sampler must define a subclass of :class:`.Sampler` that implements
+Any new dimod sampler must define a subclass of :class:`.Sampler` that implements
 abstract properties :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties`
 and one of the abstract methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
 or :meth:`~.Sampler.sample_qubo`. The :class:`.Sampler` class provides the complementary
 methods as mixins and ensures consistent responses.
 
-For example, the following steps show how to easily create a dimod sampler based on a simple function that,
-for an Ising problem, returns the sample that minimizes the linear terms:
-
-.. code-block:: python
-
-    def linear_ising(h, J):
-        sample = {}
-        for v in h:
-            if h[v] < 0:
-                sample[v] = +1
-            else:
-                sample[v] = -1
-        return sample
-
-Using the :class:`.Sampler` class to create a dimod sampler from this function, it is
-sufficient to implement a single method (in this case the :meth:`sample_ising` is
-implemented).
+For example, the following steps show how to easily create a dimod sampler. It is
+sufficient to implement a single method (in this example the :meth:`sample_ising` method)
+to create a dimod sampler with the :class:`.Sampler` class.
 
 .. code-block:: python
 
@@ -42,6 +28,21 @@ implemented).
         @property
         def parameters(self):
             return dict()
+
+For this example, the implemented sampler :meth:`~.Sampler.sample_ising` can be based on
+a simple placeholder function, which returns a sample that minimizes the linear terms:
+
+.. code-block:: python
+
+    def linear_ising(h, J):
+        sample = {}
+        for v in h:
+            if h[v] < 0:
+                sample[v] = +1
+            else:
+                sample[v] = -1
+        return sample
+
 
 The :class:`.Sampler` ABC provides the other sample methods "for free"
 as mixins.
@@ -106,7 +107,7 @@ class Sampler:
         methods and values are lists of the properties relevent to each parameter.
 
         Examples:
-            This example adds a 'verbose' parameter to an Ising sampler.
+            This example adds a `verbose` parameter to an Ising sampler.
 
             .. code-block:: python
 
@@ -137,7 +138,7 @@ class Sampler:
         """dict: A dict containing any additional information about the sampler.
 
         Examples:
-            This example adds a 'description' property to an Ising sampler.
+            This example adds a `description` property to an Ising sampler.
 
             .. code-block:: python
 
