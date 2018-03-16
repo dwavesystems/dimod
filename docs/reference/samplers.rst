@@ -4,21 +4,24 @@
 Samplers and Composites
 =======================
 
-Samplers are processes that sample from low energy states of a problem’s objective function.
-A binary quadratic model sampler samples from low energy states in models defined by an
-Ising equation or a Quadratic Unconstrained Binary Optimization Problem (QUBO) and
-returns an iterable of samples, in order of increasing energy. A dimod sampler is expected
-to have a ‘sample_qubo’ and ‘sample_ising’ method.
+*Samplers* are processes that sample from low energy states of a problem’s objective function.
+A binary quadratic model (BQM) sampler samples from low energy states in models such
+as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
+(QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
+sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
+BQM sampler method.
 
-Composed samplers apply pre- and/or post-processing to binary quadratic programs without
+*Composed samplers* apply pre- and/or post-processing to binary quadratic programs without
 changing the underlying sampler implementation by layering composite patterns on the
-sampler.
+sampler. For example, a composed sampler might add spin transformations when sampling
+from the D-Wave system.
 
-Structured samplers are restricted to sampling only binary quadratic models defined
+*Structured samplers* are restricted to sampling only binary quadratic models defined
 on a specific graph.
 
-You can create your own samplers using dimod's :class:`.Sampler` abstract base class (ABC)
-to provide complementary methods, properties, consistent responses, etc.
+You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
+providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),
+consistent responses, etc.
 
 Properties of dimod Sampler Abstract Base Classes
 =================================================
@@ -57,6 +60,10 @@ ABCs.
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
           :attr:`~.Composite.child`
+
+The table shows, for example, that the :class:`.Sampler` class requires that you implement
+the :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties` properties and at least
+one sampler method; the class provides the unimplemented methods as mixins.
 
 Creating a Sampler
 ==================
