@@ -212,17 +212,16 @@ class BinaryQuadraticModel(object):
 
     @property
     def binary(self):
-        """:class:`.BinaryQuadraticModel`: An instance of the QUBO model subclass
-        of the :class:`.BinaryQuadraticModel` superclass, corresponding to
-        a binary quadratic model with binary variables.
+        """:class:`.BinaryQuadraticModel`: An instance of the QUBO model subclass of
+        the :class:`.BinaryQuadraticModel` superclass, corresponding to a binary quadratic
+        model with binary variables.
 
-       Enables access to biases for the binary-valued binary quadratic model
-       regardless of the vartype set when the model was created.
-       If the model was created with the :attr:`.spin` vartype,
-       the QUBO model subclass is instantiated upon the first use of the
-       :attr:`.binary` property and used in any subsequent reads.
+        Enables access to biases for the binary-valued binary quadratic model
+        regardless of the vartype set when the model was created. If the model
+        was created with the :attr:`.spin` vartype, the QUBO model subclass is instantiated
+        upon the first use of the :attr:`.binary` property and used in any subsequent reads.
 
-       Examples:
+        Examples:
            This example creates an Ising model and uses the :attr:`.binary` property
            to instantiate the corresponding QUBO model.
 
