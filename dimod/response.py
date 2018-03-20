@@ -1,11 +1,11 @@
 """
-The dimod Response object allows dimod Samplers to respond consistently.
-
-The Response is :class:`~collections.Iterable` (over the samples from lowest energy to highest) and
-:class:`~collections.Sized` (the number of samples in the response).
+dimod samplers respond with a consistent :class:`.Response` object that is
+:class:`~collections.Iterable` (over samples, from lowest energy to highest) and
+:class:`~collections.Sized` (number of samples).
 
 Examples
 --------
+    This example shows the response of the dimod ExactSolver sampler.
 
 >>> response = dimod.ExactSolver().sample_ising({'a': -0.5}, {})
 >>> len(response)
@@ -31,34 +31,46 @@ __all__ = ['Response']
 
 
 class Response(Iterable, Sized):
-    """A container for the samples and any other data returned by a dimod Sampler.
+    """A container for samples and any other data returned by dimod samplers.
 
     Args:
         samples_matrix (:obj:`numpy.matrix`):
-            A numpy matrix where each row is a sample.
+            Samples as a NumPy matrix where each row is a sample.
 
         data_vectors (dict[field, :obj:`numpy.array`/list]):
-            A dict containing additional per-sample data in vectors. Each vector should be the
-            same length as samples_matrix. The key 'energy' and its vector are required.
+            Additional per-sample data as a dict of vectors. Each vector is of the
+            same length as `samples_matrix`. The key 'energy' and its vector are required.
 
         vartype (:class:`.Vartype`):
-            The vartype of the samples.
+            Vartype of the samples.
 
         info (dict, optional, default=None):
-            A dict containing information about the response as a whole.
+            Information about the response as a whole formatted as a dict.
 
         variable_labels (list, optional, default=None):
-            Maps (by index) variable labels to the columns of the samples matrix.
+            Variable labels mappped by index to columns of the samples matrix.
 
     Attributes:
-        vartype (:class:`.Vartype`): The vartype of the samples.
+        vartype (:class:`.Vartype`): Vartype of the samples.
 
-        info (dict): A dictionary containing information about the response as a whole.
+        info (dict): Information about the response as a whole formatted as a dict.
 
-        variable_labels (list/None): The variable labels. Each column in the samples matrix is the
-            values assigned to one variable. If None then the column indices are the labels.
+        variable_labels (list/None): Variable labels. Each column in the samples matrix is the
+            values returned for one variable. If None, column indices are the labels.
 
-        label_to_idx (dict): A mapping from the variable labels to their columns in samples matrix.
+        label_to_idx (dict): Map of variable labels to columns in samples matrix.
+
+    Examples:
+        This example shows some attributes of the response for the sampler
+        of dimod package's random_sampler.py reference example.
+
+        >>> sampler = RandomSampler() # dimod package's random_sampler.py sampler
+        >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
+        >>> res = sampler.sample(bqm)
+        >>> res.vartype
+        <Vartype.SPIN: frozenset([1, -1])>
+        >>> res.variable_labels
+        [0, 1]
 
     """
 
@@ -66,7 +78,7 @@ class Response(Iterable, Sized):
     def __init__(self, samples_matrix, data_vectors, vartype, info=None, variable_labels=None):
         # Constructor is opinionated about the samples_matrix type, it should be a numpy matrix
         if not isinstance(samples_matrix, np.matrix):
-            raise TypeError("expected 'samples_matrix' to be a numpy matrix")
+            raise TypeError("expected 'samples_matrix' to be a NumPy matrix")
         elif samples_matrix.dtype != np.int8:
             # cast to int8
             samples_matrix = samples_matrix.astype(np.int8)
@@ -88,7 +100,7 @@ class Response(Iterable, Sized):
                     raise ValueError(("expected data vector {} to be a vector of length {}"
                                       "").format(vector, num_samples))
             else:
-                raise TypeError("expected data vector {} to be a list of numpy array".format(vector))
+                raise TypeError("expected data vector {} to be a list of NumPy array".format(vector))
         self._data_vectors = data_vectors
 
         # vartype is checked by the decorator
@@ -136,7 +148,7 @@ class Response(Iterable, Sized):
 
     @property
     def samples_matrix(self):
-        """:obj:`numpy.matrix`: The numpy int8 matrix containing the samples."""
+        """:obj:`numpy.matrix`: Samples as a NumPy matrix of data type int8."""
         if self._futures:
             self._resolve_futures(**self._futures)
 
@@ -148,8 +160,8 @@ class Response(Iterable, Sized):
 
     @property
     def data_vectors(self):
-        """dict[field, :obj:`numpy.array`/list]: The per-sample data. The keys should be the
-        data labels and the values should each be a vector of the same length as sample_matrix.
+        """dict[field, :obj:`numpy.array`/list]: Per-sample data as a dict, where keys are the
+        data labels and values are each a vector of the same length as sample_matrix.
         """
         if self._futures:
             self._resolve_futures(**self._futures)
@@ -160,6 +172,19 @@ class Response(Iterable, Sized):
         """True if all loaded futures are done or if there are no futures.
 
         Only relevant when the response is constructed with :meth:`Response.from_futures`.
+
+        Examples:
+            This example checks whether futures are done before and after a `set_result` call.
+
+            >>> from concurrent.futures import Future
+            >>> future = Future()
+            >>> response = dimod.Response.from_futures((future,), dimod.BINARY, 3)
+            >>> future.done()
+            False
+            >>> future.set_result({'samples': [0, 1, 0], 'energy': [1]})
+            >>> future.done()
+            True
+
         """
         return all(future.done() for future in self._futures)
 
@@ -169,22 +194,22 @@ class Response(Iterable, Sized):
 
     @classmethod
     def from_matrix(cls, samples, data_vectors, vartype=None, info=None, variable_labels=None):
-        """Build a Response from an array-like object.
+        """Build a response from a NumPy array-like object.
 
         Args:
             samples (array_like/str):
-                As for :class:`numpy.matrix`. See Notes.
+                Samples as a :class:`numpy.matrix` or NumPy array-like object. See Notes.
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
-                A dict containing additional per-sample data in vectors. Each vector should be the
-                same length as samples_matrix. The key 'energy' and its vector are required.
+                Additional per-sample data as a dict of vectors. Each vector is the same length as
+                `samples_matrix`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the response. If not provided, the vartype will be inferred from the
-                samples matrix if possible or a ValueError will be raised.
+                Vartype of the response. If not provided, vartype is inferred from the
+                samples matrix if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
-                A dict containing information about the response as a whole.
+                Information about the response as a whole formatted as a dict.
 
             variable_labels (list, optional, default=None):
                 Maps (by index) variable labels to the columns of the samples matrix.
@@ -193,15 +218,19 @@ class Response(Iterable, Sized):
             :obj:`.Response`
 
         Raises:
-            :exc:`ValueError`: If vartype is not provided and samples are either all 1s or have more
-                than two unique values or if those values are not a know vartype.
+            :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
+                than two unique values, or have values of an unknown vartype.
 
         Examples:
+            This example builds a response from a NumPy matrix.
+
             .. code-block:: python
 
                 samples = np.matrix([[0, 1], [1, 0]])
                 energies = [0.0, 1.0]
                 response = Response.from_matrix(samples, {'energy': energies})
+
+            This example builds a response from a NumPy array-like object (a Python list).
 
             .. code-block:: python
 
@@ -236,31 +265,34 @@ class Response(Iterable, Sized):
 
     @classmethod
     def from_dicts(cls, samples, data_vectors, vartype=None, info=None):
-        """Build a Response from an iterable of dicts.
+        """Build a response from an iterable of dicts.
 
         Args:
             samples (iterable[dict]):
-                An iterable of samples where each sample is a dictionary (or Mapping).
+                Iterable of samples where each sample is a dictionary (or Mapping).
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
-                A dict containing additional per-sample data in vectors. Each vector should be the
-                same length as samples_matrix. The key 'energy' and its vector are required.
+                Additional per-sample data as a dict of vectors. Each vector is the
+                same length as `samples_matrix`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the response. If not provided, the vartype will be inferred from the
-                samples matrix if possible or a ValueError will be raised.
+                Vartype of the response. If not provided, vartype is inferred from the
+                samples matrix if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
-                A dict containing information about the response as a whole.
+                Information about the response as a whole formatted as a dict.
 
         Returns:
             :obj:`.Response`
 
         Raises:
-            :exc:`ValueError`: If vartype is not provided and samples are either all 1s or have more
-                than two unique values or if those values are not a know vartype.
+            :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
+                than two unique values, or have values of an unknown vartype.
 
         Examples:
+            This example code snippet builds a response from an interable of samples and
+            its corresponding dict of energies.
+
             .. code-block:: python
 
                 samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1}]
@@ -299,31 +331,33 @@ class Response(Iterable, Sized):
 
     @classmethod
     def from_pandas(cls, samples_df, data_vectors, vartype=None, info=None):
-        """Build a Response from a pandas DataFrame.
+        """Build a response from a pandas DataFrame.
 
         Args:
             samples (:obj:`pandas.DataFrame`):
                 A pandas DataFrame of samples where each row is a sample.
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
-                A dict containing additional per-sample data in vectors. Each vector should be the
-                same length as samples_matrix. The key 'energy' and its vector are required.
+                Additional per-sample data as a dict of vectors. Each vector is the
+                same length as `samples_matrix`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
-                The vartype of the response. If not provided, the vartype will be inferred from the
-                samples matrix if possible or a ValueError will be raised.
+                Vartype of the response. If not provided, vartype is inferred from the
+                samples matrix if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
-                A dict containing information about the response as a whole.
+                Information about the response as a whole formatted as a dict.
 
         Returns:
             :obj:`.Response`
 
         Raises:
-            :exc:`ValueError`: If vartype is not provided and samples are either all 1s or have more
-                than two unique values or if those values are not a know vartype.
+            :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
+                than two unique values, or have values of an unknown vartype.
 
         Examples:
+            These examples build a response from a pandas DataFrame.
+
             .. code-block:: python
 
                 import pandas as pd
@@ -366,44 +400,50 @@ class Response(Iterable, Sized):
 
         Args:
             futures (iterable):
-                An iterable :obj:`~concurrent.futures.Future`-like objects. It is expected
-                that :meth:`~concurrent.futures.Future.result` will return a dict.
+                Iterable :obj:`~concurrent.futures.Future` or :obj:`~concurrent.futures.Future`-like
+                objects (Python objects with similar structure).
+                :meth:`~concurrent.futures.Future.result` returns a dict.
 
             vartype (:class:`.Vartype`):
-                The vartype of the response.
+                Vartype of the response.
 
             num_variables (int):
-                The number of variables each sample will have.
+                Number of variables for each sample.
 
             samples_key (hashable, optional, default='samples'):
-                The key of the result dict that contains the samples. The samples are expected
-                to be array-like.
+                Key of the result dict containing the samples. Samples are array-like.
 
             data_vector_keys (iterable/mapping, optional, default=None):
                 A mapping from the keys of the result dict to :attr:`Response.data_vectors`. If
-                None, ['energy'] is assumed to be a key in the result dict and will map the the
-                'energy' data vector.
+                None, ['energy'] is assumed to be a key in the result dict and the
+                'energy' data vector is mapped.
 
             info_keys (iterable/mapping, optional, default=None):
                 A mapping from the keys of the result dict to :attr:`Response.info`.
-                If None, info will be empty.
+                If None, info is empty.
 
             variable_labels (list, optional, default=None):
-                Maps (by index) variable labels to the columns of the samples matrix.
+                Maps (by index) variable labels to columns of the samples matrix.
 
             active_variables (array-like, optional, default=None):
-                Specify which columns of the result's samples should be used. If variable_labels is
-                not provided then the variable_labels will be set to match active_variables
+                Selects which columns of the result's samples are used. If `variable_labels` is
+                not provided, `variable_labels` is set to match `active_variables`.
 
             ignore_extra_keys (bool, optional, default=True):
                 If True, keys given in `data_vector_keys` and `info_keys` but that are not in
-                :meth:`~concurrent.futures.Future.result` will be ignored. If False, extra keys
-                will cause a ValueError.
+                :meth:`~concurrent.futures.Future.result` are ignored. If False, extra keys
+                cause a ValueError.
 
         Returns:
             :obj:`.Response`
 
+        Notes:
+            :obj:`~concurrent.futures.Future` objects are read on the first read
+            of :attr:`.Response.samples_matrix` or :attr:`.Response.data_vectors`.
+
         Examples:
+            These examples build responses from :obj:`~concurrent.futures.Future` objects.
+
             .. code-block:: python
 
                 from concurrent.futures import Future
@@ -447,10 +487,6 @@ class Response(Iterable, Sized):
 
                 # now read from the response
                 matrix = response.samples_matrix
-
-        Notes:
-            The future objects are read on the first read of :attr:`.Response.samples_matrix` or
-            :attr:`.Response.data_vectors`.
 
         """
 
@@ -545,12 +581,42 @@ class Response(Iterable, Sized):
             self.update(response)
 
     def update(self, *other_responses):
-        """Add other responses' values to the response.
+        """Add values of other responses to the response.
 
         Args:
             *other_responses: (:obj:`.Response`):
-                Any number of additional response objects. Must have matching sample_matrix
-                dimensions, matching data_vector keys and identical variable labels.
+                Additional responses from which to add values. Any number of additional response objects,
+                separated by commas, can be specified. Responses must have matching `sample_matrix`
+                dimensions, `data_vector` keys, and variable labels.
+
+        Examples:
+            This example updates a response with values from two other responses.
+
+            >>> import dimod
+            >>> samples = [[0, 1], [1, 0]]
+            >>> energies = [0.0, 1.0]
+            >>> response = dimod.Response.from_matrix(samples, {'energy': energies})
+            >>> samples1 = [[0, 0], [1, 1]]
+            >>> energies1 = [0.25, 1.25]
+            >>> response1 = dimod.Response.from_matrix(samples1, {'energy': energies1})
+            >>> samples2 = [[1, 0], [0, 1]]
+            >>> energies2 = [0.5, 1.75]
+            >>> response2 = dimod.Response.from_matrix(samples2, {'energy': energies2})
+            >>> for i in response.data():
+            ...     print(i)
+            ...
+            Sample(sample={0: 0, 1: 1}, energy=0.0)
+            Sample(sample={0: 1, 1: 0}, energy=1.0)
+            >>> response.update(response1, response2)
+            >>> for i in response.data():
+            ...     print(i)
+            ...
+            Sample(sample={0: 0, 1: 1}, energy=0.0)
+            Sample(sample={0: 0, 1: 0}, energy=0.25)
+            Sample(sample={0: 1, 1: 0}, energy=0.5)
+            Sample(sample={0: 1, 1: 0}, energy=1.0)
+            Sample(sample={0: 1, 1: 1}, energy=1.25)
+            Sample(sample={0: 0, 1: 1}, energy=1.75)
 
         """
         # make sure all of the other responses are the appropriate vartype. We could cast them but
@@ -610,26 +676,64 @@ class Response(Iterable, Sized):
     ###############################################################################################
 
     def copy(self):
-        """Creates a shallow copy of the response."""
+        """Creates a shallow copy of a response.
+
+        Examples:
+            This example copies a response.
+
+            >>> import dimod
+            >>> samples = [[0, 1], [1, 0]]
+            >>> energies = [0.0, 1.0]
+            >>> response = dimod.Response.from_matrix(samples, {'energy': energies})
+            >>> copied_response = response.copy()
+
+        """
         return self.from_matrix(self.samples_matrix, self.data_vectors,
                                 vartype=self.vartype, info=self.info,
                                 variable_labels=self.variable_labels)
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, data_vector_offsets=None, inplace=True):
-        """Creates a new response with the given vartype.
+        """Create a new response with the given vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set, optional):
-                The variable type desired for the penalty model. Accepted input values:
+                Variable type to use for the new response. Accepted input values:
                 :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            data_vector_offsets (dict[field, :obj:`numpy.array`/list], optional, default=None):
+                Offsets to add to `data_vectors` of the response formatted as a dict containing
+                per-sample offsets in vectors. Each vector is the same length as `samples_matrix`.
 
             inplace (bool, optional, default=True):
                 If True, the response is updated in-place, otherwise a new response is returned.
 
         Returns:
-            :obj:`.Response`. A new Response with vartype matching input 'vartype'.
+            :obj:`.Response`. New response with vartype matching input 'vartype'.
+
+        Examples:
+            This example creates a response with spin variables from a response with binary variables
+            while adding energy offsets to the new response.
+
+            >>> import dimod
+            >>> samples = [[0, 1], [1, 0]]
+            >>> energies = [0.0, 1.0]
+            >>> response = dimod.Response.from_matrix(samples, {'energy': energies})
+            >>> for i in response.data():
+            ...     print(i)
+            ...
+            Sample(sample={0: 0, 1: 1}, energy=0.0)
+            Sample(sample={0: 1, 1: 0}, energy=1.0)
+            >>> dvo = {'energy': [0.25, 0.75]}
+            >>> new_response = response.change_vartype('SPIN',
+            ...                                        inplace = False,
+            ...                                        data_vector_offsets = dvo)
+            >>> for i in new_response.data():
+            ...     print(i)
+            ...
+            Sample(sample={0: -1, 1: 1}, energy=0.25)
+            Sample(sample={0: 1, 1: -1}, energy=1.75)
 
         """
         if not inplace:
@@ -654,25 +758,29 @@ class Response(Iterable, Sized):
         return self
 
     def relabel_variables(self, mapping, inplace=True):
-        """Relabel the variables according to the given mapping.
+        """Relabel a response's variables as per a given mapping.
 
         Args:
             mapping (dict):
-                A dict mapping the current variable labels to new ones. If an incomplete mapping is
-                provided unmapped variables will keep their labels
+                Dict mapping current variable labels to new. If an incomplete mapping is
+                provided, unmapped variables keep their original labels
 
             inplace (bool, optional, default=True):
-                If True, the response is updated in-place, otherwise a new response is returned.
+                If True, the original response is updated; otherwise a new response is returned.
 
         Returns:
-            :class:`.Response`: A response with the variables relabeled. If inplace=True, returns
+            :class:`.Response`: Response with relabeled variables. If inplace=True, returns
             itself.
 
         Examples:
+            This example relabels variables in a response.
+
             .. code-block:: python
 
                 response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
                 response.relabel_variables({'a': 0})
+
+            This example creates a new response with relabeled variables.
 
             .. code-block:: python
 
@@ -720,7 +828,7 @@ class Response(Iterable, Sized):
 
         Args:
             sorted_by (str/None, optional, default='energy'):
-                Over what data_vector to sort the samples. If None, the samples are yielded in
+                Selects the `data_vector` used to sort the samples. If None, the samples are yielded in
                 the order given by the samples matrix.
 
         Yields:
@@ -728,6 +836,8 @@ class Response(Iterable, Sized):
             a read-only dict.
 
         Examples:
+            This example iterates over the response samples of the dimod ExactSolver sampler.
+
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> response.samples_matrix
             matrix([[-1, -1],
@@ -736,12 +846,14 @@ class Response(Iterable, Sized):
                     [-1,  1]])
             >>> for sample in response.samples(sorted_by=None):
             ...     print(sample)
+            ...
             {'a': -1, 'b': -1}
             {'a': 1, 'b': -1}
             {'a': 1, 'b': 1}
             {'a': -1, 'b': 1}
             >>> for sample in response.samples():  # sorted_by='energy'
             ...     print(sample)
+            ...
             {'a': -1, 'b': -1}
             {'a': 1, 'b': -1}
             {'a': 1, 'b': 1}
@@ -763,36 +875,41 @@ class Response(Iterable, Sized):
 
         Args:
             fields (list, optional, default=None):
-                If specified, the yielded tuples will only include the values in fields.
-                A special field name 'sample' can be used to view the samples.
+                If specified, only these fields' values are included in the yielded tuples.
+                The special field name 'sample' can be used to view the samples.
 
             sorted_by (str/None, optional, default='energy'):
-                Over what data_vector to sort the samples. If None, the samples are yielded in
-                the order given by the samples matrix.
+                Selects the data_vector used to sort the samples. If None, the samples are yielded
+                in the order given by the samples matrix.
 
             name (str/None, optional, default='Sample'):
-                The name of the yielded namedtuples or None to yield regular tuples.
+                Name of the yielded namedtuples or None to yield regular tuples.
 
         Yields:
             namedtuple/tuple: The data in the response, in the order specified by the input
-            'fields'.
+            `fields`.
 
         Examples:
+            This example iterates over the response data of the dimod ExactSolver sampler.
+
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> for datum in response.data():
             ...     print(datum)
+            ...
             Sample(sample={'a': -1, 'b': -1}, energy=0.0)
             Sample(sample={'a': 1, 'b': -1}, energy=1.0)
             Sample(sample={'a': 1, 'b': 1}, energy=1.0)
             Sample(sample={'a': -1, 'b': 1}, energy=4.0)
             >>> for sample, energy in response.data():
             ...     print(energy)
+            ...
             0.0
             1.0
             1.0
             4.0
             >>> for energy, in response.data(['energy']):
             ...     print(energy)
+            ...
             0.0
             1.0
             1.0
