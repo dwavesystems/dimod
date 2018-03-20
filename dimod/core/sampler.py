@@ -188,7 +188,7 @@ class Sampler:
             ...                                    dimod.SPIN)
             >>> res = sampler.sample(model)
             >>> print(res)
-            [[0  1]]
+            [[-1  1]]
 
         """
         if bqm.vartype is Vartype.SPIN:
@@ -258,7 +258,7 @@ class Sampler:
             >>> Q = {(0, 0): -0.5, (0, 1): 1, (1, 1): -0.75}
             >>> res = sampler.sample_qubo(Q)
             >>> print(res)
-            [[0  1]]
+            [[0 1]]
 
 
         """
