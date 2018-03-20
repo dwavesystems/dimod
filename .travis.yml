@@ -2,57 +2,58 @@ language: python
 
 matrix:
     include:
+        - os: linux
+          python: "3.6"
+          script:
+            - ls
+          deploy:
+        - os: linux
+          sudo: required
+          python: "3.6"
+          env: TOXENV=py36
+          deploy:
         # - os: linux
         #   sudo: required
-        #   python: "nightly"
-        #   env: TOXENV=pynightly
-        - os: linux
-          sudo: required
-          python: "3.6"
-          env: TOXENV=py36
-          deploy:
-        - os: linux
-          sudo: required
-          python: "3.5"
-          env: TOXENV=py35
-          deploy:
-        - os: linux
-          sudo: required
-          python: "3.4"
-          env: TOXENV=py34
-          deploy:
-        - os: linux
-          sudo: required
-          python: "2.7"
-          env: TOXENV=py27
-          deploy:
-        - os: osx
-          language: generic
-          env: TOXENV=py36
-          before_install:
-            - brew update
-            - brew upgrade python
-            - pip3 install virtualenv
-            - virtualenv env -p python3
-            - source env/bin/activate
-          deploy:
-        - os: osx
-          language: generic
-          env: TOXENV=py27
-          before_install:
-            - brew update
-            - virtualenv env -p python2
-            - source env/bin/activate
-          deploy:
-        - os: linux
-          sudo: required
-          python: "3.6"
-          env: TOXENV=py36
-          install:
-              - pip install -r requirements.txt
-              - pip install .
-          script:
-              - python -m unittest discover
+        #   python: "3.5"
+        #   env: TOXENV=py35
+        #   deploy:
+        # - os: linux
+        #   sudo: required
+        #   python: "3.4"
+        #   env: TOXENV=py34
+        #   deploy:
+        # - os: linux
+        #   sudo: required
+        #   python: "2.7"
+        #   env: TOXENV=py27
+        #   deploy:
+        # - os: osx
+        #   language: generic
+        #   env: TOXENV=py36
+        #   before_install:
+        #     - brew update
+        #     - brew upgrade python
+        #     - pip3 install virtualenv
+        #     - virtualenv env -p python3
+        #     - source env/bin/activate
+        #   deploy:
+        # - os: osx
+        #   language: generic
+        #   env: TOXENV=py27
+        #   before_install:
+        #     - brew update
+        #     - virtualenv env -p python2
+        #     - source env/bin/activate
+        #   deploy:
+        # - os: linux
+        #   sudo: required
+        #   python: "3.6"
+        #   env: TOXENV=py36
+        #   install:
+        #       - pip install -r requirements.txt
+        #       - pip install .
+        #   script:
+        #       - python -m unittest discover
 
 install:
     - pip install -r tests/requirements.txt
