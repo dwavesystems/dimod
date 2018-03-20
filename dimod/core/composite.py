@@ -41,9 +41,9 @@ Examples:
     Given a sampler, `sampler1`, the composed sampler is used as any dimod sampler.
     For example, the composed sampler inherits an Ising sampling method:
 
-    >>> composed_sampler = dimod.SpinReversalTransformComposite(sampler1)
-    >>> h = {0: -1, 1: 1}
-    >>> response = composed_sampler.sample_ising(h, {})
+    >>> composed_sampler = dimod.SpinReversalTransformComposite(sampler1) # doctest: +SKIP
+    >>> h = {0: -1, 1: 1} # doctest: +SKIP
+    >>> response = composed_sampler.sample_ising(h, {}) # doctest: +SKIP
 
 """
 from six import add_metaclass
