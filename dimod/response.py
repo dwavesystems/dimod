@@ -64,7 +64,8 @@ class Response(Iterable, Sized):
         This example shows some attributes of the response for the sampler
         of dimod package's random_sampler.py reference example.
 
-        >>> sampler = RandomSampler() # dimod package's random_sampler.py sampler
+        >>> from dimod.reference.samplers.random_sampler import RandomSampler
+        >>> sampler = RandomSampler()
         >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
         >>> res = sampler.sample(bqm)
         >>> res.vartype
@@ -896,24 +897,24 @@ class Response(Iterable, Sized):
             >>> for datum in response.data():
             ...     print(datum)
             ...
-            Sample(sample={'a': -1, 'b': -1}, energy=0.0)
-            Sample(sample={'a': 1, 'b': -1}, energy=1.0)
-            Sample(sample={'a': 1, 'b': 1}, energy=1.0)
-            Sample(sample={'a': -1, 'b': 1}, energy=4.0)
+            Sample(sample={'a': -1, 'b': -1}, energy=-1.5)
+            Sample(sample={'a': 1, 'b': -1}, energy=-0.5)
+            Sample(sample={'a': 1, 'b': 1}, energy=-0.5)
+            Sample(sample={'a': -1, 'b': 1}, energy=2.5)
             >>> for sample, energy in response.data():
             ...     print(energy)
             ...
-            0.0
-            1.0
-            1.0
-            4.0
+            -1.5
+            -0.5
+            -0.5
+            2.5
             >>> for energy, in response.data(['energy']):
             ...     print(energy)
             ...
-            0.0
-            1.0
-            1.0
-            4.0
+            -1.5
+            -0.5
+            -0.5
+            2.5
 
         """
         if fields is None:
