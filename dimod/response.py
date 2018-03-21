@@ -68,8 +68,8 @@ class Response(Iterable, Sized):
         >>> sampler = RandomSampler()
         >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
         >>> res = sampler.sample(bqm)
-        >>> res.vartype
-        <Vartype.SPIN: frozenset([1, -1])>
+        >>> res.vartype  # doctest: +SKIP
+        <Vartype.SPIN: frozenset([1, -1])>  # doctest: +SKIP
         >>> res.variable_labels
         [0, 1]
 
