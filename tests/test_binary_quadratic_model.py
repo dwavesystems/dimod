@@ -1530,3 +1530,8 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 1)
         self.assertNotIn('id', new_bqm.info)
+
+    def test_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))

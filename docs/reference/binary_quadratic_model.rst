@@ -24,6 +24,14 @@ Vartype Properties
 Methods
 =======
 
+Construction Shortcuts
+----------------------
+
+.. autosummary::
+   :toctree: generated/
+
+   BinaryQuadraticModel.empty
+
 Adding and removing variables and interactions
 ----------------------------------------------
 

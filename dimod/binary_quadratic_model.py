@@ -142,6 +142,36 @@ class BinaryQuadraticModel(object):
         self.add_variables_from(linear)
         self.add_interactions_from(quadratic)
 
+    @classmethod
+    def empty(cls, vartype):
+        """Creates an empty BinaryQuadraticModel.
+
+        Equivalent to
+
+        .. code-block:: python
+
+            BinaryQuadraticModel({}, {}, 0.0, vartype)
+
+        Args:
+            vartype (:class:`.Vartype`/str/set):
+                The variable type desired for the binary quadratic model. Accepted input values:
+
+                * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        Examples:
+
+            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+            >>> bqm.linear
+            {}
+            >>> bqm.quadratic
+            {}
+            >>> bqn.offset
+            0.0
+
+        """
+        return cls({}, {}, 0.0, vartype)
+
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
 
