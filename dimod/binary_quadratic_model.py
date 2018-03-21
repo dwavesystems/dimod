@@ -44,10 +44,14 @@ class BinaryQuadraticModel(object):
             See :meth:`.BinaryQuadraticModel.energy`.
 
         vartype (:class:`.Vartype`/str/set):
-            The variable type desired for the binary quadratic model. Accepted input values:
+            Variable type for the binary quadratic model. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        **kwargs:
+            Any additional keyword parameters and their values are stored in
+            :attr:`.BinaryQuadraticModel.info`.
 
     Notes:
         The BinaryQuadraticModel class does not enforce types on biases
@@ -113,6 +117,9 @@ class BinaryQuadraticModel(object):
                >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
                23
 
+        info (dict):
+            A place to store miscellaneous data about the BinaryQuadraticModel as a whole.
+
         SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
 
         BINARY (:class:`.Vartype`): An alias of :class:`.Vartype.BINARY` for easier access.
@@ -123,16 +130,47 @@ class BinaryQuadraticModel(object):
     BINARY = Vartype.BINARY
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype):
+    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
         self.linear = {}
         self.quadratic = {}
         self.adj = {}
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
         self.vartype = vartype
+        self.info = kwargs  # any additional kwargs are kept as info (metadata)
 
         # add linear, quadratic
         self.add_variables_from(linear)
         self.add_interactions_from(quadratic)
+
+    @classmethod
+    def empty(cls, vartype):
+        """Create an empty BinaryQuadraticModel.
+
+        Equivalent to
+
+        .. code-block:: python
+
+            BinaryQuadraticModel({}, {}, 0.0, vartype)
+
+        Args:
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        Examples:
+
+            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+            >>> bqm.linear
+            {}
+            >>> bqm.quadratic
+            {}
+            >>> bqn.offset
+            0.0
+
+        """
+        return cls({}, {}, 0.0, vartype)
 
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
@@ -875,7 +913,7 @@ class BinaryQuadraticModel(object):
         except AttributeError:
             pass
 
-    def update(self, bqm):
+    def update(self, bqm, ignore_info=True):
         """Update one binary quadratic model from another.
 
         Args:
@@ -884,6 +922,11 @@ class BinaryQuadraticModel(object):
                 model are added to the updated model. Values of biases and the offset
                 in the updating model are added to the corresponding values in
                 the updated model.
+
+            ignore_info (bool, optional, default=True):
+                If True, info in the given binary quadratic model is ignored, otherwise
+                :attr:`.BinaryQuadraticModel.info` is updated with the given binary quadratic
+                model's info, potentially overwriting values.
 
         Examples:
            This example creates two binary quadratic models and updates the first
@@ -908,6 +951,9 @@ class BinaryQuadraticModel(object):
         self.add_variables_from(bqm.linear, vartype=bqm.vartype)
         self.add_interactions_from(bqm.quadratic, vartype=bqm.vartype)
         self.add_offset(bqm.offset)
+
+        if not ignore_info:
+            self.info.update(bqm.info)
 
     def contract_variables(self, u, v):
         """Enforces u, v being the same variable in a binary quadratic model.
@@ -1190,7 +1236,7 @@ class BinaryQuadraticModel(object):
 
         """
         # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype)
+        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
