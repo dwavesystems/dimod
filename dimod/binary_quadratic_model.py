@@ -44,13 +44,13 @@ class BinaryQuadraticModel(object):
             See :meth:`.BinaryQuadraticModel.energy`.
 
         vartype (:class:`.Vartype`/str/set):
-            The variable type desired for the binary quadratic model. Accepted input values:
+            Variable type for the binary quadratic model. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         **kwargs:
-            Any additional keyword parameters and their values will be stored in
+            Any additional keyword parameters and their values are stored in
             :attr:`.BinaryQuadraticModel.info`.
 
     Notes:
@@ -136,7 +136,7 @@ class BinaryQuadraticModel(object):
         self.adj = {}
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
         self.vartype = vartype
-        self.info = kwargs  # dump any additional kwargs into info
+        self.info = kwargs  # any additional kwargs are kept as info (metadata)
 
         # add linear, quadratic
         self.add_variables_from(linear)
@@ -144,7 +144,7 @@ class BinaryQuadraticModel(object):
 
     @classmethod
     def empty(cls, vartype):
-        """Creates an empty BinaryQuadraticModel.
+        """Create an empty BinaryQuadraticModel.
 
         Equivalent to
 
@@ -154,7 +154,7 @@ class BinaryQuadraticModel(object):
 
         Args:
             vartype (:class:`.Vartype`/str/set):
-                The variable type desired for the binary quadratic model. Accepted input values:
+                Variable type for the binary quadratic model. Accepted input values:
 
                 * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
@@ -924,9 +924,9 @@ class BinaryQuadraticModel(object):
                 the updated model.
 
             ignore_info (bool, optional, default=True):
-                If True, the info in the given bqm is ignored, otherwise
-                :attr:`.BinaryQuadraticModel.info` is updated with the given bqm's info, potentially
-                overwriting values.
+                If True, info in the given binary quadratic model is ignored, otherwise
+                :attr:`.BinaryQuadraticModel.info` is updated with the given binary quadratic
+                model's info, potentially overwriting values.
 
         Examples:
            This example creates two binary quadratic models and updates the first
