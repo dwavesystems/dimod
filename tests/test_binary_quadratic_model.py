@@ -1,10 +1,16 @@
 import unittest
 import random
 import itertools
+import tempfile
+import shutil
+import json
+from os import path
 
+import jsonschema
 import numpy as np
 
 import dimod
+from dimod.io.json import bqm_json_schema
 
 try:
     import networkx as nx
@@ -1535,3 +1541,83 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))
+
+    def test_to_json_string_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        bqm_str = bqm.to_json()
+
+        self.assertIsInstance(bqm_str, str)
+
+        jsonschema.validate(json.loads(bqm_str), bqm_json_schema)
+
+    def test_to_json_string(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        bqm_str = bqm.to_json()
+
+        self.assertIsInstance(bqm_str, str)
+
+        jsonschema.validate(json.loads(bqm_str), bqm_json_schema)
+
+    def test_to_json_file_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.txt')
+
+        print(filename)
+
+        with open(filename, 'w') as file:
+            bqm.to_json(fp=file)
+
+        with open(filename, 'r') as file:
+            jsonschema.validate(json.load(file), bqm_json_schema)
+
+        shutil.rmtree(tmpdir)
+
+    def test_to_json_file(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.txt')
+
+        with open(filename, 'w') as file:
+            bqm.to_json(fp=file)
+
+        with open(filename, 'r') as file:
+            jsonschema.validate(json.load(file), bqm_json_schema)
+
+        shutil.rmtree(tmpdir)
+
+    def test_functional_to_and_from_json_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_functional_to_and_from_json(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_functional_to_and_from_json_with_info(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
+
+        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+
+        self.assertEqual(bqm, new_bqm)
+        self.assertIn('tag', new_bqm.info)
+        self.assertEqual(new_bqm.info['tag'], 5)
+        self.assertIn(('a', "complex key"), new_bqm.linear)

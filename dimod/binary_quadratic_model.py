@@ -166,7 +166,7 @@ class BinaryQuadraticModel(object):
             {}
             >>> bqm.quadratic
             {}
-            >>> bqn.offset
+            >>> bqm.offset
             0.0
 
         """
@@ -1292,6 +1292,93 @@ class BinaryQuadraticModel(object):
 ##################################################################################################
 # conversions
 ##################################################################################################
+
+    def to_json(self, fp=None):
+        """Serialize the binary quadratic model using JSON.
+
+        Args:
+            fp (file, optional):
+                A `.write()`-supporting `file object`_. If not provided, the method will return
+                a string.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        An example of a serialized BinaryQuadraticModel
+
+        .. code-block:: json
+
+            {
+                "linear_terms": [
+                    {"bias": 1.0, "label": 0},
+                    {"bias": -1.0, "label": 1}
+                ],
+                "info": {},
+                "offset": 0.5,
+                "quadratic_terms": [
+                    {"bias": 0.5, "label_head": 1, "label_tail": 0}
+                ],
+                "variable_labels": [0, 1],
+                "variable_type": "SPIN",
+                "version": {
+                    "bqm_schema": "1.0.0",
+                    "dimod": "0.6.3"
+                }
+            }
+
+        Examples:
+            Example of writing the binary quadratic model to a file
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.SPIN)
+            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
+            ...     bqm.to_json(file)
+
+            Example of writing to a string
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> bqm.to_json()  # doctest: +SKIP
+            {"info": {},
+             "linear_terms": [{"bias": -1.0, "label": "a"},
+                              {"bias": 1.0, "label": "b"}],
+             "offset": 0.0,
+             "quadratic_terms": [{"bias": -1.0, "label_head": "b", "label_tail": "a"}],
+             "variable_labels": ["a", "b"], "variable_type": "SPIN",
+             "version": {"bqm_schema": "1.0.0", "dimod": "0.6.3"}}
+
+        """
+        import json
+        from dimod.io.json import DimodEncoder
+
+        if fp is None:
+            return json.dumps(self, cls=DimodEncoder, sort_keys=True)
+        else:
+            return json.dump(self, fp, cls=DimodEncoder, sort_keys=True)
+
+    @classmethod
+    def from_json(cls, obj):
+        """Deserialize a binary quadratic model from a JSON encoding.
+
+        Args:
+            obj: (str/file):
+                Either a string or a  A `.read()`-supporting `file object`_.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.SPIN)
+            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
+            ...     bqm.to_json(file)
+            >>> with open('tmp.txt', 'r') as file:  # doctest: +SKIP
+            ...     new_bqm = dimod.BinaryQuadraticModel.from_json(file)
+
+        """
+        import json
+
+        from dimod.io.json import bqm_decode_hook
+
+        if isinstance(obj, str):
+            return json.loads(obj, object_hook=bqm_decode_hook)
+
+        return json.load(obj,  object_hook=bqm_decode_hook)
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
