@@ -59,8 +59,8 @@ __all__ = ['Composite', 'ComposedSampler']
 class Composite:
     """Abstract base class for dimod composites.
 
-    Provides the :attr:`~.Composite.children` property and :attr:`~.Composite.child` mixin property
-    that define the supported samplers for the composed sampler.
+    Provides the :attr:`~.Composite.child` mixin property and defines the :attr:`~.Composite.children`
+    abstract property to be implemented. These define the supported samplers for the composed sampler.
 
     """
     @abc.abstractproperty
@@ -104,16 +104,27 @@ class Composite:
 
                 class MyComposedSampler(Sampler, Composite):
 
-                    # Updates to inherited sampler properties and parameters
-                    # Definition of the composite's children (i.e., supported samplers)
+                    children = None
+                    parameters = None
+                    properties = None
+
+                    def __init__(self, child):
+                        self.children = [child]
+
+                        self.parameters = child.parameters.copy()  # propagate parameters
+                        self.parameters['my_additional_parameter'] = []
+
+                        self.properties = child.properties.copy()  # propagate properties
 
                     # Implementation of the composite's functionality
-                    def processed_sample(self, bqm, relevant_arguments, **kwargs):
-                        response = None
-                        # instantiation of a sampler:
-                        # sampler_response = self.child.sample(bqm, **kwargs)
-                        # Code for composed processing of samples
-                        return response
+                    def sample(self, bqm, my_additional_parameter, **kwargs):
+                        # Overwrite the abstract sample method.
+                        # Additional parameters must have defaults
+
+                        # Samples are obtained from the sampler by using the `child` property:
+                        # response = self.child.sample(bqm, **kwargs)
+
+                        raise NotImplementedError
 
         """
         try:
