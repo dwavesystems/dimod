@@ -1506,3 +1506,27 @@ class TestConvert(unittest.TestCase):
         for u in bqm.adj:
             for v in bqm.adj[u]:
                 self.assertAlmostEqual(bqm.adj[u][v], bqm_new.adj[u][v])
+
+    def test_info(self):
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, tag=1)
+
+        self.assertIn('tag', bqm.info)
+        self.assertEqual(bqm.info['tag'], 1)
+
+        new_bqm = bqm.copy()
+
+        self.assertIn('tag', new_bqm.info)
+        self.assertEqual(new_bqm.info['tag'], 1)
+
+        another_bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, id=5)
+
+        bqm.update(another_bqm, ignore_info=False)
+        self.assertIn('tag', bqm.info)
+        self.assertEqual(bqm.info['tag'], 1)
+        self.assertIn('id', bqm.info)
+        self.assertEqual(bqm.info['id'], 5)
+
+        new_bqm.update(another_bqm, ignore_info=True)
+        self.assertIn('tag', new_bqm.info)
+        self.assertEqual(new_bqm.info['tag'], 1)
+        self.assertNotIn('id', new_bqm.info)

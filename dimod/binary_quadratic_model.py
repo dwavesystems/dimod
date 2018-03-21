@@ -49,6 +49,10 @@ class BinaryQuadraticModel(object):
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
+        **kwargs:
+            Any additional keyword parameters and their values will be stored in
+            :attr:`.BinaryQuadraticModel.info`.
+
     Notes:
         The BinaryQuadraticModel class does not enforce types on biases
         and offsets, but most applications that use the BinaryQuadraticModel
@@ -113,6 +117,9 @@ class BinaryQuadraticModel(object):
                >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
                23
 
+        info (dict):
+            A place to store miscellaneous data about the BinaryQuadraticModel as a whole.
+
         SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
 
         BINARY (:class:`.Vartype`): An alias of :class:`.Vartype.BINARY` for easier access.
@@ -123,12 +130,13 @@ class BinaryQuadraticModel(object):
     BINARY = Vartype.BINARY
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype):
+    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
         self.linear = {}
         self.quadratic = {}
         self.adj = {}
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
         self.vartype = vartype
+        self.info = kwargs  # dump any additional kwargs into info
 
         # add linear, quadratic
         self.add_variables_from(linear)
@@ -875,7 +883,7 @@ class BinaryQuadraticModel(object):
         except AttributeError:
             pass
 
-    def update(self, bqm):
+    def update(self, bqm, ignore_info=True):
         """Update one binary quadratic model from another.
 
         Args:
@@ -884,6 +892,11 @@ class BinaryQuadraticModel(object):
                 model are added to the updated model. Values of biases and the offset
                 in the updating model are added to the corresponding values in
                 the updated model.
+
+            ignore_info (bool, optional, default=True):
+                If True, the info in the given bqm is ignored, otherwise
+                :attr:`.BinaryQuadraticModel.info` is updated with the given bqm's info, potentially
+                overwriting values.
 
         Examples:
            This example creates two binary quadratic models and updates the first
@@ -908,6 +921,9 @@ class BinaryQuadraticModel(object):
         self.add_variables_from(bqm.linear, vartype=bqm.vartype)
         self.add_interactions_from(bqm.quadratic, vartype=bqm.vartype)
         self.add_offset(bqm.offset)
+
+        if not ignore_info:
+            self.info.update(bqm.info)
 
     def contract_variables(self, u, v):
         """Enforces u, v being the same variable in a binary quadratic model.
@@ -1190,7 +1206,7 @@ class BinaryQuadraticModel(object):
 
         """
         # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype)
+        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
