@@ -107,6 +107,9 @@ Creating a Composed Sampler
 .. automodule:: dimod.core.composite
 
 .. currentmodule:: dimod
+.. autoclass:: ComposedSampler
+
+.. currentmodule:: dimod
 .. autoclass:: Composite
 
 Abstract Properties
@@ -125,9 +128,6 @@ Mixin Properties
    :toctree: generated/
 
    Composite.child
-
-.. currentmodule:: dimod
-.. autoclass:: ComposedSampler
 
 
 
