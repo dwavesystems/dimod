@@ -16,7 +16,8 @@ else:
 
 install_requires = ['enum34>=1.1.6,<2.0.0',
                     'numpy>=1.14.0,<2.0.0',
-                    'six>=1.10.0,<2.0.0']
+                    'six>=1.10.0,<2.0.0',
+                    'jsonschema>=2.6.0,<3.0.0']
 
 extras_require = {'all': ['networkx>=2.0,<3.0',
                           'pandas>=0.22.0,<0.23.0'],
@@ -24,6 +25,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 
 packages = ['dimod',
             'dimod.core',
+            'dimod.io',
             'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
@@ -41,5 +43,6 @@ setup(
     license='Apache 2.0',
     packages=packages,
     install_requires=install_requires,
-    extras_require=extras_require
+    extras_require=extras_require,
+    include_package_data=True
 )
