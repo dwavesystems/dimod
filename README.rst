@@ -27,7 +27,20 @@ This example constructs a simple QUBO and converts it to Ising format.
 
 >>> import dimod
 >>> bqm = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)  # QUBO
->>> bqm_ising = bqm.to_qubo()
+>>> bqm_ising = bqm.change_vartype(dimod.SPIN, inplace=False)  # Ising
+
+An example of using one of the built-in test Samplers.
+
+>>> import dimod
+>>> h = {0: 0.0, 1: 0.0}
+>>> J = {(0, 1): -1.0}
+>>> bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
+>>> response = dimod.ExactSolver().sample(bqm)
+>>> response.samples_matrix
+matrix([[-1, -1],
+        [ 1, -1],
+        [ 1,  1],
+        [-1,  1]])
 
 .. index-end-marker
 
