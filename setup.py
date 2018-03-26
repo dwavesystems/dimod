@@ -15,7 +15,7 @@ else:
     exec(open(os.path.join(".", "dimod", "package_info.py")).read())
 
 install_requires = ['enum34>=1.1.6,<2.0.0',
-                    'numpy>=1.14.0,<2.0.0',
+                    'numpy>=1.11.3,<2.0.0',
                     'six>=1.10.0,<2.0.0',
                     'jsonschema>=2.6.0,<3.0.0']
 
