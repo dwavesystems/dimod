@@ -41,7 +41,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(bqm))
-        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**len(bqm), len(bqm)))
+        self.assertEqual(response.samples_matrix.shape, (2**len(bqm), len(bqm)))
 
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
@@ -60,7 +60,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(bqm))
-        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**len(bqm), len(bqm)))
+        self.assertEqual(response.samples_matrix.shape, (2**len(bqm), len(bqm)))
 
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
@@ -77,7 +77,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**3)
-        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**3, 3))
+        self.assertEqual(response.samples_matrix.shape, (2**3, 3))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.SPIN)
@@ -94,7 +94,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**3)
-        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**3, 3))
+        self.assertEqual(response.samples_matrix.shape, (2**3, 3))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.BINARY)
@@ -115,7 +115,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(h))
-        self.assertEqual(np.unique(response.samples_matrix, axis=0).shape, (2**len(h), len(h)))
+        self.assertEqual(response.samples_matrix.shape, (2**len(h), len(h)))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.SPIN)
