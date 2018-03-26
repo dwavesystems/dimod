@@ -13,6 +13,9 @@ import dimod.binary_quadratic_model
 
 import dimod.decorators
 
+from dimod.embedding import *
+import dimod.embedding
+
 from dimod.exceptions import *
 import dimod.exceptions
 
