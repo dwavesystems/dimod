@@ -1568,8 +1568,6 @@ class TestConvert(unittest.TestCase):
         tmpdir = tempfile.mkdtemp()
         filename = path.join(tmpdir, 'test.txt')
 
-        print(filename)
-
         with open(filename, 'w') as file:
             bqm.to_json(fp=file)
 
