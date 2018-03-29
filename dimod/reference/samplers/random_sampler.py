@@ -4,7 +4,7 @@ RandomSampler
 
 A random sampler that can be used for unit testing and debugging.
 """
-import numpy as np
+from random import choice
 
 from dimod.core.sampler import Sampler
 from dimod.response import Response, SampleView
@@ -38,12 +38,15 @@ class RandomSampler(Sampler):
             For each variable in each sample, the value is chosen by a coin flip.
 
         """
-        values = np.asarray(list(bqm.vartype.value), dtype='int8')
-        samples = np.random.choice(values, (num_reads, len(bqm)))
-        variable_labels = list(bqm.linear)
-        label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
+        values = tuple(bqm.vartype.value)
 
-        energies = [bqm.energy(SampleView(idx, samples, label_to_idx)) for idx in range(num_reads)]
+        def _itersample():
+            for __ in range(num_reads):
+                sample = {v: choice(values) for v in bqm.linear}
+                energy = bqm.energy(sample)
 
-        return Response.from_matrix(samples, {'energy': energies},
-                                    vartype=bqm.vartype, variable_labels=variable_labels)
+                yield sample, energy
+
+        samples, energies = zip(*_itersample())
+
+        return Response.from_dicts(samples, {'energy': energies}, vartype=bqm.vartype)

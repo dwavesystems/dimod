@@ -10,6 +10,7 @@ from numbers import Number
 from six import itervalues, iteritems, iterkeys
 
 from dimod.decorators import vartype_argument
+from dimod.response import SampleView
 from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
@@ -1283,6 +1284,13 @@ class BinaryQuadraticModel(object):
         """
         linear = self.linear
         quadratic = self.quadratic
+
+        if isinstance(sample, SampleView):
+            # because the SampleView object simply reads from an underlying matrix, each read
+            # is relatively expensive.
+            # However, sample.items() is ~10x faster than {sample[v] for v in sample}, therefore
+            # it is much more efficient to dump sample into a dictionary for repeated reads
+            sample = dict(sample)
 
         en = self.offset
         en += sum(linear[v] * sample[v] for v in linear)
