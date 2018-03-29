@@ -16,7 +16,7 @@ Examples
 {'a': -1}
 
 """
-from collections import Mapping, Iterable, Sized, namedtuple
+from collections import Mapping, Iterable, Sized, namedtuple, ValuesView, ItemsView
 import itertools
 import concurrent.futures
 
@@ -869,7 +869,7 @@ class Response(Iterable, Sized):
         samples = self.samples_matrix
         label_mapping = self.label_to_idx
         for idx in order:
-            yield SampleView(idx, samples, label_mapping)
+            yield SampleView(idx, self)
 
     def data(self, fields=None, sorted_by='energy', name='Sample'):
         """Iterate over the data in the response.
@@ -910,7 +910,7 @@ class Response(Iterable, Sized):
             2.5
             >>> for energy, in response.data(['energy']):
             ...     print(energy)
-            ...
+            ...`
             -1.5
             -0.5
             -0.5
@@ -944,7 +944,7 @@ class Response(Iterable, Sized):
         def _values(idx):
             for field in fields:
                 if field == 'sample':
-                    yield SampleView(idx, samples, label_mapping)
+                    yield SampleView(idx, self)
                 else:
                     yield data_vectors[field][idx]
 
@@ -954,31 +954,65 @@ class Response(Iterable, Sized):
 
 class SampleView(Mapping):
     """View each row of the samples matrix as if it was a dict."""
-    def __init__(self, idx, samples, label_mapping=None):
-        self.label_mapping = label_mapping
-        self.idx = idx
-        self.samples = samples
+    def __init__(self, idx, response):
+        self._idx = idx  # row of response._samples_matrix
+        self._response = response
 
     def __getitem__(self, key):
-        if self.label_mapping is not None:
-            key = self.label_mapping[key]
-
-        return int(self.samples[self.idx, key])
+        label_mapping = self._response.label_to_idx
+        if label_mapping is not None:
+            key = label_mapping[key]
+        return int(self._response.samples_matrix[self._idx, key])
 
     def __iter__(self):
         # iterate over the variables
-        if self.label_mapping is None:
-            num_samples, num_variables = self.samples.shape
+        label_mapping = self._response.label_to_idx
+        if label_mapping is None:
+            __, num_variables = self._response.samples_matrix.shape
             return iter(range(num_variables))
-        return self.label_mapping.__iter__()
+        return label_mapping.__iter__()
 
     def __len__(self):
-        num_samples, num_variables = self.samples.shape
+        __, num_variables = self._response.samples_matrix.shape
         return num_variables
 
     def __repr__(self):
         """Represents itself as as a dictionary"""
         return dict(self).__repr__()
+
+    def values(self):
+        return SampleValuesView(self)
+
+    def items(self):
+        return SampleItemsView(self)
+
+
+class SampleItemsView(ItemsView):
+    """Faster read access to the numpy matrix"""
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        variable_labels = self._mapping._response.variable_labels
+        samples_matrix = self._mapping._response.samples_matrix
+        idx = self._mapping._idx
+        if variable_labels is None:
+            for v, val in enumerate(np.nditer(samples_matrix[idx, :], order='C', op_flags=['readonly'])):
+                yield (v, int(val))
+        else:
+            for v, val in zip(variable_labels, np.nditer(samples_matrix[idx, :], order='C', op_flags=['readonly'])):
+                yield (v, int(val))
+
+
+class SampleValuesView(ValuesView):
+    """Faster read access to the numpy matrix"""
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        samples_matrix = self._mapping._response.samples_matrix
+        for val in np.nditer(samples_matrix[self._mapping._idx, :], op_flags=['readonly']):
+            yield int(val)
 
 
 def infer_vartype(samples_matrix):
