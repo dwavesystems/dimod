@@ -4,20 +4,25 @@
 Samplers and Composites
 =======================
 
-*Samplers* are processes that sample from low energy states of a problem’s objective function.
-A binary quadratic model (BQM) sampler samples from low energy states in models such
-as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
-(QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
-sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
-BQM sampler method.
+.. glossary::
 
-*Composed samplers* apply pre- and/or post-processing to binary quadratic programs without
-changing the underlying sampler implementation by layering composite patterns on the
-sampler. For example, a composed sampler might add spin transformations when sampling
-from the D-Wave system.
+    sampler
+        A process that samples from low energy states of a problem’s objective function.
+        A binary quadratic model (BQM) sampler samples from low energy states in models such
+        as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
+        (QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
+        sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
+        BQM sampler method.
 
-*Structured samplers* are restricted to sampling only binary quadratic models defined
-on a specific graph.
+    composed sampler 
+        Samplers that apply pre- and/or post-processing to binary quadratic programs without
+        changing the underlying sampler implementation by layering composite patterns on the
+        sampler. For example, a composed sampler might add spin transformations when sampling
+        from the D-Wave system.
+
+    structured sampler
+        Samplers that are restricted to sampling only binary quadratic models defined
+        on a specific graph.
 
 You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
 providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),

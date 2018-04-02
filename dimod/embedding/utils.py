@@ -1,77 +1,3 @@
-"""
-D-Wave Embedding Utilities
-==========================
-
-This package provides functions that map samples between a source graph
-and a target graph.
-
-Terminology
------------
-
-**model** - A collection of variables with associated linear and
-quadratic biases. Sometimes referred to in other projects as a **problem**.
-In this project all models are expected to be spin-valued - that is the
-variables in the model can be -1 or 1.
-
-**graph** - A collection of nodes and edges. A graph can be derived
-from a model; a node for each variable and an edge for each pair
-of variables with a non-zero quadratic bias.
-
-**source** - The model or induced graph that we wish to embed. Sometimes
-referred to in other projects as the **logical** graph/model.
-
-**target** - Embedding attempts to create a target model from a target
-graph. The process of embedding takes a source model, derives the source
-graph, maps the source graph to the target graph, then derives the target
-model. Sometimes referred to in other projects at the **embedded** graph/model.
-
-**chain** - A collection of nodes or variables in the target graph/model
-that we want to act like a single node/variable.
-
-**chain strength** - The magnitude of the negative quadratic bias applied
-between variables within a chain.
-
-Examples
---------
-
-Imagine that we have a sampler which is structured as a 4-cycle graph.
-
-.. code-block:: python
-
-    import networkx as nx
-    target_graph = nx.cycle_graph(4)
-    # target_graph = {0: {1, 3}, 1: {0, 2}, 2: {1, 3}, 3: {0, 2}}  # equivalent
-
-We have a model on a 3-cycle that we wish to embed.
-
-.. code-block:: python
-
-    source_linear = {'a': 0., 'b': 0., 'c': 0.}
-    source_quadratic = {('a', 'b'): 1., ('b', 'c'): 1., ('a', 'c'): 1.}
-
-Finally, we have an embedding that maps a 3-cycle to a 4-cycle. In this
-case we want variables 1, 2 in the target to behave as a single variable.
-
-.. code-block:: python
-
-    embedding = {'a': {0}, 'b': {1, 2}, 'c': {3}}
-
-To get the target model, use the :func:`embed_ising` function.
-
-.. code-block:: python
-
-    target_linear, target_quadratic, chain_quadratic = embed_ising(
-        source_linear, source_quadratic, embedding, target_graph)
-
-Say that we sample from the target model using some sampler, we can then
-umembed the samples using :func:`unembed_samples`.
-
-.. code-block:: python
-
-    samples = {0: -1, 1: -1, 2: 1, 3: 1}
-    source_samples = unembed_samples(samples, embedding)
-
-"""
 from __future__ import division, absolute_import
 
 from six import iteritems
@@ -105,7 +31,7 @@ def target_to_source(target_adjacency, embedding):
 
         >>> target_adjacency = {0: {1, 3}, 1: {0, 2}, 2: {1, 3}, 3: {0, 2}}  # a square graph
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-        >>> source_adjacency = dimod.target_to_source(target_adjacency, embedding)
+        >>> source_adjacency = dimod.embedding.target_to_source(target_adjacency, embedding)
         >>> source_adjacency  # triangle
         {'a': {'b', 'c'}, 'b': {'a', 'c'}, 'c': {'a', 'b'}}
 
@@ -114,7 +40,7 @@ def target_to_source(target_adjacency, embedding):
         >>> import networkx as nx
         >>> target_graph = nx.complete_graph(5)
         >>> embedding = {'a': {0, 1, 2}, 'b': {3, 4}}
-        >>> dimod.target_to_source(target_graph, embedding)
+        >>> dimod.embedding.target_to_source(target_graph, embedding)
 
     """
     # the nodes in the source adjacency are just the keys of the embedding
@@ -174,7 +100,7 @@ def chain_to_quadratic(chain, target_adjacency, chain_strength):
     Examples:
         >>> chain = {1, 2}
         >>> target_adjacency = {0: {1, 2}, 1: {0, 2}, 2: {0, 1}}
-        >>> chain_to_quadratic(chain, target_adjacency, 1)
+        >>> dimod.embedding.chain_to_quadratic(chain, target_adjacency, 1)
         {(1, 2): -1}
 
     """
@@ -231,6 +157,7 @@ def chain_break_frequency(samples, embedding):
         >>> response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]})
         >>> embedding = {0: {'a', 'b'}}
         >>> dimod.chain_break_frequency(response, embedding)
+        {0: .5}
 
     """
     if isinstance(samples, Response):
