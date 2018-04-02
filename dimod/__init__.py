@@ -13,7 +13,8 @@ import dimod.binary_quadratic_model
 
 import dimod.decorators
 
-from dimod.embedding import *
+# for now, let's just import the most important embedding functions
+from dimod.embedding import embed_bqm, embed_ising, embed_qubo, iter_unembed
 import dimod.embedding
 
 from dimod.exceptions import *
