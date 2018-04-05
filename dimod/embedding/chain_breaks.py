@@ -231,11 +231,19 @@ class MinimizeEnergy(Callable):
 def _all_equal(iterable):
     """True if all values in `iterable` are equal, else False."""
     iterator = iter(iterable)
-    first = next(iterator)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        # empty iterable is all equal
+        return True
     return all(first == rest for rest in iterator)
 
 
 def _most_common(iterable):
     """Returns the most common element in `iterable`."""
-    (val, __), = Counter(iterable).most_common(1)
-    return val
+    counts = Counter(iterable)
+    if counts:
+        (val, __), = counts.most_common(1)
+        return val
+    else:
+        raise ValueError("iterable must contain at least one value")
