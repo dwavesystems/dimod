@@ -25,6 +25,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 
 packages = ['dimod',
             'dimod.core',
+            'dimod.embedding',
             'dimod.io',
             'dimod.reference',
             'dimod.reference.composites',
