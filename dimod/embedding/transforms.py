@@ -81,7 +81,8 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
 
     """
     if embed_singleton_variables:
-        unused = set(target_adjacency) - set().union(*embedding.values())
+        unused = set(target_adjacency)
+        unused.difference_update(*embedding.values())
         if unused:
             # if there are unused variables then we may be alterning the embedding so we need to
             # make a copy, we'll be adding new key/value pairs so we only need a shallow copy
@@ -90,7 +91,7 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         unused = False
 
     # create a new empty binary quadratic model with the same class as source_bqm
-    target_bqm = source_bqm.__class__.empty(source_bqm.vartype)
+    target_bqm = source_bqm.empty(source_bqm.vartype)
 
     # go ahead and add the offset
     target_bqm.add_offset(source_bqm.offset)

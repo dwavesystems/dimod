@@ -1,3 +1,11 @@
+"""The chain break resolution methods available to :func:`.iter_unembed`.
+
+Each method is a generator that yields zero or more unembedded samples. They are implemented
+this way to allow :func:`.iter_unembed` to utilize many different techniques without having
+to keep large numbers of samples in memory.
+
+"""
+
 from collections import Counter, defaultdict, Callable
 
 from six import iteritems, itervalues
@@ -17,7 +25,10 @@ def discard_matrix(samples_matrix, chain_list):
     for chain in chain_list:
         chain = list(chain)
 
-        v = chain[0]
+        try:
+            v = chain[0]
+        except IndexError:
+            raise ValueError("each chain in chain_list must contain at least one variable")
         variables.append(v)
 
         if len(chain) == 1:
@@ -43,20 +54,20 @@ def discard(sample, embedding):
             source graph and s is a node in the target graph.
 
     Yields:
-        dict: The unembedded sample is no chains were broken.
+        dict: The unembedded sample if no chains were broken.
 
     """
-    unembeded = {}
+    unembedded = {}
 
     for v, chain in iteritems(embedding):
         vals = [sample[u] for u in chain]
 
         if _all_equal(vals):
-            unembeded[v] = vals.pop()
+            unembedded[v] = vals.pop()
         else:
             return
 
-    yield unembeded
+    yield unembedded
 
 
 def majority_vote(sample, embedding):
@@ -75,17 +86,17 @@ def majority_vote(sample, embedding):
         is chosen to match the most common value in the chain.
 
     """
-    unembeded = {}
+    unembedded = {}
 
     for v, chain in iteritems(embedding):
         vals = [sample[u] for u in chain]
 
         if _all_equal(vals):
-            unembeded[v] = vals.pop()
+            unembedded[v] = vals.pop()
         else:
-            unembeded[v] = _most_common(vals)
+            unembedded[v] = _most_common(vals)
 
-    yield unembeded
+    yield unembedded
 
 
 def weighted_random(sample, embedding):
@@ -105,16 +116,16 @@ def weighted_random(sample, embedding):
         within the chain.
 
     """
-    unembeded = {}
+    unembedded = {}
 
     for v, chain in iteritems(embedding):
         vals = [sample[u] for u in chain]
 
         # pick a random element uniformly from all vals, this weights them by
         # the proportion of each
-        unembeded[v] = random.choice(vals)
+        unembedded[v] = random.choice(vals)
 
-    yield unembeded
+    yield unembedded
 
 
 class MinimizeEnergy(Callable):
@@ -154,7 +165,7 @@ class MinimizeEnergy(Callable):
 
     def __init__(self, linear=None, quadratic=None):
         if linear is None and quadratic is None:
-            raise TypeError("the minimize_energy method requires `linear` and `quadratic` keyword arguments")
+            raise TypeError("the minimize_energy method requires either `linear` or `quadratic` keyword arguments")
         self._linear = linear if linear is not None else defaultdict(float)
         self._quadratic = quadratic if quadratic is not None else dict()
 
@@ -172,7 +183,7 @@ class MinimizeEnergy(Callable):
             dict: The unembedded sample. When there is a chain break, the value
             is chosen to minimize the energy relative to its neighbors.
         """
-        unembeded = {}
+        unembedded = {}
         broken = {}  # keys are the broken source variables, values are the energy contributions
 
         vartype = set(itervalues(sample))
@@ -184,17 +195,17 @@ class MinimizeEnergy(Callable):
             vals = [sample[u] for u in chain]
 
             if _all_equal(vals):
-                unembeded[v] = vals.pop()
+                unembedded[v] = vals.pop()
             else:
                 broken[v] = self._linear[v]  # broken tracks the linear energy
 
         # now, we want to determine the energy for each of the broken variable
         # as much as we can
         for (u, v), bias in iteritems(self._quadratic):
-            if u in unembeded and v in broken:
-                broken[v] += unembeded[u] * bias
-            elif v in unembeded and u in broken:
-                broken[u] += unembeded[v] * bias
+            if u in unembedded and v in broken:
+                broken[v] += unembedded[u] * bias
+            elif v in unembedded and u in broken:
+                broken[u] += unembedded[v] * bias
 
         # in order of energy contribution, pick spins for the broken variables
         while broken:
@@ -204,7 +215,7 @@ class MinimizeEnergy(Callable):
             val = min(vartype, key=lambda b: broken[v] * b)
 
             # set that value and remove it from broken
-            unembeded[v] = val
+            unembedded[v] = val
             del broken[v]
 
             # add v's energy contribution to all of the nodes it is connected to
@@ -214,7 +225,7 @@ class MinimizeEnergy(Callable):
                 if (v, u) in self._quadratic:
                     broken[u] += val * self._quadratic[(v, u)]
 
-        yield unembeded
+        yield unembedded
 
 
 def _all_equal(iterable):
@@ -226,5 +237,5 @@ def _all_equal(iterable):
 
 def _most_common(iterable):
     """Returns the most common element in `iterable`."""
-    data = Counter(iterable)
-    return max(data, key=data.__getitem__)
+    (val, __), = Counter(iterable).most_common(1)
+    return val
