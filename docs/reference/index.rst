@@ -14,5 +14,6 @@ Reference Documentation
    samplers
    response
    vartypes
+   embedding
    exceptions
    utilities
