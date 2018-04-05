@@ -108,7 +108,10 @@ def chain_to_quadratic(chain, target_adjacency, chain_strength):
 
     # do a breadth first search
     seen = set()
-    next_level = {next(iter(chain))}
+    try:
+        next_level = {next(iter(chain))}
+    except StopIteration:
+        raise ValueError("chain must have at least one variable")
     while next_level:
         this_level = next_level
         next_level = set()

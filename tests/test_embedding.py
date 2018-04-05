@@ -396,10 +396,7 @@ class TestIterUnembed(unittest.TestCase):
         # specify that majority vote should be used
         source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.majority_vote))
 
-        source0, source1 = source_samples
-
-        self.assertEqual(source0['a'], -1)
-        self.assertEqual(source1['a'], +1)
+        self.assertEqual(source_samples, [{'a': -1}, {'a': +1}])
 
     def test_majority_vote_with_response(self):
         sample0 = {0: -1, 1: -1, 2: +1}

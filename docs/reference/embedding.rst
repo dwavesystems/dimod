@@ -53,7 +53,7 @@ Functions
 Chain Break Resolution
 ======================
 
-The chain break resolution methods available to :func:`.iter_unembed`.
+.. automodule:: dimod.embedding.chain_breaks
 
 .. currentmodule:: dimod.embedding
 
