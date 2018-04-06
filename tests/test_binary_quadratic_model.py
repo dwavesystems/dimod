@@ -1499,10 +1499,14 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
 
         bqm_df = bqm.to_pandas_dataframe()
+        variables = list(bqm_df)
 
         for config in itertools.product((0, 1), repeat=4):
-            sample = dict(zip(['a', 'b', 'c', 16], config))
-            sample_series = pd.Series(sample)
+            sample = dict(zip(variables, config))
+            # Note: explicitly set the index of Series object to be equal (in same order)
+            # to the column list of the DataFrame multiplied later, to avoid sorting of
+            # indexes with mixed types. See https://github.com/dwavesystems/dimod/pull/167.
+            sample_series = pd.Series(data=sample, index=variables)
 
             self.assertAlmostEqual(bqm.energy(sample), sample_series.dot(bqm_df.dot(sample_series)))
 
