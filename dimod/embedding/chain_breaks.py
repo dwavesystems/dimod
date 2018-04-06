@@ -6,6 +6,8 @@ to keep large numbers of samples in memory.
 
 """
 
+import operator
+import itertools
 from collections import Counter, defaultdict, Callable
 
 from six import iteritems, itervalues
@@ -230,9 +232,7 @@ class MinimizeEnergy(Callable):
 
 def _all_equal(iterable):
     """True if all values in `iterable` are equal, else False."""
-    iterator = iter(iterable)
-    first = next(iterator)
-    return all(first == rest for rest in iterator)
+    return all(itertools.starmap(operator.eq, zip(iterable, iterable[1:])))
 
 
 def _most_common(iterable):
