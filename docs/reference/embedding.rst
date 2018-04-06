@@ -48,6 +48,7 @@ Functions
    embed_ising
    embed_qubo
    iter_unembed
+   unembed_response
    chain_break_frequency
 
 Chain Break Resolution
