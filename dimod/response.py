@@ -98,8 +98,8 @@ class Response(Iterable, Sized):
             # todo - check that is a vector and that has the right length
             if isinstance(vector, (np.ndarray, list)):
                 if len(vector) != num_samples:
-                    raise ValueError(("expected data vector {} to be a vector of length {}"
-                                      "").format(vector, num_samples))
+                    raise ValueError(("expected data vector {} (length {}) to be a vector of length {}"
+                                      "").format(vector, len(vector), num_samples))
             else:
                 raise TypeError("expected data vector {} to be a list of NumPy array".format(vector))
         self._data_vectors = data_vectors
