@@ -508,6 +508,21 @@ class TestIterUnembed(unittest.TestCase):
 
 
 class TestEmbeddingChainBreaks(unittest.TestCase):
+    def test_utility_functions(self):
+        from dimod.embedding.chain_breaks import _all_equal, _most_common
+
+        self.assertTrue(_all_equal([]))
+        self.assertTrue(_all_equal([0]))
+        self.assertTrue(_all_equal([1]))
+        self.assertTrue(_all_equal([0,0]))
+        self.assertTrue(_all_equal([1,1,1]))
+        self.assertFalse(_all_equal([1,0]))
+        self.assertFalse(_all_equal([1,1,0]))
+
+        self.assertEqual(_most_common([0]), 0)
+        self.assertEqual(_most_common([0,1,0]), 0)
+        self.assertEqual(_most_common([1,0,1]), 1)
+
     def test_discard_no_breaks_all_ones_identity_embedding(self):
         from dimod.embedding.chain_breaks import discard_matrix
 
