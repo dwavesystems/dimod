@@ -10,7 +10,7 @@ from dimod.embedding.utils import chain_to_quadratic
 from dimod.response import Response
 from dimod.vartypes import Vartype
 
-__all__ = ['embed_bqm', 'embed_ising', 'embed_qubo', 'iter_unembed']
+__all__ = ['embed_bqm', 'embed_ising', 'embed_qubo', 'iter_unembed', 'unembed_response']
 
 
 def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed_singleton_variables=True):
@@ -366,3 +366,43 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
     for target_sample in target_samples:
         for source_sample in chain_break_method(target_sample, embedding):
             yield source_sample
+
+
+def unembed_response(target_response, embedding, source_bqm, chain_break_method=None):
+    """Unembed the response to construct a response for the source bqm.
+
+    Args:
+        target_response (:obj:`.Response`):
+            A response from the target bqm
+
+        embedding (dict):
+            Mapping from the source graph to the target graph.
+            Should be of the form {v: {s, ...}, ...} where v is a variable in the
+            source model and s is a variable in the target model.
+
+        source_bqm (:obj:`.BinaryQuadraticModel`):
+            The source binary quadratic model.
+
+        chain_break_method (function, optional, default=:func:`.majority_vote`):
+            The method used to resolve chain breaks.
+
+    """
+    if any(v not in source_bqm.linear for v in embedding):
+        raise ValueError("given bqm does not match the embedding")
+
+    energies = []
+
+    def _samples():
+        # populate energies as the samples are resolved one-at-a-time
+        for sample in iter_unembed(target_response, embedding, chain_break_method):
+            energies.append(source_bqm.energy(sample))
+            yield sample
+
+    # overwrite energy with the new values
+    data_vectors = target_response.data_vectors.copy()
+    data_vectors['energy'] = energies
+
+    # NB: this works because response.from_dict does not resolve the energies until AFTER the samples
+    return target_response.from_dicts(_samples(), data_vectors,
+                                      vartype=target_response.vartype,
+                                      info=target_response.info)

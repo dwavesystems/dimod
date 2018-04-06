@@ -507,6 +507,46 @@ class TestIterUnembed(unittest.TestCase):
         self.assertEqual(source, {'b': -1, 'c': +1, 'a': -1})
 
 
+class TestUnembedResponse(unittest.TestCase):
+    @unittest.skipUnless(_networkx, "No networkx installed")
+    def test_energies_functional(self):
+        h = {'a': .1, 'b': 0, 'c': 0}
+        J = {('a', 'b'): 1, ('b', 'c'): 1.3, ('a', 'c'): -1}
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1.3)
+
+        embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+
+        embedded_bqm = dimod.embed_bqm(bqm, embedding, nx.cycle_graph(4), chain_strength=1)
+
+        embedded_response = dimod.ExactSolver().sample(embedded_bqm)
+
+        response = dimod.unembed_response(embedded_response, embedding, bqm)
+
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertEqual(bqm.energy(sample), energy)
+
+    @unittest.skipUnless(_networkx, "No networkx installed")
+    def test_energies_discard(self):
+        h = {'a': .1, 'b': 0, 'c': 0}
+        J = {('a', 'b'): 1, ('b', 'c'): 1.3, ('a', 'c'): -1}
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1.3)
+
+        embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+
+        embedded_bqm = dimod.embed_bqm(bqm, embedding, nx.cycle_graph(4), chain_strength=1)
+
+        embedded_response = dimod.ExactSolver().sample(embedded_bqm)
+
+        chain_break_method = dimod.embedding.discard
+        response = dimod.unembed_response(embedded_response, embedding, bqm,
+                                          chain_break_method=chain_break_method)
+
+        self.assertEqual(len(embedded_response) / 2, len(response))  # half chains should be broken
+
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertEqual(bqm.energy(sample), energy)
+
+
 class TestEmbeddingChainBreaks(unittest.TestCase):
     def test_discard_no_breaks_all_ones_identity_embedding(self):
         from dimod.embedding.chain_breaks import discard_matrix
@@ -541,3 +581,24 @@ class TestEmbeddingChainBreaks(unittest.TestCase):
 
         npt.assert_equal(new_matrix, [[+1, +1],
                                       [-1, +1]])
+
+    def test__most_common(self):
+        from dimod.embedding.chain_breaks import _most_common
+
+        self.assertEqual(_most_common([-1, +1, +1]), +1)
+        self.assertEqual(_most_common([+1, -1, -1]), -1)
+        self.assertEqual(_most_common([0, 1, 1]), 1)
+        self.assertEqual(_most_common([1, 0, 0]), 0)
+
+        with self.assertRaises(ValueError):
+            _most_common([])
+
+    def test_all_equal(self):
+        from dimod.embedding.chain_breaks import _all_equal
+
+        self.assertTrue(_all_equal([1, 1]))
+        self.assertTrue(_all_equal([-1, -1]))
+        self.assertTrue(_all_equal([0, 0]))
+        self.assertFalse(_all_equal([+1, -1]))
+        self.assertFalse(_all_equal([1, 0]))
+        self.assertTrue(_all_equal([]))
