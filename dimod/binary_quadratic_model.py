@@ -5,6 +5,7 @@ todo - describe Ising, QUBO and BQM
 """
 from __future__ import absolute_import, division
 
+from collections import Sized, Container, Iterable
 from numbers import Number
 
 from six import itervalues, iteritems, iterkeys
@@ -15,7 +16,7 @@ from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
 
-class BinaryQuadraticModel(object):
+class BinaryQuadraticModel(Sized, Container, Iterable):
     """Encodes a binary quadratic model.
 
     Binary quadratic model is the superclass that contains the `Ising model`_ and the QUBO_.
@@ -60,12 +61,23 @@ class BinaryQuadraticModel(object):
         class assume that they are numeric.
 
     Examples:
-        This example creates a model with three spin variables.
+        This example creates a binary quadratic model with three spin variables.
 
-        >>> model = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
-        ...                                    {(0, 1): .5, (1, 2): 1.5},
-        ...                                    1.4,
-        ...                                    dimod.SPIN)
+        >>> bqm = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
+        ...                                  {(0, 1): .5, (1, 2): 1.5},
+        ...                                  1.4,
+        ...                                  dimod.SPIN)
+
+        Variables can be any hashable object
+
+        >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': -1.0, 'c': 0.5},
+        ...                                  {('a', 'b'): -1.0, ('b', 'c'): 1.5},
+        ...                                  1.4,
+        ...                                  dimod.SPIN)
+        >>> len(bqm)
+        3
+        >>> 'b' in bqm
+        True
 
     Attributes:
         linear (dict[variable, bias]):
@@ -195,7 +207,14 @@ class BinaryQuadraticModel(object):
 
     def __len__(self):
         """The length is number of variables."""
-        return len(self.linear)
+        return self.adj.__len__()
+
+    def __contains__(self, v):
+        """The variables"""
+        return self.adj.__contains__(v)
+
+    def __iter__(self):
+        return self.adj.__iter__()
 
 ##################################################################################################
 # vartype properties
