@@ -386,6 +386,9 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         chain_break_method (function, optional, default=:func:`.majority_vote`):
             The method used to resolve chain breaks.
 
+    Returns:
+        :obj:`.Response`
+
     """
     if any(v not in embedding for v in source_bqm):
         raise ValueError("given bqm does not match the embedding")
