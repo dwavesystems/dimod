@@ -387,7 +387,7 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
             The method used to resolve chain breaks.
 
     """
-    if any(v not in source_bqm.linear for v in embedding):
+    if any(v not in embedding for v in source_bqm):
         raise ValueError("given bqm does not match the embedding")
 
     energies = []
