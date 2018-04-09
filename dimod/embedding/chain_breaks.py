@@ -15,27 +15,28 @@ import numpy as np
 __all__ = ['majority_vote', 'discard', 'weighted_random', 'MinimizeEnergy']
 
 
-def discard_matrix(samples_matrix, chain_list):
+def discard_matrix(samples_matrix, chains):
     """Discard broken chains."""
     if not isinstance(samples_matrix, np.matrix):
         samples_matrix = np.matrix(samples_matrix, dtype='int8')
     num_samples, __ = samples_matrix.shape
 
     variables = []
-    for chain in chain_list:
+    for chain in chains:
         chain = list(chain)
 
         try:
             v = chain[0]
         except IndexError:
-            raise ValueError("each chain in chain_list must contain at least one variable")
+            raise ValueError("each chain in chains must contain at least one variable")
         variables.append(v)
 
         if len(chain) == 1:
             continue
 
         # there must be a better way
-        unbroken = np.array((samples_matrix[:, chain] == samples_matrix[:, v]).all(axis=1)).flatten()
+        chain_M = samples_matrix[:, chain]
+        unbroken = np.array((chain_M[:, 1:] == chain_M[:, 0]).all(axis=1)).flatten()
 
         samples_matrix = samples_matrix[unbroken, :]
 
