@@ -191,6 +191,25 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         self.assertEqual(len(bqm), len(linear))
 
+    def test__contains__(self):
+        bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
+
+        self.assertIn('a', bqm)
+        self.assertNotIn('b', bqm)
+
+        bqm.add_interaction('a', 'b', .5)
+
+        self.assertIn('b', bqm)
+
+    def test__iter__(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        self.assertEqual(set(bqm), set())
+
+        bqm.add_interaction('a', 'b', -1)
+
+        self.assertEqual(set(bqm), {'a', 'b'})
+
     def test_add_variable(self):
         bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
         bqm.add_variable('a', .5)
