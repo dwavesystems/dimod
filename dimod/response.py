@@ -87,21 +87,24 @@ class Response(Iterable, Sized):
         self._samples_matrix = samples_matrix
         num_samples, num_variables = samples_matrix.shape
 
-        if not isinstance(data_vectors, dict):
+        if not isinstance(data_vectors, Mapping):
             raise TypeError("expected 'data_vectors' to be a dict")
         if 'energy' not in data_vectors:
             raise ValueError("energy must be provided")
         else:
-            data_vectors = data_vectors.copy()  # shallow copy
-            data_vectors['energy'] = np.asarray(data_vectors['energy'])
-        for vector in data_vectors.values():
-            # todo - check that is a vector and that has the right length
-            if isinstance(vector, (np.ndarray, list)):
-                if len(vector) != num_samples:
-                    raise ValueError(("expected data vector {} (length {}) to be a vector of length {}"
-                                      "").format(vector, len(vector), num_samples))
-            else:
-                raise TypeError("expected data vector {} to be a list of NumPy array".format(vector))
+            data_vectors = dict(data_vectors)  # shallow copy
+
+        for key, vector in iteritems(data_vectors):
+            try:
+                data_vectors[key] = vector = np.asarray(vector)
+            except (ValueError, TypeError):
+                raise TypeError("expected data vector {} to be array-like".format(key))
+
+            shape = vector.shape
+            if not shape or shape[0] != num_samples:
+                raise ValueError(("expected data vector {} (shape {}) to have {} rows"
+                                  "").format(key, vector.shape, num_samples))
+
         self._data_vectors = data_vectors
 
         # vartype is checked by the decorator
@@ -824,10 +827,13 @@ class Response(Iterable, Sized):
     # Viewing a Response
     ###############################################################################################
 
-    def samples(self, sorted_by='energy'):
+    def samples(self, n=None, sorted_by='energy'):
         """Iterate over the samples in the response.
 
         Args:
+            n (int, optional, default=None):
+                The maximum number of samples to provide. If None, all are provided.
+
             sorted_by (str/None, optional, default='energy'):
                 Selects the `data_vector` used to sort the samples. If None, the samples are yielded in
                 the order given by the samples matrix.
@@ -861,13 +867,21 @@ class Response(Iterable, Sized):
             {'a': -1, 'b': 1}
 
         """
+        num_samples = len(self)
+
+        if n is not None:
+            for sample in itertools.islice(self.samples(n=None, sorted_by=sorted_by), n):
+                yield sample
+            return
+
         if sorted_by is None:
-            order = np.arange(len(self))
+            order = np.arange(num_samples)
         else:
             order = np.argsort(self.data_vectors[sorted_by])
 
         samples = self.samples_matrix
         label_mapping = self.label_to_idx
+
         for idx in order:
             yield SampleView(idx, self)
 
