@@ -54,7 +54,7 @@ class TestResponse(unittest.TestCase):
         npt.assert_equal(samples_matrix, response.samples_matrix)
         npt.assert_allclose(energies, response.data_vectors['energy'])
 
-    def test_data_vector_copy(self):
+    def test_data_vectors_copy(self):
         samples_matrix = np.matrix([[0, 1, 0, 1],
                                     [1, 0, 1, 0],
                                     [0, 0, 0, 0],
@@ -65,6 +65,80 @@ class TestResponse(unittest.TestCase):
         response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
 
         self.assertIsNot(response.data_vectors, data_vectors)
+
+    def test_data_vectors_are_arrays(self):
+        samples_matrix = np.matrix([[0, 1, 0, 1],
+                                    [1, 0, 1, 0],
+                                    [0, 0, 0, 0],
+                                    [1, 1, 1, 1]])
+        energies = [2, 2, 0, 4]
+        num_occurrences = [1, 1, 2, 1]
+        objects = [object() for __ in range(4)]
+
+        data_vectors = {'energy': energies, 'occurences': num_occurrences, 'objects': objects}
+
+        response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
+
+        self.assertEqual(len(response.data_vectors), 3)
+
+        for key in data_vectors:
+            self.assertIn(key, response.data_vectors)
+
+            vector = response.data_vectors[key]
+
+            self.assertIsInstance(vector, np.ndarray)
+
+            self.assertEqual(vector.shape, (4,))
+
+    def test_data_vectors_wrong_length(self):
+        samples_matrix = np.matrix([[0, 1, 0, 1],
+                                    [1, 0, 1, 0],
+                                    [0, 0, 0, 0],
+                                    [1, 1, 1, 1]])
+        energies = [2, 2, 0, 4]
+        num_occurrences = [1, 1, 2, 1, 1]
+        objects = [object() for __ in range(4)]
+
+        data_vectors = {'energy': energies, 'occurences': num_occurrences, 'objects': objects}
+
+        with self.assertRaises(ValueError):
+            response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
+
+    def test_data_vectors_not_array_like(self):
+        samples_matrix = np.matrix([[0, 1, 0, 1],
+                                    [1, 0, 1, 0],
+                                    [0, 0, 0, 0],
+                                    [1, 1, 1, 1]])
+        energies = [2, 2, 0, 4]
+        num_occurrences = 'hi there'
+        objects = [object() for __ in range(4)]
+
+        data_vectors = {'energy': energies, 'occurences': num_occurrences, 'objects': objects}
+
+        with self.assertRaises(ValueError):
+            response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
+
+    def test_samples_num_limited(self):
+        samples_matrix = np.matrix([[0, 1, 0, 1],
+                                    [1, 0, 1, 0],
+                                    [0, 0, 0, 0],
+                                    [1, 1, 1, 1]])
+        energies = [2, 2, 0, 4]
+        num_occurrences = [1, 1, 2, 1]
+        objects = [object() for __ in range(4)]
+
+        data_vectors = {'energy': energies, 'occurences': num_occurrences, 'objects': objects}
+
+        response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
+
+        samples_list = list(response.samples())
+
+        self.assertEqual(len(samples_list), 4)
+
+        shortened_samples_list = list(response.samples(3))
+
+        self.assertEqual(len(shortened_samples_list), 3)
+        self.assertEqual(shortened_samples_list, samples_list[0:3])
 
     def test_instantiation_without_energy(self):
         samples_matrix = np.matrix([[0, 1, 0, 1],
