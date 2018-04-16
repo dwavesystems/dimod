@@ -133,29 +133,34 @@ def chain_to_quadratic(chain, target_adjacency, chain_strength):
 
 
 def chain_break_frequency(samples, embedding):
-    """Determines the frequency of chain breaks in the given samples.
+    """Determine the frequency of chain breaks in the given samples.
 
     Args:
         samples (array-like/:obj:`.Response`):
-            A matrix of samples or a dimod response object.
+            Matrix of samples or a dimod response object.
 
         embedding (dict):
-            The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
     Returns:
-        dict: The frequency of chain breaks in the form {v: f, ...} where v
-        is a variable in the source graph and frequency is the fraction
-        of chains that were broken as a float.
+        dict: Frequency of chain breaks as a dict in the form {s: f, ...},  where s
+        is a variable in the source graph, and frequency, a float, is the fraction
+        of broken chains.
 
     Examples:
+        This example embeds a single source node (a) as a chain of two target nodes (0, 1)
+        and uses :func:`.chain_break_frequency` to show that out of two synthetic samples,
+        one ([-1, +1]) represents a broken chain.
+
         >>> samples = np.matrix([[-1, +1], [+1, +1]])
         >>> embedding = {'a': {0, 1}}
         >>> dimod.chain_break_frequency(samples, embedding)
         {'a': .5}
 
-        From a dimod response:
+        This example embeds a single source node (0) as a chain of two target nodes (a, b)
+        and uses :func:`.chain_break_frequency` to show that out of two samples in a
+        dimod response, one ({'a': 1, 'b': 0}) represents a broken chain. 
 
         >>> response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]})
         >>> embedding = {0: {'a', 'b'}}
