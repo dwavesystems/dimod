@@ -111,3 +111,63 @@ the :meth:`sample_ising` method).
 
 The :class:`.Sampler` ABC provides the other sample methods "for free"
 as mixins.
+
+Minor-Embedding
+---------------
+
+Embedding attempts to create a target :term:`model` from a target :term:`graph`. The process of
+embedding takes a source model, derives the source graph, maps the source graph to the target
+graph, then derives the target model. Sometimes referred to in other tools as the **embedded** graph/model.
+
+Solving an arbitrarily posed binary quadratic problem on a D-Wave system requires minor-embedding
+to a target graph that represents the system’s quantum processing unit.
+
+Terminology
+-----------
+
+.. glossary::
+
+    chain
+        A collection of nodes or variables in the target graph/model
+        that we want to act as a single node/variable.
+
+    chain strength
+        Magnitude of the negative quadratic bias applied
+        between variables to form a chain.
+
+    composed sampler
+        Samplers that apply pre- and/or post-processing to binary quadratic programs without
+        changing the underlying sampler implementation by layering composite patterns on the
+        sampler. For example, a composed sampler might add spin transformations when sampling
+        from the D-Wave system.
+
+    graph
+        A collection of nodes and edges. A graph can be derived
+        from a model: a node for each variable and an edge for each pair
+        of variables with a non-zero quadratic bias.
+
+    model
+        A collection of variables with associated linear and
+        quadratic biases. Sometimes referred to in other tools as a **problem**.
+
+    sampler
+        A process that samples from low energy states of a problem’s objective function.
+        A binary quadratic model (BQM) sampler samples from low energy states in models such
+        as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
+        (QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
+        sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
+        BQM sampler method.
+
+    source
+        In the context of embedding, the model or induced graph that we wish to embed. Sometimes
+        referred to in other tools as the **logical** graph/model.
+
+    structured sampler
+        Samplers that are restricted to sampling only binary quadratic models defined
+        on a specific graph.
+
+    target
+        Embedding attempts to create a target model from a target
+        graph. The process of embedding takes a source model, derives the source
+        graph, maps the source graph to the target graph, then derives the target
+        model. Sometimes referred to in other tools as the **embedded** graph/model.

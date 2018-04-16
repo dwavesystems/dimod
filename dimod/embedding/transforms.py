@@ -18,66 +18,68 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
 
     Args:
         source_bqm (:obj:`.BinaryQuadraticModel`):
-            The binary quadratic model to be embedded.
+            Binary quadratic model to embed.
 
         embedding (dict):
-            Mapping from the source graph to the target graph.
-            Should be of the form {v: {ls, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
         target_adjacency (dict/:class:`networkx.Graph`):
-            Adjacency dict of the target
-            graph. Should be a dict of the form {s: Ns, ...} where s is a variable
-            in the target graph and Ns is the set of neighbours of s.
+            Adjacency of the target graph as a dict of form {t: Nt, ...},
+            where t is a variable in the target graph and Nt is its set of neighbours.
 
         chain_strength (float, optional):
-            Magnitude quadratic bias (in SPIN-space) that should be used to create chains. Note
-            that the energy penalty of chain breaks will be 2 * chain_strength.
+            Magnitude of the quadratic bias (in SPIN-space) applied between variables to create chains. Note
+            that the energy penalty of chain breaks is 2 * `chain_strength`.
 
         embed_singleton_variables (bool, True):
             Attempt to allocate singleton variables in the source binary quadratic model to unused
             nodes in the target graph.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`: The target binary quadratic model.
+        :obj:`.BinaryQuadraticModel`: Target binary quadratic model.
 
     Examples:
+        This example embeds a fully connected :math:`K_3` graph onto a square target graph.
+        Embedding is accomplished by an edge contraction operation on the target graph:
+        target-nodes 2 and 3 are chained to represent source-node c.
 
-        .. code-block:: python
+        >>> import dimod
+        >>> import networkx as nx
+        >>> # Binary quadratic model for a triangular source graph
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
+        >>> # Target graph is a graph
+        >>> target = nx.cycle_graph(4)
+        >>> # Embedding from source to target graphs
+        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+        >>> # Embed the BQM
+        >>> target_bqm = dimod.embed_bqm(bqm, embedding, target)
+        >>> target_bqm.quadratic
+        {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
-            import networkx as nx
+        This example embeds a fully connected :math:`K_3` graph onto the target graph
+        of a dimod reference structured sampler, `StructureComposite`, using the dimod reference
+        `ExactSolver` sampler with a square graph specified. Target-nodes 2 and 3
+        are chained to represent source-node c.
 
-            # Get a binary quadratic model, source graph in this case is a triangle
-            bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
-
-            # Target graph is a square to a square graph
-            target = nx.cycle_graph(4)
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the bqm
-            target_bqm = dimod.embed_bqm(bqm, embedding, target)
-
-        Embedding to a dimod Sampler
-
-        .. code-block:: python
-
-            # Get a binary quadratic model, source graph in this case is a triangle
-            bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
-
-            # get a structured dimod sampler with a structure defined by a square graph
-            sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the bqm
-            target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
-
-            # sample
-            response = sampler.sample(target_bqm)
-
+        >>> import dimod
+        >>> # Binary quadratic model for a triangular source graph
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
+        >>> # Structured dimod sampler with a structure defined by a square graph
+        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
+        >>> # Embedding from source to target graph
+        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+        >>> # Embed the BQM
+        >>> target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
+        >>> # Sample
+        >>> response = sampler.sample(target_bqm)
+        >>> response.samples_matrix   # doctest: +SKIP
+        matrix([[-1, -1, -1, -1],
+                [ 1, -1, -1, -1],
+                [ 1,  1, -1, -1],
+                [-1,  1, -1, -1],
+                [-1,  1,  1, -1],
+        >>> # Snipped above response for brevity
 
     """
     if embed_singleton_variables:
@@ -151,18 +153,16 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
             Quadratic biases of the Ising problem.
 
         embedding (dict):
-            Mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
         target_adjacency (dict/:class:`networkx.Graph`):
-            Adjacency dict of the target
-            graph. Should be a dict of the form {s: Ns, ...} where s is a variable
-            in the target graph and Ns is the set of neighbours of s.
+            Adjacency of the target graph as a dict of form {t: Nt, ...},
+            where t is a target-graph variable and Nt is its set of neighbours.
 
         chain_strength (float, optional):
-            Magnitude quadratic bias (in SPIN-space) that should be used to create chains. Note
-            that the energy penalty of chain breaks will be 2 * chain_strength.
+            Magnitude of the quadratic bias (in SPIN-space) applied between variables to form a chain. Note
+            that the energy penalty of chain breaks is 2 * `chain_strength`.
 
         embed_singleton_variables (bool, True):
             Attempt to allocate singleton variables in the source binary quadratic model to unused
@@ -176,43 +176,47 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
             dict[(variable, variable), bias]: Quadratic biases of the target Ising problem.
 
     Examples:
+        This example embeds a fully connected :math:`K_3` graph onto a square target graph.
+        Embedding is accomplished by an edge contraction operation on the target graph: target-nodes
+        2 and 3 are chained to represent source-node c.
 
-        .. code-block:: python
+        >>> import dimod
+        >>> import networkx as nx
+        >>> # Ising problem for a triangular source graph
+        >>> h = {}
+        >>> J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
+        >>> # Target graph is a square graph
+        >>> target = nx.cycle_graph(4)
+        >>> # Embedding from source to target graph
+        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+        >>> # Embed the Ising problem
+        >>> target_h, target_J = dimod.embed_ising(h, J, embedding, target)
+        >>> target_J
+        {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
-            import networkx as nx
+        This example embeds a fully connected :math:`K_3` graph onto the target graph
+        of a dimod reference structured sampler, `StructureComposite`, using the dimod reference
+        `ExactSolver` sampler with a square graph specified. Target-nodes 2 and 3 are chained to
+        represent source-node c.
 
-            # Get an Ising problem, source graph in this case is a triangle
-            h = {}
-            J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
-
-            # Target graph is a square to a square graph
-            target = nx.cycle_graph(4)
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the Ising problem
-            target_h, target_J = dimod.embed_ising(h, J, embedding, target)
-
-        Embedding to a dimod Sampler
-
-        .. code-block:: python
-
-            # Get an Ising problem, source graph in this case is a triangle
-            h = {}
-            J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
-
-            # get a structured dimod sampler with a structure defined by a square graph
-            sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the Ising problem
-            target_h, target_J = dimod.embed_ising(h, J, embedding, sampler.adjacency)
-
-            # sample
-            response = sampler.sample_ising(target_h, target_J)
+        >>> import dimod
+        >>> # Ising problem for a triangular source graph
+        >>> h = {}
+        >>> J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
+        >>> # Structured dimod sampler with a structure defined by a square graph
+        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
+        >>> # Embedding from source to target graph
+        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+        >>> # Embed the Ising problem
+        >>> target_h, target_J = dimod.embed_ising(h, J, embedding, sampler.adjacency)
+        >>> # Sample
+        >>> response = sampler.sample_ising(target_h, target_J)
+        >>> for sample in response.samples(n=3, sorted_by='energy'):
+        ...     print(sample)
+        ...
+        {0: 1, 1: -1, 2: -1, 3: -1}
+        {0: 1, 1: 1, 2: -1, 3: -1}
+        {0: -1, 1: 1, 2: -1, 3: -1}
 
     """
     source_bqm = BinaryQuadraticModel.from_ising(souce_h, source_J)
@@ -223,25 +227,23 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
 
 
 def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_singleton_variables=True):
-    """Embed a quadratic unconstrained binary optimization (QUBO) onto a target graph.
+    """Embed a QUBO onto a target graph.
 
     Args:
         source_Q (dict[(variable, variable), bias]):
             Coefficients of a quadratic unconstrained binary optimization (QUBO) model.
 
         embedding (dict):
-            Mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
         target_adjacency (dict/:class:`networkx.Graph`):
-            Adjacency dict of the target
-            graph. Should be a dict of the form {s: Ns, ...} where s is a variable
-            in the target graph and Ns is the set of neighbours of s.
+            Adjacency of the target graph as a dict of form {t: Nt, ...},
+            where t is a target-graph variable and Nt is its set of neighbours.
 
         chain_strength (float, optional):
-            Magnitude quadratic bias (in SPIN-space) that should be used to create chains. Note
-            that the energy penalty of chain breaks will be 2 * chain_strength.
+            Magnitude of the quadratic bias (in SPIN-space) applied between variables to form a chain. Note
+            that the energy penalty of chain breaks is 2 * `chain_strength`.
 
         embed_singleton_variables (bool, True):
             Attempt to allocate singleton variables in the source binary quadratic model to unused
@@ -251,41 +253,66 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
         dict[(variable, variable), bias]: Quadratic biases of the target QUBO.
 
     Examples:
+        This example embeds a square source graph onto fully connected :math:`K_5` graph.
+        Embedding is accomplished by an edge deletion operation on the target graph: target-node
+        0 is not used.
 
-        .. code-block:: python
+        >>> import dimod
+        >>> import networkx as nx
+        >>> # QUBO problem for a square graph
+        >>> Q = {(1, 1): -4.0, (1, 2): 4.0, (2, 2): -4.0, (2, 3): 4.0,
+        ...      (3, 3): -4.0, (3, 4): 4.0, (4, 1): 4.0, (4, 4): -4.0}
+        >>> # Target graph is a fully connected k5 graph
+        >>> K_5 = nx.complete_graph(5)
+        >>> list(K_5.nodes)
+        [0, 1, 2, 3, 4]
+        >>> # Embedding from source to target graph
+        >>> embedding = {1: {4}, 2: {3}, 3: {1}, 4: {2}}
+        >>> # Embed the QUBO
+        >>> target_Q = dimod.embed_qubo(Q, embedding, K_5)
+        >>> target_Q
+        {(1, 1): -4.0,
+         (1, 2): 4.0,
+         (2, 2): -4.0,
+         (2, 4): 4.0,
+         (3, 1): 4.0,
+         (3, 3): -4.0,
+         (4, 3): 4.0,
+         (4, 4): -4.0}
 
-            import networkx as nx
+        This example embeds a square graph onto the target graph of a dimod reference structured
+        sampler, `StructureComposite`, using the dimod reference `ExactSolver` sampler with a
+        fully connected :math:`K_5` graph specified.
 
-            # Get a QUBO, source graph in this case is a triangle
-            Q = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
-
-            # Target graph is a square to a square graph
-            target = nx.cycle_graph(4)
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the QUBO
-            target_Q = dimod.embed_qubo(Q, embedding, target)
-
-        Embedding to a dimod Sampler
-
-        .. code-block:: python
-
-            # Get a QUBO, source graph in this case is a triangle
-            Q = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
-
-            # get a structured dimod sampler with a structure defined by a square graph
-            sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the QUBO
-            target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
-
-            # sample
-            response = sampler.sample_qubo(target_Q)
+        >>> import dimod
+        >>> import networkx as nx
+        >>> # QUBO problem for a square graph
+        >>> Q = {(1, 1): -4.0, (1, 2): 4.0, (2, 2): -4.0, (2, 3): 4.0,
+        ...      (3, 3): -4.0, (3, 4): 4.0, (4, 1): 4.0, (4, 4): -4.0}
+        >>> # Structured dimod sampler with a structure defined by a K5 graph
+        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), list(K_5.nodes), list(K_5.edges))
+        >>> sampler.adjacency
+        {0: {1, 2, 3, 4},
+         1: {0, 2, 3, 4},
+         2: {0, 1, 3, 4},
+         3: {0, 1, 2, 4},
+         4: {0, 1, 2, 3}}
+        >>> # Embedding from source to target graph
+        >>> embedding = {0: {4}, 1: {3}, 2: {1}, 3: {2}}
+        >>> # Embed the QUBO
+        >>> target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
+        >>> # Sample
+        >>> response = sampler.sample_qubo(target_Q)
+        >>> for datum in response.data():   # doctest: +SKIP
+        ...     print(datum)
+        ...
+        Sample(sample={1: 0, 2: 1, 3: 1, 4: 0}, energy=-8.0)
+        Sample(sample={1: 1, 2: 0, 3: 0, 4: 1}, energy=-8.0)
+        Sample(sample={1: 1, 2: 0, 3: 0, 4: 0}, energy=-4.0)
+        Sample(sample={1: 1, 2: 1, 3: 0, 4: 0}, energy=-4.0)
+        Sample(sample={1: 0, 2: 1, 3: 0, 4: 0}, energy=-4.0)
+        Sample(sample={1: 1, 2: 1, 3: 1, 4: 0}, energy=-4.0)
+        >>> # Snipped above response for brevity
 
     """
     source_bqm = BinaryQuadraticModel.from_qubo(source_Q)
@@ -298,34 +325,37 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
 def iter_unembed(target_samples, embedding, chain_break_method=None):
     """Yield unembedded samples.
 
+    :func:`.iter_unembed` is an iterator (to reduce memory footprint) used by :func:`.unembed_response`
+    (through the :meth:`.Response.from_dicts` method) for unembedding; you may use it directly,
+    for example, to increase performance for responses with large numbers of samples of which you
+    need only a small portion, say those with lowest energy.
+
     Args:
         target_samples (iterable[mapping[variable, value]]):
-            Iterable of samples. Each sample of the form {v: val, ...} where v is a variable in the
-            target graph and val is the associated value.
+            Iterable of samples. Each sample is a dict of form {t: val, ...},
+            where t is a variable in the target graph and val its associated value.
 
         embedding (dict):
-            Mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
         chain_break_method (function, optional, default=:func:`.majority_vote`):
-            The method used to resolve chain breaks.
+            Method used to resolve chain breaks.
 
     Yields:
-        dict[variable, value]: An unembedded sample of the form {v: val, ...} where v is a variable
-        in the source graph and val is the associated value.
-
-    Notes:
-        This is implemented as an iterator to keep down memory footprint. It is intended to be used
-        with :meth:`.Response.from_dicts`.
+        dict[variable, value]: An unembedded sample as a dict of form {s: val, ...},
+        where s is a variable in the source graph and val its associated value.
 
     Examples:
+        This example demonstrates the use of :func:`.iter_unembed` to derive samples
+        for a triangular source graph from synthetic samples of a square target graph.
 
-        >>> # Get a collection of samples from the target problem (say a square)
+        >>> import dimod
+        >>> # Synthetic samples from a square-structured target problem
         >>> samples = [{0: +1, 1: -1, 2: +1, 3: +1},
         ...            {0: -1, 1: -1, 2: -1, 3: -1},
         ...            {0: +1, 1: +1, 2: +1, 3: +1}]
-        >>> # Make an embedding from the source graph to target graph
+        >>> # Embedding from source to target graphs
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> for source_sample in dimod.iter_unembed(samples, embedding):  # doctest: +SKIP
         ...     print(source_sample)
@@ -333,29 +363,41 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
         {'a': -1, 'b': -1, 'c': -1}
         {'a': 1, 'b': 1, 'c': 1}
 
-        An example using both embedding an unembedding. Note that this is the flow used by
-        dwave-system_'s :obj:`~dwave.system.composites.EmbeddingComposite`.
+        This example uses :func:`.iter_unembed` to unembed samples of a binary quadratic model
+        for a triangular source graph that is embedded in a square-structured graph with dimod
+        reference structured sampler, `StructureComposite`, using the dimod reference `ExactSolver`
+        sampler. Note that this flow is used by dwave-system_'s :obj:`~dwave.system.composites.EmbeddingComposite`.
 
-        .. code-block:: python
-
-            # Get a binary quadratic model, source graph in this case is a triangle
-            bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
-
-            # get a structured dimod sampler with a structure defined by a square graph
-            sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
-
-            # Make an embedding from the source graph to target graph
-            embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-
-            # embed the bqm
-            target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
-
-            # get a response in the form of a target structure
-            target_response = sampler.sample(target_bqm)
-
-            # now unembed
-            source_response = dimod.Response.from_dicts(dimod.iter_unembed(target_response, embedding),
-                                                        {'energy': target_response.data_vectors['energy']})
+        >>> import dimod
+        >>> # Binary quadratic model for a triangular source graph
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
+        >>> # Structured dimod sampler with a structure defined by a square graph
+        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
+        >>> # Embedding from source to target graph
+        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+        >>> # Embed the BQM
+        >>> target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
+        >>> # Sample (the response is in the form of a target structure)
+        >>> target_response = sampler.sample(target_bqm)
+        >>> for datum in target_response.data():    # doctest: +SKIP
+        ...     print(datum)
+        ...
+        Sample(sample={0: 1, 1: -1, 2: -1, 3: -1}, energy=-1.0)
+        Sample(sample={0: 1, 1: 1, 2: -1, 3: -1}, energy=-1.0)
+        Sample(sample={0: -1, 1: 1, 2: -1, 3: -1}, energy=-1.0)
+        Sample(sample={0: 1, 1: -1, 2: 1, 3: -1}, energy=-1.0)
+        >>> # Snipped above response for brevity
+        >>> # Unembed
+        >>> source_response = dimod.Response.from_dicts(dimod.iter_unembed(target_response, embedding),
+                                                    {'energy': target_response.data_vectors['energy']})
+        >>> for datum in source_response.data():    # doctest: +SKIP
+        ...     print(datum)
+        ...
+        Sample(sample={'a': 1, 'c': -1, 'b': 1}, energy=-1.0)
+        Sample(sample={'a': -1, 'c': -1, 'b': 1}, energy=-1.0)
+        Sample(sample={'a': 1, 'c': 1, 'b': -1}, energy=-1.0)
+        Sample(sample={'a': -1, 'c': 1, 'b': 1}, energy=-1.0)
+        >>> # Snipped above response for brevity
 
     .. _dwave-system: https://github.com/dwavesystems/dwave-system
 
@@ -369,25 +411,81 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
 
 
 def unembed_response(target_response, embedding, source_bqm, chain_break_method=None):
-    """Unembed the response to construct a response for the source bqm.
+    """Unembed the response.
+
+    Construct a response for the source binary quadratic model (BQM) by unembedding the given
+    response from the target BQM.
 
     Args:
         target_response (:obj:`.Response`):
-            A response from the target bqm
+            Response from the target BQM.
 
         embedding (dict):
-            Mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a variable in the
-            source model and s is a variable in the target model.
+            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
+            where s is a source-model variable and t is a target-model variable.
 
         source_bqm (:obj:`.BinaryQuadraticModel`):
-            The source binary quadratic model.
+            Source binary quadratic model.
 
         chain_break_method (function, optional, default=:func:`.majority_vote`):
-            The method used to resolve chain breaks.
+            Method used to resolve chain breaks.
 
     Returns:
         :obj:`.Response`
+
+    Examples:
+        This example is for an AND gate :math:`x_3 \Leftrightarrow x_1 \wedge x_2`
+        represented as penalty model :math:`x_1 x_2 - 2(x_1+x_2)x_3 +3x_3` by
+        the QUBO :math:`E(a_i, b_{i,j}; x_i) = 3x_3 + x_1x_2 - 2x_1x_3 - 2x_2x_3`, which is the fully
+        connected :math:`K_3` graph. The AND gate is embedded in a square-structured
+        graph and sampled with dimod reference structured sampler, `StructureComposite`, using the
+        dimod reference `ExactSolver` sampler. The samples as unembedded by :func:`.unembed_response`
+        show that only valid states of the AND gate have zero energy (e.g., only input :math:`x_1 x_2=1,1`
+        results in :math:`z=1`) while invalid states have higher energy.
+
+        >>> import dimod
+        >>> import networkx as nx
+        >>> # Binary quadratic model for the AND gate
+        >>> Q = {('x1', 'x2'): 1, ('x1', 'z'): -2, ('x2', 'z'): -2, ('z', 'z'): 3}
+        >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        >>> # Embed the BQM in a structured dimod sampler defined by a square graph
+        >>> target_graph = nx.cycle_graph(4)
+        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(),
+        ...                          list(target_graph.nodes), list(target_graph.edges))
+        >>> embedding = {'x1': {0}, 'x2': {1}, 'z': {2, 3}}
+        >>> target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
+        >>> # Sample on the target graph
+        >>> target_response = sampler.sample_qubo(target_Q)
+        >>> for datum in target_response.data():  # doctest: +SKIP
+        ...     print(datum)
+        ...
+        Sample(sample={0: 0, 1: 0, 2: 0, 3: 0}, energy=0.0)
+        Sample(sample={0: 1, 1: 0, 2: 0, 3: 0}, energy=0.0)
+        Sample(sample={0: 0, 1: 1, 2: 0, 3: 0}, energy=0.0)
+        Sample(sample={0: 1, 1: 1, 2: 1, 3: 1}, energy=0.0)
+        Sample(sample={0: 1, 1: 1, 2: 0, 3: 0}, energy=1.0)
+        >>> # Snipped above response for brevity
+        >>> # Unembed samples back to the problem graph
+        >>> source_response = dimod.unembed_response(response, embedding, bqm)
+        >>> for datum in source_response.data():
+        ...     print(datum)
+        ...
+        Sample(sample={'x2': 0, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 0, 'x1': 1, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 1, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 1, 'x1': 1, 'z': 1}, energy=0.0)
+        Sample(sample={'x2': 1, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 0, 'x1': 1, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 0, 'x1': 1, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 0, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 1, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 0, 'x1': 0, 'z': 0}, energy=0.0)
+        Sample(sample={'x2': 1, 'x1': 1, 'z': 0}, energy=1.0)
+        Sample(sample={'x2': 0, 'x1': 1, 'z': 1}, energy=1.0)
+        Sample(sample={'x2': 1, 'x1': 0, 'z': 1}, energy=1.0)
+        Sample(sample={'x2': 1, 'x1': 1, 'z': 0}, energy=1.0)
+        Sample(sample={'x2': 1, 'x1': 1, 'z': 0}, energy=1.0)
+        Sample(sample={'x2': 0, 'x1': 0, 'z': 1}, energy=3.0)
 
     """
     if any(v not in embedding for v in source_bqm):
