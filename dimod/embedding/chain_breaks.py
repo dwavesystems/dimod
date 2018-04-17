@@ -1,8 +1,8 @@
 """The chain break resolution methods available to :func:`.iter_unembed`.
 
-Each method is a generator that yields zero or more unembedded samples. They are implemented
-this way to allow :func:`.iter_unembed` to utilize many different techniques without having
-to keep large numbers of samples in memory.
+Chain-break-resolution generators enable :func:`.iter_unembed` to use different techniques
+of resolving chain breaks without keeping large numbers of samples in memory. Each generator
+yields zero or more unembedded samples.
 
 """
 
@@ -43,18 +43,34 @@ def discard_matrix(samples_matrix, chain_list):
 
 
 def discard(sample, embedding):
-    """Discards the sample if broken.
+    """Discard the sample if broken.
 
     Args:
-        sample (Mapping): A sample of the form {v: val, ...} where v is
-            a variable in the target graph and val is the associated value as
+        sample (Mapping):
+            Sample as a dict of form {t: val, ...}, where t is
+            a variable in the target graph and val its associated value as
             determined by a binary quadratic model sampler.
-        embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a node in the
-            source graph and s is a node in the target graph.
+        embedding (dict):
+            Mapping from source graph to target graph as a dict
+            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
+            a target-model variable.
 
     Yields:
         dict: The unembedded sample if no chains were broken.
+
+    Examples:
+        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
+        represent source node a. The first sample has an unbroken chain, the second a broken
+        chain.
+
+        >>> import dimod
+        >>> embedding = {'a': {0, 1}, 'b': {2}}
+        >>> samples = {0: 1, 1: 1, 2: 0}
+        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')
+        {'a': 1, 'b': 0}
+        >>> samples = {0: 1, 1: 0, 2: 0}
+        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')
+        'No sample'
 
     """
     unembedded = {}
@@ -71,19 +87,35 @@ def discard(sample, embedding):
 
 
 def majority_vote(sample, embedding):
-    """Determines the sample values by majority vote.
+    """Determine the sample values by majority vote.
 
     Args:
-        sample (Mapping): A sample of the form {v: val, ...} where v is
-            a variable in the target graph and val is the associated value as
+        sample (Mapping):
+            Sample as a dict of form {t: val, ...}, where t is
+            a variable in the target graph and val its associated value as
             determined by a binary quadratic model sampler.
-        embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a node in the
-            source graph and s is a node in the target graph.
+        embedding (dict):
+            Mapping from source graph to target graph as a dict
+            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
+            a target-model variable.
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
         is chosen to match the most common value in the chain.
+
+    Examples:
+        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
+        represent source node a and nodes 2, 3, and 4 to represent source node b.
+        Both samples have broken chains for source node b, with different majority values.
+
+        >>> import dimod
+        >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
+        >>> samples = {0: 1, 1: 1, 2: 0, 3: 0, 4: 1}
+        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')
+        {'a': 1, 'b': 0}
+        >>> samples = {0: 1, 1: 1, 2: 1, 3: 0, 4: 1}
+        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')
+        {'a': 1, 'b': 1}
 
     """
     unembedded = {}
