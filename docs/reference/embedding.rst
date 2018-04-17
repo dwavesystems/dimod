@@ -58,7 +58,7 @@ Functions
    unembed_response
    chain_break_frequency
 
-Chain Break Resolution
+Chain-Break Resolution
 ======================
 
 .. automodule:: dimod.embedding.chain_breaks
