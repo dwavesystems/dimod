@@ -123,7 +123,7 @@ def weighted_random(sample, embedding):
 
         # pick a random element uniformly from all vals, this weights them by
         # the proportion of each
-        unembedded[v] = random.choice(vals)
+        unembedded[v] = np.random.choice(vals)
 
     yield unembedded
 
