@@ -54,7 +54,7 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> # Embed the BQM
         >>> target_bqm = dimod.embed_bqm(bqm, embedding, target)
-        >>> target_bqm.quadratic
+        >>> target_bqm.quadratic   # doctest: +SKIP
         {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
         This example embeds a fully connected :math:`K_3` graph onto the target graph
@@ -191,7 +191,7 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> # Embed the Ising problem
         >>> target_h, target_J = dimod.embed_ising(h, J, embedding, target)
-        >>> target_J
+        >>> target_J        # doctest: +SKIP
         {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
         This example embeds a fully connected :math:`K_3` graph onto the target graph
@@ -211,7 +211,7 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
         >>> target_h, target_J = dimod.embed_ising(h, J, embedding, sampler.adjacency)
         >>> # Sample
         >>> response = sampler.sample_ising(target_h, target_J)
-        >>> for sample in response.samples(n=3, sorted_by='energy'):
+        >>> for sample in response.samples(n=3, sorted_by='energy'):   # doctest: +SKIP
         ...     print(sample)
         ...
         {0: 1, 1: -1, 2: -1, 3: -1}
@@ -270,7 +270,7 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
         >>> embedding = {1: {4}, 2: {3}, 3: {1}, 4: {2}}
         >>> # Embed the QUBO
         >>> target_Q = dimod.embed_qubo(Q, embedding, K_5)
-        >>> target_Q
+        >>> target_Q     # doctest: +SKIP
         {(1, 1): -4.0,
          (1, 2): 4.0,
          (2, 2): -4.0,
@@ -291,7 +291,7 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
         ...      (3, 3): -4.0, (3, 4): 4.0, (4, 1): 4.0, (4, 4): -4.0}
         >>> # Structured dimod sampler with a structure defined by a K5 graph
         >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), list(K_5.nodes), list(K_5.edges))
-        >>> sampler.adjacency
+        >>> sampler.adjacency      # doctest: +SKIP
         {0: {1, 2, 3, 4},
          1: {0, 2, 3, 4},
          2: {0, 1, 3, 4},
@@ -358,6 +358,7 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> for source_sample in dimod.iter_unembed(samples, embedding):  # doctest: +SKIP
         ...     print(source_sample)
+        ...
         {'a': 1, 'b': -1, 'c': 1}
         {'a': -1, 'b': -1, 'c': -1}
         {'a': 1, 'b': 1, 'c': 1}
@@ -387,8 +388,9 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
         Sample(sample={0: 1, 1: -1, 2: 1, 3: -1}, energy=-1.0)
         >>> # Snipped above response for brevity
         >>> # Unembed
-        >>> source_response = dimod.Response.from_dicts(dimod.iter_unembed(target_response, embedding),
-                                                    {'energy': target_response.data_vectors['energy']})
+        >>> source_response = dimod.Response.from_dicts(dimod.iter_unembed(target_response,
+        ...                          embedding),
+        ...                          {'energy': target_response.data_vectors['energy']})
         >>> for datum in source_response.data():    # doctest: +SKIP
         ...     print(datum)
         ...
@@ -470,8 +472,8 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         Sample(sample={0: 1, 1: 1, 2: 0, 3: 0}, energy=1.0)
         >>> # Snipped above response for brevity
         >>> # Unembed samples back to the problem graph
-        >>> source_response = dimod.unembed_response(response, embedding, bqm)
-        >>> for datum in source_response.data():
+        >>> source_response = dimod.unembed_response(target_response, embedding, bqm)
+        >>> for datum in source_response.data():     # doctest: +SKIP
         ...     print(datum)
         ...
         Sample(sample={'x2': 0, 'x1': 0, 'z': 0}, energy=0.0)

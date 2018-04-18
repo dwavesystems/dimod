@@ -156,7 +156,7 @@ def chain_break_frequency(samples, embedding):
         >>> import numpy as np
         >>> samples = np.matrix([[-1, +1], [+1, +1]])
         >>> embedding = {'a': {0, 1}}
-        >>> dimod.chain_break_frequency(samples, embedding)
+        >>> dimod.chain_break_frequency(samples, embedding)  # doctest: +SKIP
         {'a': .5}
 
         This example embeds a single source node (0) as a chain of two target nodes (a, b)
@@ -165,7 +165,7 @@ def chain_break_frequency(samples, embedding):
 
         >>> response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]})
         >>> embedding = {0: {'a', 'b'}}
-        >>> dimod.chain_break_frequency(response, embedding)
+        >>> dimod.chain_break_frequency(response, embedding)   # doctest: +SKIP
         {0: .5}
 
     """
