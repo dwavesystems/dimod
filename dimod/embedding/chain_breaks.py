@@ -66,7 +66,7 @@ def discard(sample, embedding):
         >>> import dimod
         >>> embedding = {'a': {0, 1}, 'b': {2}}
         >>> samples = {0: 1, 1: 1, 2: 0}
-        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')
+        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')  # doctest: +SKIP
         {'a': 1, 'b': 0}
         >>> samples = {0: 1, 1: 0, 2: 0}
         >>> next(dimod.embedding.discard(samples, embedding), 'No sample')
@@ -112,10 +112,10 @@ def majority_vote(sample, embedding):
         >>> import dimod
         >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
         >>> samples = {0: 1, 1: 1, 2: 0, 3: 0, 4: 1}
-        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')
+        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')  # doctest: +SKIP
         {'a': 1, 'b': 0}
         >>> samples = {0: 1, 1: 1, 2: 1, 3: 0, 4: 1}
-        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')
+        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')  # doctest: +SKIP
         {'a': 1, 'b': 1}
 
     """
@@ -157,7 +157,7 @@ def weighted_random(sample, embedding):
         >>> import dimod
         >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
         >>> samples = {0: 1, 1: 0, 2: 1, 3: 0, 4: 1}
-        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')
+        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')  # doctest: +SKIP
         {'a': 0, 'b': 1}
 
     """
@@ -200,8 +200,7 @@ class MinimizeEnergy(Callable):
         ...            {0: -1, 1: -1, 2: +1, 3: -1},
         ...            {0: +1, 1: +1, 2: -1, 3: +1}]
         ...
-        >>> for source_sample in dimod.iter_unembed(samples, embedding,
-        ...                              chain_break_method=method):
+        >>> for source_sample in dimod.iter_unembed(samples, embedding, chain_break_method=method):  # doctest: +SKIP
         ...     print(source_sample)
         ...
         {'a': 1, 'c': 1, 'b': -1}
