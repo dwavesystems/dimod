@@ -433,14 +433,19 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         :obj:`.Response`
 
     Examples:
-        This example is for an AND gate :math:`x_3 \Leftrightarrow x_1 \wedge x_2`
-        represented as penalty model :math:`x_1 x_2 - 2(x_1+x_2)x_3 +3x_3` by
-        the QUBO :math:`E(a_i, b_{i,j}; x_i) = 3x_3 + x_1x_2 - 2x_1x_3 - 2x_2x_3`, which is the fully
-        connected :math:`K_3` graph. The AND gate is embedded in a square-structured
-        graph and sampled with dimod reference structured sampler, `StructureComposite`, using the
-        dimod reference `ExactSolver` sampler. The samples as unembedded by :func:`.unembed_response`
-        show that only valid states of the AND gate have zero energy (e.g., only input :math:`x_1 x_2=1,1`
-        results in :math:`z=1`) while invalid states have higher energy.
+        This example embeds a Boolean AND gate,
+        :math:`x_3 \Leftrightarrow x_1 \wedge x_2`, in a square-structured
+        graph and samples with dimod reference structured sampler,
+        `StructureComposite`, using the dimod reference `ExactSolver` sampler.
+        The gate is represented as penalty model
+        :math:`x_1 x_2 - 2(x_1+x_2)x_3 +3x_3`, which is submitted to the
+        sampler as QUBO  problem
+        :math:`E(a_i, b_{i,j}; x_i) = 3x_3 + x_1x_2 - 2x_1x_3 - 2x_2x_3`.
+        This QUBO represents a fully connected :math:`K_3` graph.
+        Samples are unembedded by :func:`.unembed_response` and show that
+        only valid states of the AND gate have zero energy (e.g., only input
+        :math:`x_1 x_2=1,1` results in :math:`z=1`), while invalid states have
+        higher energy.
 
         >>> import dimod
         >>> import networkx as nx
