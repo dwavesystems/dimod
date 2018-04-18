@@ -326,9 +326,8 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
     """Yield unembedded samples.
 
     :func:`.iter_unembed` is an iterator (to reduce memory footprint) used by :func:`.unembed_response`
-    (through the :meth:`.Response.from_dicts` method) for unembedding; you may use it directly,
-    for example, to increase performance for responses with large numbers of samples of which you
-    need only a small portion, say those with lowest energy.
+    for unembedding; you may use it directly, for example, to increase performance for responses with
+    large numbers of samples of which you need only a small portion, say those with lowest energy.
 
     Args:
         target_samples (iterable[mapping[variable, value]]):

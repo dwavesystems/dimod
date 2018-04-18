@@ -43,7 +43,7 @@ def discard_matrix(samples_matrix, chain_list):
 
 
 def discard(sample, embedding):
-    """Discard the sample if broken.
+    """Discard the sample if a chain is broken.
 
     Args:
         sample (Mapping):
@@ -87,7 +87,7 @@ def discard(sample, embedding):
 
 
 def majority_vote(sample, embedding):
-    """Determine the sample values by majority vote.
+    """Determine the sample values for chains by majority vote.
 
     Args:
         sample (Mapping):
@@ -101,7 +101,8 @@ def majority_vote(sample, embedding):
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
-        is chosen to match the most common value in the chain.
+        is chosen to match the most common value in the chain. For broken chains
+        without a majority, one of the two values is chosen arbitrarily.
 
     Examples:
         This example unembeds a sample from a target graph that chains nodes 0 and 1 to
@@ -132,20 +133,32 @@ def majority_vote(sample, embedding):
 
 
 def weighted_random(sample, embedding):
-    """Determines the sample values by weighed random choice.
+    """Determine the sample values of chains by weighed random choice.
 
     Args:
-        sample (Mapping): A sample of the form {v: val, ...} where v is
-            a variable in the target graph and val is the associated value as
+        sample (Mapping):
+            Sample as a dict of form {t: val, ...}, where t is
+            a variable in the target graph and val its associated value as
             determined by a binary quadratic model sampler.
-        embedding (dict): The mapping from the source graph to the target graph.
-            Should be of the form {v: {s, ...}, ...} where v is a node in the
-            source graph and s is a node in the target graph.
+        embedding (dict):
+            Mapping from source graph to target graph as a dict
+            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
+            a target-model variable.
 
     Yields:
         dict: The unembedded sample. When there is a chain break, the value
-        is chosen randomly, weighted by the frequency of the values
-        within the chain.
+        is chosen randomly, weighted by frequency of the chain's values.
+
+    Examples:
+        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
+        represent source node a and nodes 2, 3, and 4 to represent source node b.
+        The sample has broken chains for both source nodes.
+
+        >>> import dimod
+        >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
+        >>> samples = {0: 1, 1: 0, 2: 1, 3: 0, 4: 1}
+        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')
+        {'a': 0, 'b': 1}
 
     """
     unembedded = {}
