@@ -1565,6 +1565,161 @@ class TestConvert(unittest.TestCase):
 
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))
 
+    def test_to_coo_string_empty_BINARY(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        bqm_str = bqm.to_coo()
+
+        self.assertIsInstance(bqm_str, str)
+
+        self.assertEqual(bqm_str, '')
+
+    def test_to_coo_string_empty_SPIN(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        bqm_str = bqm.to_coo()
+
+        self.assertIsInstance(bqm_str, str)
+
+        self.assertEqual(bqm_str, '')
+
+    def test_to_coo_string_typical_SPIN(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4})
+        s = bqm.to_coo()
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        self.assertEqual(s, contents)
+
+    def test_to_coo_string_typical_BINARY(self):
+        bqm = dimod.BinaryQuadraticModel.from_qubo({(0, 0): 1, (0, 1): 2, (2, 3): .4})
+        s = bqm.to_coo()
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        self.assertEqual(s, contents)
+
+    def test_from_coo_file(self):
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'coo_qubo.qubo')
+
+        with open(filepath, 'r') as fp:
+            bqm = dimod.BinaryQuadraticModel.from_coo(fp, dimod.BINARY)
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
+
+    def test_from_coo_string(self):
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        bqm = dimod.BinaryQuadraticModel.from_coo(contents, dimod.SPIN)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
+
+    def test_coo_functional_file_empty_BINARY(self):
+
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_file_empty_SPIN(self):
+
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.SPIN)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_file_BINARY(self):
+
+        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_file_SPIN(self):
+
+        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.SPIN)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_string_empty_BINARY(self):
+
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        s = bqm.to_coo()
+        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.BINARY)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_string_empty_SPIN(self):
+
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        s = bqm.to_coo()
+        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_string_BINARY(self):
+
+        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+
+        s = bqm.to_coo()
+        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.BINARY)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_two_digit_integers_string(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({12: .5, 0: 1}, {(0, 12): .5})
+
+        s = bqm.to_coo()
+        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
+    def test_coo_functional_string_SPIN(self):
+
+        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+
+        s = bqm.to_coo()
+        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
     def test_to_json_string_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
