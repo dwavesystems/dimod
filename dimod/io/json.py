@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import json
 from pkg_resources import resource_filename
 
-import jsonschema
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
