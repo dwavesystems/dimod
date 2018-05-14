@@ -1320,6 +1320,82 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 # conversions
 ##################################################################################################
 
+    def to_coo(self, fp=None):
+        """Serialize the binary quadratic model to a COOrdinate_ format encoding.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            fp (file, optional):
+                A `.write()`-supporting `file object`_. If not provided, the method will return
+                a string.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        An example of a COOrdinate format encoded BinaryQuadraticModel.
+
+        .. code-block:: none
+
+            0 0 0.50000
+            0 1 0.50000
+            1 1 -1.50000
+
+        Examples:
+            Example of writing the binary quadratic model to a file
+
+            >>> bqm = dimod.BinaryQuadraticModel({0: -1.0, 1: 1.0}, {(0, 1): -1.0}, 0.0, dimod.SPIN)
+            >>> with open('tmp.ising', 'w') as file:  # doctest: +SKIP
+            ...     bqm.to_coo(file)
+
+            Example of writing to a string
+
+            >>> bqm = dimod.BinaryQuadraticModel({0: -1.0, 1: 1.0}, {(0, 1): -1.0}, 0.0, dimod.SPIN)
+            >>> bqm.to_coo()  # doctest: +SKIP
+            0 0 -1.000000
+            0 1 -1.000000
+            1 1 1.000000
+
+        """
+        import dimod.io.coo as coo
+
+        if fp is None:
+            return coo.dumps(self)
+        else:
+            coo.dump(self, fp)
+
+    @classmethod
+    def from_coo(cls, obj, vartype):
+        """Deserialize a binary quadratic model from a COOrdinate_ format encoding.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            obj: (str/file):
+                Either a string or a  A `.read()`-supporting `file object`_.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.BINARY)
+            >>> with open('tmp.qubo', 'w') as file:  # doctest: +SKIP
+            ...     bqm.to_coo(file)
+            >>> with open('tmp.qubo', 'r') as file:  # doctest: +SKIP
+            ...     new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
+
+        """
+        import dimod.io.coo as coo
+
+        if isinstance(obj, str):
+            return coo.loads(obj, cls.empty(vartype))
+
+        return coo.load(obj, cls.empty(vartype))
+
     def to_json(self, fp=None):
         """Serialize the binary quadratic model using JSON.
 
@@ -1355,7 +1431,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Examples:
             Example of writing the binary quadratic model to a file
 
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.SPIN)
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_json(file)
 
