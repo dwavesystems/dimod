@@ -156,8 +156,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
        >>> vt = dimod.BINARY
        >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
        >>> bqm_k4.info = {'Complete K4 binary quadratic model.'}
-       >>> bqm_k4.info
-       {'Complete K4 binary quadratic model.'}
+       >>> bqm_k4.info.issubset({'Complete K3 binary quadratic model.',
+       ...                       'Complete K4 binary quadratic model.',
+       ...                       'Complete K5 binary quadratic model.'})
+       True
        >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
        dict_items([(1, {2: 12, 3: 13, 4: 14}),
                    (2, {1: 12, 3: 23, 4: 24}),
@@ -258,7 +260,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         a binary quadratic model with spins as its variables.
 
         Enables access to biases for the spin-valued binary quadratic model
-        regardless of the vartype set when the model was created.
+        regardless of the :class:`vartype` set when the model was created.
         If the model was created with the :attr:`.binary` vartype,
         the Ising model subclass is instantiated upon the first use of the
         :attr:`.spin` property and used in any subsequent reads.
@@ -270,7 +272,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm_qubo = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)
             >>> bqm_spin = bqm_qubo.spin
-            >>> bqm_spin
+            >>> bqm_spin   # doctest: +SKIP
             BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, Vartype.SPIN)
             >>> bqm_spin.spin is bqm_spin
             True
@@ -306,7 +308,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         model with binary variables.
 
         Enables access to biases for the binary-valued binary quadratic model
-        regardless of the vartype set when the model was created. If the model
+        regardless of the :class:`vartype` set when the model was created. If the model
         was created with the :attr:`.spin` vartype, the QUBO model subclass is instantiated
         upon the first use of the :attr:`.binary` property and used in any subsequent reads.
 
@@ -317,7 +319,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            >>> import dimod
            >>> bqm_spin = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
            >>> bqm_qubo = bqm_spin.binary
-           >>> bqm_qubo
+           >>> bqm_qubo  # doctest: +SKIP
            BinaryQuadraticModel({0: -1.0, 1: -1.0}, {(0, 1): 2.0}, 0.0, Vartype.BINARY)
            >>> bqm_qubo.binary is bqm_qubo
            True
