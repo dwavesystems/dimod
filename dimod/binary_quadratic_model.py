@@ -1,6 +1,32 @@
 """
 
-todo - describe Ising, QUBO and BQM
+The binary quadratic model (BQM) class contains
+Ising and quadratic unconstrained binary optimization (QUBO) models
+used by samplers such as the D-Wave system.
+
+The :term:`Ising` model is an objective function of :math:`N` variables
+:math:`\bf s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
+are the biases and :math:`J_{i,j}` the couplings (interactions) between spins.
+
+.. math::
+
+    \\text{Ising:} \\qquad  E(\\bf{s}|\\bf{h},\\bf{J})
+    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\}
+    \\qquad\\qquad s_i\\in\\{-1,+1\\}
+
+
+The :term:`QUBO` model is an objective function of :math:`N` binary variables represented
+as an upper-diagonal matrix :math:`Q`, where diagonal terms are the linear coefficients
+and the nonzero off-diagonal terms the quadratic coefficients.
+
+.. math::
+
+    \\text{QUBO:} \\qquad E(\\bf{x}| \\bf{Q})  =  \\sum_{i\\le j}^N x_i Q_{i,j} x_j
+    \\qquad\\qquad x_i\\in \\{0,1\\}
+
+The :class:`.BinaryQuadraticModel` class can contain both these models and its methods provide
+convenient utilities for working with, and interworking between, the two representations
+of a problem.
 
 """
 from __future__ import absolute_import, division
@@ -56,8 +82,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             :attr:`.BinaryQuadraticModel.info`.
 
     Notes:
-        The BinaryQuadraticModel class does not enforce types on biases
-        and offsets, but most applications that use the BinaryQuadraticModel
+        The :class:`.BinaryQuadraticModel` class does not enforce types on biases
+        and offsets, but most applications that use the :class:`.BinaryQuadraticModel`
         class assume that they are numeric.
 
     Examples:
@@ -68,7 +94,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         ...                                  1.4,
         ...                                  dimod.SPIN)
 
-        Variables can be any hashable object
+        This example creates a binary quadratic model with non-numeric variables
+        (variables can be any hashable object).
 
         >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': -1.0, 'c': 0.5},
         ...                                  {('a', 'b'): -1.0, ('b', 'c'): 1.5},
@@ -106,36 +133,40 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             adjacent to `v` (e.g. `u`) and values are quadratic biases associated
             with the pair of inner and outer keys (`u, v`).
 
-            Examples:
-               This example creates an instance of the BinaryQuadraticModel()
-               class for the K4 complete graph, where the nodes have biases
-               set equal to their sequential labels and interactions are the
-               concatenations of the node pairs (e.g., 23 for u,v = 2,3).
-
-               >>> import dimod
-               >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
-               >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
-               ...              (2, 3): 23, (2, 4): 24,
-               ...              (3, 4): 34}
-               >>> offset = 0.0
-               >>> vt = dimod.BINARY
-               >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
-               >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
-               dict_items([(1, {2: 12, 3: 13, 4: 14}),
-                           (2, {1: 12, 3: 23, 4: 24}),
-                           (3, {1: 13, 2: 23, 4: 34}),
-                           (4, {1: 14, 2: 24, 3: 34})])
-               >>> bqm_k4.adj[2]            # Show adjacencies for node 2
-               {1: 12, 3: 23, 4: 24}
-               >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
-               23
-
         info (dict):
-            A place to store miscellaneous data about the BinaryQuadraticModel as a whole.
+            A place to store miscellaneous data about the :class:`.BinaryQuadraticModel`
+            as a whole.
 
         SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
 
         BINARY (:class:`.Vartype`): An alias of :class:`.Vartype.BINARY` for easier access.
+
+    Examples:
+       This example creates an instance of the :class:`.BinaryQuadraticModel`
+       class for the K4 complete graph, where the nodes have biases
+       set equal to their sequential labels and interactions are the
+       concatenations of the node pairs (e.g., 23 for u,v = 2,3).
+
+       >>> import dimod
+       >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
+       >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
+       ...              (2, 3): 23, (2, 4): 24,
+       ...              (3, 4): 34}
+       >>> offset = 0.0
+       >>> vt = dimod.BINARY
+       >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
+       >>> bqm_k4.info = {'Complete K4 binary quadratic model.'}
+       >>> bqm_k4.info
+       {'Complete K4 binary quadratic model.'}
+       >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
+       dict_items([(1, {2: 12, 3: 13, 4: 14}),
+                   (2, {1: 12, 3: 23, 4: 24}),
+                   (3, {1: 13, 2: 23, 4: 34}),
+                   (4, {1: 14, 2: 24, 3: 34})])
+       >>> bqm_k4.adj[2]            # Show adjacencies for node 2  # doctest: +SKIP
+       {1: 12, 3: 23, 4: 24}
+       >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3 # doctest: +SKIP
+       23
 
     """
 
