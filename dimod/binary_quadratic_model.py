@@ -379,13 +379,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-            >>> bqm.linear
-            {0: 0.0, 1: 1.0}
+            >>> len(bqm.linear)
+            2
             >>> bqm.add_variable(2, 2.0, vartype=dimod.SPIN)        # Add a new variable
             >>> bqm.add_variable(1, 0.33, vartype=dimod.SPIN)
             >>> bqm.add_variable(0, 0.33, vartype=dimod.BINARY)     # Binary value is converted to spin value
-            >>> bqm.linear
-            {0: 0.165, 1: 1.33, 2: 2.0}
+            >>> len(bqm.linear)
+            3
+            >>> bqm.linear[1]
+            1.33
 
         """
 
@@ -439,13 +441,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             and subsequently adds to the bias of the one while adding a new, third,
             variable.
 
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> len(bqm.linear)
+            0
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
-            >>> bqm.linear
-            {'a': 0.5, 'b': -1.0}
+            >>> 'b' in bqm
+            True
             >>> bqm.add_variables_from({'b': -1., 'c': 2.0})
-            >>> bqm.linear  # doctest: +SKIP
-            {'a': 0.5, 'b': -2.0, 'c': 2.0}
+            >>> bqm.linear['b']
+            -2.0
 
         """
         if isinstance(linear, dict):
@@ -487,13 +492,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-            >>> bqm.quadratic
-            {(0, 1): 0.5}
+            >>> len(bqm.quadratic)
+            1
             >>> bqm.add_interaction(0, 2, 2)        # Add new variable 2
             >>> bqm.add_interaction(0, 1, .25)
             >>> bqm.add_interaction(1, 2, .25, vartype=dimod.BINARY)     # Binary value is converted to spin value
-            >>> bqm.quadratic  # doctest: +SKIP
-            {(0, 1): 0.75, (0, 2): 2, (1, 2): 0.0625}
+            >>> len(bqm.quadratic)
+            3
+            >>> bqm.quadratic[(0, 1)]
+            0.75
 
         """
         if u == v:
@@ -591,14 +598,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             for two variables, adds to its bias while adding a new variable,
             then adds another interaction.
 
-            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
-            >>> bqm.quadratic
-            {('a', 'b'): -0.5}
+            >>> bqm.quadratic[('a', 'b')]
+            -0.5
             >>> bqm.add_interactions_from({('a', 'b'): -.5, ('a', 'c'): 2})
             >>> bqm.add_interactions_from({('b', 'c'): 2}, vartype=dimod.BINARY)   # Binary value is converted to spin value
-            >>> bqm.quadratic  # doctest: +SKIP
-            {('a', 'b'): -1.0, ('a', 'c'): 2, ('b', 'c'): 0.5}
+            >>> len(bqm.quadratic)
+            3
+            >>> bqm.quadratic[('a', 'b')]
+            -1.0
 
         """
         if isinstance(quadratic, dict):
