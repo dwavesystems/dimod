@@ -633,14 +633,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Examples:
             This example creates an Ising model and then removes one variable.
 
-            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0, 2: 2.0},
-            ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
-            ...                                  -0.5, dimod.SPIN)
-            >>> bqm.remove_variable(0)
-            >>> bqm.linear
-            {1: 1.0, 2: 2.0}
-            >>> bqm.quadratic
-            {(1, 2): 0.75}
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': 1.0, 'c': 2.0},
+            ...                            {('a', 'b'): 0.25, ('a','c'): 0.5, ('b','c'): 0.75},
+            ...                            -0.5, dimod.SPIN)
+            >>> bqm.remove_variable('a')
+            >>> 'a' in bqm.linear
+            False
+            >>> ('b','c') in bqm.quadratic
+            True
 
         """
         linear = self.linear
@@ -689,10 +690,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
             ...                                  -0.5, dimod.SPIN)
             >>> bqm.remove_variables_from([0, 1])
-            >>> bqm.linear
-            {2: 2.0}
-            >>> bqm.quadratic
-            {}
+            >>> len(bqm.linear)
+            1
+            >>> any(bqm.quadratic)
+            False
 
         """
         for v in variables:
@@ -719,11 +720,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interaction('b', 'c')
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> ('b', 'c') in bqm.quadratic
+            False
             >>> bqm.remove_interaction('a', 'c')  # not an interaction, so ignored
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> len(bqm.quadratic)
+            1
 
         """
         quadratic = self.quadratic
@@ -767,8 +768,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> len(bqm.quadratic)
+            1
 
         """
         for u, v in interactions:
