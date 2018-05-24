@@ -4,9 +4,10 @@
 Ising, QUBO and Binary Quadratic Models
 =======================================
 
-Overview
-========
 .. automodule:: dimod.binary_quadratic_model
+
+Class
+=====
 
 .. currentmodule:: dimod
 .. autoclass:: BinaryQuadraticModel
