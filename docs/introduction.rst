@@ -2,10 +2,12 @@
 Introduction
 ============
 
-The dimod API provides a binary quadratic model (BQM) class that contains Ising and quadratic
-unconstrained binary optimization (QUBO) models used by samplers such as the D-Wave system.
-It provides utilities for constructing new samplers and composed samplers. It also
-provides useful functionality for working with these models and samplers.
+The dimod API provides a binary quadratic :term:`model` (BQM) class that contains
+:term:`Ising` and quadratic unconstrained binary optimization (\ :term:`QUBO`\ ) models
+used by :term:`sampler`\ s such as the D-Wave system.
+It provides utilities for constructing new samplers and :term:`composed sampler`\ s.
+It also provides useful functionality for working with these models and samplers.
+Its reference examples include several samplers and composed samplers.
 
 Ising and QUBO Formulations
 ---------------------------
@@ -33,7 +35,7 @@ the nonzero off-diagonal terms the quadratic coefficients.
     =  \sum_{i\le j}^N x_i Q_{i,j} x_j
     \qquad\qquad x_i\in \{0,1\}
 
-The BinaryQuadraticModel class can contain both these models and its methods provide
+The :class:`.BinaryQuadraticModel` class can contain both these models and its methods provide
 convenient utilities for working with, and interworking between, the two representations
 of a problem.
 
@@ -53,30 +55,31 @@ illustrative purposes, and converts the reduced-variables model to QUBO formulat
     ...              (2, 3): 23, (2, 4): 24,
     ...              (3, 4): 34}
     >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+    >>> bqm_k4.vartype
+    <Vartype.SPIN: frozenset([1, -1])>
+    >>> len(bqm_k4.linear)
+    4
     >>> bqm_k4.contract_variables(2, 3)
-    >>> bqm_k4
-    BinaryQuadraticModel({1: 1, 2: 2, 4: 4}, {(1, 2): 25, (1, 4): 14, (2, 4): 58}, 23.5, Vartype.SPIN)
+    >>> len(bqm_k4.linear)
+    3
     >>> bqm_no3_qubo = bqm_k4.binary
-    >>> bqm_no3_qubo.linear
-    {1: -76.0, 2: -162.0, 4: -136.0}
-    >>> bqm_no3_qubo.quadratic
-    {(1, 2): 100.0, (1, 4): 56.0, (2, 4): 232.0}
-    >>> bqm_no3_qubo.offset
-    113.5
+    >>> bqm_no3_qubo.vartype
+    <Vartype.BINARY: frozenset([0, 1])>
 
 
 Samplers and Composites
 -----------------------
 
 *Samplers* are processes that sample from low energy states of a problem’s objective function.
-A binary quadratic model (BQM) sampler samples from low energy states in models such
-as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
-(QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
+A binary quadratic :term:`model` (BQM) :term:`sampler` samples from low energy states in
+models such as those defined by an Ising equation or a QUBO problem and returns an
+iterable of samples, in order of increasing energy. A dimod
 sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
 BQM sampler method.
 
 *Composed samplers* apply pre- and/or post-processing to binary quadratic programs without
-changing the underlying sampler implementation by layering composite patterns on the
+changing the underlying sampler implementation by layering
+`composite patterns <https://en.wikipedia.org/wiki/Composite_pattern>`_ on the
 sampler. For example, a composed sampler might add spin transformations when sampling
 from the D-Wave system.
 
@@ -116,7 +119,7 @@ as mixins.
 Minor-Embedding
 ---------------
 
-Embedding attempts to create a target :term:`model` from a target :term:`graph`. The process of
+:term:`Embedding` attempts to create a target :term:`model` from a target :term:`graph`. The process of
 embedding takes a source model, derives the source graph, maps the source graph to the target
 graph, then derives the target model. Sometimes referred to in other tools as the **embedded** graph/model.
 
@@ -129,22 +132,22 @@ Terminology
 .. glossary::
 
     chain
-        A collection of nodes or variables in the target graph/model
+        A collection of nodes or variables in the target :term:`graph`\ /\ :term:`model`
         that we want to act as a single node/variable.
 
     chain strength
         Magnitude of the negative quadratic bias applied
-        between variables to form a chain.
+        between variables to form a :term:`chain`.
 
     composed sampler
         Samplers that apply pre- and/or post-processing to binary quadratic programs without
-        changing the underlying sampler implementation by layering composite patterns on the
-        sampler. For example, a composed sampler might add spin transformations when sampling
-        from the D-Wave system.
+        changing the underlying :term:`sampler` implementation by layering composite patterns
+        on the sampler. For example, a composed sampler might add spin transformations when
+        sampling from the D-Wave system.
 
     graph
         A collection of nodes and edges. A graph can be derived
-        from a model: a node for each variable and an edge for each pair
+        from a :term:`model`\ : a node for each variable and an edge for each pair
         of variables with a non-zero quadratic bias.
 
     model
@@ -152,23 +155,23 @@ Terminology
         quadratic biases. Sometimes referred to in other tools as a **problem**.
 
     sampler
-        A process that samples from low energy states of a problem’s objective function.
+        A process that samples from low energy states of a problem’s :term:`objective function`.
         A binary quadratic model (BQM) sampler samples from low energy states in models such
-        as those defined by an Ising equation or a Quadratic Unconstrained Binary Optimization
-        (QUBO) problem and returns an iterable of samples, in order of increasing energy. A dimod
-        sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
-        BQM sampler method.
+        as those defined by an :term`Ising` equation or a Quadratic Unconstrained Binary
+        Optimization (\ :term:`QUBO`\ ) problem and returns an iterable of samples, in order
+        of increasing energy. A dimod sampler provides ‘sample_qubo’ and ‘sample_ising’ methods
+        as well as the generic BQM sampler method.
 
     source
-        In the context of embedding, the model or induced graph that we wish to embed. Sometimes
-        referred to in other tools as the **logical** graph/model.
+        In the context of :term:`embedding`, the model or induced :term:`graph` that we
+        wish to embed. Sometimes referred to in other tools as the **logical** graph/model.
 
     structured sampler
         Samplers that are restricted to sampling only binary quadratic models defined
-        on a specific graph.
+        on a specific :term:`graph`.
 
     target
-        Embedding attempts to create a target model from a target
-        graph. The process of embedding takes a source model, derives the source
+        :term:`Embedding` attempts to create a target :term:`model` from a target
+        :term:`graph`. The process of embedding takes a source model, derives the source
         graph, maps the source graph to the target graph, then derives the target
         model. Sometimes referred to in other tools as the **embedded** graph/model.
