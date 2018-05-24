@@ -190,9 +190,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @classmethod
     def empty(cls, vartype):
-        """Create an empty BinaryQuadraticModel.
+        """Create an empty :class:`.BinaryQuadraticModel` instance.
 
-        Equivalent to
+        Equivalent to instantiating a binary quadratic model with no bias values
+        and zero offset for the defined :class:`vartype`:
 
         .. code-block:: python
 
@@ -206,12 +207,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         Examples:
+            This example creates an empty binary :class:`.BinaryQuadraticModel`
+            instance.
 
             >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-            >>> bqm.linear
-            {}
-            >>> bqm.quadratic
-            {}
+            >>> any(bqm.linear)
+            False
+            >>> any(bqm.quadratic)
+            False
             >>> bqm.offset
             0.0
 
