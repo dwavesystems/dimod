@@ -999,19 +999,24 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            from the second.
 
            >>> import dimod
-           >>> linear = {1: 1, 2: 2}
-           >>> quadratic = {(1, 2): 12}
-           >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+           >>> linear1 = {1: 1, 2: 2}
+           >>> quadratic1 = {(1, 2): 12}
+           >>> bqm1 = dimod.BinaryQuadraticModel(linear1, quadratic1, 0.5, dimod.SPIN)
+           >>> bqm1.info = {'BQM number 1'}
            >>> linear2 = {2: 0.25, 3: 0.35}
            >>> quadratic2 = {(2, 3): 23}
            >>> bqm2 = dimod.BinaryQuadraticModel(linear2, quadratic2, 0.75, dimod.SPIN)
-           >>> bqm.update(bqm2)
-           >>> bqm.linear
-           {1: 1, 2: 2.25, 3: 0.35}
-           >>> bqm.quadratic
-           {(1, 2): 12, (2, 3): 23}
-           >>> bqm.offset
+           >>> bqm2.info = {'BQM number 2'}
+           >>> bqm1.update(bqm2)
+           >>> bqm1.offset
            1.25
+           >>> 'BQM number 2' in bqm1.info
+           False
+           >>> bqm1.update(bqm2, ignore_info=False)
+           >>> 'BQM number 2' in bqm1.info
+           True
+           >>> bqm1.offset
+           2.0
 
         """
         self.add_variables_from(bqm.linear, vartype=bqm.vartype)
