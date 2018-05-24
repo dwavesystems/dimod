@@ -33,7 +33,7 @@ Construction Shortcuts
 
    BinaryQuadraticModel.empty
 
-Adding and removing variables and interactions
+Adding and Removing Variables and Interactions
 ----------------------------------------------
 
 .. autosummary::
