@@ -1302,8 +1302,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm2 = bqm.copy()
-            >>> bqm2
-            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
+            >>> bqm2 is bqm
+            False
 
         """
         # new objects are constructed for each, so we just need to pass them in
@@ -1334,11 +1334,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             sample (dict):
-                Sample for which to calculate the energy as a dict. Keys are variables
-                and values are the value associated with each variable.
+                Sample for which to calculate the energy, formatted as a dict where keys
+                are variables and values are the value associated with each variable.
 
         Returns:
-            float: The energy.
+            float: Energy for the sample.
 
         Examples:
             This example creates a binary quadratic model and returns the energies for
