@@ -1479,42 +1479,50 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             fp (file, optional):
-                A `.write()`-supporting `file object`_. If not provided, the method will return
-                a string.
+                A `.write()`-supporting `file object`_ to save the binary quadratic model to,
+                formatted according to the current `BQM schema`_\ . If not provided,
+                returns a string.
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
 
-        An example of a serialized BinaryQuadraticModel
 
-        .. code-block:: json
-
-            {
-                "linear_terms": [
-                    {"bias": 1.0, "label": 0},
-                    {"bias": -1.0, "label": 1}
-                ],
-                "info": {},
-                "offset": 0.5,
-                "quadratic_terms": [
-                    {"bias": 0.5, "label_head": 1, "label_tail": 0}
-                ],
-                "variable_labels": [0, 1],
-                "variable_type": "SPIN",
-                "version": {
-                    "bqm_schema": "1.0.0",
-                    "dimod": "0.6.3"
-                }
-            }
 
         Examples:
-            Example of writing the binary quadratic model to a file
+            This example shows a serialized binary quadratic model in JSON encoding for
+            schema version 1.0.0.
 
+            .. code-block:: json
+
+                {
+                    "linear_terms": [
+                        {"bias": 1.0, "label": 0},
+                        {"bias": -1.0, "label": 1}
+                    ],
+                    "info": {},
+                    "offset": 0.5,
+                    "quadratic_terms": [
+                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
+                    ],
+                    "variable_labels": [0, 1],
+                    "variable_type": "SPIN",
+                    "version": {
+                        "bqm_schema": "1.0.0",
+                        "dimod": "0.6.3"
+                    }
+                }
+
+
+            This is an example of writing a binary quadratic model to a JSON-format file.
+
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_json(file)
 
-            Example of writing to a string
+            This is an example of writing a binary quadratic model to a JSON-format string.
 
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> bqm.to_json()  # doctest: +SKIP
             {"info": {},
@@ -1540,12 +1548,42 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             obj: (str/file):
-                Either a string or a  A `.read()`-supporting `file object`_.
+                Either a string or a  `.read()`-supporting `file object`_
+                that represents linear and quadratic biases for a binary quadratic model
+                formatted in accordance to the current `BQM schema`_\ .
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.SPIN)
+            This example shows a serialized binary quadratic model in JSON encoding
+            for schema version 1.0.0.
+
+            .. code-block:: json
+
+                {
+                    "linear_terms": [
+                        {"bias": 1.0, "label": 0},
+                        {"bias": -1.0, "label": 1}
+                    ],
+                    "info": {},
+                    "offset": 0.5,
+                    "quadratic_terms": [
+                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
+                    ],
+                    "variable_labels": [0, 1],
+                    "variable_type": "SPIN",
+                    "version": {
+                        "bqm_schema": "1.0.0",
+                        "dimod": "0.6.3"
+                    }
+                }
+
+            This example saves a binary quadratic model to a JSON-format file and creates
+            a new model by reading the saved file.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_json(file)
             >>> with open('tmp.txt', 'r') as file:  # doctest: +SKIP
@@ -1770,7 +1808,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Examples:
             This example converts a binary quadratic model to NumPy matrix format while
-            ordering variables and adding one.
+            ordering variables and adding one ('d').
 
             >>> import dimod
             >>> import numpy as np
@@ -1846,7 +1884,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`.Vartype.BINARY`.
+
 
         Examples:
             This example creates a binary quadratic model from a QUBO in NumPy format while
@@ -1864,16 +1904,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...         variable_order = ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
             ...         offset = 2.5,
             ...         interactions = {('a', 'f')})
-            >>> model.linear
+            >>> model.linear   # doctest: +SKIP
             {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': 4.0, 'e': 5.0, 'f': 0.0}
-            >>> model.quadratic
-            {('a', 'd'): 10.0,
-             ('a', 'e'): 11.0,
-             ('a', 'f'): 0.0,
-             ('b', 'd'): 12.0,
-             ('b', 'e'): 13.0,
-             ('c', 'd'): 14.0,
-             ('c', 'e'): 15.0}
+            >>> model.quadratic[('a', 'd')]
+            10.0
+            >>> model.quadratic[('a', 'f')]
+            0.0
             >>> model.offset
             2.5
 
