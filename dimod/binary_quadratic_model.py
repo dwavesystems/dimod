@@ -83,8 +83,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     Notes:
         The :class:`.BinaryQuadraticModel` class does not enforce types on biases
-        and offsets, but most applications that use the :class:`.BinaryQuadraticModel`
-        class assume that they are numeric.
+        and offsets, but most applications that use this class assume that they are numeric.
 
     Examples:
         This example creates a binary quadratic model with three spin variables.
@@ -134,7 +133,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             with the pair of inner and outer keys (`u, v`).
 
         info (dict):
-            A place to store miscellaneous data about the :class:`.BinaryQuadraticModel`
+            A place to store miscellaneous data about the binary quadratic model
             as a whole.
 
         SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
@@ -190,9 +189,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @classmethod
     def empty(cls, vartype):
-        """Create an empty :class:`.BinaryQuadraticModel` instance.
+        """Create an empty binary quadratic model.
 
-        Equivalent to instantiating a binary quadratic model with no bias values
+        Equivalent to instantiating a :class:`.BinaryQuadraticModel` with no bias values
         and zero offset for the defined :class:`vartype`:
 
         .. code-block:: python
@@ -207,8 +206,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         Examples:
-            This example creates an empty binary :class:`.BinaryQuadraticModel`
-            instance.
+            This example creates an empty binary quadratic model.
 
             >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
             >>> any(bqm.linear)
@@ -829,10 +827,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
             >>> bqm.scale(0.5)
-            >>> bqm.linear
-            {'a': -1.0, 'b': 1.0}
-            >>> bqm.quadratic
-            {('a', 'b'): -0.5}
+            >>> bqm.linear['a']
+            -1.0
+            >>> bqm.quadratic[('a', 'b')]
+            -0.5
             >>> bqm.offset
             0.5
 
@@ -881,8 +879,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
             0.5
-            >>> bqm.linear
-            {}
+            >>> 'a' in bqm
+            False
 
             This example creates a binary quadratic model with two variables and fixes
             the value of one.
@@ -892,10 +890,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
             0.5
-            >>> bqm.linear
-            {'b': 1.0}
-            >>> bqm.quadratic
-            {}
+            >>> bqm.linear['b']
+            1.0
+            >>> any(bqm.quadratic)
+            False
 
         """
         adj = self.adj
@@ -914,7 +912,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         self.remove_variable(v)
 
     def flip_variable(self, v):
-        """Flips variable v in a binary quadratic model.
+        """Flip variable v in a binary quadratic model.
 
         Args:
             v (variable):
@@ -927,8 +925,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm.flip_variable(1)
-            >>> bqm
-            BinaryQuadraticModel({1: -1.0, 2: 2}, {(1, 2): -0.5}, 0.5, Vartype.SPIN)
+            >>> bqm.linear[1], bqm.linear[2], bqm.quadratic[(1, 2)]
+            (-1.0, 2, -0.5)
 
         """
         adj = self.adj
@@ -1027,7 +1025,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             self.info.update(bqm.info)
 
     def contract_variables(self, u, v):
-        """Enforces u, v being the same variable in a binary quadratic model.
+        """Enforce u, v being the same variable in a binary quadratic model.
 
         The resulting variable is labeled 'u'. Values of interactions between `v` and
         variables that `u` interacts with are added to the corresponding interactions
@@ -1053,10 +1051,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            ...              (3, 4): 34}
            >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
            >>> bqm.contract_variables(2, 3)
-           >>> bqm.linear
-           {1: 1, 2: 2, 4: 4}
-           >>> bqm.quadratic
-           {(1, 2): 25, (1, 4): 14, (2, 4): 58}
+           >>> 3 in bqm.linear
+           False
+           >>> bqm.quadratic[(1, 2)]
+           25
 
         """
         adj = self.adj
@@ -1103,15 +1101,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 quadratic model is returned.
 
         Returns:
-            :class:`.BinaryQuadraticModel`: A BinaryQuadraticModel with the variables relabeled.
-            If inplace=True, returns itself.
+            :class:`.BinaryQuadraticModel`: A binary quadratic model
+            with the variables relabeled. If `inplace` is set to True, returns
+            itself.
 
         Examples:
             This example creates a binary quadratic model with two variables and relables one.
 
             >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> model.relabel_variables({0: 'a'})
+            >>> model.relabel_variables({0: 'a'})   # doctest: +SKIP
             BinaryQuadraticModel({1: 1.0, 'a': 0.0}, {('a', 1): -1}, 0.0, Vartype.SPIN)
 
             This example creates a binary quadratic model with two variables and returns a new
@@ -1119,8 +1118,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)
-            >>> new_model.quadratic
+            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)  # doctest: +SKIP
+            >>> new_model.quadratic       # doctest: +SKIP
             {('a', 'b'): -1}
 
         """
@@ -1171,20 +1170,21 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
-        """Create a BinaryQuadraticModel with the specified vartype.
+        """Create a binary quadratic model with the specified vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set, optional):
                 Variable type for the changed model. Accepted input values:
-                :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             inplace (bool, optional, default=True):
                 If True, the binary quadratic model is updated in-place; otherwise, a new binary
                 quadratic model is returned.
 
         Returns:
-            :class:`.BinaryQuadraticModel`. A new BinaryQuadraticModel with
+            :class:`.BinaryQuadraticModel`. A new binary quadratic model with
             vartype matching input 'vartype'.
 
         Examples:
@@ -1193,10 +1193,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
-            >>> bqm_spin
-            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
-            >>> bqm_qubo
-            BinaryQuadraticModel({1: 1.0, 2: 3.0}, {(1, 2): 2.0}, -2.0, Vartype.BINARY)
+            >>> bqm_spin.offset, bqm_spin.vartype
+            (0.5, <Vartype.SPIN: frozenset([1, -1])>)
+            >>> bqm_qubo.offset, bqm_qubo.vartype
+            (-2.0, <Vartype.BINARY: frozenset([0, 1])>)
 
         """
 
