@@ -4,14 +4,23 @@
 Response
 ========
 
-Overview
-========
-
 .. automodule:: dimod.response
+
+Class
+=====
 
 .. currentmodule:: dimod
 .. autoclass:: Response
-   :members: samples_matrix, data_vectors
+
+Properties
+==========
+
+.. autosummary::
+   :toctree: generated/
+
+   Response.samples_matrix
+   Response.data_vectors
+
 
 Methods
 =======
