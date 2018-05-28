@@ -130,8 +130,8 @@ class Structured:
             ...     def edgelist(self):
             ...         return [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
             >>> K4sampler = K4StructuredClass()
-            >>> K4sampler.adjacency
-            {1: {2, 3, 4}, 2: {1, 3, 4}, 3: {1, 2, 4}, 4: {1, 2, 3}}
+            >>> K4sampler.adjacency.keys()
+            [1, 2, 3, 4]
 
         """
         if not hasattr(self, '_adjacency'):
@@ -166,8 +166,8 @@ class Structured:
             ...     def edgelist(self):
             ...         return [(1, 2), (1, 3), (2, 3)]
             >>> K3sampler = K3StructuredClass()
-            >>> K3sampler.structure
-            Structure(nodelist=[1, 2, 3], edgelist=[(1, 2), (1, 3), (2, 3)], adjacency={1: set([2, 3]), 2: set([1, 3]), 3: set([1, 2])})
+            >>> K3sampler.structure.edgelist
+            [(1, 2), (1, 3), (2, 3)]
 
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
