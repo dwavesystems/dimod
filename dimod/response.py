@@ -7,6 +7,7 @@ Examples
 --------
     This example shows the response of the dimod ExactSolver sampler.
 
+>>> import dimod
 >>> response = dimod.ExactSolver().sample_ising({'a': -0.5}, {})
 >>> len(response)
 2
@@ -67,10 +68,10 @@ class Response(Iterable, Sized):
         >>> from dimod.reference.samplers.random_sampler import RandomSampler
         >>> sampler = RandomSampler()
         >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-        >>> res = sampler.sample(bqm)
-        >>> res.vartype  # doctest: +SKIP
+        >>> response = sampler.sample(bqm)
+        >>> response.vartype  # doctest: +SKIP
         <Vartype.SPIN: frozenset([1, -1])>  # doctest: +SKIP
-        >>> res.variable_labels
+        >>> response.variable_labels
         [0, 1]
 
     """
@@ -152,7 +153,21 @@ class Response(Iterable, Sized):
 
     @property
     def samples_matrix(self):
-        """:obj:`numpy.matrix`: Samples as a NumPy matrix of data type int8."""
+        """:obj:`numpy.matrix`: Samples as a NumPy matrix of data type int8.
+
+        Examples:
+            This example shows the samples of dimod package's ExactSolver reference sampler
+            formatted as a NumPy matrix.
+
+            >>> import dimod
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> response.samples_matrix
+            matrix([[-1, -1],
+                    [ 1, -1],
+                    [ 1,  1],
+                    [-1,  1]])
+
+        """
         if self._futures:
             self._resolve_futures(**self._futures)
 
@@ -166,6 +181,16 @@ class Response(Iterable, Sized):
     def data_vectors(self):
         """dict[field, :obj:`numpy.array`/list]: Per-sample data as a dict, where keys are the
         data labels and values are each a vector of the same length as sample_matrix.
+
+        Examples:
+            This example shows the returned energies of dimod package's ExactSolver
+            reference sampler.
+
+            >>> import dimod
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> response.data_vectors['energy']
+            array([-1.5, -0.5, -0.5,  2.5])
+
         """
         if self._futures:
             self._resolve_futures(**self._futures)
