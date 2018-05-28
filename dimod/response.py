@@ -244,14 +244,15 @@ class Response(Iterable, Sized):
                 Maps (by index) variable labels to the columns of the samples matrix.
 
         Returns:
-            :obj:`.Response`
+            :obj:`.Response`: A `dimod` :obj:`.Response` object based on the input
+            NumPy array-like object.
 
         Raises:
             :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
                 than two unique values, or have values of an unknown vartype.
 
         Examples:
-            This example builds a response from a NumPy matrix.
+            This example code snippet builds a response from a NumPy matrix.
 
             .. code-block:: python
 
@@ -259,7 +260,7 @@ class Response(Iterable, Sized):
                 energies = [0.0, 1.0]
                 response = Response.from_matrix(samples, {'energy': energies})
 
-            This example builds a response from a NumPy array-like object (a Python list).
+            This example code snippet builds a response from a NumPy array-like object (a Python list).
 
             .. code-block:: python
 
@@ -312,7 +313,7 @@ class Response(Iterable, Sized):
                 Information about the response as a whole formatted as a dict.
 
         Returns:
-            :obj:`.Response`
+            :obj:`.Response`: A `dimod` :obj:`.Response` object based on the input dicts.
 
         Raises:
             :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
@@ -378,14 +379,14 @@ class Response(Iterable, Sized):
                 Information about the response as a whole formatted as a dict.
 
         Returns:
-            :obj:`.Response`
+            :obj:`.Response`: A `dimod` :obj:`.Response` object based on the input DataFrame.
 
         Raises:
             :exc:`ValueError`: If vartype is not provided and samples are all 1s, have more
                 than two unique values, or have values of an unknown vartype.
 
         Examples:
-            These examples build a response from a pandas DataFrame.
+            These example code snippets build a response from a pandas DataFrame.
 
             .. code-block:: python
 
@@ -464,14 +465,15 @@ class Response(Iterable, Sized):
                 cause a ValueError.
 
         Returns:
-            :obj:`.Response`
+            :obj:`.Response`: A `dimod` :obj:`.Response` object based on the input
+            Future-like objects.
 
         Notes:
             :obj:`~concurrent.futures.Future` objects are read on the first read
             of :attr:`.Response.samples_matrix` or :attr:`.Response.data_vectors`.
 
         Examples:
-            These examples build responses from :obj:`~concurrent.futures.Future` objects.
+            These example code snippets build responses from :obj:`~concurrent.futures.Future` objects.
 
             .. code-block:: python
 
@@ -631,21 +633,25 @@ class Response(Iterable, Sized):
             >>> samples2 = [[1, 0], [0, 1]]
             >>> energies2 = [0.5, 1.75]
             >>> response2 = dimod.Response.from_matrix(samples2, {'energy': energies2})
-            >>> for i in response.data():
+            >>> len(response)
+            2
+            >>> for i in response.data():         # doctest: +SKIP
             ...     print(i)
             ...
             Sample(sample={0: 0, 1: 1}, energy=0.0)
             Sample(sample={0: 1, 1: 0}, energy=1.0)
             >>> response.update(response1, response2)
-            >>> for i in response.data():
-            ...     print(i)
+            >>> len(response)
+            6
+            >>> for energy in response.data(fields=['energy'], name='UpdatedEnergy'):
+            ...     print(energy)
             ...
-            Sample(sample={0: 0, 1: 1}, energy=0.0)
-            Sample(sample={0: 0, 1: 0}, energy=0.25)
-            Sample(sample={0: 1, 1: 0}, energy=0.5)
-            Sample(sample={0: 1, 1: 0}, energy=1.0)
-            Sample(sample={0: 1, 1: 1}, energy=1.25)
-            Sample(sample={0: 0, 1: 1}, energy=1.75)
+            UpdatedEnergy(energy=0.0)
+            UpdatedEnergy(energy=0.25)
+            UpdatedEnergy(energy=0.5)
+            UpdatedEnergy(energy=1.0)
+            UpdatedEnergy(energy=1.25)
+            UpdatedEnergy(energy=1.75)
 
         """
         # make sure all of the other responses are the appropriate vartype. We could cast them but
@@ -726,10 +732,11 @@ class Response(Iterable, Sized):
         """Create a new response with the given vartype.
 
         Args:
-            vartype (:class:`.Vartype`/str/set, optional):
+            vartype (:class:`.Vartype`/str/set):
                 Variable type to use for the new response. Accepted input values:
-                :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             data_vector_offsets (dict[field, :obj:`numpy.array`/list], optional, default=None):
                 Offsets to add to `data_vectors` of the response formatted as a dict containing
@@ -742,28 +749,36 @@ class Response(Iterable, Sized):
             :obj:`.Response`. New response with vartype matching input 'vartype'.
 
         Examples:
-            This example creates a response with spin variables from a response with binary variables
-            while adding energy offsets to the new response.
+            This example converts the response of the dimod package's ExactSolver sampler
+            to binary and adds offsets.
 
             >>> import dimod
-            >>> samples = [[0, 1], [1, 0]]
-            >>> energies = [0.0, 1.0]
-            >>> response = dimod.Response.from_matrix(samples, {'energy': energies})
-            >>> for i in response.data():
-            ...     print(i)
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> response_binary = response.change_vartype('BINARY',
+            ...                   data_vector_offsets={'energy': [0, 0.1, 0.2, 0.3]},
+            ...                   inplace=False)
+            >>> response_binary.vartype
+            <Vartype.BINARY: frozenset([0, 1])>
+            >>> for datum in response_binary.data():    # doctest: +SKIP
+            ...    print(datum)
             ...
-            Sample(sample={0: 0, 1: 1}, energy=0.0)
-            Sample(sample={0: 1, 1: 0}, energy=1.0)
-            >>> dvo = {'energy': [0.25, 0.75]}
-            >>> new_response = response.change_vartype('SPIN',
-            ...                                        inplace = False,
-            ...                                        data_vector_offsets = dvo)
-            >>> for i in new_response.data():
-            ...     print(i)
-            ...
-            Sample(sample={0: -1, 1: 1}, energy=0.25)
-            Sample(sample={0: 1, 1: -1}, energy=1.75)
+            Sample(sample={'a': 0, 'b': 0}, energy=-1.5)
+            Sample(sample={'a': 1, 'b': 0}, energy=-0.4)
+            Sample(sample={'a': 1, 'b': 1}, energy=-0.3)
+            Sample(sample={'a': 0, 'b': 1}, energy=2.8)
 
+            This example code snippet creates a response with spin variables from a response
+            with binary variables while adding energy offsets to the new response.
+
+            .. code-block:: python
+
+                import pandas as pd
+                samples = [[0, 1], [1, 0]]
+                energies = [0.0, 1.0]
+                response = dimod.Response.from_matrix(samples, {'energy': energies})
+                offsets = {'energy': [0.25, 0.75]}
+                response.change_vartype('SPIN',
+                                         data_vector_offsets = offsets)
         """
         if not inplace:
             return self.copy().change_vartype(vartype, data_vector_offsets=data_vector_offsets, inplace=True)
@@ -802,19 +817,22 @@ class Response(Iterable, Sized):
             itself.
 
         Examples:
-            This example relabels variables in a response.
+            This example relabels the response of the dimod package's ExactSolver sampler and
+            saves it as a new response.
+
+            >>> import dimod
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
+            >>> [next(new_response.samples())[x] for x in [0, 1]]
+            [-1, -1]            
+
+
+            This example code snippet relabels variables in a response.
 
             .. code-block:: python
 
                 response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
                 response.relabel_variables({'a': 0})
-
-            This example creates a new response with relabeled variables.
-
-            .. code-block:: python
-
-                response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
-                new_response = response.relabel_variables({'a': 0}, inplace=False)
 
         """
         if not inplace:
@@ -870,20 +888,16 @@ class Response(Iterable, Sized):
         Examples:
             This example iterates over the response samples of the dimod ExactSolver sampler.
 
+            >>> import dimod
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> response.samples_matrix
-            matrix([[-1, -1],
-                    [ 1, -1],
-                    [ 1,  1],
-                    [-1,  1]])
-            >>> for sample in response.samples(sorted_by=None):
-            ...     print(sample)
+            >>> for sample in response.samples():    # sorted_by='energy'
+            ...     print(sample['a']==sample['b'])
             ...
-            {'a': -1, 'b': -1}
-            {'a': 1, 'b': -1}
-            {'a': 1, 'b': 1}
-            {'a': -1, 'b': 1}
-            >>> for sample in response.samples():  # sorted_by='energy'
+            True
+            False
+            True
+            False
+            >>> for sample in response.samples(sorted_by=None):   # doctest: +SKIP
             ...     print(sample)
             ...
             {'a': -1, 'b': -1}
@@ -932,28 +946,24 @@ class Response(Iterable, Sized):
         Examples:
             This example iterates over the response data of the dimod ExactSolver sampler.
 
+            >>> import dimod
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> for datum in response.data():
+            >>> for datum in response.data():   # doctest: +SKIP
             ...     print(datum)
             ...
             Sample(sample={'a': -1, 'b': -1}, energy=-1.5)
             Sample(sample={'a': 1, 'b': -1}, energy=-0.5)
             Sample(sample={'a': 1, 'b': 1}, energy=-0.5)
             Sample(sample={'a': -1, 'b': 1}, energy=2.5)
-            >>> for sample, energy in response.data():
+            >>> for energy, in response.data(fields=['energy'], sorted_by='energy'):
             ...     print(energy)
             ...
             -1.5
             -0.5
             -0.5
             2.5
-            >>> for energy, in response.data(['energy']):
-            ...     print(energy)
-            ...`
-            -1.5
-            -0.5
-            -0.5
-            2.5
+            >>> print(next(response.data(fields=['energy'], name='ExactSolverSample')))
+            ExactSolverSample(energy=-1.5)
 
         """
         if fields is None:
