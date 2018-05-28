@@ -186,8 +186,8 @@ class Sampler:
             ...                                    {(0, 1): .5, (1, 2): 1.5},
             ...                                    1.4,
             ...                                    dimod.SPIN)
-            >>> res = sampler.sample(model)
-            >>> print(res)
+            >>> response = sampler.sample(model)
+            >>> print(response)
             [[-1  1]]
 
         """
@@ -226,8 +226,8 @@ class Sampler:
             >>> sampler = ImplementQuboSampler()
             >>> h = {1: 0.5, 2: -1, 3: -0.75}
             >>> J = {}
-            >>> res = sampler.sample_ising(h, J)
-            >>> print(res)
+            >>> response = sampler.sample_ising(h, J)
+            >>> print(response)
             [[-1  1]]
 
         """
@@ -256,8 +256,8 @@ class Sampler:
             ...
             >>> sampler = ImplementIsingSampler()
             >>> Q = {(0, 0): -0.5, (0, 1): 1, (1, 1): -0.75}
-            >>> res = sampler.sample_qubo(Q)
-            >>> print(res)
+            >>> response = sampler.sample_qubo(Q)
+            >>> print(response)
             [[0 1]]
 
 
