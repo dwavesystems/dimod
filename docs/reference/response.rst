@@ -34,7 +34,7 @@ Viewing a Response
    Response.samples
    Response.data
 
-Constructing or updating a Response
+Constructing or Updating a Response
 -----------------------------------
 
 .. autosummary::
