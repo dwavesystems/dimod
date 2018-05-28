@@ -1,6 +1,32 @@
 """
 
-todo - describe Ising, QUBO and BQM
+The binary quadratic model (BQM) class contains
+Ising and quadratic unconstrained binary optimization (QUBO) models
+used by samplers such as the D-Wave system.
+
+The :term:`Ising` model is an objective function of :math:`N` variables
+:math:`\bf s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
+are the biases and :math:`J_{i,j}` the couplings (interactions) between spins.
+
+.. math::
+
+    \\text{Ising:} \\qquad  E(\\bf{s}|\\bf{h},\\bf{J})
+    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\}
+    \\qquad\\qquad s_i\\in\\{-1,+1\\}
+
+
+The :term:`QUBO` model is an objective function of :math:`N` binary variables represented
+as an upper-diagonal matrix :math:`Q`, where diagonal terms are the linear coefficients
+and the nonzero off-diagonal terms the quadratic coefficients.
+
+.. math::
+
+    \\text{QUBO:} \\qquad E(\\bf{x}| \\bf{Q})  =  \\sum_{i\\le j}^N x_i Q_{i,j} x_j
+    \\qquad\\qquad x_i\\in \\{0,1\\}
+
+The :class:`.BinaryQuadraticModel` class can contain both these models and its methods provide
+convenient utilities for working with, and interworking between, the two representations
+of a problem.
 
 """
 from __future__ import absolute_import, division
@@ -56,9 +82,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             :attr:`.BinaryQuadraticModel.info`.
 
     Notes:
-        The BinaryQuadraticModel class does not enforce types on biases
-        and offsets, but most applications that use the BinaryQuadraticModel
-        class assume that they are numeric.
+        The :class:`.BinaryQuadraticModel` class does not enforce types on biases
+        and offsets, but most applications that use this class assume that they are numeric.
 
     Examples:
         This example creates a binary quadratic model with three spin variables.
@@ -68,7 +93,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         ...                                  1.4,
         ...                                  dimod.SPIN)
 
-        Variables can be any hashable object
+        This example creates a binary quadratic model with non-numeric variables
+        (variables can be any hashable object).
 
         >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': -1.0, 'c': 0.5},
         ...                                  {('a', 'b'): -1.0, ('b', 'c'): 1.5},
@@ -106,36 +132,42 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             adjacent to `v` (e.g. `u`) and values are quadratic biases associated
             with the pair of inner and outer keys (`u, v`).
 
-            Examples:
-               This example creates an instance of the BinaryQuadraticModel()
-               class for the K4 complete graph, where the nodes have biases
-               set equal to their sequential labels and interactions are the
-               concatenations of the node pairs (e.g., 23 for u,v = 2,3).
-
-               >>> import dimod
-               >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
-               >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
-               ...              (2, 3): 23, (2, 4): 24,
-               ...              (3, 4): 34}
-               >>> offset = 0.0
-               >>> vt = dimod.BINARY
-               >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
-               >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
-               dict_items([(1, {2: 12, 3: 13, 4: 14}),
-                           (2, {1: 12, 3: 23, 4: 24}),
-                           (3, {1: 13, 2: 23, 4: 34}),
-                           (4, {1: 14, 2: 24, 3: 34})])
-               >>> bqm_k4.adj[2]            # Show adjacencies for node 2
-               {1: 12, 3: 23, 4: 24}
-               >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
-               23
-
         info (dict):
-            A place to store miscellaneous data about the BinaryQuadraticModel as a whole.
+            A place to store miscellaneous data about the binary quadratic model
+            as a whole.
 
         SPIN (:class:`.Vartype`): An alias of :class:`.Vartype.SPIN` for easier access.
 
         BINARY (:class:`.Vartype`): An alias of :class:`.Vartype.BINARY` for easier access.
+
+    Examples:
+       This example creates an instance of the :class:`.BinaryQuadraticModel`
+       class for the K4 complete graph, where the nodes have biases
+       set equal to their sequential labels and interactions are the
+       concatenations of the node pairs (e.g., 23 for u,v = 2,3).
+
+       >>> import dimod
+       >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
+       >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
+       ...              (2, 3): 23, (2, 4): 24,
+       ...              (3, 4): 34}
+       >>> offset = 0.0
+       >>> vartype = dimod.BINARY
+       >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
+       >>> bqm_k4.info = {'Complete K4 binary quadratic model.'}
+       >>> bqm_k4.info.issubset({'Complete K3 binary quadratic model.',
+       ...                       'Complete K4 binary quadratic model.',
+       ...                       'Complete K5 binary quadratic model.'})
+       True
+       >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
+       [(1, {2: 12, 3: 13, 4: 14}),
+        (2, {1: 12, 3: 23, 4: 24}),
+        (3, {1: 13, 2: 23, 4: 34}),
+        (4, {1: 14, 2: 24, 3: 34})]
+       >>> bqm_k4.adj[2]            # Show adjacencies for node 2  # doctest: +SKIP
+       {1: 12, 3: 23, 4: 24}
+       >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3 # doctest: +SKIP
+       23
 
     """
 
@@ -157,9 +189,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @classmethod
     def empty(cls, vartype):
-        """Create an empty BinaryQuadraticModel.
+        """Create an empty binary quadratic model.
 
-        Equivalent to
+        Equivalent to instantiating a :class:`.BinaryQuadraticModel` with no bias values
+        and zero offset for the defined :class:`vartype`:
 
         .. code-block:: python
 
@@ -173,12 +206,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         Examples:
+            This example creates an empty binary quadratic model.
 
             >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-            >>> bqm.linear
-            {}
-            >>> bqm.quadratic
-            {}
+            >>> any(bqm.linear)
+            False
+            >>> any(bqm.quadratic)
+            False
             >>> bqm.offset
             0.0
 
@@ -227,7 +261,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         a binary quadratic model with spins as its variables.
 
         Enables access to biases for the spin-valued binary quadratic model
-        regardless of the vartype set when the model was created.
+        regardless of the :class:`vartype` set when the model was created.
         If the model was created with the :attr:`.binary` vartype,
         the Ising model subclass is instantiated upon the first use of the
         :attr:`.spin` property and used in any subsequent reads.
@@ -239,7 +273,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm_qubo = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)
             >>> bqm_spin = bqm_qubo.spin
-            >>> bqm_spin
+            >>> bqm_spin   # doctest: +SKIP
             BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, Vartype.SPIN)
             >>> bqm_spin.spin is bqm_spin
             True
@@ -275,7 +309,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         model with binary variables.
 
         Enables access to biases for the binary-valued binary quadratic model
-        regardless of the vartype set when the model was created. If the model
+        regardless of the :class:`vartype` set when the model was created. If the model
         was created with the :attr:`.spin` vartype, the QUBO model subclass is instantiated
         upon the first use of the :attr:`.binary` property and used in any subsequent reads.
 
@@ -286,7 +320,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            >>> import dimod
            >>> bqm_spin = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
            >>> bqm_qubo = bqm_spin.binary
-           >>> bqm_qubo
+           >>> bqm_qubo  # doctest: +SKIP
            BinaryQuadraticModel({0: -1.0, 1: -1.0}, {(0, 1): 2.0}, 0.0, Vartype.BINARY)
            >>> bqm_qubo.binary is bqm_qubo
            True
@@ -343,13 +377,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-            >>> bqm.linear
-            {0: 0.0, 1: 1.0}
+            >>> len(bqm.linear)
+            2
             >>> bqm.add_variable(2, 2.0, vartype=dimod.SPIN)        # Add a new variable
             >>> bqm.add_variable(1, 0.33, vartype=dimod.SPIN)
             >>> bqm.add_variable(0, 0.33, vartype=dimod.BINARY)     # Binary value is converted to spin value
-            >>> bqm.linear
-            {0: 0.165, 1: 1.33, 2: 2.0}
+            >>> len(bqm.linear)
+            3
+            >>> bqm.linear[1]
+            1.33
 
         """
 
@@ -403,13 +439,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             and subsequently adds to the bias of the one while adding a new, third,
             variable.
 
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> len(bqm.linear)
+            0
             >>> bqm.add_variables_from({'a': .5, 'b': -1.})
-            >>> bqm.linear
-            {'a': 0.5, 'b': -1.0}
+            >>> 'b' in bqm
+            True
             >>> bqm.add_variables_from({'b': -1., 'c': 2.0})
-            >>> bqm.linear  # doctest: +SKIP
-            {'a': 0.5, 'b': -2.0, 'c': 2.0}
+            >>> bqm.linear['b']
+            -2.0
 
         """
         if isinstance(linear, dict):
@@ -451,13 +490,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-            >>> bqm.quadratic
-            {(0, 1): 0.5}
+            >>> len(bqm.quadratic)
+            1
             >>> bqm.add_interaction(0, 2, 2)        # Add new variable 2
             >>> bqm.add_interaction(0, 1, .25)
             >>> bqm.add_interaction(1, 2, .25, vartype=dimod.BINARY)     # Binary value is converted to spin value
-            >>> bqm.quadratic  # doctest: +SKIP
-            {(0, 1): 0.75, (0, 2): 2, (1, 2): 0.0625}
+            >>> len(bqm.quadratic)
+            3
+            >>> bqm.quadratic[(0, 1)]
+            0.75
 
         """
         if u == v:
@@ -555,14 +596,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             for two variables, adds to its bias while adding a new variable,
             then adds another interaction.
 
-            >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
-            >>> bqm.quadratic
-            {('a', 'b'): -0.5}
+            >>> bqm.quadratic[('a', 'b')]
+            -0.5
             >>> bqm.add_interactions_from({('a', 'b'): -.5, ('a', 'c'): 2})
             >>> bqm.add_interactions_from({('b', 'c'): 2}, vartype=dimod.BINARY)   # Binary value is converted to spin value
-            >>> bqm.quadratic  # doctest: +SKIP
-            {('a', 'b'): -1.0, ('a', 'c'): 2, ('b', 'c'): 0.5}
+            >>> len(bqm.quadratic)
+            3
+            >>> bqm.quadratic[('a', 'b')]
+            -1.0
 
         """
         if isinstance(quadratic, dict):
@@ -588,14 +631,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Examples:
             This example creates an Ising model and then removes one variable.
 
-            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0, 2: 2.0},
-            ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
-            ...                                  -0.5, dimod.SPIN)
-            >>> bqm.remove_variable(0)
-            >>> bqm.linear
-            {1: 1.0, 2: 2.0}
-            >>> bqm.quadratic
-            {(1, 2): 0.75}
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': 1.0, 'c': 2.0},
+            ...                            {('a', 'b'): 0.25, ('a','c'): 0.5, ('b','c'): 0.75},
+            ...                            -0.5, dimod.SPIN)
+            >>> bqm.remove_variable('a')
+            >>> 'a' in bqm.linear
+            False
+            >>> ('b','c') in bqm.quadratic
+            True
 
         """
         linear = self.linear
@@ -644,10 +688,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
             ...                                  -0.5, dimod.SPIN)
             >>> bqm.remove_variables_from([0, 1])
-            >>> bqm.linear
-            {2: 2.0}
-            >>> bqm.quadratic
-            {}
+            >>> len(bqm.linear)
+            1
+            >>> len(bqm.quadratic)
+            0
 
         """
         for v in variables:
@@ -674,11 +718,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interaction('b', 'c')
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> ('b', 'c') in bqm.quadratic
+            False
             >>> bqm.remove_interaction('a', 'c')  # not an interaction, so ignored
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> len(bqm.quadratic)
+            1
 
         """
         quadratic = self.quadratic
@@ -722,8 +766,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
-            >>> bqm.quadratic
-            {('a', 'b'): -1.0}
+            >>> len(bqm.quadratic)
+            1
 
         """
         for u, v in interactions:
@@ -783,10 +827,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
             >>> bqm.scale(0.5)
-            >>> bqm.linear
-            {'a': -1.0, 'b': 1.0}
-            >>> bqm.quadratic
-            {('a', 'b'): -0.5}
+            >>> bqm.linear['a']
+            -1.0
+            >>> bqm.quadratic[('a', 'b')]
+            -0.5
             >>> bqm.offset
             0.5
 
@@ -835,8 +879,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
             0.5
-            >>> bqm.linear
-            {}
+            >>> 'a' in bqm
+            False
 
             This example creates a binary quadratic model with two variables and fixes
             the value of one.
@@ -846,10 +890,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
             0.5
-            >>> bqm.linear
-            {'b': 1.0}
-            >>> bqm.quadratic
-            {}
+            >>> bqm.linear['b']
+            1.0
+            >>> len(bqm.quadratic)
+            0
 
         """
         adj = self.adj
@@ -868,7 +912,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         self.remove_variable(v)
 
     def flip_variable(self, v):
-        """Flips variable v in a binary quadratic model.
+        """Flip variable v in a binary quadratic model.
 
         Args:
             v (variable):
@@ -881,8 +925,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm.flip_variable(1)
-            >>> bqm
-            BinaryQuadraticModel({1: -1.0, 2: 2}, {(1, 2): -0.5}, 0.5, Vartype.SPIN)
+            >>> bqm.linear[1], bqm.linear[2], bqm.quadratic[(1, 2)]
+            (-1.0, 2, -0.5)
 
         """
         adj = self.adj
@@ -953,19 +997,24 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            from the second.
 
            >>> import dimod
-           >>> linear = {1: 1, 2: 2}
-           >>> quadratic = {(1, 2): 12}
-           >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+           >>> linear1 = {1: 1, 2: 2}
+           >>> quadratic1 = {(1, 2): 12}
+           >>> bqm1 = dimod.BinaryQuadraticModel(linear1, quadratic1, 0.5, dimod.SPIN)
+           >>> bqm1.info = {'BQM number 1'}
            >>> linear2 = {2: 0.25, 3: 0.35}
            >>> quadratic2 = {(2, 3): 23}
            >>> bqm2 = dimod.BinaryQuadraticModel(linear2, quadratic2, 0.75, dimod.SPIN)
-           >>> bqm.update(bqm2)
-           >>> bqm.linear
-           {1: 1, 2: 2.25, 3: 0.35}
-           >>> bqm.quadratic
-           {(1, 2): 12, (2, 3): 23}
-           >>> bqm.offset
+           >>> bqm2.info = {'BQM number 2'}
+           >>> bqm1.update(bqm2)
+           >>> bqm1.offset
            1.25
+           >>> 'BQM number 2' in bqm1.info
+           False
+           >>> bqm1.update(bqm2, ignore_info=False)
+           >>> 'BQM number 2' in bqm1.info
+           True
+           >>> bqm1.offset
+           2.0
 
         """
         self.add_variables_from(bqm.linear, vartype=bqm.vartype)
@@ -976,7 +1025,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             self.info.update(bqm.info)
 
     def contract_variables(self, u, v):
-        """Enforces u, v being the same variable in a binary quadratic model.
+        """Enforce u, v being the same variable in a binary quadratic model.
 
         The resulting variable is labeled 'u'. Values of interactions between `v` and
         variables that `u` interacts with are added to the corresponding interactions
@@ -1002,10 +1051,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            ...              (3, 4): 34}
            >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
            >>> bqm.contract_variables(2, 3)
-           >>> bqm.linear
-           {1: 1, 2: 2, 4: 4}
-           >>> bqm.quadratic
-           {(1, 2): 25, (1, 4): 14, (2, 4): 58}
+           >>> 3 in bqm.linear
+           False
+           >>> bqm.quadratic[(1, 2)]
+           25
 
         """
         adj = self.adj
@@ -1052,15 +1101,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 quadratic model is returned.
 
         Returns:
-            :class:`.BinaryQuadraticModel`: A BinaryQuadraticModel with the variables relabeled.
-            If inplace=True, returns itself.
+            :class:`.BinaryQuadraticModel`: A binary quadratic model
+            with the variables relabeled. If `inplace` is set to True, returns
+            itself.
 
         Examples:
             This example creates a binary quadratic model with two variables and relables one.
 
             >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> model.relabel_variables({0: 'a'})
+            >>> model.relabel_variables({0: 'a'})   # doctest: +SKIP
             BinaryQuadraticModel({1: 1.0, 'a': 0.0}, {('a', 1): -1}, 0.0, Vartype.SPIN)
 
             This example creates a binary quadratic model with two variables and returns a new
@@ -1068,8 +1118,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             >>> import dimod
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)
-            >>> new_model.quadratic
+            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)  # doctest: +SKIP
+            >>> new_model.quadratic       # doctest: +SKIP
             {('a', 'b'): -1}
 
         """
@@ -1120,20 +1170,21 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
-        """Create a BinaryQuadraticModel with the specified vartype.
+        """Create a binary quadratic model with the specified vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set, optional):
                 Variable type for the changed model. Accepted input values:
-                :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             inplace (bool, optional, default=True):
                 If True, the binary quadratic model is updated in-place; otherwise, a new binary
                 quadratic model is returned.
 
         Returns:
-            :class:`.BinaryQuadraticModel`. A new BinaryQuadraticModel with
+            :class:`.BinaryQuadraticModel`. A new binary quadratic model with
             vartype matching input 'vartype'.
 
         Examples:
@@ -1142,10 +1193,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
-            >>> bqm_spin
-            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
-            >>> bqm_qubo
-            BinaryQuadraticModel({1: 1.0, 2: 3.0}, {(1, 2): 2.0}, -2.0, Vartype.BINARY)
+            >>> bqm_spin.offset, bqm_spin.vartype
+            (0.5, <Vartype.SPIN: frozenset([1, -1])>)
+            >>> bqm_qubo.offset, bqm_qubo.vartype
+            (-2.0, <Vartype.BINARY: frozenset([0, 1])>)
 
         """
 
@@ -1251,8 +1302,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm2 = bqm.copy()
-            >>> bqm2
-            BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, Vartype.SPIN)
+            >>> bqm2 is bqm
+            False
 
         """
         # new objects are constructed for each, so we just need to pass them in
@@ -1283,11 +1334,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             sample (dict):
-                Sample for which to calculate the energy as a dict. Keys are variables
-                and values are the value associated with each variable.
+                Sample for which to calculate the energy, formatted as a dict where keys
+                are variables and values are the value associated with each variable.
 
         Returns:
-            float: The energy.
+            float: Energy for the sample.
 
         Examples:
             This example creates a binary quadratic model and returns the energies for
@@ -1327,27 +1378,33 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             fp (file, optional):
-                A `.write()`-supporting `file object`_. If not provided, the method will return
-                a string.
+                `.write()`-supporting `file object`_ to save the linear and quadratic biases
+                of a binary quadratic model to. The model is stored as a list of 3-tuples,
+                (i, j, bias), where :math:`i=j` for linear biases. If not provided,
+                returns a string.
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
-        An example of a COOrdinate format encoded BinaryQuadraticModel.
-
-        .. code-block:: none
-
-            0 0 0.50000
-            0 1 0.50000
-            1 1 -1.50000
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models saved to COOrdinate format encoding do not preserve offsets.
 
         Examples:
-            Example of writing the binary quadratic model to a file
+            This is an example of a binary quadratic model encoded in COOrdinate format.
+
+            .. code-block:: none
+
+                0 0 0.50000
+                0 1 0.50000
+                1 1 -1.50000
+
+            This is an example of writing a binary quadratic model to a COOrdinate-format
+            file.
 
             >>> bqm = dimod.BinaryQuadraticModel({0: -1.0, 1: 1.0}, {(0, 1): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.ising', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_coo(file)
 
-            Example of writing to a string
+            This is an example of writing a binary quadratic model to a COOrdinate-format string.
 
             >>> bqm = dimod.BinaryQuadraticModel({0: -1.0, 1: 1.0}, {(0, 1): -1.0}, 0.0, dimod.SPIN)
             >>> bqm.to_coo()  # doctest: +SKIP
@@ -1371,7 +1428,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             obj: (str/file):
-                Either a string or a  A `.read()`-supporting `file object`_.
+                Either a string or a `.read()`-supporting `file object`_ that represents
+                linear and quadratic biases for a binary quadratic model. This data
+                is stored as a list of 3-tuples, (i, j, bias), where :math:`i=j`
+                for linear biases.
 
             vartype (:class:`.Vartype`/str/set):
                 Variable type for the binary quadratic model. Accepted input values:
@@ -1381,12 +1441,30 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models created from COOrdinate format encoding have offsets set to
+            zero.
+
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.BINARY)
-            >>> with open('tmp.qubo', 'w') as file:  # doctest: +SKIP
+            This is an example of a binary quadratic model encoded in COOrdinate format.
+
+            .. code-block:: none
+
+                0 0 0.50000
+                0 1 0.50000
+                1 1 -1.50000
+
+            This example saves a binary quadratic model to a COOrdinate-format file
+            and creates a new model by reading the saved file.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({0: -1.0, 1: 1.0}, {(0, 1): -1.0}, 0.0, dimod.BINARY)
+            >>> with open('tmp.qubo', 'w') as file:      # doctest: +SKIP
             ...     bqm.to_coo(file)
-            >>> with open('tmp.qubo', 'r') as file:  # doctest: +SKIP
+            >>> with open('tmp.qubo', 'r') as file:      # doctest: +SKIP
             ...     new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
+            >>> any(new_bqm)        # doctest: +SKIP
+            True
 
         """
         import dimod.io.coo as coo
@@ -1401,42 +1479,50 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             fp (file, optional):
-                A `.write()`-supporting `file object`_. If not provided, the method will return
-                a string.
+                A `.write()`-supporting `file object`_ to save the binary quadratic model to,
+                formatted according to the current `BQM schema`_\ . If not provided,
+                returns a string.
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
 
-        An example of a serialized BinaryQuadraticModel
 
-        .. code-block:: json
-
-            {
-                "linear_terms": [
-                    {"bias": 1.0, "label": 0},
-                    {"bias": -1.0, "label": 1}
-                ],
-                "info": {},
-                "offset": 0.5,
-                "quadratic_terms": [
-                    {"bias": 0.5, "label_head": 1, "label_tail": 0}
-                ],
-                "variable_labels": [0, 1],
-                "variable_type": "SPIN",
-                "version": {
-                    "bqm_schema": "1.0.0",
-                    "dimod": "0.6.3"
-                }
-            }
 
         Examples:
-            Example of writing the binary quadratic model to a file
+            This example shows a serialized binary quadratic model in JSON encoding for
+            schema version 1.0.0.
 
+            .. code-block:: json
+
+                {
+                    "linear_terms": [
+                        {"bias": 1.0, "label": 0},
+                        {"bias": -1.0, "label": 1}
+                    ],
+                    "info": {},
+                    "offset": 0.5,
+                    "quadratic_terms": [
+                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
+                    ],
+                    "variable_labels": [0, 1],
+                    "variable_type": "SPIN",
+                    "version": {
+                        "bqm_schema": "1.0.0",
+                        "dimod": "0.6.3"
+                    }
+                }
+
+
+            This is an example of writing a binary quadratic model to a JSON-format file.
+
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_json(file)
 
-            Example of writing to a string
+            This is an example of writing a binary quadratic model to a JSON-format string.
 
+            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> bqm.to_json()  # doctest: +SKIP
             {"info": {},
@@ -1462,12 +1548,42 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             obj: (str/file):
-                Either a string or a  A `.read()`-supporting `file object`_.
+                Either a string or a  `.read()`-supporting `file object`_
+                that represents linear and quadratic biases for a binary quadratic model
+                formatted in accordance to the current `BQM schema`_\ .
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
 
         Examples:
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0, 0.0, dimod.SPIN)
+            This example shows a serialized binary quadratic model in JSON encoding
+            for schema version 1.0.0.
+
+            .. code-block:: json
+
+                {
+                    "linear_terms": [
+                        {"bias": 1.0, "label": 0},
+                        {"bias": -1.0, "label": 1}
+                    ],
+                    "info": {},
+                    "offset": 0.5,
+                    "quadratic_terms": [
+                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
+                    ],
+                    "variable_labels": [0, 1],
+                    "variable_type": "SPIN",
+                    "version": {
+                        "bqm_schema": "1.0.0",
+                        "dimod": "0.6.3"
+                    }
+                }
+
+            This example saves a binary quadratic model to a JSON-format file and creates
+            a new model by reading the saved file.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
             ...     bqm.to_json(file)
             >>> with open('tmp.txt', 'r') as file:  # doctest: +SKIP
@@ -1535,10 +1651,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     def to_ising(self):
         """Converts a binary quadratic model to Ising format.
 
-        If the binary quadratic model's vartype is not spin, values are converted.
+        If the binary quadratic model's vartype is not :class:`.Vartype.SPIN`,
+        values are converted.
 
         Returns:
-            tuple: A 3-tuple of the form (`linear`, `quadratic`, `offset`) where `linear`
+            tuple: 3-tuple of form (`linear`, `quadratic`, `offset`), where `linear`
             is a dict of linear biases, `quadratic` is a dict of quadratic biases,
             and `offset` is a number that represents the constant offset of the
             binary quadratic model.
@@ -1551,7 +1668,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...                                    {(0, 1): .5, (1, 2): 1.5},
             ...                                    1.4,
             ...                                    dimod.SPIN)
-            >>> model.to_ising()
+            >>> model.to_ising()    # doctest: +SKIP
             ({0: 1, 1: -1, 2: 0.5}, {(0, 1): 0.5, (1, 2): 1.5}, 1.4)
 
         """
@@ -1574,7 +1691,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Constant offset applied to the model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`.Vartype.SPIN`.
 
         Examples:
             This example creates a binary quadratic model from an Ising problem.
@@ -1585,7 +1703,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...      (2, 3): 23, (2, 4): 24,
             ...      (3, 4): 34}
             >>> model = dimod.BinaryQuadraticModel.from_ising(h, J, offset = 0.0)
-            >>> model
+            >>> model      # doctest: +SKIP
             BinaryQuadraticModel({1: 1, 2: 2, 3: 3, 4: 4}, {(1, 2): 12, (1, 3): 13, (1, 4): 14, (2, 3): 23, (3, 4): 34, (2, 4): 24}, 0.0, Vartype.SPIN)
 
         """
@@ -1597,11 +1715,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     def to_qubo(self):
         """Convert a binary quadratic model to QUBO format.
 
-        If the binary quadratic model's vartype is not binary, values are converted.
+        If the binary quadratic model's vartype is not :class:`.Vartype.BINARY`,
+        values are converted.
 
         Returns:
-            tuple: A 2-tuple of the form (`biases`, `offset`) where `biases` is a dict
-            where keys are pairs of variables and values are the associated linear or
+            tuple: 2-tuple of form (`biases`, `offset`), where `biases` is a dict
+            in which keys are pairs of variables and values are the associated linear or
             quadratic bias and `offset` is a number that represents the constant offset
             of the binary quadratic model.
 
@@ -1614,7 +1733,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...                                    {(0, 1): .5, (1, 2): 1.5},
             ...                                    1.4,
             ...                                    dimod.SPIN)
-            >>> model.to_qubo()
+            >>> model.to_qubo()   # doctest: +SKIP
             ({(0, 0): 1.0, (0, 1): 2.0, (1, 1): -6.0, (1, 2): 6.0, (2, 2): -2.0}, 2.9)
 
         """
@@ -1640,7 +1759,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Constant offset applied to the model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`.Vartype.BINARY`.
 
         Examples:
             This example creates a binary quadratic model from a QUBO model.
@@ -1648,7 +1768,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> import dimod
             >>> Q = {(0, 0): -1, (1, 1): -1, (0, 1): 2}
             >>> model = dimod.BinaryQuadraticModel.from_qubo(Q, offset = 0.0)
-            >>> model.linear
+            >>> model.linear    # doctest: +SKIP
             {0: -1, 1: -1}
             >>> model.vartype
             <Vartype.BINARY: frozenset([0, 1])>
@@ -1688,7 +1808,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Examples:
             This example converts a binary quadratic model to NumPy matrix format while
-            ordering variables and adding one.
+            ordering variables and adding one ('d').
 
             >>> import dimod
             >>> import numpy as np
@@ -1764,7 +1884,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`.Vartype.BINARY`.
+
 
         Examples:
             This example creates a binary quadratic model from a QUBO in NumPy format while
@@ -1782,16 +1904,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...         variable_order = ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
             ...         offset = 2.5,
             ...         interactions = {('a', 'f')})
-            >>> model.linear
+            >>> model.linear   # doctest: +SKIP
             {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': 4.0, 'e': 5.0, 'f': 0.0}
-            >>> model.quadratic
-            {('a', 'd'): 10.0,
-             ('a', 'e'): 11.0,
-             ('a', 'f'): 0.0,
-             ('b', 'd'): 12.0,
-             ('b', 'e'): 13.0,
-             ('c', 'd'): 14.0,
-             ('c', 'e'): 15.0}
+            >>> model.quadratic[('a', 'd')]
+            10.0
+            >>> model.quadratic[('a', 'f')]
+            0.0
             >>> model.offset
             2.5
 
@@ -1886,7 +2004,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`vartype.BINARY`.
 
         Examples:
             This example creates a binary quadratic model from a QUBO in pandas DataFrame format
@@ -1902,9 +2021,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> model = dimod.BinaryQuadraticModel.from_pandas_dataframe(pd_qubo,
             ...         offset = 2.5,
             ...         interactions = {(0,2), (1,2)})
-            >>> model.linear
+            >>> model.linear        # doctest: +SKIP
             {0: -1, 1: -1.0, 2: 0.0}
-            >>> model.quadratic
+            >>> model.quadratic     # doctest: +SKIP
             {(0, 1): 2, (0, 2): 0.0, (1, 2): 0.0}
             >>> model.offset
             2.5

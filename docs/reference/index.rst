@@ -9,7 +9,6 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   introduction
    binary_quadratic_model
    samplers
    response
