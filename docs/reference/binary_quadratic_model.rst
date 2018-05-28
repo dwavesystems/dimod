@@ -4,9 +4,10 @@
 Ising, QUBO and Binary Quadratic Models
 =======================================
 
-Overview
-========
 .. automodule:: dimod.binary_quadratic_model
+
+Class
+=====
 
 .. currentmodule:: dimod
 .. autoclass:: BinaryQuadraticModel
@@ -32,7 +33,7 @@ Construction Shortcuts
 
    BinaryQuadraticModel.empty
 
-Adding and removing variables and interactions
+Adding and Removing Variables and Interactions
 ----------------------------------------------
 
 .. autosummary::

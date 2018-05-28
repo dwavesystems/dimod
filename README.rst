@@ -15,13 +15,14 @@
 dimod
 =====
 
-dimod is a shared API for binary quadratic samplers. It provides a binary quadratic
+`dimod` is a shared API for binary quadratic samplers. It provides a binary quadratic
 model (BQM) class that contains Ising and quadratic unconstrained binary
 optimization (QUBO) models used by samplers such as the D-Wave system. It also
 provides utilities for constructing new samplers and composed samplers and for
 minor-embedding. Its reference examples include several samplers and composed
-samplers. 
+samplers.
 
+Learn more about `dimod on Read the Docs <http://dimod.readthedocs.io/en/latest/>`_\ .
 
 Example Usage
 -------------
