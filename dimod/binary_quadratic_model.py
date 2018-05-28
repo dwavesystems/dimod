@@ -152,18 +152,18 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
        ...              (2, 3): 23, (2, 4): 24,
        ...              (3, 4): 34}
        >>> offset = 0.0
-       >>> vt = dimod.BINARY
-       >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vt)
+       >>> vartype = dimod.BINARY
+       >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
        >>> bqm_k4.info = {'Complete K4 binary quadratic model.'}
        >>> bqm_k4.info.issubset({'Complete K3 binary quadratic model.',
        ...                       'Complete K4 binary quadratic model.',
        ...                       'Complete K5 binary quadratic model.'})
        True
        >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
-       dict_items([(1, {2: 12, 3: 13, 4: 14}),
-                   (2, {1: 12, 3: 23, 4: 24}),
-                   (3, {1: 13, 2: 23, 4: 34}),
-                   (4, {1: 14, 2: 24, 3: 34})])
+       [(1, {2: 12, 3: 13, 4: 14}),
+        (2, {1: 12, 3: 23, 4: 24}),
+        (3, {1: 13, 2: 23, 4: 34}),
+        (4, {1: 14, 2: 24, 3: 34})]
        >>> bqm_k4.adj[2]            # Show adjacencies for node 2  # doctest: +SKIP
        {1: 12, 3: 23, 4: 24}
        >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3 # doctest: +SKIP
@@ -690,8 +690,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm.remove_variables_from([0, 1])
             >>> len(bqm.linear)
             1
-            >>> any(bqm.quadratic)
-            False
+            >>> len(bqm.quadratic)
+            0
 
         """
         for v in variables:
@@ -892,8 +892,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             0.5
             >>> bqm.linear['b']
             1.0
-            >>> any(bqm.quadratic)
-            False
+            >>> len(bqm.quadratic)
+            0
 
         """
         adj = self.adj
@@ -2004,7 +2004,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 Any additional 0.0-bias interactions to be added to the binary quadratic model.
 
         Returns:
-            :class:`.BinaryQuadraticModel`
+            :class:`.BinaryQuadraticModel`: Binary quadratic model with vartype set to
+            :class:`vartype.BINARY`.
 
         Examples:
             This example creates a binary quadratic model from a QUBO in pandas DataFrame format
@@ -2020,9 +2021,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> model = dimod.BinaryQuadraticModel.from_pandas_dataframe(pd_qubo,
             ...         offset = 2.5,
             ...         interactions = {(0,2), (1,2)})
-            >>> model.linear
+            >>> model.linear        # doctest: +SKIP
             {0: -1, 1: -1.0, 2: 0.0}
-            >>> model.quadratic
+            >>> model.quadratic     # doctest: +SKIP
             {(0, 1): 2, (0, 2): 0.0, (1, 2): 0.0}
             >>> model.offset
             2.5
