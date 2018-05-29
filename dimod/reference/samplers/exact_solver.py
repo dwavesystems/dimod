@@ -17,9 +17,6 @@ __all__ = ['ExactSolver']
 class ExactSolver(Sampler):
     """A simple exact solver for testing and debugging.
 
-    Returns:
-        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
-
     Notes:
         This solver becomes slow for problems with 18 or more
         variables.

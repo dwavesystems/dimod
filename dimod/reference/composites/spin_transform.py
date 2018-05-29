@@ -31,9 +31,6 @@ class SpinReversalTransformComposite(Sampler, Composite):
     Args:
         sampler: A `dimod` sampler object.
 
-    Returns:
-        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
-
     Attributes:
         children (list):
             [`sampler`] where `sampler` is the input sampler.
@@ -101,7 +98,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
             >>> base_sampler = dimod.ExactSolver()
             >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
             >>> Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
-            >>> response = composed_sampler.sample_ising(Q,
+            >>> response = composed_sampler.sample_qubo(Q,
             ...               num_spin_reversal_transforms=100,
             ...               spin_reversal_variables={'a'})
             >>> len(response)

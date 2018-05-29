@@ -95,8 +95,8 @@ Methods
 
    SpinReversalTransformComposite.sample
 
-Structure Composite
--------------------
+Structured Composite
+--------------------
 
 .. automodule:: dimod.reference.composites.structure
 

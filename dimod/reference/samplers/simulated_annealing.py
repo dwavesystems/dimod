@@ -17,9 +17,6 @@ __all__ = ['SimulatedAnnealingSampler']
 class SimulatedAnnealingSampler(Sampler):
     """A simple simulated annealing sampler.
 
-    Returns:
-        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
-
     Examples:
         This example solves a two-variable Ising model.
 
