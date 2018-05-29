@@ -1,3 +1,12 @@
+"""
+On the D-Wave system, coupling :math:`J_{i,j}` adds a small bias to qubits :math:`i` and
+:math:`j` due to leakage. This can become significant for chained qubits. Additionally,
+qubits are biased to some small degree in one direction or another.
+Applying a spin-reversal transform can improve results by reducing the impact of possible
+analog and systematic errors. A spin-reversal transform does not alter the Ising problem;
+the transform simply amounts to reinterpreting spin up as spin down, and visa-versa, for
+a particular spin.
+"""
 from random import random
 import time
 import itertools
@@ -15,41 +24,42 @@ class SpinReversalTransformComposite(Sampler, Composite):
     """Composite for applying spin reversal transform preprocessing.
 
     Spin reversal transforms (or "gauge transformations") are applied
-    by flipping the spin of variables in the Ising problem. We can
-    then sample using the transformed Ising problem and flip the same
-    bits in the resulting sample.
+    by flipping the spin of variables in the Ising problem. After
+    sampling the transformed Ising problem, the same bits are flipped in the
+    resulting sample.
 
     Args:
-        sampler: A dimod sampler object.
+        sampler: A `dimod` sampler object.
+
+    Returns:
+        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+
+    Attributes:
+        children (list):
+            [`sampler`] where `sampler` is the input sampler.
+        structure:
+            Inherited from input `sampler`.
 
     Examples:
-        Composing a sampler.
+        This example composes a dimod ExactSolver sampler with spin transforms then
+        uses it to sample an Ising problem.
 
+        >>> import dimod
+        >>> # Compose the sampler
         >>> base_sampler = dimod.ExactSolver()
         >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
-
-        The composed sampler can now be used as a dimod sampler.
-
-        >>> h = {0: -1, 1: 1}
-        >>> response = composed_sampler.sample_ising(h, {})
-        >>> list(response.samples())
-        [{0: 1, 1: -1}, {0: -1, 1: -1}, {0: 1, 1: 1}, {0: -1, 1: 1}]
-
-        The base sampler is also in `children` attribute of the composed
-        sampler.
-
         >>> base_sampler in composed_sampler.children
         True
+        >>> # Sample an Ising problem
+        >>> response = composed_sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+        >>> print(next(response.data()))           # doctest: +SKIP
+        Sample(sample={'a': 1, 'b': 1}, energy=-1.5)
 
     References
     ----------
     .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
         for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
         2014.
-
-    Attributes:
-        children (list): [`sampler`] where `sampler` is the input sampler.
-        structure: Inherited from input `sampler`.
 
     """
     children = None
@@ -70,7 +80,36 @@ class SpinReversalTransformComposite(Sampler, Composite):
         self.properties = {'child_properties': child.properties}
 
     def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
-        """todo"""
+        """Sample from the binary quadratic model.
+
+        Args:
+            bqm (:obj:`~dimod.BinaryQuadraticModel`):
+                Binary quadratic model to be sampled from.
+            num_spin_reversal_transforms (integer, optional, default=2):
+                Number of spin reversal transform runs.
+            spin_reversal_variables (list/dict, optional, default=None):
+                Variables to which to apply the spin reversal. If None, every variable
+                has a 50% probability of being selected.
+
+        Returns:
+            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+
+        Examples:
+            This example runs 100 spin reversals applied to one variable of a QUBO problem.
+
+            >>> import dimod
+            >>> base_sampler = dimod.ExactSolver()
+            >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
+            >>> Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
+            >>> response = composed_sampler.sample_ising(Q,
+            ...               num_spin_reversal_transforms=100,
+            ...               spin_reversal_variables={'a'})
+            >>> len(response)
+            400
+            >>> print(next(response.data()))           # doctest: +SKIP
+            Sample(sample={'a': 0, 'b': 1}, energy=-1.0)
+
+        """
         # make a main response
         response = None
 
