@@ -1,8 +1,5 @@
 """
-SimulatedAnnealingSampler
--------------------------
-
-A reference implementation of a simulated annealing sampler using the dimod API.
+A reference implementation of a simulated annealing sampler.
 """
 import random
 import math
@@ -19,6 +16,19 @@ __all__ = ['SimulatedAnnealingSampler']
 
 class SimulatedAnnealingSampler(Sampler):
     """A simple simulated annealing sampler.
+
+    Returns:
+        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+
+    Examples:
+        This example solves a two-variable Ising model.
+
+        >>> import dimod
+        >>> response = dimod.SimulatedAnnealingSampler().sample_ising(
+        ...                  {'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+        >>> response.data_vectors['energy']      # doctest: +SKIP
+        array([-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5])
+
     """
     properties = None
     parameters = None
@@ -33,31 +43,34 @@ class SimulatedAnnealingSampler(Sampler):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
-            todo
-            beta_range (tuple, optional): A 2-tuple defining the
-                beginning and end of the beta schedule (beta is the
-                inverse temperature). The schedule is applied linearly
-                in beta. Default is chosen based on the total bias associated
+            bqm (:obj:`~dimod.BinaryQuadraticModel`):
+                Binary quadratic model to be sampled from.
+            beta_range (tuple, optional): Beginning and end of the beta schedule
+                (beta is the inverse temperature) as a 2-tuple. The schedule is applied
+                linearly in beta. Default is chosen based on the total bias associated
                 with each node.
-            num_reads (int, optional): Each sample is the result of
+            num_reads (int, optional): Number of reads. Each sample is the result of
                 a single run of the simulated annealing algorithm.
-            num_sweeps (int, optional): The number of sweeps or steps.
+            num_sweeps (int, optional): Number of sweeps or steps.
                 Default is 1000.
 
         Returns:
-            :obj:`Response`
-
-        Examples:
-            >>> sampler = SimulatedAnnealingSampler()
-            >>> h = {0: -1, 1: -1}
-            >>> J = {(0, 1): -1}
-            >>> response = sampler.sample_ising(h, J, num_reads=1)
-            >>> list(response.samples())
-            [{0: 1, 1: 1}]
+            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
 
         Note:
             This is a reference implementation, not optimized for speed
             and therefore not an appropriate sampler for benchmarking.
+
+        Examples:
+            This example provides samples for a two-variable QUBO model.
+
+            >>> import dimod
+            >>> sampler = dimod.SimulatedAnnealingSampler()
+            >>> Q = {(0, 0): -1, (1, 1): -1, (0, 1): 2}
+            >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q, offset = 0.0)
+            >>> response = sampler.sample(bqm, num_reads=2)
+            >>> response.data_vectors['energy']        # doctest: +SKIP
+            array([-1., -1.])
 
         """
 
