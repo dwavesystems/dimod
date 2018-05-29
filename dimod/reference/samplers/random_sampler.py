@@ -12,9 +12,6 @@ __all__ = ['RandomSampler']
 class RandomSampler(Sampler):
     """A sampler that gives random samples for testing.
 
-    Returns:
-        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
-
     Examples:
         This example provides random samples for a two-variable QUBO model.
 
