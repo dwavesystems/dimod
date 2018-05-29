@@ -9,6 +9,9 @@ The `dimod` package includes several example samplers and composed samplers.
 Samplers
 ========
 
+The reference samplers included in the `dimod` package are intended as an aid for
+coding and testing; they are not optimized for performance or intended for benchmarking.
+
 .. automodule:: dimod.reference.samplers
 
 Exact Sampler

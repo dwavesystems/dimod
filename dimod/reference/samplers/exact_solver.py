@@ -1,7 +1,4 @@
 """
-ExactSolver
------------
-
 An exact solver that calculates the energy of all possible samples.
 """
 import itertools
@@ -18,11 +15,22 @@ __all__ = ['ExactSolver']
 
 
 class ExactSolver(Sampler):
-    """A simple exact solver, intended for testing and debugging.
+    """A simple exact solver for testing and debugging.
+
+    Returns:
+        :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
 
     Notes:
-        This solver starts to become slow for problems with 18 or more
+        This solver becomes slow for problems with 18 or more
         variables.
+
+    Examples:
+        This example solves a two-variable Ising model.
+
+        >>> import dimod
+        >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+        >>> response.data_vectors['energy']
+        array([-1.5, -0.5, -0.5,  2.5])
 
     """
     properties = None
@@ -34,6 +42,27 @@ class ExactSolver(Sampler):
 
     @bqm_index_labels
     def sample(self, bqm):
+        """Sample from a binary quadratic model.
+
+        Args:
+            bqm (:obj:`~dimod.BinaryQuadraticModel`):
+                Binary quadratic model to be sampled from.
+
+        Returns:
+            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+
+
+        Examples:
+            This example provides samples for a two-variable Ising model.
+
+            >>> import dimod
+            >>> sampler = dimod.ExactSolver()
+            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
+            >>> response = sampler.sample(bqm)
+            >>> response.data_vectors['energy']
+            array([-1., -2.,  1.,  0.])
+
+        """
         M = bqm.binary.to_numpy_matrix()
         off = bqm.binary.offset
 
