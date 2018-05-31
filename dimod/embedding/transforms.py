@@ -97,7 +97,7 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
     # create a new empty binary quadratic model with the same class as source_bqm
     target_bqm = source_bqm.empty(source_bqm.vartype)
 
-    # go ahead and add the offset
+    # add the offset
     target_bqm.add_offset(source_bqm.offset)
 
     # start with the linear biases, spreading the source bias equally over the target variables in
@@ -133,6 +133,14 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         target_bqm.add_interactions_from((u, v, b) for u, v in available_interactions)
 
     for chain in itervalues(embedding):
+
+        # in the case where the chain has length 1, there are no chain quadratic biases, but we
+        # none-the-less want the chain variables to appear in the target_bqm
+        if len(chain) == 1:
+            v, = chain
+            target_bqm.add_variable(v, 0.0)
+            continue
+
         quadratic_chain_biases = chain_to_quadratic(chain, target_adjacency, chain_strength)
         target_bqm.add_interactions_from(quadratic_chain_biases, vartype=Vartype.SPIN)  # these are spin
 

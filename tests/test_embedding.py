@@ -162,7 +162,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(freq, {0: .5})
 
 
-class TestApply(unittest.TestCase):
+class TestEmbedBQM(unittest.TestCase):
     def test_embed_bqm_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
@@ -380,6 +380,18 @@ class TestApply(unittest.TestCase):
 
         self.assertEqual(target_Q, {(0, 0): 0.0, (1, 1): 0.0, (2, 2): 2.0, (3, 3): 2.0,
                                     (0, 1): -1.0, (1, 2): -1.0, (2, 3): -4.0})
+
+    @unittest.skipUnless(_networkx, "No networkx installed")
+    def test_embedding_with_extra_chains(self):
+        embedding = {0: [0, 1], 1: [2], 2: [3]}
+        G = nx.cycle_graph(4)
+
+        bqm = dimod.BinaryQuadraticModel.from_qubo({(0, 0): 1})
+
+        target_bqm = dimod.embed_bqm(bqm, embedding, G)
+
+        for v in itertools.chain(*embedding.values()):
+            self.assertIn(v, target_bqm)
 
 
 class TestIterUnembed(unittest.TestCase):
