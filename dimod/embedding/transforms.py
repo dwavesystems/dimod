@@ -54,6 +54,8 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> # Embed the BQM
         >>> target_bqm = dimod.embed_bqm(bqm, embedding, target)
+        >>> target_bqm.quadratic[(0, 1)] == bqm.quadratic[('a', 'b')]
+        True
         >>> target_bqm.quadratic   # doctest: +SKIP
         {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
@@ -191,6 +193,8 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
         >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
         >>> # Embed the Ising problem
         >>> target_h, target_J = dimod.embed_ising(h, J, embedding, target)
+        >>> target_J[(0, 1)] == J[('a', 'b')]
+        True
         >>> target_J        # doctest: +SKIP
         {(0, 1): 1.0, (0, 3): 1.0, (1, 2): 1.0, (2, 3): -1.0}
 
@@ -264,12 +268,14 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
         ...      (3, 3): -4.0, (3, 4): 4.0, (4, 1): 4.0, (4, 4): -4.0}
         >>> # Target graph is a fully connected k5 graph
         >>> K_5 = nx.complete_graph(5)
-        >>> list(K_5.nodes)
-        [0, 1, 2, 3, 4]
+        >>> 0 in K_5
+        True
         >>> # Embedding from source to target graph
         >>> embedding = {1: {4}, 2: {3}, 3: {1}, 4: {2}}
         >>> # Embed the QUBO
         >>> target_Q = dimod.embed_qubo(Q, embedding, K_5)
+        >>> (0, 0) in target_Q
+        False
         >>> target_Q     # doctest: +SKIP
         {(1, 1): -4.0,
          (1, 2): 4.0,
@@ -432,7 +438,8 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
             Method used to resolve chain breaks.
 
     Returns:
-        :obj:`.Response`
+        :obj:`.Response`:
+            Response for the source binary quadratic model.
 
     Examples:
         This example embeds a Boolean AND gate,
@@ -462,17 +469,18 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         >>> target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
         >>> # Sample on the target graph
         >>> target_response = sampler.sample_qubo(target_Q)
-        >>> for datum in target_response.data():  # doctest: +SKIP
-        ...     print(datum)
-        ...
-        Sample(sample={0: 0, 1: 0, 2: 0, 3: 0}, energy=0.0)
-        Sample(sample={0: 1, 1: 0, 2: 0, 3: 0}, energy=0.0)
-        Sample(sample={0: 0, 1: 1, 2: 0, 3: 0}, energy=0.0)
-        Sample(sample={0: 1, 1: 1, 2: 1, 3: 1}, energy=0.0)
-        Sample(sample={0: 1, 1: 1, 2: 0, 3: 0}, energy=1.0)
-        >>> # Snipped above response for brevity
         >>> # Unembed samples back to the problem graph
         >>> source_response = dimod.unembed_response(target_response, embedding, bqm)
+        >>> # Verify correct representation of the AND gate (first automatically then manually)
+        >>> for datum in source_response.data():
+        ...     if (datum.sample['x1'] and datum.sample['x2']) == datum.sample['z']:
+        ...         if datum.energy > 0:
+        ...            print('Valid AND has high energy')
+        ...
+        ...     else:
+        ...         if datum.energy == 0:
+        ...             print('invalid AND has low energy')
+        ...
         >>> for datum in source_response.data():     # doctest: +SKIP
         ...     print(datum)
         ...
