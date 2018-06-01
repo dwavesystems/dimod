@@ -13,7 +13,7 @@ from dimod.vartypes import Vartype
 __all__ = ['embed_bqm', 'embed_ising', 'embed_qubo', 'iter_unembed', 'unembed_response']
 
 
-def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed_singleton_variables=True):
+def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
     """Embed a binary quadratic model onto a target graph.
 
     Args:
@@ -31,10 +31,6 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         chain_strength (float, optional):
             Magnitude of the quadratic bias (in SPIN-space) applied between variables to create chains. Note
             that the energy penalty of chain breaks is 2 * `chain_strength`.
-
-        embed_singleton_variables (bool, True):
-            Attempt to allocate singleton variables in the source binary quadratic model to unused
-            nodes in the target graph.
 
     Returns:
         :obj:`.BinaryQuadraticModel`: Target binary quadratic model.
@@ -84,16 +80,6 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
         >>> # Snipped above response for brevity
 
     """
-    if embed_singleton_variables:
-        unused = set(target_adjacency)
-        unused.difference_update(*embedding.values())
-        if unused:
-            # if there are unused variables then we may be alterning the embedding so we need to
-            # make a copy, we'll be adding new key/value pairs so we only need a shallow copy
-            embedding = embedding.copy()
-    else:
-        unused = False
-
     # create a new empty binary quadratic model with the same class as source_bqm
     target_bqm = source_bqm.empty(source_bqm.vartype)
 
@@ -106,10 +92,6 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
 
         if v in embedding:
             chain = embedding[v]
-        elif embed_singleton_variables and unused:
-            # if a variable is in the source_bqm but is not mentioned in embedding, then we try to map
-            # it to a source node not already mentioned in embedding
-            chain = embedding[v] = {unused.pop()}
         else:
             raise ValueError('no embedding provided for source variable {}'.format(v))
 
@@ -151,7 +133,7 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0, embed
     return target_bqm
 
 
-def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1.0, embed_singleton_variables=True):
+def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1.0):
     """Embed an Ising problem onto a target graph.
 
     Args:
@@ -173,10 +155,6 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
         chain_strength (float, optional):
             Magnitude of the quadratic bias (in SPIN-space) applied between variables to form a chain. Note
             that the energy penalty of chain breaks is 2 * `chain_strength`.
-
-        embed_singleton_variables (bool, True):
-            Attempt to allocate singleton variables in the source binary quadratic model to unused
-            nodes in the target graph.
 
     Returns:
         tuple: A 2-tuple:
@@ -232,13 +210,12 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
 
     """
     source_bqm = BinaryQuadraticModel.from_ising(souce_h, source_J)
-    target_bqm = embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=chain_strength,
-                           embed_singleton_variables=embed_singleton_variables)
+    target_bqm = embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=chain_strength)
     target_h, target_J, __ = target_bqm.to_ising()
     return target_h, target_J
 
 
-def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_singleton_variables=True):
+def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0):
     """Embed a QUBO onto a target graph.
 
     Args:
@@ -256,10 +233,6 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
         chain_strength (float, optional):
             Magnitude of the quadratic bias (in SPIN-space) applied between variables to form a chain. Note
             that the energy penalty of chain breaks is 2 * `chain_strength`.
-
-        embed_singleton_variables (bool, True):
-            Attempt to allocate singleton variables in the source binary quadratic model to unused
-            nodes in the target graph.
 
     Returns:
         dict[(variable, variable), bias]: Quadratic biases of the target QUBO.
@@ -330,8 +303,7 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0, embed_
 
     """
     source_bqm = BinaryQuadraticModel.from_qubo(source_Q)
-    target_bqm = embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=chain_strength,
-                           embed_singleton_variables=embed_singleton_variables)
+    target_bqm = embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=chain_strength)
     target_Q, __ = target_bqm.to_qubo()
     return target_Q
 

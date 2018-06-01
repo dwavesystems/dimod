@@ -324,37 +324,6 @@ class TestEmbedBQM(unittest.TestCase):
             dimod.embedding.embed_ising(h, J, embedding, adjacency)
 
     @unittest.skipUnless(_networkx, "No networkx installed")
-    def test_embed_bqm_singleton_variables_false_flag(self):
-        bqm = dimod.BinaryQuadraticModel({'a': -1}, {('b', 'c'): -1}, 0.0, dimod.SPIN)
-
-        embedding = {'b': {1}, 'c': {2, 3}}
-
-        with self.assertRaises(ValueError):
-            embedded_bqm = dimod.embed_bqm(bqm, embedding, nx.cycle_graph(4), chain_strength=1,
-                                           embed_singleton_variables=False)
-
-    @unittest.skipUnless(_networkx, "No networkx installed")
-    def test_embed_bqm_singleton_variables(self):
-        bqm = dimod.BinaryQuadraticModel({'a': -1}, {('b', 'c'): -1}, 0.0, dimod.SPIN)
-
-        embedding = {'b': {1}, 'c': {2, 3}}
-
-        embedded_bqm = dimod.embed_bqm(bqm, embedding, nx.cycle_graph(4), chain_strength=1)
-
-        # 'a' should be allocated to 0 (not mentioned in the embedding)
-        self.assertIn(0, embedded_bqm.linear)
-        self.assertEqual(embedded_bqm.linear[0], -1)
-        self.assertNotIn('a', embedding)  # should not alter embedding
-
-        embedding['a'] = {0}
-
-        # check that the energy has been preserved
-        for config in itertools.product((-1, 1), repeat=3):
-            sample = dict(zip(('a', 'b', 'c'), config))
-            target_sample = {u: sample[v] for v, chain in embedding.items() for u in chain}  # no chains broken
-            self.assertAlmostEqual(bqm.energy(sample), embedded_bqm.energy(target_sample))
-
-    @unittest.skipUnless(_networkx, "No networkx installed")
     def test_embed_bqm_BINARY(self):
         Q = {('a', 'a'): 0, ('a', 'b'): -1, ('b', 'b'): 0, ('c', 'c'): 0, ('b', 'c'): -1}
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
