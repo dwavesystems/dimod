@@ -149,24 +149,27 @@ def chain_break_frequency(samples, embedding):
         of broken chains.
 
     Examples:
-        This example embeds a single source node (a) as a chain of two target nodes (0, 1)
+        This example embeds a single source node, 'a', as a chain of two target nodes (0, 1)
         and uses :func:`.chain_break_frequency` to show that out of two synthetic samples,
         one ([-1, +1]) represents a broken chain.
 
+        >>> import dimod
         >>> import numpy as np
         >>> samples = np.matrix([[-1, +1], [+1, +1]])
         >>> embedding = {'a': {0, 1}}
-        >>> dimod.chain_break_frequency(samples, embedding)  # doctest: +SKIP
-        {'a': .5}
+        >>> print(dimod.chain_break_frequency(samples, embedding)['a'])
+        0.5
+
 
         This example embeds a single source node (0) as a chain of two target nodes (a, b)
         and uses :func:`.chain_break_frequency` to show that out of two samples in a
         dimod response, one ({'a': 1, 'b': 0}) represents a broken chain.
 
+        >>> import dimod
         >>> response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]})
         >>> embedding = {0: {'a', 'b'}}
-        >>> dimod.chain_break_frequency(response, embedding)   # doctest: +SKIP
-        {0: .5}
+        >>> print(dimod.chain_break_frequency(response, embedding)[0])
+        0.5
 
     """
     if isinstance(samples, Response):
