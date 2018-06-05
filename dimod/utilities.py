@@ -37,6 +37,12 @@ def ising_energy(sample, h, J, offset=0.0):
         offset (numeric, optional, default=0):
             Constant offset to be applied to the energy. Default 0.
 
+    Returns:
+        float: The induced energy.
+
+    Notes:
+        No input checking is performed.
+
     Examples:
         This example calculates the energy of a sample representing two down spins for
         an Ising model of two variables that have positive biases of value 1 and
@@ -48,12 +54,6 @@ def ising_energy(sample, h, J, offset=0.0):
         >>> J = {(1, 2): 1}
         >>> dimod.ising_energy(sample, h, J, 0.5)
         -0.5
-
-    Returns:
-        float: The induced energy.
-
-    Notes:
-        No input checking is performed.
 
     References
     ----------
@@ -132,17 +132,17 @@ def qubo_energy(sample, Q, offset=0.0):
 def ising_to_qubo(h, J, offset=0.0):
     """Convert an Ising problem to a QUBO problem.
 
-    Map an Ising model defined on spins (-1/+1 variables) to quadratic unconstrained binary
-    optimization (QUBO) formulation :math:`x'  Q  x` defined over binary variables
-    (0 or 1), where the linear term is contained along the diagonal of Q. Return matrix
-    Q that defines the BQP model as well as the offset in energy between the two
+    Map an Ising model defined on spins (variables with {-1, +1} values) to quadratic
+    unconstrained binary optimization (QUBO) formulation :math:`x'  Q  x` defined over
+    binary variables (0 or 1 values), where the linear term is contained along the diagonal of Q.
+    Return matrix Q that defines the model as well as the offset in energy between the two
     problem formulations:
 
     .. math::
 
          s'  J  s + h'  s = offset + x'  Q  x
 
-    See qubo_to_ising(Q) for the inverse function.
+    See :meth:`~dimod.utilities.qubo_to_ising` for the inverse function.
 
     Args:
         h (dict[variable, bias]):
@@ -195,8 +195,8 @@ def qubo_to_ising(Q, offset=0.0):
     """Convert a QUBO problem to an Ising problem.
 
     Map a quadratic unconstrained binary optimization (QUBO) problem :math:`x'  Q  x`
-    defined over binary variables (0 or 1), where the linear term is contained along
-    the diagonal of Q, to an Ising model defined on spins (-1/+1 variables).
+    defined over binary variables (0 or 1 values), where the linear term is contained along
+    the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
     Return h and J that define the Ising model as well as the offset in energy
     between the two problem formulations:
 
@@ -204,7 +204,7 @@ def qubo_to_ising(Q, offset=0.0):
 
          x'  Q  x  = offset + s'  J  s + h'  s
 
-    See ising_to_qubo(h, J) for the inverse function.
+    See :meth:`~dimod.utilities.ising_to_qubo` for the inverse function.
 
     Args:
         Q (dict[(variable, variable), coefficient]):
@@ -231,7 +231,7 @@ def qubo_to_ising(Q, offset=0.0):
 
         >>> import dimod
         >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
-        >>> dimod.qubo_to_ising(Q, 0.5)
+        >>> dimod.qubo_to_ising(Q, 0.5)    # doctest: +SKIP
         ({1: 0.75, 2: 0.75}, {(1, 2): 0.25}, 1.75)
 
     """

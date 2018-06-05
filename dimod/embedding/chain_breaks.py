@@ -157,8 +157,8 @@ def weighted_random(sample, embedding):
         >>> import dimod
         >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
         >>> samples = {0: 1, 1: 0, 2: 1, 3: 0, 4: 1}
-        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')['b']
-        1
+        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')  # doctest: +SKIP
+        {'a': 0, 'b': 1}
 
     """
     unembedded = {}
