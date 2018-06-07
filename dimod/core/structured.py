@@ -48,11 +48,11 @@ Examples:
                 return response
 
 """
+import abc
+
 from collections import namedtuple
 
 from six import add_metaclass
-
-import dimod.abc as abc
 
 __all__ = ['Structured']
 

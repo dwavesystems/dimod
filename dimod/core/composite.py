@@ -46,11 +46,11 @@ Examples:
     >>> response = composed_sampler.sample_ising(h, {}) # doctest: +SKIP
 
 """
+import abc
+
 from six import add_metaclass
 
 from dimod.core.sampler import Sampler
-
-import dimod.abc as abc
 
 __all__ = ['Composite', 'ComposedSampler']
 
