@@ -81,18 +81,20 @@ Below is a more complex version of the same sampler, where the :attr:`properties
 
 
 """
+import abc
+
 from six import add_metaclass
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
+from dimod.meta import SamplerABCMeta, samplemixinmethod
 from dimod.vartypes import Vartype
 
-import dimod.abc as abc
 
 __all__ = ['Sampler']
 
 
-@add_metaclass(abc.SamplerABCMeta)
+@add_metaclass(SamplerABCMeta)
 class Sampler:
     """Abstract base class for dimod samplers.
 
@@ -162,7 +164,7 @@ class Sampler:
         """
         pass
 
-    @abc.samplemixinmethod
+    @samplemixinmethod
     def sample(self, bqm, **parameters):
         """Samples from a binary quadratic model using an implemented sample method.
 
@@ -204,7 +206,7 @@ class Sampler:
         else:
             raise RuntimeError("binary quadratic model has an unknown vartype")
 
-    @abc.samplemixinmethod
+    @samplemixinmethod
     def sample_ising(self, h, J, **parameters):
         """Samples from an Ising model using an implemented sample method.
 
@@ -235,7 +237,7 @@ class Sampler:
         response = self.sample(bqm, **parameters)
         return response
 
-    @abc.samplemixinmethod
+    @samplemixinmethod
     def sample_qubo(self, Q, **parameters):
         """Samples from a QUBO using an implemented sample method.
 
