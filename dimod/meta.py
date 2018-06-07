@@ -6,7 +6,7 @@ import abc
 
 class SamplerABCMeta(abc.ABCMeta):
     def __new__(mcls, name, bases, namespace, **kwargs):
-        cls = ABCMeta.__new__(mcls, name, bases, namespace, **kwargs)
+        cls = abc.ABCMeta.__new__(mcls, name, bases, namespace, **kwargs)
 
         samplermixins = {name
                          for name, value in namespace.items()
