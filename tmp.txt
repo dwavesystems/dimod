@@ -1,1 +1,0 @@
-{"info": {}, "linear_terms": [{"bias": -1.0, "label": "a"}, {"bias": 1.0, "label": "b"}], "offset": 0.0, "quadratic_terms": [{"bias": -1.0, "label_head": "b", "label_tail": "a"}], "variable_labels": ["a", "b"], "variable_type": "SPIN", "version": {"bqm_schema": "1.0.0", "dimod": "0.6.9"}}
