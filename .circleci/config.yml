@@ -1,0 +1,228 @@
+version: 2
+jobs:
+  test-3.6: &full-test-template
+    docker:
+      - image: circleci/python:3.6-jessie
+
+    working_directory: ~/repo
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv
+          command: |
+            python -m virtualenv env
+
+      - run: &install-dependencies-template
+          name: install dependencies
+          command: |
+            . env/bin/activate
+            python --version
+            pip install -r requirements.txt
+
+      - save_cache:
+          paths:
+            - ./env
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+        
+      - run: &run-tests-template
+          name: run unittests
+          command: |
+            . env/bin/activate
+            python --version
+            coverage run -m unittest discover
+
+      - run:
+          # requires COVERALLS_REPO_TOKEN env variable
+          name: coveralls
+          command: |
+            . env/bin/activate
+            if [[ -v COVERALLS_REPO_TOKEN ]]; then coveralls; fi
+
+      - run:
+          name: doctest
+          command: |
+            . env/bin/activate
+            make -C docs/ doctest
+
+  test-3.5:
+    <<: *full-test-template
+    docker:
+      - image: circleci/python:3.5-jessie
+
+  test-2.7:
+    <<: *full-test-template
+    docker:
+      - image: circleci/python:2.7-jessie
+
+  test-3.7:
+    docker:
+      - image: circleci/python:3.7-rc-stretch
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: create virtualenv
+          command: |
+            python -m virtualenv env
+
+      - run:
+          name: install package
+          command: |
+            . env/bin/activate
+            pip install .
+            pip install coverage
+        
+      - run: *run-tests-template
+
+  test-osx:
+    macos:
+      xcode: "9.0"
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run: 
+          name: install pyenv
+          command: |
+            brew install pyenv
+
+      - restore_cache:
+          keys:
+          - pyenv-versions-{{ .Environment.CIRCLE_JOB }}
+          - dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: install python 2.7.14 and 3.6.5 with pyenv
+          command: |
+            pyenv install 2.7.14 -s
+            pyenv install 3.6.5 -s
+
+      - save_cache:
+          paths:
+            - ~/.pyenv
+          key: pyenv-versions-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv for 2.7.14
+          command: |
+            eval "$(pyenv init -)"
+            pyenv local 2.7.14
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - save_cache:
+          paths:
+            - ./env
+          key: dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *run-tests-template
+
+      - run:
+          name: clear virtual environment
+          command: |
+            rm -rf env
+
+      - restore_cache:
+          keys:
+          - dependencies3.6-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv for 3.6.5
+          command: |
+            eval "$(pyenv init -)"
+            pyenv local 3.6.5
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - save_cache:
+          paths:
+            - ./env
+          key: dependencies3.6-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *run-tests-template
+
+  deploy:
+    docker:
+      - image: circleci/python:3.6-jessie
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: create virtualenv
+          command: |
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - run:
+          name: install twine
+          command: |
+            . env/bin/activate
+            pip install twine
+
+      - run:
+          name: verify version matches tag
+          command: |
+            . env/bin/activate
+            pip install .
+            echo $CIRCLE_TAG
+            [[ "$(pip show dimod 2>/dev/null | grep Version)" == "Version: $CIRCLE_TAG" ]]
+
+      - run:
+          name: init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = dwtools-ci" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+
+      - run:
+          name: build sdist and bdist
+          command: |
+            . env/bin/activate
+            python setup.py sdist
+            python setup.py bdist_wheel
+
+      - run:
+          name: upload
+          command: |
+            . env/bin/activate
+            twine upload dist/*
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test-2.7
+      - test-3.7
+      - test-3.6
+      - test-3.5
+      - test-osx:
+          requires:
+            - test-3.6
+            - test-3.5
+            - test-2.7
+      - deploy:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
