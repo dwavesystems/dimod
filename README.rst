@@ -10,10 +10,10 @@
 .. image:: https://readthedocs.org/projects/dimod/badge/?version=latest
     :target: http://dimod.readthedocs.io/en/latest/?badge=latest
 
-.. index-start-marker
-
 dimod
 =====
+
+.. index-start-marker1
 
 `dimod` is a shared API for binary quadratic samplers. It provides a binary quadratic
 model (BQM) class that contains Ising and quadratic unconstrained binary
@@ -22,17 +22,23 @@ provides utilities for constructing new samplers and composed samplers and for
 minor-embedding. Its reference examples include several samplers and composed
 samplers.
 
+.. index-end-marker1
+
 Learn more about `dimod on Read the Docs <http://dimod.readthedocs.io/en/latest/>`_\ .
 
 Example Usage
 -------------
+
+.. index-start-marker2
+
 This example constructs a simple QUBO and converts it to Ising format.
 
 >>> import dimod
 >>> bqm = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)  # QUBO
 >>> bqm_ising = bqm.change_vartype(dimod.SPIN, inplace=False)  # Ising
 
-An example of using one of the built-in test Samplers.
+This example uses one of dimod's test samplers, ExactSampler, a solver that calculates
+the energies of all possible samples.
 
 >>> import dimod
 >>> h = {0: 0.0, 1: 0.0}
@@ -45,7 +51,7 @@ matrix([[-1, -1],
         [ 1,  1],
         [-1,  1]])
 
-.. index-end-marker
+.. index-end-marker2
 
 See the documentation for more examples.
 
