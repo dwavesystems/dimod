@@ -167,31 +167,6 @@ class Sampler:
     @samplemixinmethod
     def sample(self, bqm, **parameters):
         """Samples from a binary quadratic model using an implemented sample method.
-
-        Examples:
-            This example implements a placeholder Ising sampler and samples using
-            the mixin binary quadratic model sampler.
-
-            >>> import dimod
-            >>> class ImplementIsingSampler(dimod.Sampler):
-            ...     def sample_ising(self, h, J):
-            ...         return dimod.Response.from_dicts([{1: -1, 2: +1}], {'energy': [-1.0]}) # Placeholder
-            ...     @property
-            ...     def properties(self):
-            ...         return self._properties
-            ...     @property
-            ...     def parameters(self):
-            ...         return dict()
-            ...
-            >>> sampler = ImplementIsingSampler()
-            >>> model = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
-            ...                                    {(0, 1): .5, (1, 2): 1.5},
-            ...                                    1.4,
-            ...                                    dimod.SPIN)
-            >>> response = sampler.sample(model)
-            >>> print(response)
-            [[-1  1]]
-
         """
         if bqm.vartype is Vartype.SPIN:
             Q, offset = bqm.to_qubo()
@@ -209,29 +184,6 @@ class Sampler:
     @samplemixinmethod
     def sample_ising(self, h, J, **parameters):
         """Samples from an Ising model using an implemented sample method.
-
-        Examples:
-            This example implements a placeholder QUBO sampler and samples using
-            the mixin Ising sampler.
-
-            >>> import dimod
-            >>> class ImplementQuboSampler(dimod.Sampler):
-            ...     def sample_qubo(self, Q):
-            ...         return dimod.Response.from_dicts([{1: -1, 2: +1}], {'energy': [-1.0]}) # Placeholder
-            ...     @property
-            ...     def properties(self):
-            ...         return self._properties
-            ...     @property
-            ...     def parameters(self):
-            ...         return dict()
-            ...
-            >>> sampler = ImplementQuboSampler()
-            >>> h = {1: 0.5, 2: -1, 3: -0.75}
-            >>> J = {}
-            >>> response = sampler.sample_ising(h, J)
-            >>> print(response)
-            [[-1  1]]
-
         """
         bqm = BinaryQuadraticModel.from_ising(h, J)
         response = self.sample(bqm, **parameters)
@@ -240,29 +192,6 @@ class Sampler:
     @samplemixinmethod
     def sample_qubo(self, Q, **parameters):
         """Samples from a QUBO using an implemented sample method.
-
-        Examples:
-            This example implements a placeholder Ising sampler and samples using
-            the mixin QUBO sampler.
-
-            >>> import dimod
-            >>> class ImplementIsingSampler(dimod.Sampler):
-            ...     def sample_ising(self, h, J):
-            ...         return dimod.Response.from_dicts([{1: -1, 2: +1}], {'energy': [-1.0]}) # Placeholder
-            ...     @property
-            ...     def properties(self):
-            ...         return self._properties
-            ...     @property
-            ...     def parameters(self):
-            ...         return dict()
-            ...
-            >>> sampler = ImplementIsingSampler()
-            >>> Q = {(0, 0): -0.5, (0, 1): 1, (1, 1): -0.75}
-            >>> response = sampler.sample_qubo(Q)
-            >>> print(response)
-            [[0 1]]
-
-
         """
         bqm = BinaryQuadraticModel.from_qubo(Q)
         response = self.sample(bqm, **parameters)
