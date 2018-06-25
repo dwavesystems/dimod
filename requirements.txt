@@ -9,7 +9,7 @@ pandas
 mock==2.0.0
 
 coverage
-coveralls
+codecov
 
 sphinx
 sphinx_rtd_theme
