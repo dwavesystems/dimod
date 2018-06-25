@@ -32,6 +32,19 @@ packages = ['dimod',
             'dimod.reference.samplers',
             'dimod.testing']
 
+classifiers = [
+    'License :: OSI Approved :: Apache Software License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 2',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    ]
+
+python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
+
 setup(
     name='dimod',
     version=__version__,
@@ -45,5 +58,7 @@ setup(
     packages=packages,
     install_requires=install_requires,
     extras_require=extras_require,
-    include_package_data=True
+    include_package_data=True,
+    classifiers=classifiers,
+    python_requires=python_requires
 )
