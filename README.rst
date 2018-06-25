@@ -4,8 +4,8 @@
 .. image:: https://ci.appveyor.com/api/projects/status/2oc8vrxxh15ecgo1?svg=true
     :target: https://ci.appveyor.com/project/dwave-adtt/dimod
 
-.. image:: https://coveralls.io/repos/github/dwavesystems/dimod/badge.svg?branch=master
-    :target: https://coveralls.io/github/dwavesystems/dimod?branch=master
+.. image:: https://codecov.io/gh/dwavesystems/dimod/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/dwavesystems/dimod
 
 .. image:: https://readthedocs.org/projects/dimod/badge/?version=latest
     :target: http://dimod.readthedocs.io/en/latest/?badge=latest
