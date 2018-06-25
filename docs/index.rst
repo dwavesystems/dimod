@@ -36,6 +36,7 @@ Documentation
 
   introduction
   reference/index
+  release
   installation
   license
   bibliography
