@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/dwavesystems/dimod.svg?branch=master
-    :target: https://travis-ci.org/dwavesystems/dimod
+.. image:: https://img.shields.io/pypi/v/dimod.svg
+    :target: https://pypi.python.org/pypi/dimod
 
 .. image:: https://ci.appveyor.com/api/projects/status/2oc8vrxxh15ecgo1?svg=true
     :target: https://ci.appveyor.com/project/dwave-adtt/dimod
@@ -9,6 +9,9 @@
 
 .. image:: https://readthedocs.org/projects/dimod/badge/?version=latest
     :target: http://dimod.readthedocs.io/en/latest/?badge=latest
+
+.. image:: https://circleci.com/gh/dwavesystems/dimod.svg?style=svg
+    :target: https://circleci.com/gh/dwavesystems/dimod
 
 dimod
 =====
