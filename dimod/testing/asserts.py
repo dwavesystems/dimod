@@ -14,7 +14,7 @@
 #
 # ================================================================================================
 """
-This module contains asserts that can be used to testing the correctness of dimod samplers,
+This module contains asserts that can be used to test the correctness of dimod samplers,
 composites and responses. This is useful for checking that a created sampler correctly fulfills
 the dimod API.
 """
@@ -131,7 +131,7 @@ def assert_structured_api(sampler):
     # properties
 
     msg = ("instantiated structured sampler must have an 'adjacency' property formatted as a dict "
-           "where the keys are the nodes and the the values are sets of all node adjacenct to the key")
+           "where the keys are the nodes and the values are sets of all node adjacency to the key")
     assert hasattr(sampler, 'adjacency'), msg
     assert isinstance(sampler.adjacency, Mapping), msg
     for u, neighborhood in sampler.adjacency.items():
@@ -159,7 +159,7 @@ def assert_structured_api(sampler):
         assert u != v, msg
 
 
-def assert_response_energies(response, bqm, places=7):
+def assert_response_energies(response, bqm, precision=7):
     """Assert that each sample in the given response has the correct energy.
 
     Args:
@@ -169,10 +169,10 @@ def assert_response_energies(response, bqm, places=7):
         bqm (:obj:`.BinaryQuadraticModel`):
             The binary quadratic model used to generate the samples.
 
-        places (int, optional, default=7):
+        precision (int, optional, default=7):
             Equality of energy is tested by calculating the difference between the `response`'s
             sample energy and that returned by `bqm`'s :meth:`~.BinaryQuadraticModel.energy`,
-            rounding to the given number of decimal `places` and comparing to zero.
+            rounding to the closest multiple of 10 to the power minus `precision`.
 
     Raises:
         AssertionError: If any of the samples in the response do not match their associated energy.
@@ -200,4 +200,4 @@ def assert_response_energies(response, bqm, places=7):
             for v in bqm.linear:
                 assert v in sample, "bqm contains a variable not in sample"
 
-        assert round(bqm.energy(sample) - energy, places) == 0
+        assert round(bqm.energy(sample) - energy, precision) == 0
