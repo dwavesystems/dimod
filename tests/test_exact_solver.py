@@ -62,9 +62,7 @@ class TestExactSolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
 
-        # check their energies
-        for sample, energy in response.data(['sample', 'energy']):
-            self.assertAlmostEqual(energy, bqm.energy(sample))
+        dtest.assert_response_energies(response, bqm)
 
     def test_sample_BINARY(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
@@ -81,9 +79,7 @@ class TestExactSolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
 
-        # check their energies
-        for sample, energy in response.data(['sample', 'energy']):
-            self.assertAlmostEqual(energy, bqm.energy(sample))
+        dtest.assert_response_energies(response, bqm)
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}

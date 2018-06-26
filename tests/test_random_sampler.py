@@ -25,6 +25,7 @@ class TestRandomSampler(unittest.TestCase):
         sampler = dimod.RandomSampler()
 
         dtest.assert_sampler_api(sampler)
+
         self.assertEqual(sampler.properties, {})
         self.assertEqual(sampler.parameters, {'num_reads': []})
 
@@ -36,6 +37,4 @@ class TestRandomSampler(unittest.TestCase):
         sampler = dimod.RandomSampler()
         response = sampler.sample(bqm, num_reads=10)
 
-        # check their energies
-        for sample, energy in response.data(['sample', 'energy']):
-            self.assertAlmostEqual(energy, bqm.energy(sample))
+        dtest.assert_response_energies(response, bqm)

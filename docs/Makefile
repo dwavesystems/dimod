@@ -1,5 +1,5 @@
 # You can set these variables from the command line.
-SPHINXOPTS    =
+SPHINXOPTS    = -q
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = dimod
 SOURCEDIR     = .
