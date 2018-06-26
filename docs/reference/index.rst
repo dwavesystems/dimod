@@ -17,3 +17,4 @@ Reference Documentation
    embedding
    exceptions
    utilities
+   testing
