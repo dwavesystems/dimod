@@ -242,13 +242,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         if not isinstance(other, BinaryQuadraticModel):
             return False
 
-        if self.vartype == other.vartype:
-            return all([self.linear == other.linear,
-                        self.adj == other.adj,  # adj is invariant of edge order, so check that instead of quadratic
-                        self.offset == other.offset])
-        else:
-            # different vartypes are not equal
-            return False
+        # NB: adj is invariant of edge order, so check that instead of quadratic
+        return (self.vartype == other.vartype and self.offset == other.offset
+                and self.linear == other.linear and self.adj == other.adj)
 
     def __ne__(self, other):
         """Inversion of equality."""
