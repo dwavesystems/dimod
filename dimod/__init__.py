@@ -36,6 +36,9 @@ import dimod.embedding
 from dimod.exceptions import *
 import dimod.exceptions
 
+from dimod.higherorder import *
+import dimod.higherorder
+
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
 from dimod.response import *
