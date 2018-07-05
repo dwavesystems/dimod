@@ -21,9 +21,10 @@ from collections import Counter
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 
-__all__ = ['reduce_degree']
+__all__ = ['make_quadratic']
 
 
 def _spin_product(variables):
@@ -41,17 +42,17 @@ def _spin_product(variables):
     """
     multiplier, multiplicand, product, aux = variables
 
-    return BinaryQuadraticModel({multiplier: -1.,
-                                 multiplicand: -1.,
-                                 product: -1.,
-                                 aux: -2.},
-                                {(multiplier, multiplicand): 1.0,
-                                 (multiplier, product): 1.0,
-                                 (multiplier, aux): 2.0,
-                                 (multiplicand, product): 1.0,
-                                 (multiplicand, aux): 2.0,
-                                 (product, aux): 2.0},
-                                4.0,
+    return BinaryQuadraticModel({multiplier: -.5,
+                                 multiplicand: -.5,
+                                 product: -.5,
+                                 aux: -1.},
+                                {(multiplier, multiplicand): .5,
+                                 (multiplier, product): .5,
+                                 (multiplier, aux): 1.,
+                                 (multiplicand, product): .5,
+                                 (multiplicand, aux): 1.,
+                                 (product, aux): 1.},
+                                2.,
                                 Vartype.SPIN)
 
 
@@ -70,29 +71,32 @@ def _binary_product(variables):
 
     return BinaryQuadraticModel({multiplier: 0.0,
                                  multiplicand: 0.0,
-                                 product: 6.0},
+                                 product: 3.0},
                                 {(multiplier, multiplicand): 2.0,
-                                 (multiplier, product): -4.0,
-                                 (multiplicand, product): -4.0},
+                                 (multiplier, product): -2.0,
+                                 (multiplicand, product): -2.0},
                                 0.0,
                                 Vartype.BINARY)
 
 
-def reduce_degree(linear, poly, vartype, offset=0.0, scale=1, track_reduction=True):
+def make_quadratic(poly, strength, vartype=None, create_using=None):
 
-    bqm = BinaryQuadraticModel.empty(vartype)
+    if create_using is None:
+        if vartype is None:
+            raise ValueError("one of vartype and create_using must be provided")
+        bqm = BinaryQuadraticModel.empty(vartype)
+    else:
+        bqm = create_using
+        if not isinstance(bqm, BinaryQuadraticModel):
+            raise TypeError('create_using must be a BinaryQuadraticModel')
+        if vartype is not None and vartype is not bqm.vartype:
+            raise ValueError("one of vartype and create_using must be provided")
+    bqm.info['reduction'] = {}
 
-    if track_reduction:
-        bqm.info['reduction'] = {}
-
-    # we can load the linear biases directly into bqm
-    bqm.add_variables_from(linear)
-    bqm.add_offset(offset)
-
-    return _reduce_degree(bqm, poly, vartype, scale, track_reduction)
+    return _reduce_degree(bqm, poly, vartype, strength)
 
 
-def _reduce_degree(bqm, poly, vartype, scale, track_reduction):
+def _reduce_degree(bqm, poly, vartype, scale):
 
     if all(len(term) <= 2 for term in poly):
         # termination criteria, we are already quadratic
@@ -127,8 +131,7 @@ def _reduce_degree(bqm, poly, vartype, scale, track_reduction):
     constraint.scale(scale)
     bqm.update(constraint)
 
-    if track_reduction:
-        bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
+    bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
 
     new_poly = {}
     for interaction, bias in poly.items():
@@ -149,4 +152,4 @@ def _reduce_degree(bqm, poly, vartype, scale, track_reduction):
         else:
             new_poly[interaction] = bias
 
-    return _reduce_degree(bqm, new_poly, vartype, scale, track_reduction)
+    return _reduce_degree(bqm, new_poly, vartype, scale)

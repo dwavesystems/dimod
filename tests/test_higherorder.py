@@ -4,7 +4,7 @@ import itertools
 import dimod
 
 
-class TestReduceDegree(unittest.TestCase):
+class TestMakeQuadratic(unittest.TestCase):
 
     def test__spin_prod(self):
 
@@ -18,7 +18,7 @@ class TestReduceDegree(unittest.TestCase):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
             if sample['a'] * sample['b'] != sample['p']:
-                self.assertGreaterEqual(energy, 2)
+                self.assertGreaterEqual(energy, 1)
 
     def test__binary_prod(self):
 
@@ -32,14 +32,14 @@ class TestReduceDegree(unittest.TestCase):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
             if sample['a'] * sample['b'] != sample['p']:
-                self.assertGreaterEqual(energy, 2)
+                self.assertGreaterEqual(energy, 1)
 
     def test_no_higher_order(self):
         h = {0: 0, 1: 0, 2: 0}
         J = {(0, 1): -1, (1, 2): 1}
         off = 0
 
-        bqm = dimod.reduce_degree(h, J, dimod.SPIN, offset=off)
+        bqm = dimod.make_quadratic(J, 1.0, dimod.SPIN)
 
         variables = set(h).union(*J)
         aux_variables = set(bqm.linear) - variables
@@ -61,7 +61,7 @@ class TestReduceDegree(unittest.TestCase):
         J = {(0, 1, 2): -1}
         off = 0
 
-        bqm = dimod.reduce_degree(h, J, dimod.SPIN, offset=off)
+        bqm = dimod.make_quadratic(J, 5.0, dimod.SPIN)
 
         variables = set(h).union(*J)
         aux_variables = set(bqm.linear) - variables
@@ -84,7 +84,7 @@ class TestReduceDegree(unittest.TestCase):
         J = {(0, 1, 2): -1, (1, 2, 3): 1, (0, 2, 3): .5}
         off = .5
 
-        bqm = dimod.reduce_degree(h, J, dimod.SPIN, offset=off, scale=1.5)
+        bqm = dimod.make_quadratic(J, 5.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
         aux_variables = set(bqm.linear) - variables
@@ -107,7 +107,7 @@ class TestReduceDegree(unittest.TestCase):
         h = {0: 0, 1: 0, 2: 0, 3: 0}
         off = .5
 
-        bqm = dimod.reduce_degree(h, J, dimod.SPIN, offset=off, scale=60)
+        bqm = dimod.make_quadratic(J, 5.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
         aux_variables = set(bqm.linear) - variables
@@ -131,7 +131,7 @@ class TestReduceDegree(unittest.TestCase):
 
         off = .5
 
-        bqm = dimod.reduce_degree(h, J, dimod.SPIN, offset=off, scale=60)
+        bqm = dimod.make_quadratic(J, 10.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
         aux_variables = set(bqm.linear) - variables
