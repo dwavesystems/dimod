@@ -22,17 +22,23 @@ class TestMakeQuadratic(unittest.TestCase):
 
     def test__binary_prod(self):
 
-        bqm = dimod.higherorder._binary_product(['a', 'b', 'p'])
+        variables = ['a', 'b', 'p']
 
-        for v in ['a', 'b', 'p']:
+        bqm = dimod.higherorder._binary_product(variables)
+
+        for v in variables:
             self.assertIn(v, bqm)
         self.assertEqual(len(bqm), 3)
 
+        seen_configs = set()
         for sample, energy in dimod.ExactSolver().sample(bqm).data(['sample', 'energy']):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
+                seen_configs.add(tuple(sample[v] for v in variables))
             if sample['a'] * sample['b'] != sample['p']:
                 self.assertGreaterEqual(energy, 1)
+
+        self.assertEqual(len(seen_configs), 4)
 
     def test_no_higher_order(self):
         h = {0: 0, 1: 0, 2: 0}
@@ -42,7 +48,8 @@ class TestMakeQuadratic(unittest.TestCase):
         bqm = dimod.make_quadratic(J, 1.0, dimod.SPIN)
 
         variables = set(h).union(*J)
-        aux_variables = set(bqm.linear) - variables
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
@@ -64,7 +71,8 @@ class TestMakeQuadratic(unittest.TestCase):
         bqm = dimod.make_quadratic(J, 5.0, dimod.SPIN)
 
         variables = set(h).union(*J)
-        aux_variables = set(bqm.linear) - variables
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
@@ -84,10 +92,11 @@ class TestMakeQuadratic(unittest.TestCase):
         J = {(0, 1, 2): -1, (1, 2, 3): 1, (0, 2, 3): .5}
         off = .5
 
-        bqm = dimod.make_quadratic(J, 5.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = dimod.make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
-        aux_variables = set(bqm.linear) - variables
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
@@ -107,10 +116,11 @@ class TestMakeQuadratic(unittest.TestCase):
         h = {0: 0, 1: 0, 2: 0, 3: 0}
         off = .5
 
-        bqm = dimod.make_quadratic(J, 5.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = dimod.make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
-        aux_variables = set(bqm.linear) - variables
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
@@ -131,10 +141,11 @@ class TestMakeQuadratic(unittest.TestCase):
 
         off = .5
 
-        bqm = dimod.make_quadratic(J, 10.0, create_using=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = dimod.make_quadratic(J, 10.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
-        aux_variables = set(bqm.linear) - variables
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
@@ -143,6 +154,37 @@ class TestMakeQuadratic(unittest.TestCase):
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+                aux_sample = dict(zip(aux_variables, aux_config))
+                aux_sample.update(sample)
+                reduced_energies.append(bqm.energy(aux_sample))
+
+            self.assertAlmostEqual(energy, min(reduced_energies))
+
+    def test_linear_and_offset(self):
+
+        poly = {(0,): .5, tuple(): 1.3}
+
+        bqm = dimod.make_quadratic(poly, 10.0, dimod.BINARY)
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: .5}, {}, 1.3, dimod.BINARY))
+
+    def test_binary_polynomial(self):
+
+        HUBO = {(0, 1, 2): .5, (0, 1): 1.3, (2, 4, 1): -1, (3, 2): -1}
+
+        bqm = dimod.make_quadratic(HUBO, 1000.0, dimod.BINARY)
+
+        variables = set().union(*HUBO)
+        aux_variables = tuple(set(bqm.linear) - variables)
+        variables = tuple(variables)
+        self.assertTrue(aux_variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            sample = dict(zip(variables, config))
+
+            energy = poly_energy(sample, {}, HUBO, offset=0.0)
+
+            reduced_energies = []
+            for aux_config in itertools.product((0, 1), repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
