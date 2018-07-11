@@ -1875,3 +1875,36 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
+
+    def test_from_dict_docstring(self):
+        bqm0 = dimod.BinaryQuadraticModel.from_ising({0: 1, 2: .1}, {(0, 1): -1})
+        dct = {'linear_terms': [{'bias': 1, 'label': 0},
+               {'bias': 0.1, 'label': 2},
+               {'bias': 0.0, 'label': 1}],
+               'quadratic_terms': [{'bias': -1, 'label_head': 1, 'label_tail': 0}],
+               'offset': 0.0,
+               'variable_type': 'SPIN',
+               'version': {'dimod': dimod.__version__, 'bqm_schema': '1.0.0'},
+               'variable_labels': [0, 2, 1],
+               'info': {}}
+        bqm = dimod.BinaryQuadraticModel.from_dict(dct)
+
+        self.assertEqual(bqm, bqm0)
+
+    def test_functional_to_and_from_dict_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        new_bqm = dimod.BinaryQuadraticModel.from_dict(bqm.to_dict())
+        self.assertEqual(bqm, new_bqm)
+
+    def test_functional_to_and_from_dict_with_info(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
+
+        new_bqm = dimod.BinaryQuadraticModel.from_dict(bqm.to_dict())
+
+        self.assertEqual(bqm, new_bqm)
+        self.assertIn('tag', new_bqm.info)
+        self.assertEqual(new_bqm.info['tag'], 5)
+        self.assertIn(('a', "complex key"), new_bqm.linear)
