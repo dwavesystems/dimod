@@ -35,18 +35,21 @@ with open(resource_filename(__name__, 'bqm_json_schema.json'), 'r') as schema_fi
 
 
 def _decode_label(label):
+    """Convert a list label into a tuple. Works recursively on nested lists."""
     if isinstance(label, list):
         return tuple(_decode_label(v) for v in label)
     return label
 
 
 def _encode_label(label):
+    """Convert a tuple label into a list. Works recursively on nested tuples."""
     if isinstance(label, tuple):
         return [_encode_label(v) for v in label]
     return label
 
 
 def bqm_decode_hook(dct, cls=None):
+    """Decode hook as can be used with json.loads."""
 
     if cls is None:
         cls = BinaryQuadraticModel
