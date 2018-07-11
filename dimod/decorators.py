@@ -20,6 +20,7 @@ from functools import wraps
 from six import iteritems
 
 from dimod.compatibility23 import getargspec
+from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError
 from dimod.vartypes import Vartype
 
