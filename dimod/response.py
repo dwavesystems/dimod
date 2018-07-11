@@ -421,7 +421,7 @@ class Response(Iterable, Sized):
         import pandas as pd
 
         variable_labels = list(samples_df.columns)
-        samples_matrix = samples_df.as_matrix(columns=variable_labels)
+        samples_matrix = np.matrix(samples_df.values)
 
         if isinstance(data_vectors, pd.DataFrame):
             raise NotImplementedError("support for DataFrame data_vectors is forthcoming")
