@@ -230,7 +230,7 @@ class Response(Iterable, Sized):
             True
 
         """
-        return all(future.done() for future in self._futures)
+        return all(future.done() for future in self._futures.get('futures', tuple()))
 
     ##############################################################################################
     # Construction and updates
@@ -559,7 +559,7 @@ class Response(Iterable, Sized):
         response = cls.empty(vartype)
 
         # now dump all of the remaining information into the _futures
-        response._futures = {'futures': futures,
+        response._futures = {'futures': list(futures),
                              'samples_key': samples_key,
                              'data_vector_keys': data_vector_keys,
                              'info_keys': info_keys,
