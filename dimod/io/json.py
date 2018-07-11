@@ -46,7 +46,10 @@ def _encode_label(label):
     return label
 
 
-def bqm_decode_hook(dct):
+def bqm_decode_hook(dct, cls=None):
+
+    if cls is None:
+        cls = BinaryQuadraticModel
 
     if jsonschema.Draft4Validator(bqm_json_schema).is_valid(dct):
         # BinaryQuadraticModel
@@ -57,7 +60,7 @@ def bqm_decode_hook(dct):
         offset = dct['offset']
         vartype = Vartype[dct['variable_type']]
 
-        return BinaryQuadraticModel(linear, quadratic, offset, vartype, **dct['info'])
+        return cls(linear, quadratic, offset, vartype, **dct['info'])
 
     return dct
 
