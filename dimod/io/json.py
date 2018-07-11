@@ -40,6 +40,12 @@ def _decode_label(label):
     return label
 
 
+def _encode_label(label):
+    if isinstance(label, tuple):
+        return [_encode_label(v) for v in label]
+    return label
+
+
 def bqm_decode_hook(dct):
 
     if jsonschema.Draft4Validator(bqm_json_schema).is_valid(dct):
@@ -155,9 +161,9 @@ class _JSONQuadraticBiasStream(list):
     def __iter__(self):
         for (u, v), bias in iteritems(self.quadratic):
             if isinstance(u, tuple):
-                u = json.loads(json.dumps(u))  # handles nested tuples
+                u = _encode_label(u)  # handles nested tuples
             if isinstance(v, tuple):
-                v = json.loads(json.dumps(v))  # handles nested tuples
+                v = _encode_label(v)  # handles nested tuples
             yield {"bias": bias, "label_head": u, "label_tail": v}
 
     def __len__(self):
@@ -179,7 +185,7 @@ class _JSONLabelsStream(list):
     def __iter__(self):
         for u in self.linear:
             if isinstance(u, tuple):
-                u = json.loads(json.dumps(u))  # handles nested tuples
+                u = _encode_label(u)  # handles nested tuples
             yield u
 
     def __len__(self):
