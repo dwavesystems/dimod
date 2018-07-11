@@ -1506,6 +1506,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
              'variable_labels': [0, 2, 1],
              'info': {}}
 
+        See also:
+            :meth:`~.BinaryQuadraticModel.from_dict`
+
         """
         from dimod.io.json import DimodEncoder
 
@@ -1519,9 +1522,6 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             dct (dict):
                 A dictionary as created by :meth:`~.BinaryQuadraticModel.to_dict`.
 
-        Returns:
-            :obj:`.BinaryQuadraticModel`
-
         Examples:
             >>> dct = {'linear_terms': [{'bias': 1, 'label': 0},
                        {'bias': 0.1, 'label': 2},
@@ -1533,6 +1533,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                       'variable_labels': [0, 2, 1],
                       'info': {}}
             >>> bqm = dimod.BinaryQuadraticModel.from_dict(dct)
+
+        See also:
+            :meth:`~.BinaryQuadraticModel.to_dict`
 
         """
         from dimod.io.json import bqm_decode_hook
