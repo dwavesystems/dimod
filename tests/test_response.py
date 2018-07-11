@@ -301,6 +301,8 @@ class TestResponse(unittest.TestCase):
 
         response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=3)
 
+        self.assertTrue(response.done())
+
         matrix = response.samples_matrix
 
         npt.assert_equal(matrix, np.matrix([[-1, -1, 1], [-1, -1, 1]]))
