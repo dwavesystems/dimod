@@ -1487,6 +1487,63 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         return coo.load(obj, cls.empty(vartype))
 
+    def to_dict(self):
+        """Create a serializable JSON-style dict.
+
+        Returns:
+            dict: A python dictionary of JSON-serializable objects.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel.from_ising({0: 1, 2: .1}, {(0, 1): -1})
+            >>> bqm.to_dict()  # doctest: +SKIP
+            {'linear_terms': [{'bias': 1, 'label': 0},
+              {'bias': 0.1, 'label': 2},
+              {'bias': 0.0, 'label': 1}],
+             'quadratic_terms': [{'bias': -1, 'label_head': 1, 'label_tail': 0}],
+             'offset': 0.0,
+             'variable_type': 'SPIN',
+             'version': {'dimod': '0.6.12', 'bqm_schema': '1.0.0'},
+             'variable_labels': [0, 2, 1],
+             'info': {}}
+
+        """
+        from dimod.io.json import DimodEncoder
+
+        return DimodEncoder().default(self)
+
+    @classmethod
+    def from_dict(cls, dct):
+        """Inverse of to_dict.
+
+        Args:
+            dct (dict):
+                A dictionary as created by :meth:`~.BinaryQuadraticModel.to_dict`.
+
+        Returns:
+            :obj:`.BinaryQuadraticModel`
+
+        Examples:
+            >>> dct = {'linear_terms': [{'bias': 1, 'label': 0},
+                       {'bias': 0.1, 'label': 2},
+                       {'bias': 0.0, 'label': 1}],
+                      'quadratic_terms': [{'bias': -1, 'label_head': 1, 'label_tail': 0}],
+                      'offset': 0.0,
+                      'variable_type': 'SPIN',
+                      'version': {'dimod': dimod.__version__, 'bqm_schema': '1.0.0'},
+                      'variable_labels': [0, 2, 1],
+                      'info': {}}
+            >>> bqm = dimod.BinaryQuadraticModel.from_dict(dct)
+
+        """
+        from dimod.io.json import bqm_decode_hook
+
+        bqm = bqm_decode_hook(dct, cls=cls)
+
+        if not isinstance(bqm, cls):
+            raise ValueError("Given dct is not a serialized {}".format(cls))
+
+        return bqm
+
     def to_json(self, fp=None):
         """Serialize the binary quadratic model using JSON.
 
@@ -1548,12 +1605,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         """
         import json
-        from dimod.io.json import DimodEncoder
+        from dimod.io.json import DimodStreamEncoder
 
         if fp is None:
-            return json.dumps(self, cls=DimodEncoder, sort_keys=True)
+            return json.dumps(self, cls=DimodStreamEncoder, sort_keys=True)
         else:
-            return json.dump(self, fp, cls=DimodEncoder, sort_keys=True)
+            return json.dump(self, fp, cls=DimodStreamEncoder, sort_keys=True)
 
     @classmethod
     def from_json(cls, obj):
@@ -1604,13 +1661,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         """
         import json
-
         from dimod.io.json import bqm_decode_hook
 
         if isinstance(obj, str):
-            return json.loads(obj, object_hook=bqm_decode_hook)
+            return json.loads(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
-        return json.load(obj,  object_hook=bqm_decode_hook)
+        return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
