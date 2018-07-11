@@ -2,7 +2,13 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "binary quadratic model schema",
   "type": "object",
-  "required":["linear_terms", "info", "offset", "quadratic_terms", "variable_labels", "variable_type", "version"],
+  "required": ["linear_terms",
+               "info",
+               "offset",
+               "quadratic_terms",
+               "variable_labels",
+               "variable_type",
+               "version"],
   "properties": {
     "info": {
       "type": "object"
