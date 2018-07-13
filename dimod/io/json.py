@@ -118,7 +118,7 @@ class _JSONQuadraticBiasStream(list):
 
     def __iter__(self):
         for (u, v), bias in iteritems(self.quadratic):
-            yield {"bias": bias, "label_head": v, "label_tail": u}
+            yield {"bias": bias, "label_head": u, "label_tail": v}
 
     def __len__(self):
         return len(self.quadratic)
