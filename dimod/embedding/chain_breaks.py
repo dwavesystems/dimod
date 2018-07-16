@@ -30,33 +30,6 @@ import numpy as np
 __all__ = ['majority_vote', 'discard', 'weighted_random', 'MinimizeEnergy']
 
 
-def discard_matrix(samples_matrix, chain_list):
-    """Discard broken chains."""
-    if not isinstance(samples_matrix, np.matrix):
-        samples_matrix = np.matrix(samples_matrix, dtype='int8')
-    num_samples, __ = samples_matrix.shape
-
-    variables = []
-    for chain in chain_list:
-        chain = list(chain)
-
-        try:
-            v = chain[0]
-        except IndexError:
-            raise ValueError("each chain in chain_list must contain at least one variable")
-        variables.append(v)
-
-        if len(chain) == 1:
-            continue
-
-        # there must be a better way
-        unbroken = np.array((samples_matrix[:, chain] == samples_matrix[:, v]).all(axis=1)).flatten()
-
-        samples_matrix = samples_matrix[unbroken, :]
-
-    return samples_matrix[:, variables]
-
-
 def discard(sample, embedding):
     """Discard the sample if a chain is broken.
 
