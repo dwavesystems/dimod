@@ -115,7 +115,9 @@ def majority_vote_matrix(samples, chains):
     # because it is faster
     if samples.all():  # spin-valued
         for cidx, chain in enumerate(chains):
-            unembedded[:, cidx] = np.sign(samples[:, chain].sum(axis=1))
+            # we just need the sign for spin. We don't use np.sign because in that can return 0
+            # and fixing the 0s is slow.
+            unembedded[:, cidx] = 2*(samples[:, chain].sum(axis=1) >= 0) - 1
     else:  # binary-valued
         for cidx, chain in enumerate(chains):
             mid = len(chain) / 2

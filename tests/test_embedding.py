@@ -520,7 +520,7 @@ class TestUnembedResponse(unittest.TestCase):
         response = dimod.unembed_response(embedded_response, embedding, bqm)
 
         for sample, energy in response.data(['sample', 'energy']):
-            self.assertEqual(bqm.energy(sample), energy)
+            self.assertAlmostEqual(bqm.energy(sample), energy)
 
     @unittest.skipUnless(_networkx, "No networkx installed")
     def test_energies_discard(self):

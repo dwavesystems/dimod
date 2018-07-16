@@ -99,3 +99,27 @@ class TestMajorityVote(unittest.TestCase):
         np.testing.assert_equal(samples, [[0, 1],
                                           [1, 1],
                                           [0, 0]])
+
+    def test_four_chains(self):
+        S = [[-1, -1, -1, -1],
+             [+1, -1, -1, -1],
+             [+1, +1, -1, -1],
+             [-1, +1, -1, -1],
+             [-1, +1, +1, -1],
+             [+1, +1, +1, -1],
+             [+1, -1, +1, -1],
+             [-1, -1, +1, -1],
+             [-1, -1, +1, +1],
+             [+1, -1, +1, +1],
+             [+1, +1, +1, +1],
+             [-1, +1, +1, +1],
+             [-1, +1, -1, +1],
+             [+1, +1, -1, +1],
+             [+1, -1, -1, +1],
+             [-1, -1, -1, +1]]
+        chains = [[0], [1], [2, 3]]
+
+        samples, idx = dimod.embedding.majority_vote_matrix(S, chains)
+
+        self.assertEqual(samples.shape, (16, 3))
+        self.assertEqual(set().union(*samples), {-1, 1})  # should be spin-valued
