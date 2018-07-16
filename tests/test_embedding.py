@@ -545,39 +545,6 @@ class TestUnembedResponse(unittest.TestCase):
 
 
 class TestEmbeddingChainBreaks(unittest.TestCase):
-    def test_discard_no_breaks_all_ones_identity_embedding(self):
-        from dimod.embedding.chain_breaks import discard_matrix
-
-        samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
-        chain_list = [{idx} for idx in range(50)]
-
-        new_matrix = discard_matrix(samples_matrix, chain_list)
-
-        npt.assert_equal(new_matrix, samples_matrix)
-
-    def test_discard_no_breaks_all_ones_one_var_embedding(self):
-        from dimod.embedding.chain_breaks import discard_matrix
-
-        samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
-        chain_list = [{idx for idx in range(50)}]
-
-        new_matrix = discard_matrix(samples_matrix, chain_list)
-
-        self.assertEqual(new_matrix.shape, (100, 1))
-
-    def test_discard_typical(self):
-        from dimod.embedding.chain_breaks import discard_matrix
-
-        samples_matrix = np.matrix([[-1, +1, -1, +1],
-                                    [+1, +1, +1, +1],
-                                    [-1, -1, +1, -1],
-                                    [-1, -1, +1, +1]], dtype='int8')
-        chain_list = [{0, 1}, {2, 3}]
-
-        new_matrix = discard_matrix(samples_matrix, chain_list)
-
-        npt.assert_equal(new_matrix, [[+1, +1],
-                                      [-1, +1]])
 
     def test__most_common(self):
         from dimod.embedding.chain_breaks import _most_common
