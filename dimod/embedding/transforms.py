@@ -21,7 +21,7 @@ import itertools
 from six import iteritems, itervalues
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.embedding.chain_breaks import majority_vote
+from dimod.embedding.array import majority_vote_matrix
 from dimod.embedding.utils import chain_to_quadratic
 from dimod.response import Response
 from dimod.vartypes import Vartype
@@ -413,7 +413,8 @@ def iter_unembed(target_samples, embedding, chain_break_method=None):
             yield source_sample
 
 
-def unembed_response(target_response, embedding, source_bqm, chain_break_method=None):
+def unembed_response(target_response, embedding, source_bqm,
+                     chain_break_method=None, array_chain_break_method=None):
     """Unembed the response.
 
     Construct a response for the source binary quadratic model (BQM) by unembedding the given
@@ -430,8 +431,13 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         source_bqm (:obj:`.BinaryQuadraticModel`):
             Source binary quadratic model.
 
-        chain_break_method (function, optional, default=:func:`.majority_vote`):
-            Method used to resolve chain breaks.
+        chain_break_method (function, optional):
+            Method used to resolve chain breaks. Must be an iterator which accepts a sample and
+            an embedding and yields unembedded samples.
+
+        array_chain_break_method (function, optional):
+            Method used to resolve chain break. Must accept a matrix of samples and an list of
+            chains and return a matrix of unembedded samples and an array of indices.
 
     Returns:
         :obj:`.Response`:
@@ -503,17 +509,43 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
 
     energies = []
 
-    def _samples():
-        # populate energies as the samples are resolved one-at-a-time
-        for sample in iter_unembed(target_response, embedding, chain_break_method):
-            energies.append(source_bqm.energy(sample))
-            yield sample
+    if chain_break_method is not None:
 
-    # overwrite energy with the new values
-    data_vectors = target_response.data_vectors.copy()
-    data_vectors['energy'] = energies
+        def _samples():
+            # populate energies as the samples are resolved one-at-a-time
+            for sample in iter_unembed(target_response, embedding, chain_break_method):
+                energies.append(source_bqm.energy(sample))
+                yield sample
 
-    # NB: this works because response.from_dict does not resolve the energies until AFTER the samples
-    return target_response.from_dicts(_samples(), data_vectors,
-                                      vartype=target_response.vartype,
-                                      info=target_response.info)
+        # overwrite energy with the new values
+        data_vectors = target_response.data_vectors.copy()
+        data_vectors['energy'] = energies
+
+        # NB: this works because response.from_dict does not resolve the energies until AFTER the samples
+        return target_response.from_dicts(_samples(), data_vectors,
+                                          vartype=target_response.vartype,
+                                          info=target_response.info)
+
+    else:
+        if array_chain_break_method is None:
+            array_chain_break_method = majority_vote_matrix
+
+        variables, chains = zip(*embedding.items())
+
+        if target_response.label_to_idx is None:
+            chain_idxs = [list(chain) for chain in chains]
+        else:
+            chain_idxs = [[target_response.label_to_idx[v] for v in chain] for chain in chains]
+
+        unembedded, idxs = array_chain_break_method(target_response.samples_matrix, chain_idxs)
+        data_vectors = {key: vector[idxs] for key, vector in target_response.data_vectors.items()}
+
+        lin, (i, j, quad), off = source_bqm.to_numpy_vectors(variable_order=variables)
+
+        # overwrite energy with the new values
+        data_vectors['energy'] = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
+
+        return target_response.from_matrix(unembedded, data_vectors,
+                                           vartype=target_response.vartype,
+                                           info=target_response.info,
+                                           variable_labels=variables)
