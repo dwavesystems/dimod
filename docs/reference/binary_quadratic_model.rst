@@ -97,6 +97,7 @@ Converting to other types
    BinaryQuadraticModel.from_ising
    BinaryQuadraticModel.from_json
    BinaryQuadraticModel.from_numpy_matrix
+   BinaryQuadraticModel.from_numpy_vectors
    BinaryQuadraticModel.from_qubo
    BinaryQuadraticModel.from_pandas_dataframe
    BinaryQuadraticModel.to_coo
@@ -104,5 +105,6 @@ Converting to other types
    BinaryQuadraticModel.to_json
    BinaryQuadraticModel.to_networkx_graph
    BinaryQuadraticModel.to_numpy_matrix
+   BinaryQuadraticModel.to_numpy_vectors
    BinaryQuadraticModel.to_qubo
    BinaryQuadraticModel.to_pandas_dataframe
