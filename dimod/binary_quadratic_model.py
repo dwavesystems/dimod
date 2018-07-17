@@ -2077,8 +2077,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         if variable_order is None:
             variable_order = list(range(len(linear)))
 
-        linear = {v: bias for v, bias in zip(variable_order, linear)}
-        quadratic = {(variable_order[u], variable_order[v]): bias
+        linear = {v: float(bias) for v, bias in zip(variable_order, linear)}
+        quadratic = {(variable_order[u], variable_order[v]): float(bias)
                      for u, v, bias in zip(heads, tails, values)}
 
         return cls(linear, quadratic, offset, vartype)
