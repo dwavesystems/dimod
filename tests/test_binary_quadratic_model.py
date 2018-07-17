@@ -1485,6 +1485,68 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_numpy_matrix(M)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
 
+    def test_to_numpy_vectors(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): .5, (2, 3): -1, (0, 3): 1.5})
+
+        h, (i, j, values), off = bqm.to_numpy_vectors()
+
+        self.assertEqual(len(h), len(bqm.linear))
+        for idx, bias in enumerate(h):
+            self.assertAlmostEqual(bias, bqm.linear[idx])
+
+        self.assertEqual(len(i), len(j))
+        self.assertEqual(len(j), len(values))
+        self.assertEqual(len(values), len(bqm.quadratic))
+        for u, v, bias in zip(i, j, values):
+            self.assertIn(u, bqm.adj)
+            self.assertIn(v, bqm.adj[u])
+            self.assertAlmostEqual(bias, bqm.adj[u][v])
+
+    def test_to_numpy_vectors_sorted(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): .5, (3, 2): -1, (0, 3): 1.5})
+
+        h, (i, j, values), off = bqm.to_numpy_vectors(sort_indices=True)
+
+        np.testing.assert_array_equal(h, [0, 0, 0, 0])
+        np.testing.assert_array_equal(i, [0, 0, 2])
+        np.testing.assert_array_equal(j, [1, 3, 3])
+        np.testing.assert_array_equal(values, [.5, 1.5, -1])
+
+    def test_to_numpy_vectors_labels_sorted(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): .5, ('d', 'c'): -1, ('a', 'd'): 1.5})
+
+        with self.assertRaises(ValueError):
+            bqm.to_numpy_vectors(sort_indices=True)
+
+        h, (i, j, values), off = bqm.to_numpy_vectors(sort_indices=True, variable_order=['a', 'b', 'c', 'd'])
+
+        np.testing.assert_array_equal(h, [0, 0, 0, 0])
+        np.testing.assert_array_equal(i, [0, 0, 2])
+        np.testing.assert_array_equal(j, [1, 3, 3])
+        np.testing.assert_array_equal(values, [.5, 1.5, -1])
+
+    def test_from_numpy_vectors(self):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1])
+        tails = np.array([1, 2])
+        values = np.array([-1, +1])
+
+        bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(h, (heads, tails, values), 0.0, dimod.SPIN)
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising([-1, 1, 5], {(0, 1): -1, (1, 2): 1}))
+
+    def test_from_numpy_vectors_labels(self):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1])
+        tails = np.array([1, 2])
+        values = np.array([-1, +1])
+
+        bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(h, (heads, tails, values), 0.0, dimod.SPIN,
+                                                            variable_order=['a', 'b', 'c'])
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({'a': -1, 'b': 1, 'c': 5},
+                                                                    {('a', 'b'): -1, ('b', 'c'): 1}))
+
     def test_from_qubo(self):
         Q = {('a', 'a'): 1, ('a', 'b'): -1}
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
