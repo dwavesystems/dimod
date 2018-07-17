@@ -49,6 +49,8 @@ from __future__ import absolute_import, division
 from collections import Sized, Container, Iterable
 from numbers import Number
 
+import numpy as np
+
 from six import itervalues, iteritems, iterkeys
 
 from dimod.decorators import vartype_argument
@@ -1952,6 +1954,134 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             bqm.add_interaction(u, v, 0.0)
 
         return bqm
+
+    def to_numpy_vectors(self, variable_order=None, dtype=None, index_dtype=None, sort_indices=False):
+        """Convert a binary quadratic model to numpy arrays.
+
+        Args:
+            variable_order (iterable, optional):
+                If provided, labels the variables; otherwise, row/column indices are used.
+
+            dtype (:class:`numpy.dtype`, optional):
+                Data-type of the biases. By default, the data-type is inferred from the biases.
+
+            index_dtype (:class:`numpy.dtype`, optional):
+                Data-type of the indices. By default, the data-type is inferred from the labels.
+
+            sort_indices (bool, optional, default=False):
+                If True, the indices are sorted, first by row then by column. Otherwise they
+                match :attr:`~.BinaryQuadraticModel.quadratic`.
+
+        Returns:
+            :obj:`~numpy.ndarray`: A numpy array of the linear biases.
+
+            tuple: The quadratic biases in COOrdinate format.
+
+                :obj:`~numpy.ndarray`: A numpy array of the row indices of the quadratic matrix
+                entries
+
+                :obj:`~numpy.ndarray`: A numpy array of the column indices of the quadratic matrix
+                entries
+
+                :obj:`~numpy.ndarray`: A numpy array of the values of the quadratic matrix
+                entries
+
+            The offset
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {(0, 1): .5, (3, 2): -1, (0, 3): 1.5}, 0.0, dimod.SPIN)
+            >>> lin, (i, j, vals), off = bqm.to_numpy_vectors(sort_indices=True)
+            >>> lin
+            array([0., 0., 0., 0.])
+            >>> i
+            array([0, 0, 2])
+            >>> j
+            array([1, 3, 3])
+            >>> vals
+            array([ 0.5,  1.5, -1. ])
+
+        """
+        linear = self.linear
+        quadratic = self.quadratic
+        n = len(linear)
+
+        if variable_order is None:
+            if not all(v in self.linear for v in range(n)):
+                raise ValueError(("if 'variable_order' is not provided, binary quadratic model must be "
+                                  "index labeled [0, ..., N-1]"))
+            variable_order = list(range(n))
+
+        labels = {v: idx for idx, v in enumerate(variable_order)}
+
+        lin = np.array([linear[v] for v in variable_order], dtype=dtype)
+
+        if sort_indices:
+            def _iter_quadratic():
+                for (u, v), bias in iteritems(quadratic):
+                    u = labels[u]
+                    v = labels[v]
+
+                    if u > v:
+                        yield (v, u, bias)
+                    else:
+                        yield (u, v, bias)
+
+            heads, tails, values = zip(*sorted(_iter_quadratic()))
+        else:
+            heads, tails, values = zip(*((labels[u], labels[v], bias) for (u, v), bias in iteritems(quadratic)))
+
+        return lin, (np.array(heads, dtype=index_dtype),
+                     np.array(tails, dtype=index_dtype),
+                     np.array(values, dtype=dtype)), self.offset
+
+    @classmethod
+    def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
+        """Create a binary quadratic model from vectors.
+
+        Args:
+            linear (array_like):
+                A 1D array-like iterable of linear biases.
+
+            quadratic (tuple[array_like, array_like, array_like]):
+                A 3-tuple of 1D array_like vectors of the form (row, col, bias).
+
+            offset (numeric, optional):
+                Constant offset for the binary quadratic model.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            variable_order (iterable, optional):
+                If provided, labels the variables; otherwise, indices are used.
+
+        Returns:
+            :obj:`.BinaryQuadraticModel`
+
+        Examples:
+            >>> linear_vector = np.asarray([-1, 1])
+            >>> quadratic_vectors = (np.asarray([0]), np.asarray([1]), np.asarray([-1.0])))
+            >>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear_vector, quadratic_vectors, 0.0, dimod.SPIN)
+            >>> bqm.quadratic
+            {(0, 1): -1}
+
+        """
+
+        try:
+            heads, tails, values = quadratic
+        except ValueError:
+            raise ValueError("quadratic should be a 3-tuple")
+
+        if variable_order is None:
+            variable_order = list(range(len(linear)))
+
+        linear = {v: bias for v, bias in zip(variable_order, linear)}
+        quadratic = {(variable_order[u], variable_order[v]): bias
+                     for u, v, bias in zip(heads, tails, values)}
+
+        return cls(linear, quadratic, offset, vartype)
 
     def to_pandas_dataframe(self):
         """Convert a binary quadratic model to pandas DataFrame format.
