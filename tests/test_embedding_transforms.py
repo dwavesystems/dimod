@@ -195,6 +195,27 @@ class TestUnembedResponse(unittest.TestCase):
         for sample, energy in response.data(['sample', 'energy']):
             self.assertEqual(bqm.energy(sample), energy)
 
+    @unittest.skipUnless(_networkx, "No networkx installed")
+    def test_unembed_response_with_discard_matrix_typical(self):
+        h = {'a': .1, 'b': 0, 'c': 0}
+        J = {('a', 'b'): 1, ('b', 'c'): 1.3, ('a', 'c'): -1}
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1.3)
+
+        embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
+
+        embedded_bqm = dimod.embed_bqm(bqm, embedding, nx.cycle_graph(4), chain_strength=1)
+
+        embedded_response = dimod.ExactSolver().sample(embedded_bqm)
+
+        chain_break_method = dimod.embedding.discard
+        response = dimod.unembed_response(embedded_response, embedding, bqm,
+                                          array_chain_break_method=dimod.embedding.discard_matrix)
+
+        self.assertEqual(len(embedded_response) / 2, len(response))  # half chains should be broken
+
+        for sample, energy in response.data(['sample', 'energy']):
+            self.assertEqual(bqm.energy(sample), energy)
+
 
 class TestEmbedBQM(unittest.TestCase):
     def test_embed_bqm_empty(self):
