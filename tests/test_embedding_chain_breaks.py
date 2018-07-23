@@ -48,7 +48,7 @@ class TestDiscardMatrix(unittest.TestCase):
         samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
         chain_list = [[idx] for idx in range(50)]
 
-        new_matrix, idxs = dimod.embedding.discard_matrix(samples_matrix, chain_list)
+        new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
 
         np.testing.assert_equal(new_matrix, samples_matrix)
 
@@ -57,7 +57,7 @@ class TestDiscardMatrix(unittest.TestCase):
         samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
         chain_list = [[idx for idx in range(50)]]
 
-        new_matrix, idxs = dimod.embedding.discard_matrix(samples_matrix, chain_list)
+        new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
 
         self.assertEqual(new_matrix.shape, (100, 1))
 
@@ -69,7 +69,7 @@ class TestDiscardMatrix(unittest.TestCase):
                                     [-1, -1, +1, +1]], dtype='int8')
         chain_list = [(0, 1), (2, 3)]
 
-        new_matrix, idxs = dimod.embedding.discard_matrix(samples_matrix, chain_list)
+        new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
 
         np.testing.assert_equal(new_matrix, [[+1, +1],
                                              [-1, +1]])
@@ -82,7 +82,7 @@ class TestMajorityVote(unittest.TestCase):
                       [-1, +1, -1, -1]])
         chains = [[0, 1, 2], [3]]
 
-        samples, idx = dimod.embedding.majority_vote_matrix(S, chains)
+        samples, idx = dimod.embedding.majority_vote(S, chains)
 
         np.testing.assert_equal(samples, [[-1, +1],
                                           [+1, +1],
@@ -94,7 +94,7 @@ class TestMajorityVote(unittest.TestCase):
                       [0, 1, 0, 0]])
         chains = [[0, 1, 2], [3]]
 
-        samples, idx = dimod.embedding.majority_vote_matrix(S, chains)
+        samples, idx = dimod.embedding.majority_vote(S, chains)
 
         np.testing.assert_equal(samples, [[0, 1],
                                           [1, 1],
@@ -119,7 +119,7 @@ class TestMajorityVote(unittest.TestCase):
              [-1, -1, -1, +1]]
         chains = [[0], [1], [2, 3]]
 
-        samples, idx = dimod.embedding.majority_vote_matrix(S, chains)
+        samples, idx = dimod.embedding.majority_vote(S, chains)
 
         self.assertEqual(samples.shape, (16, 3))
         self.assertEqual(set().union(*samples), {-1, 1})  # should be spin-valued
