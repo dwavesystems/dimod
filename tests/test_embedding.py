@@ -176,27 +176,3 @@ class TestUtils(unittest.TestCase):
         freq = dimod.embedding.chain_break_frequency(response, embedding)
 
         self.assertEqual(freq, {0: .5})
-
-
-class TestEmbeddingChainBreaks(unittest.TestCase):
-
-    def test__most_common(self):
-        from dimod.embedding.chain_breaks import _most_common
-
-        self.assertEqual(_most_common([-1, +1, +1]), +1)
-        self.assertEqual(_most_common([+1, -1, -1]), -1)
-        self.assertEqual(_most_common([0, 1, 1]), 1)
-        self.assertEqual(_most_common([1, 0, 0]), 0)
-
-        with self.assertRaises(ValueError):
-            _most_common([])
-
-    def test_all_equal(self):
-        from dimod.embedding.chain_breaks import _all_equal
-
-        self.assertTrue(_all_equal([1, 1]))
-        self.assertTrue(_all_equal([-1, -1]))
-        self.assertTrue(_all_equal([0, 0]))
-        self.assertFalse(_all_equal([+1, -1]))
-        self.assertFalse(_all_equal([1, 0]))
-        self.assertTrue(_all_equal([]))

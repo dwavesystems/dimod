@@ -31,7 +31,7 @@ except ImportError:
     _networkx = False
 
 
-class TestIterUnembed(unittest.TestCase):
+class TestUnembedResponse(unittest.TestCase):
 
     def test_majority_vote(self):
         """should return the most common value in the chain"""
@@ -42,8 +42,14 @@ class TestIterUnembed(unittest.TestCase):
 
         embedding = {'a': {0, 1, 2}}
 
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
+
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.majority_vote)
+
         # specify that majority vote should be used
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.majority_vote))
+        source_samples = list(resp)
 
         self.assertEqual(source_samples, [{'a': -1}, {'a': +1}])
 
@@ -55,11 +61,14 @@ class TestIterUnembed(unittest.TestCase):
         # now set up an embedding that works for one sample and not the other
         embedding = {'a': {0, 1, 2}}
 
-        # load the samples into a dimod response
-        response = dimod.Response.from_dicts(samples, {'energy': [0 for __ in samples]})
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
+
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.majority_vote)
 
         # specify that majority vote should be used
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.majority_vote))
+        source_samples = list(resp)
 
         self.assertEqual(len(source_samples), 2)
         self.assertEqual(source_samples, [{'a': -1}, {'a': +1}])
@@ -71,8 +80,13 @@ class TestIterUnembed(unittest.TestCase):
 
         embedding = {'a': {0, 1, 2}}
 
-        # specify that majority vote should be used
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.discard))
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
+
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
+
+        source_samples = list(resp)
 
         # no samples should be returned because they are all broken
         self.assertEqual(len(source_samples), 0)
@@ -80,9 +94,13 @@ class TestIterUnembed(unittest.TestCase):
         # now set up an embedding that works for one sample and not the other
         embedding = {'a': {0, 1}, 'b': {2}}
 
-        # specify that discard should be used
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.discard))
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {('a', 'b'): -1})
 
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
+
+        source_samples = list(resp)
         # only the first sample should be returned
         self.assertEqual(len(source_samples), 1)
         self.assertEqual(source_samples, [{'a': -1, 'b': +1}])
@@ -95,68 +113,18 @@ class TestIterUnembed(unittest.TestCase):
         # now set up an embedding that works for one sample and not the other
         embedding = {'a': {0, 1}, 'b': {2}}
 
-        # load the samples into a dimod response
-        response = dimod.Response.from_dicts(samples, {'energy': [0 for __ in samples]})
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {('a', 'b'): -1})
 
-        # specify that discard should be used
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=dimod.embedding.discard))
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
+
+        source_samples = list(resp)
 
         # only the first sample should be returned
         self.assertEqual(len(source_samples), 1)
         self.assertEqual(source_samples, [{'a': -1, 'b': +1}])
 
-    def test_energy_minimization(self):
-        sample0 = {0: -1, 1: -1, 2: +1, 3: +1}
-        sample1 = {0: +1, 1: -1, 2: +1, 3: -1}
-        samples = [sample0, sample1]
-
-        embedding = {'a': {0, 1}, 'b': {2}, 'c': {3}}
-
-        linear = {'a': -1, 'b': 0, 'c': 0}
-        quadratic = {}
-
-        chain_break_method = dimod.embedding.MinimizeEnergy(linear=linear, quadratic=quadratic)
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=chain_break_method))
-
-        source0, source1 = source_samples
-
-        # no broken chains
-        self.assertEqual(source0, {'a': -1, 'b': +1, 'c': +1})
-
-        # in this case 'a' being spin-up minimizes the energy
-        self.assertEqual(source1, {'a': +1, 'b': +1, 'c': -1})
-
-        linear = {'a': 1, 'b': 0, 'c': 0}
-        quadratic = {('a', 'b'): -5}
-
-        chain_break_method = dimod.embedding.MinimizeEnergy(linear=linear, quadratic=quadratic)
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=chain_break_method))
-
-        source0, source1 = source_samples
-
-        # no broken chains
-        self.assertEqual(source0, {'a': -1, 'b': +1, 'c': +1})
-
-        # in this case 'a' being spin-up minimizes the energy due to the quadratic bias
-        self.assertEqual(source1, {'a': +1, 'b': +1, 'c': -1})
-
-        # now we need two broken chains
-        sample = {0: +1, 1: -1, 2: +1, 3: -1, 4: +1}
-        samples = [sample]
-
-        embedding = {'a': {0, 1}, 'b': {2, 3}, 'c': {4}}
-
-        quadratic = {('a', 'b'): -1, ('b', 'c'): 1}
-
-        chain_break_method = dimod.embedding.MinimizeEnergy(quadratic=quadratic)
-        source_samples = list(dimod.iter_unembed(samples, embedding, chain_break_method=chain_break_method))
-
-        source, = source_samples
-
-        self.assertEqual(source, {'b': -1, 'c': +1, 'a': -1})
-
-
-class TestUnembedResponse(unittest.TestCase):
     @unittest.skipUnless(_networkx, "No networkx installed")
     def test_energies_functional(self):
         h = {'a': .1, 'b': 0, 'c': 0}
@@ -209,7 +177,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         chain_break_method = dimod.embedding.discard
         response = dimod.unembed_response(embedded_response, embedding, bqm,
-                                          array_chain_break_method=dimod.embedding.discard_matrix)
+                                          chain_break_method=dimod.embedding.discard)
 
         self.assertEqual(len(embedded_response) / 2, len(response))  # half chains should be broken
 
