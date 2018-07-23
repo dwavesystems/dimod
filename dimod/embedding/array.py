@@ -20,6 +20,7 @@ import numpy as np
 __all__ = ['broken_chains',
            'discard_matrix',
            'majority_vote_matrix',
+           'weighted_random_matrix',
            ]
 
 
@@ -124,3 +125,27 @@ def majority_vote_matrix(samples, chains):
             unembedded[:, cidx] = (samples[:, chain].sum(axis=1) >= mid)
 
     return unembedded, np.arange(num_samples)  # we keep all of the samples in this case
+
+
+def weighted_random_matrix(samples, chains):
+    """Determine the sample values of chains by weighed random choice."""
+    samples = np.asarray(samples)
+    if samples.ndim != 2:
+        raise ValueError("expected samples to be a numpy 2D array")
+
+    # it sufficies to choose a random index in each chain and use that to construct the matrix
+    idx = [np.random.choice(chain) for chain in chains]
+
+    return samples[:, idx], np.arange(num_samples)  # we keep all of the samples in this case
+
+
+class MinimizeEnergy(Callable):
+    def __init__(self, bqm, variable_order):
+        self.linear, self.quadratic, __ = bqm.to_numpy_vectors(variable_order)
+
+    def __call__(self, samples, chains):
+        samples = np.asarray(samples)
+        if samples.ndim != 2:
+            raise ValueError("expected samples to be a numpy 2D array")
+
+        raise NotImplementedError
