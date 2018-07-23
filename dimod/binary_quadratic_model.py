@@ -2015,24 +2015,31 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         lin = np.array([linear[v] for v in variable_order], dtype=dtype)
 
-        if sort_indices:
-            def _iter_quadratic():
-                for (u, v), bias in iteritems(quadratic):
-                    u = labels[u]
-                    v = labels[v]
+        if quadratic:
+            if sort_indices:
+                def _iter_quadratic():
+                    for (u, v), bias in iteritems(quadratic):
+                        u = labels[u]
+                        v = labels[v]
 
-                    if u > v:
-                        yield (v, u, bias)
-                    else:
-                        yield (u, v, bias)
+                        if u > v:
+                            yield (v, u, bias)
+                        else:
+                            yield (u, v, bias)
 
-            heads, tails, values = zip(*sorted(_iter_quadratic()))
+                heads, tails, values = zip(*sorted(_iter_quadratic()))
+            else:
+                heads, tails, values = zip(*((labels[u], labels[v], bias) for (u, v), bias in iteritems(quadratic)))
         else:
-            heads, tails, values = zip(*((labels[u], labels[v], bias) for (u, v), bias in iteritems(quadratic)))
+            # need to specify a dtype, otherwise they would be cast to float. This might be overwritten
+            # by the user
+            heads = np.array([], dtype=int)
+            tails = np.array([], dtype=int)
+            values = []  # will be cast to float which is fine
 
-        return lin, (np.array(heads, dtype=index_dtype),
-                     np.array(tails, dtype=index_dtype),
-                     np.array(values, dtype=dtype)), self.offset
+        return lin, (np.asarray(heads, dtype=index_dtype),
+                     np.asarray(tails, dtype=index_dtype),
+                     np.asarray(values, dtype=dtype)), self.offset
 
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
