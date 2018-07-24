@@ -107,7 +107,7 @@ class ExactSolver(Sampler):
 
         samples, energies = zip(*iter_samples())
 
-        response = Response.from_matrix(np.matrix(samples, dtype='int8'), {'energy': energies},
+        response = Response.from_matrix(np.array(samples, dtype='int8'), {'energy': energies},
                                         vartype=Vartype.BINARY)
 
         # make sure the response matches the given vartype, in-place.

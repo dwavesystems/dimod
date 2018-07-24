@@ -20,6 +20,7 @@ from six import iteritems
 import numpy as np
 
 from dimod.response import Response
+from dimod.embedding.chain_breaks import broken_chains
 
 
 __all__ = ['target_to_source', 'chain_to_quadratic', 'chain_break_frequency']
@@ -171,7 +172,7 @@ def chain_break_frequency(samples, embedding):
 
         >>> import dimod
         >>> import numpy as np
-        >>> samples = np.matrix([[-1, +1], [+1, +1]])
+        >>> samples = np.array([[-1, +1], [+1, +1]])
         >>> embedding = {'a': {0, 1}}
         >>> print(dimod.chain_break_frequency(samples, embedding)['a'])
         0.5
@@ -192,17 +193,20 @@ def chain_break_frequency(samples, embedding):
         if samples.variable_labels is not None:
             label_to_idx = samples.label_to_idx
             embedding = {v: {label_to_idx[u] for u in chain} for v, chain in iteritems(embedding)}
-        samples = samples.samples_matrix
+        samples = samples.record.sample
     else:
-        samples = np.matrix(samples)
+        samples = np.asarray(samples, dtype=np.int8)
 
-    f = {}
-    for v, chain in iteritems(embedding):
-        chain = list(chain)
-        u = chain[0]
-        f[v] = 1.0 - float(np.mean((samples[:, chain] == samples[:, u]).all(axis=1), dtype=float))
+    if not embedding:
+        return {}
 
-    return f
+    variables, chains = zip(*embedding.items())
+
+    broken = broken_chains(samples, chains)
+
+    freq = {v: float(broken[:, cidx].mean()) for cidx, v in enumerate(variables)}
+
+    return freq
 
 
 def edgelist_to_adjacency(edgelist):

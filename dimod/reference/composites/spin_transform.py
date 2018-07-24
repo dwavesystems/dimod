@@ -142,9 +142,9 @@ class SpinReversalTransformComposite(Sampler, Composite):
             tf_idxs = [flipped_response.label_to_idx[v] for v in flipped_response.variable_labels]
 
             if bqm.vartype is Vartype.SPIN:
-                flipped_response.samples_matrix[:, tf_idxs] = -1 * flipped_response.samples_matrix[:, tf_idxs]
+                flipped_response.record.sample[:, tf_idxs] = -1 * flipped_response.record.sample[:, tf_idxs]
             else:
-                flipped_response.samples_matrix[:, tf_idxs] = 1 - flipped_response.samples_matrix[:, tf_idxs]
+                flipped_response.record.sample[:, tf_idxs] = 1 - flipped_response.record.sample[:, tf_idxs]
 
             if response is None:
                 response = flipped_response
