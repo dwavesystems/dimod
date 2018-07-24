@@ -264,15 +264,18 @@ jobs:
     working_directory: ~/repo
 
     steps:
+      - checkout
+
       - run:
           name: create virtualenv
           command: |
             python -m virtualenv env
 
       - run:
-          name: install sphinx
+          name: install sphinx and dependencies
           command: |
             . env/bin/activate
+            pip install -r requirements.txt
             pip install sphinx
             pip install sphinx_rtd_theme
 
