@@ -44,12 +44,6 @@ jobs:
             . env/bin/activate
             codecov
 
-      - run:
-          name: doctest
-          command: |
-            . env/bin/activate
-            make -C docs/ doctest
-
   test-3.5:
     <<: *full-test-template
     docker:
@@ -62,7 +56,7 @@ jobs:
 
   test-3.7:
     docker:
-      - image: circleci/python:3.7-rc-stretch
+      - image: circleci/python:3.7-stretch
 
     working_directory: ~/repo
 
@@ -102,19 +96,21 @@ jobs:
 
       - restore_cache:
           keys:
-          - pyenv-versions-{{ .Environment.CIRCLE_JOB }}
+          - pyenv-versions-2.7.14-3.5.5-3.6.5-3.7.0-{{ .Environment.CIRCLE_JOB }}
           - dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run:
-          name: install python 2.7.14 and 3.6.5 with pyenv
+          name: install python 2.7.14, 3.5.5, 3.6.5, and 3.7.0 with pyenv
           command: |
             pyenv install 2.7.14 -s
+            pyenv install 3.5.5 -s
             pyenv install 3.6.5 -s
+            pyenv install 3.7.0 -s
 
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-versions-{{ .Environment.CIRCLE_JOB }}
+          key: pyenv-versions-2.7.14-3.5.5-3.6.5-3.7.0-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: create virtualenv for 2.7.14
@@ -130,6 +126,32 @@ jobs:
           paths:
             - ./env
           key: dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *run-tests-template
+
+      - run:
+          name: clear virtual environment
+          command: |
+            rm -rf env
+
+      - restore_cache:
+          keys:
+          - dependencies3.5-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv for 3.5.5
+          command: |
+            eval "$(pyenv init -)"
+            pyenv local 3.5.5
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - save_cache:
+          paths:
+            - ./env
+          key: dependencies3.5-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: *run-tests-template
 
@@ -156,6 +178,32 @@ jobs:
           paths:
             - ./env
           key: dependencies3.6-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *run-tests-template
+
+      - run:
+          name: clear virtual environment
+          command: |
+            rm -rf env
+
+      - restore_cache:
+          keys:
+          - dependencies3.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv for 3.7.0
+          command: |
+            eval "$(pyenv init -)"
+            pyenv local 3.7.0
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - save_cache:
+          paths:
+            - ./env
+          key: dependencies3.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: *run-tests-template
 
@@ -209,19 +257,41 @@ jobs:
             . env/bin/activate
             twine upload dist/*
 
+  test-doctest:
+    docker:
+      - image: circleci/python:3.5-jessie
+
+    working_directory: ~/repo
+
+    steps:
+      - run:
+          name: create virtualenv
+          command: |
+            python -m virtualenv env
+
+      - run:
+          name: install sphinx
+          command: |
+            . env/bin/activate
+            pip install sphinx
+            pip install sphinx_rtd_theme
+
+      - run:
+          name: doctest
+          command: |
+            . env/bin/activate
+            make -C docs/ doctest
+
 workflows:
   version: 2
-  test:
+  test-doctest:
     jobs:
       - test-2.7
       - test-3.7
       - test-3.6
       - test-3.5
-      - test-osx:
-          requires:
-            - test-3.6
-            - test-3.5
-            - test-2.7
+      - test-doctest
+      - test-osx
       - deploy:
           filters:
             tags:
