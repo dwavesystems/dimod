@@ -1,5 +1,5 @@
 enum34==1.1.6; python_version<="3.3"
-numpy==1.11.3
+numpy==1.14.5
 six==1.11.0
 futures; python_version=="2.7"
 jsonschema==2.6.0
@@ -10,6 +10,3 @@ mock==2.0.0
 
 coverage
 codecov
-
-sphinx
-sphinx_rtd_theme
