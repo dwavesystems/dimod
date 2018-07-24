@@ -42,7 +42,7 @@ class TestBrokenChains(unittest.TestCase):
         broken = dimod.embedding.broken_chains(samples_matrix, chain_list)
 
 
-class TestDiscardMatrix(unittest.TestCase):
+class TestDiscard(unittest.TestCase):
     def test_discard_no_breaks_all_ones_identity_embedding(self):
 
         samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
@@ -73,6 +73,14 @@ class TestDiscardMatrix(unittest.TestCase):
 
         np.testing.assert_equal(new_matrix, [[+1, +1],
                                              [-1, +1]])
+
+    def test_mixed_chain_types(self):
+        chains = [(0, 1), [2, 3], {4, 5}]
+        samples = [[1, 1, 1, 1, 1, 1], [0, 1, 0, 1, 0, 1]]
+        unembedded, idx = dimod.embedding.discard(samples, chains)
+
+        np.testing.assert_array_equal(unembedded, [[1, 1, 1]])
+        np.testing.assert_array_equal(idx, [0])
 
 
 class TestMajorityVote(unittest.TestCase):
@@ -171,3 +179,40 @@ class TestMinimizeEnergy(unittest.TestCase):
         unembedded, idx = cbm(solutions, chains)
 
         np.testing.assert_array_equal(expected, unembedded)
+
+    def test_empty_matrix(self):
+        chains = []
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+        solutions = [[]]
+        embedding = {}
+        cbm = dimod.embedding.MinimizeEnergy(bqm, embedding)
+        unembedded, idx = cbm(solutions, chains)
+
+        np.testing.assert_array_equal([[]], unembedded)
+        np.testing.assert_array_equal(idx, [0])
+
+    def test_empty_chains(self):
+        embedding = {}
+        h = []
+        j = {(0, 1): -1, (0, 2): 2, (0, 3): 2, (0, 4): -1,
+             (2, 1): -1, (1, 3): 2, (3, 1): -1, (1, 4): -1,
+             (2, 3): 1, (4, 2): -1, (2, 4): -1, (3, 4): 1}
+
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, j)
+
+        solutions = [
+            [-1, -1, -1, -1, -1, -1, +1, +1, +1, 3, +1],
+            [+1, +1, +1, +1, +1, -1, +1, -1, -1, 3, -1],
+            [+1, +1, -1, +1, -1, -1, -1, -1, -1, 3, -1]
+        ]
+        expected = [
+            [-1, -1, +1, +1, -1],
+            [+1, +1, +1, -1, +1],
+            [-1, -1, -1, +1, -1]
+        ]
+
+        cbm = dimod.embedding.MinimizeEnergy(bqm, embedding)
+
+        unembedded, idx = cbm(solutions, [])
+
+        np.testing.assert_array_equal(unembedded, [[], [], []])
