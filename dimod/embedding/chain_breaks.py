@@ -16,14 +16,17 @@
 from __future__ import division
 
 from collections import Callable
+from heapq import heapify, heappop
 
 import numpy as np
+
+from dimod.vartypes import SPIN
 
 __all__ = ['broken_chains',
            'discard',
            'majority_vote',
            'weighted_random',
-           # 'MinimizeEnergy',
+           'MinimizeEnergy',
            ]
 
 
@@ -69,12 +72,14 @@ def broken_chains(samples, chains):
     broken = np.zeros((num_samples, num_chains), dtype=bool, order='F')
 
     for cidx, chain in enumerate(chains):
+        if isinstance(chain, set):
+            chain = list(chain)
         chain = np.asarray(chain)
 
         if chain.ndim > 1:
             raise ValueError("chains should be 1D array_like objects")
 
-        # # chains of length 1, or 0 cannot be broken
+        # chains of length 1, or 0 cannot be broken
         if len(chain) <= 1:
             continue
 
@@ -82,7 +87,7 @@ def broken_chains(samples, chains):
         any_ = (samples[:, chain] == 1).any(axis=1)
         broken[:, cidx] = np.bitwise_xor(all_, any_)
 
-    return np.ascontiguousarray(broken)
+    return broken
 
 
 def discard(samples, chains):
@@ -136,19 +141,76 @@ def weighted_random(samples, chains):
     if samples.ndim != 2:
         raise ValueError("expected samples to be a numpy 2D array")
 
-    # it sufficies to choose a random index in each chain and use that to construct the matrix
+    # it sufficies to choose a random index from each chain and use that to construct the matrix
     idx = [np.random.choice(chain) for chain in chains]
 
+    num_samples, num_variables = samples.shape
     return samples[:, idx], np.arange(num_samples)  # we keep all of the samples in this case
 
 
-# class MinimizeEnergy(Callable):
-#     def __init__(self, bqm, variable_order):
-#         self.linear, self.quadratic, __ = bqm.to_numpy_vectors(variable_order)
+class MinimizeEnergy(Callable):
+    """"""
+    def __init__(self, bqm, embedding):
+        # this is an awkward construction but we need it to maintain consistency with the other
+        # chain break methods
+        self.chain_to_var = {frozenset(chain): v for v, chain in embedding.items()}
 
-#     def __call__(self, samples, chains):
-#         samples = np.asarray(samples)
-#         if samples.ndim != 2:
-#             raise ValueError("expected samples to be a numpy 2D array")
+        self.bqm = bqm
 
-#         raise NotImplementedError
+    def __call__(self, samples, chains):
+        samples = np.asarray(samples)
+        if samples.ndim != 2:
+            raise ValueError("expected samples to be a numpy 2D array")
+
+        chain_to_var = self.chain_to_var
+        variables = [chain_to_var[frozenset(chain)] for chain in chains]
+        chains = [np.asarray(list(chain)) if isinstance(chain, set) else np.array(chain) for chain in chains]
+
+        # we want the bqm by index
+        bqm = self.bqm.relabel_variables({v: idx for idx, v in enumerate(variables)}, inplace=False)
+
+        num_chains = len(chains)
+
+        if bqm.vartype is SPIN:
+            ZERO = -1
+        else:
+            ZERO = 0
+
+        def _minenergy(arr):
+
+            # energies = []
+
+            unbroken_arr = np.zeros((num_chains,), dtype=np.int8)
+            broken = []
+
+            for cidx, chain in enumerate(chains):
+
+                eq1 = (arr[chain] == 1)
+                if not np.bitwise_xor(eq1.all(), eq1.any()):
+                    # not broken
+                    unbroken_arr[cidx] = arr[chain][0]
+                else:
+                    broken.append(cidx)
+
+            energies = []
+            for cidx in broken:
+                en = bqm.linear[cidx] + sum(unbroken_arr[idx] * bqm.adj[cidx][idx] for idx in bqm.adj[cidx])
+                energies.append([-abs(en), en, cidx])
+            heapify(energies)
+
+            while energies:
+                _, e, i = heappop(energies)
+
+                unbroken_arr[i] = val = ZERO if e > 0 else 1
+
+                for energy_triple in energies:
+                    k = energy_triple[2]
+                    energy_triple[1] += val * bqm.adj[i][k]
+                    energy_triple[0] = -abs(energy_triple[1])
+
+                heapify(energies)
+
+            return unbroken_arr
+
+        num_samples, num_variables = samples.shape
+        return np.apply_along_axis(_minenergy, 1, samples), np.arange(num_samples)
