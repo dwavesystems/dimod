@@ -22,7 +22,6 @@ import concurrent.futures
 from collections import OrderedDict
 
 import numpy as np
-import numpy.testing as npt
 
 import dimod
 
@@ -33,60 +32,25 @@ except ImportError:
     _pandas = False
 
 
-def iter_spins(avg=.4):
-    """infinite iterator that yields samples converging to the expected average"""
-
-    yield 1
-
-    total = 1
-    count = 1
-
-    while True:
-        val = 1 if total / count <= avg else -1
-        total += val
-        count += 1
-        yield val
-
-
 class TestResponse(unittest.TestCase):
 
-    ##############################################################################################
-    # Properties and overrides
-    ##############################################################################################
-
-    ##############################################################################################
-    # Construction
-    ##############################################################################################
-
     def test_instantiation(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
         energies = np.asarray([2, 2, 0, 4], dtype=float)
 
         response = dimod.Response(samples_matrix, {'energy': energies}, dimod.BINARY)
 
-        npt.assert_equal(samples_matrix, response.samples_matrix)
-        npt.assert_allclose(energies, response.data_vectors['energy'])
-
-    def test_data_vectors_copy(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
-        energies = np.asarray([2, 2, 0, 4], dtype=float)
-
-        data_vectors = {'energy': energies}
-        response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
-
-        self.assertIsNot(response.data_vectors, data_vectors)
+        np.testing.assert_equal(samples_matrix, response.record.sample)
+        np.testing.assert_allclose(energies, response.record.energy)
 
     def test_data_vectors_are_arrays(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
         energies = [2, 2, 0, 4]
         num_occurrences = [1, 1, 2, 1]
         objects = [object() for __ in range(4)]
@@ -95,22 +59,22 @@ class TestResponse(unittest.TestCase):
 
         response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
 
-        self.assertEqual(len(response.data_vectors), 3)
+        self.assertEqual(len(response.record.dtype.fields), 4)
 
         for key in data_vectors:
-            self.assertIn(key, response.data_vectors)
+            self.assertIn(key, response.record.dtype.fields)
 
-            vector = response.data_vectors[key]
+            vector = response.record[key]
 
             self.assertIsInstance(vector, np.ndarray)
 
-            self.assertEqual(vector.shape, (4,))
+            self.assertEqual(vector.shape, (4,))  # in this case they will all be 1D
 
     def test_data_vectors_wrong_length(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
         energies = [2, 2, 0, 4]
         num_occurrences = [1, 1, 2, 1, 1]
         objects = [object() for __ in range(4)]
@@ -121,10 +85,10 @@ class TestResponse(unittest.TestCase):
             response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
 
     def test_data_vectors_not_array_like(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
         energies = [2, 2, 0, 4]
         num_occurrences = 'hi there'
         objects = [object() for __ in range(4)]
@@ -135,10 +99,10 @@ class TestResponse(unittest.TestCase):
             response = dimod.Response(samples_matrix, data_vectors, dimod.BINARY)
 
     def test_samples_num_limited(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
         energies = [2, 2, 0, 4]
         num_occurrences = [1, 1, 2, 1]
         objects = [object() for __ in range(4)]
@@ -157,24 +121,24 @@ class TestResponse(unittest.TestCase):
         self.assertEqual(shortened_samples_list, samples_list[0:3])
 
     def test_instantiation_without_energy(self):
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0],
-                                    [0, 0, 0, 0],
-                                    [1, 1, 1, 1]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0],
+                                   [0, 0, 0, 0],
+                                   [1, 1, 1, 1]])
 
         with self.assertRaises(ValueError):
             dimod.Response(samples_matrix, {}, dimod.BINARY)
 
     def test_from_matrix(self):
         # binary matrix
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0]])
         energies = np.asarray([0, 1], dtype=float)
 
-        response = dimod.Response.from_matrix(samples_matrix, {'energy': energies})
+        response = dimod.Response.from_matrix(samples_matrix, {'energy': energies}, vartype=dimod.BINARY)
 
-        self.assertTrue(np.all(samples_matrix == response.samples_matrix))
-        self.assertEqual(response.samples_matrix.dtype, np.int8)
+        self.assertTrue(np.all(samples_matrix == response.record.sample))
+        self.assertEqual(response.record.sample.dtype, np.int8)
         self.assertIs(response.vartype, dimod.BINARY)
 
         # spin array
@@ -182,21 +146,21 @@ class TestResponse(unittest.TestCase):
                                      [+1, -1, +1, -1]])
         energies = np.asarray([-.5, 1], dtype=float)
 
-        response = dimod.Response.from_matrix(samples_matrix, {'energy': energies})
+        response = dimod.Response.from_matrix(samples_matrix, {'energy': energies}, dimod.SPIN)
 
-        self.assertTrue(np.all(samples_matrix == response.samples_matrix))
-        self.assertEqual(response.samples_matrix.dtype, np.int8)
+        self.assertTrue(np.all(samples_matrix == response.record.sample))
+        self.assertEqual(response.record.sample.dtype, np.int8)
         self.assertIs(response.vartype, dimod.SPIN)
 
         # with array type
-        samples_matrix = np.matrix([[0, 1, 0, 1],
-                                    [1, 0, 1, 0]])
+        samples_matrix = np.array([[0, 1, 0, 1],
+                                   [1, 0, 1, 0]])
         energies = np.asarray([0, 1], dtype=float)
 
         response = dimod.Response.from_matrix(samples_matrix, {'energy': energies}, vartype=dimod.BINARY)
 
-        self.assertTrue(np.all(samples_matrix == response.samples_matrix))
-        self.assertEqual(response.samples_matrix.dtype, np.int8)
+        self.assertTrue(np.all(samples_matrix == response.record.sample))
+        self.assertEqual(response.record.sample.dtype, np.int8)
         self.assertIs(response.vartype, dimod.BINARY)
 
     def test_from_dicts(self):
@@ -206,10 +170,10 @@ class TestResponse(unittest.TestCase):
                    {'a': -1, 'b': -1}]
         energies = [sum(sample.values()) for sample in samples]
 
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
-        self.assertTrue(np.all(response.samples_matrix == np.asarray([[-1, +1], [-1, -1]])))
-        self.assertEqual(response.samples_matrix.dtype, np.int8)
+        self.assertTrue(np.all(response.record.sample == np.asarray([[-1, +1], [-1, -1]])))
+        self.assertEqual(response.record.sample.dtype, np.int8)
         self.assertIs(response.vartype, dimod.SPIN)
         self.assertEqual(response.variable_labels, ['a', 'b'])  # sortable in py2 and py3
 
@@ -219,14 +183,14 @@ class TestResponse(unittest.TestCase):
                    OrderedDict([('a', -1), (0, -1)])]
         energies = [sum(sample.values()) for sample in samples]
 
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
         if response.variable_labels == [0, 'a']:
-            npt.assert_equal(response.samples_matrix, np.matrix([[+1, -1], [-1, -1]]))
+            np.testing.assert_equal(response.record.sample, np.array([[+1, -1], [-1, -1]]))
         else:
             self.assertEqual(response.variable_labels, ['a', 0])
-            npt.assert_equal(response.samples_matrix, np.matrix([[-1, +1], [-1, -1]]))
-        self.assertEqual(response.samples_matrix.dtype, np.int8)
+            np.testing.assert_equal(response.record.sample, np.array([[-1, +1], [-1, -1]]))
+        self.assertEqual(response.record.sample.dtype, np.int8)
         self.assertIs(response.vartype, dimod.SPIN)
 
     def test_from_dicts_unlike_labels(self):
@@ -235,31 +199,36 @@ class TestResponse(unittest.TestCase):
         energies = [sum(sample.values()) for sample in samples]
 
         with self.assertRaises(ValueError):
-            dimod.Response.from_dicts(samples, {'energy': energies})
+            dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
     @unittest.skipUnless(_pandas, "no pandas installed")
     def test_from_pandas(self):
         samples_df = pd.DataFrame([[0, 1, 0], [1, 1, 1]], columns=['a', 'b', 'c'])
 
-        response = dimod.Response.from_pandas(samples_df, {'energy': [-1, 1]})
+        response = dimod.Response.from_pandas(samples_df, {'energy': [-1, 1]}, dimod.BINARY)
 
     def test_update(self):
         samples = [{'a': -1, 'b': +1},
                    {'a': -1, 'b': -1}]
         energies = [sum(sample.values()) for sample in samples]
 
-        response0 = dimod.Response.from_dicts(samples, {'energy': energies})
-        response1 = dimod.Response.from_dicts(samples, {'energy': energies})
+        response0 = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
+        response1 = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
         response0.update(response1)
 
         self.assertEqual(len(response0), 4)
-        for vector in response0.data_vectors.values():
-            self.assertEqual(len(vector), 4)
+        for field in response0.record.dtype.fields:
+            self.assertEqual(len(response0.record[field]), 4)
 
     def test_update_energy(self):
 
-        spingen = iter(iter_spins())
+        def _spingen():
+            while True:
+                yield -1
+                yield +1
+                yield -1
+        spingen = _spingen()
 
         h = {v: v * .2 for v in range(8)}
         J = {(u, u + 1): .3 * u * (u + 1) for u in range(7)}
@@ -303,9 +272,9 @@ class TestResponse(unittest.TestCase):
 
         self.assertTrue(response.done())
 
-        matrix = response.samples_matrix
+        matrix = response.record.sample
 
-        npt.assert_equal(matrix, np.matrix([[-1, -1, 1], [-1, -1, 1]]))
+        np.testing.assert_array_equal(matrix, np.array([[-1, -1, 1], [-1, -1, 1]]))
 
     def test_from_futures_column_subset(self):
         def _futures():
@@ -319,9 +288,9 @@ class TestResponse(unittest.TestCase):
         response = dimod.Response.from_futures(_futures(), vartype=dimod.SPIN, num_variables=2,
                                                active_variables=[0, 2])
 
-        matrix = response.samples_matrix
+        matrix = response.record.sample
 
-        npt.assert_equal(matrix, np.matrix([[-1, 1], [-1, 1]]))
+        np.testing.assert_equal(matrix, np.array([[-1, 1], [-1, 1]]))
 
     def test_from_futures_typical(self):
         result = {'occurrences': [1],
@@ -368,9 +337,9 @@ class TestResponse(unittest.TestCase):
 
         future.set_result(result)
 
-        matrix = response.samples_matrix
+        matrix = response.record.sample
 
-        npt.assert_equal(matrix, result['samples'])
+        np.testing.assert_equal(matrix, result['samples'])
 
     def test_from_futures_extra_keys(self):
         def _futures():
@@ -386,9 +355,9 @@ class TestResponse(unittest.TestCase):
                                                data_vector_keys={'energy', 'other'},
                                                info_keys=['other'])
 
-        matrix = response.samples_matrix
+        matrix = response.record.sample
 
-        npt.assert_equal(matrix, np.matrix([[-1, 1], [-1, 1]]))
+        np.testing.assert_equal(matrix, np.array([[-1, 1], [-1, 1]]))
 
         #
 
@@ -399,7 +368,7 @@ class TestResponse(unittest.TestCase):
                                                ignore_extra_keys=False)
 
         with self.assertRaises(ValueError):
-            matrix = response.samples_matrix
+            matrix = response.record.sample
 
         #
 
@@ -410,22 +379,18 @@ class TestResponse(unittest.TestCase):
                                                ignore_extra_keys=False)
 
         with self.assertRaises(ValueError):
-            matrix = response.samples_matrix
+            matrix = response.record.sample
 
     def test_empty(self):
         response = dimod.Response.empty(dimod.SPIN)
         self.assertFalse(response)
         self.assertIs(response.vartype, dimod.SPIN)
 
-    ###############################################################################################
-    # Viewing a Response
-    ###############################################################################################
-
     def test__iter__(self):
         samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0},
                    {'a': 1, 'b': 1}, {'a': 0, 'b': 0}]
         energies = [0, 1, 2, 3]
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.BINARY)
 
         for s0, s1 in zip(response, samples):
             self.assertEqual(s0, s1)
@@ -455,16 +420,12 @@ class TestResponse(unittest.TestCase):
             self.assertEqual(nsu, datum.num_spin_up)
             self.assertEqual(energy, datum.energy)
 
-    ###############################################################################################
-    # Transformations and Copies
-    ###############################################################################################
-
     def test_change_vartype_inplace(self):
         bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
         samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
                    {'a': +1, 'b': +1}, {'a': -1, 'b': -1}]
         energies = [bqm.energy(sample) for sample in samples]
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
@@ -494,7 +455,7 @@ class TestResponse(unittest.TestCase):
         samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
                    {'a': +1, 'b': +1}, {'a': -1, 'b': -1}]
         energies = [bqm.energy(sample) for sample in samples]
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(bqm.energy(sample), energy)
@@ -511,7 +472,7 @@ class TestResponse(unittest.TestCase):
         samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
                    {'a': -1, 'b': +1}, {'a': -1, 'b': -1}]
         energies = [bqm.energy(sample) for sample in samples]
-        response = dimod.Response.from_dicts(samples, {'energy': energies})
+        response = dimod.Response.from_dicts(samples, {'energy': energies}, dimod.SPIN)
 
         new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
 
@@ -523,14 +484,14 @@ class TestResponse(unittest.TestCase):
             self.assertEqual(set(sample), {0, 1})
 
     def test_relabel_docstring(self):
-        response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
-        response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]})
+        response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]}, dimod.SPIN)
+        response = dimod.Response.from_dicts([{'a': -1}, {'a': +1}], {'energy': [-1, 1]}, dimod.SPIN)
         new_response = response.relabel_variables({'a': 0}, inplace=False)
 
     def test_partial_relabel_inplace(self):
         mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
 
-        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
+        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]}, dimod.SPIN)
 
         new_response = response.relabel_variables(mapping, inplace=False)
 
@@ -545,8 +506,8 @@ class TestResponse(unittest.TestCase):
 
         mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
 
-        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
-        response2 = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]})
+        response = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]}, dimod.SPIN)
+        response2 = dimod.Response.from_matrix([[-1, +1, -1, +1, -1, +1, -1, +1]], {'energy': [-1]}, dimod.SPIN)
 
         response.relabel_variables(mapping, inplace=True)
 
@@ -558,14 +519,71 @@ class TestResponse(unittest.TestCase):
             self.assertEqual(len(sample), len(new_sample))
 
 
+class TestSamplesStructuredArray(unittest.TestCase):
+    def test_empty(self):
+        data = dimod.response.data_struct_array([], energy=[])
 
+        self.assertEqual(data.shape, (0,))
 
-    ##############################################################################################
-    # Other
-    ##############################################################################################
+        self.assertEqual(len(data.dtype.fields), 2)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
 
-    def test_infer_vartype(self):
-        samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
+    def test_single_sample(self):
+        data = dimod.response.data_struct_array([-1, 1, -1], energy=[1.5])
 
+        self.assertEqual(data.shape, (1,))
+
+        self.assertEqual(len(data.dtype.fields), 2)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
+
+    def test_single_sample_nested(self):
+        data = dimod.response.data_struct_array([[-1, 1, -1]], energy=[1.5])
+
+        self.assertEqual(data.shape, (1,))
+
+        self.assertEqual(len(data.dtype.fields), 2)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
+
+    def test_multiple_samples(self):
+        data = dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], energy=[1.5, 4.5])
+
+        self.assertEqual(data.shape, (2,))
+
+        self.assertEqual(len(data.dtype.fields), 2)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
+
+    def test_extra_data_vector(self):
+        data = dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], energy=[1.5, 4.5], occurrences=np.asarray([1, 2]))
+
+        self.assertEqual(data.shape, (2,))
+
+        self.assertEqual(len(data.dtype.fields), 3)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
+        self.assertIn('occurrences', data.dtype.fields)
+
+    def test_data_vector_higher_dimension(self):
+        data = dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], energy=[1.5, 4.5], occurrences=[[0, 1], [1, 2]])
+
+        self.assertEqual(data.shape, (2,))
+
+        self.assertEqual(len(data.dtype.fields), 3)
+        self.assertIn('sample', data.dtype.fields)
+        self.assertIn('energy', data.dtype.fields)
+        self.assertIn('occurrences', data.dtype.fields)
+
+    def test_mismatched_vector_samples_rows(self):
         with self.assertRaises(ValueError):
-            response = dimod.response.infer_vartype(samples_matrix)
+            dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], energy=[1.5, 4.5, 5.6])
+
+    def test_protected_sample_kwarg(self):
+        with self.assertRaises(TypeError):
+            dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], energy=[1.5, 4.5], sample=[5, 6])
+
+    def test_missing_kwarg_energy(self):
+        with self.assertRaises(TypeError):
+            dimod.response.data_struct_array([[-1, +1, -1], [+1, -1, +1]], occ=[5, 6])

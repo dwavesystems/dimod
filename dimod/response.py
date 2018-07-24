@@ -50,12 +50,12 @@ class Response(Iterable, Sized):
     """A container for samples and any other data returned by dimod samplers.
 
     Args:
-        samples_matrix (:obj:`numpy.matrix`):
-            Samples as a NumPy matrix where each row is a sample.
+        samples (:obj:`numpy.ndarray`):
+            Samples as a NumPy 2D array where each row is a sample.
 
         data_vectors (dict[field, :obj:`numpy.array`/list]):
             Additional per-sample data as a dict of vectors. Each vector is of the
-            same length as `samples_matrix`. The key 'energy' and its vector are required.
+            same length as `samples`. The key 'energy' and its vector are required.
 
         vartype (:class:`.Vartype`):
             Vartype of the samples.
@@ -64,17 +64,17 @@ class Response(Iterable, Sized):
             Information about the response as a whole formatted as a dict.
 
         variable_labels (list, optional, default=None):
-            Variable labels mappped by index to columns of the samples matrix.
+            Variable labels mappped by index to columns of the samples array.
 
     Attributes:
         vartype (:class:`.Vartype`): Vartype of the samples.
 
         info (dict): Information about the response as a whole formatted as a dict.
 
-        variable_labels (list/None): Variable labels. Each column in the samples matrix is the
+        variable_labels (list/None): Variable labels. Each column in the samples array is the
             values returned for one variable. If None, column indices are the labels.
 
-        label_to_idx (dict): Map of variable labels to columns in samples matrix.
+        label_to_idx (dict): Map of variable labels to columns in samples array.
 
     Examples:
         This example shows some attributes of the response for the sampler
@@ -92,36 +92,15 @@ class Response(Iterable, Sized):
     """
 
     @vartype_argument('vartype')
-    def __init__(self, samples_matrix, data_vectors, vartype, info=None, variable_labels=None):
-        # Constructor is opinionated about the samples_matrix type, it should be a numpy matrix
-        if not isinstance(samples_matrix, np.matrix):
-            raise TypeError("expected 'samples_matrix' to be a NumPy matrix")
-        elif samples_matrix.dtype != np.int8:
-            # cast to int8
-            samples_matrix = samples_matrix.astype(np.int8)
+    def __init__(self, samples, data_vectors, vartype, info=None, variable_labels=None):
 
-        self._samples_matrix = samples_matrix
-        num_samples, num_variables = samples_matrix.shape
-
-        if not isinstance(data_vectors, Mapping):
-            raise TypeError("expected 'data_vectors' to be a dict")
         if 'energy' not in data_vectors:
-            raise ValueError("energy must be provided")
-        else:
-            data_vectors = dict(data_vectors)  # shallow copy
+            raise ValueError('energy must be provided as a data vector')
 
-        for key, vector in iteritems(data_vectors):
-            try:
-                data_vectors[key] = vector = np.asarray(vector)
-            except (ValueError, TypeError):
-                raise TypeError("expected data vector {} to be array-like".format(key))
+        # get the data struct array
+        self.record = record = data_struct_array(samples, **data_vectors)
 
-            shape = vector.shape
-            if not shape or shape[0] != num_samples:
-                raise ValueError(("expected data vector {} (shape {}) to have {} rows"
-                                  "").format(key, vector.shape, num_samples))
-
-        self._data_vectors = data_vectors
+        num_samples, num_variables = record.sample.shape
 
         # vartype is checked by the decorator
         self.vartype = vartype
@@ -139,9 +118,9 @@ class Response(Iterable, Sized):
             self.label_to_idx = None
         else:
             self.variable_labels = variable_labels = list(variable_labels)
-            if len(variable_labels) != num_variables:
+            if len(variable_labels) != num_variables and num_samples > 0:
                 msg = ("variable_labels' length must match the number of columns in "
-                       "samples_matrix, {} labels, matrix has {} columns".format(len(variable_labels), num_variables))
+                       "samples, {} labels, array has {} columns".format(len(variable_labels), num_variables))
                 raise ValueError(msg)
 
             self.label_to_idx = {v: idx for idx, v in enumerate(variable_labels)}
@@ -151,7 +130,7 @@ class Response(Iterable, Sized):
 
     def __len__(self):
         """The number of samples."""
-        num_samples, num_variables = self.samples_matrix.shape
+        num_samples, num_variables = self.record.sample.shape
         return num_samples
 
     def __iter__(self):
@@ -160,42 +139,55 @@ class Response(Iterable, Sized):
 
     def __str__(self):
         # developer note: it would be nice if the variable labels (if present could be printed)
-        return self.samples_matrix.__str__()
+        return self.record.sample.__str__()
 
     ##############################################################################################
     # Properties
     ##############################################################################################
 
     @property
+    def record(self):
+        if self._futures:
+            self._resolve_futures(**self._futures)
+        return self._record
+
+    @record.setter
+    def record(self, rec):
+        self._record = rec
+
+    @property
     def samples_matrix(self):
-        """:obj:`numpy.matrix`: Samples as a NumPy matrix of data type int8.
+        """:obj:`numpy.ndarray`: Samples as a NumPy 2D array of data type int8.
 
         Examples:
             This example shows the samples of dimod package's ExactSolver reference sampler
-            formatted as a NumPy matrix.
+            formatted as a NumPy array.
 
             >>> import dimod
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> response.samples_matrix
-            matrix([[-1, -1],
-                    [ 1, -1],
-                    [ 1,  1],
-                    [-1,  1]])
+            array([[-1, -1],
+                   [ 1, -1],
+                   [ 1,  1],
+                   [-1,  1]])
 
         """
-        if self._futures:
-            self._resolve_futures(**self._futures)
-
-        return self._samples_matrix
+        import warnings
+        warnings.warn("Response.samples_matrix is deprecated, please use Response.record.sample instead.",
+                      DeprecationWarning)
+        return self.record['sample']
 
     @samples_matrix.setter
     def samples_matrix(self, mat):
-        self._samples_matrix = mat
+        import warnings
+        warnings.warn("Response.samples_matrix is deprecated, please use Response.record.sample instead.",
+                      DeprecationWarning)
+        self.record['sample'] = mat
 
     @property
     def data_vectors(self):
         """dict[field, :obj:`numpy.array`/list]: Per-sample data as a dict, where keys are the
-        data labels and values are each a vector of the same length as sample_matrix.
+        data labels and values are each a vector of the same length as record.samples.
 
         Examples:
             This example shows the returned energies of dimod package's ExactSolver
@@ -207,10 +199,12 @@ class Response(Iterable, Sized):
             array([-1.5, -0.5, -0.5,  2.5])
 
         """
-        if self._futures:
-            self._resolve_futures(**self._futures)
+        import warnings
+        warnings.warn("Response.data_vectors is deprecated, please use Response.record instead.",
+                      DeprecationWarning)
+        rec = self.record
 
-        return self._data_vectors
+        return {field: rec[field] for field in rec.dtype.fields if field != 'sample'}
 
     def done(self):
         """True if all loaded futures are done or if there are no futures.
@@ -237,26 +231,26 @@ class Response(Iterable, Sized):
     ##############################################################################################
 
     @classmethod
-    def from_matrix(cls, samples, data_vectors, vartype=None, info=None, variable_labels=None):
+    def from_matrix(cls, samples, data_vectors, vartype, info=None, variable_labels=None):
         """Build a response from a NumPy array-like object.
 
         Args:
             samples (array_like/str):
-                Samples as a :class:`numpy.matrix` or NumPy array-like object. See Notes.
+                Samples as a :class:`numpy.array` or NumPy array-like object. See Notes.
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
                 Additional per-sample data as a dict of vectors. Each vector is the same length as
-                `samples_matrix`. The key 'energy' and its vector are required.
+                `samples`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the response. If not provided, vartype is inferred from the
-                samples matrix if possible or a ValueError is raised.
+                samples array if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
 
             variable_labels (list, optional, default=None):
-                Maps (by index) variable labels to the columns of the samples matrix.
+                Maps (by index) variable labels to the columns of the samples array.
 
         Returns:
             :obj:`.Response`: A `dimod` :obj:`.Response` object based on the input
@@ -267,11 +261,11 @@ class Response(Iterable, Sized):
                 than two unique values, or have values of an unknown vartype.
 
         Examples:
-            This example code snippet builds a response from a NumPy matrix.
+            This example code snippet builds a response from a NumPy array.
 
             .. code-block:: python
 
-                samples = np.matrix([[0, 1], [1, 0]])
+                samples = np.array([[0, 1], [1, 0]], dtype=np.int8)
                 energies = [0.0, 1.0]
                 response = Response.from_matrix(samples, {'energy': energies})
 
@@ -298,18 +292,13 @@ class Response(Iterable, Sized):
                 [Accessed 16 Feb. 2018].
 
         """
-        samples_matrix = np.matrix(samples, dtype=np.int8)
-
-        if vartype is None:
-            vartype = infer_vartype(samples_matrix)
-
-        response = cls(samples_matrix, data_vectors=data_vectors,
+        response = cls(samples, data_vectors=data_vectors,
                        vartype=vartype, info=info, variable_labels=variable_labels)
 
         return response
 
     @classmethod
-    def from_dicts(cls, samples, data_vectors, vartype=None, info=None):
+    def from_dicts(cls, samples, data_vectors, vartype, info=None):
         """Build a response from an iterable of dicts.
 
         Args:
@@ -318,11 +307,11 @@ class Response(Iterable, Sized):
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
                 Additional per-sample data as a dict of vectors. Each vector is the
-                same length as `samples_matrix`. The key 'energy' and its vector are required.
+                same length as `samples`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the response. If not provided, vartype is inferred from the
-                samples matrix if possible or a ValueError is raised.
+                samples array if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
@@ -369,26 +358,26 @@ class Response(Iterable, Sized):
                 msg = ("Each dict in 'samples' must have the same keys.")
                 raise ValueError(msg)
 
-        samples_matrix = np.matrix(np.stack(list(_iter_samples())))
+        samples = np.asarray(np.stack(list(_iter_samples())), dtype=np.int8)
 
-        return cls.from_matrix(samples_matrix, data_vectors=data_vectors, vartype=vartype,
+        return cls.from_matrix(samples, data_vectors=data_vectors, vartype=vartype,
                                info=info, variable_labels=variable_labels)
 
     @classmethod
-    def from_pandas(cls, samples_df, data_vectors, vartype=None, info=None):
+    def from_pandas(cls, samples_df, data_vectors, vartype, info=None):
         """Build a response from a pandas DataFrame.
 
         Args:
-            samples (:obj:`pandas.DataFrame`):
+            samples_df (:obj:`pandas.DataFrame`):
                 A pandas DataFrame of samples where each row is a sample.
 
             data_vectors (dict[field, :obj:`numpy.array`/list]):
                 Additional per-sample data as a dict of vectors. Each vector is the
-                same length as `samples_matrix`. The key 'energy' and its vector are required.
+                same length as `samples_df`. The key 'energy' and its vector are required.
 
             vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the response. If not provided, vartype is inferred from the
-                samples matrix if possible or a ValueError is raised.
+                samples array if possible or a ValueError is raised.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
@@ -421,7 +410,7 @@ class Response(Iterable, Sized):
         import pandas as pd
 
         variable_labels = list(samples_df.columns)
-        samples_matrix = np.matrix(samples_df.values)
+        samples_matrix = np.array(samples_df.values)
 
         if isinstance(data_vectors, pd.DataFrame):
             raise NotImplementedError("support for DataFrame data_vectors is forthcoming")
@@ -431,10 +420,7 @@ class Response(Iterable, Sized):
 
     @classmethod
     def empty(cls, vartype):
-        empty_samples_matrix = np.matrix(np.empty((0, 0), dtype=np.int8))
-        empty_data_vectors = {'energy': []}
-        return cls(samples_matrix=empty_samples_matrix, data_vectors=empty_data_vectors,
-                   vartype=vartype)
+        return cls(samples=[], data_vectors={'energy': []}, vartype=vartype)
 
     @classmethod
     def from_futures(cls, futures, vartype, num_variables,
@@ -468,7 +454,7 @@ class Response(Iterable, Sized):
                 If None, info is empty.
 
             variable_labels (list, optional, default=None):
-                Maps (by index) variable labels to columns of the samples matrix.
+                Maps (by index) variable labels to columns of the samples array.
 
             active_variables (array-like, optional, default=None):
                 Selects which columns of the result's samples are used. If `variable_labels` is
@@ -485,7 +471,7 @@ class Response(Iterable, Sized):
 
         Notes:
             :obj:`~concurrent.futures.Future` objects are read on the first read
-            of :attr:`.Response.samples_matrix` or :attr:`.Response.data_vectors`.
+            of :attr:`.Response.record`.
 
         Examples:
             These example code snippets build responses from :obj:`~concurrent.futures.Future` objects.
@@ -502,7 +488,7 @@ class Response(Iterable, Sized):
                 future.set_result({'samples': [0, 1, 0], 'energy': [1]})
 
                 # now read from the response
-                matrix = response.samples_matrix
+                samples = response.record.sample
 
             .. code-block:: python
 
@@ -516,8 +502,8 @@ class Response(Iterable, Sized):
 
                 future.set_result({'samples': [0, 1, 3, 0], 'energy': [1]})
 
-                # now read from the response, this matrix
-                matrix = response.samples_matrix
+                # now read from the response
+                samples = response.record.sample
 
             .. code-block:: python
 
@@ -532,7 +518,7 @@ class Response(Iterable, Sized):
                 future.set_result({'samples': [0, 1, 0], 'en': [1]})
 
                 # now read from the response
-                matrix = response.samples_matrix
+                samples = response.record.sample
 
         """
 
@@ -589,7 +575,11 @@ class Response(Iterable, Sized):
             result = dict(future.result())  # create a shallow copy
 
             # first get the samples matrix and filter out any inactive variables
-            samples = np.matrix(result.pop(samples_key), dtype=np.int8)
+            samples = np.asarray(result.pop(samples_key), dtype=np.int8)
+
+            if samples.ndim < 2:
+                samples = np.expand_dims(samples, 0)
+
             if active_variables is not None:
                 samples = samples[:, active_variables]
 
@@ -632,8 +622,8 @@ class Response(Iterable, Sized):
         Args:
             *other_responses: (:obj:`.Response`):
                 Additional responses from which to add values. Any number of additional response objects,
-                separated by commas, can be specified. Responses must have matching `sample_matrix`
-                dimensions, `data_vector` keys, and variable labels.
+                separated by commas, can be specified. Responses must have matching `record`
+                dimensions, keys, and variable labels.
 
         Examples:
             This example updates a response with values from two other responses.
@@ -682,8 +672,7 @@ class Response(Iterable, Sized):
 
             response = other_responses.pop()
 
-            self.samples_matrix = response.samples_matrix
-            self.data_vectors.update(response.data_vectors)
+            self.record = response.record
             self.info.update(response.info)
             self.variable_labels = response.variable_labels
             self.label_to_idx = response.label_to_idx
@@ -696,7 +685,7 @@ class Response(Iterable, Sized):
         # make sure that the variable labels are consistent
         variable_labels = self.variable_labels
         if variable_labels is None:
-            __, num_variables = self.samples_matrix.shape
+            __, num_variables = self.record.sample.shape
             variable_labels = list(range(num_variables))
             # in this case we need to allow for either None or variable_labels
             if not all(response.variable_labels is None or response.variable_labels == variable_labels
@@ -706,16 +695,9 @@ class Response(Iterable, Sized):
             if not all(response.variable_labels == variable_labels for response in other_responses):
                 raise ValueError("cannot update responses with unlike variable labels")
 
-        # concatenate all of the matrices
-        matrices = [self.samples_matrix]
-        matrices.extend([response.samples_matrix for response in other_responses])
-        self.samples_matrix = np.concatenate(matrices)
-
-        # group all of the data vectors
-        for key in self.data_vectors:
-            vectors = [self.data_vectors[key]]
-            vectors.extend(response.data_vectors[key] for response in other_responses)
-            self.data_vectors[key] = np.concatenate(vectors)
+        records = [self.record]
+        records.extend([response.record for response in other_responses])
+        self.record = np.rec.array(np.concatenate(records))
 
         # finally update the response info
         for response in other_responses:
@@ -738,7 +720,8 @@ class Response(Iterable, Sized):
             >>> copied_response = response.copy()
 
         """
-        return self.from_matrix(self.samples_matrix, self.data_vectors,
+        rec = self.record
+        return self.from_matrix(rec.sample, {field: rec[field] for field in rec.dtype.fields if field != 'sample'},
                                 vartype=self.vartype, info=self.info,
                                 variable_labels=self.variable_labels)
 
@@ -755,7 +738,7 @@ class Response(Iterable, Sized):
 
             data_vector_offsets (dict[field, :obj:`numpy.array`/list], optional, default=None):
                 Offsets to add to `data_vectors` of the response formatted as a dict containing
-                per-sample offsets in vectors. Each vector is the same length as `samples_matrix`.
+                per-sample offsets in vectors. Each vector is the same length as `record`.
 
             inplace (bool, optional, default=True):
                 If True, the response is updated in-place, otherwise a new response is returned.
@@ -800,16 +783,16 @@ class Response(Iterable, Sized):
 
         if data_vector_offsets is not None:
             for key in data_vector_offsets:
-                self.data_vectors[key] += data_vector_offsets[key]
+                self.record[key] += np.asarray(data_vector_offsets[key])
 
         if vartype is self.vartype:
             return self
 
         if vartype is Vartype.SPIN and self.vartype is Vartype.BINARY:
-            self.samples_matrix = 2 * self.samples_matrix - 1
+            self.record.sample = 2 * self.record.sample - 1
             self.vartype = vartype
         elif vartype is Vartype.BINARY and self.vartype is Vartype.SPIN:
-            self.samples_matrix = (self.samples_matrix + 1) // 2
+            self.record.sample = (self.record.sample + 1) // 2
             self.vartype = vartype
         else:
             raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
@@ -839,7 +822,7 @@ class Response(Iterable, Sized):
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
             >>> [next(new_response.samples())[x] for x in [0, 1]]
-            [-1, -1]            
+            [-1, -1]
 
 
             This example code snippet relabels variables in a response.
@@ -855,7 +838,7 @@ class Response(Iterable, Sized):
 
         # we need labels
         if self.variable_labels is None:
-            __, num_variables = self.samples_matrix.shape
+            __, num_variables = self.record.sample.shape
             self.variable_labels = list(range(num_variables))
 
         try:
@@ -894,7 +877,7 @@ class Response(Iterable, Sized):
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the `data_vector` used to sort the samples. If None, the samples are yielded in
-                the order given by the samples matrix.
+                the order given by the samples array.
 
         Yields:
             :obj:`.SampleView`: A view object mapping the variable labels to their values. Acts like
@@ -931,9 +914,9 @@ class Response(Iterable, Sized):
         if sorted_by is None:
             order = np.arange(num_samples)
         else:
-            order = np.argsort(self.data_vectors[sorted_by])
+            order = np.argsort(self.record[sorted_by])
 
-        samples = self.samples_matrix
+        samples = self.record.sample
         label_mapping = self.label_to_idx
 
         for idx in order:
@@ -949,7 +932,7 @@ class Response(Iterable, Sized):
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the data_vector used to sort the samples. If None, the samples are yielded
-                in the order given by the samples matrix.
+                in the order given by the samples array.
 
             name (str/None, optional, default='Sample'):
                 Name of the yielded namedtuples or None to yield regular tuples.
@@ -982,13 +965,12 @@ class Response(Iterable, Sized):
 
         """
         if fields is None:
-            fields = ['sample']
-            fields.extend(self.data_vectors)
+            fields = self.record.dtype.fields
 
         if sorted_by is None:
             order = np.arange(len(self))
         else:
-            order = np.argsort(self.data_vectors[sorted_by])
+            order = np.argsort(self.record[sorted_by])
 
         if name is None:
             # yielding a tuple
@@ -1001,9 +983,9 @@ class Response(Iterable, Sized):
             def _pack(values):
                 return SampleTuple(*values)
 
-        samples = self.samples_matrix
+        samples = self.record.sample
         label_mapping = self.label_to_idx
-        data_vectors = self.data_vectors
+        data_vectors = self.record
 
         def _values(idx):
             for field in fields:
@@ -1017,27 +999,27 @@ class Response(Iterable, Sized):
 
 
 class SampleView(Mapping):
-    """View each row of the samples matrix as if it was a dict."""
+    """View each row of the samples record as if it was a dict."""
     def __init__(self, idx, response):
-        self._idx = idx  # row of response._samples_matrix
+        self._idx = idx  # row of response.record
         self._response = response
 
     def __getitem__(self, key):
         label_mapping = self._response.label_to_idx
         if label_mapping is not None:
             key = label_mapping[key]
-        return int(self._response.samples_matrix[self._idx, key])
+        return int(self._response.record.sample[self._idx, key])
 
     def __iter__(self):
         # iterate over the variables
         label_mapping = self._response.label_to_idx
         if label_mapping is None:
-            __, num_variables = self._response.samples_matrix.shape
+            __, num_variables = self._response.record.sample.shape
             return iter(range(num_variables))
         return label_mapping.__iter__()
 
     def __len__(self):
-        __, num_variables = self._response.samples_matrix.shape
+        __, num_variables = self._response.record.sample.shape
         return num_variables
 
     def __repr__(self):
@@ -1052,13 +1034,13 @@ class SampleView(Mapping):
 
 
 class SampleItemsView(ItemsView):
-    """Faster read access to the numpy matrix"""
+    """Faster read access to the numpy array"""
     __slots__ = ()
 
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
         variable_labels = self._mapping._response.variable_labels
-        samples_matrix = self._mapping._response.samples_matrix
+        samples_matrix = self._mapping._response.record.sample
         idx = self._mapping._idx
         if variable_labels is None:
             for v, val in enumerate(np.nditer(samples_matrix[idx, :], order='C', op_flags=['readonly'])):
@@ -1069,47 +1051,69 @@ class SampleItemsView(ItemsView):
 
 
 class SampleValuesView(ValuesView):
-    """Faster read access to the numpy matrix"""
+    """Faster read access to the numpy array"""
     __slots__ = ()
 
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
-        samples_matrix = self._mapping._response.samples_matrix
+        samples_matrix = self._mapping._response.record.sample
         for val in np.nditer(samples_matrix[self._mapping._idx, :], op_flags=['readonly']):
             yield int(val)
 
 
-def infer_vartype(samples_matrix):
-    """Try to determine the Vartype of the samples matrix based on its values.
+def data_struct_array(sample, **vectors):  # data_struct_array(sample, *, energy, **vectors):
+    """Combine samples and per-sample data into a numpy structured array.
 
     Args:
-        samples_matrix (:object:`numpy.ndarray`):
-            An array or matrix of samples.
+        sample (array_like):
+            Samples, in any form that can be converted into a numpy array.
+
+        energy (array_like, required):
+            Required keyword argument. Energies, in any form that can be converted into a numpy
+            1-dimensional array.
+
+        **kwargs (array_like):
+            Other per-sample data, in any form that can be converted into a numpy array.
 
     Returns:
-        :class:`.Vartype`
-
-    Raises:
-        ValueError: If the matrix is all ones, contains values other than -1, 1, 0 or contains more
-        than two unique values.
+        :obj:`~numpy.ndarray`: A numpy structured array. Has fields ['sample', 'energy', **kwargs]
 
     """
-    ones_matrix = samples_matrix == 1
-
-    if np.all(ones_matrix):
-        msg = ("ambiguous vartype - an empty samples_matrix or one where all the values "
-               "are all 1 must have the vartype specified by setting vartype=dimod.SPIN or "
-               "vartype=dimod.BINARY.")
-        raise ValueError(msg)
-
-    if np.all(ones_matrix + (samples_matrix == 0)):
-        return Vartype.BINARY
-    elif np.all(ones_matrix + (samples_matrix == -1)):
-        return Vartype.SPIN
+    if not len(sample):
+        # if samples are empty
+        sample = np.zeros((0, 0), dtype=np.int8)
     else:
-        sample_vals = set(int(v) for v in np.nditer(samples_matrix)) - {-1, 1, 0}
-        if sample_vals:
-            msg = ("samples_matrix includes unknown values {}").format(sample_vals)
-        else:
-            msg = ("samples_matrix includes both -1 and 0 values")
-        raise ValueError(msg)
+        sample = np.asarray(sample, dtype=np.int8)
+
+        if sample.ndim < 2:
+            sample = np.expand_dims(sample, 0)
+
+    num_samples, num_variables = sample.shape
+
+    datavectors = {}
+    datatypes = [('sample', np.dtype(np.int8), (num_variables,))]
+
+    for kwarg, vector in vectors.items():
+        datavectors[kwarg] = vector = np.asarray(vector)
+
+        if len(vector.shape) < 1 or vector.shape[0] != num_samples:
+            msg = ('{} and sample have a mismatched shape {}, {}. They must have the same size '
+                   'in the first axis.').format(kwarg, vector.shape, sample.shape)
+            raise ValueError(msg)
+
+        datatypes.append((kwarg, vector.dtype, vector.shape[1:]))
+
+    if 'energy' not in datavectors:
+        # consistent error with the one thrown in python3
+        raise TypeError('data_struct_array() needs keyword-only argument energy')
+    elif datavectors['energy'].shape != (num_samples,):
+        raise ValueError('energy should be a vector of length {}'.format(num_samples))
+
+    data = np.rec.array(np.zeros(num_samples, dtype=datatypes))
+
+    data['sample'] = sample
+
+    for kwarg, vector in datavectors.items():
+        data[kwarg] = vector
+
+    return data
