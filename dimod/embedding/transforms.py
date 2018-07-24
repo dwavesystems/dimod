@@ -91,12 +91,12 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
         >>> target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
         >>> # Sample
         >>> response = sampler.sample(target_bqm)
-        >>> response.samples_matrix   # doctest: +SKIP
-        matrix([[-1, -1, -1, -1],
-                [ 1, -1, -1, -1],
-                [ 1,  1, -1, -1],
-                [-1,  1, -1, -1],
-                [-1,  1,  1, -1],
+        >>> response.record.sample   # doctest: +SKIP
+        array([[-1, -1, -1, -1],
+               [ 1, -1, -1, -1],
+               [ 1,  1, -1, -1],
+               [-1,  1, -1, -1],
+               [-1,  1,  1, -1],
         >>> # Snipped above response for brevity
 
     """
@@ -427,8 +427,9 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     else:
         chain_idxs = [[target_response.label_to_idx[v] for v in chain] for chain in chains]
 
-    unembedded, idxs = chain_break_method(target_response.samples_matrix, chain_idxs)
-    data_vectors = {key: vector[idxs] for key, vector in target_response.data_vectors.items()}
+    unembedded, idxs = chain_break_method(target_response.record.sample, chain_idxs)
+    data_vectors = {key: target_response.record[key][idxs] for key in target_response.record.dtype.fields
+                    if key != 'sample'}
 
     lin, (i, j, quad), off = source_bqm.to_numpy_vectors(variable_order=variables)
 

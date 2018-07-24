@@ -37,14 +37,14 @@ class TestExactSolver(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
         response = dimod.ExactSolver().sample(bqm)
 
-        self.assertEqual(response.samples_matrix.shape, (0, 0))
+        self.assertEqual(response.record.sample.shape, (0, 0))
         self.assertIs(response.vartype, bqm.vartype)
 
     def test_sample_BINARY_empty(self):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.BINARY)
         response = dimod.ExactSolver().sample(bqm)
 
-        self.assertEqual(response.samples_matrix.shape, (0, 0))
+        self.assertEqual(response.record.sample.shape, (0, 0))
         self.assertIs(response.vartype, bqm.vartype)
 
     def test_sample_SPIN(self):
@@ -57,7 +57,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(bqm))
-        self.assertEqual(response.samples_matrix.shape, (2**len(bqm), len(bqm)))
+        self.assertEqual(response.record.sample.shape, (2**len(bqm), len(bqm)))
 
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
@@ -74,7 +74,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(bqm))
-        self.assertEqual(response.samples_matrix.shape, (2**len(bqm), len(bqm)))
+        self.assertEqual(response.record.sample.shape, (2**len(bqm), len(bqm)))
 
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
@@ -89,7 +89,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**3)
-        self.assertEqual(response.samples_matrix.shape, (2**3, 3))
+        self.assertEqual(response.record.sample.shape, (2**3, 3))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.SPIN)
@@ -106,7 +106,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**3)
-        self.assertEqual(response.samples_matrix.shape, (2**3, 3))
+        self.assertEqual(response.record.sample.shape, (2**3, 3))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.BINARY)
@@ -127,7 +127,7 @@ class TestExactSolver(unittest.TestCase):
 
         # every possible conbination should be present
         self.assertEqual(len(response), 2**len(h))
-        self.assertEqual(response.samples_matrix.shape, (2**len(h), len(h)))
+        self.assertEqual(response.record.sample.shape, (2**len(h), len(h)))
 
         # confirm vartype
         self.assertIs(response.vartype, dimod.SPIN)
