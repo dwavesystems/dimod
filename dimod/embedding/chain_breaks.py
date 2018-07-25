@@ -13,299 +13,368 @@
 #    limitations under the License.
 #
 # ================================================================================================
-"""Chain-break-resolution generators available to :func:`.iter_unembed`.
+from __future__ import division
 
-Chain-break-resolution generators enable :func:`.iter_unembed` to use different techniques
-of resolving chain breaks without keeping large numbers of samples in memory. Each generator
-yields zero or more unembedded samples.
-
-"""
-
-from collections import Counter, defaultdict, Callable
-
-from six import iteritems, itervalues
+from collections import Callable
+from heapq import heapify, heappop
 
 import numpy as np
 
-__all__ = ['majority_vote', 'discard', 'weighted_random', 'MinimizeEnergy']
+from dimod.vartypes import SPIN
+
+__all__ = ['broken_chains',
+           'discard',
+           'majority_vote',
+           'weighted_random',
+           'MinimizeEnergy',
+           ]
 
 
-def discard_matrix(samples_matrix, chain_list):
-    """Discard broken chains."""
-    if not isinstance(samples_matrix, np.matrix):
-        samples_matrix = np.matrix(samples_matrix, dtype='int8')
-    num_samples, __ = samples_matrix.shape
+def broken_chains(samples, chains):
+    """Find the broken chains.
 
-    variables = []
-    for chain in chain_list:
-        chain = list(chain)
+    Args:
+        samples (array_like):
+            Samples as a nS x nV array_like object where nS is the number of samples and nV is the
+            number of variables. The values should all be 0/1 or -1/+1.
 
-        try:
-            v = chain[0]
-        except IndexError:
-            raise ValueError("each chain in chain_list must contain at least one variable")
-        variables.append(v)
+        chains (list[array_like]):
+            List of chains of length nC where nC is the number of chains.
+            Each chain should be an array_like collection of column indices in samples.
 
-        if len(chain) == 1:
+    Returns:
+        :obj:`numpy.ndarray`: A nS x nC boolean array. If i, j is True, then chain j in sample i is
+        broken.
+
+    Examples:
+        >>> samples = np.array([[-1, +1, -1, +1], [-1, -1, +1, +1]], dtype=np.int8)
+        >>> chains = [[0, 1], [2, 3]]
+        >>> dimod.broken_chains(samples, chains)
+        array([[True, True],
+               [ False,  False]])
+
+        >>> samples = np.array([[-1, +1, -1, +1], [-1, -1, +1, +1]], dtype=np.int8)
+        >>> chains = [[0, 2], [1, 3]]
+        >>> dimod.broken_chains(samples, chains)
+        array([[False, False],
+               [ True,  True]])
+
+    """
+    samples = np.asarray(samples)
+    if samples.ndim != 2:
+        raise ValueError("expected samples to be a numpy 2D array")
+
+    num_samples, num_variables = samples.shape
+    num_chains = len(chains)
+
+    broken = np.zeros((num_samples, num_chains), dtype=bool, order='F')
+
+    for cidx, chain in enumerate(chains):
+        if isinstance(chain, set):
+            chain = list(chain)
+        chain = np.asarray(chain)
+
+        if chain.ndim > 1:
+            raise ValueError("chains should be 1D array_like objects")
+
+        # chains of length 1, or 0 cannot be broken
+        if len(chain) <= 1:
             continue
 
-        # there must be a better way
-        unbroken = np.array((samples_matrix[:, chain] == samples_matrix[:, v]).all(axis=1)).flatten()
+        all_ = (samples[:, chain] == 1).all(axis=1)
+        any_ = (samples[:, chain] == 1).any(axis=1)
+        broken[:, cidx] = np.bitwise_xor(all_, any_)
 
-        samples_matrix = samples_matrix[unbroken, :]
-
-    return samples_matrix[:, variables]
-
-
-def discard(sample, embedding):
-    """Discard the sample if a chain is broken.
-
-    Args:
-        sample (Mapping):
-            Sample as a dict of form {t: val, ...}, where t is
-            a variable in the target graph and val its associated value as
-            determined by a binary quadratic model sampler.
-        embedding (dict):
-            Mapping from source graph to target graph as a dict
-            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
-            a target-model variable.
-
-    Yields:
-        dict: The unembedded sample if no chains were broken.
-
-    Examples:
-        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
-        represent source node a. The first sample has an unbroken chain, the second a broken
-        chain.
-
-        >>> import dimod
-        >>> embedding = {'a': {0, 1}, 'b': {2}}
-        >>> samples = {0: 1, 1: 1, 2: 0}
-        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')  # doctest: +SKIP
-        {'a': 1, 'b': 0}
-        >>> samples = {0: 1, 1: 0, 2: 0}
-        >>> next(dimod.embedding.discard(samples, embedding), 'No sample')
-        'No sample'
-
-    """
-    unembedded = {}
-
-    for v, chain in iteritems(embedding):
-        vals = [sample[u] for u in chain]
-
-        if _all_equal(vals):
-            unembedded[v] = vals.pop()
-        else:
-            return
-
-    yield unembedded
+    return broken
 
 
-def majority_vote(sample, embedding):
-    """Determine the sample values for chains by majority vote.
+def discard(samples, chains):
+    """Discard broken chains.
 
     Args:
-        sample (Mapping):
-            Sample as a dict of form {t: val, ...}, where t is
-            a variable in the target graph and val its associated value as
-            determined by a binary quadratic model sampler.
-        embedding (dict):
-            Mapping from source graph to target graph as a dict
-            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
-            a target-model variable.
+        samples (array_like):
+            Samples as a nS x nV array_like object where nS is the number of samples and nV is the
+            number of variables. The values should all be 0/1 or -1/+1.
 
-    Yields:
-        dict: The unembedded sample. When there is a chain break, the value
-        is chosen to match the most common value in the chain. For broken chains
-        without a majority, one of the two values is chosen arbitrarily.
+        chains (list[array_like]):
+            List of chains of length nC where nC is the number of chains.
+            Each chain should be an array_like collection of column indices in samples.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            :obj:`numpy.ndarray`: An array of unembedded samples. Broken chains are discarded. The
+            array has dtype 'int8'.
+
+            :obj:`numpy.ndarray`: The indicies of the rows with unbroken chains.
 
     Examples:
-        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
-        represent source node a and nodes 2, 3, and 4 to represent source node b.
-        Both samples have broken chains for source node b, with different majority values.
+        This example unembeds two samples that chains nodes 0 and 1 to represent a single source
+        node. The first sample has an unbroken chain, the second a broken chain.
 
         >>> import dimod
-        >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
-        >>> samples = {0: 1, 1: 1, 2: 0, 3: 0, 4: 1}
-        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')['b']
-        0
-        >>> samples = {0: 1, 1: 1, 2: 1, 3: 0, 4: 1}
-        >>> next(dimod.embedding.majority_vote(samples, embedding), 'No sample')['b']
-        1
+        >>> import numpy as np
+        ...
+        >>> chains = [(0, 1), (2,)]
+        >>> samples = np.array([[1, 1, 0], [1, 0, 0]], dtype=np.int8)
+        >>> unembedded, idx = dimod.embedding.discard(samples, chains)
+        >>> unembedded
+        array([[1, 0]], dtype=int8)
+        >>> idx
+        array([0])
 
     """
-    unembedded = {}
+    samples = np.asarray(samples)
+    if samples.ndim != 2:
+        raise ValueError("expected samples to be a numpy 2D array")
 
-    for v, chain in iteritems(embedding):
-        vals = [sample[u] for u in chain]
+    num_samples, num_variables = samples.shape
+    num_chains = len(chains)
 
-        if _all_equal(vals):
-            unembedded[v] = vals.pop()
-        else:
-            unembedded[v] = _most_common(vals)
+    broken = broken_chains(samples, chains)
 
-    yield unembedded
+    unbroken_idxs, = np.where(~broken.any(axis=1))
+
+    chain_variables = np.fromiter((np.asarray(tuple(chain))[0] if isinstance(chain, set) else np.asarray(chain)[0]
+                                   for chain in chains),
+                                  count=num_chains, dtype=int)
+
+    return samples[np.ix_(unbroken_idxs, chain_variables)], unbroken_idxs
 
 
-def weighted_random(sample, embedding):
+def majority_vote(samples, chains):
+    """Use the most common element in broken chains.
+
+    Args:
+        samples (array_like):
+            Samples as a nS x nV array_like object where nS is the number of samples and nV is the
+            number of variables. The values should all be 0/1 or -1/+1.
+
+        chains (list[array_like]):
+            List of chains of length nC where nC is the number of chains.
+            Each chain should be an array_like collection of column indices in samples.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            :obj:`numpy.ndarray`: A nS x nC array of unembedded samples. The array has dtype 'int8'.
+            Where there is a chain break, the value is chosen to match the most common value in the
+            chain. For broken chains without a majority, the value is chosen arbitrarily.
+
+            :obj:`numpy.ndarray`: Equivalent to :code:`np.arange(nS)` because all samples are kept
+            and no samples are added.
+
+    Examples:
+        This example unembeds samples from a target graph that chains nodes 0 and 1 to
+        represent one source node and nodes 2, 3, and 4 to represent another.
+        Both samples have one broken chain, with different majority values.
+
+        >>> import dimod
+        >>> import numpy as np
+        ...
+        >>> chains = [(0, 1), (2, 3, 4)]
+        >>> samples = np.array([[1, 1, 0, 0, 1], [1, 1, 1, 0, 1]], dtype=np.int8)
+        >>> unembedded, idx = dimod.embedding.majority_vote(samples, chains)
+        >>> unembedded
+        array([[1, 0],
+               [1, 1]], dtype=int8)
+        >>> idx
+        array([0, 1])
+
+    """
+    samples = np.asarray(samples)
+    if samples.ndim != 2:
+        raise ValueError("expected samples to be a numpy 2D array")
+
+    num_samples, num_variables = samples.shape
+    num_chains = len(chains)
+
+    unembedded = np.empty((num_samples, num_chains), dtype='int8', order='F')
+
+    # determine if spin or binary. If samples are all 1, then either method works, so we use spin
+    # because it is faster
+    if samples.all():  # spin-valued
+        for cidx, chain in enumerate(chains):
+            # we just need the sign for spin. We don't use np.sign because in that can return 0
+            # and fixing the 0s is slow.
+            unembedded[:, cidx] = 2*(samples[:, chain].sum(axis=1) >= 0) - 1
+    else:  # binary-valued
+        for cidx, chain in enumerate(chains):
+            mid = len(chain) / 2
+            unembedded[:, cidx] = (samples[:, chain].sum(axis=1) >= mid)
+
+    return unembedded, np.arange(num_samples)  # we keep all of the samples in this case
+
+
+def weighted_random(samples, chains):
     """Determine the sample values of chains by weighed random choice.
 
     Args:
-        sample (Mapping):
-            Sample as a dict of form {t: val, ...}, where t is
-            a variable in the target graph and val its associated value as
-            determined by a binary quadratic model sampler.
-        embedding (dict):
-            Mapping from source graph to target graph as a dict
-            of form {s: {t, ...}, ...}, where s is a source-model variable and t is
-            a target-model variable.
+        samples (array_like):
+            Samples as a nS x nV array_like object where nS is the number of samples and nV is the
+            number of variables. The values should all be 0/1 or -1/+1.
 
-    Yields:
-        dict: The unembedded sample. When there is a chain break, the value
-        is chosen randomly, weighted by frequency of the chain's values.
+        chains (list[array_like]):
+            List of chains of length nC where nC is the number of chains.
+            Each chain should be an array_like collection of column indices in samples.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            :obj:`numpy.ndarray`: A nS x nC array of unembedded samples. The array has dtype 'int8'.
+            Where there is a chain break, the value is chosen randomly, weighted by frequency of the
+            chain's value.
+
+            :obj:`numpy.ndarray`: Equivalent to :code:`np.arange(nS)` because all samples are kept
+            and no samples are added.
 
     Examples:
-        This example unembeds a sample from a target graph that chains nodes 0 and 1 to
-        represent source node a and nodes 2, 3, and 4 to represent source node b.
+        This example unembeds samples from a target graph that chains nodes 0 and 1 to
+        represent one source node and nodes 2, 3, and 4 to represent another.
         The sample has broken chains for both source nodes.
 
         >>> import dimod
-        >>> embedding = {'a': {0, 1}, 'b': {2, 3, 4}}
-        >>> samples = {0: 1, 1: 0, 2: 1, 3: 0, 4: 1}
-        >>> next(dimod.embedding.weighted_random(samples, embedding), 'No sample')  # doctest: +SKIP
-        {'a': 0, 'b': 1}
+        >>> import numpy as np
+        ...
+        >>> chains = [(0, 1), (2, 3, 4)]
+        >>> samples = np.array([[1, 0, 1, 0, 1]], dtype=np.int8)
+        >>> unembedded, idx = dimod.embedding.majority_vote(samples, chains)  # doctest: +SKIP
+        >>> unembedded  # doctest: +SKIP
+        array([[1, 1]], dtype=int8)
+        >>> idx  # doctest: +SKIP
+        array([0, 1])
 
     """
-    unembedded = {}
+    samples = np.asarray(samples)
+    if samples.ndim != 2:
+        raise ValueError("expected samples to be a numpy 2D array")
 
-    for v, chain in iteritems(embedding):
-        vals = [sample[u] for u in chain]
+    # it sufficies to choose a random index from each chain and use that to construct the matrix
+    idx = [np.random.choice(chain) for chain in chains]
 
-        # pick a random element uniformly from all vals, this weights them by
-        # the proportion of each
-        unembedded[v] = np.random.choice(vals)
-
-    yield unembedded
+    num_samples, num_variables = samples.shape
+    return samples[:, idx], np.arange(num_samples)  # we keep all of the samples in this case
 
 
 class MinimizeEnergy(Callable):
     """Determine the sample values of broken chains by minimizing local energy.
 
     Args:
-        linear (dict): Linear biases of the source model as a dict of
-            form {s: bias, ...}, where s is a source-model variable
-            and bias its associated linear bias.
-        quadratic (dict): Quadratic biases of the source model as a dict
-            of form {(u, v): bias, ...}, where u, v are source-model variables
-            and bias the associated quadratic bias.
+        bqm (:obj:`.BinaryQuadraticModel`).
+            The binary quadratic model associated with the source graph.
+
+        embedding (dict):
+            Mapping from source graph to target graph as a dict of form {s: [t, ...], ...},
+            where s is a source-model variable and t is a target-model variable.
 
     Examples:
         This example embeds from a triangular graph to a square graph,
-        chaining target-nodes 2 and 3 to represent source-node c, and unembeds
-        using the `MinimizeEnergy` method four synthetic samples. The first two
-        sample have unbroken chains, the second two have broken chains.
+        chaining target-nodes 2 and 3 to represent source-node c, and unembeds minimizing the
+        energy for the samples. The first two sample have unbroken chains, the second two have
+        broken chains.
 
         >>> import dimod
+        >>> import numpy as np
+        ...
         >>> h = {'a': 0, 'b': 0, 'c': 0}
         >>> J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1}
-        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-        >>> method = dimod.embedding.MinimizeEnergy(h, J)
-        >>> samples = [{0: +1, 1: -1, 2: +1, 3: +1},
-        ...            {0: -1, 1: -1, 2: -1, 3: -1},
-        ...            {0: -1, 1: -1, 2: +1, 3: -1},
-        ...            {0: +1, 1: +1, 2: -1, 3: +1}]
-        ...
-        >>> for source_sample in dimod.iter_unembed(samples, embedding, chain_break_method=method):  # doctest: +SKIP
-        ...     print(source_sample)
-        ...
-        {'a': 1, 'c': 1, 'b': -1}
-        {'a': -1, 'c': -1, 'b': -1}
-        {'a': -1, 'c': 1, 'b': -1}
-        {'a': 1, 'c': -1, 'b': 1}
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
+        >>> embedding = {'a': [0], 'b': [1], 'c': [2, 3]}
+        >>> cbm = dimod.embedding.MinimizeEnergy(bqm, embedding)
+        >>> samples = np.array([[+1, -1, +1, +1],
+        ...                     [-1, -1, -1, -1],
+        ...                     [-1, -1, +1, -1],
+        ...                     [+1, +1, -1, +1]], dtype=np.int8)
+        >>> chains = [embedding['a'], embedding['b'], embedding['c']]
+        >>> unembedded, idx = cbm(samples, chains)
+        >>> unembedded
+        array([[ 1, -1,  1],
+               [-1, -1, -1],
+               [-1, -1,  1],
+               [ 1,  1, -1]], dtype=int8)
+        >>> idx
+        array([0, 1, 2, 3])
 
     """
+    def __init__(self, bqm, embedding):
+        # this is an awkward construction but we need it to maintain consistency with the other
+        # chain break methods
+        self.chain_to_var = {frozenset(chain): v for v, chain in embedding.items()}
 
-    def __init__(self, linear=None, quadratic=None):
-        if linear is None and quadratic is None:
-            raise TypeError("the minimize_energy method requires either `linear` or `quadratic` keyword arguments")
-        self._linear = linear if linear is not None else defaultdict(float)
-        self._quadratic = quadratic if quadratic is not None else dict()
+        self.bqm = bqm
 
-    def __call__(self, sample, embedding):
+    def __call__(self, samples, chains):
         """
         Args:
-            sample (dict): Sample as a dict of form {t: val, ...}, where t is
-                a target-graph variable and val its associated value as
-                determined by a binary quadratic model sampler.
-            embedding (dict): Mapping from source graph to target graph as a
-                dict of form {s: {t, ...}, ...} where s is a source-graph node
-                and t is a target-graph node.
+            samples (array_like):
+                Samples as a nS x nV array_like object where nS is the number of samples and nV is the
+                number of variables. The values should all be 0/1 or -1/+1.
 
-        Yields:
-            dict: The unembedded sample. When there is a chain break, the value
-            is chosen to minimize the energy relative to its neighbors.
+            chains (list[array_like]):
+                List of chains of length nC where nC is the number of chains.
+                Each chain should be an array_like collection of column indices in samples.
+
+        Returns:
+            tuple: A 2-tuple containing:
+
+                :obj:`numpy.ndarray`: A nS x nC array of unembedded samples. The array has dtype 'int8'.
+                Where there is a chain break, the value is chosen by greedy energy descent.
+
+                :obj:`numpy.ndarray`: Equivalent to :code:`np.arange(nS)` because all samples are kept
+                and no samples are added.
+
         """
-        unembedded = {}
-        broken = {}  # keys are the broken source variables, values are the energy contributions
+        samples = np.asarray(samples)
+        if samples.ndim != 2:
+            raise ValueError("expected samples to be a numpy 2D array")
 
-        vartype = set(itervalues(sample))
-        if len(vartype) > 2:
-            raise ValueError("sample has more than two different values")
+        chain_to_var = self.chain_to_var
+        variables = [chain_to_var[frozenset(chain)] for chain in chains]
+        chains = [np.asarray(list(chain)) if isinstance(chain, set) else np.array(chain) for chain in chains]
 
-        # first establish the values of all of the unbroken chains
-        for v, chain in iteritems(embedding):
-            vals = [sample[u] for u in chain]
+        # we want the bqm by index
+        bqm = self.bqm.relabel_variables({v: idx for idx, v in enumerate(variables)}, inplace=False)
 
-            if _all_equal(vals):
-                unembedded[v] = vals.pop()
-            else:
-                broken[v] = self._linear[v]  # broken tracks the linear energy
+        num_chains = len(chains)
 
-        # now, we want to determine the energy for each of the broken variable
-        # as much as we can
-        for (u, v), bias in iteritems(self._quadratic):
-            if u in unembedded and v in broken:
-                broken[v] += unembedded[u] * bias
-            elif v in unembedded and u in broken:
-                broken[u] += unembedded[v] * bias
+        if bqm.vartype is SPIN:
+            ZERO = -1
+        else:
+            ZERO = 0
 
-        # in order of energy contribution, pick spins for the broken variables
-        while broken:
-            v = max(broken, key=lambda u: abs(broken[u]))  # biggest energy contribution
+        def _minenergy(arr):
 
-            # get the value from vartypes that minimizes the energy
-            val = min(vartype, key=lambda b: broken[v] * b)
+            unbroken_arr = np.zeros((num_chains,), dtype=np.int8)
+            broken = []
 
-            # set that value and remove it from broken
-            unembedded[v] = val
-            del broken[v]
+            for cidx, chain in enumerate(chains):
 
-            # add v's energy contribution to all of the nodes it is connected to
-            for u in broken:
-                if (u, v) in self._quadratic:
-                    broken[u] += val * self._quadratic[(u, v)]
-                if (v, u) in self._quadratic:
-                    broken[u] += val * self._quadratic[(v, u)]
+                eq1 = (arr[chain] == 1)
+                if not np.bitwise_xor(eq1.all(), eq1.any()):
+                    # not broken
+                    unbroken_arr[cidx] = arr[chain][0]
+                else:
+                    broken.append(cidx)
 
-        yield unembedded
+            energies = []
+            for cidx in broken:
+                en = bqm.linear[cidx] + sum(unbroken_arr[idx] * bqm.adj[cidx][idx] for idx in bqm.adj[cidx])
+                energies.append([-abs(en), en, cidx])
+            heapify(energies)
 
+            while energies:
+                _, e, i = heappop(energies)
 
-def _all_equal(iterable):
-    """True if all values in `iterable` are equal, else False."""
-    iterator = iter(iterable)
-    try:
-        first = next(iterator)
-    except StopIteration:
-        # empty iterable is all equal
-        return True
-    return all(first == rest for rest in iterator)
+                unbroken_arr[i] = val = ZERO if e > 0 else 1
 
+                for energy_triple in energies:
+                    k = energy_triple[2]
+                    energy_triple[1] += val * bqm.adj[i][k]
+                    energy_triple[0] = -abs(energy_triple[1])
 
-def _most_common(iterable):
-    """Returns the most common element in `iterable`."""
-    counts = Counter(iterable)
-    if counts:
-        (val, __), = counts.most_common(1)
-        return val
-    else:
-        raise ValueError("iterable must contain at least one value")
+                heapify(energies)
+
+            return unbroken_arr
+
+        num_samples, num_variables = samples.shape
+        return np.apply_along_axis(_minenergy, 1, samples), np.arange(num_samples)

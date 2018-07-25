@@ -26,7 +26,11 @@ from dimod.embedding.utils import chain_to_quadratic
 from dimod.response import Response
 from dimod.vartypes import Vartype
 
-__all__ = ['embed_bqm', 'embed_ising', 'embed_qubo', 'iter_unembed', 'unembed_response']
+__all__ = ['embed_bqm',
+           'embed_ising',
+           'embed_qubo',
+           'unembed_response',
+           ]
 
 
 def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
@@ -324,95 +328,6 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0):
     return target_Q
 
 
-def iter_unembed(target_samples, embedding, chain_break_method=None):
-    """Yield unembedded samples.
-
-    :func:`.iter_unembed` is an iterator (to reduce memory footprint) used by :func:`.unembed_response`
-    for unembedding; you may use it directly, for example, to increase performance for responses with
-    large numbers of samples of which you need only a small portion, say those with lowest energy.
-
-    Args:
-        target_samples (iterable[mapping[variable, value]]):
-            Iterable of samples. Each sample is a dict of form {t: val, ...},
-            where t is a variable in the target graph and val its associated value.
-
-        embedding (dict):
-            Mapping from source graph to target graph as a dict of form {s: {t, ...}, ...},
-            where s is a source-model variable and t is a target-model variable.
-
-        chain_break_method (function, optional, default=:func:`.majority_vote`):
-            Method used to resolve chain breaks.
-
-    Yields:
-        dict[variable, value]: An unembedded sample as a dict of form {s: val, ...},
-        where s is a variable in the source graph and val its associated value.
-
-    Examples:
-        This example demonstrates the use of :func:`.iter_unembed` to derive samples
-        for a triangular source graph from synthetic samples of a square target graph.
-
-        >>> import dimod
-        >>> # Synthetic samples from a square-structured target problem
-        >>> samples = [{0: +1, 1: -1, 2: +1, 3: +1},
-        ...            {0: -1, 1: -1, 2: -1, 3: -1},
-        ...            {0: +1, 1: +1, 2: +1, 3: +1}]
-        >>> # Embedding from source to target graphs
-        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-        >>> for source_sample in dimod.iter_unembed(samples, embedding):  # doctest: +SKIP
-        ...     print(source_sample)
-        ...
-        {'a': 1, 'b': -1, 'c': 1}
-        {'a': -1, 'b': -1, 'c': -1}
-        {'a': 1, 'b': 1, 'c': 1}
-
-        This example uses :func:`.iter_unembed` to unembed samples of a binary quadratic model
-        for a triangular source graph that is embedded in a square-structured graph with dimod
-        reference structured sampler, `StructureComposite`, using the dimod reference `ExactSolver`
-        sampler. Note that this flow is used by dwave-system_'s :obj:`~dwave.system.composites.EmbeddingComposite`.
-
-        >>> import dimod
-        >>> # Binary quadratic model for a triangular source graph
-        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1})
-        >>> # Structured dimod sampler with a structure defined by a square graph
-        >>> sampler = dimod.StructureComposite(dimod.ExactSolver(), [0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (0, 3)])
-        >>> # Embedding from source to target graph
-        >>> embedding = {'a': {0}, 'b': {1}, 'c': {2, 3}}
-        >>> # Embed the BQM
-        >>> target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
-        >>> # Sample (the response is in the form of a target structure)
-        >>> target_response = sampler.sample(target_bqm)
-        >>> for datum in target_response.data():    # doctest: +SKIP
-        ...     print(datum)
-        ...
-        Sample(sample={0: 1, 1: -1, 2: -1, 3: -1}, energy=-1.0)
-        Sample(sample={0: 1, 1: 1, 2: -1, 3: -1}, energy=-1.0)
-        Sample(sample={0: -1, 1: 1, 2: -1, 3: -1}, energy=-1.0)
-        Sample(sample={0: 1, 1: -1, 2: 1, 3: -1}, energy=-1.0)
-        >>> # Snipped above response for brevity
-        >>> # Unembed
-        >>> source_response = dimod.Response.from_dicts(dimod.iter_unembed(target_response,
-        ...                          embedding),
-        ...                          {'energy': target_response.data_vectors['energy']})
-        >>> for datum in source_response.data():    # doctest: +SKIP
-        ...     print(datum)
-        ...
-        Sample(sample={'a': 1, 'c': -1, 'b': 1}, energy=-1.0)
-        Sample(sample={'a': -1, 'c': -1, 'b': 1}, energy=-1.0)
-        Sample(sample={'a': 1, 'c': 1, 'b': -1}, energy=-1.0)
-        Sample(sample={'a': -1, 'c': 1, 'b': 1}, energy=-1.0)
-        >>> # Snipped above response for brevity
-
-    .. _dwave-system: https://github.com/dwavesystems/dwave-system
-
-    """
-    if chain_break_method is None:
-        chain_break_method = majority_vote
-
-    for target_sample in target_samples:
-        for source_sample in chain_break_method(target_sample, embedding):
-            yield source_sample
-
-
 def unembed_response(target_response, embedding, source_bqm, chain_break_method=None):
     """Unembed the response.
 
@@ -430,8 +345,9 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         source_bqm (:obj:`.BinaryQuadraticModel`):
             Source binary quadratic model.
 
-        chain_break_method (function, optional, default=:func:`.majority_vote`):
-            Method used to resolve chain breaks.
+        chain_break_method (function, optional):
+            Method used to resolve chain breaks. Must be an iterator which accepts a sample and
+            an embedding and yields unembedded samples.
 
     Returns:
         :obj:`.Response`:
@@ -501,19 +417,25 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     if any(v not in embedding for v in source_bqm):
         raise ValueError("given bqm does not match the embedding")
 
-    energies = []
+    if chain_break_method is None:
+        chain_break_method = majority_vote
 
-    def _samples():
-        # populate energies as the samples are resolved one-at-a-time
-        for sample in iter_unembed(target_response, embedding, chain_break_method):
-            energies.append(source_bqm.energy(sample))
-            yield sample
+    variables, chains = zip(*embedding.items())
+
+    if target_response.label_to_idx is None:
+        chain_idxs = [list(chain) for chain in chains]
+    else:
+        chain_idxs = [[target_response.label_to_idx[v] for v in chain] for chain in chains]
+
+    unembedded, idxs = chain_break_method(target_response.samples_matrix, chain_idxs)
+    data_vectors = {key: vector[idxs] for key, vector in target_response.data_vectors.items()}
+
+    lin, (i, j, quad), off = source_bqm.to_numpy_vectors(variable_order=variables)
 
     # overwrite energy with the new values
-    data_vectors = target_response.data_vectors.copy()
-    data_vectors['energy'] = energies
+    data_vectors['energy'] = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
 
-    # NB: this works because response.from_dict does not resolve the energies until AFTER the samples
-    return target_response.from_dicts(_samples(), data_vectors,
-                                      vartype=target_response.vartype,
-                                      info=target_response.info)
+    return target_response.from_matrix(unembedded, data_vectors,
+                                       vartype=target_response.vartype,
+                                       info=target_response.info,
+                                       variable_labels=variables)
