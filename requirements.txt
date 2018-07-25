@@ -5,7 +5,7 @@ futures; python_version=="2.7"
 jsonschema==2.6.0
 
 networkx==2.0
-pandas
+pandas; python_version!="3.4"
 mock==2.0.0
 
 coverage

@@ -1,8 +1,8 @@
 version: 2
 jobs:
-  test-3.6: &full-test-template
+  test-3.7: &full-test-template
     docker:
-      - image: circleci/python:3.6-jessie
+      - image: circleci/python:3.7-stretch
 
     working_directory: ~/repo
 
@@ -44,41 +44,25 @@ jobs:
             . env/bin/activate
             codecov
 
+  test-3.6:
+    <<: *full-test-template
+    docker:
+      - image: circleci/python:3.6-jessie
+
   test-3.5:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.5-jessie
 
+  test-3.4:
+    <<: *full-test-template
+    docker:
+      - image: circleci/python:3.4-jessie
+
   test-2.7:
     <<: *full-test-template
     docker:
       - image: circleci/python:2.7-jessie
-
-  test-3.7:
-    docker:
-      - image: circleci/python:3.7-stretch
-
-    working_directory: ~/repo
-
-    steps:
-      - checkout
-
-      - run:
-          name: create virtualenv
-          command: |
-            python -m virtualenv env
-
-      - run:
-          name: install package
-          command: |
-            . env/bin/activate
-            pip install .
-        
-      - run:
-          name: run unittests
-          command: |
-            . env/bin/activate
-            python -m unittest discover
 
   test-osx:
     macos:
