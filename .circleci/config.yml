@@ -250,6 +250,10 @@ jobs:
     steps:
       - checkout
 
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
       - run:
           name: create virtualenv
           command: |
@@ -262,6 +266,11 @@ jobs:
             pip install -r requirements.txt
             pip install sphinx
             pip install sphinx_rtd_theme
+
+      - save_cache:
+          paths:
+            - ./env
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: doctest
