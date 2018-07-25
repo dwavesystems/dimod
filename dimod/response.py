@@ -965,7 +965,8 @@ class Response(Iterable, Sized):
 
         """
         if fields is None:
-            fields = self.record.dtype.fields
+            # make sure that sample is first
+            fields = ['sample'] + [field for field in self.record.dtype.fields if field != 'sample']
 
         if sorted_by is None:
             order = np.arange(len(self))
