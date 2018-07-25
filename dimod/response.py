@@ -242,9 +242,8 @@ class Response(Iterable, Sized):
                 Additional per-sample data as a dict of vectors. Each vector is the same length as
                 `samples`. The key 'energy' and its vector are required.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                Vartype of the response. If not provided, vartype is inferred from the
-                samples array if possible or a ValueError is raised.
+            vartype (:class:`.Vartype`):
+                Vartype of the response.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
@@ -309,9 +308,8 @@ class Response(Iterable, Sized):
                 Additional per-sample data as a dict of vectors. Each vector is the
                 same length as `samples`. The key 'energy' and its vector are required.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                Vartype of the response. If not provided, vartype is inferred from the
-                samples array if possible or a ValueError is raised.
+            vartype (:class:`.Vartype`):
+                Vartype of the response.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
@@ -375,9 +373,8 @@ class Response(Iterable, Sized):
                 Additional per-sample data as a dict of vectors. Each vector is the
                 same length as `samples_df`. The key 'energy' and its vector are required.
 
-            vartype (:class:`.Vartype`, optional, default=None):
-                Vartype of the response. If not provided, vartype is inferred from the
-                samples array if possible or a ValueError is raised.
+            vartype (:class:`.Vartype`):
+                Vartype of the response.
 
             info (dict, optional, default=None):
                 Information about the response as a whole formatted as a dict.
