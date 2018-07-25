@@ -230,7 +230,7 @@ jobs:
 
 workflows:
   version: 2
-  test-doctest:
+  tests:
     jobs:
       - test-3.7
       - test-3.6
