@@ -48,11 +48,11 @@ the energies of all possible samples.
 >>> J = {(0, 1): -1.0}
 >>> bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
 >>> response = dimod.ExactSolver().sample(bqm)
->>> response.samples_matrix
-matrix([[-1, -1],
-        [ 1, -1],
-        [ 1,  1],
-        [-1,  1]])
+>>> for sample, energy in response.data(['sample', 'energy']): print(sample, energy)
+{0: -1, 1: -1} -1.0
+{0: 1, 1: 1} -1.0
+{0: 1, 1: -1} 1.0
+{0: -1, 1: 1} 1.0
 
 .. index-end-marker2
 
