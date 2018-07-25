@@ -64,13 +64,16 @@ jobs:
     docker:
       - image: circleci/python:2.7-jessie
 
-  test-osx:
+  test-osx-3.7: &osx-tests-template
     macos:
-      xcode: "9.0"
+      xcode: "9.4.1"
+    environment:
+      PYTHON: 3.7.0
+      # HOMEBREW_NO_AUTO_UPDATE: 1  # for 3.7 we need to update homebrew
 
     working_directory: ~/repo
 
-    steps:
+    steps: 
       - checkout
 
       - run: 
@@ -80,116 +83,63 @@ jobs:
 
       - restore_cache:
           keys:
-          - pyenv-versions-2.7.14-3.5.5-3.6.5-3.7.0-{{ .Environment.CIRCLE_JOB }}
-          - dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+            - pyenv-{{ .Environment.CIRCLE_JOB }}
 
       - run:
-          name: install python 2.7.14, 3.5.5, 3.6.5, and 3.7.0 with pyenv
+          name: install python
           command: |
-            pyenv install 2.7.14 -s
-            pyenv install 3.5.5 -s
-            pyenv install 3.6.5 -s
-            pyenv install 3.7.0 -s
+            pyenv install $PYTHON -s
 
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-versions-2.7.14-3.5.5-3.6.5-3.7.0-{{ .Environment.CIRCLE_JOB }}
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}
 
       - run:
-          name: create virtualenv for 2.7.14
+          name: create virtualenv
           command: |
             eval "$(pyenv init -)"
-            pyenv local 2.7.14
+            pyenv local $PYTHON
             python -m pip install virtualenv
             python -m virtualenv env
-
-      - run: *install-dependencies-template
-
-      - save_cache:
-          paths:
-            - ./env
-          key: dependencies2.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run: *run-tests-template
-
-      - run:
-          name: clear virtual environment
-          command: |
-            rm -rf env
 
       - restore_cache:
           keys:
-          - dependencies3.5-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run:
-          name: create virtualenv for 3.5.5
-          command: |
-            eval "$(pyenv init -)"
-            pyenv local 3.5.5
-            python -m pip install virtualenv
-            python -m virtualenv env
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: *install-dependencies-template
 
       - save_cache:
           paths:
             - ./env
-          key: dependencies3.5-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+        
       - run: *run-tests-template
 
-      - run:
-          name: clear virtual environment
-          command: |
-            rm -rf env
+  test-osx-3.6:
+    <<: *osx-tests-template
+    environment:
+      PYTHON: 3.6.5
+      HOMEBREW_NO_AUTO_UPDATE: 1
 
-      - restore_cache:
-          keys:
-          - dependencies3.6-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+  test-osx-3.5:
+    <<: *osx-tests-template
+    environment:
+      PYTHON: 3.5.5
+      HOMEBREW_NO_AUTO_UPDATE: 1
 
-      - run:
-          name: create virtualenv for 3.6.5
-          command: |
-            eval "$(pyenv init -)"
-            pyenv local 3.6.5
-            python -m pip install virtualenv
-            python -m virtualenv env
+  test-osx-3.4:
+    <<: *osx-tests-template
+    environment:
+      PYTHON: 3.4.8
+      HOMEBREW_NO_AUTO_UPDATE: 1
 
-      - run: *install-dependencies-template
+  test-osx-2.7:
+    <<: *osx-tests-template
+    environment:
+      PYTHON: 2.7.15
+      HOMEBREW_NO_AUTO_UPDATE: 1
 
-      - save_cache:
-          paths:
-            - ./env
-          key: dependencies3.6-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run: *run-tests-template
-
-      - run:
-          name: clear virtual environment
-          command: |
-            rm -rf env
-
-      - restore_cache:
-          keys:
-          - dependencies3.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run:
-          name: create virtualenv for 3.7.0
-          command: |
-            eval "$(pyenv init -)"
-            pyenv local 3.7.0
-            python -m pip install virtualenv
-            python -m virtualenv env
-
-      - run: *install-dependencies-template
-
-      - save_cache:
-          paths:
-            - ./env
-          key: dependencies3.7-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run: *run-tests-template
 
   deploy:
     docker:
@@ -282,12 +232,17 @@ workflows:
   version: 2
   test-doctest:
     jobs:
-      - test-2.7
       - test-3.7
       - test-3.6
       - test-3.5
+      - test-3.4
+      - test-2.7
+      - test-osx-3.7
+      - test-osx-3.6
+      - test-osx-3.5
+      - test-osx-3.4
+      - test-osx-2.7
       - test-doctest
-      - test-osx
       - deploy:
           filters:
             tags:
