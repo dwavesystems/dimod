@@ -1607,6 +1607,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
     def to_bson(self, fp=None):
+        """Convert a binary quadratic model to an effecient BSON format.
+
+        Args:
+            fp (file, optional):
+                A `.write()`-supporting `file object`_ to save the binary 
+                quadratic model encoded in BSON format to. If not provided, 
+                returns bytes.
+        """
+                
+
         import bson
 
         num_variables = len(self)
@@ -1653,6 +1663,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @classmethod
     def from_bson(cls, obj):
+        """Deserialize a binary quadratic model from a BSON encoding.
+
+        Args:
+            obj: (bytes/file):
+                Either bytes or a  `.read()`-supporting `file object`_
+                that represents linear and quadratic biases using the encoding
+                used in `.to_bson`.
+        """
+
         import bson, itertools
 
         doc = bson.BSON.decode(obj if isinstance(obj, bytes) else obj.read())
