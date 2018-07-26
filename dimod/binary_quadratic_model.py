@@ -1606,6 +1606,73 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
+    def to_bson(self, fp=None):
+        import bson
+
+        num_variables = len(self)
+        if num_variables > 2**16:
+            raise ValueError
+
+        variable_order = sorted(self.linear)
+        num_possible_edges = num_variables*(num_variables - 1) // 2
+        density = len(self.quadratic) / float(num_possible_edges)
+        as_complete = density >= 0.5
+
+        lin, (i, j, _vals), off = self.to_numpy_vectors(
+            dtype=np.float32,
+            index_dtype=np.uint16,
+            sort_indices=as_complete,
+            variable_order=variable_order)
+
+        edge_idxs = i*(num_variables - 1) - i*(i+1)//2 + j - 1
+        if as_complete:
+            vals = np.zeros(num_possible_edges, dtype=np.float32)
+            vals[edge_idxs] = _vals
+
+        else:
+            vals = _vals
+
+        doc = {
+            "as_complete": as_complete,
+            "linear": bson.binary.Binary(lin.tobytes()),
+            "quadratic_vals": bson.binary.Binary(vals.tobytes()),
+            "vartype": "SPIN" if self.vartype == self.SPIN else "BINARY",
+            "offset": off,
+            "variable_order": variable_order,
+        }
+
+        if not as_complete:
+            doc["quadratic_head"] = bson.binary.Binary(i.tobytes())
+            doc["quadratic_tail"] = bson.binary.Binary(j.tobytes())
+
+        enc_doc = bson.BSON.encode(doc)
+        if fp is None:
+            return enc_doc
+
+        fp.write(enc_doc)
+
+    @classmethod
+    def from_bson(cls, obj):
+        import bson, itertools
+
+        doc = bson.BSON.decode(obj if isinstance(obj, bytes) else obj.read())
+
+        lin = np.frombuffer(doc["linear"], dtype=np.float32)
+        num_variables = len(lin)
+        vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
+        if doc["as_complete"]:
+            i, j = list(zip(*itertools.combinations(range(num_variables), 2)))
+        else:
+            i = np.frombuffer(doc["quadratic_head"], dtype=np.uint16)
+            j = np.frombuffer(doc["quadratic_tail"], dtype=np.uint16)
+
+        off = doc["offset"]
+
+        return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"], 
+                                      doc["vartype"], 
+                                      variable_order=doc["variable_order"])
+
+
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
 

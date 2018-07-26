@@ -1889,6 +1889,33 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
 
+    def test_bson_dense(self):
+        n = 7
+        bqm = dimod.BinaryQuadraticModel(
+            {0: 1., 1: np.float32(-850.234)}, 
+            {(u, v): u*3.0 + v/2.0 for u in range(n) for v in range(u+1, n)}, 
+            0.0, dimod.BINARY)
+
+        enc_bqm = bqm.to_bson()
+        self.assertIsInstance(enc_bqm, bytes)
+        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
+
+        self.assertEqual(bqm, dec_bqm)
+
+    def test_bson_sparse(self):
+        bqm = dimod.BinaryQuadraticModel(
+            {"a": 1., "b": np.float32(7.0), "c": np.float32(-5.0), 
+             "e": np.float32(4.0)},
+            {("a", "b"): np.float32(-4.0), ("a", "c"): np.float32(6.0), 
+             ("b", "d"): np.float32(5.0)},
+            0.0, dimod.BINARY)
+
+        enc_bqm = bqm.to_bson()
+        self.assertIsInstance(enc_bqm, bytes)
+        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
+
+        self.assertEqual(bqm, dec_bqm)
+
 
 class TestOrderedBQM(unittest.TestCase):
     def test_construction(self):
