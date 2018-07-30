@@ -1487,19 +1487,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         return coo.load(obj, cls.empty(vartype))
 
-    def to_json(self, fp=None):
+    def to_json(self):
         """Serialize the binary quadratic model using JSON.
 
-        Args:
-            fp (file, optional):
-                A `.write()`-supporting `file object`_ to save the binary quadratic model to,
-                formatted according to the current `BQM schema`_\ . If not provided,
-                returns a string.
+        Returns:
+            str: Bnary quadratic model serialized in accordance with `BQM schema`_.
 
-        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
         .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
-
-
 
         Examples:
             This example shows a serialized binary quadratic model in JSON encoding for
@@ -1525,14 +1519,6 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                     }
                 }
 
-
-            This is an example of writing a binary quadratic model to a JSON-format file.
-
-            >>> import dimod
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
-            ...     bqm.to_json(file)
-
             This is an example of writing a binary quadratic model to a JSON-format string.
 
             >>> import dimod
@@ -1546,14 +1532,18 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
              "variable_labels": ["a", "b"], "variable_type": "SPIN",
              "version": {"bqm_schema": "1.0.0", "dimod": "0.6.3"}}
 
+            This is an example of writing a binary quadratic model to a JSON-format file.
+
+            >>> import dimod
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
+            ...     file.write(bqm.to_json())
+
         """
         import json
-        from dimod.io.json import DimodStreamEncoder
+        from dimod.io.json import DimodEncoder
 
-        if fp is None:
-            return json.dumps(self, cls=DimodStreamEncoder, sort_keys=True)
-        else:
-            return json.dump(self, fp, cls=DimodStreamEncoder, sort_keys=True)
+        return json.dumps(self, cls=DimodEncoder, sort_keys=True)
 
     @classmethod
     def from_json(cls, obj):
@@ -1561,9 +1551,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             obj: (str/file):
-                Either a string or a  `.read()`-supporting `file object`_
+                Either a string or a `.read()`-supporting `file object`_
                 that represents linear and quadratic biases for a binary quadratic model
-                formatted in accordance to the current `BQM schema`_\ .
+                formatted in accordance to the current `BQM schema`_ .
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
         .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json

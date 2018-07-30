@@ -68,11 +68,8 @@ def bqm_decode_hook(dct, cls=None):
     return dct
 
 
-class DimodStreamEncoder(json.JSONEncoder):
-    """Subclass the JSONEncoder for dimod objects.
-
-    By using the stream objects, we don't need to create the entire serializable object in memory
-    """
+class DimodEncoder(json.JSONEncoder):
+    """Subclass the JSONEncoder for dimod objects."""
     def default(self, obj):
 
         if isinstance(obj, BinaryQuadraticModel):
@@ -84,12 +81,12 @@ class DimodStreamEncoder(json.JSONEncoder):
             else:
                 raise RuntimeError("unknown vartype")
 
-            json_dict = {"linear_terms": self._linear_biases(obj.linear),
-                         "quadratic_terms": self._quadratic_biases(obj.quadratic),
+            json_dict = {"linear_terms": list(self._linear_biases(obj.linear)),
+                         "quadratic_terms": list(self._quadratic_biases(obj.quadratic)),
                          "offset": obj.offset,
                          "variable_type": vartype_string,
                          "version": {"dimod": __version__, "bqm_schema": bqm_json_schema_version},
-                         "variable_labels": self._variable_labels(obj.linear),
+                         "variable_labels": list(self._variable_labels(obj.linear)),
                          "info": obj.info}
             return json_dict
 
@@ -101,101 +98,23 @@ class DimodStreamEncoder(json.JSONEncoder):
 
     @staticmethod
     def _linear_biases(linear):
-        return _JSONLinearBiasStream.from_dict(linear)
-
-    @staticmethod
-    def _quadratic_biases(quadratic):
-        return _JSONQuadraticBiasStream.from_dict(quadratic)
-
-    @staticmethod
-    def _variable_labels(linear):
-        return _JSONLabelsStream.from_dict(linear)
-
-
-class DimodEncoder(DimodStreamEncoder):
-    """Subclass the JSONEncoder for dimod objects.
-
-    In this case we dump the steam contents into arrays so that intermediate representations function
-    correctly.
-    """
-    @staticmethod
-    def _linear_biases(linear):
-        return list(_JSONLinearBiasStream.from_dict(linear))
-
-    @staticmethod
-    def _quadratic_biases(quadratic):
-        return list(_JSONQuadraticBiasStream.from_dict(quadratic))
-
-    @staticmethod
-    def _variable_labels(linear):
-        return list(_JSONLabelsStream.from_dict(linear))
-
-
-class _JSONLinearBiasStream(list):
-    """Allows json to encode linear biases without needing to create a large number of dicts in
-    memory.
-    """
-    @classmethod
-    def from_dict(cls, linear):
-        jlbs = cls()
-        jlbs.linear = linear
-        return jlbs
-
-    def __iter__(self):
-        for v, bias in iteritems(self.linear):
+        for v, bias in iteritems(linear):
             if isinstance(v, tuple):
                 v = json.loads(json.dumps(v))  # handles nested tuples
             yield {"bias": bias, "label": v}
 
-    def __len__(self):
-        return len(self.linear)
-
-    def __bool__(self):
-        return bool(self.linear)
-
-
-class _JSONQuadraticBiasStream(list):
-    """Allows json to encode quadratic biases without needing to create a large number of dicts in
-    memory.
-    """
-    @classmethod
-    def from_dict(cls, quadratic):
-        jqbs = cls()
-        jqbs.quadratic = quadratic
-        return jqbs
-
-    def __iter__(self):
-        for (u, v), bias in iteritems(self.quadratic):
+    @staticmethod
+    def _quadratic_biases(quadratic):
+        for (u, v), bias in iteritems(quadratic):
             if isinstance(u, tuple):
                 u = _encode_label(u)  # handles nested tuples
             if isinstance(v, tuple):
                 v = _encode_label(v)  # handles nested tuples
             yield {"bias": bias, "label_head": u, "label_tail": v}
 
-    def __len__(self):
-        return len(self.quadratic)
-
-    def __bool__(self):
-        return bool(self.quadratic)
-
-
-class _JSONLabelsStream(list):
-    """Allows json to encode variable labels without needing to create a large list in memory.
-    """
-    @classmethod
-    def from_dict(cls, linear):
-        jlbs = cls()
-        jlbs.linear = linear
-        return jlbs
-
-    def __iter__(self):
-        for u in self.linear:
+    @staticmethod
+    def _variable_labels(linear):
+        for u in linear:
             if isinstance(u, tuple):
                 u = _encode_label(u)  # handles nested tuples
             yield u
-
-    def __len__(self):
-        return len(self.linear)
-
-    def __bool__(self):
-        return bool(self.linear)
