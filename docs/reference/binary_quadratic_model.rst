@@ -94,7 +94,6 @@ Converting to other types
    :toctree: generated/
 
    BinaryQuadraticModel.from_coo
-   BinaryQuadraticModel.from_dict
    BinaryQuadraticModel.from_ising
    BinaryQuadraticModel.from_json
    BinaryQuadraticModel.from_numpy_matrix
@@ -102,7 +101,6 @@ Converting to other types
    BinaryQuadraticModel.from_qubo
    BinaryQuadraticModel.from_pandas_dataframe
    BinaryQuadraticModel.to_coo
-   BinaryQuadraticModel.to_dict
    BinaryQuadraticModel.to_ising
    BinaryQuadraticModel.to_json
    BinaryQuadraticModel.to_networkx_graph
