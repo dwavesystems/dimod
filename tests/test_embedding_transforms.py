@@ -44,7 +44,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
 
-        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]}, dimod.SPIN)
 
         resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.majority_vote)
 
@@ -63,7 +63,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
 
-        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]}, dimod.SPIN)
 
         resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.majority_vote)
 
@@ -82,7 +82,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {})
 
-        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]}, dimod.SPIN)
 
         resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
 
@@ -96,7 +96,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {('a', 'b'): -1})
 
-        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]}, dimod.SPIN)
 
         resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
 
@@ -115,7 +115,7 @@ class TestUnembedResponse(unittest.TestCase):
 
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {('a', 'b'): -1})
 
-        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]})
+        resp = dimod.Response.from_dicts(samples, {'energy': [-1, 1]}, dimod.SPIN)
 
         resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard)
 

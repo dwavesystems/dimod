@@ -1803,16 +1803,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         return cls(linear, quadratic, offset, Vartype.BINARY)
 
     def to_numpy_matrix(self, variable_order=None):
-        """Convert a binary quadratic model to NumPy matrix format.
+        """Convert a binary quadratic model to NumPy 2D array.
 
         Args:
             variable_order (list, optional):
                 If provided, indexes the rows/columns of the NumPy array. If `variable_order` includes
-                any variables not in the binary quadratic model, these are added to the NumPy matrix.
+                any variables not in the binary quadratic model, these are added to the NumPy array.
 
         Returns:
-            :class:`numpy.matrix`: The binary quadratic model as a NumPy matrix. The matrix has binary
-            vartype.
+            :class:`numpy.ndarray`: The binary quadratic model as a NumPy 2D array. Note that the
+            binary quadratic model is converted to :class:`~.Vartype.BINARY` vartype.
 
         Notes:
             The matrix representation of a binary quadratic model only makes sense for binary models.
@@ -1822,23 +1822,24 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
                 E(x) = x^T Q x
 
-            The offset is dropped when converting to a NumPy matrix.
+            The offset is dropped when converting to a NumPy array.
 
         Examples:
-            This example converts a binary quadratic model to NumPy matrix format while
+            This example converts a binary quadratic model to NumPy array format while
             ordering variables and adding one ('d').
 
             >>> import dimod
             >>> import numpy as np
+            ...
             >>> model = dimod.BinaryQuadraticModel({'a': 1, 'b': -1, 'c': .5},
             ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
             ...                                    1.4,
             ...                                    dimod.BINARY)
             >>> model.to_numpy_matrix(variable_order=['d', 'c', 'b', 'a'])
-            matrix([[ 0. ,  0. ,  0. ,  0. ],
-                    [ 0. ,  0.5,  1.5,  0. ],
-                    [ 0. ,  0. , -1. ,  0.5],
-                    [ 0. ,  0. ,  0. ,  1. ]])
+            array([[ 0. ,  0. ,  0. ,  0. ],
+                   [ 0. ,  0.5,  1.5,  0. ],
+                   [ 0. ,  0. , -1. ,  0.5],
+                   [ 0. ,  0. ,  0. ,  1. ]])
 
         """
         import numpy as np
@@ -1880,20 +1881,20 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 else:
                     mat[iv, iu] = bias
 
-        return np.asmatrix(mat)
+        return mat
 
     @classmethod
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0.0, interactions=None):
-        """Create a binary quadratic model from a NumPy matrix.
+        """Create a binary quadratic model from a NumPy array.
 
         Args:
-            mat (:class:`numpy.matrix`):
+            mat (:class:`numpy.ndarray`):
                 Coefficients of a quadratic unconstrained binary optimization (QUBO)
-                model formatted as a square NumPy matrix.
+                model formatted as a square NumPy 2D array.
 
             variable_order (list, optional):
                 If provided, labels the QUBO variables; otherwise, row/column indices are used.
-                If `variable_order` is longer than the matrix, extra values are ignored.
+                If `variable_order` is longer than the array, extra values are ignored.
 
             offset (optional, default=0.0):
                 Constant offset for the binary quadratic model.
@@ -1935,11 +1936,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         import numpy as np
 
         if mat.ndim != 2:
-            raise ValueError("expected input mat to be a square matrix")  # pragma: no cover
+            raise ValueError("expected input mat to be a square 2D numpy array")
 
         num_row, num_col = mat.shape
         if num_col != num_row:
-            raise ValueError("expected input mat to be a square matrix")  # pragma: no cover
+            raise ValueError("expected input mat to be a square 2D numpy array")
 
         if variable_order is None:
             variable_order = list(range(num_row))
