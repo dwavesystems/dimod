@@ -46,7 +46,7 @@ of a problem.
 """
 from __future__ import absolute_import, division
 
-from collections import Sized, Container, Iterable
+from collections import Sized, Container, Iterable, OrderedDict
 from numbers import Number
 
 import numpy as np
@@ -2200,3 +2200,37 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             bqm.add_interaction(u, v, 0.0)
 
         return bqm
+
+
+class OrderedBinaryQuadraticModel(BinaryQuadraticModel):
+    """Consistently ordered variant of :class:`BinaryQuadraticModel`.
+
+    Uses :class:`collections.OrderedDict` to store the linear and quadratic biases. Note that
+    :attr:`~.BinaryQuadraticModel.adj` remains unordered.
+
+    Variables are ordered by insertion. This is well defined if adding the variable/interactions
+    singly, but not when constructed from unordered mappings like dicts.
+
+    Examples:
+
+        >>> bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
+        >>> bqm.add_variable('a', .5)
+        >>> bqm.add_interaction('a', 'b', 1.5)
+        >>> bqm.linear
+        OrderedDict([('a', 0.5), ('b', 0.0)])
+        >>> bqm.quadratic
+        OrderedDict([(('a', 'b'), 1.5)])
+
+    """
+    @vartype_argument('vartype')
+    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
+        self.linear = OrderedDict()
+        self.quadratic = OrderedDict()
+        self.adj = {}
+        self.offset = offset  # we are agnostic to type, though generally should behave like a number
+        self.vartype = vartype
+        self.info = kwargs  # any additional kwargs are kept as info (metadata)
+
+        # add linear, quadratic
+        self.add_variables_from(linear)
+        self.add_interactions_from(quadratic)
