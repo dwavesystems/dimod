@@ -171,7 +171,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(freq, {'a': .5})
 
     def test_chain_break_frequency_response_mix_string_labels(self):
-        response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]}, dimod.BINARY)
+        response = dimod.Response.from_samples([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]}, {}, dimod.BINARY)
         embedding = {0: {'a', 'b'}}
         freq = dimod.embedding.chain_break_frequency(response, embedding)
 

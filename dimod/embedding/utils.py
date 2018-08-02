@@ -190,7 +190,7 @@ def chain_break_frequency(samples, embedding):
 
     """
     if isinstance(samples, Response):
-        if samples.variable_labels is not None:
+        if samples.labels is not None:
             label_to_idx = samples.label_to_idx
             embedding = {v: {label_to_idx[u] for u in chain} for v, chain in iteritems(embedding)}
         samples = samples.record.sample

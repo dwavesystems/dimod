@@ -1,6 +1,7 @@
 import itertools
 
-from collections import namedtuple, Mapping, ItemsView, ValuesView, Iterable
+from collections import ItemsView, Iterable, Mapping, Sized, ValuesView
+from collections import namedtuple
 
 import numpy as np
 
@@ -9,7 +10,7 @@ from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
 
-class Response(Iterable):
+class Response(Iterable, Sized):
 
     @vartype_argument('vartype')
     def __init__(self, record, labels, info, vartype):
@@ -39,6 +40,10 @@ class Response(Iterable):
 
         # vartype is checked by vartype_argument decorator
         self._vartype = vartype
+
+    def __len__(self):
+        """The number of rows in record."""
+        return self.record.__len__()
 
     def __iter__(self):
         """Iterate over the samples, low energy to high."""
