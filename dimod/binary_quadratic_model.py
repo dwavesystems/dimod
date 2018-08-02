@@ -2198,12 +2198,16 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
 
 class OrderedBinaryQuadraticModel(BinaryQuadraticModel):
-    """Consistently ordered varient of :class:`BinaryQuadraticModel`.
+    """Consistently ordered variant of :class:`BinaryQuadraticModel`.
 
     Uses :class:`collections.OrderedDict` to store the linear and quadratic biases. Note that
     :attr:`~.BinaryQuadraticModel.adj` remains unordered.
 
+    Variables are ordered by insertion. This is well defined if adding the variable/interactions
+    singly, but not when constructed from unordered mappings like dicts.
+
     Examples:
+
         >>> bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
         >>> bqm.add_variable('a', .5)
         >>> bqm.add_interaction('a', 'b', 1.5)
