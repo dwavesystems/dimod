@@ -134,8 +134,9 @@ class Response(Iterable, Sized):
         record = self.record
 
         if fields is None:
-            # make sure that sample is first
-            fields = ['sample'] + [field for field in record.dtype.fields if field != 'sample']
+            # make sure that sample, energy is first
+            fields = ['sample', 'energy', 'num_occurrences'] + [field for field in record.dtype.fields
+                                                                if field not in {'sample', 'energy', 'num_occurrences'}]
 
         if sorted_by is None:
             order = np.arange(len(self))
@@ -218,7 +219,7 @@ class Response(Iterable, Sized):
     def copy(self):
         """Create a shallow copy.
         """
-        return Response(self.record.copy(), self.labels.copy(), self.info.copy(), self.vartype)
+        return Response(self.record.copy(), list(self.labels), self.info.copy(), self.vartype)
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
