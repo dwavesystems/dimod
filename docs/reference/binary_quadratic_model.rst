@@ -108,3 +108,9 @@ Converting to other types
    BinaryQuadraticModel.to_numpy_vectors
    BinaryQuadraticModel.to_qubo
    BinaryQuadraticModel.to_pandas_dataframe
+
+
+OrderedBinaryQuadraticModel
+===========================
+
+.. autoclass:: OrderedBinaryQuadraticModel

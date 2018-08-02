@@ -20,6 +20,8 @@ import itertools
 import tempfile
 import shutil
 import json
+import collections
+
 from os import path
 
 import jsonschema
@@ -134,7 +136,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertEqual(dimod.BinaryQuadraticModel(linear, quadratic, offset, {-1, 1}).vartype, dimod.SPIN)
 
         self.assertEqual(dimod.BinaryQuadraticModel(linear, quadratic, offset, 'BINARY').vartype, dimod.BINARY)
-
 
     def test_construction_quadratic(self):
         linear = {v: v * .01 for v in range(10)}
@@ -1875,3 +1876,18 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
+
+
+class TestOrderedBQM(unittest.TestCase):
+    def test_construction(self):
+        bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
+        bqm.add_variable('a', .5)
+        bqm.add_interaction('c', 'a', 1.5)
+        bqm.add_interaction('a', 'c', -1.)
+        bqm.add_interaction('a', 'b', -1.)
+        bqm.add_variables_from([('b', 1.0), ('c', 1.0)])
+        bqm.add_interaction('e', 'd', 0.0)
+
+        self.assertEqual(bqm.linear, collections.OrderedDict([('a', .5), ('c', 1.), ('b', 1.), ('e', 0.), ('d', 0.)]))
+        self.assertEqual(bqm.quadratic,
+                         collections.OrderedDict([(('c', 'a'), .5), (('a', 'b'), -1.), (('e', 'd'), 0.0)]))
