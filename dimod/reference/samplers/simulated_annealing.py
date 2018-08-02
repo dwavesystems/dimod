@@ -104,8 +104,8 @@ class SimulatedAnnealingSampler(Sampler):
             samples.append(sample)
             energies.append(energy)
 
-        response = Response.from_dicts(samples, {'energy': energies}, vartype=Vartype.SPIN)
-        response.change_vartype(bqm.vartype, {'energy': offset}, inplace=True)
+        response = Response.from_samples(samples, {'energy': energies}, {}, vartype=Vartype.SPIN)
+        response.change_vartype(bqm.vartype, offset, inplace=True)
         return response
 
 

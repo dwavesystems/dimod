@@ -18,6 +18,8 @@ from __future__ import division
 
 import itertools
 
+import numpy as np
+
 from six import iteritems, itervalues
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -427,16 +429,25 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     else:
         chain_idxs = [[target_response.label_to_idx[v] for v in chain] for chain in chains]
 
-    unembedded, idxs = chain_break_method(target_response.record.sample, chain_idxs)
-    data_vectors = {key: target_response.record[key][idxs] for key in target_response.record.dtype.fields
-                    if key != 'sample'}
+    record = target_response.record
+
+    unembedded, idxs = chain_break_method(record.sample, chain_idxs)
 
     lin, (i, j, quad), off = source_bqm.to_numpy_vectors(variable_order=variables)
+    energies = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
 
-    # overwrite energy with the new values
-    data_vectors['energy'] = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
+    num_samples, num_variables = unembedded.shape
 
-    return target_response.from_matrix(unembedded, data_vectors,
-                                       vartype=target_response.vartype,
-                                       info=target_response.info,
-                                       variable_labels=variables)
+    datatypes = [('sample', np.dtype(np.int8), (num_variables,)), ('energy', energies.dtype)]
+    datatypes.extend((name, record[name].dtype, record[name].shape[1:]) for name in record.dtype.names
+                     if name not in {'sample', 'energy'})
+
+    data = np.rec.array(np.empty(num_samples, dtype=datatypes))
+
+    data.sample = unembedded
+    data.energy = energies
+    for name in record.dtype.names:
+        if name not in {'sample', 'energy'}:
+            data[name] = record[name][idxs]
+
+    return Response(data, variables, target_response.info, target_response.vartype)
