@@ -83,7 +83,7 @@ class TestResponse(unittest.TestCase):
                                       np.array([1]))
         self.assertEqual(response.info, {'another_field': .5})
         self.assertIs(response.vartype, dimod.SPIN)
-        self.assertEqual(response.labels, [0, 1, 2])
+        self.assertEqual(response.variable_labels, [0, 1, 2])
 
     def test__iter__(self):
         samples = [{'a': 0, 'b': 1}, {'a': 1, 'b': 0},

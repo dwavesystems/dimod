@@ -68,7 +68,7 @@ class Response(Iterable, Sized):
 
     def __repr__(self):
         return 'Response({}, {}, {}, {})'.format(self.record.__repr__(),
-                                                 self.labels.__repr__(),
+                                                 self.variable_labels.__repr__(),
                                                  self.info.__repr__(),
                                                  self.vartype.name.__repr__())
 
@@ -85,11 +85,11 @@ class Response(Iterable, Sized):
         return record
 
     @property
-    def labels(self):
+    def variable_labels(self):
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
-        self.__dict__['record'] = labels = self._labels
+        self.__dict__['variable_labels'] = labels = self._labels
         return labels
 
     @property
@@ -97,7 +97,7 @@ class Response(Iterable, Sized):
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
-        self.__dict__['record'] = label_to_idx = self._label_to_idx
+        self.__dict__['label_to_idx'] = label_to_idx = self._label_to_idx
         return label_to_idx
 
     @property
@@ -105,7 +105,7 @@ class Response(Iterable, Sized):
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
-        self.__dict__['record'] = info = self._info
+        self.__dict__['info'] = info = self._info
         return info
 
     @property
@@ -113,6 +113,7 @@ class Response(Iterable, Sized):
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
+        self.__dict__['vartype'] = vartype = self._vartype
         return self._vartype
 
     ###############################################################################################
@@ -184,7 +185,7 @@ class Response(Iterable, Sized):
 
     def _resolve_future(self):
         response = self._result_hook(self._future)
-        self.__init__(response.record, response.labels, response.info, response.vartype)
+        self.__init__(response.record, response.variable_labels, response.info, response.vartype)
         del self._future
         del self._result_hook
 
@@ -219,7 +220,7 @@ class Response(Iterable, Sized):
     def copy(self):
         """Create a shallow copy.
         """
-        return Response(self.record.copy(), list(self.labels), self.info.copy(), self.vartype)
+        return Response(self.record.copy(), list(self.variable_labels), self.info.copy(), self.vartype)
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
@@ -253,7 +254,7 @@ class Response(Iterable, Sized):
         except TypeError:
             raise ValueError("mapping targets must be hashable objects")
 
-        for v in self.labels:
+        for v in self.variable_labels:
             if v in new_labels and v not in old_labels:
                 raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
                                   "the existing variable of the same name").format(v))
@@ -266,7 +267,7 @@ class Response(Iterable, Sized):
             self.relabel_variables(intermediate_to_new, inplace=True)
             return self
 
-        self._labels = labels = [mapping.get(v, v) for v in self.labels]
+        self._labels = labels = [mapping.get(v, v) for v in self.variable_labels]
         self._label_to_idx = {v: idx for idx, v in enumerate(labels)}
         return self
 
@@ -395,7 +396,7 @@ class SampleItemsView(ItemsView):
 
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
-        labels = self._mapping._response.labels
+        labels = self._mapping._response.variable_labels
         samples_matrix = self._mapping._response.record.sample
         idx = self._mapping._idx
         if labels is None:
