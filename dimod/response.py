@@ -13,6 +13,8 @@
 #    limitations under the License.
 #
 # ================================================================================================
+"""todo"""
+
 from __future__ import division
 
 import itertools
@@ -28,6 +30,7 @@ from dimod.vartypes import Vartype
 
 
 class Response(Iterable, Sized):
+    """todo"""
 
     @vartype_argument('vartype')
     def __init__(self, record, labels, info, vartype):

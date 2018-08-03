@@ -18,8 +18,11 @@ Properties
 .. autosummary::
    :toctree: generated/
 
-   Response.samples_matrix
-   Response.data_vectors
+   Response.record
+   Response.variable_labels
+   Response.label_to_idx
+   Response.info
+   Response.vartype
 
 
 Methods
@@ -34,17 +37,14 @@ Viewing a Response
    Response.samples
    Response.data
 
-Constructing or Updating a Response
------------------------------------
+Constructing a Response
+-----------------------
 
 .. autosummary::
    :toctree: generated/
 
-   Response.from_dicts
-   Response.from_futures
-   Response.from_matrix
-   Response.from_pandas
-   Response.update
+   Response.from_future
+   Response.from_samples
 
 Transformations
 ---------------

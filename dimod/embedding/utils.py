@@ -183,7 +183,9 @@ def chain_break_frequency(samples, embedding):
         dimod response, one ({'a': 1, 'b': 0}) represents a broken chain.
 
         >>> import dimod
-        >>> response = dimod.Response.from_dicts([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}], {'energy': [1, 0]})
+        ...
+        >>> response = dimod.Response.from_samples([{'a': 1, 'b': 0}, {'a': 0, 'b': 0}],
+        ...                                        {'energy': [1, 0]}, {}, dimod.BINARY)
         >>> embedding = {0: {'a', 'b'}}
         >>> print(dimod.chain_break_frequency(response, embedding)[0])
         0.5
