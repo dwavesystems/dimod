@@ -2074,11 +2074,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             :obj:`.BinaryQuadraticModel`
 
         Examples:
+            >>> import dimod
+            >>> import numpy as np
+            ...
             >>> linear_vector = np.asarray([-1, 1])
-            >>> quadratic_vectors = (np.asarray([0]), np.asarray([1]), np.asarray([-1.0])))
+            >>> quadratic_vectors = (np.asarray([0]), np.asarray([1]), np.asarray([-1.0]))
             >>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear_vector, quadratic_vectors, 0.0, dimod.SPIN)
             >>> bqm.quadratic
-            {(0, 1): -1}
+            {(0, 1): -1.0}
 
         """
 
@@ -2119,13 +2122,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example converts a binary quadratic model to pandas DataFrame format.
 
             >>> import dimod
-            >>> model = dimod.BinaryQuadraticModel({'a': 1, 'b': -1, 'c': .5},
+            >>> model = dimod.BinaryQuadraticModel({'a': 1.1, 'b': -1., 'c': .5},
             ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
             ...                                    1.4,
             ...                                    dimod.BINARY)
             >>> model.to_pandas_dataframe()
                  a    b    c
-            a  1.0  0.5  0.0
+            a  1.1  0.5  0.0
             b  0.0 -1.0  1.5
             c  0.0  0.0  0.5
 

@@ -86,7 +86,12 @@ todo_include_todos = True
 
 modindex_common_prefix = ['dimod.']
 
-doctest_global_setup = "import dimod"
+doctest_global_setup = """
+from __future__ import print_function, division
+
+import dimod
+
+"""
 
 
 # -- Options for HTML output ----------------------------------------------

@@ -307,7 +307,7 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0):
          3: {0, 1, 2, 4},
          4: {0, 1, 2, 3}}
         >>> # Embedding from source to target graph
-        >>> embedding = {0: {4}, 1: {3}, 2: {1}, 3: {2}}
+        >>> embedding = {0: [4], 1: [3], 2: [1], 3: [2], 4: [0]}
         >>> # Embed the QUBO
         >>> target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
         >>> # Sample
