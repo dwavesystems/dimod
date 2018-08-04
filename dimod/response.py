@@ -13,8 +13,6 @@
 #    limitations under the License.
 #
 # ================================================================================================
-"""todo"""
-
 from __future__ import division
 
 import itertools
@@ -30,7 +28,52 @@ from dimod.vartypes import Vartype
 
 
 class Response(Iterable, Sized):
-    """todo"""
+    """Samples and any other data returned by dimod samplers.
+
+    Args:
+        record (:obj:`numpy.recarray`)
+            A numpy record array. Must have 'sample', 'energy' and 'num_occurrences' as fields.
+            The 'sample' field should be a 2D numpy int8 array where each row is a sample and each
+            column represents the value of a variable.
+
+        labels (list):
+            A list of variable labels.
+
+        info (dict):
+            Information about the response as a whole formatted as a dict.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the response. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    Examples:
+        >>> import dimod
+        ...
+        >>> sampler = dimod.ExactSolver()
+        >>> response = sampler.sample_ising({'a': -0.5, 'b': -0.5}, {('a', 'b'): -1.0})
+        >>> response.record.sample
+        array([[-1, -1],
+               [ 1, -1],
+               [ 1,  1],
+               [-1,  1]], dtype=int8)
+        >>> response.record.energy
+        array([ 0.,  1., -2.,  1.])
+        >>> response.variable_labels # doctest: +SKIP
+        ['a', 'b']
+        >>> response.labels_to_idx['b'] # doctest: +SKIP
+        1
+        >>> response.vartype is dimod.SPIN
+        True
+        >>> for sample, energy in response.data(['sample', 'energy']):  # doctest: +SKIP
+        ...     print(sample, energy)
+        {'a': 1, 'b': 1} -2.0
+        {'a': -1, 'b': -1} 0.0
+        {'a': 1, 'b': -1} 1.0
+        {'a': -1, 'b': 1} 1.0
+
+    """
 
     @vartype_argument('vartype')
     def __init__(self, record, labels, info, vartype):
@@ -81,6 +124,28 @@ class Response(Iterable, Sized):
 
     @property
     def record(self):
+        """:obj:`numpy.recarray` The samples, energies, number of occurences and other sample data.
+
+        Examples:
+            >>> import dimod
+            ...
+            >>> sampler = dimod.ExactSolver()
+            >>> response = sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1.0})
+            >>> response.record
+            rec.array([([-1, -1], -1.5, 1), ([ 1, -1], -0.5, 1), ([ 1,  1], -0.5, 1),
+                       ([-1,  1],  2.5, 1)],
+                      dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
+            >>> response.record.sample
+            array([[-1, -1],
+                   [ 1, -1],
+                   [ 1,  1],
+                   [-1,  1]], dtype=int8)
+            >>> response.record.energy
+            array([-1.5, -0.5, -0.5,  2.5])
+            >>> response.record.num_occurrences
+            array([1, 1, 1, 1])
+
+        """
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
@@ -89,6 +154,10 @@ class Response(Iterable, Sized):
 
     @property
     def variable_labels(self):
+        """list: Variable labels of the samples.
+
+        Corresponds to the columns of the sample field of :attr:`.Response.record`.
+        """
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
@@ -97,6 +166,7 @@ class Response(Iterable, Sized):
 
     @property
     def label_to_idx(self):
+        """dict: Maps the variable labels to the column in :attr:`.Response.record`."""
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
@@ -105,6 +175,7 @@ class Response(Iterable, Sized):
 
     @property
     def info(self):
+        """dict: Information about the response as a whole formatted as a dict."""
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
@@ -113,6 +184,7 @@ class Response(Iterable, Sized):
 
     @property
     def vartype(self):
+        """:class:`.Vartype`: Vartype of the samples."""
         if hasattr(self, '_future'):
             self._resolve_future()
         # subsequent calls will bypass the _future check
@@ -124,9 +196,60 @@ class Response(Iterable, Sized):
     ###############################################################################################
 
     def done(self):
-        return (not hasattr(self, '_future')) or self._future.done()
+        """True if any pending computation is done.
+
+        Only relevant when the response is constructed with :meth:`Response.from_future`.
+
+        Examples:
+            This example uses a :class:`~concurrent.futures.Future` object directly. Normally
+            the future would have it's result set by an :class:`~concurrent.futures.Executor`
+            (see documentation for :mod:`concurrent.futures`).
+
+            >>> import dimod
+            >>> from concurrent.futures import Future
+            ...
+            >>> future = Future()
+            >>> response = dimod.Response.from_future(future)
+            >>> future.done()
+            False
+            >>> future.set_result(dimod.ExactSolver().sample_ising({0: -1}, {}))
+            >>> future.done()
+            True
+            >>> response.record.sample
+            array([[-1],
+                   [ 1]], dtype=int8)
+
+        """
+        return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
 
     def samples(self, n=None, sorted_by='energy'):
+        """Iterate over the samples in the response.
+
+        Args:
+            n (int, optional, default=None):
+                The maximum number of samples to provide. If None, all are provided.
+
+            sorted_by (str/None, optional, default='energy'):
+                Selects the record field used to sort the samples. If None, the samples are yielded
+                in record order.
+
+        Yields:
+            :obj:`.SampleView`: A view object mapping the variable labels to their values. Acts like
+            a read-only dict.
+
+        Examples:
+
+            >>> import dimod
+            ...
+            >>> response = dimod.ExactSolver().sample_ising({'a': 0.0, 'b': 0.0}, {('a', 'b'): -1})
+            >>> for sample in response.samples():   # doctest: +SKIP
+            ...     print(sample)
+            {'a': -1, 'b': -1}
+            {'a': 1, 'b': 1}
+            {'a': 1, 'b': -1}
+            {'a': -1, 'b': 1}
+
+        """
         if n is None:
             for sample, in self.data(['sample'], sorted_by=sorted_by, name=None):
                 yield sample
@@ -135,6 +258,46 @@ class Response(Iterable, Sized):
                 yield sample
 
     def data(self, fields=None, sorted_by='energy', name='Sample'):
+        """Iterate over the data in the response.
+
+        Args:
+            fields (list, optional, default=None):
+                If specified, only these fields' values are included in the yielded tuples.
+                The special field name 'sample' can be used to view the samples.
+
+            sorted_by (str/None, optional, default='energy'):
+                Selects the record field used to sort the samples. If None, the samples are yielded
+                in record order.
+
+            name (str/None, optional, default='Sample'):
+                Name of the yielded namedtuples or None to yield regular tuples.
+
+        Yields:
+            namedtuple/tuple: The data in the response, in the order specified by the input
+            `fields`.
+
+        Examples:
+
+            >>> import dimod
+            ...
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> for datum in response.data():   # doctest: +SKIP
+            ...     print(datum)
+            Sample(sample={'a': -1, 'b': -1}, energy=-1.5)
+            Sample(sample={'a': 1, 'b': -1}, energy=-0.5)
+            Sample(sample={'a': 1, 'b': 1}, energy=-0.5)
+            Sample(sample={'a': -1, 'b': 1}, energy=2.5)
+            >>> for energy, in response.data(fields=['energy'], sorted_by='energy'):
+            ...     print(energy)
+            ...
+            -1.5
+            -0.5
+            -0.5
+            2.5
+            >>> print(next(response.data(fields=['energy'], name='ExactSolverSample')))
+            ExactSolverSample(energy=-1.5)
+
+        """
         record = self.record
 
         if fields is None:
@@ -174,6 +337,45 @@ class Response(Iterable, Sized):
 
     @classmethod
     def from_future(cls, future, result_hook=None):
+        """Construct a response referencing the result of a future computation.
+
+        Args:
+            future (object):
+                An object that contains or will contain the information needed to construct a
+                response. If future has a :meth:`~concurrent.futures.Future.done` method then
+                this will determine the value returned by :meth:`.Response.done`.
+
+            result_hook (callable, optional):
+                A function that is called to resolve the future. Must accept the future and return
+                a :obj:`.Response`. If not provided then set to
+
+                .. code-block:: python
+
+                    def result_hook(future):
+                        return future.result()
+
+        Returns:
+            :obj:`.Response`
+
+        Notes:
+            The future is resolved on the first read of any of the response's properties.
+
+        Examples:
+            Run a dimod sampler on a single thread and load the returned future into response.
+
+            >>> import dimod
+            >>> from concurrent.futures import ThreadPoolExecutor
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
+            >>> with ThreadPoolExecutor(max_workers=1) as executor:
+            ...     future = executor.submit(dimod.ExactSolver().sample, bqm)
+            ...     response = dimod.Response.from_future(future)
+            >>> response.record
+            rec.array([([-1, -1], -1., 1), ([ 1, -1],  1., 1), ([ 1,  1], -1., 1),
+                       ([-1,  1],  1., 1)],
+                      dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
+
+        """
         obj = cls.__new__(cls)
         obj._future = future
 
@@ -193,7 +395,55 @@ class Response(Iterable, Sized):
         del self._result_hook
 
     @classmethod
-    def from_samples(cls, samples_like, vectors, info, vartype, labels=None):
+    def from_samples(cls, samples_like, vectors, info, vartype, variable_labels=None):
+        """Build a response from samples.
+
+        Args:
+            samples_like:
+                A collection of samples. 'samples_like' is an extension of NumPy's array_like
+                to include an iterable of sample dictionaries (as returned by
+                :meth:`.Response.samples`).
+
+            data_vectors (dict[field, :obj:`numpy.array`/list]):
+                Additional per-sample data as a dict of vectors. Each vector is the
+                same length as `samples_matrix`. The key 'energy' and it's vector is required.
+
+            info (dict):
+                Information about the response as a whole formatted as a dict.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the response. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            variable_labels (list, optional):
+                Determines the variable labels if samples_like is not an iterable of dictionaries.
+                If samples_like is not an iterable of dictionaries and if variable_labels is not
+                provided then index labels are used.
+
+        Returns:
+            :obj:`.Response`
+
+        Examples:
+            From dicts
+
+            >>> import dimod
+            ...
+            >>> samples = [{'a': -1, 'b': +1}, {'a': -1, 'b': -1}]
+            >>> response = dimod.Response.from_samples(samples, {'energy': [-1, 0]}, {}, dimod.SPIN)
+
+            From an array
+
+            >>> import dimod
+            >>> import numpy as np
+            ...
+            >>> samples = np.ones((2, 3), dtype='int8')  # 2 samples, 3 variables
+            >>> response = dimod.Response.from_samples(samples, {'energy': [-1.0, -1.0]}, {},
+            ...                                        dimod.SPIN, variable_labels=['a', 'b', 'c'])
+
+
+        """
 
         # there is no np.is_array_like so we use a try-except block
         try:
@@ -202,7 +452,7 @@ class Response(Iterable, Sized):
             samples = np.asarray(samples_like, dtype=np.int8)
         except TypeError:
             # if labels are None, they are set here
-            samples, labels = _samples_dicts_to_array(samples_like, labels)
+            samples, variable_labels = _samples_dicts_to_array(samples_like, variable_labels)
 
         assert samples.dtype == np.int8, 'sanity check'
 
@@ -210,23 +460,58 @@ class Response(Iterable, Sized):
 
         # if labels are still None, set them here. We could do this in an else in the try-except
         # block, but the samples-array might not have the correct shape
-        if labels is None:
+        if variable_labels is None:
             __, num_variables = record.sample.shape
-            labels = list(range(num_variables))
+            variable_labels = list(range(num_variables))
 
-        return cls(record, labels, info, vartype)
+        return cls(record, variable_labels, info, vartype)
 
     ###############################################################################################
     # Methods
     ###############################################################################################
 
     def copy(self):
-        """Create a shallow copy.
-        """
+        """Create a shallow copy."""
         return Response(self.record.copy(), list(self.variable_labels), self.info.copy(), self.vartype)
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
+        """Create a new response with the given vartype.
+
+        Args:
+            vartype (:class:`.Vartype`/str/set):
+                Variable type to use for the new response. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            energy_offset (number, optional, defaul=0.0):
+                Constant value applied to the 'energy' field of :attr:`Response.record`.
+
+            inplace (bool, optional, default=True):
+                If True, the response is updated in-place, otherwise a new response is returned.
+
+        Returns:
+            :obj:`.Response`: Response with changed vartype. If inplace=True, returns itself.
+
+        Examples:
+            Create a binary copy of a spin-valued response
+
+            >>> import dimod
+            ...
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> response_binary = response.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
+            >>> response_binary.vartype is dimod.BINARY
+            True
+            >>> for datum in response_binary.data():    # doctest: +SKIP
+            ...    print(datum)
+            Sample(sample={'a': 0, 'b': 0}, energy=-0.5, num_occurrences=1)
+            Sample(sample={'a': 1, 'b': 0}, energy=0.5, num_occurrences=1)
+            Sample(sample={'a': 1, 'b': 1}, energy=0.5, num_occurrences=1)
+            Sample(sample={'a': 0, 'b': 1}, energy=3.5, num_occurrences=1)
+
+
+        """
         if not inplace:
             return self.copy().change_vartype(vartype, energy_offset, inplace=True)
 
@@ -248,6 +533,31 @@ class Response(Iterable, Sized):
         return self
 
     def relabel_variables(self, mapping, inplace=True):
+        """Relabel a response's variables as per a given mapping.
+
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new. If an incomplete mapping is
+                provided, unmapped variables keep their original labels
+
+            inplace (bool, optional, default=True):
+                If True, the original response is updated; otherwise a new response is returned.
+
+        Returns:
+            :class:`.Response`: Response with relabeled variables. If inplace=True, returns
+            itself.
+
+        Examples:
+            Create a relabeled copy of a response
+
+            >>> import dimod
+            ...
+            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
+            >>> response.variable_labels    # doctest: +SKIP
+            [0, 1]
+
+        """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -294,6 +604,9 @@ class Response(Iterable, Sized):
                    [ 1,  1],
                    [-1,  1]])
 
+        Note:
+            Deprecated
+
         """
         import warnings
         warnings.warn("Response.samples_matrix is deprecated, please use Response.record.sample instead.",
@@ -320,6 +633,10 @@ class Response(Iterable, Sized):
             >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> response.data_vectors['energy']
             array([-1.5, -0.5, -0.5,  2.5])
+
+
+        Note:
+            Deprecated
 
         """
         import warnings
