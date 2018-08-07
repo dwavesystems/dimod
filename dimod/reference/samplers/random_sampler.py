@@ -86,4 +86,4 @@ class RandomSampler(Sampler):
 
         samples, energies = zip(*_itersample())
 
-        return Response.from_dicts(samples, {'energy': energies}, vartype=bqm.vartype)
+        return Response.from_samples(samples, {'energy': energies}, {}, vartype=bqm.vartype)

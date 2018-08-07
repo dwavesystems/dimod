@@ -23,8 +23,9 @@ the transform simply amounts to reinterpreting spin up as spin down, and visa-ve
 a particular spin.
 """
 from random import random
-import time
 import itertools
+
+import numpy as np
 
 from dimod.core.composite import Composite
 from dimod.core.sampler import Sampler
@@ -123,7 +124,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
         """
         # make a main response
-        response = None
+        responses = []
 
         for ii in range(num_spin_reversal_transforms):
             if spin_reversal_variables is None:
@@ -142,13 +143,24 @@ class SpinReversalTransformComposite(Sampler, Composite):
             tf_idxs = [flipped_response.label_to_idx[v] for v in flipped_response.variable_labels]
 
             if bqm.vartype is Vartype.SPIN:
-                flipped_response.samples_matrix[:, tf_idxs] = -1 * flipped_response.samples_matrix[:, tf_idxs]
+                flipped_response.record.sample[:, tf_idxs] = -1 * flipped_response.record.sample[:, tf_idxs]
             else:
-                flipped_response.samples_matrix[:, tf_idxs] = 1 - flipped_response.samples_matrix[:, tf_idxs]
+                flipped_response.record.sample[:, tf_idxs] = 1 - flipped_response.record.sample[:, tf_idxs]
 
-            if response is None:
-                response = flipped_response
-            else:
-                response.update(flipped_response)
+            responses.append(flipped_response)
 
-        return response
+        # # stack the records
+        record = np.rec.array(np.hstack((resp.record for resp in responses)))
+
+        vartypes = set(resp.vartype for resp in responses)
+        if len(vartypes) > 1:
+            raise RuntimeError("inconsistent vartypes returned")
+        vartype = vartypes.pop()
+
+        info = {}
+        for resp in responses:
+            info.update(resp.info)
+
+        labels = responses[0].variable_labels
+
+        return Response(record, labels, info, vartype)

@@ -18,6 +18,8 @@ from __future__ import division
 
 import itertools
 
+import numpy as np
+
 from six import iteritems, itervalues
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -91,12 +93,12 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
         >>> target_bqm = dimod.embed_bqm(bqm, embedding, sampler.adjacency)
         >>> # Sample
         >>> response = sampler.sample(target_bqm)
-        >>> response.samples_matrix   # doctest: +SKIP
-        matrix([[-1, -1, -1, -1],
-                [ 1, -1, -1, -1],
-                [ 1,  1, -1, -1],
-                [-1,  1, -1, -1],
-                [-1,  1,  1, -1],
+        >>> response.record.sample   # doctest: +SKIP
+        array([[-1, -1, -1, -1],
+               [ 1, -1, -1, -1],
+               [ 1,  1, -1, -1],
+               [-1,  1, -1, -1],
+               [-1,  1,  1, -1],
         >>> # Snipped above response for brevity
 
     """
@@ -305,7 +307,7 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0):
          3: {0, 1, 2, 4},
          4: {0, 1, 2, 3}}
         >>> # Embedding from source to target graph
-        >>> embedding = {0: {4}, 1: {3}, 2: {1}, 3: {2}}
+        >>> embedding = {0: [4], 1: [3], 2: [1], 3: [2], 4: [0]}
         >>> # Embed the QUBO
         >>> target_Q = dimod.embed_qubo(Q, embedding, sampler.adjacency)
         >>> # Sample
@@ -427,15 +429,25 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     else:
         chain_idxs = [[target_response.label_to_idx[v] for v in chain] for chain in chains]
 
-    unembedded, idxs = chain_break_method(target_response.samples_matrix, chain_idxs)
-    data_vectors = {key: vector[idxs] for key, vector in target_response.data_vectors.items()}
+    record = target_response.record
+
+    unembedded, idxs = chain_break_method(record.sample, chain_idxs)
 
     lin, (i, j, quad), off = source_bqm.to_numpy_vectors(variable_order=variables)
+    energies = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
 
-    # overwrite energy with the new values
-    data_vectors['energy'] = unembedded.dot(lin) + (unembedded[:, i]*unembedded[:, j]).dot(quad) + off
+    num_samples, num_variables = unembedded.shape
 
-    return target_response.from_matrix(unembedded, data_vectors,
-                                       vartype=target_response.vartype,
-                                       info=target_response.info,
-                                       variable_labels=variables)
+    datatypes = [('sample', np.dtype(np.int8), (num_variables,)), ('energy', energies.dtype)]
+    datatypes.extend((name, record[name].dtype, record[name].shape[1:]) for name in record.dtype.names
+                     if name not in {'sample', 'energy'})
+
+    data = np.rec.array(np.empty(num_samples, dtype=datatypes))
+
+    data.sample = unembedded
+    data.energy = energies
+    for name in record.dtype.names:
+        if name not in {'sample', 'energy'}:
+            data[name] = record[name][idxs]
+
+    return Response(data, variables, target_response.info, target_response.vartype)

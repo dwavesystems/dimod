@@ -48,7 +48,7 @@ class StructureComposite(Sampler, Composite, Structured):
         >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 1.0, dimod.Vartype.SPIN)
         >>> response = structured_sampler.sample(bqm)
         >>> print(next(response.data()))
-        Sample(sample={0: 1, 1: -1, 2: -1, 3: -1}, energy=-1.0)
+        Sample(sample={0: 1, 1: -1, 2: -1, 3: -1}, energy=-1.0, num_occurrences=1)
         >>> # Try giving the composed sampler a non-square model
         >>> del quadratic[(0, 1)]
         >>> quadratic[(0, 2)] = 1.0
@@ -98,6 +98,6 @@ class StructureComposite(Sampler, Composite, Structured):
             >>> response = dimod.StructureComposite(dimod.ExactSolver(),
             ...                  [0, 1], [(0, 1)]).sample_ising({0: 1, 1: 1}, {})
             >>> print(next(response.data()))
-            Sample(sample={0: -1, 1: -1}, energy=-2.0)
+            Sample(sample={0: -1, 1: -1}, energy=-2.0, num_occurrences=1)
         """
         return self.child.sample(bqm, **sample_kwargs)
