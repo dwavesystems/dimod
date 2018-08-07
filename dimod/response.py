@@ -74,6 +74,7 @@ class Response(Iterable, Sized):
         {'a': -1, 'b': 1} 1.0
 
     """
+    _REQUIRED_FIELDS = ['sample', 'energy', 'num_occurrences']
 
     @vartype_argument('vartype')
     def __init__(self, record, labels, info, vartype):
@@ -81,8 +82,8 @@ class Response(Iterable, Sized):
         # make sure that record is a numpy recarray and that it has the expected fields
         if not isinstance(record, np.recarray):
             raise TypeError("input record must be a numpy recarray")
-        elif not {'sample', 'energy', 'num_occurrences'}.issubset(record.dtype.fields):
-            raise ValueError("input record must have 'sample', 'energy' and 'num_occurrences' as fields")
+        elif not set(self._REQUIRED_FIELDS).issubset(record.dtype.fields):
+            raise ValueError("input record must have {}, {} and {} as fields".format(*self._REQUIRED_FIELDS))
         self._record = record
 
         num_samples, num_variables = record.sample.shape
@@ -292,8 +293,8 @@ class Response(Iterable, Sized):
 
         if fields is None:
             # make sure that sample, energy is first
-            fields = ['sample', 'energy', 'num_occurrences'] + [field for field in record.dtype.fields
-                                                                if field not in {'sample', 'energy', 'num_occurrences'}]
+            fields = self._REQUIRED_FIELDS + [field for field in record.dtype.fields
+                                              if field not in self._REQUIRED_FIELDS]
 
         if sorted_by is None:
             order = np.arange(len(self))
