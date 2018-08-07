@@ -46,6 +46,8 @@ of a problem.
 """
 from __future__ import absolute_import, division
 
+import itertools
+
 from collections import Sized, Container, Iterable, OrderedDict
 from numbers import Number
 
@@ -1607,13 +1609,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
     def to_bson(self):
-        """Convert a binary quadratic model to an efficient BSON format.
+        """Serialize a binary quadratic model to an efficient BSON format.
 
         Returns:
             bytes: BSON formatted bytes representing the original BQM.
-        """
-                
 
+        """
         import bson
 
         num_variables = len(self)
@@ -1659,16 +1660,17 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         """Deserialize a binary quadratic model from a BSON encoding.
 
         Args:
-            obj: bytes:
-                Byte string that represents linear and quadratic biases using 
-                the encoding used in :meth: `.to_bson`.
+            obj (bytes):
+                Byte string that represents linear and quadratic biases as
+                encoded by :meth:`.to_bson`.
+
         Returns:
-            :class:`.BinaryQuadraticModel`: The corresponding binary quadratic 
+            :obj:`.BinaryQuadraticModel`: The corresponding binary quadratic
             model.
+
         """
 
         import bson
-        import itertools
 
         doc = bson.BSON.decode(obj)
 
@@ -1683,10 +1685,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         off = doc["offset"]
 
-        return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"], 
-                                      str(doc["vartype"]), 
+        return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"],
+                                      str(doc["vartype"]),
                                       variable_order=doc["variable_order"])
-
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
