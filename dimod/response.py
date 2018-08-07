@@ -93,7 +93,7 @@ class Response(Iterable, Sized):
             msg = ("mismatch between number of variables in record.sample ({}) "
                    "and labels ({})").format(num_variables, len(labels))
             raise ValueError(msg)
-        self._labels = labels
+        self._variable_labels = labels
         self._label_to_idx = {v: idx for idx, v in enumerate(labels)}
 
         # cast info to a dict if it's a mapping or similar
@@ -148,9 +148,7 @@ class Response(Iterable, Sized):
         """
         if hasattr(self, '_future'):
             self._resolve_future()
-        # subsequent calls will bypass the _future check
-        self.__dict__['record'] = record = self._record
-        return record
+        return self._record
 
     @property
     def variable_labels(self):
@@ -160,35 +158,27 @@ class Response(Iterable, Sized):
         """
         if hasattr(self, '_future'):
             self._resolve_future()
-        # subsequent calls will bypass the _future check
-        self.__dict__['variable_labels'] = labels = self._labels
-        return labels
+        return self._variable_labels
 
     @property
     def label_to_idx(self):
         """dict: Maps the variable labels to the column in :attr:`.Response.record`."""
         if hasattr(self, '_future'):
             self._resolve_future()
-        # subsequent calls will bypass the _future check
-        self.__dict__['label_to_idx'] = label_to_idx = self._label_to_idx
-        return label_to_idx
+        return self._label_to_idx
 
     @property
     def info(self):
         """dict: Information about the response as a whole formatted as a dict."""
         if hasattr(self, '_future'):
             self._resolve_future()
-        # subsequent calls will bypass the _future check
-        self.__dict__['info'] = info = self._info
-        return info
+        return self._info
 
     @property
     def vartype(self):
         """:class:`.Vartype`: Vartype of the samples."""
         if hasattr(self, '_future'):
             self._resolve_future()
-        # subsequent calls will bypass the _future check
-        self.__dict__['vartype'] = vartype = self._vartype
         return self._vartype
 
     ###############################################################################################
@@ -580,7 +570,7 @@ class Response(Iterable, Sized):
             self.relabel_variables(intermediate_to_new, inplace=True)
             return self
 
-        self._labels = labels = [mapping.get(v, v) for v in self.variable_labels]
+        self._variable_labels = labels = [mapping.get(v, v) for v in self.variable_labels]
         self._label_to_idx = {v: idx for idx, v in enumerate(labels)}
         return self
 
