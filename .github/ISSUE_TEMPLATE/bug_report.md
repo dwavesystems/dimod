@@ -14,7 +14,7 @@ Stack Overflow provides an excellent guide on [how to create a Minimal, Complete
 A clear and concise description of what you expected to happen.
 
 **Environment:**
- - OS: [e.g. iOS]
+ - OS: [Ubuntu 16.04.4 LTS]
  - Python version: [e.g. 3.7.0]
 
 **Additional context**
