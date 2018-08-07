@@ -35,7 +35,8 @@ install_requires = ['numpy>=1.14.0,<2.0.0',
                     'jsonschema>=2.6.0,<3.0.0']
 
 extras_require = {'all': ['networkx>=2.0,<3.0',
-                          'pandas>=0.22.0,<0.23.0'],
+                          'pandas>=0.22.0,<0.23.0',
+                          'pymongo>=3.7.0,<3.8.0'],
                   ':python_version == "2.7"': ['futures'],
                   ':python_version <= "3.3"': ['enum34>=1.1.6,<2.0.0']}
 
