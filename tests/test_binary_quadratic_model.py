@@ -1838,7 +1838,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            bqm.to_json(fp=file)
+            file.write(bqm.to_json())
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
@@ -1854,7 +1854,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            bqm.to_json(fp=file)
+            file.write(bqm.to_json())
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
