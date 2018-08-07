@@ -33,10 +33,10 @@ class TestBrokenChains(unittest.TestCase):
             dimod.embedding.broken_chains(S, chains)
 
     def test_matrix(self):
-        samples_matrix = np.matrix([[-1, +1, -1, +1],
-                                    [+1, +1, +1, +1],
-                                    [-1, -1, +1, -1],
-                                    [-1, -1, +1, +1]], dtype='int8')
+        samples_matrix = np.array([[-1, +1, -1, +1],
+                                   [+1, +1, +1, +1],
+                                   [-1, -1, +1, -1],
+                                   [-1, -1, +1, +1]], dtype='int8')
         chain_list = [(0, 1), (2, 3)]
 
         broken = dimod.embedding.broken_chains(samples_matrix, chain_list)
@@ -45,7 +45,7 @@ class TestBrokenChains(unittest.TestCase):
 class TestDiscard(unittest.TestCase):
     def test_discard_no_breaks_all_ones_identity_embedding(self):
 
-        samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
+        samples_matrix = np.array(np.ones((100, 50)), dtype='int8')
         chain_list = [[idx] for idx in range(50)]
 
         new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
@@ -54,7 +54,7 @@ class TestDiscard(unittest.TestCase):
 
     def test_discard_no_breaks_all_ones_one_var_embedding(self):
 
-        samples_matrix = np.matrix(np.ones((100, 50)), dtype='int8')
+        samples_matrix = np.array(np.ones((100, 50)), dtype='int8')
         chain_list = [[idx for idx in range(50)]]
 
         new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
@@ -63,10 +63,10 @@ class TestDiscard(unittest.TestCase):
 
     def test_discard_typical(self):
 
-        samples_matrix = np.matrix([[-1, +1, -1, +1],
-                                    [+1, +1, +1, +1],
-                                    [-1, -1, +1, -1],
-                                    [-1, -1, +1, +1]], dtype='int8')
+        samples_matrix = np.array([[-1, +1, -1, +1],
+                                   [+1, +1, +1, +1],
+                                   [-1, -1, +1, -1],
+                                   [-1, -1, +1, +1]], dtype='int8')
         chain_list = [(0, 1), (2, 3)]
 
         new_matrix, idxs = dimod.embedding.discard(samples_matrix, chain_list)
