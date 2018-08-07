@@ -19,6 +19,8 @@ from __future__ import absolute_import
 import json
 from pkg_resources import resource_filename
 
+import jsonschema
+
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -32,29 +34,36 @@ with open(resource_filename(__name__, 'bqm_json_schema.json'), 'r') as schema_fi
     bqm_json_schema = json.load(schema_file)
 
 
-def bqm_decode_hook(dct):
-    if 'bias' in dct:
-        bias = dct['bias']
-        if 'label' in dct:
-            u = dct['label']
-            if isinstance(u, list):
-                u = tuple(u)
-            return (u, bias)
-        else:
-            u = dct['label_head']
-            v = dct['label_tail']
-            if isinstance(u, list):
-                u = tuple(u)
-            if isinstance(v, list):
-                v = tuple(v)
-            return ((u, v), bias)
+def _decode_label(label):
+    """Convert a list label into a tuple. Works recursively on nested lists."""
+    if isinstance(label, list):
+        return tuple(_decode_label(v) for v in label)
+    return label
 
-    elif 'linear_terms' in dct and 'quadratic_terms' in dct:
-        return BinaryQuadraticModel(dict(dct['linear_terms']),
-                                    dict(dct['quadratic_terms']),
-                                    dct['offset'],
-                                    Vartype[dct['variable_type']],
-                                    **dct['info'])
+
+def _encode_label(label):
+    """Convert a tuple label into a list. Works recursively on nested tuples."""
+    if isinstance(label, tuple):
+        return [_encode_label(v) for v in label]
+    return label
+
+
+def bqm_decode_hook(dct, cls=None):
+    """Decode hook as can be used with json.loads."""
+
+    if cls is None:
+        cls = BinaryQuadraticModel
+
+    if jsonschema.Draft4Validator(bqm_json_schema).is_valid(dct):
+        # BinaryQuadraticModel
+
+        linear = {_decode_label(obj['label']): obj['bias'] for obj in dct['linear_terms']}
+        quadratic = {(_decode_label(obj['label_head']), _decode_label(obj['label_tail'])): obj['bias']
+                     for obj in dct['quadratic_terms']}
+        offset = dct['offset']
+        vartype = Vartype[dct['variable_type']]
+
+        return cls(linear, quadratic, offset, vartype, **dct['info'])
 
     return dct
 
@@ -62,6 +71,7 @@ def bqm_decode_hook(dct):
 class DimodEncoder(json.JSONEncoder):
     """Subclass the JSONEncoder for dimod objects."""
     def default(self, obj):
+
         if isinstance(obj, BinaryQuadraticModel):
 
             if obj.vartype is Vartype.SPIN:
@@ -71,71 +81,40 @@ class DimodEncoder(json.JSONEncoder):
             else:
                 raise RuntimeError("unknown vartype")
 
-            # by using the stream objects, we don't need to create the entire json_dict in memory
-            json_dict = {"linear_terms": _JSONLinearBiasStream.from_dict(obj.linear),
-                         "quadratic_terms": _JSONQuadraticBiasStream.from_dict(obj.quadratic),
+            json_dict = {"linear_terms": list(self._linear_biases(obj.linear)),
+                         "quadratic_terms": list(self._quadratic_biases(obj.quadratic)),
                          "offset": obj.offset,
                          "variable_type": vartype_string,
                          "version": {"dimod": __version__, "bqm_schema": bqm_json_schema_version},
-                         "variable_labels": _JSONLabelsStream.from_dict(obj.linear),
+                         "variable_labels": list(self._variable_labels(obj.linear)),
                          "info": obj.info}
             return json_dict
 
-        if isinstance(obj, Response):
+        elif isinstance(obj, Response):
             # we will eventually want to implement this
             raise NotImplementedError
 
         return json.JSONEncoder.default(self, obj)
 
-
-class _JSONLinearBiasStream(list):
-    """Allows json to encode linear biases without needing to create a large number of dicts in
-    memory.
-    """
-    @classmethod
-    def from_dict(cls, linear):
-        jlbs = cls()
-        jlbs.linear = linear
-        return jlbs
-
-    def __iter__(self):
-        for v, bias in iteritems(self.linear):
+    @staticmethod
+    def _linear_biases(linear):
+        for v, bias in iteritems(linear):
+            if isinstance(v, tuple):
+                v = json.loads(json.dumps(v))  # handles nested tuples
             yield {"bias": bias, "label": v}
 
-    def __len__(self):
-        return len(self.linear)
-
-
-class _JSONQuadraticBiasStream(list):
-    """Allows json to encode quadratic biases without needing to create a large number of dicts in
-    memory.
-    """
-    @classmethod
-    def from_dict(cls, quadratic):
-        jqbs = cls()
-        jqbs.quadratic = quadratic
-        return jqbs
-
-    def __iter__(self):
-        for (u, v), bias in iteritems(self.quadratic):
+    @staticmethod
+    def _quadratic_biases(quadratic):
+        for (u, v), bias in iteritems(quadratic):
+            if isinstance(u, tuple):
+                u = _encode_label(u)  # handles nested tuples
+            if isinstance(v, tuple):
+                v = _encode_label(v)  # handles nested tuples
             yield {"bias": bias, "label_head": u, "label_tail": v}
 
-    def __len__(self):
-        return len(self.quadratic)
-
-
-class _JSONLabelsStream(list):
-    """Allows json to encode variable labels without needing to create a large list in memory.
-    """
-    @classmethod
-    def from_dict(cls, linear):
-        jlbs = cls()
-        jlbs.linear = linear
-        return jlbs
-
-    def __iter__(self):
-        for u in self.linear:
+    @staticmethod
+    def _variable_labels(linear):
+        for u in linear:
+            if isinstance(u, tuple):
+                u = _encode_label(u)  # handles nested tuples
             yield u
-
-    def __len__(self):
-        return len(self.linear)
