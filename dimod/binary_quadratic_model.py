@@ -1661,7 +1661,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Args:
             obj: bytes:
                 Byte string that represents linear and quadratic biases using 
-                the encoding used in `.to_bson`.
+                the encoding used in :meth: `.to_bson`.
         Returns:
             :class:`.BinaryQuadraticModel`: The corresponding binary quadratic 
             model.
@@ -1676,7 +1676,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         num_variables = len(lin)
         vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
         if doc["as_complete"]:
-            i, j = list(zip(*itertools.combinations(range(num_variables), 2)))
+            i, j = zip(*itertools.combinations(range(num_variables), 2))
         else:
             i = np.frombuffer(doc["quadratic_head"], dtype=np.uint16)
             j = np.frombuffer(doc["quadratic_tail"], dtype=np.uint16)
