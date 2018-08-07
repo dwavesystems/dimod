@@ -1684,7 +1684,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         off = doc["offset"]
 
         return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"], 
-                                      doc["vartype"], 
+                                      str(doc["vartype"]), 
                                       variable_order=doc["variable_order"])
 
 
