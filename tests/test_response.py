@@ -50,6 +50,18 @@ class TestResponse(unittest.TestCase):
 
         np.testing.assert_array_equal(resp.record, new_resp.record)
 
+    def test_instantiation_missing_field(self):
+        samples = [[-1, 1, 1], [1, 1, 1]]
+        num_occurrences = [1, 1]
+
+        datatypes = [('sample', np.dtype(np.int8), (3,)), ('num_occurrences', np.dtype(np.int8))]
+
+        num_samples = 2
+        record = np.rec.array(np.zeros(num_samples, dtype=datatypes))
+
+        with self.assertRaises(ValueError):
+            dimod.Response(record, ['a', 'b', 'c'], {}, dimod.SPIN)
+
     def test_from_samples_dicts(self):
         bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
         samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
