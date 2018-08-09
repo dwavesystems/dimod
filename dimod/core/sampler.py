@@ -34,7 +34,7 @@ to create a dimod sampler with the :class:`.Sampler` class.
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.Response.from_dicts([sample], {'energy': [energy]})
+            return dimod.Response.from_samples([sample], {'energy': [energy]})
 
         @property
         def properties(self):
@@ -84,7 +84,7 @@ Below is a more complex version of the same sampler, where the :attr:`properties
             energy = dimod.ising_energy(sample, h, J)
             if verbose:
                 print(sample)
-            return dimod.Response.from_dicts([sample], {'energy': [energy]})
+            return dimod.Response.from_samples([sample], {'energy': [energy]})
 
         @property
         def properties(self):
@@ -137,7 +137,7 @@ class Sampler:
                         energy = dimod.ising_energy(sample, h, J)
                         if verbose:
                             print(sample)
-                        return dimod.Response.from_dicts([sample], {'energy': [energy]})
+                        return dimod.Response.from_samples([sample], {'energy': [energy]})
 
                     @property
                     def properties(self):
@@ -166,7 +166,7 @@ class Sampler:
                     def sample_ising(self, h, J):
                         sample = linear_ising(h, J) # Implemented elsewhere
                         energy = dimod.ising_energy(sample, h, J)
-                        return dimod.Response.from_dicts([sample], {'energy': [energy]})
+                        return dimod.Response.from_samples([sample], {'energy': [energy]})
 
                     @property
                     def properties(self):

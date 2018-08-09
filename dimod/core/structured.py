@@ -58,7 +58,7 @@ Examples:
                     samples.append(sample)
                     energies.append(bqm.energy(sample))
 
-                response = dimod.Response.from_dicts(samples, {'energy': energies}, vartype=bqm.vartype)
+                response = dimod.Response.from_samples(samples, {'energy': energies}, vartype=bqm.vartype)
 
                 return response
 
