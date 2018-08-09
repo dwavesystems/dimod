@@ -222,7 +222,8 @@ class TestSamplerClass(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({0: 0.1, 1: -0.3}, {(0, 1): -1}, 0.0, dimod.BINARY)
         resp = sampler.sample(bqm)
         expected_resp = dimod.Response.from_samples([[0, 1]], {"energy": [-0.3]}, {}, dimod.BINARY)
-        np.testing.assert_almost_equal(resp.record, expected_resp.record)
+        np.testing.assert_almost_equal(resp.record.sample, expected_resp.record.sample)
+        np.testing.assert_almost_equal(resp.record.energy, expected_resp.record.energy)
 
     def test_instantiation_overwrite_sample_qubo_and_call_sample(self):
         class Dummy(dimod.Sampler):
@@ -241,4 +242,5 @@ class TestSamplerClass(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({0: 0.1, 1: -0.3}, {(0, 1): -1}, 0.1, dimod.SPIN)
         resp = sampler.sample(bqm)
         expected_resp = dimod.Response.from_samples([[-1, 1]], {"energy": [0.7]}, {}, dimod.SPIN)
-        np.testing.assert_almost_equal(resp.record, expected_resp.record)
+        np.testing.assert_almost_equal(resp.record.sample, expected_resp.record.sample)
+        np.testing.assert_almost_equal(resp.record.energy, expected_resp.record.energy)
