@@ -238,7 +238,7 @@ def weighted_random(samples, chains):
         ...
         >>> chains = [(0, 1), (2, 3, 4)]
         >>> samples = np.array([[1, 0, 1, 0, 1]], dtype=np.int8)
-        >>> unembedded, idx = dimod.embedding.majority_vote(samples, chains)  # doctest: +SKIP
+        >>> unembedded, idx = dimod.embedding.weighted_random(samples, chains)  # doctest: +SKIP
         >>> unembedded  # doctest: +SKIP
         array([[1, 1]], dtype=int8)
         >>> idx  # doctest: +SKIP
