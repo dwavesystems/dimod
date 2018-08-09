@@ -103,7 +103,7 @@ the :meth:`sample_ising` method).
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)  # Defined elsewhere
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.Response.from_dicts([sample], {'energy': [energy]})
+            return dimod.Response.from_samples([sample], {'energy': [energy]})
 
         @property
         def properties(self):
