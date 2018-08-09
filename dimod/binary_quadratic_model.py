@@ -1494,6 +1494,69 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         return coo.load(obj, cls.empty(vartype))
 
+    def to_serializable(self, use_bytes=False):
+        """Convert the binary quadratic model to a serializable object.
+
+        Args:
+            use_bytes (bool, optional, default=False):
+                If True, a compact representation representing the biases as bytes is used.
+
+        Returns:
+            dict: An object that can be serialized.
+
+        Examples:
+
+            Serialize using json
+
+            >>> import dimod
+            >>> import json
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> s = json.dumps(bqm.to_serializable())
+
+            Serialize using bson
+
+            >>> import dimod
+            >>> import bson
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> b = bson.encode(bqm.to_serializable(use_bytes=True))
+
+        """
+        if use_bytes:
+            from dimod.io.bson import bqm_bson_encoder
+
+            return bqm_bson_encoder(self)
+        else:
+            # we we don't use bytes then use json encoder
+            from dimod.io.json import DimodEncoder
+
+            return DimodEncoder().default(self)
+
+    @classmethod
+    def from_serializable(cls, obj):
+        """Deserialize a binary quadratic model.
+
+        Args:
+            obj (dict):
+                A binary quadratic model serialized as by
+                :meth:`~.BinaryQuadraticModel.to_serializable`.
+
+        Returns:
+            :obj:`.BinaryQuadraticModel`
+
+        """
+        from dimod.io.json import bqm_decode_hook
+        from dimod.io.bson import bqm_bson_decoder
+
+        # try decoding with json
+        dct = bqm_decode_hook(obj, cls=cls)
+        if isinstance(dct, cls):
+            return dct
+
+        # if not json assume bson
+        return bqm_bson_decoder(obj, cls=cls)
+
     def to_json(self):
         """Serialize the binary quadratic model using JSON.
 
@@ -1547,10 +1610,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ...     file.write(bqm.to_json())
 
         """
+        import warnings
+        warnings.warn(("BinaryQuadraticModel.to_json is deprecated, use "
+                       "`json.dumps(bqm.to_serializable())` instead."),
+                      DeprecationWarning)
         import json
-        from dimod.io.json import DimodEncoder
-
-        return json.dumps(self, cls=DimodEncoder, sort_keys=True)
+        return json.dumps(self.to_serializable(use_bytes=False), sort_keys=True)
 
     @classmethod
     def from_json(cls, obj):
@@ -1603,8 +1668,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         import json
         from dimod.io.json import bqm_decode_hook
 
+        import warnings
+        warnings.warn(("BinaryQuadraticModel.from_json is deprecated, use "
+                       "`BinaryQuadraticModel.from_serializable(json.loads(obj))` instead."),
+                      DeprecationWarning)
+
         if isinstance(obj, str):
-            return json.loads(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
+            return cls.from_serializable(json.loads(obj))
 
         return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
 
@@ -1617,43 +1687,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         """
         import bson
 
-        num_variables = len(self)
-        if num_variables > 2**16:
-            raise ValueError
+        import warnings
+        warnings.warn(("BinaryQuadraticModel.to_bson is deprecated, use "
+                       "`bson.BSON.encode(bqm.to_serializable(use_bytes=True))` instead."),
+                      DeprecationWarning)
 
-        variable_order = sorted(self.linear)
-        num_possible_edges = num_variables*(num_variables - 1) // 2
-        density = len(self.quadratic) / num_possible_edges
-        as_complete = density >= 0.5
-
-        lin, (i, j, _vals), off = self.to_numpy_vectors(
-            dtype=np.float32,
-            index_dtype=np.uint16,
-            sort_indices=as_complete,
-            variable_order=variable_order)
-
-        if as_complete:
-            vals = np.zeros(num_possible_edges, dtype=np.float32)
-            edge_idxs = i*(num_variables - 1) - i*(i+1)//2 + j - 1
-            vals[edge_idxs] = _vals
-
-        else:
-            vals = _vals
-
-        doc = {
-            "as_complete": as_complete,
-            "linear": bson.binary.Binary(lin.tobytes()),
-            "quadratic_vals": bson.binary.Binary(vals.tobytes()),
-            "vartype": "SPIN" if self.vartype == self.SPIN else "BINARY",
-            "offset": off,
-            "variable_order": variable_order,
-        }
-
-        if not as_complete:
-            doc["quadratic_head"] = bson.binary.Binary(i.tobytes())
-            doc["quadratic_tail"] = bson.binary.Binary(j.tobytes())
-
-        return bson.BSON.encode(doc)
+        return bson.BSON.encode(self.to_serializable(use_bytes=True))
 
     @classmethod
     def from_bson(cls, obj):
@@ -1669,25 +1708,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             model.
 
         """
-
         import bson
 
-        doc = bson.BSON.decode(obj)
+        import warnings
+        warnings.warn(("BinaryQuadraticModel.from_bson is deprecated, use "
+                       "`BinaryQuadraticModel.from_serializable(bson.BSON.decode(obj))` instead."),
+                      DeprecationWarning)
 
-        lin = np.frombuffer(doc["linear"], dtype=np.float32)
-        num_variables = len(lin)
-        vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
-        if doc["as_complete"]:
-            i, j = zip(*itertools.combinations(range(num_variables), 2))
-        else:
-            i = np.frombuffer(doc["quadratic_head"], dtype=np.uint16)
-            j = np.frombuffer(doc["quadratic_tail"], dtype=np.uint16)
-
-        off = doc["offset"]
-
-        return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"],
-                                      str(doc["vartype"]),
-                                      variable_order=doc["variable_order"])
+        return cls.from_serializable(bson.BSON.decode(obj))
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
