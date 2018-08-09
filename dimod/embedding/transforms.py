@@ -155,7 +155,7 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
     return target_bqm
 
 
-def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1.0):
+def embed_ising(source_h, source_J, embedding, target_adjacency, chain_strength=1.0):
     """Embed an Ising problem onto a target graph.
 
     Args:
@@ -231,7 +231,7 @@ def embed_ising(souce_h, source_J, embedding, target_adjacency, chain_strength=1
         {0: -1, 1: 1, 2: -1, 3: -1}
 
     """
-    source_bqm = BinaryQuadraticModel.from_ising(souce_h, source_J)
+    source_bqm = BinaryQuadraticModel.from_ising(source_h, source_J)
     target_bqm = embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=chain_strength)
     target_h, target_J, __ = target_bqm.to_ising()
     return target_h, target_J
