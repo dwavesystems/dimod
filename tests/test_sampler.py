@@ -16,6 +16,8 @@
 
 import unittest
 
+import numpy as np
+
 import dimod
 
 
@@ -202,3 +204,41 @@ class TestSamplerClass(unittest.TestCase):
                         "sampler must have a 'properties' property")
         self.assertFalse(callable(sampler.properties),
                          "sampler must have a 'properties' property")
+
+    def test_instantiation_overwrite_sample_ising_and_call_sample(self):
+        class Dummy(dimod.Sampler):
+            def sample_ising(self, h, J):
+                return dimod.Response.from_samples([[-1, 1]], {"energy": [0.05]}, {}, dimod.SPIN)
+
+            @property
+            def parameters(self):
+                return {}
+
+            @property
+            def properties(self):
+                return {}
+
+        sampler = Dummy()
+        bqm = dimod.BinaryQuadraticModel({0: 0.1, 1: -0.3}, {(0, 1): -1}, 0.0, dimod.BINARY)
+        resp = sampler.sample(bqm)
+        expected_resp = dimod.Response.from_samples([[0, 1]], {"energy": [-0.3]}, {}, dimod.BINARY)
+        np.testing.assert_almost_equal(resp.record, expected_resp.record)
+
+    def test_instantiation_overwrite_sample_qubo_and_call_sample(self):
+        class Dummy(dimod.Sampler):
+            def sample_qubo(self, Q):
+                return dimod.Response.from_samples([[0, 1]], {"energy": [1.4]}, {}, dimod.BINARY)
+
+            @property
+            def parameters(self):
+                return {}
+
+            @property
+            def properties(self):
+                return {}
+
+        sampler = Dummy()
+        bqm = dimod.BinaryQuadraticModel({0: 0.1, 1: -0.3}, {(0, 1): -1}, 0.1, dimod.SPIN)
+        resp = sampler.sample(bqm)
+        expected_resp = dimod.Response.from_samples([[-1, 1]], {"energy": [0.7]}, {}, dimod.SPIN)
+        np.testing.assert_almost_equal(resp.record, expected_resp.record)
