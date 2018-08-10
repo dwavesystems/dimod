@@ -197,4 +197,5 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'networkx': ('https://networkx.github.io/documentation/stable/', None),
                        'dwave-system': ('http://dwave-system.readthedocs.io/en/latest/', None),
-                       'docs': ('http://dw-docs.readthedocs.io/en/latest/', None) }
+                       'bson': ('https://api.mongodb.com/python/current/', None),
+                       'docs': ('http://dw-docs.readthedocs.io/en/latest/', None)}
