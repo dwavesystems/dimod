@@ -1504,12 +1504,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Returns:
             dict: An object that can be serialized.
 
-        Notes:
-            In python 2, bytes is an alias for str which can cause encoding errors when using bson.
-
         Examples:
 
-            Serialize using json
+            Encode using JSON
 
             >>> import dimod
             >>> import json
@@ -1517,7 +1514,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> s = json.dumps(bqm.to_serializable())
 
-            Serialize using bson in python 3.5+
+            Encode using BSON_ in python 3.5+
 
             >>> import dimod
             >>> import bson
@@ -1525,7 +1522,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> b = bson.BSON.encode(bqm.to_serializable(use_bytes=True))
 
-            Serialize using bson in python 2.7
+            Encode using BSON in python 2.7. Because :class:`bytes` is an alias for :class:`str`,
+            we need to signal to the encoder that it should encode the biases and labels as binary
+            data.
 
             >>> import dimod
             >>> import bson
@@ -1540,7 +1539,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> b = bson.BSON.encode(doc)
 
         See also:
-            :meth:`.BinaryQuadraticModel.from_serializable`
+            :meth:`~.BinaryQuadraticModel.from_serializable`
+
+            :func:`json.dumps`, :func:`json.dump` JSON encoding functions
+
+            :meth:`bson.BSON.encode` BSON encoding method
+
+        .. _BSON: http://bsonspec.org/
 
         """
         if use_bytes:
@@ -1559,14 +1564,26 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Args:
             obj (dict):
-                A binary quadratic model serialized as by
-                :meth:`~.BinaryQuadraticModel.to_serializable`.
+                A binary quadratic model serialized by :meth:`~.BinaryQuadraticModel.to_serializable`.
 
         Returns:
             :obj:`.BinaryQuadraticModel`
 
+        Examples:
+
+            Encode and decode using JSON
+
+            >>> import dimod
+            >>> import json
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> s = json.dumps(bqm.to_serializable())
+            >>> new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(s))
+
         See also:
-            :meth:`.BinaryQuadraticModel.to_serializable`
+            :meth:`~.BinaryQuadraticModel.to_serializable`
+
+            :func:`json.loads`, :func:`json.load` JSON deserialization functions
 
         """
         from dimod.io.json import bqm_decode_hook
