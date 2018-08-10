@@ -53,7 +53,7 @@ from numbers import Number
 
 import numpy as np
 
-from six import itervalues, iteritems, iterkeys, viewkeys
+from six import itervalues, iteritems, iterkeys, viewkeys, PY2
 
 from dimod.decorators import vartype_argument
 from dimod.response import SampleView
@@ -1504,6 +1504,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         Returns:
             dict: An object that can be serialized.
 
+        Notes:
+            In python 2, bytes is an alias for str which can cause encoding errors when using bson.
+
         Examples:
 
             Serialize using json
@@ -1514,13 +1517,30 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> s = json.dumps(bqm.to_serializable())
 
-            Serialize using bson
+            Serialize using bson in python 3.5+
 
             >>> import dimod
             >>> import bson
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> b = bson.encode(bqm.to_serializable(use_bytes=True))
+            >>> b = bson.BSON.encode(bqm.to_serializable(use_bytes=True))
+
+            Serialize using bson in python 2.7
+
+            >>> import dimod
+            >>> import bson
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
+            >>> doc = bqm.to_serializable(use_bytes=True)
+            >>> for key in ['linear', 'quadratic_vals', 'quadratic_head', 'quadratic_tail']:
+            >>>     if key in doc:
+            >>>         doc[key] = bson.binary.Binary(doc[key])
+            >>>     else:
+            >>>         assert doc['as_complete']
+            >>> b = bson.BSON.encode(doc)
+
+        See also:
+            :meth:`.BinaryQuadraticModel.from_serializable`
 
         """
         if use_bytes:
@@ -1544,6 +1564,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         Returns:
             :obj:`.BinaryQuadraticModel`
+
+        See also:
+            :meth:`.BinaryQuadraticModel.to_serializable`
 
         """
         from dimod.io.json import bqm_decode_hook
@@ -1692,7 +1715,18 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                        "`bson.BSON.encode(bqm.to_serializable(use_bytes=True))` instead."),
                       DeprecationWarning)
 
-        return bson.BSON.encode(self.to_serializable(use_bytes=True))
+        dct = self.to_serializable(use_bytes=True)
+
+        if PY2:
+            # in python2 bytes are not stored in binary objects by pymongo unless they have been
+            # wrapped in bson.binary.Binary
+            for key in ['linear', 'quadratic_vals', 'quadratic_head', 'quadratic_tail']:
+                if key in dct:
+                    dct[key] = bson.binary.Binary(dct[key])
+                else:
+                    assert dct['as_complete']
+
+        return bson.BSON.encode(dct)
 
     @classmethod
     def from_bson(cls, obj):
