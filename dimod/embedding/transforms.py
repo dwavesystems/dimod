@@ -416,13 +416,15 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         Sample(sample={'x2': 0, 'x1': 0, 'z': 1}, energy=3.0)
 
     """
-    if any(v not in embedding for v in source_bqm):
-        raise ValueError("given bqm does not match the embedding")
 
     if chain_break_method is None:
         chain_break_method = majority_vote
 
-    variables, chains = zip(*embedding.items())
+    variables = list(source_bqm)
+    try:
+        chains = [embedding[v] for v in variables]
+    except KeyError:
+        raise ValueError("given bqm does not match the embedding")
 
     if target_response.label_to_idx is None:
         chain_idxs = [list(chain) for chain in chains]
