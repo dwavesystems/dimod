@@ -184,6 +184,24 @@ class TestUnembedResponse(unittest.TestCase):
         for sample, energy in response.data(['sample', 'energy']):
             self.assertEqual(bqm.energy(sample), energy)
 
+    def test_embedding_superset(self):
+        # source graph in the embedding is a superset of the bqm
+        response = dimod.Response(np.rec.array([([-1,  1, -1,  1, -1,  1, -1,  1], -1.4, 1),
+                                                ([-1,  1, -1, -1, -1,  1, -1, -1], -1.4, 1),
+                                                ([+1, -1, -1, -1,  1, -1, -1, -1], -1.6, 1),
+                                                ([+1, -1, -1, -1,  1, -1, -1, -1], -1.6, 1)],
+                                  dtype=[('sample', 'i1', (8,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
+                                  [0, 1, 2, 3, 4, 5, 6, 7], {}, 'SPIN')
+        embedding = {0: {0, 4}, 1: {1, 5}, 2: {2, 6}, 3: {3, 7}}
+        bqm = dimod.OrderedBinaryQuadraticModel.from_ising([.1, .2], {(0, 1): 1.5}, 0.0)
+
+        unembedded = dimod.unembed_response(response, embedding, source_bqm=bqm)
+
+        arr = np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1), ([+1, -1], -1.6, 1), ([+1, -1], -1.6, 1)],
+                           dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
+
+        np.testing.assert_array_equal(arr, unembedded.record)
+
 
 class TestEmbedBQM(unittest.TestCase):
     def test_embed_bqm_empty(self):
