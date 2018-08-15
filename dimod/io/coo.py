@@ -18,7 +18,7 @@ import re
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
-_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?([0-9]*[.])?[0-9]+)\s*$'
+_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?(?:[0-9]*[.]):?[0-9]+)\s*$'
 """
 Each line should look like
 
@@ -27,57 +27,69 @@ Each line should look like
 where 0, 1 are the variable lables and 2.0 is the bias.
 """
 
+_VARTYPE_HEADER_REGEX = r'^[ \t\f]*#.*?vartype[:=][ \t]*([-_.a-zA-Z0-9]+)'
+"""
+The header should be in the first line and look like
 
-def dumps(bqm):
+# vartype=SPIN
+
+"""
+
+
+def dumps(bqm, vartype_header=False):
     """Dump a binary quadratic model to a string in COOrdinate format."""
-    return '\n'.join(_iter_triplets(bqm))
+    return '\n'.join(_iter_triplets(bqm, vartype_header))
 
 
-def dump(bqm, fp):
+def dump(bqm, fp, vartype_header=False):
     """Dump a binary quadratic model to a string in COOrdinate format."""
-    for triplet in _iter_triplets(bqm):
+    for triplet in _iter_triplets(bqm, vartype_header):
         fp.write('%s\n' % triplet)
 
 
-def loads(s, bqm):
+def loads(s, cls=BinaryQuadraticModel, vartype=None):
     """Load a COOrdinate formatted binary quadratic model from a string."""
-    pattern = re.compile(_LINE_REGEX)
-
-    for line in s.split('\n'):
-        match = pattern.search(line)
-
-        if match is not None:
-            u, v, bias = int(match.group(1)), int(match.group(2)), float(match.group(3))
-            if u == v:
-                bqm.add_variable(u, bias)
-            else:
-                bqm.add_interaction(u, v, bias)
-
-    return bqm
+    return load(s.split('\n'), cls=cls, vartype=vartype)
 
 
-def load(fp, bqm):
+def load(fp, cls=BinaryQuadraticModel, vartype=None):
     """Load a COOrdinate formatted binary quadratic model from a file."""
     pattern = re.compile(_LINE_REGEX)
+    vartype_pattern = re.compile(_VARTYPE_HEADER_REGEX)
 
+    triplets = []
     for line in fp:
-        match = pattern.search(line)
+        triplets.extend(pattern.findall(line))
 
-        if match is not None:
-            u, v, bias = int(match.group(1)), int(match.group(2)), float(match.group(3))
-            if u == v:
-                bqm.add_variable(u, bias)
-            else:
-                bqm.add_interaction(u, v, bias)
+        vt = vartype_pattern.findall(line)
+        if vt:
+            if vartype is None:
+                vartype = vt[0]
+            elif vartype is not vt[0]:
+                raise ValueError("vartypes from headers and/or inputs do not match")
+
+    if vartype is None:
+        raise ValueError("vartype must be provided either as a header or as an argument")
+
+    bqm = cls.empty(vartype)
+
+    for u, v, bias in triplets:
+        if u == v:
+            bqm.add_variable(int(u), float(bias))
+        else:
+            bqm.add_interaction(int(u), int(v), float(bias))
 
     return bqm
 
 
-def _iter_triplets(bqm):
+def _iter_triplets(bqm, vartype_header):
     if not isinstance(bqm, BinaryQuadraticModel):
         raise TypeError("expected input to be a BinaryQuadraticModel")
     if not all(isinstance(v, int) and v >= 0 for v in bqm.linear):
         raise ValueError("only positive index-labeled binary quadratic models can be dumped to COOrdinate format")
+
+    if vartype_header:
+        yield '# vartype=%s' % bqm.vartype.name
 
     # developer note: we could (for some threshold sparseness) sort the neighborhoods,
     # but this is simple and probably sufficient

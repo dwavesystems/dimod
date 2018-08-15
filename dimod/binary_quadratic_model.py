@@ -1391,7 +1391,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 # conversions
 ##################################################################################################
 
-    def to_coo(self, fp=None):
+    def to_coo(self, fp=None, vartype_header=False):
         """Serialize the binary quadratic model to a COOrdinate_ format encoding.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
@@ -1403,6 +1403,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 (i, j, bias), where :math:`i=j` for linear biases. If not provided,
                 returns a string.
 
+            vartype_header (bool, optional, default=False):
+                If true, the binary quadratic model's variable type as prepended to the
+                string or file as a header.
+
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
         .. note:: Variables must use index lables (numeric lables). Binary quadratic
@@ -1413,6 +1417,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             .. code-block:: none
 
+                0 0 0.50000
+                0 1 0.50000
+                1 1 -1.50000
+
+            The Coordinate format with a header
+
+            .. code-block:: none
+
+                # vartype=SPIN
                 0 0 0.50000
                 0 1 0.50000
                 1 1 -1.50000
@@ -1436,12 +1449,12 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         import dimod.io.coo as coo
 
         if fp is None:
-            return coo.dumps(self)
+            return coo.dumps(self, vartype_header)
         else:
-            coo.dump(self, fp)
+            coo.dump(self, fp, vartype_header)
 
     @classmethod
-    def from_coo(cls, obj, vartype):
+    def from_coo(cls, obj, vartype=None):
         """Deserialize a binary quadratic model from a COOrdinate_ format encoding.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
@@ -1453,11 +1466,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 is stored as a list of 3-tuples, (i, j, bias), where :math:`i=j`
                 for linear biases.
 
-            vartype (:class:`.Vartype`/str/set):
+            vartype (:class:`.Vartype`/str/set, optional):
                 Variable type for the binary quadratic model. Accepted input values:
 
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the vartype must be specified with a header in the
+                file.
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
@@ -1466,10 +1482,19 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             zero.
 
         Examples:
-            This is an example of a binary quadratic model encoded in COOrdinate format.
+            An example of a binary quadratic model encoded in COOrdinate format.
 
             .. code-block:: none
 
+                0 0 0.50000
+                0 1 0.50000
+                1 1 -1.50000
+
+            The Coordinate format with a header
+
+            .. code-block:: none
+
+                # vartype=SPIN
                 0 0 0.50000
                 0 1 0.50000
                 1 1 -1.50000
@@ -1490,9 +1515,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         import dimod.io.coo as coo
 
         if isinstance(obj, str):
-            return coo.loads(obj, cls.empty(vartype))
+            return coo.loads(obj, cls=cls, vartype=vartype)
 
-        return coo.load(obj, cls.empty(vartype))
+        return coo.load(obj, cls=cls, vartype=vartype)
 
     def to_serializable(self, use_bytes=False):
         """Convert the binary quadratic model to a serializable object.
