@@ -23,7 +23,7 @@ import numpy as np
 from six import iteritems, itervalues
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.embedding.chain_breaks import majority_vote
+from dimod.embedding.chain_breaks import majority_vote, broken_chains
 from dimod.embedding.utils import chain_to_quadratic
 from dimod.response import Response
 from dimod.vartypes import Vartype
@@ -330,7 +330,8 @@ def embed_qubo(source_Q, embedding, target_adjacency, chain_strength=1.0):
     return target_Q
 
 
-def unembed_response(target_response, embedding, source_bqm, chain_break_method=None):
+def unembed_response(target_response, embedding, source_bqm,
+                     chain_break_method=None, chain_break_fraction=False):
     """Unembed the response.
 
     Construct a response for the source binary quadratic model (BQM) by unembedding the given
@@ -350,6 +351,10 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
         chain_break_method (function, optional):
             Method used to resolve chain breaks. Must be an iterator which accepts a sample and
             an embedding and yields unembedded samples.
+
+        chain_break_fraction (bool, optional, default=False):
+            If True, a 'chain_break_fraction' field is added to the unembedded response which report
+            what fraction of the chains were broken before unembedding.
 
     Returns:
         :obj:`.Response`:
@@ -444,6 +449,9 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     datatypes.extend((name, record[name].dtype, record[name].shape[1:]) for name in record.dtype.names
                      if name not in {'sample', 'energy'})
 
+    if chain_break_fraction:
+        datatypes.append(('chain_break_fraction', np.float64))
+
     data = np.rec.array(np.empty(num_samples, dtype=datatypes))
 
     data.sample = unembedded
@@ -451,5 +459,8 @@ def unembed_response(target_response, embedding, source_bqm, chain_break_method=
     for name in record.dtype.names:
         if name not in {'sample', 'energy'}:
             data[name] = record[name][idxs]
+
+    if chain_break_fraction:
+        data['chain_break_fraction'] = broken_chains(record.sample, chain_idxs).mean(axis=1)[idxs]
 
     return Response(data, variables, target_response.info, target_response.vartype)
