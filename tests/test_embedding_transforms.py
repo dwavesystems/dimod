@@ -202,6 +202,29 @@ class TestUnembedResponse(unittest.TestCase):
 
         np.testing.assert_array_equal(arr, unembedded.record)
 
+    def test_chain_break_statistics_discard(self):
+        sample0 = {0: -1, 1: -1, 2: +1}
+        sample1 = {0: +1, 1: -1, 2: +1}
+        samples = [sample0, sample1]
+
+        # now set up an embedding that works for one sample and not the other
+        embedding = {'a': {0, 1}, 'b': {2}}
+
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1}, {('a', 'b'): -1})
+
+        resp = dimod.Response.from_samples(samples, {'energy': [-1, 1]}, {}, dimod.SPIN)
+
+        resp = dimod.unembed_response(resp, embedding, bqm, chain_break_method=dimod.embedding.discard,
+                                      chain_break_statistics=True)
+
+        source_samples = list(resp)
+
+        # only the first sample should be returned
+        self.assertEqual(len(source_samples), 1)
+        self.assertEqual(source_samples, [{'a': -1, 'b': +1}])
+
+        self.assertEqual(resp.record.chain_break_fraction.sum(), 0)
+
 
 class TestEmbedBQM(unittest.TestCase):
     def test_embed_bqm_empty(self):
