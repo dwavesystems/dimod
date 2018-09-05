@@ -75,19 +75,19 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             the binary quadratic model and values the linear biases associated
             with these variables.
             A variable can be any python object that is valid as a dictionary key.
-            Biases are generally numbers but this is not explicitly checked.
+            Biases are generally numbers, see dtype below.
 
         quadratic (dict[(variable, variable), bias]):
             Quadratic biases as a dict, where keys are
             2-tuples of variables and values the quadratic biases associated
             with the pair of variables (the interaction).
             A variable can be any python object that is valid as a dictionary key.
-            Biases are generally numbers but this is not explicitly checked.
+            Biases are generally numbers, see dtype below.
             Interactions that are not unique are added.
 
         offset (number):
             Constant energy offset associated with the binary quadratic model.
-            Any input type is allowed, but many applications assume that offset is a number.
+            Offsets are generally numbers, see dtype below.
             See :meth:`.BinaryQuadraticModel.energy`.
 
         vartype (:class:`.Vartype`/str/set):
@@ -95,6 +95,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        dtype (type/function, optional, default=object):
+            The type used for biases in the binary quadratic model. If :class:`object`, then biases
+            can be of any type, though in general only numeric types will work. Otherwise dtype
+            is called on each bias to coerce it into the appropriate type.
 
         **kwargs:
             Any additional keyword parameters and their values are stored in
@@ -151,6 +156,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             adjacent to `v` (e.g. `u`) and values are quadratic biases associated
             with the pair of inner and outer keys (`u, v`).
 
+        dtype (type):
+            The bias type.
+
         info (dict):
             A place to store miscellaneous data about the binary quadratic model
             as a whole.
@@ -194,20 +202,26 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     BINARY = Vartype.BINARY
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
+    def __init__(self, linear, quadratic, offset, vartype, dtype=object, **kwargs):
         self.linear = {}
         self.quadratic = {}
         self.adj = {}
-        self.offset = offset  # we are agnostic to type, though generally should behave like a number
+
+        if dtype is object:
+            self.offset = offset  # we are agnostic to type, though generally should behave like a number
+        else:
+            self.offset = dtype(offset)
+
         self.vartype = vartype
         self.info = kwargs  # any additional kwargs are kept as info (metadata)
+        self.dtype = dtype
 
         # add linear, quadratic
         self.add_variables_from(linear)
         self.add_interactions_from(quadratic)
 
     @classmethod
-    def empty(cls, vartype):
+    def empty(cls, vartype, dtype=object):
         """Create an empty binary quadratic model.
 
         Equivalent to instantiating a :class:`.BinaryQuadraticModel` with no bias values
@@ -224,6 +238,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
+            dtype (type/function, optional, default=object):
+                The type used for biases in the binary quadratic model. If :class:`object`, then biases
+                can be of any type, though in general only numeric types will work. Otherwise dtype
+                is called on each bias to coerce it into the appropriate type.
+
         Examples:
             This example creates an empty binary quadratic model.
 
@@ -236,7 +255,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             0.0
 
         """
-        return cls({}, {}, 0.0, vartype)
+        return cls({}, {}, 0.0, vartype, dtype=dtype)
 
     def __repr__(self):
         return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
@@ -409,16 +428,19 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         """
 
+        if self.dtype is not object:
+            bias = self.dtype(bias)
+
         # handle the case that a different vartype is provided
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
-                bias /= 2.
+                bias /= 2
                 self.offset += bias
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
                 self.offset -= bias
-                bias *= 2.
+                bias *= 2
             else:
                 raise ValueError("unknown vartype")
 
@@ -445,7 +467,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 values are biases. Alternatively, an iterable of (variable, bias) pairs.
                 Variables can be any python object that is a valid dict key.
                 Many methods and functions expect the biases
-                to be numbers but this is not explicitly checked.
+                to be numbers but this is not explicitly checked unless a dtype has been provided.
                 If any variable already exists in the model, its bias is added to
                 the variable's current linear bias.
 
@@ -496,7 +518,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             bias (bias):
                 Quadratic bias associated with u, v. If u, v is already in the model, this value
                 is added to the current quadratic bias. Many methods and functions expect `bias` to
-                be a number but this is not explicitly checked.
+                to be numbers but this is not explicitly checked unless a dtype has been provided.
 
             vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
@@ -521,6 +543,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             0.75
 
         """
+        if self.dtype is not object:
+            bias = self.dtype(bias)
+
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
 
@@ -531,7 +556,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
-                bias /= 4.
+                bias /= 4
 
                 self.offset += bias
 
@@ -552,18 +577,18 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 self.offset += bias
 
                 if u in linear:
-                    linear[u] += -2. * bias
+                    linear[u] += -2 * bias
                 else:
-                    linear[u] = -2. * bias
+                    linear[u] = -2 * bias
                     self.adj[u] = {}
 
                 if v in linear:
-                    linear[v] += -2. * bias
+                    linear[v] += -2 * bias
                 else:
-                    linear[v] = -2. * bias
+                    linear[v] = -2 * bias
                     self.adj[v] = {}
 
-                bias *= 4.
+                bias *= 4
             else:
                 raise ValueError("unknown vartype")
         else:
@@ -604,7 +629,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 unique; that is, if `(u, v)` is a key, `(v, u)` should not be.
                 Variables can be any python object that is a valid dict key.
                 Many methods and functions expect the biases to be numbers but this is not
-                explicitly checked.
+                explicitly checked unless a dtype has been provided.
 
             vartype (:class:`.Vartype`, optional, default=None):
                 Vartype of the given bias. If None, the vartype of the binary
@@ -958,15 +983,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         if self.vartype is Vartype.SPIN:
             # in this case we just multiply by -1
-            linear[v] *= -1.
+            linear[v] *= -1
             for u in adj[v]:
-                adj[v][u] *= -1.
-                adj[u][v] *= -1.
+                adj[v][u] *= -1
+                adj[u][v] *= -1
 
                 if (u, v) in quadratic:
-                    quadratic[(u, v)] *= -1.
+                    quadratic[(u, v)] *= -1
                 elif (v, u) in quadratic:
-                    quadratic[(v, u)] *= -1.
+                    quadratic[(v, u)] *= -1
                 else:
                     raise RuntimeError("quadratic is missing an interaction")
 
@@ -977,15 +1002,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             for u in adj[v]:
                 bias = adj[v][u]
 
-                adj[v][u] *= -1.
-                adj[u][v] *= -1.
+                adj[v][u] *= -1
+                adj[u][v] *= -1
 
                 linear[u] += bias
 
                 if (u, v) in quadratic:
-                    quadratic[(u, v)] *= -1.
+                    quadratic[(u, v)] *= -1
                 elif (v, u) in quadratic:
-                    quadratic[(v, u)] *= -1.
+                    quadratic[(v, u)] *= -1
                 else:
                     raise RuntimeError("quadratic is missing an interaction")
 
@@ -1186,7 +1211,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             return BinaryQuadraticModel({mapping.get(v, v): bias for v, bias in iteritems(self.linear)},
                                         {(mapping.get(u, u), mapping.get(v, v)): bias
                                          for (u, v), bias in iteritems(self.quadratic)},
-                                        self.offset, self.vartype)
+                                        self.offset, self.vartype, dtype=self.dtype)
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
@@ -1222,7 +1247,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         if not inplace:
             # create a new model of the appropriate type, then add self's biases to it
-            new_model = BinaryQuadraticModel({}, {}, 0.0, vartype)
+            new_model = BinaryQuadraticModel({}, {}, 0.0, vartype, dtype=self.dtype)
 
             new_model.add_variables_from(self.linear, vartype=self.vartype)
             new_model.add_interactions_from(self.quadratic, vartype=self.vartype)
@@ -1265,14 +1290,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         """
 
         # the linear biases are the easiest
-        new_linear = {v: 2. * bias for v, bias in iteritems(linear)}
+        new_linear = {v: 2 * bias for v, bias in iteritems(linear)}
 
         # next the quadratic biases
         new_quadratic = {}
         for (u, v), bias in iteritems(quadratic):
-            new_quadratic[(u, v)] = 4. * bias
-            new_linear[u] -= 2. * bias
-            new_linear[v] -= 2. * bias
+            new_quadratic[(u, v)] = 4 * bias
+            new_linear[u] -= 2 * bias
+            new_linear[v] -= 2 * bias
 
         # finally calculate the offset
         offset += sum(itervalues(quadratic)) - sum(itervalues(linear))
@@ -1286,23 +1311,23 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         """
         h = {}
         J = {}
-        linear_offset = 0.0
-        quadratic_offset = 0.0
+        linear_offset = 0
+        quadratic_offset = 0
 
         for u, bias in iteritems(linear):
-            h[u] = .5 * bias
+            h[u] = bias / 2
             linear_offset += bias
 
         for (u, v), bias in iteritems(quadratic):
 
-            J[(u, v)] = .25 * bias
+            J[(u, v)] = bias / 4
 
-            h[u] += .25 * bias
-            h[v] += .25 * bias
+            h[u] += bias / 4
+            h[v] += bias / 4
 
             quadratic_offset += bias
 
-        offset += .5 * linear_offset + .25 * quadratic_offset
+        offset += linear_offset / 2 + quadratic_offset / 4
 
         return h, J, offset
 
@@ -1327,7 +1352,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         """
         # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
+        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype,
+                                    dtype=self.dtype, **self.info)
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
@@ -2403,13 +2429,19 @@ class OrderedBinaryQuadraticModel(BinaryQuadraticModel):
 
     """
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
+    def __init__(self, linear, quadratic, offset, vartype, dtype=object, **kwargs):
         self.linear = OrderedDict()
         self.quadratic = OrderedDict()
         self.adj = {}
-        self.offset = offset  # we are agnostic to type, though generally should behave like a number
+
+        if dtype is object:
+            self.offset = offset  # we are agnostic to type, though generally should behave like a number
+        else:
+            self.offset = dtype(offset)
+
         self.vartype = vartype
         self.info = kwargs  # any additional kwargs are kept as info (metadata)
+        self.dtype = dtype
 
         # add linear, quadratic
         self.add_variables_from(linear)

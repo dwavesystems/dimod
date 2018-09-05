@@ -1311,6 +1311,159 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertIn('a', model.spin.linear)
         self.assertNotIn(0, model.spin.linear)
 
+    def test_dtype_basic_construction_float(self):
+        linear = {'a': 1, 'b': 1., 'c': np.int8(1), 'd': np.float(1)}
+        quadratic = {'ab': 1, 'bc': 1., 'cd': np.uint(16), 'da': np.float64(1)}
+        offset = 1
+        vartype = dimod.BINARY
+        dtype = float
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype, dtype=dtype)
+
+        self.assertIsInstance(bqm.offset, dtype)
+        self.assertEqual(bqm.offset, offset)
+
+        for v in linear:
+            self.assertIn(v, bqm.linear)
+            self.assertIsInstance(bqm.linear[v], dtype)
+            self.assertEqual(linear[v], bqm.linear[v])
+
+        for edge in quadratic:
+            u, v = edge
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+            self.assertIsInstance(bqm.adj[v][u], dtype)
+            self.assertEqual(bqm.adj[v][u], quadratic[edge])
+
+        # test the counterpart
+        self.assertIsInstance(bqm.spin.offset, dtype)
+
+        for v in linear:
+            self.assertIn(v, bqm.spin.linear)
+            self.assertIsInstance(bqm.spin.linear[v], dtype)
+
+        for u, v in quadratic:
+            self.assertIn(v, bqm.spin.adj)
+            self.assertIn(u, bqm.spin.adj[v])
+            self.assertIsInstance(bqm.spin.adj[v][u], dtype)
+
+    def test_dtype_basic_construction_int(self):
+        linear = {'a': 1, 'b': 1., 'c': np.int8(1), 'd': np.float(1)}
+        quadratic = {'ab': 1, 'bc': 1., 'cd': np.uint(16), 'da': np.float64(1)}
+        offset = 1
+        vartype = dimod.BINARY
+        dtype = int
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype, dtype=dtype)
+
+        self.assertIsInstance(bqm.offset, dtype)
+        self.assertEqual(bqm.offset, offset)
+
+        for v in linear:
+            self.assertIn(v, bqm.linear)
+            self.assertIsInstance(bqm.linear[v], dtype)
+            self.assertEqual(linear[v], bqm.linear[v])
+
+        for edge in quadratic:
+            u, v = edge
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+            self.assertIsInstance(bqm.adj[v][u], dtype)
+            self.assertEqual(bqm.adj[v][u], quadratic[edge])
+
+    def test_dtype_basic_construction_numpy_float(self):
+        linear = {'a': 1, 'b': 1., 'c': np.int8(1), 'd': np.float(1)}
+        quadratic = {'ab': 1, 'bc': 1., 'cd': np.uint(16), 'da': np.float64(1)}
+        offset = 1
+        vartype = dimod.BINARY
+        dtype = np.float
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype, dtype=dtype)
+
+        self.assertIsInstance(bqm.offset, dtype)
+        self.assertEqual(bqm.offset, offset)
+
+        for v in linear:
+            self.assertIn(v, bqm.linear)
+            self.assertIsInstance(bqm.linear[v], dtype)
+            self.assertEqual(linear[v], bqm.linear[v])
+
+        for edge in quadratic:
+            u, v = edge
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+            self.assertIsInstance(bqm.adj[v][u], dtype)
+            self.assertEqual(bqm.adj[v][u], quadratic[edge])
+
+        # test the counterpart
+        self.assertIsInstance(bqm.spin.offset, dtype)
+
+        for v in linear:
+            self.assertIn(v, bqm.spin.linear)
+            self.assertIsInstance(bqm.spin.linear[v], dtype)
+
+        for u, v in quadratic:
+            self.assertIn(v, bqm.spin.adj)
+            self.assertIn(u, bqm.spin.adj[v])
+            self.assertIsInstance(bqm.spin.adj[v][u], dtype)
+
+    def test_dtype_basic_construction_numpy_int8(self):
+        linear = {'a': 1, 'b': 1., 'c': np.int8(1), 'd': np.float(1)}
+        quadratic = {'ab': 1, 'bc': 1., 'cd': np.uint(16), 'da': np.float64(1)}
+        offset = 1
+        vartype = dimod.BINARY
+        dtype = np.int8
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype, dtype=dtype)
+
+        self.assertIsInstance(bqm.offset, dtype)
+        self.assertEqual(bqm.offset, offset)
+
+        for v in linear:
+            self.assertIn(v, bqm.linear)
+            self.assertIsInstance(bqm.linear[v], dtype)
+            self.assertEqual(linear[v], bqm.linear[v])
+
+        for edge in quadratic:
+            u, v = edge
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+            self.assertIsInstance(bqm.adj[v][u], dtype)
+            self.assertEqual(bqm.adj[v][u], quadratic[edge])
+
+    def test_dtype_basic_construction_fraction(self):
+        from fractions import Fraction
+
+        linear = {'a': 1, 'b': 1., 'd': np.float(1)}
+        quadratic = {'ab': 1, 'bc': 1., 'cd': 0, 'da': np.float64(1)}
+        offset = 1
+        vartype = dimod.BINARY
+        dtype = Fraction
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype, dtype=dtype)
+
+        self.assertIsInstance(bqm.offset, dtype)
+        self.assertEqual(bqm.offset, offset)
+
+        for v in linear:
+            self.assertIn(v, bqm.linear)
+            self.assertIsInstance(bqm.linear[v], dtype)
+            self.assertEqual(linear[v], bqm.linear[v])
+
+        for edge in quadratic:
+            u, v = edge
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+            self.assertIsInstance(bqm.adj[v][u], dtype)
+            self.assertEqual(bqm.adj[v][u], quadratic[edge])
+
+        # test the counterpart
+        self.assertIsInstance(bqm.spin.offset, dtype)
+
+        for v in linear:
+            self.assertIn(v, bqm.spin.linear)
+            self.assertIsInstance(bqm.spin.linear[v], dtype)
+
+        for u, v in quadratic:
+            self.assertIn(v, bqm.spin.adj)
+            self.assertIn(u, bqm.spin.adj[v])
+            self.assertIsInstance(bqm.spin.adj[v][u], dtype)
+
 
 class TestConvert(unittest.TestCase):
     @unittest.skipUnless(_networkx, "No networkx installed")
