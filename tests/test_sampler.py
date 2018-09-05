@@ -244,3 +244,23 @@ class TestSamplerClass(unittest.TestCase):
         expected_resp = dimod.Response.from_samples([[-1, 1]], {"energy": [0.7]}, {}, dimod.SPIN)
         np.testing.assert_almost_equal(resp.record.sample, expected_resp.record.sample)
         np.testing.assert_almost_equal(resp.record.energy, expected_resp.record.energy)
+
+    def test_sampler_can_return_integer_energy_values(self):
+        class Dummy(dimod.Sampler):
+            def sample_qubo(self, Q):
+                return dimod.Response.from_samples([[1]], {"energy": [-3]}, {}, dimod.BINARY)
+
+            @property
+            def parameters(self):
+                return {}
+
+            @property
+            def properties(self):
+                return {}
+
+        sampler = Dummy()
+        bqm = dimod.BinaryQuadraticModel({0: -3}, {}, 0, dimod.BINARY)
+        resp = sampler.sample(bqm)
+        expected_resp = dimod.Response.from_samples([[1]], {"energy": [-3]}, {}, dimod.BINARY)
+        np.testing.assert_almost_equal(resp.record.sample, expected_resp.record.sample)
+        np.testing.assert_almost_equal(resp.record.energy, expected_resp.record.energy)
