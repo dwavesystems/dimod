@@ -765,7 +765,8 @@ def data_struct_array(sample, **vectors):  # data_struct_array(sample, *, energy
     datatypes = [('sample', np.dtype(np.int8), (num_variables,))]
 
     for kwarg, vector in vectors.items():
-        datavectors[kwarg] = vector = np.asarray(vector)
+        dtype = float if kwarg == 'energy' else None
+        datavectors[kwarg] = vector = np.asarray(vector, dtype)
 
         if len(vector.shape) < 1 or vector.shape[0] != num_samples:
             msg = ('{} and sample have a mismatched shape {}, {}. They must have the same size '
