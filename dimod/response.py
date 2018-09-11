@@ -113,6 +113,16 @@ class Response(Iterable, Sized):
         """Iterate over the samples, low energy to high."""
         return self.samples(sorted_by='energy')
 
+    def __eq__(self, other):
+        """Response equality."""
+
+        if not isinstance(other, Response):
+            return False
+
+        return (self.vartype == other.vartype and self.info == other.info
+                and self.variable_labels == other.variable_labels
+                and all(self.record == other.record))
+
     def __repr__(self):
         return 'Response({}, {}, {}, {})'.format(self.record.__repr__(),
                                                  self.variable_labels.__repr__(),
