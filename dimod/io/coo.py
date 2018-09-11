@@ -15,7 +15,7 @@
 # ================================================================================================
 
 import re
-
+from dimod import Vartype
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
 _LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?(?:[0-9]*[.]):?[0-9]+)\s*$'
@@ -65,8 +65,13 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
         if vt:
             if vartype is None:
                 vartype = vt[0]
-            elif vt[0] not in vartype:
-                raise ValueError("vartypes from headers and/or inputs do not match")
+            else:
+                if isinstance(vartype, str):
+                    vartype = Vartype[vartype]
+                else:
+                    vartype = Vartype(vartype)
+                if Vartype[vt[0]] != vartype:
+                    raise ValueError("vartypes from headers and/or inputs do not match")
 
     if vartype is None:
         raise ValueError("vartype must be provided either as a header or as an argument")
