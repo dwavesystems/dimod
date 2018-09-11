@@ -192,6 +192,13 @@ class Response(Iterable, Sized):
             self._resolve_future()
         return self._vartype
 
+    @property
+    def first(self):
+        """Return the `Sample(sample={...}, energy, num_occurrences)` with
+        lowest energy.
+        """
+        return next(self.data(sorted_by='energy', name='Sample'))
+
     ###############################################################################################
     # Views
     ###############################################################################################
