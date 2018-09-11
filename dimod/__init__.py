@@ -22,6 +22,8 @@ import dimod.core
 from dimod.reference import *
 import dimod.reference
 
+from dimod.roof_duality import *
+
 import dimod.testing
 
 from dimod.binary_quadratic_model import *

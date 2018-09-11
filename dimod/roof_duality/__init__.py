@@ -1,1 +1,1 @@
-from dimod.roof_duality._fix_variables import fix_variables
+from dimod.roof_duality.fix_variables import *

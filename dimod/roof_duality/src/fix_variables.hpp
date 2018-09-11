@@ -27,6 +27,8 @@ private:
 	
 FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<double>& Q, int method);
 
+std::vector<std::pair<int,  int> > fixQuboVariablesMap(std::map<std::pair<int, int>, double> QMap, int QSize, int method);
+
 } // namespace fix_variables_
 
 #endif // FIX_VARIABLES_HPP_INCLUDED
