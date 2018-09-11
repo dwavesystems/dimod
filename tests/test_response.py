@@ -50,6 +50,38 @@ class TestResponse(unittest.TestCase):
 
         np.testing.assert_array_equal(resp.record, new_resp.record)
 
+    def test_eq(self):
+        """Equal iff record, vectors, info, vartype and labels equal."""
+
+        self.assertEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'b')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'BINARY', 'a')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 2}, 'SPIN', 'a')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 2]}, {'extra': 1}, 'SPIN', 'a')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [1]], {'energy': [1, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a')
+        )
+        self.assertNotEqual(
+            dimod.Response.from_samples([[0], [1]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a'),
+            dimod.Response.from_samples([[0], [2]], {'energy': [0, 1], 'num_occurrences': [1, 1]}, {'extra': 1}, 'SPIN', 'a')
+        )
+
     def test_instantiation_missing_field(self):
         samples = [[-1, 1, 1], [1, 1, 1]]
         num_occurrences = [1, 1]
