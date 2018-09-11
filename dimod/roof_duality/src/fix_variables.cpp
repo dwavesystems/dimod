@@ -1265,4 +1265,15 @@ FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<do
 	return ret;
 }
 
+
+std::vector<std::pair<int,  int> > fixQuboVariablesMap(std::map<std::pair<int, int>, double> QMap, int QSize, int mtd)
+{
+    compressed_matrix::CompressedMatrix<double> QInput(QSize, QSize, QMap);
+
+    FixVariablesResult ret = fixQuboVariables(QInput, mtd);
+
+    return ret.fixedVars;
+}
+
+
 } // namespace fix_variables_
