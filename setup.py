@@ -20,6 +20,7 @@ import sys
 import os
 
 from setuptools import setup
+from distutils.extension import Extension
 
 # add __version__, __author__, __authoremail__, __description__ to this namespace
 _PY2 = sys.version_info.major == 2
@@ -63,6 +64,23 @@ classifiers = [
 
 python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*'
 
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    USE_CYTHON = False
+else:
+    USE_CYTHON = True
+
+ext = '.pyx' if USE_CYTHON else '.cpp'
+
+extensions = [Extension("dimod.roof_duality._fix_variables",
+                        ['dimod/roof_duality/_fix_variables'+ext],
+                        include_dirs=['dimod/roof_duality/src/'])]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
+
 setup(
     name='dimod',
     version=__version__,
@@ -73,6 +91,7 @@ setup(
     url='https://github.com/dwavesystems/dimod',
     download_url='https://github.com/dwavesystems/dimod/releases',
     license='Apache 2.0',
+    ext_modules=extensions,
     packages=packages,
     install_requires=install_requires,
     extras_require=extras_require,
