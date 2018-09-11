@@ -65,7 +65,7 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
         if vt:
             if vartype is None:
                 vartype = vt[0]
-            elif vartype is not vt[0]:
+            elif vt[0] not in vartype:
                 raise ValueError("vartypes from headers and/or inputs do not match")
 
     if vartype is None:
