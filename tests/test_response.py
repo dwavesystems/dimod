@@ -315,6 +315,12 @@ class TestResponse(unittest.TestCase):
 
             self.assertEqual(len(sample), len(new_sample))
 
+    def test_first_property(self):
+        resp = dimod.Response.from_samples([[0], [1], [2]], {'energy': [0, -1, 2]}, {}, 'SPIN')
+        first = next(resp.data())
+        self.assertEqual(first.energy, -1)
+        self.assertEqual(resp.first, first)
+
 
 class TestSamplesStructuredArray(unittest.TestCase):
     def test_empty(self):
