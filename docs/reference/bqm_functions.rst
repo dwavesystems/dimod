@@ -1,0 +1,35 @@
+.. _bqm_functions:
+
+=============
+BQM Functions
+=============
+
+Functional interface to BQM methods and assorted utilities.
+
+.. currentmodule:: dimod
+
+Embedding
+=========
+
+.. autosummary::
+   :toctree: generated/
+
+   embed_bqm
+
+
+Higher-order Polynomials
+========================
+
+.. autosummary::
+   :toctree: generated/
+
+   make_quadratic
+
+
+Roof-duality
+============
+
+.. autosummary::
+   :toctree: generated/
+
+   fix_variables

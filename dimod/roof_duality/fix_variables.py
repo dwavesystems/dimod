@@ -11,6 +11,7 @@ def fix_variables(bqm, sampling_mode=True):
 
     Args:
         bqm (:obj:`.BinaryQuadraticModel`)
+            A binary quadratic model.
 
         sampling_mode (bool, optional, default=True):
             Setting sampling_model to False can fix more variables, but in some optimal solutions
@@ -18,6 +19,27 @@ def fix_variables(bqm, sampling_mode=True):
 
     Returns:
         dict: Variable assignments for some bqm variables.
+
+    Examples:
+
+        >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+        >>> bqm.add_variable('a', 1.0)
+        >>> dimod.fix_variables(bqm)
+        {'a': -1}
+
+        There are two ground states, so no variables fixed.
+
+        >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+        >>> bqm.add_interaction('a', 'b', -1.0)
+        >>> dimod.fix_variables(bqm)
+        {}
+
+        With sampling_model off, additional variables are fixed.
+
+        >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+        >>> bqm.add_interaction('a', 'b', -1.0)
+        >>> dimod.fix_variables(bqm, sampling_mode=False) # doctest: +SKIP
+        {'a': 1, 'b': 1}
 
     """
     if sampling_mode:
