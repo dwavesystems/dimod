@@ -10,6 +10,11 @@ jobs:
 
       - checkout
 
+      - run: &install-boost-linux-template
+          name: install boost
+          command: |
+            sudo apt-get install libboost-dev
+
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
@@ -86,6 +91,11 @@ jobs:
           name: install pyenv
           command: |
             brew install pyenv
+
+      - run: 
+          name: install boost
+          command: |
+            brew install boost
 
       - restore_cache:
           keys:
@@ -207,6 +217,8 @@ jobs:
 
     steps:
       - checkout
+
+      - run: *install-boost-linux-template
 
       - restore_cache:
           keys:
