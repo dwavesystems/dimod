@@ -48,6 +48,7 @@ packages = ['dimod',
             'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
+            'dimod.roof_duality',
             'dimod.testing']
 
 classifiers = [
@@ -98,5 +99,6 @@ setup(
     extras_require=extras_require,
     include_package_data=True,
     classifiers=classifiers,
+    zip_safe=False,
     python_requires=python_requires
 )
