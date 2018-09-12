@@ -30,7 +30,13 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-        
+
+      - run: &build-ext-template
+          name: build extension
+          command: |
+            . env/bin/activate
+            python setup.py build_ext --inplace
+
       - run: &run-tests-template
           name: run unittests
           command: |
@@ -113,6 +119,8 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *build-ext-template
         
       - run: *run-tests-template
 
@@ -209,11 +217,12 @@ jobs:
           command: |
             python -m virtualenv env
 
+      - run: *install-dependencies-template
+
       - run:
-          name: install sphinx and dependencies
+          name: install sphinx
           command: |
             . env/bin/activate
-            pip install -r requirements.txt
             pip install sphinx
             pip install sphinx_rtd_theme
 
@@ -221,6 +230,8 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *build-ext-template
 
       - run:
           name: doctest
