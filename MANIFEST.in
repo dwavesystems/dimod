@@ -1,1 +1,3 @@
 include dimod/io/bqm_json_schema.json
+recursive-include dimod/roof_duality/src *.hpp *.cpp
+recursive-include dimod/roof_duality *.cpp *.pyx
