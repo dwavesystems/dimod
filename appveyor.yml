@@ -19,7 +19,12 @@ install:
   - "%PYTHON%\\python.exe --version"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
 
-build: off
+  # for python34-x64
+  - echo "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 > "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64/vcvars64.bat"
+
+build_script:
+  # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
+  - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
 
 test_script:
   - "%PYTHON%\\python.exe -m unittest discover"

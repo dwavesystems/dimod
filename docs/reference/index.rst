@@ -14,6 +14,7 @@ Reference Documentation
    ref_samplers_composites
    response
    vartypes
+   bqm_functions
    embedding
    exceptions
    utilities

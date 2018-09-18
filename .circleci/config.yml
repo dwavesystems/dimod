@@ -10,6 +10,11 @@ jobs:
 
       - checkout
 
+      - run: &install-boost-linux-template
+          name: install boost
+          command: |
+            sudo apt-get install libboost-dev
+
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
@@ -30,7 +35,13 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-        
+
+      - run: &build-ext-template
+          name: build extension
+          command: |
+            . env/bin/activate
+            python setup.py build_ext --inplace
+
       - run: &run-tests-template
           name: run unittests
           command: |
@@ -81,6 +92,11 @@ jobs:
           command: |
             brew install pyenv
 
+      - run: 
+          name: install boost
+          command: |
+            brew install boost
+
       - restore_cache:
           keys:
             - pyenv-{{ .Environment.CIRCLE_JOB }}
@@ -113,6 +129,8 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *build-ext-template
         
       - run: *run-tests-template
 
@@ -200,6 +218,8 @@ jobs:
     steps:
       - checkout
 
+      - run: *install-boost-linux-template
+
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
@@ -209,11 +229,12 @@ jobs:
           command: |
             python -m virtualenv env
 
+      - run: *install-dependencies-template
+
       - run:
-          name: install sphinx and dependencies
+          name: install sphinx
           command: |
             . env/bin/activate
-            pip install -r requirements.txt
             pip install sphinx
             pip install sphinx_rtd_theme
 
@@ -221,6 +242,8 @@ jobs:
           paths:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+
+      - run: *build-ext-template
 
       - run:
           name: doctest
