@@ -8,6 +8,8 @@ networkx==2.0
 pandas; python_version!="3.4"
 mock==2.0.0
 
+cython
+
 pymongo==3.7.1
 
 coverage
