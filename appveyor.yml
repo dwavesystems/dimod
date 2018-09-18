@@ -1,5 +1,10 @@
 environment:
 
+  # PyPI login
+  username: dwtools-ci
+  password:
+    secure: ImmjKZE9iYNMYj7qKREpbQ==
+
   matrix:
 
     # https://www.appveyor.com/docs/build-environment/#python
@@ -28,3 +33,12 @@ build_script:
 
 test_script:
   - "%PYTHON%\\python.exe -m unittest discover"
+
+deploy_script:
+  - "%PYTHON%\\python.exe -m pip install twine"
+  - "%PYTHON%\\python.exe -m pip install wheel"  
+  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+  - "echo [pypi] > %USERPROFILE%\\.pypirc"
+  - "echo username: %username% >> %USERPROFILE%\\.pypirc"
+  - "echo password: %password% >> %USERPROFILE%\\.pypirc"
+  - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] if NOT [%CPPDEBUG%]==[1] %PYTHON%\\Scripts\\twine upload --skip-existing dist\\*.whl"
