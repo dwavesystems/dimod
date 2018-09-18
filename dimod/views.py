@@ -74,6 +74,8 @@ class IndexView(Mapping):
     __slots__ = '_variables', '_data'
 
     def __init__(self, variables, data):
+        if len(variables) != len(data):
+            raise ValueError("variables and data should match")
         self._variables = variables
         self._data = data
 
