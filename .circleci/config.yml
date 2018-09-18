@@ -92,7 +92,7 @@ jobs:
           command: |
             brew install pyenv
 
-      - run: 
+      - run: &install-boost-osx-template
           name: install boost
           command: |
             brew install boost
@@ -158,57 +158,6 @@ jobs:
       PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-
-  deploy:
-    docker:
-      - image: circleci/python:3.6-jessie
-
-    working_directory: ~/repo
-
-    steps:
-      - checkout
-
-      - run:
-          name: create virtualenv
-          command: |
-            python -m virtualenv env
-
-      - run: *install-dependencies-template
-
-      - run:
-          name: install twine
-          command: |
-            . env/bin/activate
-            pip install twine
-
-      - run:
-          name: verify version matches tag
-          command: |
-            . env/bin/activate
-            pip install .
-            echo $CIRCLE_TAG
-            [[ "$(pip show dimod 2>/dev/null | grep Version)" == "Version: $CIRCLE_TAG" ]]
-
-      - run:
-          name: init .pypirc
-          command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = dwtools-ci" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
-
-      - run:
-          name: build sdist and bdist
-          command: |
-            . env/bin/activate
-            python setup.py sdist
-            python setup.py bdist_wheel
-
-      - run:
-          name: upload
-          command: |
-            . env/bin/activate
-            twine upload dist/*
-
   test-doctest:
     docker:
       - image: circleci/python:3.5-jessie
@@ -251,6 +200,152 @@ jobs:
             . env/bin/activate
             make -C docs/ doctest
 
+##################################################################################################
+# Deploy
+##################################################################################################
+
+  deploy-manylinux-64: &manylinux-deploy-template
+    docker:
+      - image: quay.io/pypa/manylinux1_x86_64
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: install boost
+          command: |
+            yum install -y boost-devel
+
+      - run:
+          name: build wheels
+          command: |
+            for PYBIN in /opt/python/*/bin; do
+              "${PYBIN}/pip" install -r requirements.txt
+              "${PYBIN}/pip" wheel . -w ./wheelhouse
+              "${PYBIN}/python" setup.py sdist -d ./dist
+            done
+
+      - run:
+          name: bundle shared libraries into wheels
+          command: |
+            for whl in ./wheelhouse/dimod*.whl; do
+              auditwheel repair "$whl" -w ./dist
+            done
+
+      - store_artifacts:
+          path: ./dist
+
+      - run: &init-pypirc-template
+          name: init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+
+      - run:
+          name: create a virtualenv
+          command: |
+            pythons=(/opt/python/*/bin)
+            python="${pythons[0]}"
+            "$python/pip" install virtualenv
+            "$python/python" -m virtualenv env
+
+      - run: &upload-template
+          name: install twine and deploy
+          command: |
+            . env/bin/activate
+            python -m pip install twine
+            twine upload --skip-existing ./dist/*
+
+  deploy-manylinux-32:
+    <<: *manylinux-deploy-template
+    docker:
+      - image: quay.io/pypa/manylinux1_i686
+
+  deploy-osx-3.7: &osx-deploy-template
+    macos:
+      xcode: "9.4.1"
+    environment:
+      PYTHON: 3.7.0
+      # HOMEBREW_NO_AUTO_UPDATE: 1  # for 3.7 we need to update homebrew
+
+    working_directory: ~/repo
+
+    steps: 
+      - checkout
+
+      - run: 
+          name: install pyenv
+          command: |
+            brew install pyenv
+
+      - run: *install-boost-osx-template
+
+      - restore_cache:
+          keys:
+            - pyenv-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: install python
+          command: |
+            pyenv install $PYTHON -s
+
+      - save_cache:
+          paths:
+            - ~/.pyenv
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: create virtualenv
+          command: |
+            eval "$(pyenv init -)"
+            pyenv local $PYTHON
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run: *install-dependencies-template
+
+      - run: *build-ext-template
+        
+      - run:
+          name: create bdist_wheel
+          command: |
+            . env/bin/activate
+            python setup.py bdist_wheel
+
+      - store_artifacts:
+          path: ./dist
+
+      - run: *init-pypirc-template
+
+      - run: *upload-template
+
+  deploy-osx-3.6:
+    <<: *osx-deploy-template
+    environment:
+      PYTHON: 3.6.5
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
+  deploy-osx-3.5:
+    <<: *osx-deploy-template
+    environment:
+      PYTHON: 3.5.5
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
+  deploy-osx-3.4:
+    <<: *osx-deploy-template
+    environment:
+      PYTHON: 3.4.8
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
+  deploy-osx-2.7:
+    <<: *osx-deploy-template
+    environment:
+      PYTHON: 2.7.15
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
 workflows:
   version: 2
   tests:
@@ -266,7 +361,45 @@ workflows:
       - test-osx-3.4
       - test-osx-2.7
       - test-doctest
-      - deploy:
+  deploy:
+    jobs:
+      - deploy-manylinux-64:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-manylinux-32:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-3.7:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-3.6:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-3.5:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-3.4:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-2.7:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
