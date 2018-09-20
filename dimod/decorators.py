@@ -15,6 +15,9 @@
 # ================================================================================================
 
 import inspect
+import itertools
+
+from collections import Sequence
 from functools import wraps
 
 from six import iteritems
@@ -176,3 +179,59 @@ def vartype_argument(*arg_names):
         return new_f
 
     return _vartype_arg
+
+
+def graph_argument(*arg_names):
+    # by default, constrain only one argument, the 'G`
+    if not arg_names:
+        arg_names = ['G']
+
+    def _graph_arg(f):
+        argspec = getargspec(f)
+
+        def _enforce_single_arg(name, args, kwargs):
+            try:
+                G = kwargs[name]
+            except KeyError:
+                raise TypeError('Graph argument missing')
+
+            if hasattr(G, 'edges') and hasattr(G, 'nodes'):
+                # networkx or perhaps a named tuple
+                kwargs[name] = (list(G.nodes), list(G.edges))
+
+            elif isinstance(G, int):
+                # an integer, cast to a complete graph
+                kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
+
+            elif isinstance(G, Sequence) and len(G) == 2:
+                # is a pair nodes/edges
+                if isinstance(G[0], int):
+                    # if nodes is an int
+                    kwargs[name] = (list(range(G[0])), G[1])
+
+            else:
+                raise ValueError()
+
+            return
+
+        @wraps(f)
+        def new_f(*args, **kwargs):
+            # bound actual f arguments (including defaults) to f argument names
+            # (note: if call arguments don't match actual function signature,
+            # we'll fail here with the standard `TypeError`)
+            bound_args = inspect.getcallargs(f, *args, **kwargs)
+
+            # `getcallargs` doesn't merge additional positional/keyword arguments,
+            # so do it manually
+            final_args = list(bound_args.pop(argspec.varargs, ()))
+            final_kwargs = bound_args.pop(argspec.keywords, {})
+
+            final_kwargs.update(bound_args)
+            for name in arg_names:
+                _enforce_single_arg(name, final_args, final_kwargs)
+
+            return f(*final_args, **final_kwargs)
+
+        return new_f
+
+    return _graph_arg
