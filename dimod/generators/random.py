@@ -1,0 +1,76 @@
+import random
+
+import numpy as np
+
+from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.decorators import graph_argument
+
+__all__ = ['uniform', 'randint']
+
+
+@graph_argument('graph')
+def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
+    """Generate a bqm with random biases and offset.
+
+    Biases and offset are drawn from a uniform distribution range (low, high).
+
+    Args:
+        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
+            The graph to build the frustrated loops on. Either an integer n, interpreted as a
+            complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        low (float, optional, default=0.0):
+            The low end of the range for the random biases.
+
+        high (float, optional, default=1.0):
+            The high end of the range for the random biases.
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+    """
+    nodes, edges = graph
+    return cls(((n, random.uniform(low, high)) for n in nodes),
+               ((u, v, random.uniform(low, high)) for u, v in edges),
+               random.uniform(low, high),
+               vartype)
+
+
+@graph_argument('graph')
+def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
+    """Generate a bqm with random biases and offset.
+
+    Biases and offset are integer-valued in range [low, high] inclusive.
+
+    Args:
+        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
+            The graph to build the frustrated loops on. Either an integer n, interpreted as a
+            complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        low (float, optional, default=0):
+            The low end of the range for the random biases.
+
+        high (float, optional, default=1):
+            The high end of the range for the random biases.
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+    """
+    nodes, edges = graph
+    return cls(((n, random.randint(low, high)) for n in nodes),
+               ((u, v, random.randint(low, high)) for u, v in edges),
+               0.0,
+               vartype)

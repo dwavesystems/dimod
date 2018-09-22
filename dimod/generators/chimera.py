@@ -1,52 +1,83 @@
-import numpy as np
+import random
 
-from ezdw import chimera
+from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.vartypes import SPIN
+
+__all__ = ['chimera_anticluster']
 
 
-def generate_random_problem(edges, k, random):
+def chimera_anticluster(m, n=None, t=4, multiplier=3.0, cls=BinaryQuadraticModel):
+    """Generate an anticluster problem on a Chimera lattice.
+
+    An anticluster problem has weak interactions within a tile and strong interactions outside.
+
+    Args:
+        m (int):
+            Number of rows in the Chimera lattice.
+
+        n (int, optional, default=m):
+            Number of columns in the Chimera lattice.
+
+        t (int, optiona, default=t):
+            Size of the shore within each Chimera tile.
+
+        multiplier (number):
+            Strength of the intertile edges.
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`: spin-valued binary quadratic model.
+
     """
-    A random problem has zero fields, and couplers chosen uniformly at random in {-k, -k+1, ..., -1, 1, ..., k}
-    if `k` is finite, else [-1, 1].
-    :param edges: the (Chimera) edges for which coupler values are provided.
-    :param k: a non-negative integer, possibly infinite precision for the coupler values.
-    :param random: the random state used for sampling.
-    :return: a random problem.
-    """
-    assert k > 0
-    if np.isinf(k):
-
-        def value_factory(): return random.uniform(-1, 1)
+    m = int(m)
+    if n is None:
+        n = m
     else:
-        assert np.equal(np.mod(k, 1), 0), 'Finite precision must be integral.'
-        values = np.arange(-k, k + 1)
-        values = np.delete(values, k)  # Remove the 0 value.
+        n = int(n)
+    t = int(t)
 
-        def value_factory(): return random.choice(values)
-    J = {coupler: value_factory() for coupler in edges}
-    return J
+    # only defined for Ising problems
+    linear = {}
+
+    quadratic = {edge: random.choice((-1., 1.)) for edge in _iter_chimera_tile_edges(m, n, t)}
+    quadratic.update({edge: multiplier*random.choice((-1., 1.)) for edge in _iter_chimera_intertile_edges(m, n, t)})
+
+    return cls(linear, quadratic, 0.0, SPIN)
 
 
-def generate_anticluster_problem(edges, k, random, dims=None):
-    """
-    An anticluster problem has zero fields, inter-cell couplers chosen uniformly at random from {-k, k}, and
-    intra-cell couplers chosen uniformly at random from {-1, 1}.
-    :param edges: the (Chimera) edges for which coupler values are provided.
-    :param k: a non-negative, integer precision for the inter-cell coupler values.
-    :param random: the random state used for sampling.
-    :param dims: Chimera dimensions tuple (see arguments to `ezdw.chimera.get_chimera_dimensions`). If
-        `None`, smallest square MxMx4 Chimera graph is inferred from edges.
-    :return: an anticluster problem.
-    """
-    assert k > 0
-    assert not np.isinf(k)
-    assert np.equal(np.mod(k, 1), 0), 'Precision must be integral.'
-    if dims is None:
-        n = max(i for e in edges for i in e)+1
-        dims = (chimera.get_min_square_chimera_dimensions(n),)
-    J = {}
-    for lu, lv in edges:
-        cu, cv = chimera.ltoc(lu, *dims), chimera.ltoc(lv, *dims)
-        assert chimera.is_edge(cu, cv)
-        jj = k if chimera.is_intercell_edge(cu, cv) else 1
-        J[lu, lv] = random.choice([-jj, jj])
-    return J
+def _iter_chimera_tile_edges(m, n, t):
+    hoff = 2 * t
+    voff = n * hoff
+    mi = m * voff
+    ni = n * hoff
+
+    # tile edges
+    for edge in ((k0, k1)
+                 for i in range(0, ni, hoff)
+                 for j in range(i, mi, voff)
+                 for k0 in range(j, j + t)
+                 for k1 in range(j + t, j + 2 * t)):
+        yield edge
+
+
+def _iter_chimera_intertile_edges(m, n, t):
+    hoff = 2 * t
+    voff = n * hoff
+    mi = m * voff
+    ni = n * hoff
+
+    # horizontal edges
+    for edge in ((k, k + hoff)
+                 for i in range(t, 2 * t)
+                 for j in range(i, ni - hoff, hoff)
+                 for k in range(j, mi, voff)):
+        yield edge
+
+    # vertical edges
+    for edge in ((k, k + voff)
+                 for i in range(t)
+                 for j in range(i, ni, hoff)
+                 for k in range(j, mi - voff, voff)):
+        yield edge
