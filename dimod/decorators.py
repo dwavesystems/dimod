@@ -209,8 +209,12 @@ def graph_argument(*arg_names):
                     # if nodes is an int
                     kwargs[name] = (list(range(G[0])), G[1])
 
+            elif isinstance(G, float) and G.is_integer():
+                G = int(G)
+                kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
+
             else:
-                raise ValueError()
+                raise ValueError('Unexpected graph input form')
 
             return
 

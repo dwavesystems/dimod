@@ -13,9 +13,9 @@
 #    limitations under the License.
 #
 # ================================================================================================
-import random
+from __future__ import absolute_import
 
-import numpy as np
+import random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
