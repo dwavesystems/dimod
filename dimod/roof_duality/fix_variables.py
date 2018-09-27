@@ -13,8 +13,12 @@
 #    limitations under the License.
 #
 # ================================================================================================
-from dimod.roof_duality._fix_variables import fix_variables_wrapper
 from dimod.vartypes import Vartype
+
+try:
+    from dimod.roof_duality._fix_variables import fix_variables_wrapper
+except ImportError:
+    raise ImportError("c++ extension roof_duality is not built")
 
 
 def fix_variables(bqm, sampling_mode=True):
@@ -64,6 +68,7 @@ def fix_variables(bqm, sampling_mode=True):
         (2002), pp. 155-225
 
     """
+
     if sampling_mode:
         method = 2  # roof-duality only
     else:
