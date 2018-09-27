@@ -15,10 +15,19 @@
 # ================================================================================================
 
 import unittest
+import itertools
+
 from operator import itemgetter
 
+try:
+    import networkx as nx
+except ImportError:
+    _networkx = False
+else:
+    _networkx = True
+
 from dimod.vartypes import SPIN, BINARY
-from dimod.decorators import vartype_argument
+from dimod.decorators import vartype_argument, graph_argument
 
 
 class TestVartypeArgument(unittest.TestCase):
@@ -102,3 +111,66 @@ class TestVartypeArgument(unittest.TestCase):
         self.assertEqual(f(), SPIN)
         self.assertEqual(f('BINARY'), BINARY)
         self.assertEqual(f(vartype='BINARY'), BINARY)
+
+
+class TestGraphArgument(unittest.TestCase):
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_networkx_graph(self):
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        G = nx.complete_graph(3)
+
+        nodes, edges = f(G)
+
+        for n in nodes:
+            self.assertIn(n, G.nodes)
+        for edge in edges:
+            self.assertIn(edge, G.edges)
+
+    def test_nodelist_edgelist(self):
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        nodelist, edgelist = ([0, 1, 2, 3, 4],
+                              [(0, 1), (2, 3), (0, 2)])
+
+        nodes, edges = f((nodelist, edgelist))
+
+        self.assertIs(nodes, nodelist)
+        self.assertIs(edges, edgelist)
+
+        for n in nodes:
+            self.assertIn(n, nodelist)
+        for edge in edges:
+            self.assertIn(edge, edgelist)
+
+    def test_complete_number(self):
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        nodes, edges = f(5)
+
+        self.assertEqual(nodes, list(range(5)))
+        for u, v in itertools.combinations(range(5), 2):
+            self.assertTrue((u, v) in edges or (v, u) in edges)
+
+    def test_nodelist_edgelist(self):
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        N, edgelist = (5,
+                       [(0, 1), (2, 3), (0, 2)])
+
+        nodes, edges = f((N, edgelist))
+
+        self.assertIs(edges, edgelist)
+
+        for n in nodes:
+            self.assertIn(n, range(N))
+        for edge in edges:
+            self.assertIn(edge, edgelist)

@@ -35,6 +35,8 @@ import dimod.decorators
 from dimod.embedding import embed_bqm, embed_ising, embed_qubo, chain_break_frequency, unembed_response
 import dimod.embedding
 
+import dimod.generators
+
 from dimod.exceptions import *
 import dimod.exceptions
 
