@@ -22,7 +22,10 @@ import dimod.core
 from dimod.reference import *
 import dimod.reference
 
-from dimod.roof_duality import *
+try:
+    from dimod.roof_duality import *
+except ImportError:
+    pass
 
 import dimod.testing
 
