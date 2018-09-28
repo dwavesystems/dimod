@@ -31,7 +31,7 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
 
     Args:
         graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the frustrated loops on. Either an integer n, interpreted as a
+            The graph to build the bqm loops on. Either an integer n, interpreted as a
             complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
@@ -65,7 +65,7 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
 
     Args:
         graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the frustrated loops on. Either an integer n, interpreted as a
+            The graph to build the bqm loops on. Either an integer n, interpreted as a
             complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
