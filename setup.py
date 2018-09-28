@@ -21,6 +21,8 @@ import os
 
 from setuptools import setup
 from distutils.extension import Extension
+from distutils.command.build_ext import build_ext
+from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
 # add __version__, __author__, __authoremail__, __description__ to this namespace
 _PY2 = sys.version_info.major == 2
@@ -84,22 +86,84 @@ if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions)
 
-setup(
-    name='dimod',
-    version=__version__,
-    author=__author__,
-    author_email=__authoremail__,
-    description=__description__,
-    long_description=open('README.rst').read(),
-    url='https://github.com/dwavesystems/dimod',
-    download_url='https://github.com/dwavesystems/dimod/releases',
-    license='Apache 2.0',
-    ext_modules=extensions,
-    packages=packages,
-    install_requires=install_requires,
-    extras_require=extras_require,
-    include_package_data=True,
-    classifiers=classifiers,
-    zip_safe=False,
-    python_requires=python_requires
-)
+###############################################################################
+# The following code to fail gracefully when when c++ extensions cannot be
+# built is adapted from the simplejson library under the MIT License
+#
+# MIT License
+# ===========
+#
+# Copyright (c) 2006 Bob Ippolito
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+
+class BuildFailed(Exception):
+    pass
+
+
+class ve_build_ext(build_ext):
+    # This class allows C extension building to fail.
+
+    def run(self):
+        try:
+            build_ext.run(self)
+        except DistutilsPlatformError:
+            raise BuildFailed()
+
+    def build_extension(self, ext):
+        try:
+            build_ext.build_extension(self, ext)
+        except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
+            raise BuildFailed()
+
+
+def run_setup(cpp):
+    if cpp:
+        kw = dict(cmdclass=dict(build_ext=ve_build_ext), ext_modules=extensions)
+    else:
+        kw = {}
+
+    setup(
+        name='dimod',
+        version=__version__,
+        author=__author__,
+        author_email=__authoremail__,
+        description=__description__,
+        long_description=open('README.rst').read(),
+        url='https://github.com/dwavesystems/dimod',
+        download_url='https://github.com/dwavesystems/dimod/releases',
+        license='Apache 2.0',
+        packages=packages,
+        install_requires=install_requires,
+        extras_require=extras_require,
+        include_package_data=True,
+        classifiers=classifiers,
+        zip_safe=False,
+        python_requires=python_requires,
+        **kw
+    )
+
+
+try:
+    run_setup(cpp=True)
+except BuildFailed:
+    print("building c++ extensions failed, trying to build without")
+    run_setup(cpp=False)

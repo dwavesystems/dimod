@@ -167,8 +167,6 @@ jobs:
     steps:
       - checkout
 
-      - run: *install-boost-linux-template
-
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
