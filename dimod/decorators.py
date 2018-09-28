@@ -19,8 +19,9 @@ import itertools
 
 from collections import Sequence
 from functools import wraps
+from numbers import Integral
 
-from six import iteritems
+from six import iteritems, integer_types
 
 from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
@@ -199,13 +200,13 @@ def graph_argument(*arg_names):
                 # networkx or perhaps a named tuple
                 kwargs[name] = (list(G.nodes), list(G.edges))
 
-            elif isinstance(G, int):
+            elif isinstance(G, integer_types):
                 # an integer, cast to a complete graph
                 kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
 
             elif isinstance(G, Sequence) and len(G) == 2:
                 # is a pair nodes/edges
-                if isinstance(G[0], int):
+                if isinstance(G[0], integer_types):
                     # if nodes is an int
                     kwargs[name] = (list(range(G[0])), G[1])
 
