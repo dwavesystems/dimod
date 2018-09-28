@@ -29,6 +29,8 @@ Higher-order Polynomials
 Roof-duality
 ============
 
+.. currentmodule:: dimod.roof_duality
+
 .. autosummary::
    :toctree: generated/
 
