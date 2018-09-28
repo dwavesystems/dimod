@@ -23,9 +23,13 @@ from dimod.reference import *
 import dimod.reference
 
 try:
-    from dimod.roof_duality import *
+    import dimod.roof_duality._fix_variables as _
 except ImportError:
     pass
+else:
+    # we only import fix_variables function into the top level namespace if the c++ extension
+    # is built
+    from dimod.roof_duality import *
 
 import dimod.testing
 
