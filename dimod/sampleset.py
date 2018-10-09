@@ -13,6 +13,14 @@
 #    limitations under the License.
 #
 # ================================================================================================
+"""
+Samples can be provided in many forms, referred generally to as samples_like. This is an extension
+of NumPy's array_like_ to allow for arbitrary variable labels.
+
+.. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-
+    like-objects-to-numpy-arrays
+
+"""
 from collections import Iterable, Sized, Mapping, Iterator
 from collections import namedtuple
 
@@ -23,7 +31,117 @@ from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 from dimod.views import VariableIndexView, SampleView
 
-__all__ = ['SampleSet']
+__all__ = 'SampleSet', 'as_samples'
+
+
+def as_samples(samples_like, dtype=None):
+    """Convert samples_like into a NumPy array and list of labels.
+
+    Args:
+        samples_like (samples_like):
+            A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+            See examples.
+
+        dtype (data-type, optional):
+            The desired dtype for the returned samples array. If not provided, it is derived from
+            samples_like if samples_like has a dtype, otherwise :class:`numpy.int8` is used.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            :obj:`numpy.ndarray`: The samples.
+
+            list: The variable labels as a list.
+
+    Examples:
+        samples_like can be many things:
+
+        NumPy arrays
+
+        >>> dimod.as_samples(np.ones(5, dtype='int8'))
+        (array([[1, 1, 1, 1, 1]], dtype=int8), [0, 1, 2, 3, 4])
+        >>> dimod.as_samples(np.zeros((5, 2), dtype='int8'))
+        (array([[0, 0],
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [0, 0]], dtype=int8), [0, 1])
+
+        Lists
+
+        >>> dimod.as_samples([-1, +1, -1])
+        (array([[-1,  1, -1]], dtype=int8), [0, 1, 2])
+        >>> dimod.as_samples([[-1], [+1], [-1]])
+        (array([[-1],
+                [ 1],
+                [-1]], dtype=int8), [0])
+
+        Dicts
+
+        >>> dimod.as_samples({'a': 0, 'b': 1, 'c': 0}) # doctest: +SKIP
+        (array([[0, 1, 0]], dtype=int8), ['a', 'b', 'c'])
+        >>> dimod.as_samples([{'a': -1, 'b': +1}, {'a': 1, 'b': 1}]) # doctest: +SKIP
+        (array([[-1,  1],
+                [ 1,  1]], dtype=int8), ['a', 'b'])
+
+        A 2-tuple containing an array_like and a list of labels
+
+        >>> dimod.as_samples(([-1, +1, -1], ['a', 'b', 'c']))
+        (array([[-1,  1, -1]], dtype=int8), ['a', 'b', 'c'])
+        >>> dimod.as_samples((np.zeros((5, 2), dtype='int8'), ['in', 'out']))
+        (array([[0, 0],
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [0, 0]], dtype=int8), ['in', 'out'])
+
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-
+        array-like-objects-to-numpy-arrays
+
+    """
+
+    if isinstance(samples_like, Iterator):
+        raise TypeError('samples_like cannot be an iterator')
+
+    if isinstance(samples_like, tuple) and len(samples_like) == 2:
+        # (samples_like, labels)
+        samples_like, labels = samples_like
+
+        samples, __ = as_samples(samples_like)
+
+        labels = list(labels)  # coerce and/or shallow copy
+
+        if len(labels) != samples.shape[1]:
+            raise ValueError("labels and samples_like dimensions do not match")
+
+        return samples, labels
+
+    if isinstance(samples_like, Mapping):
+        return as_samples([samples_like], dtype=dtype)
+
+    if isinstance(samples_like, Iterable) and all(isinstance(sample, Mapping) for sample in samples_like):
+        # list of dicts
+        return _samples_dicts_to_array(samples_like)
+
+    # anything else should be array_like, which covers ndarrays, lists of lists, etc
+
+    # if no ` is specified and the array_like doesn't already have a dtype, we default to int8
+    if dtype is None and not hasattr(samples_like, 'dtype'):
+        dtype = np.int8
+
+    try:
+        samples_like = np.asarray(samples_like, dtype=dtype)
+    except (ValueError, TypeError):
+        raise TypeError("unknown format for samples_like")
+
+    # want 2D array
+    if samples_like.ndim == 1:
+        samples_like = np.expand_dims(samples_like, 0)
+    elif samples_like.ndim > 2:
+        ValueError("expected sample_like to be <= 2 dimensions")
+
+    return samples_like, list(range(samples_like.shape[1]))
 
 
 class SampleSet(Iterable, Sized):
@@ -67,8 +185,35 @@ class SampleSet(Iterable, Sized):
         self._vartype = vartype
 
     @classmethod
-    def from_samples(cls, samples_like, vartype, info=None,
-                     energy=None, num_occurrences=None, **kwargs):
+    def from_samples(cls, samples_like, vartype, energy,
+                     info=None,
+                     num_occurrences=None, **vectors):
+        """Build a SampleSet from raw samples.
+
+        Args:
+            samples_like:
+                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+                See :func:`.as_samples`.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the sample set. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            energy (array_like):
+                A vector of energies.
+
+            info (dict, optional):
+                Information about the sample set as a whole formatted as a dict.
+
+            num_occurrences (array_like, optional):
+                Number of occurences for each sample. If not provided, defaults to a vector of 1s.
+
+            **vectors (array_like):
+                Other per-sample data.
+
+        """
 
         # get the samples, variable labels
         samples, variables = as_samples(samples_like)
@@ -87,8 +232,8 @@ class SampleSet(Iterable, Sized):
         datatypes = [('sample', samples.dtype, (num_variables,)),
                      ('energy', energy.dtype),
                      ('num_occurrences', num_occurrences.dtype)]
-        for key, vector in kwargs.items():
-            kwargs[key] = vector = np.asarray(vector)
+        for key, vector in vectors.items():
+            vectors[key] = vector = np.asarray(vector)
 
             if len(vector.shape) < 1 or vector.shape[0] != num_samples:
                 msg = ('{} and sample have a mismatched shape {}, {}. They must have the same size '
@@ -101,8 +246,8 @@ class SampleSet(Iterable, Sized):
         record['sample'] = samples
         record['energy'] = energy
         record['num_occurrences'] = num_occurrences
-        for kwarg, vector in kwargs.items():
-            record[kwargs] = vector
+        for key, vector in vectors.items():
+            record[key] = vector
 
         if info is None:
             info = {}
@@ -540,48 +685,6 @@ class SampleSet(Iterable, Sized):
 
         self._variables = VariableIndexView(mapping.get(v, v) for v in self.variable_labels)
         return self
-
-
-def as_samples(samples_like, dtype=None):
-
-    if isinstance(samples_like, tuple) and len(samples_like) == 2:
-        # (samples_like, labels)
-        samples_like, labels = samples_like
-
-        samples, __ = as_samples(samples_like)
-
-        labels = list(labels)  # coerce and/or shallow copy
-
-        if len(labels) != samples.shape[1]:
-            raise ValueError("labels and samples_like dimensions do not match")
-
-        return samples, labels
-
-    if isinstance(samples_like, Iterator):
-        raise TypeError('samples_like cannot be an iterator')
-
-    if isinstance(samples_like, Iterable) and all(isinstance(sample, Mapping) for sample in samples_like):
-        # list of dicts
-        return _samples_dicts_to_array(samples_like)
-
-    # anything else should be array_like, which covers ndarrays, lists of lists, etc
-
-    # if no dtype is specified and the array_like doesn't already have a dtype, we default to int8
-    if dtype is None and not hasattr(samples_like, 'dtype'):
-        dtype = np.int8
-
-    try:
-        samples_like = np.asarray(samples_like, dtype=dtype)
-    except (ValueError, TypeError):
-        raise TypeError("unknown format for samples_like")
-
-    # want 2D array
-    if samples_like.ndim == 1:
-        samples_like = np.expand_dims(samples_like, 0)
-    elif samples_like.ndim > 2:
-        ValueError("expected sample_like to be <= 2 dimensions")
-
-    return samples_like, list(range(samples_like.shape[1]))
 
 
 def _samples_dicts_to_array(samples_dicts):

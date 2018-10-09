@@ -1,10 +1,15 @@
 .. _sampleset:
 
+.. automodule:: dimod.sampleset
+
+.. autosummary::
+   :toctree: generated/
+
+   as_samples
+
 =========
 SampleSet
 =========
-
-.. automodule:: dimod.sampleset
 
 Class
 =====

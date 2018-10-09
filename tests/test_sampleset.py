@@ -47,6 +47,17 @@ class TestSampleSet(unittest.TestCase):
         # all should be the same
         self.assertEqual(sample_sets[1:], sample_sets[:-1])
 
+    def test_from_samples_single_sample(self):
+        ss0 = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=1.0)
+        ss1 = dimod.SampleSet.from_samples({'a': -1, 'b': +1}, dimod.SPIN, energy=1.0)
+
+        self.assertEqual(ss0, ss1)
+
+        ss2 = dimod.SampleSet.from_samples([-1, +1], dimod.SPIN, energy=1.0)
+        ss3 = dimod.SampleSet.from_samples({0: -1, 1: +1}, dimod.SPIN, energy=1.0)
+
+        self.assertEqual(ss2, ss3)
+
     def test_from_samples_iterator(self):
         ss0 = dimod.SampleSet.from_samples(np.ones((100, 5), dtype='int8'), dimod.BINARY, energy=np.ones(100))
 
