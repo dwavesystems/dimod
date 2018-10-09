@@ -57,7 +57,10 @@ class VariableIndexView(Sequence, Container):
 
     def index(self, v):
         # we can speed this up because we're keeping a dict
-        return self._index[v]
+        try:
+            return self._index[v]
+        except KeyError:
+            raise ValueError('{!r} is not in VariableIndexView'.format(v))
 
     def count(self, v):
         # everything is unique

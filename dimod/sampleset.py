@@ -192,9 +192,29 @@ class SampleSet(Iterable, Sized):
         if not isinstance(other, SampleSet):
             return False
 
-        return (self.vartype == other.vartype and self.info == other.info
-                and self.variables == other.variables
-                and all(self.record == other.record))
+        if self.vartype != other.vartype or self.info != other.info:
+            return False
+
+        # check that all the fields match in record, order doesn't matter
+        if self.record.dtype.fields != other.record.dtype.fields:
+            return False
+        for field in self.record.dtype.fields:
+            if field == 'sample':
+                continue
+            if not (self.record[field] == other.record[field]).all():
+                return False
+
+        # now check the actual samples.
+        if self.variables == other.variables:
+            return (self.record.sample == other.record.sample).all()
+
+        try:
+            other_idx = [other.variables.index(v) for v in self.variables]
+        except ValueError:
+            # mismatched variables
+            return False
+
+        return (self.record.sample == other.record.sample[:, other_idx]).all()
 
     def __repr__(self):
         return "{}({!r}, {}, {}, {!r})".format(self.__class__.__name__,
@@ -202,7 +222,6 @@ class SampleSet(Iterable, Sized):
                                                self.variables,
                                                self.info,
                                                self.vartype.name)
-
 
     ###############################################################################################
     # Properties
