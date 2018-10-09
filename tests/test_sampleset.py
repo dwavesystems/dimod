@@ -47,7 +47,13 @@ class TestSampleSet(unittest.TestCase):
         # all should be the same
         self.assertEqual(sample_sets[1:], sample_sets[:-1])
 
-    # def test_from_samples_single_sample(self):
-    #     samples = dimod.SampleSet.from_samples([-1, 1, -1], dimod.SPIN, energy=.5)
+    def test_eq_ordered(self):
+        # samplesets should be equal regardless of variable order
+        ss0 = dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0)
+        ss1 = dimod.SampleSet.from_samples(([1, -1], 'ba'), dimod.SPIN, energy=0.0)
+        ss2 = dimod.SampleSet.from_samples(([1, -1], 'ab'), dimod.SPIN, energy=0.0)
+        ss3 = dimod.SampleSet.from_samples(([1, -1], 'ac'), dimod.SPIN, energy=0.0)
 
-    #     print(samples)
+        self.assertEqual(ss0, ss1)
+        self.assertNotEqual(ss0, ss2)
+        self.assertNotEqual(ss1, ss3)
