@@ -563,7 +563,7 @@ def as_samples(samples_like, dtype=None):
 
     if isinstance(samples_like, Iterable) and all(isinstance(sample, Mapping) for sample in samples_like):
         # list of dicts
-        return _samples_dicts_to_array(samples_like, None)
+        return _samples_dicts_to_array(samples_like)
 
     # anything else should be array_like, which covers ndarrays, lists of lists, etc
 
@@ -585,7 +585,7 @@ def as_samples(samples_like, dtype=None):
     return samples_like, list(range(samples_like.shape[1]))
 
 
-def _samples_dicts_to_array(samples_dicts, labels):
+def _samples_dicts_to_array(samples_dicts):
     """Convert an iterable of samples where each sample is a dict to a numpy 2d array. Also
     determines the labels is they are None.
     """
@@ -593,8 +593,7 @@ def _samples_dicts_to_array(samples_dicts, labels):
 
     first_sample = next(itersamples)
 
-    if labels is None:
-        labels = list(first_sample)
+    labels = list(first_sample)
 
     num_variables = len(labels)
 
