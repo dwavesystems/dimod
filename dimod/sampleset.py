@@ -13,7 +13,7 @@
 #    limitations under the License.
 #
 # ================================================================================================
-from collections import Iterable, Sized, Mapping
+from collections import Iterable, Sized, Mapping, Iterator
 from collections import namedtuple
 
 import numpy as np
@@ -557,6 +557,9 @@ def as_samples(samples_like, dtype=None):
             raise ValueError("labels and samples_like dimensions do not match")
 
         return samples, labels
+
+    if isinstance(samples_like, Iterator):
+        raise TypeError('samples_like cannot be an iterator')
 
     if isinstance(samples_like, Iterable) and all(isinstance(sample, Mapping) for sample in samples_like):
         # list of dicts
