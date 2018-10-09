@@ -48,9 +48,13 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(sample_sets[1:], sample_sets[:-1])
 
     def test_from_samples_iterator(self):
-        ss0 = dimod.SampleSet.from_samples(np.ones((100, 5), dtype=np.int8), dimod.BINARY, energy=np.ones(100))
+        ss0 = dimod.SampleSet.from_samples(np.ones((100, 5), dtype='int8'), dimod.BINARY, energy=np.ones(100))
 
         # ss0.samples() is an iterator, so let's just use that
+        with self.assertRaises(TypeError):
+            dimod.SampleSet.from_samples(ss0.samples(), dimod.BINARY, energy=ss0.record.energy)
+
+        # should work for iterable
         ss1 = dimod.SampleSet.from_samples(list(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)
 
         self.assertEqual(len(ss0), len(ss1))
