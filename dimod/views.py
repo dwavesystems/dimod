@@ -43,7 +43,7 @@ class VariableIndexView(Sequence, Container):
         return len(self._label)
 
     def __repr__(self):
-        return 'VariableIndexView({})'.format(self._label)
+        return '{}({})'.format(self.__class__.__name__, self._label)
 
     def __str__(self):
         return str(self._label)
@@ -60,7 +60,7 @@ class VariableIndexView(Sequence, Container):
         try:
             return self._index[v]
         except KeyError:
-            raise ValueError('{!r} is not in VariableIndexView'.format(v))
+            raise ValueError('{!r} is not in {}'.format(v, self.__class__.__name__))
 
     def count(self, v):
         # everything is unique
@@ -87,7 +87,7 @@ class IndexView(Mapping):
         return len(self._variables)
 
     def __repr__(self):
-        return 'IndexView({}, {})'.format(self._variables, self._data)
+        return '{}({}, {})'.format(self.__class__.__name__, self._variables, self._data)
 
     def __str__(self):
         return str(dict(self))
@@ -101,7 +101,8 @@ class IndexView(Mapping):
 
 class SampleView(IndexView):
     """View each row of the samples record as if it was a dict."""
-    pass
+    def __repr__(self):
+        return str(self)
 
 
 class IndexItemsView(ItemsView):
