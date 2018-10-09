@@ -429,7 +429,7 @@ class SampleSet(Iterable, Sized):
     def copy(self):
         """Create a shallow copy."""
         return self.__class__(self.record.copy(),
-                              list(self.variables),
+                              self.variables,  # a new one is made in all cases
                               self.info.copy(),
                               self.vartype)
 
