@@ -47,6 +47,15 @@ class TestSampleSet(unittest.TestCase):
         # all should be the same
         self.assertEqual(sample_sets[1:], sample_sets[:-1])
 
+    def test_from_samples_iterator(self):
+        ss0 = dimod.SampleSet.from_samples(np.ones((100, 5), dtype=np.int8), dimod.BINARY, energy=np.ones(100))
+
+        # ss0.samples() is an iterator, so let's just use that
+        ss1 = dimod.SampleSet.from_samples(list(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)
+
+        self.assertEqual(len(ss0), len(ss1))
+        self.assertEqual(ss0, ss1)
+
     def test_eq_ordered(self):
         # samplesets should be equal regardless of variable order
         ss0 = dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0)
