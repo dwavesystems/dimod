@@ -168,12 +168,6 @@ class SampleSet(Iterable, Sized):
         del self._future
         del self._result_hook
 
-    @classmethod
-    def from_response(cls, response):
-        """Convenience method for constructing a SampleSet from a dimod response.
-        """
-        return cls.from_future(response, result_hook=lambda x: x)
-
     ###############################################################################################
     # Special Methods
     ###############################################################################################
