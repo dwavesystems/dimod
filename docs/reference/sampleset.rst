@@ -45,7 +45,6 @@ Constructing a Response
 
    SampleSet.from_samples
    SampleSet.from_future
-   SampleSet.from_response
 
 Transformations
 ---------------
