@@ -271,6 +271,11 @@ class SampleSet(Iterable, Sized):
 
     @property
     def variables(self):
+        """:obj:`.VariableIndexView`: Variable labels.
+
+        Corresponds to the columns of the sample field of :attr:`.Response.record`.
+
+        """
         if hasattr(self, '_future'):
             self._resolve_future()
         return self._variables
