@@ -1,7 +1,7 @@
 .. image:: https://img.shields.io/pypi/v/dimod.svg
     :target: https://pypi.python.org/pypi/dimod
 
-.. image:: https://ci.appveyor.com/api/projects/status/2oc8vrxxh15ecgo1?svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/2oc8vrxxh15ecgo1/branch/master?svg=true
     :target: https://ci.appveyor.com/project/dwave-adtt/dimod
 
 .. image:: https://codecov.io/gh/dwavesystems/dimod/branch/master/graph/badge.svg
