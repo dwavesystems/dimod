@@ -145,6 +145,28 @@ def as_samples(samples_like, dtype=None):
 
 
 class SampleSet(Iterable, Sized):
+    """Samples and any other data returned by dimod samplers.
+
+    Args:
+        record (:obj:`numpy.recarray`)
+            A numpy record array. Must have 'sample', 'energy' and 'num_occurrences' as fields.
+            The 'sample' field should be a 2D numpy array where each row is a sample and each
+            column represents the value of a variable.
+
+        variables (iterable):
+            An iterable of variable labels, corresponding the the columns in the record.samples.
+
+        info (dict):
+            Information about the sample set as a whole formatted as a dict.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the sample set. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    """
+
     __slots__ = ('_info',
                  '_future',
                  '_record',
@@ -213,6 +235,9 @@ class SampleSet(Iterable, Sized):
             **vectors (array_like):
                 Other per-sample data.
 
+        Returns:
+            :obj:`.SampleSet`
+
         """
 
         # get the samples, variable labels
@@ -256,17 +281,17 @@ class SampleSet(Iterable, Sized):
 
     @classmethod
     def from_future(cls, future, result_hook=None):
-        """Construct a response referencing the result of a future computation.
+        """Construct a sample set referencing the result of a future computation.
 
         Args:
             future (object):
                 An object that contains or will contain the information needed to construct a
-                response. If future has a :meth:`~concurrent.futures.Future.done` method then
-                this will determine the value returned by :meth:`.Response.done`.
+                sample set. If future has a :meth:`~concurrent.futures.Future.done` method then
+                this will determine the value returned by :meth:`.SampleSet.done`.
 
             result_hook (callable, optional):
                 A function that is called to resolve the future. Must accept the future and return
-                a :obj:`.Response`. If not provided then set to
+                a :obj:`.SampleSet`. If not provided then set to
 
                 .. code-block:: python
 
@@ -274,13 +299,13 @@ class SampleSet(Iterable, Sized):
                         return future.result()
 
         Returns:
-            :obj:`.Response`
+            :obj:`.SampleSet`
 
         Notes:
-            The future is resolved on the first read of any of the response's properties.
+            The future is resolved on the first read of any of the sample set's properties.
 
         Examples:
-            Run a dimod sampler on a single thread and load the returned future into response.
+            Run a dimod sampler on a single thread and load the returned future into sample set.
 
             >>> import dimod
             >>> from concurrent.futures import ThreadPoolExecutor
@@ -288,8 +313,8 @@ class SampleSet(Iterable, Sized):
             >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
             >>> with ThreadPoolExecutor(max_workers=1) as executor:
             ...     future = executor.submit(dimod.ExactSolver().sample, bqm)
-            ...     response = dimod.Response.from_future(future)
-            >>> response.record
+            ...     sampleset = dimod.SampleSet.from_future(future)
+            >>> sampleset.record
             rec.array([([-1, -1], -1., 1), ([ 1, -1],  1., 1), ([ 1,  1], -1., 1),
                        ([-1,  1],  1., 1)],
                       dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
@@ -308,8 +333,8 @@ class SampleSet(Iterable, Sized):
         return obj
 
     def _resolve_future(self):
-        response = self._result_hook(self._future)
-        self.__init__(response.record, response.variable_labels, response.info, response.vartype)
+        samples = self._result_hook(self._future)
+        self.__init__(samples.record, samples.variables, samples.info, samples.vartype)
         del self._future
         del self._result_hook
 
@@ -326,7 +351,7 @@ class SampleSet(Iterable, Sized):
         return self.samples(sorted_by='energy')
 
     def __eq__(self, other):
-        """Response equality."""
+        """SampleSet equality."""
 
         if not isinstance(other, SampleSet):
             return False
@@ -375,7 +400,7 @@ class SampleSet(Iterable, Sized):
 
     @property
     def info(self):
-        """dict: Information about the response as a whole formatted as a dict."""
+        """dict: Information about the sample set as a whole formatted as a dict."""
         if hasattr(self, '_future'):
             self._resolve_future()
         return self._info
@@ -388,19 +413,19 @@ class SampleSet(Iterable, Sized):
             >>> import dimod
             ...
             >>> sampler = dimod.ExactSolver()
-            >>> response = sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1.0})
-            >>> response.record
+            >>> sampleset = sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1.0})
+            >>> sampleset.record
             rec.array([([-1, -1], -1.5, 1), ([ 1, -1], -0.5, 1), ([ 1,  1], -0.5, 1),
                        ([-1,  1],  2.5, 1)],
                       dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
-            >>> response.record.sample
+            >>> sampleset.record.sample
             array([[-1, -1],
                    [ 1, -1],
                    [ 1,  1],
                    [-1,  1]], dtype=int8)
-            >>> response.record.energy
+            >>> sampleset.record.energy
             array([-1.5, -0.5, -0.5,  2.5])
-            >>> response.record.num_occurrences
+            >>> sampleset.record.num_occurrences
             array([1, 1, 1, 1])
 
         """
@@ -412,7 +437,7 @@ class SampleSet(Iterable, Sized):
     def variables(self):
         """:obj:`.VariableIndexView`: Variable labels.
 
-        Corresponds to the columns of the sample field of :attr:`.Response.record`.
+        Corresponds to the columns of the sample field of :attr:`.SampleSet.record`.
 
         """
         if hasattr(self, '_future'):
@@ -433,7 +458,7 @@ class SampleSet(Iterable, Sized):
     def done(self):
         """True if any pending computation is done.
 
-        Only relevant when the response is constructed with :meth:`Response.from_future`.
+        Only relevant when the sample set is constructed with :meth:`SampleSet.from_future`.
 
         Examples:
             This example uses a :class:`~concurrent.futures.Future` object directly. Normally
@@ -444,13 +469,13 @@ class SampleSet(Iterable, Sized):
             >>> from concurrent.futures import Future
             ...
             >>> future = Future()
-            >>> response = dimod.Response.from_future(future)
+            >>> sampleset = dimod.SampleSet.from_future(future)
             >>> future.done()
             False
             >>> future.set_result(dimod.ExactSolver().sample_ising({0: -1}, {}))
             >>> future.done()
             True
-            >>> response.record.sample
+            >>> sampleset.record.sample
             array([[-1],
                    [ 1]], dtype=int8)
 
@@ -458,7 +483,7 @@ class SampleSet(Iterable, Sized):
         return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
 
     def samples(self, n=None, sorted_by='energy'):
-        """Iterate over the samples in the response.
+        """Iterate over the samples in the sample set.
 
         Args:
             n (int, optional, default=None):
@@ -476,8 +501,8 @@ class SampleSet(Iterable, Sized):
 
             >>> import dimod
             ...
-            >>> response = dimod.ExactSolver().sample_ising({'a': 0.0, 'b': 0.0}, {('a', 'b'): -1})
-            >>> for sample in response.samples():   # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.0, 'b': 0.0}, {('a', 'b'): -1})
+            >>> for sample in sampleset.samples():   # doctest: +SKIP
             ...     print(sample)
             {'a': -1, 'b': -1}
             {'a': 1, 'b': 1}
@@ -493,7 +518,7 @@ class SampleSet(Iterable, Sized):
                 yield sample
 
     def data(self, fields=None, sorted_by='energy', name='Sample'):
-        """Iterate over the data in the response.
+        """Iterate over the data in the sample set.
 
         Args:
             fields (list, optional, default=None):
@@ -508,28 +533,28 @@ class SampleSet(Iterable, Sized):
                 Name of the yielded namedtuples or None to yield regular tuples.
 
         Yields:
-            namedtuple/tuple: The data in the response, in the order specified by the input
+            namedtuple/tuple: The data in the sample set, in the order specified by the input
             `fields`.
 
         Examples:
 
             >>> import dimod
             ...
-            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> for datum in response.data():   # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> for datum in sampleset.data():   # doctest: +SKIP
             ...     print(datum)
             Sample(sample={'a': -1, 'b': -1}, energy=-1.5)
             Sample(sample={'a': 1, 'b': -1}, energy=-0.5)
             Sample(sample={'a': 1, 'b': 1}, energy=-0.5)
             Sample(sample={'a': -1, 'b': 1}, energy=2.5)
-            >>> for energy, in response.data(fields=['energy'], sorted_by='energy'):
+            >>> for energy, in sampleset.data(fields=['energy'], sorted_by='energy'):
             ...     print(energy)
             ...
             -1.5
             -0.5
             -0.5
             2.5
-            >>> print(next(response.data(fields=['energy'], name='ExactSolverSample')))
+            >>> print(next(sampleset.data(fields=['energy'], name='ExactSolverSample')))
             ExactSolverSample(energy=-1.5)
 
         """
@@ -579,34 +604,34 @@ class SampleSet(Iterable, Sized):
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
-        """Create a new response with the given vartype.
+        """Create a new sample set with the given vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set):
-                Variable type to use for the new response. Accepted input values:
+                Variable type to use for the new sample set. Accepted input values:
 
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             energy_offset (number, optional, defaul=0.0):
-                Constant value applied to the 'energy' field of :attr:`Response.record`.
+                Constant value applied to the 'energy' field of :attr:`SampleSet.record`.
 
             inplace (bool, optional, default=True):
-                If True, the response is updated in-place, otherwise a new response is returned.
+                If True, the sample set is updated in-place, otherwise a new sample set is returned.
 
         Returns:
-            :obj:`.Response`: Response with changed vartype. If inplace=True, returns itself.
+            :obj:`.SampleSet`: SampleSet with changed vartype. If inplace=True, returns itself.
 
         Examples:
-            Create a binary copy of a spin-valued response
+            Create a binary copy of a spin-valued sample set
 
             >>> import dimod
             ...
-            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> response_binary = response.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
-            >>> response_binary.vartype is dimod.BINARY
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> sampleset_binary = sampleset.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
+            >>> sampleset_binary.vartype is dimod.BINARY
             True
-            >>> for datum in response_binary.data():    # doctest: +SKIP
+            >>> for datum in sampleset_binary.data():    # doctest: +SKIP
             ...    print(datum)
             Sample(sample={'a': 0, 'b': 0}, energy=-0.5, num_occurrences=1)
             Sample(sample={'a': 1, 'b': 0}, energy=0.5, num_occurrences=1)
@@ -636,7 +661,7 @@ class SampleSet(Iterable, Sized):
         return self
 
     def relabel_variables(self, mapping, inplace=True):
-        """Relabel a response's variables as per a given mapping.
+        """Relabel a sample set's variables as per a given mapping.
 
         Args:
             mapping (dict):
@@ -644,20 +669,20 @@ class SampleSet(Iterable, Sized):
                 provided, unmapped variables keep their original labels
 
             inplace (bool, optional, default=True):
-                If True, the original response is updated; otherwise a new response is returned.
+                If True, the original sample set is updated; otherwise a new sample set is returned.
 
         Returns:
-            :class:`.Response`: Response with relabeled variables. If inplace=True, returns
+            :class:`.SampleSet`: SampleSet with relabeled variables. If inplace=True, returns
             itself.
 
         Examples:
-            Create a relabeled copy of a response
+            Create a relabeled copy of a sample set
 
             >>> import dimod
             ...
-            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
-            >>> response.variable_labels    # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
+            >>> new_sampleset = sampleset.relabel_variables({'a': 0, 'b': 1}, inplace=False)
+            >>> sampleset.variable_labels    # doctest: +SKIP
             [0, 1]
 
         """
