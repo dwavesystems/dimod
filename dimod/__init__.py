@@ -52,6 +52,8 @@ import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
+from dimod.sampleset import *
+
 from dimod.response import *
 import dimod.response
 
