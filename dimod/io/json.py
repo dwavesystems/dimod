@@ -17,21 +17,29 @@
 from __future__ import absolute_import
 
 import json
+import base64
+import operator
+
+from functools import reduce
 from pkg_resources import resource_filename
 
 import jsonschema
+import numpy as np
 
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.package_info import __version__
-from dimod.response import Response
+from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
 
-bqm_json_schema_version = "1.0.0"
+json_schema_version = "1.0.0"
 
 with open(resource_filename(__name__, 'bqm_json_schema.json'), 'r') as schema_file:
     bqm_json_schema = json.load(schema_file)
+
+with open(resource_filename(__name__, 'sampleset_json_schema.json'), 'r') as schema_file:
+    sampleset_json_schema = json.load(schema_file)
 
 
 def _decode_label(label):
@@ -46,6 +54,55 @@ def _encode_label(label):
     if isinstance(label, tuple):
         return [_encode_label(v) for v in label]
     return label
+
+
+def _pack_record(record):
+    doc = {}
+    for field in record.dtype.fields:
+        dat = record[field]
+        if field == 'sample':
+            binary = np.packbits(dat > 0).tobytes()
+        else:
+            binary = dat.tobytes()
+
+        doc[field] = {'data': (base64.b64encode(binary)).decode("UTF-8"),
+                      'shape': dat.shape,
+                      'dtype': str(dat.dtype)}
+    return doc
+
+
+def _prod(iterable):
+    return reduce(operator.mul, iterable, 1)
+
+
+def _unpack_record(obj, vartype):
+    fields = {}
+    datatypes = []
+
+    for field, data in obj.items():
+
+        shape = tuple(data['shape'])
+        dtype = data['dtype']
+
+        if field == 'sample':
+            raw = np.unpackbits(np.frombuffer(base64.b64decode(data['data']), dtype=np.uint8))
+            arr = raw[:_prod(shape)].astype(dtype).reshape(shape)
+
+            if vartype is Vartype.SPIN:
+                arr = 2 * arr - 1
+        else:
+            raw = np.frombuffer(base64.b64decode(data['data']), dtype=dtype)
+            arr = raw[:_prod(shape)].reshape(shape)
+
+        fields[field] = arr
+        datatypes.append((field, dtype, shape[1:]))
+
+    record = np.rec.array(np.zeros(shape[0], dtype=datatypes))
+
+    for field, arr in fields.items():
+        record[field] = arr
+
+    return record
 
 
 def bqm_decode_hook(dct, cls=None):
@@ -68,6 +125,22 @@ def bqm_decode_hook(dct, cls=None):
     return dct
 
 
+def sampleset_decode_hook(dct, cls=None):
+    """Decode hook as can be used with json.loads."""
+
+    if cls is None:
+        cls = SampleSet
+
+    if jsonschema.Draft4Validator(sampleset_json_schema).is_valid(dct):
+        # SampleSet
+
+        vartype = Vartype[dct['variable_type']]
+        record = _unpack_record(dct['record'], vartype)
+        return cls(record, dct['variable_labels'], dct['info'], vartype)
+
+    return dct
+
+
 class DimodEncoder(json.JSONEncoder):
     """Subclass the JSONEncoder for dimod objects."""
     def default(self, obj):
@@ -85,14 +158,25 @@ class DimodEncoder(json.JSONEncoder):
                          "quadratic_terms": list(self._quadratic_biases(obj.quadratic)),
                          "offset": obj.offset,
                          "variable_type": vartype_string,
-                         "version": {"dimod": __version__, "bqm_schema": bqm_json_schema_version},
+                         "version": {"dimod": __version__, "bqm_schema": json_schema_version},
                          "variable_labels": list(self._variable_labels(obj.linear)),
                          "info": obj.info}
             return json_dict
 
-        elif isinstance(obj, Response):
-            # we will eventually want to implement this
-            raise NotImplementedError
+        elif isinstance(obj, SampleSet):
+
+            if obj.vartype is Vartype.SPIN:
+                vartype_string = 'SPIN'
+            elif obj.vartype is Vartype.BINARY:
+                vartype_string = 'BINARY'
+            else:
+                raise RuntimeError("unknown vartype")
+
+            return {"record": _pack_record(obj.record),
+                    "variable_type": vartype_string,
+                    "info": obj.info,
+                    "version": {"dimod": __version__, "sampleset_schema": json_schema_version},
+                    "variable_labels": list(obj.variables)}
 
         return json.JSONEncoder.default(self, obj)
 
