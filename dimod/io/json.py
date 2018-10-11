@@ -131,8 +131,6 @@ def sampleset_decode_hook(dct, cls=None):
     if cls is None:
         cls = SampleSet
 
-    jsonschema.Draft4Validator(sampleset_json_schema).validate(dct)
-
     if jsonschema.Draft4Validator(sampleset_json_schema).is_valid(dct):
         # SampleSet
 
