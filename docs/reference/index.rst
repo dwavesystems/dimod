@@ -12,6 +12,7 @@ Reference Documentation
    binary_quadratic_model
    samplers
    ref_samplers_composites
+   sampleset
    response
    vartypes
    bqm_functions
