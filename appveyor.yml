@@ -37,7 +37,7 @@ test_script:
 deploy_script:
   - "%PYTHON%\\python.exe -m pip install twine"
   - "%PYTHON%\\python.exe -m pip install wheel"  
-  - "%PYTHON%\\python.exe setup.py bdist_wheel --include-dirs \"C:\\Libraries\\boost_1_67_0\"
+  - "%PYTHON%\\python.exe setup.py bdist_wheel --include-dirs \"C:\\Libraries\\boost_1_67_0\""
   - "echo [pypi] > %USERPROFILE%\\.pypirc"
   - "echo username: %username% >> %USERPROFILE%\\.pypirc"
   - "echo password: %password% >> %USERPROFILE%\\.pypirc"
