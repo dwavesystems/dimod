@@ -360,7 +360,7 @@ class SampleSet(Iterable, Sized):
             return False
 
         # check that all the fields match in record, order doesn't matter
-        if self.record.dtype.fields != other.record.dtype.fields:
+        if self.record.dtype.fields.keys() != other.record.dtype.fields.keys():
             return False
         for field in self.record.dtype.fields:
             if field == 'sample':
