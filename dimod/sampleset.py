@@ -711,6 +711,62 @@ class SampleSet(Iterable, Sized):
         self._variables = VariableIndexView(mapping.get(v, v) for v in self.variable_labels)
         return self
 
+    ###############################################################################################
+    # Serialization
+    ###############################################################################################
+
+    def to_serializable(self):
+        """Convert a sample set to a serializable object
+
+        Returns:
+            dict: An object that can be serialized.
+
+        Examples:
+
+            Encode using JSON
+
+            >>> import dimod
+            >>> import json
+            ...
+            >>> samples = dimod.SampleSet.from_samples([-1, 1, -1], dimod.SPIN, energy=-.5)
+            >>> s = json.dumps(samples.to_serializable())
+
+        See also:
+            :meth:`~.SampleSet.from_serializable`
+
+        """
+        from dimod.io.json import DimodEncoder
+        return DimodEncoder().default(self)
+
+    @classmethod
+    def from_serializable(cls, obj):
+        """Deserialize a sample set.
+
+        Args:
+            obj (dict):
+                A sample set serialized by :meth:`~.SampleSet.to_serializable`.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            Encode and decode using JSON
+
+            >>> import dimod
+            >>> import json
+            ...
+            >>> samples = dimod.SampleSet.from_samples([-1, 1, -1], dimod.SPIN, energy=-.5)
+            >>> s = json.dumps(samples.to_serializable())
+            >>> new_samples = dimod.SampleSet.from_serializable(json.loads(s))
+
+        See also:
+            :meth:`~.SampleSet.to_serializable`
+
+        """
+        from dimod.io.json import sampleset_decode_hook
+        return sampleset_decode_hook(obj, cls=cls)
+
 
 def _samples_dicts_to_array(samples_dicts):
     """Convert an iterable of samples where each sample is a dict to a numpy 2d array. Also

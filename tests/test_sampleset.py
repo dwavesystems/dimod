@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 import unittest
+import json
 
 import numpy as np
 
@@ -81,3 +82,46 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(ss0, ss1)
         self.assertNotEqual(ss0, ss2)
         self.assertNotEqual(ss1, ss3)
+
+
+class TestSampleSetSerialization(unittest.TestCase):
+
+    def test_functional_simple_shapes(self):
+        for ns in range(1, 9):
+            for nv in range(1, 15):
+
+                raw = np.random.randint(2, size=(ns, nv))
+
+                if ns % 2:
+                    vartype = dimod.SPIN
+                    raw = 2 * raw - 1
+                else:
+                    vartype = dimod.BINARY
+
+                samples = dimod.SampleSet.from_samples(raw, vartype, energy=np.ones(ns))
+                new_samples = dimod.SampleSet.from_serializable(samples.to_serializable())
+                self.assertEqual(samples, new_samples)
+
+    def test_functional_json(self):
+        nv = 4
+        ns = 7
+
+        raw = np.random.randint(2, size=(ns, nv))
+
+        samples = dimod.SampleSet.from_samples(raw, dimod.BINARY, energy=np.ones(ns))
+
+        s = json.dumps(samples.to_serializable())
+        new_samples = dimod.SampleSet.from_serializable(json.loads(s))
+        self.assertEqual(samples, new_samples)
+
+    def test_functional_str(self):
+        nv = 4
+        ns = 7
+
+        raw = np.random.randint(2, size=(ns, nv))
+
+        samples = dimod.SampleSet.from_samples((raw, 'abcd'), dimod.BINARY, energy=np.ones(ns))
+
+        s = json.dumps(samples.to_serializable())
+        new_samples = dimod.SampleSet.from_serializable(json.loads(s))
+        self.assertEqual(samples, new_samples)
