@@ -695,7 +695,7 @@ class SampleSet(Iterable, Sized):
         except TypeError:
             raise ValueError("mapping targets must be hashable objects")
 
-        for v in self.variable_labels:
+        for v in self.variables:
             if v in new_labels and v not in old_labels:
                 raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
                                   "the existing variable of the same name").format(v))
@@ -708,7 +708,7 @@ class SampleSet(Iterable, Sized):
             self.relabel_variables(intermediate_to_new, inplace=True)
             return self
 
-        self._variables = VariableIndexView(mapping.get(v, v) for v in self.variable_labels)
+        self._variables = VariableIndexView(mapping.get(v, v) for v in self.variables)
         return self
 
     ###############################################################################################
