@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "sample set schema",
+  "type": "object",
+  "required": ["record",
+               "info",
+               "variable_labels",
+               "variable_type",
+               "version"],
+  "properties": {
+    "record": {
+        "type": "object",
+        "required": ["sample",
+                     "energy",
+                     "num_occurrences"]
+    },
+    "info": {
+      "type": "object"
+    },
+    "variable_labels": {
+      "type": "array",
+      "items": {
+        "type": ["integer", "string", "array"],
+        "minimum": 0
+      }
+    },
+    "variable_type": {
+      "type":"string",
+      "enum":["SPIN", "BINARY"]
+    },
+    "version": {
+      "type": "object",
+      "required": ["sampleset_schema", "dimod"],
+      "properties": {
+        "sampleset_schema": {
+          "enum":["1.0.0"]
+        }
+      }
+    }
+  }
+}
