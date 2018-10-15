@@ -4,6 +4,7 @@ environment:
   username: dwtools-ci
   password:
     secure: ImmjKZE9iYNMYj7qKREpbQ==
+  CL: /IC:\\Libraries\\boost_1_67_0\
 
   matrix:
 
@@ -21,7 +22,6 @@ environment:
     - PYTHON: "C:\\Python37-x64"
 
 install:
-  - "%PYTHON%\\python.exe --version"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
 
   # for python34-x64
@@ -31,14 +31,23 @@ build_script:
   # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
   - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
 
+  # build the wheel
+  - "%PYTHON%\\python.exe -m pip install wheel"
+  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+
 test_script:
   - "%PYTHON%\\python.exe -m unittest discover"
 
-deploy_script:
+artifacts:
+  - path: dist\*.whl
+
+before_deploy:
   - "%PYTHON%\\python.exe -m pip install twine"
-  - "%PYTHON%\\python.exe -m pip install wheel"  
-  - "%PYTHON%\\python.exe setup.py bdist_wheel --include-dirs \"C:\\Libraries\\boost_1_67_0\""
+
+  # set up the pypi credentials
   - "echo [pypi] > %USERPROFILE%\\.pypirc"
   - "echo username: %username% >> %USERPROFILE%\\.pypirc"
   - "echo password: %password% >> %USERPROFILE%\\.pypirc"
+
+deploy_script:
   - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] if NOT [%CPPDEBUG%]==[1] %PYTHON%\\Scripts\\twine upload --skip-existing dist\\*.whl"
