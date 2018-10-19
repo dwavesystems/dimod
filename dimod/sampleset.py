@@ -21,6 +21,8 @@ of NumPy's array_like_ to allow for arbitrary variable labels.
     like-objects-to-numpy-arrays
 
 """
+import itertools
+
 from collections import Iterable, Sized, Mapping, Iterator
 from collections import namedtuple
 
