@@ -83,6 +83,11 @@ class TestSampleSet(unittest.TestCase):
         self.assertNotEqual(ss0, ss2)
         self.assertNotEqual(ss1, ss3)
 
+    def test_shorter_samples(self):
+        ss = dimod.SampleSet.from_samples(np.ones((100, 5), dtype='int8'), dimod.BINARY, energy=np.ones(100))
+
+        self.assertEqual(len(list(ss.samples(n=1))), 1)
+
 
 class TestSampleSetSerialization(unittest.TestCase):
 
