@@ -72,6 +72,26 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(len(ss0), len(ss1))
         self.assertEqual(ss0, ss1)
 
+    def test_from_samples_fields_single(self):
+        ss = dimod.SampleSet.from_samples({'a': 1, 'b': -1}, dimod.SPIN, energy=1.0, a=5, b='b')
+
+        self.assertIn('a', ss.record.dtype.fields)
+        self.assertIn('b', ss.record.dtype.fields)
+        self.assertTrue(all(ss.record.a == [5]))
+        self.assertTrue(all(ss.record.b == ['b']))
+
+    def test_from_samples_fields_multiple(self):
+        ss = dimod.SampleSet.from_samples(np.ones((2, 5)), dimod.BINARY, energy=[0, 0], a=[-5, 5], b=['a', 'b'])
+
+        self.assertIn('a', ss.record.dtype.fields)
+        self.assertIn('b', ss.record.dtype.fields)
+        self.assertTrue(all(ss.record.a == [-5, 5]))
+        self.assertTrue(all(ss.record.b == ['a', 'b']))
+
+    def test_mismatched_shapes(self):
+        with self.assertRaises(ValueError):
+            dimod.SampleSet.from_samples(np.ones((3, 5)), dimod.SPIN, energy=[5, 5])
+
     def test_eq_ordered(self):
         # samplesets should be equal regardless of variable order
         ss0 = dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0)
