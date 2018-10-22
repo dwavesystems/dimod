@@ -209,9 +209,7 @@ class SampleSet(Iterable, Sized):
         self._vartype = vartype
 
     @classmethod
-    def from_samples(cls, samples_like, vartype, energy,
-                     info=None,
-                     num_occurrences=None, **vectors):
+    def from_samples(cls, samples_like, vartype, energy, info=None, num_occurrences=None, **vectors):
         """Build a SampleSet from raw samples.
 
         Args:
@@ -261,13 +259,7 @@ class SampleSet(Iterable, Sized):
                      ('num_occurrences', num_occurrences.dtype)]
         for key, vector in vectors.items():
             vectors[key] = vector = np.asarray(vector)
-
-            if len(vector.shape) < 1 or vector.shape[0] != num_samples:
-                msg = ('{} and sample have a mismatched shape {}, {}. They must have the same size '
-                       'in the first axis.').format(kwarg, vector.shape, sample.shape)
-                raise ValueError(msg)
-
-            datatypes.append((kwarg, vector.dtype, vector.shape[1:]))
+            datatypes.append((key, vector.dtype, vector.shape[1:]))
 
         record = np.rec.array(np.zeros(num_samples, dtype=datatypes))
         record['sample'] = samples
