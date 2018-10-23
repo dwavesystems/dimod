@@ -123,3 +123,69 @@ class IndexValuesView(ValuesView):
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
         return iter(self._mapping._data.flat)
+
+
+class QuadraticView(Mapping):
+    __slots__ = 'bqm',
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getitem__(self, interaction):
+        u, v = interaction
+        return self.bqm.adj[u][v]
+
+    def __iter__(self):
+        bqm = self.bqm
+        variables = bqm.variables
+        for r, c in zip(bqm.irow, bqm.icol):
+            yield variables[r], variables[c]
+
+    def __len__(self):
+        return len(self.bqm.qdata)
+
+    def __str__(self):
+        return str(dict(self))
+
+
+class NeighbourView(Mapping):
+    __slots__ = '_index', '_data'
+
+    def __init__(self, index, data):
+        self._index = index
+        self._data = data
+
+    def __getitem__(self, v):
+        return self._data[self._index[v]]
+
+    def __iter__(self):
+        return iter(self._index)
+
+    def __len__(self):
+        return len(self._index)
+
+    def __repr__(self):
+        return '{}({}, {})'.format(self.__class__.__name__, self._index, self._data)
+
+    def __str__(self):
+        return str(dict(self))
+
+
+class AdjacencyView(Mapping):
+    __slots__ = 'iadj', 'data'
+
+    def __init__(self, iadj, data):
+        self.iadj = iadj
+        self.data = data
+
+    def __getitem__(self, v):
+        return NeighbourView(self.iadj[v], self.data)
+
+    def __iter__(self):
+        return iter(self.iadj)
+
+    def __len__(self):
+        return len(self.adj)
+
+    def __str__(self):
+        return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})

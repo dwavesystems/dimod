@@ -3,71 +3,10 @@ from itertools import chain
 
 import numpy as np
 
-from dimod.views import VariableIndexView, IndexView
+from dimod.sampleset import as_samples
+from dimod.views import VariableIndexView, IndexView, AdjacencyView, QuadraticView
 
-
-class QuadraticView(Mapping):
-    __slots__ = 'bqm',
-
-    def __init__(self, bqm):
-        self.bqm = bqm
-
-    def __getitem__(self, interaction):
-        u, v = interaction
-        return self.bqm.adj[u][v]
-
-    def __iter__(self):
-        bqm = self.bqm
-        variables = bqm.variables
-        for r, c in zip(bqm.irow, bqm.icol):
-            yield variables[r], variables[c]
-
-    def __len__(self):
-        return len(self.bqm.qdata)
-
-    def __str__(self):
-        return str(dict(self))
-
-
-class NeighbourView(Mapping):
-    __slots__ = '_index', '_data'
-
-    def __init__(self, index, data):
-        self._index = index
-        self._data = data
-
-    def __getitem__(self, v):
-        return self._data[self._index[v]]
-
-    def __iter__(self):
-        return iter(self._index)
-
-    def __len__(self):
-        return len(self._index)
-
-    def __repr__(self):
-        return '{}({}, {})'.format(self.__class__.__name__, self._index, self._data)
-
-    def __str__(self):
-        return str(dict(self))
-
-
-class AdjacencyView(Mapping):
-    def __init__(self, iadj, qdata):
-        self.iadj = iadj
-        self.qdata = qdata
-
-    def __getitem__(self, v):
-        return NeighbourView(self.iadj[v], self.qdata)
-
-    def __iter__(self):
-        return iter(self.iadj)
-
-    def __len__(self):
-        return len(self.adj)
-
-    def __str__(self):
-        return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
+__all__ = 'FastBQM',
 
 
 def reduce_coo(row, col, data, dtype=None, index_dtype=None):
@@ -236,62 +175,24 @@ class FastBQM(Collection):
         return (self.vartype == other.vartype and self.offset == other.offset
                 and self.linear == other.linear and self.adj == other.adj)
 
+    def energies(self, samples_like):
+        samples, labels = as_samples(samples_like)
 
-if __name__ == '__main__':
-    import unittest
-    import dimod
-    import itertools
+        variables = self.variables
 
-    import numpy as np
+        if labels != variables:
+            indices = {v: idx for idx, v in enumerate(labels)}
+            order = [indices[v] for v in self.variables]
+            samples = samples[:, order]  # this is unfortunately a copy
 
-    class TestFastBQM(unittest.TestCase):
+        linear_energy = samples.dot(self.ldata)
+        quadratic_energy = (samples[:, self.irow]*samples[:, self.icol]).dot(self.qdata)
+        return linear_energy + quadratic_energy + self.offset
 
-        def test_construction(self):
-            lins = [{0: -.5, 1: 0.0},
-                    {0: -.5},
-                    [-.5, 0.0],
-                    np.array([-.5, 0.0])]
-
-            quads = [{(0, 1): -1},
-                     {(1, 0): -1},
-                     {(0, 1): -1},
-                     {(1, 0): -1},
-                     {(0, 1): -.5, (1, 0): -.5},
-                     [[0, -1], [0, 0]],
-                     [[0, 0], [-1, 0]],
-                     [[0, -.5], [-.5, 0]],
-                     np.asarray([[0, -1], [0, 0]]),
-                     ([0], [1], [-1])]
-
-            bqms = [FastBQM({0: -.5, 1: 0.0}, {(0, 1): -1}, 1.2, dimod.SPIN),
-                    FastBQM([0, -.5], {(0, 1): -1}, 1.2, dimod.SPIN, labels=[1, 0]),
-                    FastBQM([0, -.5], [[0, -1], [0, 0]], 1.2, dimod.SPIN, labels=[1, 0])]
-            bqms.extend(FastBQM(l, q, 1.2, dimod.SPIN) for l in lins for q in quads)
-
-        def test_construction_labels(self):
-
-            lins = [{'a': -.5, 'b': 0.0},
-                    {'a': -.5},
-                    [-.5, 0.0],
-                    np.array([-.5, 0.0])]
-
-            quads = [{'ab': -1},
-                     {'ba': -1},
-                     {('a', 'b'): -1},
-                     {('b', 'a'): -1},
-                     {('a', 'b'): -.5, ('b', 'a'): -.5},
-                     [[0, -1], [0, 0]],
-                     [[0, 0], [-1, 0]],
-                     [[0, -.5], [-.5, 0]],
-                     np.asarray([[0, -1], [0, 0]]),
-                     ([0], [1], [-1])]
-
-            bqms = [FastBQM({'a': -.5, 'b': 0.0}, {'ab': -1}, 1.2, dimod.SPIN),
-                    FastBQM([0, -.5], {'ab': -1}, 1.2, dimod.SPIN, labels=['b', 'a']),
-                    FastBQM([0, -.5], [[0, -1], [0, 0]], 1.2, dimod.SPIN, labels=['b', 'a'])]
-            bqms.extend(FastBQM(l, q, 1.2, dimod.SPIN, labels=['a', 'b']) for l in lins for q in quads)
-
-            for bqm0, bqm1 in itertools.combinations(bqms, 2):
-                self.assertEqual(bqm0, bqm1)
-
-    unittest.main()
+    def energy(self, sample):
+        linear = self.linear
+        quadratic = self.quadratic
+        en = self.offset
+        en += sum(sample[v] * bias for v, bias in linear.items())
+        en += sum(sample[u] * sample[v] * bias for (u, v), bias in quadratic.items())
+        return en
