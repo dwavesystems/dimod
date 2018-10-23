@@ -166,6 +166,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
        concatenations of the node pairs (e.g., 23 for u,v = 2,3).
 
        >>> import dimod
+       ...
        >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
        >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
        ...              (2, 3): 23, (2, 4): 24,
@@ -225,15 +226,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         Examples:
-            This example creates an empty binary quadratic model.
-
             >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-            >>> any(bqm.linear)
-            False
-            >>> any(bqm.quadratic)
-            False
-            >>> bqm.offset
-            0.0
 
         """
         return cls({}, {}, 0.0, vartype)
@@ -267,7 +260,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @property
     def variables(self):
-        """Returns BQM's variables as a dictionary view object."""
+        """Return binary quadratic model's variables as a dictionary view object."""
         return viewkeys(self.linear)
 
 ##################################################################################################
@@ -291,6 +284,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             to instantiate the corresponding Ising model.
 
             >>> import dimod
+            ...
             >>> bqm_qubo = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)
             >>> bqm_spin = bqm_qubo.spin
             >>> bqm_spin   # doctest: +SKIP
@@ -338,6 +332,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            to instantiate the corresponding QUBO model.
 
            >>> import dimod
+           ...
            >>> bqm_spin = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
            >>> bqm_qubo = bqm_spin.binary
            >>> bqm_qubo  # doctest: +SKIP
@@ -396,6 +391,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             and adds to the linear biases of the initial two.
 
             >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> len(bqm.linear)
             2
@@ -460,6 +456,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             variable.
 
             >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
             >>> len(bqm.linear)
             0
@@ -509,6 +506,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             a new interaction.
 
             >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> len(bqm.quadratic)
             1
@@ -616,6 +614,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             for two variables, adds to its bias while adding a new variable,
             then adds another interaction.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
             >>> bqm.add_interactions_from({('a', 'b'): -.5})
             >>> bqm.quadratic[('a', 'b')]
@@ -652,6 +652,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model and then removes one variable.
 
             >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': 1.0, 'c': 2.0},
             ...                            {('a', 'b'): 0.25, ('a','c'): 0.5, ('b','c'): 0.75},
             ...                            -0.5, dimod.SPIN)
@@ -704,6 +705,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model with three variables and interactions
             among all of them, and then removes two variables.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0, 2: 2.0},
             ...                                  {(0, 1): 0.25, (0,2): 0.5, (1,2): 0.75},
             ...                                  -0.5, dimod.SPIN)
@@ -736,6 +739,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model with three variables that has interactions
             between two, and then removes an interaction.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interaction('b', 'c')
             >>> ('b', 'c') in bqm.quadratic
@@ -784,6 +789,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model with three variables that has interactions
             between two, and then removes an interaction.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1.0, ('b', 'c'): 1.0}, 0.0, dimod.SPIN)
             >>> bqm.remove_interactions_from([('b', 'c'), ('a', 'c')])  # ('a', 'c') is not an interaction, so ignored
             >>> len(bqm.quadratic)
@@ -805,6 +812,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model with an offset of -0.5 and then
             adds to it.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> bqm.add_offset(1.0)
             >>> bqm.offset
@@ -825,6 +834,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model with a positive energy offset, and
             then removes it.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({}, {}, 1.3, dimod.SPIN)
             >>> bqm.remove_offset()
             >>> bqm.offset
@@ -845,6 +856,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates a binary quadratic model and then scales it to half
             the original energy range.
 
+            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
             >>> bqm.scale(0.5)
             >>> bqm.linear['a']
@@ -895,25 +908,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             its value.
 
             >>> import dimod
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -.5}, {}, 0.0, dimod.SPIN)
-            >>> bqm.fix_variable('a', -1)
-            >>> bqm.offset
-            0.5
-            >>> 'a' in bqm
-            False
-
-            This example creates a binary quadratic model with two variables and fixes
-            the value of one.
-
-            >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0.}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
             >>> bqm.fix_variable('a', -1)
             >>> bqm.offset
             0.5
             >>> bqm.linear['b']
             1.0
-            >>> len(bqm.quadratic)
-            0
+            >>> 'a' in bqm
+            False
 
         """
         adj = self.adj
@@ -940,9 +943,11 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 quadratic model, it is ignored.
 
         Examples:
-            This example creates a binary quadratic model with two variables and inverts the value of one.
+            This example creates a binary quadratic model with two variables and inverts
+            the value of one.
 
             >>> import dimod
+            ...
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm.flip_variable(1)
             >>> bqm.linear[1], bqm.linear[2], bqm.quadratic[(1, 2)]
@@ -1017,6 +1022,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            from the second.
 
            >>> import dimod
+           ...
            >>> linear1 = {1: 1, 2: 2}
            >>> quadratic1 = {(1, 2): 12}
            >>> bqm1 = dimod.BinaryQuadraticModel(linear1, quadratic1, 0.5, dimod.SPIN)
@@ -1065,6 +1071,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
            between 2 and those same neighbors.
 
            >>> import dimod
+           ...
            >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
            >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
            ...              (2, 3): 23, (2, 4): 24,
@@ -1129,6 +1136,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates a binary quadratic model with two variables and relables one.
 
             >>> import dimod
+            ...
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> model.relabel_variables({0: 'a'})   # doctest: +SKIP
             BinaryQuadraticModel({1: 1.0, 'a': 0.0}, {('a', 1): -1}, 0.0, Vartype.SPIN)
@@ -1137,6 +1145,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             model with relabled variables.
 
             >>> import dimod
+            ...
             >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
             >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)  # doctest: +SKIP
             >>> new_model.quadratic       # doctest: +SKIP
@@ -1211,6 +1220,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates an Ising model and then creates a QUBO from it.
 
             >>> import dimod
+            ...
             >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
             >>> bqm_spin.offset, bqm_spin.vartype
@@ -1317,13 +1327,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             :class:`.BinaryQuadraticModel`
 
         Examples:
-            This example creates a binary quadratic model and copies it.
 
-            >>> import dimod
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm2 = bqm.copy()
-            >>> bqm2 is bqm
-            False
+
 
         """
         # new objects are constructed for each, so we just need to pass them in
@@ -1344,13 +1351,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         where :math:`s_v` is the sample, :math:`h_v` is the linear bias, :math:`J_{u,v}`
         the quadratic bias (interactions), and :math:`c` the energy offset.
 
-        Code for the energy calculation might look like the following:
+        Code for the energy calculation might look like the following::
 
-        >>> energy = model.offset  # doctest: +SKIP
-        >>> for v in model:  # doctest: +SKIP
-        ...     energy += model.linear[v] * sample[v]
-        >>> for u, v in model.quadratic:  # doctest: +SKIP
-        ...     energy += model.quadratic[(u, v)] * sample[u] * sample[v]
+            energy = model.offset  # doctest: +SKIP
+            for v in model:  # doctest: +SKIP
+                energy += model.linear[v] * sample[v]
+            for u, v in model.quadratic:  # doctest: +SKIP
+                energy += model.quadratic[(u, v)] * sample[u] * sample[v]
 
         Args:
             sample (dict):
