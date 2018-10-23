@@ -58,6 +58,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
         uses it to sample an Ising problem.
 
         >>> import dimod
+        ...
         >>> # Compose the sampler
         >>> base_sampler = dimod.ExactSolver()
         >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
@@ -111,6 +112,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
             This example runs 100 spin reversals applied to one variable of a QUBO problem.
 
             >>> import dimod
+            ...
             >>> base_sampler = dimod.ExactSolver()
             >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
             >>> Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
