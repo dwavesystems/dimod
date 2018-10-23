@@ -6,6 +6,13 @@ import numpy as np
 
 from dimod.bqm.fast_bqm import FastBQM
 
+try:
+    from dimod.bqm._helpers import fast_energy
+except ImportError:
+    _helpers = False
+else:
+    _helpers = True
+
 
 class TestFastBQM(unittest.TestCase):
 
@@ -63,3 +70,13 @@ class TestFastBQM(unittest.TestCase):
         self.assertTrue(all(bqm.energies([{'a': -1, 'b': -1}, {'a': -1, 'b': +1}]) == [-.5, 1.5]))
 
         self.assertTrue(all(bqm.energies(([[-1, -1], [+1, -1]], ['b', 'a'])) == [-.5, 1.5]))
+
+
+@unittest.skipUnless(_helpers, "c++ extensions not built")
+class TestFastBQMHelpers(unittest.TestCase):
+    def test_small(self):
+        fbqm = FastBQM([0, 0], [[0, -1], [0, 0]], 0, dimod.SPIN)
+
+        samples = [[-1, -1], [-1, +1], [+1, -1], [+1, +1]]
+
+        en = fast_energy(fbqm, samples)

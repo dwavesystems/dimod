@@ -5,6 +5,7 @@ import numpy as np
 
 from dimod.sampleset import as_samples
 from dimod.views import VariableIndexView, IndexView, AdjacencyView, QuadraticView
+from dimod.vartypes import Vartype
 
 __all__ = 'FastBQM',
 
@@ -157,6 +158,8 @@ class FastBQM(Collection):
 
         self.offset = offset
         self.vartype = vartype
+        self.dtype = dtype
+        self.index_dtype = index_dtype
 
     def __contains__(self, v):
         return v in self.variables
@@ -176,6 +179,15 @@ class FastBQM(Collection):
                 and self.linear == other.linear and self.adj == other.adj)
 
     def energies(self, samples_like):
+
+        # try to use the cython extension, but if it's not present or something fails fall back
+        # on the numpy version
+        try:
+            from dimod.bqm._helpers import fast_energy
+            return fast_energy(self, samples_like)
+        except Exception:
+            pass
+
         samples, labels = as_samples(samples_like)
 
         variables = self.variables
@@ -196,3 +208,7 @@ class FastBQM(Collection):
         en += sum(sample[v] * bias for v, bias in linear.items())
         en += sum(sample[u] * sample[v] * bias for (u, v), bias in quadratic.items())
         return en
+
+    @classmethod
+    def from_ising(cls, h, J, offset=0.0):
+        return cls(h, J, offset, Vartype.SPIN)
