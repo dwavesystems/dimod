@@ -39,6 +39,7 @@ class StructureComposite(Sampler, Composite, Structured):
         The target structure is a square graph.
 
         >>> import dimod
+        ...
         >>> base_sampler = dimod.ExactSolver()
         >>> node_list = [0, 1, 2, 3]
         >>> edge_list = [(0, 1), (1, 2), (2, 3), (0, 3)]
@@ -95,6 +96,7 @@ class StructureComposite(Sampler, Composite, Structured):
             the dimod ExactSampler only on problems structured for a K2 fully connected graph.
 
             >>> import dimod
+            ...
             >>> response = dimod.StructureComposite(dimod.ExactSolver(),
             ...                  [0, 1], [(0, 1)]).sample_ising({0: 1, 1: 1}, {})
             >>> print(next(response.data()))
