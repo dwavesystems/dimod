@@ -1,4 +1,8 @@
-from collections.abc import Collection, Mapping
+try:
+    from collections.abc import Sized, Iterable, Container, Mapping
+except ImportError:
+    from collections import Sized, Iterable, Container, Mapping
+
 from itertools import chain
 
 import numpy as np
@@ -68,7 +72,7 @@ def reduce_coo(row, col, data, dtype=None, index_dtype=None):
     return row, col, data
 
 
-class FastBQM(Collection):
+class FastBQM(Sized, Iterable, Container):
     """
 
     Args:
