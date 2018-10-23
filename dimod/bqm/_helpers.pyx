@@ -106,10 +106,10 @@ def _fast_energy(offset,
     cdef Py_ssize_t row
 
     for row in prange(num_samples, nogil=True):
-        energies_view[row] = _energy(ldata,
-                                     irow, icol, qdata,
-                                     samples[row, :],
-                                     num_variables,
-                                     num_interactions)
+        energies_view[row] = energies_view[row] + _energy(ldata,
+                                                          irow, icol, qdata,
+                                                          samples[row, :],
+                                                          num_variables,
+                                                          num_interactions)
 
     return energies

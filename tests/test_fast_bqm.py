@@ -79,4 +79,11 @@ class TestFastBQMHelpers(unittest.TestCase):
 
         samples = [[-1, -1], [-1, +1], [+1, -1], [+1, +1]]
 
-        en = fast_energy(fbqm, samples)
+        self.assertTrue((fast_energy(fbqm, samples) == [-1, 1, 1, -1]).all())
+
+    def test_small_with_offset(self):
+        fbqm = FastBQM([0, 0], [[0, -1], [0, 0]], 1.5, dimod.SPIN)
+
+        samples = [[-1, -1], [-1, +1], [+1, -1], [+1, +1]]
+
+        self.assertTrue((fast_energy(fbqm, samples) == [.5, 2.5, 2.5, .5]).all())
