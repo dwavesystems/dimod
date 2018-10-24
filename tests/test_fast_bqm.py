@@ -16,6 +16,40 @@ else:
 
 class TestFastBQM(unittest.TestCase):
 
+    def assertConsistentBQM(self, bqm):
+        # adjacency and linear are self-consistent
+        for v in bqm.linear:
+            self.assertIn(v, bqm.adj)
+        for v in bqm.adj:
+            self.assertIn(v, bqm.linear)
+
+        # adjacency and quadratic are self-consistent
+        for u, v in bqm.quadratic:
+            self.assertIn(v, bqm.linear)
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+
+            self.assertIn(u, bqm.linear)
+            self.assertIn(u, bqm.adj)
+            self.assertIn(v, bqm.adj[u])
+
+            self.assertEqual(bqm.adj[u][v], bqm.quadratic[(u, v)])
+            self.assertEqual(bqm.adj[v][u], bqm.adj[u][v])
+
+        for u in bqm.adj:
+            for v in bqm.adj[u]:
+                self.assertTrue((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
+
+        # (u, v) and (v, u) are both in quadratic but iteration should be unique
+        pairs = set(bqm.quadratic)
+        for u, v in pairs:
+            self.assertNotIn((v, u), pairs)
+
+        # the type of the underlying fields should be consistent
+        self.assertIs(bqm.ldata.dtype, bqm.qdata.dtype)
+        self.assertIs(bqm.offset.dtype, bqm.qdata.dtype)
+        self.assertIs(bqm.irow.dtype, bqm.icol.dtype)
+
     def test_construction(self):
         lins = [{0: -.5, 1: 0.0},
                 {0: -.5},
@@ -37,6 +71,12 @@ class TestFastBQM(unittest.TestCase):
                 FastBQM([0, -.5], {(0, 1): -1}, 1.2, dimod.SPIN, labels=[1, 0]),
                 FastBQM([0, -.5], [[0, -1], [0, 0]], 1.2, dimod.SPIN, labels=[1, 0])]
         bqms.extend(FastBQM(l, q, 1.2, dimod.SPIN) for l in lins for q in quads)
+
+        for bqm0, bqm1 in itertools.combinations(bqms, 2):
+            self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.assertConsistentBQM(bqm)
 
     def test_construction_labels(self):
 
@@ -63,6 +103,22 @@ class TestFastBQM(unittest.TestCase):
 
         for bqm0, bqm1 in itertools.combinations(bqms, 2):
             self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.assertConsistentBQM(bqm)
+
+    def test_construction_empty(self):
+        lins = [{}, [], np.array([])]
+
+        quads = [{}, [[]], [], np.asarray([]), np.asarray([[]]), ([], [], [])]
+
+        bqms = [FastBQM(l, q, 1.2, dimod.SPIN) for l in lins for q in quads]
+
+        for bqm0, bqm1 in itertools.combinations(bqms, 2):
+            self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.assertConsistentBQM(bqm)
 
     def test_energies(self):
         bqm = FastBQM({'a': .5}, {'ab': -1}, 1.0, dimod.SPIN)

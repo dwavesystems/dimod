@@ -36,6 +36,9 @@ import dimod.testing
 from dimod.binary_quadratic_model import *
 import dimod.binary_quadratic_model
 
+from dimod.bqm import *
+import dimod.bqm
+
 import dimod.decorators
 
 # for now, let's just import the most important embedding functions

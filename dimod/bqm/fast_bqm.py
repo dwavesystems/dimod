@@ -7,6 +7,7 @@ from itertools import chain
 
 import numpy as np
 
+from dimod.decorators import vartype_argument
 from dimod.sampleset import as_samples
 from dimod.views import VariableIndexView, IndexView, AdjacencyView, QuadraticView
 from dimod.vartypes import Vartype
@@ -52,6 +53,13 @@ def reduce_coo(row, col, data, dtype=None, index_dtype=None):
     col = np.asarray(col, dtype=index_dtype)
     data = np.asarray(data, dtype=dtype)
 
+    if row.ndim != 1 or col.ndim != 1 or data.ndim != 1 or len(row) != len(col) or len(col) != len(data):
+        raise ValueError("row, col and data should all be vectors of equal length")
+
+    if len(row) == 0:
+        # empty arrays are already sorted
+        return row, col, data
+
     # row index should be less than col index, this handles upper-triangular vs lower-triangular
     swaps = row > col
     row[swaps], col[swaps] = col[swaps], row[swaps]
@@ -81,7 +89,14 @@ class FastBQM(Sized, Iterable, Container):
         quadratic (Mapping[tuple[variable, variable], bias])
 
     """
+
+    @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype, labels=None, dtype=np.float, index_dtype=np.int64):
+
+        self.dtype = dtype = np.dtype(dtype).type  # e.g. 'int8' -> np.int8
+        self.index_dtype = index_dtype = np.dtype(index_dtype).type
+
+        self.vartype = vartype  # checked by decorator
 
         #
         # variables
@@ -99,13 +114,26 @@ class FastBQM(Sized, Iterable, Container):
                 quadratic_labels = (v for interaction in quadratic.keys() for v in interaction)
             elif isinstance(quadratic, tuple) and len(quadratic) == 3:
                 row, col, _ = quadratic
-                quadratic_labels = range(max(max(row), max(col)) + 1)
+                try:
+                    quadratic_labels = range(max(max(row), max(col)) + 1)
+                except ValueError:
+                    # if row/col are empty
+                    quadratic_labels = []
             else:
-                quadratic_labels = range(len(quadratic))
+                # assume dense
+                quadratic = np.atleast_2d(np.asarray(quadratic, dtype=dtype))
+
+                quadratic_labels = range(quadratic.shape[1])
 
             labels = chain(linear_labels, quadratic_labels)
 
         self.variables = variables = VariableIndexView(labels)
+
+        #
+        # offset
+        #
+
+        self.offset = dtype(offset)
 
         #
         # linear biases
@@ -127,8 +155,11 @@ class FastBQM(Sized, Iterable, Container):
         self.iadj = iadj = {v: {} for v in variables}
         if isinstance(quadratic, Mapping):
 
-            row, col, data = zip(*((variables.index(u), variables.index(v), bias)
-                                   for (u, v), bias in quadratic.items()))
+            if quadratic:
+                row, col, data = zip(*((variables.index(u), variables.index(v), bias)
+                                       for (u, v), bias in quadratic.items()))
+            else:
+                row, col, data = [], [], []
 
         elif isinstance(quadratic, tuple) and len(quadratic) == 3:
             row, col, data = quadratic
@@ -137,6 +168,8 @@ class FastBQM(Sized, Iterable, Container):
             quadratic = np.atleast_2d(np.asarray(quadratic, dtype=dtype))
 
             if quadratic.ndim > 2:
+                raise ValueError
+            if max(quadratic.shape[0], 1) != max(quadratic.shape[1], 1):
                 raise ValueError
 
             row, col = quadratic.nonzero()
@@ -156,15 +189,6 @@ class FastBQM(Sized, Iterable, Container):
         self.adj = adj = AdjacencyView(iadj, qdata)
         self.quadratic = QuadraticView(self)
 
-        #
-        # offset and vartype
-        #
-
-        self.offset = offset
-        self.vartype = vartype
-        self.dtype = dtype
-        self.index_dtype = index_dtype
-
     def __contains__(self, v):
         return v in self.variables
 
@@ -179,8 +203,46 @@ class FastBQM(Sized, Iterable, Container):
                                            self.quadratic, self.offset, self.vartype)
 
     def __eq__(self, other):
-        return (self.vartype == other.vartype and self.offset == other.offset
+        return (self.vartype is other.vartype and self.offset == other.offset
                 and self.linear == other.linear and self.adj == other.adj)
+
+    @property
+    def spin(self):
+        try:
+            spin = self._spin
+        except AttributeError:
+            pass
+        else:
+            return spin
+
+        if self.vartype is Vartype.SPIN:
+            self._spin = spin = self
+        else:
+            self._counterpart = self._spin = spin = self.to_spin()
+
+            # we also want to go ahead and set spin.binary to refer back to self
+            spin._binary = self
+
+        return spin
+
+    @property
+    def binary(self):
+        try:
+            binary = self._binary
+        except AttributeError:
+            pass
+        else:
+            return binary
+
+        if self.vartype is Vartype.BINARY:
+            self._binary = binary = self
+        else:
+            self._counterpart = self._binary = binary = self.to_binary()
+
+            # we also want to go ahead and set binary.spin to refer back to self
+            binary._spin = self
+
+        return binary
 
     def energies(self, samples_like):
 
@@ -216,3 +278,32 @@ class FastBQM(Sized, Iterable, Container):
     @classmethod
     def from_ising(cls, h, J, offset=0.0):
         return cls(h, J, offset, Vartype.SPIN)
+
+    def to_spin(self):
+        raise NotImplementedError
+
+    def to_binary(self):
+        if self.vartype is Vartype.BINARY:
+            return self.copy()
+
+        ldata = self.ldata
+        qdata = self.qdata
+        irow = self.irow
+        icol = self.icol
+
+        # offset
+        off = -ldata.sum() + qdata.sum() + self.offset
+
+        # linear
+        two = ldata.dtype.type(2)  # faster multiplication
+
+        h = two*ldata  # makes a new vector of the same dtype
+        for qi, bias in np.ndenumerate(qdata):
+            tb = two*bias
+            h[irow[qi]] -= tb
+            h[icol[qi]] -= tb
+
+        # quadratic
+        J = (irow, icol, 4 * self.qdata)
+
+        return self.__class__(h, J, off, Vartype.BINARY, labels=self.variables)
