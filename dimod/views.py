@@ -14,10 +14,11 @@
 #
 # ================================================================================================
 from collections import Sequence, Container, Mapping, ItemsView, ValuesView
+from operator import eq
 
 import numpy as np
 
-from six.moves import zip
+from six.moves import zip, map
 
 
 class VariableIndexView(Sequence, Container):
@@ -67,7 +68,9 @@ class VariableIndexView(Sequence, Container):
         return int(v in self)
 
     def __eq__(self, other):
-        return len(self) == len(other) and all(self[idx] == other[idx] for idx in range(len(self)))
+        return (isinstance(other, Sequence) and
+                len(self) == len(other) and
+                all(map(eq, self, other)))
 
 
 class IndexView(Mapping):
