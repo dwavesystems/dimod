@@ -64,18 +64,21 @@ def reduce_coo(row, col, data, dtype=None, index_dtype=None):
     swaps = row > col
     row[swaps], col[swaps] = col[swaps], row[swaps]
 
-    # sorted lexigraphically
+    # sort lexigraphically, also makes copies
     order = np.lexsort((row, col))
     row = row[order]
     col = col[order]
     data = data[order]
 
-    unique = np.append(True, ((row[1:] != row[:-1]) | (col[1:] != col[:-1])))
+    unique = ((row[1:] != row[:-1]) | (col[1:] != col[:-1]))
+    if not unique.all():
+        unique = np.append(True, unique)
 
-    row = row[unique]
-    col = col[unique]
-    unique_idxs, = np.nonzero(unique)
-    data = np.add.reduceat(data, unique_idxs, dtype=data.dtype)
+        row = row[unique]
+        col = col[unique]
+
+        unique_idxs, = np.nonzero(unique)
+        data = np.add.reduceat(data, unique_idxs, dtype=data.dtype)
 
     return row, col, data
 
@@ -206,14 +209,15 @@ class FastBQM(Sized, Iterable, Container):
         return (self.vartype is other.vartype and self.offset == other.offset
                 and self.linear == other.linear and self.adj == other.adj)
 
+    def __ne__(self, other):
+        return not (self == other)
+
     @property
     def spin(self):
         try:
-            spin = self._spin
+            return self._spin
         except AttributeError:
             pass
-        else:
-            return spin
 
         if self.vartype is Vartype.SPIN:
             self._spin = spin = self
@@ -228,11 +232,9 @@ class FastBQM(Sized, Iterable, Container):
     @property
     def binary(self):
         try:
-            binary = self._binary
+            return self._binary
         except AttributeError:
             pass
-        else:
-            return binary
 
         if self.vartype is Vartype.BINARY:
             self._binary = binary = self

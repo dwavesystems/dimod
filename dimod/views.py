@@ -67,6 +67,9 @@ class VariableIndexView(Sequence, Container):
         # everything is unique
         return int(v in self)
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __eq__(self, other):
         return (isinstance(other, Sequence) and
                 len(self) == len(other) and
