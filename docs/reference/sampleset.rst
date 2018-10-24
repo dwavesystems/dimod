@@ -1,5 +1,14 @@
 .. _sampleset:
 
+=======
+Samples
+=======
+
+This module is under development as a possible replacement for :obj:`.Response`.
+
+sample_like Objects
+===================
+
 .. automodule:: dimod.sampleset
 
 .. autosummary::
@@ -7,18 +16,17 @@
 
    as_samples
 
-=========
 SampleSet
 =========
 
 Class
-=====
+-----
 
 .. currentmodule:: dimod
 .. autoclass:: SampleSet
 
 Properties
-==========
+----------
 
 .. autosummary::
    :toctree: generated/
@@ -31,10 +39,10 @@ Properties
 
 
 Methods
-=======
+-------
 
 Viewing a Response
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -43,7 +51,7 @@ Viewing a Response
    SampleSet.data
 
 Constructing a Response
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -52,7 +60,7 @@ Constructing a Response
    SampleSet.from_future
 
 Transformations
----------------
+~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -61,7 +69,7 @@ Transformations
    SampleSet.relabel_variables
 
 Copy
-----
+~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -69,7 +77,7 @@ Copy
    SampleSet.copy
 
 Done
-----
+~~~~
 
 .. autosummary::
    :toctree: generated/
