@@ -84,27 +84,25 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     Args:
         poly (dict):
-            A polynomial. Should be a dict of the form {term: bias, ...} where term is a tuple of
-            variables and bias is their associated bias.
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
+            variables and `bias` the associated bias.
 
         strength (float):
-            The strength of the reduction constraint. Insufficient strength can result in the
+            Strength of the reduction constraint. Insufficient strength can result in the
             binary quadratic model not having the same minimizations as the polynomial.
 
         vartype (:class:`.Vartype`, optional):
-            The vartype of the polynomial. If a bqm is provided, then vartype is not required.
+            Vartype of the polynomial. If `bqm` is provided, vartype is not required.
 
         bqm (:class:`.BinaryQuadraticModel`, optional):
-            The terms of the reduced polynomial are added to this bqm. If not provided a new
-            empty binary quadratic model is created.
+            The terms of the reduced polynomial are added to this binary quadratic model.
+            If not provided, a new binary quadratic model is created.
 
     Returns:
         :class:`.BinaryQuadraticModel`
 
     Examples:
 
-        >>> import dimod
-        ...
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
         >>> bqm = make_quadratic(poly, 5.0, dimod.SPIN)
 
