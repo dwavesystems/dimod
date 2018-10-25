@@ -281,8 +281,36 @@ class FastBQM(Sized, Iterable, Container):
     def from_ising(cls, h, J, offset=0.0):
         return cls(h, J, offset, Vartype.SPIN)
 
+    def copy(self):
+        # construction makes copies of the arrays
+        return self.__class__(self.ldata, (self.irow, self.icol, self.qdata), self.offset,
+                              self.vartype, labels=self.variables)
+
     def to_spin(self):
-        raise NotImplementedError
+        if self.vartype is Vartype.SPIN:
+            return self.copy()
+
+        ldata = self.ldata
+        qdata = self.qdata
+        irow = self.irow
+        icol = self.icol
+
+        p25 = qdata.dtype.type(.25)  # faster multiplication
+
+        # offset
+        offset = .5 * ldata.sum() + p25 * qdata.sum() + self.offset
+
+        # linear
+        linear = .5 * ldata
+        for qi, bias in np.ndenumerate(qdata):
+            p25bias = p25 * bias
+            linear[irow[qi]] += p25bias
+            linear[icol[qi]] += p25bias
+
+        # quadratic
+        quadratic = (irow, icol, p25 * qdata)
+
+        return self.__class__(linear, quadratic, offset, Vartype.SPIN, labels=self.variables)
 
     def to_binary(self):
         if self.vartype is Vartype.BINARY:
@@ -293,19 +321,19 @@ class FastBQM(Sized, Iterable, Container):
         irow = self.irow
         icol = self.icol
 
-        # offset
-        off = -ldata.sum() + qdata.sum() + self.offset
-
-        # linear
         two = ldata.dtype.type(2)  # faster multiplication
 
-        h = two*ldata  # makes a new vector of the same dtype
+        # offset
+        offset = -ldata.sum() + qdata.sum() + self.offset
+
+        # linear
+        linear = two*ldata  # makes a new vector of the same dtype
         for qi, bias in np.ndenumerate(qdata):
             tb = two*bias
-            h[irow[qi]] -= tb
-            h[icol[qi]] -= tb
+            linear[irow[qi]] -= tb
+            linear[icol[qi]] -= tb
 
         # quadratic
-        J = (irow, icol, 4 * self.qdata)
+        quadratic = (irow, icol, 4 * self.qdata)
 
-        return self.__class__(h, J, off, Vartype.BINARY, labels=self.variables)
+        return self.__class__(linear, quadratic, offset, Vartype.BINARY, labels=self.variables)
