@@ -163,7 +163,7 @@ def assert_response_energies(response, bqm, precision=7):
     """Assert that each sample in the given response has the correct energy.
 
     Args:
-        response (:obj:`.Response`):
+        response (:obj:`.SampleSet`):
             The response as returned by a dimod sampler.
 
         bqm (:obj:`.BinaryQuadraticModel`):
@@ -188,7 +188,7 @@ def assert_response_energies(response, bqm, precision=7):
         >>> dtest.assert_response_energies(response, bqm)
 
     """
-    assert isinstance(response, dimod.Response), "expected response to be a dimod Response object"
+    assert isinstance(response, dimod.SampleSet), "expected response to be a dimod SampleSet object"
 
     for sample, energy in response.data(['sample', 'energy']):
         assert isinstance(sample, Mapping), "'for sample in response', each sample should be a Mapping"
