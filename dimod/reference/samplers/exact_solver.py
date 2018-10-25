@@ -14,7 +14,7 @@
 #
 # ================================================================================================
 """
-An exact solver that calculates the energy of all possible samples.
+An exact classical solver that calculates the energy of all possible samples.
 """
 import itertools
 
@@ -30,7 +30,7 @@ __all__ = ['ExactSolver']
 
 
 class ExactSolver(Sampler):
-    """A simple exact solver for testing and debugging.
+    """A simple exact solver for testing and debugging code using your local CPU.
 
     Notes:
         This solver becomes slow for problems with 18 or more
@@ -40,6 +40,7 @@ class ExactSolver(Sampler):
         This example solves a two-variable Ising model.
 
         >>> import dimod
+        ...
         >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
         >>> response.data_vectors['energy']
         array([-1.5, -0.5, -0.5,  2.5])
@@ -68,6 +69,7 @@ class ExactSolver(Sampler):
             This example provides samples for a two-variable Ising model.
 
             >>> import dimod
+            ...
             >>> sampler = dimod.ExactSolver()
             >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
             >>> response = sampler.sample(bqm)

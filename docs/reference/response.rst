@@ -4,6 +4,8 @@
 Response
 ========
 
+See also :ref:`sampleset`. 
+
 .. automodule:: dimod.response
 
 Class

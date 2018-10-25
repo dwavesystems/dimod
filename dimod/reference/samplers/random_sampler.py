@@ -31,6 +31,7 @@ class RandomSampler(Sampler):
         This example provides random samples for a two-variable QUBO model.
 
         >>> import dimod
+        ...
         >>> response = dimod.RandomSampler().sample_qubo({(0, 0): -1, (1, 1): -1, (0, 1): 2}, num_reads=5)
         >>> len(response)
         5
@@ -64,6 +65,7 @@ class RandomSampler(Sampler):
             This example provides samples for a two-variable Ising model.
 
             >>> import dimod
+            ...
             >>> sampler = dimod.RandomSampler()
             >>> h = {0: -1, 1: -1}
             >>> J = {(0, 1): -1}

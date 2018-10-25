@@ -15,6 +15,9 @@
 # ================================================================================================
 """
 A reference implementation of a simulated annealing sampler.
+
+:std:doc:`dwave_neal <neal:index>` (https://github.com/dwavesystems/dwave-neal)
+is a more performant implementation of simulated annealing you can use for solving problems.
 """
 import random
 import math
@@ -30,12 +33,13 @@ __all__ = ['SimulatedAnnealingSampler']
 
 
 class SimulatedAnnealingSampler(Sampler):
-    """A simple simulated annealing sampler.
+    """A simple simulated annealing sampler for testing and debugging code.
 
     Examples:
         This example solves a two-variable Ising model.
 
         >>> import dimod
+        ...
         >>> response = dimod.SimulatedAnnealingSampler().sample_ising(
         ...                  {'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
         >>> response.data_vectors['energy']      # doctest: +SKIP
@@ -77,6 +81,7 @@ class SimulatedAnnealingSampler(Sampler):
             This example provides samples for a two-variable QUBO model.
 
             >>> import dimod
+            ...
             >>> sampler = dimod.SimulatedAnnealingSampler()
             >>> Q = {(0, 0): -1, (1, 1): -1, (0, 1): 2}
             >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q, offset = 0.0)

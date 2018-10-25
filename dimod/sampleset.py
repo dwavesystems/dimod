@@ -14,11 +14,10 @@
 #
 # ================================================================================================
 """
-Samples can be provided in many forms, referred generally to as samples_like. This is an extension
+Samples can be provided in many forms, generally referred to as samples_like, an extension
 of NumPy's array_like_ to allow for arbitrary variable labels.
 
-.. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-
-    like-objects-to-numpy-arrays
+.. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
 
 """
 import itertools
@@ -37,26 +36,26 @@ __all__ = 'SampleSet', 'as_samples'
 
 
 def as_samples(samples_like, dtype=None):
-    """Convert samples_like into a NumPy array and list of labels.
+    """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
         samples_like (samples_like):
-            A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
-            See examples.
+            A collection of raw samples. `samples_like` is an extension of NumPy's array_like_
+            structure. See examples below.
 
         dtype (data-type, optional):
-            The desired dtype for the returned samples array. If not provided, it is derived from
-            samples_like if samples_like has a dtype, otherwise :class:`numpy.int8` is used.
+            dtype for the returned samples array. If not provided, it is either derived from
+            `samples_like`, if that object has a dtype, or set to :class:`numpy.int8`.
 
     Returns:
         tuple: A 2-tuple containing:
 
-            :obj:`numpy.ndarray`: The samples.
+            :obj:`numpy.ndarray`: Samples.
 
-            list: The variable labels as a list.
+            list: Variable labels as a list.
 
     Examples:
-        samples_like can be many things:
+        The following examples convert a variety of samples_like objects:
 
         NumPy arrays
 
@@ -86,7 +85,7 @@ def as_samples(samples_like, dtype=None):
         (array([[-1,  1],
                 [ 1,  1]], dtype=int8), ['a', 'b'])
 
-        A 2-tuple containing an array_like and a list of labels
+        A 2-tuple containing an array_like object and a list of labels
 
         >>> dimod.as_samples(([-1, +1, -1], ['a', 'b', 'c']))
         (array([[-1,  1, -1]], dtype=int8), ['a', 'b', 'c'])
@@ -97,9 +96,7 @@ def as_samples(samples_like, dtype=None):
                 [0, 0],
                 [0, 0]], dtype=int8), ['in', 'out'])
 
-
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-
-        array-like-objects-to-numpy-arrays
+    .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
 
     """
 
@@ -154,21 +151,33 @@ class SampleSet(Iterable, Sized):
 
     Args:
         record (:obj:`numpy.recarray`)
-            A numpy record array. Must have 'sample', 'energy' and 'num_occurrences' as fields.
-            The 'sample' field should be a 2D numpy array where each row is a sample and each
+            A NumPy record array. Must have 'sample', 'energy' and 'num_occurrences' as fields.
+            The 'sample' field should be a 2D NumPy array where each row is a sample and each
             column represents the value of a variable.
 
         variables (iterable):
-            An iterable of variable labels, corresponding the the columns in the record.samples.
+            An iterable of variable labels, corresponding to columns in `record.samples`.
 
         info (dict):
-            Information about the sample set as a whole formatted as a dict.
+            Information about the :class:`SampleSet` as a whole, formatted as a dict.
 
         vartype (:class:`.Vartype`/str/set):
-            Variable type for the sample set. Accepted input values:
+            Variable type for the :class:`SampleSet`. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    Examples:
+        This example creates a SampleSet out of a samples_like object (a NumPy array).
+
+        >>> import dimod
+        >>> import numpy as np
+        ...
+        >>> dimod.SampleSet.from_samples(dimod.as_samples(np.ones(5, dtype='int8')),
+        ...                              'BINARY', 0)   # doctest: +SKIP
+        SampleSet(rec.array([([1, 1, 1, 1, 1], 0, 1)],
+        ...       dtype=[('sample', 'i1', (5,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
+        ...       [0, 1, 2, 3, 4], {}, 'BINARY')
 
     """
 
@@ -213,24 +222,24 @@ class SampleSet(Iterable, Sized):
 
     @classmethod
     def from_samples(cls, samples_like, vartype, energy, info=None, num_occurrences=None, **vectors):
-        """Build a SampleSet from raw samples.
+        """Build a :class:`SampleSet` from raw samples.
 
         Args:
             samples_like:
-                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like_.
                 See :func:`.as_samples`.
 
             vartype (:class:`.Vartype`/str/set):
-                Variable type for the sample set. Accepted input values:
+                Variable type for the :class:`SampleSet`. Accepted input values:
 
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             energy (array_like):
-                A vector of energies.
+                Vector of energies.
 
             info (dict, optional):
-                Information about the sample set as a whole formatted as a dict.
+                Information about the :class:`SampleSet` as a whole formatted as a dict.
 
             num_occurrences (array_like, optional):
                 Number of occurences for each sample. If not provided, defaults to a vector of 1s.
@@ -241,6 +250,19 @@ class SampleSet(Iterable, Sized):
         Returns:
             :obj:`.SampleSet`
 
+        Examples:
+            This example creates a SampleSet out of a samples_like object (a dict).
+
+            >>> import dimod
+            >>> import numpy as np
+            ...
+            >>> dimod.SampleSet.from_samples(dimod.as_samples({'a': 0, 'b': 1, 'c': 0}),
+            ...                              'BINARY', 0)   # doctest: +SKIP
+            SampleSet(rec.array([([0, 1, 0], 0, 1)],
+            ...       dtype=[('sample', 'i1', (3,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
+            ...       ['a', 'b', 'c'], {}, 'BINARY')
+
+        .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
         """
 
         # get the samples, variable labels
@@ -278,17 +300,17 @@ class SampleSet(Iterable, Sized):
 
     @classmethod
     def from_future(cls, future, result_hook=None):
-        """Construct a sample set referencing the result of a future computation.
+        """Construct a :class:`SampleSet` referencing the result of a future computation.
 
         Args:
             future (object):
-                An object that contains or will contain the information needed to construct a
-                sample set. If future has a :meth:`~concurrent.futures.Future.done` method then
-                this will determine the value returned by :meth:`.SampleSet.done`.
+                Object that contains or will contain the information needed to construct a
+                :class:`SampleSet`. If `future` has a :meth:`~concurrent.futures.Future.done` method,
+                this determines the value returned by :meth:`.SampleSet.done`.
 
             result_hook (callable, optional):
                 A function that is called to resolve the future. Must accept the future and return
-                a :obj:`.SampleSet`. If not provided then set to
+                a :obj:`.SampleSet`. If not provided, set to
 
                 .. code-block:: python
 
@@ -299,10 +321,10 @@ class SampleSet(Iterable, Sized):
             :obj:`.SampleSet`
 
         Notes:
-            The future is resolved on the first read of any of the sample set's properties.
+            The future is resolved on the first read of any of the :class:`SampleSet` properties.
 
         Examples:
-            Run a dimod sampler on a single thread and load the returned future into sample set.
+            Run a dimod sampler on a single thread and load the returned future into :class:`SampleSet`.
 
             >>> import dimod
             >>> from concurrent.futures import ThreadPoolExecutor
@@ -390,21 +412,25 @@ class SampleSet(Iterable, Sized):
 
     @property
     def first(self):
-        """Return the `Sample(sample={...}, energy, num_occurrences)` with
-        lowest energy.
+        """Sample with the lowest-energy.
+
+        Example:
+
+            >>> sampleset.first   # doctest: +SKIP
+            Sample(sample={'a': -1, 'b': -1}, energy=-1.0, num_occurrences=1)
         """
         return next(self.data(sorted_by='energy', name='Sample'))
 
     @property
     def info(self):
-        """dict: Information about the sample set as a whole formatted as a dict."""
+        """Dict of information about the :class:`SampleSet` as a whole."""
         if hasattr(self, '_future'):
             self._resolve_future()
         return self._info
 
     @property
     def record(self):
-        """:obj:`numpy.recarray` The samples, energies, number of occurences and other sample data.
+        """:obj:`numpy.recarray` containing the samples, energies, number of occurences, and other sample data.
 
         Examples:
             >>> import dimod
@@ -422,8 +448,6 @@ class SampleSet(Iterable, Sized):
                    [-1,  1]], dtype=int8)
             >>> sampleset.record.energy
             array([-1.5, -0.5, -0.5,  2.5])
-            >>> sampleset.record.num_occurrences
-            array([1, 1, 1, 1])
 
         """
         if hasattr(self, '_future'):
@@ -432,9 +456,9 @@ class SampleSet(Iterable, Sized):
 
     @property
     def variables(self):
-        """:obj:`.VariableIndexView`: Variable labels.
+        """:obj:`.VariableIndexView` of variable labels.
 
-        Corresponds to the columns of the sample field of :attr:`.SampleSet.record`.
+        Corresponds to columns of the sample field of :attr:`.SampleSet.record`.
 
         """
         if hasattr(self, '_future'):
@@ -443,7 +467,7 @@ class SampleSet(Iterable, Sized):
 
     @property
     def vartype(self):
-        """:class:`.Vartype`: Vartype of the samples."""
+        """:class:`.Vartype` of the samples."""
         if hasattr(self, '_future'):
             self._resolve_future()
         return self._vartype
@@ -453,13 +477,13 @@ class SampleSet(Iterable, Sized):
     ###############################################################################################
 
     def done(self):
-        """True if any pending computation is done.
+        """Return True if a pending computation is done.
 
-        Only relevant when the sample set is constructed with :meth:`SampleSet.from_future`.
+        Used when a :class:`SampleSet` is constructed with :meth:`SampleSet.from_future`.
 
         Examples:
-            This example uses a :class:`~concurrent.futures.Future` object directly. Normally
-            the future would have it's result set by an :class:`~concurrent.futures.Executor`
+            This example uses a :class:`~concurrent.futures.Future` object directly. Typically
+            a :class:`~concurrent.futures.Executor` sets the result of the future
             (see documentation for :mod:`concurrent.futures`).
 
             >>> import dimod
@@ -480,18 +504,18 @@ class SampleSet(Iterable, Sized):
         return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
 
     def samples(self, n=None, sorted_by='energy'):
-        """Iterate over the samples in the sample set.
+        """Iterate over the samples in the :class:`SampleSet`.
 
         Args:
             n (int, optional, default=None):
-                The maximum number of samples to provide. If None, all are provided.
+                Maximum number of samples to yield. If None, all are yielded.
 
             sorted_by (str/None, optional, default='energy'):
-                Selects the record field used to sort the samples. If None, the samples are yielded
+                Selects the record field used to sort the samples. If None, samples are yielded
                 in record order.
 
         Yields:
-            :obj:`.SampleView`: A view object mapping the variable labels to their values. Acts like
+            :obj:`.SampleView`: A view object mapping variable labels to values. Acts as
             a read-only dict.
 
         Examples:
@@ -515,11 +539,11 @@ class SampleSet(Iterable, Sized):
                 yield sample
 
     def data(self, fields=None, sorted_by='energy', name='Sample'):
-        """Iterate over the data in the sample set.
+        """Iterate over the data in the :class:`SampleSet`.
 
         Args:
             fields (list, optional, default=None):
-                If specified, only these fields' values are included in the yielded tuples.
+                If specified, only these fields are included in the yielded tuples.
                 The special field name 'sample' can be used to view the samples.
 
             sorted_by (str/None, optional, default='energy'):
@@ -530,7 +554,7 @@ class SampleSet(Iterable, Sized):
                 Name of the yielded namedtuples or None to yield regular tuples.
 
         Yields:
-            namedtuple/tuple: The data in the sample set, in the order specified by the input
+            namedtuple/tuple: The data in the :class:`SampleSet`, in the order specified by the input
             `fields`.
 
         Examples:
@@ -538,7 +562,7 @@ class SampleSet(Iterable, Sized):
             >>> import dimod
             ...
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> for datum in sampleset.data():   # doctest: +SKIP
+            >>> for datum in sampleset.data(fields=['sample', 'energy']):   # doctest: +SKIP
             ...     print(datum)
             Sample(sample={'a': -1, 'b': -1}, energy=-1.5)
             Sample(sample={'a': 1, 'b': -1}, energy=-0.5)
@@ -601,11 +625,11 @@ class SampleSet(Iterable, Sized):
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
-        """Create a new sample set with the given vartype.
+        """Return the :class:`SampleSet` with the given vartype.
 
         Args:
             vartype (:class:`.Vartype`/str/set):
-                Variable type to use for the new sample set. Accepted input values:
+                Variable type to use for the new :class:`SampleSet`. Accepted input values:
 
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
@@ -614,13 +638,14 @@ class SampleSet(Iterable, Sized):
                 Constant value applied to the 'energy' field of :attr:`SampleSet.record`.
 
             inplace (bool, optional, default=True):
-                If True, the sample set is updated in-place, otherwise a new sample set is returned.
+                If True, the instantiated :class:`SampleSet` is updated; otherwise, a new
+                :class:`SampleSet` is returned.
 
         Returns:
-            :obj:`.SampleSet`: SampleSet with changed vartype. If inplace=True, returns itself.
+            :obj:`.SampleSet`: SampleSet with changed vartype. If `inplace` is True, returns itself.
 
         Examples:
-            Create a binary copy of a spin-valued sample set
+            This example creates a binary copy of a spin-valued :class:`SampleSet`.
 
             >>> import dimod
             ...
@@ -628,7 +653,7 @@ class SampleSet(Iterable, Sized):
             >>> sampleset_binary = sampleset.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
             >>> sampleset_binary.vartype is dimod.BINARY
             True
-            >>> for datum in sampleset_binary.data():    # doctest: +SKIP
+            >>> for datum in sampleset_binary.data(fields=['sample', 'energy', 'num_occurrences']):    # doctest: +SKIP
             ...    print(datum)
             Sample(sample={'a': 0, 'b': 0}, energy=-0.5, num_occurrences=1)
             Sample(sample={'a': 1, 'b': 0}, energy=0.5, num_occurrences=1)
@@ -658,22 +683,23 @@ class SampleSet(Iterable, Sized):
         return self
 
     def relabel_variables(self, mapping, inplace=True):
-        """Relabel a sample set's variables as per a given mapping.
+        """Relabel the variables of a :class:`SampleSet` according to the specified mapping.
 
         Args:
             mapping (dict):
-                Dict mapping current variable labels to new. If an incomplete mapping is
-                provided, unmapped variables keep their original labels
+                Mapping from current variable labels to new, as a dict. If incomplete mapping is
+                specified, unmapped variables keep their current labels.
 
             inplace (bool, optional, default=True):
-                If True, the original sample set is updated; otherwise a new sample set is returned.
+                If True, the current :class:`SampleSet` is updated; otherwise, a new
+                :class:`SampleSet` is returned.
 
         Returns:
-            :class:`.SampleSet`: SampleSet with relabeled variables. If inplace=True, returns
+            :class:`.SampleSet`: SampleSet with relabeled variables. If `inplace` is True, returns
             itself.
 
         Examples:
-            Create a relabeled copy of a sample set
+            This example creates a relabeled copy of a :class:`SampleSet`.
 
             >>> import dimod
             ...
@@ -713,14 +739,13 @@ class SampleSet(Iterable, Sized):
     ###############################################################################################
 
     def to_serializable(self):
-        """Convert a sample set to a serializable object
+        """Convert a :class:`SampleSet` to a serializable object.
 
         Returns:
-            dict: An object that can be serialized.
+            dict: Object that can be serialized.
 
         Examples:
-
-            Encode using JSON
+            This example encodes using JSON.
 
             >>> import dimod
             >>> import json
@@ -737,18 +762,17 @@ class SampleSet(Iterable, Sized):
 
     @classmethod
     def from_serializable(cls, obj):
-        """Deserialize a sample set.
+        """Deserialize a :class:`SampleSet`.
 
         Args:
             obj (dict):
-                A sample set serialized by :meth:`~.SampleSet.to_serializable`.
+                A :class:`SampleSet` serialized by :meth:`~.SampleSet.to_serializable`.
 
         Returns:
             :obj:`.SampleSet`
 
         Examples:
-
-            Encode and decode using JSON
+            This example encodes and decodes using JSON.
 
             >>> import dimod
             >>> import json
