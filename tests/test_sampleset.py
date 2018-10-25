@@ -108,6 +108,14 @@ class TestSampleSet(unittest.TestCase):
 
         self.assertEqual(len(list(ss.samples(n=1))), 1)
 
+    def test_from_samples_empty(self):
+
+        self.assertEqual(len(dimod.SampleSet.from_samples([], dimod.SPIN, energy=[], a=1)), 0)
+
+        self.assertEqual(len(dimod.SampleSet.from_samples({}, dimod.SPIN, energy=[], a=1)), 0)
+
+        self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
+
 
 class TestSampleSetSerialization(unittest.TestCase):
 
