@@ -192,6 +192,10 @@ class FastBQM(Sized, Iterable, Container):
         self.adj = adj = AdjacencyView(iadj, qdata)
         self.quadratic = QuadraticView(self)
 
+    ###############################################################################################
+    # Special Methods
+    ###############################################################################################
+
     def __contains__(self, v):
         return v in self.variables
 
@@ -212,39 +216,9 @@ class FastBQM(Sized, Iterable, Container):
     def __ne__(self, other):
         return not (self == other)
 
-    @property
-    def spin(self):
-        try:
-            return self._spin
-        except AttributeError:
-            pass
-
-        if self.vartype is Vartype.SPIN:
-            self._spin = spin = self
-        else:
-            self._counterpart = self._spin = spin = self.to_spin()
-
-            # we also want to go ahead and set spin.binary to refer back to self
-            spin._binary = self
-
-        return spin
-
-    @property
-    def binary(self):
-        try:
-            return self._binary
-        except AttributeError:
-            pass
-
-        if self.vartype is Vartype.BINARY:
-            self._binary = binary = self
-        else:
-            self._counterpart = self._binary = binary = self.to_binary()
-
-            # we also want to go ahead and set binary.spin to refer back to self
-            binary._spin = self
-
-        return binary
+    ###############################################################################################
+    # Methods
+    ###############################################################################################
 
     def energies(self, samples_like):
 
@@ -277,14 +251,32 @@ class FastBQM(Sized, Iterable, Container):
         en += sum(sample[u] * sample[v] * bias for (u, v), bias in quadratic.items())
         return en
 
-    @classmethod
-    def from_ising(cls, h, J, offset=0.0):
-        return cls(h, J, offset, Vartype.SPIN)
-
     def copy(self):
         # construction makes copies of the arrays
         return self.__class__(self.ldata, (self.irow, self.icol, self.qdata), self.offset,
                               self.vartype, labels=self.variables)
+
+    @classmethod
+    def from_ising(cls, h, J, offset=0.0):
+        return cls(h, J, offset, Vartype.SPIN)
+
+    def to_ising(self, dtype=float):
+
+        if dtype is None:
+            return dict(self.linear), dict(self.quadratic), self.offset
+
+        if not isinstance(dtype, type):
+            dtype = np.dtype(dtype).type
+
+        if dtype is self.dtype:
+            # don't need to bother casting
+            return self.to_ising(dtype=None)
+
+        h = {v: dtype(bias) for v, bias in self.linear.items()}
+        J = {interaction: dtype(bias) for v, bias in self.quadratic.items()}
+        offset = dtype(self.offset)
+
+        return h, J, offset
 
     def to_spin(self):
         if self.vartype is Vartype.SPIN:
