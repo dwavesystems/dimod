@@ -119,6 +119,13 @@ def as_samples(samples_like, dtype=None):
 
         return samples, labels
 
+    # if no ` is specified and the array_like doesn't already have a dtype, we default to int8
+    if dtype is None and not hasattr(samples_like, 'dtype'):
+        dtype = np.int8
+
+    if len(samples_like) == 0:
+        return np.empty((0, 0), dtype=dtype), []
+
     if isinstance(samples_like, Mapping):
         return as_samples([samples_like], dtype=dtype)
 
@@ -127,10 +134,6 @@ def as_samples(samples_like, dtype=None):
         return _samples_dicts_to_array(samples_like)
 
     # anything else should be array_like, which covers ndarrays, lists of lists, etc
-
-    # if no ` is specified and the array_like doesn't already have a dtype, we default to int8
-    if dtype is None and not hasattr(samples_like, 'dtype'):
-        dtype = np.int8
 
     try:
         samples_like = np.asarray(samples_like, dtype=dtype)
