@@ -844,12 +844,18 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         """
         self.add_offset(-self.offset)
 
-    def scale(self, scalar):
+    def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
         """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
         Args:
             scalar (number):
                 Value by which to scale the energy range of the binary quadratic model.
+
+            ignored_variables (iterable, optional):
+                Biases associated with these variables are not scaled.
+
+            ignored_interactions (iterable[tuple], optional):
+                As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
 
         Examples:
 
@@ -871,23 +877,40 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         if not isinstance(scalar, Number):
             raise TypeError("expected scalar to be a Number")
 
+        if ignored_variables is None:
+            ignored_variables = set()
+        elif not isinstance(ignored_variables, Container):
+            ignored_variables = set(ignored_variables)
+
+        if ignored_interactions is None:
+            ignored_interactions = set()
+        elif not isinstance(ignored_interactions, Container):
+            ignored_interactions = set(ignored_interactions)
+
         linear = self.linear
         for v in linear:
+            if v in ignored_variables:
+                continue
             linear[v] *= scalar
 
         quadratic = self.quadratic
-        for edge in quadratic:
-            quadratic[edge] *= scalar
+        for u, v in quadratic:
+            if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
+                continue
+            quadratic[(u, v)] *= scalar
 
         adj = self.adj
         for u in adj:
             for v in adj[u]:
+                if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
+                    continue
                 adj[u][v] *= scalar
 
         self.offset *= scalar
 
         try:
-            self._counterpart.scale(scalar)
+            self._counterpart.scale(scalar, ignored_variables=ignored_variables,
+                                    ignored_interactions=ignored_interactions)
         except AttributeError:
             pass
 
