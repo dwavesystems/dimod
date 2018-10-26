@@ -107,12 +107,6 @@ class IndexView(Mapping):
         return IndexItemsView(self)
 
 
-class SampleView(IndexView):
-    """View each row of the samples record as if it was a dict."""
-    def __repr__(self):
-        return str(self)
-
-
 class IndexItemsView(ItemsView):
     """Faster read access to the numpy array"""
     __slots__ = ()
@@ -131,6 +125,17 @@ class IndexValuesView(ValuesView):
         return iter(self._mapping._data.flat)
 
 
+class SampleView(IndexView):
+    """View each row of the samples record as if it was a dict."""
+    def __repr__(self):
+        return str(self)
+
+
+class LinearView(IndexView):
+    def __setitem__(self, v, bias):
+        self._data[self._variables.index(v)] = bias
+
+
 class QuadraticView(Mapping):
     __slots__ = 'bqm',
 
@@ -140,6 +145,10 @@ class QuadraticView(Mapping):
     def __getitem__(self, interaction):
         u, v = interaction
         return self.bqm.adj[u][v]
+
+    def __setitem__(self, interaction, bias):
+        u, v = interaction
+        self.bqm.adj[u][v] = bias
 
     def __iter__(self):
         bqm = self.bqm
@@ -163,6 +172,9 @@ class NeighbourView(Mapping):
 
     def __getitem__(self, v):
         return self._data[self._index[v]]
+
+    def __setitem__(self, v, bias):
+        self._data[self._index[v]] = bias
 
     def __iter__(self):
         return iter(self._index)
