@@ -11,6 +11,8 @@ Functional interface to BQM methods and assorted utilities.
 Embedding
 =========
 
+See :ref:`embedding`.
+
 .. autosummary::
    :toctree: generated/
 

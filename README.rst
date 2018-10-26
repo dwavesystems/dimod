@@ -82,6 +82,9 @@ To install from source:
     pip install -r requirements.txt
     python setup.py install
 
+Note that for an installation from source some functionality requires that your
+system have Boost C++ libraries installed. 
+
 .. installation-end-marker
 
 License
