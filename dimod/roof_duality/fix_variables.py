@@ -17,39 +17,48 @@ from dimod.vartypes import Vartype
 
 
 def fix_variables(bqm, sampling_mode=True):
-    """Determine assignments for some binary quadratic model variables.
+    """Determine assignments for some variables of a binary quadratic model.
 
-    fix_variables uses maximum flow in the implication network to correctly fix variables (that is,
-    one can find an assignment for the other variables that attains the optimal value). The
-    variables that roof duality fixes will take the same values in all optimal solutions [BHT]_ [BH]_.
+    Roof duality finds a lower bound for the minimum of a quadratic polynomial. It
+    can also find minimizing assignments for some of the polynomial's variables;
+    these fixed variables take the same values in all optimal solutions [BHT]_ [BH]_.
+    A quadratic pseudo-Boolean function can be represented as a network to find
+    the lower bound through network-flow computations. `fix_variables` uses maximum
+    flow in the implication network to correctly fix variables. Consequently, you can
+    find an assignment for the remaining variables that attains the optimal value.
 
     Args:
         bqm (:obj:`.BinaryQuadraticModel`)
             A binary quadratic model.
 
         sampling_mode (bool, optional, default=True):
-            In sampling mode, only roof-duality is used. When sampling_mode is false, strongly
+            In sampling mode, only roof-duality is used. When `sampling_mode` is false, strongly
             connected components are used to fix more variables, but in some optimal solutions
             these variables may take different values.
 
     Returns:
-        dict: Variable assignments for some bqm variables.
+        dict: Variable assignments for some variables of the specified binary quadratic model.
 
     Examples:
+        This example creates a binary quadratic model with a single ground state
+        and fixes the model's single variable to the minimizing assignment.
 
         >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
         >>> bqm.add_variable('a', 1.0)
         >>> dimod.fix_variables(bqm)
-        {'a': -1} # doctest: +SKIP
+        {'a': -1}
 
-        In this example, there are two ground states, so no variables fixed.
+        This example has two ground states, :math:`a=b=-1` and :math:`a=b=1`, with
+        no variable having a single value for all ground states, so neither variable
+        is fixed.
 
         >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
         >>> bqm.add_interaction('a', 'b', -1.0)
         >>> dimod.fix_variables(bqm) # doctest: +SKIP
         {}
 
-        In this example with sampling_model off, additional variables are fixed.
+        This example turns sampling model off, so variables are fixed to an assignment
+        that attains the ground state.
 
         >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
         >>> bqm.add_interaction('a', 'b', -1.0)
