@@ -896,7 +896,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         fall in the range [-a, a], and adjusts the offset appropriately.
 
         Args:
-            scalar (number):
+            a (number):
                 Value by which to normalize the biases.
 
         Examples:
