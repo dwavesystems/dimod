@@ -891,6 +891,40 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         except AttributeError:
             pass
 
+    def normalize(self, a=1):
+        """Normalizes the biases of the binary quadratic model such that they
+        fall in the range [-a, a], and adjusts the offset appropriately.
+
+        Args:
+            scalar (number):
+                Value by which to normalize the biases.
+
+        Examples:
+
+            This example creates a binary quadratic model and then normalizes
+            the range [-0.5, 0.5].
+
+            >>> import dimod
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm.normalize(0.5)
+            >>> bqm.linear['a']
+            -0.5
+            >>> bqm.quadratic[('a', 'b')]
+            -0.25
+            >>> bqm.offset
+            0.25
+        """
+
+        if not isinstance(a, Number):
+            raise TypeError("expected `a` to be a Number")
+
+        all_biases = itertools.chain(itervalues(self.linear),
+                                     itervalues(self.quadratic))
+        max_abs_bias = max(map(abs, all_biases))
+
+        self.scale(a / max_abs_bias)
+
     def fix_variable(self, v, value):
         """Fix the value of a variable and remove it from a binary quadratic model.
 
