@@ -1,1 +1,1 @@
-from dimod.bqm.fast_bqm import *
+from dimod.bqm.vectorbqm import *

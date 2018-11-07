@@ -163,7 +163,7 @@ class QuadraticView(Mapping):
         return str(dict(self))
 
 
-class NeighbourView(Mapping):
+class NeighborView(Mapping):
     __slots__ = '_index', '_data'
 
     def __init__(self, index, data):
