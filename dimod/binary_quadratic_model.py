@@ -891,18 +891,31 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         except AttributeError:
             pass
 
-    def normalize(self, a=1):
+    def normalize(self, bias_range=1, linear_range=None, quadratic_range=None):
         """Normalizes the biases of the binary quadratic model such that they
-        fall in the range [-a, a], and adjusts the offset appropriately.
+        fall in the provided range(s), and adjusts the offset appropriately.
+
+        Either `bias_range` should be provided, or one or both of
+        `linear_range` and `quadratic_range`.
 
         Args:
-            a (number):
-                Value by which to normalize the biases.
+            bias_range (number/pair):
+                Value/range by which to normalize the biases. If either
+                `linear_range` or `quadratic_range` are provided, it will be
+                ignored.
+
+            linear_range (number/pair):
+                Value/range by which to normalize the linear biases. Quadratic
+                biases and offset will scaled accordingly.
+
+            quadratic_range (number/pair):
+                Value/range by which to normalize the quadratic biases. Linear
+                biases and offset will scaled accordingly.
 
         Examples:
 
             This example creates a binary quadratic model and then normalizes
-            the range [-0.5, 0.5].
+            all the biases in the range [-0.5, 0.5].
 
             >>> import dimod
             ...
@@ -916,14 +929,34 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             0.25
         """
 
-        if not isinstance(a, Number):
-            raise TypeError("expected `a` to be a Number")
+        def parse_range(r):
+            if isinstance(r, Number):
+                return -abs(r), abs(r)
+            return r
 
-        all_biases = itertools.chain(itervalues(self.linear),
-                                     itervalues(self.quadratic))
-        max_abs_bias = max(map(abs, all_biases))
+        def min_and_max(iterable):
+            if not iterable:
+                return 0, 0
+            return min(iterable), max(iterable)
 
-        self.scale(a / max_abs_bias)
+        if linear_range is None and quadratic_range is None:
+            linear_range, quadratic_range = bias_range, bias_range
+        elif linear_range is None:
+            linear_range = float("inf")
+        elif quadratic_range is None:
+            quadratic_range = float("inf")
+
+        lin_range, quad_range = map(parse_range, (linear_range,
+                                                  quadratic_range))
+
+        lin_min, lin_max = min_and_max(self.linear.values())
+        quad_min, quad_max = min_and_max(self.quadratic.values())
+
+        inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
+                         quad_min / quad_range[0], quad_max / quad_range[1])
+
+        if inv_scalar != 0:
+            self.scale(1 / inv_scalar)
 
     def fix_variable(self, v, value):
         """Fix the value of a variable and remove it from a binary quadratic model.
