@@ -891,42 +891,37 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         except AttributeError:
             pass
 
-    def normalize(self, bias_range=1, linear_range=None, quadratic_range=None):
+    def normalize(self, bias_range=1, quadratic_range=None):
         """Normalizes the biases of the binary quadratic model such that they
         fall in the provided range(s), and adjusts the offset appropriately.
 
-        Either `bias_range` should be provided, or one or both of
-        `linear_range` and `quadratic_range`.
+        If `quadratic_range` is provided, then `bias_range` will be treated as
+        the range for the linear biases and `quadratic_range` will be used for
+        the range of the quadratic biases.
 
         Args:
             bias_range (number/pair):
-                Value/range by which to normalize the biases. If either
-                `linear_range` or `quadratic_range` are provided, it will be
-                ignored.
-
-            linear_range (number/pair):
-                Value/range by which to normalize the linear biases. Quadratic
-                biases and offset will scaled accordingly.
+                Value/range by which to normalize the all the biases, or if
+                `quadratic_range` is provided, just the linear biases.
 
             quadratic_range (number/pair):
-                Value/range by which to normalize the quadratic biases. Linear
-                biases and offset will scaled accordingly.
+                Value/range by which to normalize the quadratic biases.
 
         Examples:
 
             This example creates a binary quadratic model and then normalizes
-            all the biases in the range [-0.5, 0.5].
+            all the biases in the range [-0.4, 0.8].
 
             >>> import dimod
             ...
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
-            >>> bqm.normalize(0.5)
-            >>> bqm.linear['a']
-            -0.5
-            >>> bqm.quadratic[('a', 'b')]
-            -0.25
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm.normalize([-0.4, 0.8])
+            >>> bqm.linear
+            {'a': -0.4, 'b': 0.30000000000000004}
+            >>> bqm.quadratic
+            {('a', 'b'): -0.2}
             >>> bqm.offset
-            0.25
+            0.2
         """
 
         def parse_range(r):
@@ -939,12 +934,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
                 return 0, 0
             return min(iterable), max(iterable)
 
-        if linear_range is None and quadratic_range is None:
+        if quadratic_range is None:
             linear_range, quadratic_range = bias_range, bias_range
-        elif linear_range is None:
-            linear_range = float("inf")
-        elif quadratic_range is None:
-            quadratic_range = float("inf")
+        else:
+            linear_range = bias_range
 
         lin_range, quad_range = map(parse_range, (linear_range,
                                                   quadratic_range))
