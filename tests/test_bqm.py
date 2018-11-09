@@ -5,14 +5,14 @@ import dimod
 import numpy as np
 
 try:
-    import dimod.bqm._helpers
+    import dimod.bqm._utils
 except ImportError:
-    cppext = False
+    cext = False
 else:
-    cppext = True
+    cext = True
 
 
-class TestIndexBQM(unittest.TestCase):
+class TestVectorBQM(unittest.TestCase):
     @staticmethod
     def check_consistent_vectorbqm(vbqm):
         num_variables = len(vbqm)
@@ -78,7 +78,24 @@ class TestIndexBQM(unittest.TestCase):
         for b0, b1 in itertools.combinations(bqms, 2):
             self.assertEqual(b0, b1)
 
-    @unittest.skipUnless(cppext, "No c++ extension built")
+    def test_energy(self):
+        bqm = dimod.VectorBQM([-1, +1], ([0], [1], [-1]), 1.5, dimod.SPIN)
+
+        self.assertEqual(bqm.energy([-1, -1]), .5)
+        self.assertEqual(bqm.energy([-1, +1]), 4.5)
+        self.assertEqual(bqm.energy([+1, -1]), .5)
+        self.assertEqual(bqm.energy([+1, +1]), .5)
+
+    def test_energies(self):
+        bqm = dimod.VectorBQM([-1, +1], ([0], [1], [-1]), 1.5, dimod.SPIN)
+
+        samples = [[-1, -1], [-1, +1], [+1, -1], [+1, +1]]
+
+        np.testing.assert_array_equal(bqm.energies(samples), [.5, 4.5, .5, .5])
+
+
+class TestUtils(unittest.TestCase):
+    @unittest.skipUnless(cext, "No c extension built")
     def test_energies(self):
         num_variables = 1000
         p = .1
@@ -92,7 +109,7 @@ class TestIndexBQM(unittest.TestCase):
 
         samples = np.random.randint(2, size=(num_samples, num_variables))
 
-        energiescpp = vbqm.energies(samples)
-        energiesnp = vbqm.energies(samples, _use_cpp_ext=False)
+        energies_c = dimod.bqm.utils.energies(vbqm, samples, _use_cpp_ext=True)
+        energies_np = dimod.bqm.utils.energies(vbqm, samples, _use_cpp_ext=False)
 
-        np.testing.assert_array_almost_equal(energiesnp, energiescpp)
+        np.testing.assert_array_almost_equal(energies_np, energies_c)

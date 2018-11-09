@@ -80,14 +80,15 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-ext = '.pyx' if USE_CYTHON else '.cpp'
+cppext = '.pyx' if USE_CYTHON else '.cpp'
+cext = '.pyx' if USE_CYTHON else '.c'
 
 extensions = [Extension("dimod.roof_duality._fix_variables",
-                        ['dimod/roof_duality/_fix_variables'+ext,
+                        ['dimod/roof_duality/_fix_variables'+cppext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
-              Extension("dimod.bqm._helpers",
-                        ['dimod/bqm/_helpers'+ext])
+              Extension("dimod.bqm._utils",
+                        ['dimod/bqm/_utils'+cext])
               ]
 
 if USE_CYTHON:

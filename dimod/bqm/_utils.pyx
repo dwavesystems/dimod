@@ -1,4 +1,3 @@
-# distutils: language = c++
 # distutils: extra_compile_args=-fopenmp
 # distutils: extra_link_args=-fopenmp
 # cython: language_level = 3
