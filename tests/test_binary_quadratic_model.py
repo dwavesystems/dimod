@@ -730,6 +730,22 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm.scale('a')
 
+    def test_normalize(self):
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        self.assertAlmostEqual(bqm.binary.energy({v: v % 2 for v in bqm.linear}),
+                               bqm.spin.energy({v: 2 * (v % 2) - 1 for v in bqm.linear}))
+
+        #
+
+        with self.assertRaises(TypeError):
+            bqm.scale('a')
+
     def test_fix_variable(self):
         # spin model, fix variable to +1
         bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
