@@ -7,14 +7,17 @@ import numpy as np
 
 import dimod.bqm.utils as bqmutils
 from dimod.decorators import vartype_argument
-from dimod.views import NeighborView
+from dimod.views import IndexAdjacencyView
+
+__all__ = 'VectorBinaryQuadraticModel', 'VectorBQM'
 
 
 class VectorBinaryQuadraticModel(Sized):
     __slots__ = 'vartype', 'offset', 'ldata', 'irow', 'icol', 'qdata', 'iadj'
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, dtype=np.float, index_dtype=np.int64):
+    def __init__(self, linear, quadratic, offset, vartype,
+                 dtype=np.float, index_dtype=np.int64):
         """
         Developer note, linear, quadratic might be modified in-place
 
@@ -62,9 +65,10 @@ class VectorBinaryQuadraticModel(Sized):
             msg = "mismatched linear and quadratic dimensions ({}, {})".format(num_variables, icol[-1])
             raise ValueError(msg)
 
-        self.iadj = iadj = {v: NeighborView({}, qdata) for v in range(num_variables)}
+        index = {v: {} for v in range(num_variables)}
         for idx, (ir, ic) in enumerate(zip(irow, icol)):
-            iadj[ir]._index[ic] = iadj[ic]._index[ir] = idx
+            index[ir][ic] = index[ic][ir] = idx
+        self.iadj = IndexAdjacencyView(index, qdata)
 
         self.irow = irow
         self.icol = icol

@@ -13,7 +13,11 @@
 #    limitations under the License.
 #
 # ================================================================================================
-from collections import Sequence, Container, Mapping, ItemsView, ValuesView
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from operator import eq
 
 import numpy as np
@@ -21,11 +25,28 @@ import numpy as np
 from six.moves import zip, map
 
 
-class VariableIndexView(Sequence, Container):
-    __slots__ = '_label', '_index'
+class CallableDict(abc.Callable, dict):
+    """Dict that can be accessed like a function."""
+    __slots__ = ()
+
+    def __call__(self, v):
+        try:
+            return self[v]
+        except KeyError:
+            raise ValueError('missing element {!r}')
+
+
+class Variables(abc.Sequence, abc.Container):
+    """set-like and list-like variable tracking.
+
+    Args:
+        iterable: An iterable of variable labels.
+
+    """
+    __slots__ = '_label', 'index'
 
     def __init__(self, iterable):
-        self._index = index = {}
+        self.index = index = CallableDict()
 
         def _iter():
             idx = 0
@@ -54,34 +75,38 @@ class VariableIndexView(Sequence, Container):
 
     def __contains__(self, v):
         # we can speed this up because we're keeping a dict
-        return v in self._index
-
-    def index(self, v):
-        # we can speed this up because we're keeping a dict
-        try:
-            return self._index[v]
-        except KeyError:
-            raise ValueError('{!r} is not in {}'.format(v, self.__class__.__name__))
-
-    def count(self, v):
-        # everything is unique
-        return int(v in self)
+        return v in self.index
 
     def __ne__(self, other):
         return not (self == other)
 
     def __eq__(self, other):
-        return (isinstance(other, Sequence) and
+        return (isinstance(other, abc.Sequence) and
                 len(self) == len(other) and
                 all(map(eq, self, other)))
 
+    # index method is overloaded by __init__
 
-class IndexView(Mapping):
+    def count(self, v):
+        # everything is unique
+        return int(v in self)
+
+
+class VariableArrayView(abc.Mapping):
+    """Create a mapping out of :class:`dimod.views.Variables' and :obj:`numpy.ndarray`."""
     __slots__ = '_variables', '_data'
 
     def __init__(self, variables, data):
+
+        if not isinstance(variables, Variables):
+            raise TypeError("variables should be a Variables object")
+        if not isinstance(data, np.ndarray):
+            raise TypeError("data should be a numpy 1 dimensional array")
+        if data.ndim != 1:
+            raise ValueError("data should be a numpy 1 dimensional array")
         if len(variables) != len(data):
-            raise ValueError("variables and data should match")
+            raise ValueError("variables and data should match length")
+
         self._variables = variables
         self._data = data
 
@@ -101,22 +126,13 @@ class IndexView(Mapping):
         return str(dict(self))
 
     def values(self):
-        return IndexValuesView(self)
+        return ArrayValuesView(self)
 
     def items(self):
-        return IndexItemsView(self)
+        return ArrayItemsView(self)
 
 
-class IndexItemsView(ItemsView):
-    """Faster read access to the numpy array"""
-    __slots__ = ()
-
-    def __iter__(self):
-        # Inherited __init__ puts the Mapping into self._mapping
-        return zip(self._mapping._variables, self._mapping._data.flat)
-
-
-class IndexValuesView(ValuesView):
+class ArrayValuesView(abc.ValuesView):
     """Faster read access to the numpy array"""
     __slots__ = ()
 
@@ -125,62 +141,78 @@ class IndexValuesView(ValuesView):
         return iter(self._mapping._data.flat)
 
 
-class SampleView(IndexView):
+class ArrayItemsView(abc.ItemsView):
+    """Faster read access to the numpy array"""
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        return zip(self._mapping._variables, self._mapping._data.flat)
+
+
+class SampleView(VariableArrayView):
     """View each row of the samples record as if it was a dict."""
+    __slots__ = ()
+
     def __repr__(self):
         return str(self)
 
 
-class LinearView(IndexView):
-    def __setitem__(self, v, bias):
-        self._data[self._variables.index(v)] = bias
+# class LinearView(VariableArrayView):
+#     __slots__ = ()
+
+#     def __setitem__(self, v, bias):
+#         self._data[self._variables.index(v)] = bias
 
 
-class QuadraticView(Mapping):
-    __slots__ = 'bqm',
+# class QuadraticView(abc.Mapping):
+#     __slots__ = 'bqm',
 
-    def __init__(self, bqm):
-        self.bqm = bqm
+#     def __init__(self, bqm):
+#         self.bqm = bqm
 
-    def __getitem__(self, interaction):
-        u, v = interaction
-        return self.bqm.adj[u][v]
+#     def __getitem__(self, interaction):
+#         u, v = interaction
+#         return self.bqm.adj[u][v]
 
-    def __setitem__(self, interaction, bias):
-        u, v = interaction
-        self.bqm.adj[u][v] = bias
+#     def __setitem__(self, interaction, bias):
+#         u, v = interaction
+#         self.bqm.adj[u][v] = bias
 
-    def __iter__(self):
-        bqm = self.bqm
-        variables = bqm.variables
-        for r, c in zip(bqm.irow, bqm.icol):
-            yield variables[r], variables[c]
+#     def __iter__(self):
+#         bqm = self.bqm
+#         variables = bqm.variables
+#         for r, c in zip(bqm.irow, bqm.icol):
+#             yield variables[r], variables[c]
 
-    def __len__(self):
-        return len(self.bqm.qdata)
+#     def __len__(self):
+#         return len(self.bqm.qdata)
 
-    def __str__(self):
-        return str(dict(self))
+#     def __str__(self):
+#         return str(dict(self))
 
 
-class NeighborView(Mapping):
+class IndexView(abc.Mapping):
     __slots__ = '_index', '_data'
 
     def __init__(self, index, data):
         self._index = index
         self._data = data
 
-    def __getitem__(self, v):
-        return self._data[self._index[v]]
-
-    def __setitem__(self, v, bias):
-        self._data[self._index[v]] = bias
-
     def __iter__(self):
         return iter(self._index)
 
     def __len__(self):
         return len(self._index)
+
+    def __getitem__(self, v):
+        return self._data[self._index[v]]
+
+
+class IndexNeighborView(IndexView):
+
+    def __setitem__(self, v, bias):
+        self._data[self._index[v]] = bias
 
     def __repr__(self):
         return '{}({}, {})'.format(self.__class__.__name__, self._index, self._data)
@@ -189,21 +221,41 @@ class NeighborView(Mapping):
         return str(dict(self))
 
 
-class AdjacencyView(Mapping):
-    __slots__ = 'iadj', 'data'
+class IndexAdjacencyView(IndexView):
+    __slots__ = '_index', '_data'
 
-    def __init__(self, iadj, data):
-        self.iadj = iadj
-        self.data = data
+    def __init__(self, index, data):
+        self._index = index
+        self._data = data
 
     def __getitem__(self, v):
-        return NeighbourView(self.iadj[v], self.data)
+        return IndexNeighborView(self._index[v], self._data)
 
     def __iter__(self):
-        return iter(self.iadj)
+        return iter(self._index)
 
     def __len__(self):
-        return len(self.adj)
+        return len(self._index)
 
     def __str__(self):
         return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
+
+
+# class AdjacencyView(abc.Mapping):
+#     __slots__ = '_variables', '_iadj'
+
+#     def __init__(self, variables, iadj):
+#         self._variables = variables
+#         self._iadj = iadj
+
+#     def __getitem__(self, v):
+#         return IndexNeighborView(self._index[v], self._data)
+
+#     def __iter__(self):
+#         return iter(self.variables)
+
+#     def __len__(self):
+#         return len(self._index)
+
+#     def __str__(self):
+#         return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
