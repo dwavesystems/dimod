@@ -158,40 +158,6 @@ class SampleView(VariableArrayView):
         return str(self)
 
 
-# class LinearView(VariableArrayView):
-#     __slots__ = ()
-
-#     def __setitem__(self, v, bias):
-#         self._data[self._variables.index(v)] = bias
-
-
-# class QuadraticView(abc.Mapping):
-#     __slots__ = 'bqm',
-
-#     def __init__(self, bqm):
-#         self.bqm = bqm
-
-#     def __getitem__(self, interaction):
-#         u, v = interaction
-#         return self.bqm.adj[u][v]
-
-#     def __setitem__(self, interaction, bias):
-#         u, v = interaction
-#         self.bqm.adj[u][v] = bias
-
-#     def __iter__(self):
-#         bqm = self.bqm
-#         variables = bqm.variables
-#         for r, c in zip(bqm.irow, bqm.icol):
-#             yield variables[r], variables[c]
-
-#     def __len__(self):
-#         return len(self.bqm.qdata)
-
-#     def __str__(self):
-#         return str(dict(self))
-
-
 class IndexView(abc.Mapping):
     __slots__ = '_index', '_data'
 
@@ -208,12 +174,6 @@ class IndexView(abc.Mapping):
     def __getitem__(self, v):
         return self._data[self._index[v]]
 
-
-class IndexNeighborView(IndexView):
-
-    def __setitem__(self, v, bias):
-        self._data[self._index[v]] = bias
-
     def __repr__(self):
         return '{}({}, {})'.format(self.__class__.__name__, self._index, self._data)
 
@@ -221,41 +181,111 @@ class IndexNeighborView(IndexView):
         return str(dict(self))
 
 
-class IndexAdjacencyView(IndexView):
-    __slots__ = '_index', '_data'
+class IndexNeighborView(IndexView):
+    __slots__ = ()
 
-    def __init__(self, index, data):
-        self._index = index
-        self._data = data
+    def __setitem__(self, v, bias):
+        self._data[self._index[v]] = bias
+
+
+class IndexAdjacencyView(IndexView):
+    __slots__ = ()
 
     def __getitem__(self, v):
         return IndexNeighborView(self._index[v], self._data)
-
-    def __iter__(self):
-        return iter(self._index)
-
-    def __len__(self):
-        return len(self._index)
 
     def __str__(self):
         return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
 
 
-# class AdjacencyView(abc.Mapping):
-#     __slots__ = '_variables', '_iadj'
+class NeighbourView(abc.Mapping):
+    __slots__ = '_variables', '_ineighbours'
 
-#     def __init__(self, variables, iadj):
-#         self._variables = variables
-#         self._iadj = iadj
+    def __init__(self, variables, ineighbours):
+        if not isinstance(variables, Variables):
+            raise TypeError
+        if not isinstance(ineighbours, IndexNeighborView):
+            raise TypeError
+        self._variables = variables
+        self._ineighbours = ineighbours
 
-#     def __getitem__(self, v):
-#         return IndexNeighborView(self._index[v], self._data)
+    def __getitem__(self, v):
+        return self._ineighbours[self._variables.index(v)]
 
-#     def __iter__(self):
-#         return iter(self.variables)
+    def __setitem__(self, v, bias):
+        self._ineighbours[self._variables.index(v)] = bias
 
-#     def __len__(self):
-#         return len(self._index)
+    def __iter__(self):
+        variables = self._variables
+        for idx in self._ineighbours:
+            yield variables[idx]
 
-#     def __str__(self):
-#         return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
+    def __len__(self):
+        return len(self._ineighbours)
+
+    def __repr__(self):
+        return '{}({!r}, {!r})'.format(self.__class__.__name__, self._variables, self._ineighbours)
+
+    def __str__(self):
+        return str(dict(self))
+
+
+class AdjacencyView(abc.Mapping):
+    __slots__ = '_variables', '_iadj'
+
+    def __init__(self, variables, iadj):
+        if not isinstance(variables, Variables):
+            raise TypeError
+        if not isinstance(iadj, IndexAdjacencyView):
+            raise TypeError
+        self._variables = variables
+        self._iadj = iadj
+
+    def __getitem__(self, v):
+        return NeighbourView(self._variables, self._iadj[self._variables.index(v)])
+
+    def __iter__(self):
+        return iter(self._variables)
+
+    def __len__(self):
+        return len(self._variables)
+
+    def __repr__(self):
+        return '{}({!r}, {!r})'.format(self.__class__.__name__, self._variables, self._iadj)
+
+    def __str__(self):
+        return str({key: dict(val) for key, val in self.items()})
+
+
+class LinearView(VariableArrayView):
+    __slots__ = ()
+
+    def __setitem__(self, v, bias):
+        self._data[self._variables.index(v)] = bias
+
+
+class QuadraticView(abc.Mapping):
+    __slots__ = 'bqm',
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getitem__(self, interaction):
+        u, v = interaction
+        return self.bqm.adj[u][v]
+
+    def __setitem__(self, interaction, bias):
+        u, v = interaction
+        self.bqm.adj[u][v] = bias
+
+    def __iter__(self):
+        bqm = self.bqm
+        variables = bqm.variables
+        for r, c in zip(bqm.irow, bqm.icol):
+            yield variables[r], variables[c]
+
+    def __len__(self):
+        return len(self.bqm.qdata)
+
+    def __str__(self):
+        return str(dict(self))

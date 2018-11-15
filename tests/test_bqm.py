@@ -12,6 +12,124 @@ else:
     cext = True
 
 
+class TestFastBQM(unittest.TestCase):
+    @staticmethod
+    def check_consistent_fastbqm(bqm):
+        TestVectorBQM.check_consistent_vectorbqm(bqm)
+
+        for v in bqm.linear:
+            assert v in bqm.adj
+        for v in bqm.adj:
+            assert v in bqm.linear
+
+        # adjacency and quadratic are self-consistent
+        for u, v in bqm.quadratic:
+            assert v in bqm.linear
+            assert v in bqm.adj
+            assert u in bqm.adj[v]
+
+            assert u in bqm.linear
+            assert u in bqm.adj
+            assert v in bqm.adj[u]
+
+            assert bqm.adj[u][v] == bqm.quadratic[(u, v)]
+            assert bqm.adj[v][u] == bqm.adj[u][v]
+
+        for u in bqm.adj:
+            for v in bqm.adj[u]:
+                assert (u, v) in bqm.quadratic and (v, u) in bqm.quadratic
+
+        # (u, v) and (v, u) are both in quadratic but iteration should be unique
+        pairs = set(bqm.quadratic)
+        for u, v in pairs:
+            assert (v, u) not in pairs
+
+    def test_construction(self):
+        lins = [{0: -.5, 1: 0.0},
+                {0: -.5},
+                [-.5, 0.0],
+                np.array([-.5, 0.0])]
+
+        quads = [{(0, 1): -1},
+                 {(1, 0): -1},
+                 {(0, 1): -1},
+                 {(1, 0): -1},
+                 {(0, 1): -.5, (1, 0): -.5},
+                 [[0, -1], [0, 0]],
+                 [[0, 0], [-1, 0]],
+                 [[0, -.5], [-.5, 0]],
+                 np.asarray([[0, -1], [0, 0]]),
+                 ([0], [1], [-1])]
+
+        bqms = [dimod.FastBQM({0: -.5, 1: 0.0}, {(0, 1): -1}, 1.2, dimod.SPIN),
+                dimod.FastBQM([0, -.5], {(0, 1): -1}, 1.2, dimod.SPIN, labels=[1, 0]),
+                dimod.FastBQM([0, -.5], [[0, -1], [0, 0]], 1.2, dimod.SPIN, labels=[1, 0])]
+        bqms.extend(dimod.FastBQM(l, q, 1.2, dimod.SPIN) for l in lins for q in quads)
+
+        for bqm0, bqm1 in itertools.combinations(bqms, 2):
+            self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.check_consistent_fastbqm(bqm)
+
+    def test_construction_labels(self):
+
+        lins = [{'a': -.5, 'b': 0.0},
+                {'a': -.5},
+                [-.5, 0.0],
+                np.array([-.5, 0.0])]
+
+        quads = [{'ab': -1},
+                 {'ba': -1},
+                 {('a', 'b'): -1},
+                 {('b', 'a'): -1},
+                 {('a', 'b'): -.5, ('b', 'a'): -.5},
+                 [[0, -1], [0, 0]],
+                 [[0, 0], [-1, 0]],
+                 [[0, -.5], [-.5, 0]],
+                 np.asarray([[0, -1], [0, 0]]),
+                 ([0], [1], [-1])]
+
+        bqms = [dimod.FastBQM({'a': -.5, 'b': 0.0}, {'ab': -1}, 1.2, dimod.SPIN),
+                dimod.FastBQM([0, -.5], {'ab': -1}, 1.2, dimod.SPIN, labels=['b', 'a']),
+                dimod.FastBQM([0, -.5], [[0, -1], [0, 0]], 1.2, dimod.SPIN, labels=['b', 'a'])]
+        bqms.extend(dimod.FastBQM(l, q, 1.2, dimod.SPIN, labels=['a', 'b']) for l in lins for q in quads)
+
+        for bqm0, bqm1 in itertools.combinations(bqms, 2):
+            self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.check_consistent_fastbqm(bqm)
+
+    def test_construction_empty(self):
+        lins = [{}, [], np.array([])]
+
+        quads = [{}, [[]], [], np.asarray([]), np.asarray([[]]), ([], [], [])]
+
+        bqms = [dimod.FastBQM(l, q, 1.2, dimod.SPIN) for l in lins for q in quads]
+
+        for bqm0, bqm1 in itertools.combinations(bqms, 2):
+            self.assertEqual(bqm0, bqm1)
+
+        for bqm in bqms:
+            self.check_consistent_fastbqm(bqm)
+
+    def test__eq__(self):
+        bqm = dimod.FastBQM({'a': .5}, {'ab': -1, 'bc': 1}, 1.0, dimod.SPIN)
+        self.check_consistent_fastbqm(bqm)
+
+        # should test true for self
+        self.assertEqual(bqm, bqm)
+
+    # def test_energies(self):
+    #     bqm = dimod.FastBQM({'a': .5}, {'ab': -1}, 1.0, dimod.SPIN)
+    #     self.check_consistent_fastbqm(bqm)
+
+    #     self.assertTrue(all(bqm.energies([{'a': -1, 'b': -1}, {'a': -1, 'b': +1}]) == [-.5, 1.5]))
+
+    #     self.assertTrue(all(bqm.energies(([[-1, -1], [+1, -1]], ['b', 'a'])) == [-.5, 1.5]))
+
+
 class TestVectorBQM(unittest.TestCase):
     @staticmethod
     def check_consistent_vectorbqm(vbqm):
