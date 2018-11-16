@@ -49,6 +49,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
                   ':python_version <= "3.3"': ['enum34>=1.1.6,<2.0.0']}
 
 packages = ['dimod',
+            'dimod.bqm',
             'dimod.core',
             'dimod.embedding',
             'dimod.io',

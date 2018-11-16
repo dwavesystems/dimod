@@ -121,13 +121,13 @@ class TestFastBQM(unittest.TestCase):
         # should test true for self
         self.assertEqual(bqm, bqm)
 
-    # def test_energies(self):
-    #     bqm = dimod.FastBQM({'a': .5}, {'ab': -1}, 1.0, dimod.SPIN)
-    #     self.check_consistent_fastbqm(bqm)
+    def test_energies(self):
+        bqm = dimod.FastBQM({'a': .5}, {'ab': -1}, 1.0, dimod.SPIN)
+        self.check_consistent_fastbqm(bqm)
 
-    #     self.assertTrue(all(bqm.energies([{'a': -1, 'b': -1}, {'a': -1, 'b': +1}]) == [-.5, 1.5]))
+        self.assertTrue(all(bqm.energies([{'a': -1, 'b': -1}, {'a': -1, 'b': +1}]) == [-.5, 1.5]))
 
-    #     self.assertTrue(all(bqm.energies(([[-1, -1], [+1, -1]], ['b', 'a'])) == [-.5, 1.5]))
+        self.assertTrue(all(bqm.energies(([[-1, -1], [+1, -1]], ['b', 'a'])) == [-.5, 1.5]))
 
 
 class TestVectorBQM(unittest.TestCase):
@@ -211,10 +211,46 @@ class TestVectorBQM(unittest.TestCase):
 
         np.testing.assert_array_equal(bqm.energies(samples), [.5, 4.5, .5, .5])
 
+    def test_energies_order_linear(self):
 
-class TestUtils(unittest.TestCase):
+        samples = list(itertools.product((0, 1), repeat=3))
+
+        # only linear + offset
+        bqm = dimod.VectorBQM([1, 2, 3], [], 1.5, dimod.BINARY)
+        rbqm = dimod.VectorBQM([3, 2, 1], [], 1.5, dimod.BINARY)
+
+        renergies = rbqm.energies(samples)
+        energies = bqm.energies(samples, order=[2, 1, 0])
+
+        np.testing.assert_array_almost_equal(renergies, energies)
+
+    def test_energies_order_quadratic(self):
+
+        samples = list(itertools.product((0, 1), repeat=3))
+
+        # only quadratic + offset
+        bqm = dimod.VectorBQM([0, 0, 0], ([0, 1], [1, 2], [1, 2]), 1.5, dimod.BINARY)
+        rbqm = dimod.VectorBQM([0, 0, 0], ([2, 1], [1, 0], [1, 2]), 1.5, dimod.BINARY)
+
+        renergies = rbqm.energies(samples)
+        energies = bqm.energies(samples, order=[2, 1, 0])
+
+        np.testing.assert_array_almost_equal(renergies, energies)
+
+    def test_energies_order(self):
+        samples = list(itertools.product((0, 1), repeat=3))
+
+        # all
+        bqm = dimod.VectorBQM([1, 2, 3], ([0, 1], [1, 2], [1, 2]), 1.5, dimod.BINARY)
+        rbqm = dimod.VectorBQM([3, 2, 1], ([2, 1], [1, 0], [1, 2]), 1.5, dimod.BINARY)
+
+        renergies = rbqm.energies(samples)
+        energies = bqm.energies(samples, order=[2, 1, 0])
+
+        np.testing.assert_array_almost_equal(renergies, energies)
+
     @unittest.skipUnless(cext, "No c extension built")
-    def test_energies(self):
+    def test_energies_cpp(self):
         num_variables = 1000
         p = .1
         num_samples = 100
@@ -227,7 +263,7 @@ class TestUtils(unittest.TestCase):
 
         samples = np.random.randint(2, size=(num_samples, num_variables))
 
-        energies_c = dimod.bqm.utils.energies(vbqm, samples, _use_cpp_ext=True)
-        energies_np = dimod.bqm.utils.energies(vbqm, samples, _use_cpp_ext=False)
+        energies_c = vbqm.energies(samples, _use_cpp_ext=True)
+        energies_np = vbqm.energies(samples, _use_cpp_ext=False)
 
         np.testing.assert_array_almost_equal(energies_np, energies_c)

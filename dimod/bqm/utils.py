@@ -1,37 +1,6 @@
+from __future__ import absolute_import
+
 import numpy as np
-
-
-def energies(bqm, samples, _use_cpp_ext=True):
-    # use the faster c++ extension if it's available
-
-    if hasattr(samples, "dtype"):
-        samples = np.asarray(samples, dtype=samples.dtype)  # handle subclasses
-    else:
-        samples = np.asarray(samples, dtype=np.int8)
-
-    if _use_cpp_ext:
-        try:
-            from dimod.bqm._utils import fast_energy
-            return fast_energy(bqm.offset, bqm.ldata, bqm.irow, bqm.icol, bqm.qdata, samples)
-        except ImportError:
-            # no c++ extension
-            pass
-        # except TypeError:
-        #     # dtype is the wrong type
-        #     pass
-
-    try:
-        num_samples, num_variables = samples.shape
-    except ValueError:
-        raise ValueError("samples should be a square array where each row is a sample")
-
-    energy = np.full(num_samples, bqm.offset)  # offset
-
-    energy += samples.dot(bqm.ldata)  # linear
-
-    energy += (samples[:, bqm.irow]*samples[:, bqm.icol]).dot(bqm.qdata)  # quadratic
-
-    return energy
 
 
 def reduce_coo(row, col, data, dtype=None, index_dtype=None, copy=True):

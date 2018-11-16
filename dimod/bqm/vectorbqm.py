@@ -9,8 +9,6 @@ import dimod.bqm.utils as bqmutils
 from dimod.decorators import vartype_argument
 from dimod.views import IndexAdjacencyView
 
-__all__ = 'VectorBinaryQuadraticModel', 'VectorBQM'
-
 
 class VectorBinaryQuadraticModel(Sized):
     __slots__ = 'vartype', 'offset', 'ldata', 'irow', 'icol', 'qdata', 'iadj'
@@ -154,12 +152,53 @@ class VectorBinaryQuadraticModel(Sized):
         return self.__class__(linear, quadratic, offset, Vartype.BINARY,
                               dtype=self.dtype, index_dtype=self.index_dtype)
 
-    def energy(self, sample):
-        en, = self.energies([sample])  # should only be one
+    def energy(self, sample, *args, **kwargs):
+        en, = self.energies([sample], *args, **kwargs)  # should only be one
         return en
 
-    def energies(self, samples):
-        return bqmutils.energies(self, samples)
+    def energies(self, samples, order=None, _use_cpp_ext=True):
+
+        if hasattr(samples, "dtype"):
+            samples = np.asarray(samples, dtype=samples.dtype)  # handle subclasses
+        else:
+            samples = np.asarray(samples, dtype=np.int8)
+
+        ldata = self.ldata
+        row = self.irow
+        col = self.icol
+        qdata = self.qdata
+        offset = self.offset
+
+        if order is not None:
+            order = np.asarray(order)
+
+            ldata = ldata[order]
+            row = order[row]
+            col = order[col]
+
+        if _use_cpp_ext:
+            try:
+                from dimod.bqm._utils import fast_energy
+                return fast_energy(offset, ldata, row, col, qdata, samples)
+            except ImportError:
+                # no c++ extension
+                pass
+            # except TypeError:
+            #     # dtype is the wrong type
+            #     pass
+
+        try:
+            num_samples, num_variables = samples.shape
+        except ValueError:
+            raise ValueError("samples should be a square array where each row is a sample")
+
+        energy = np.full(num_samples, offset)  # offset
+
+        energy += samples.dot(ldata)  # linear
+
+        energy += (samples[:, row]*samples[:, col]).dot(qdata)  # quadratic
+
+        return energy
 
 
 VectorBQM = VectorBinaryQuadraticModel

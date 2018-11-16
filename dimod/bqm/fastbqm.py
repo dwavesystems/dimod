@@ -12,9 +12,6 @@ from dimod.sampleset import as_samples
 from dimod.views import Variables, LinearView, QuadraticView, AdjacencyView
 
 
-__all__ = 'FastBinaryQuadraticModel', 'FastBQM'
-
-
 class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
     __slots__ = 'variables', 'linear', 'quadratic', 'adj'
 
@@ -94,6 +91,17 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
 
     def __ne__(self, other):
         return not (self == other)
+
+    def energies(self, samples_like, _use_cpp_ext=True):
+        samples, labels = as_samples(samples_like)
+
+        variables = self.variables
+        if labels == variables:
+            order = None
+        else:
+            order = [variables.index(v) for v in labels]
+
+        return VectorBQM.energies(self, samples, order=order, _use_cpp_ext=_use_cpp_ext)
 
 
 FastBQM = FastBinaryQuadraticModel
