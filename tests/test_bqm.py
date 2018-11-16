@@ -185,6 +185,80 @@ class TestFastBQM(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm.scale('a')
 
+    def test_flip_variable(self):
+
+        # single spin variable, trivial
+        bqm = dimod.FastBQM({'a': -1}, {}, 0.0, dimod.SPIN)
+        original_bqm = dimod.FastBQM({'a': -1}, {}, 0.0, dimod.SPIN)
+        bqm.flip_variable('a')
+        self.assertAlmostEqual(bqm.energy({'a': +1}), original_bqm.energy({'a': -1}))
+        self.assertAlmostEqual(bqm.energy({'a': -1}), original_bqm.energy({'a': +1}))
+        self.check_consistent_fastbqm(bqm)
+
+        bqm.flip_variable('a')  # should return to original
+        self.assertEqual(bqm, original_bqm)
+
+        #
+
+        # more complicated spin model
+        linear = {v: v * -.43 for v in range(10)}
+        quadratic = {(u, v): u * v * -.021 for u, v in itertools.combinations(linear, 2)}
+        offset = -1.2
+        vartype = dimod.SPIN
+        bqm = dimod.FastBQM(linear, quadratic, offset, vartype)
+        original_bqm = dimod.FastBQM(linear, quadratic, offset, vartype)
+
+        bqm.flip_variable(4)
+        self.check_consistent_fastbqm(bqm)
+        self.assertEqual(linear[4], bqm.linear[4] * -1)
+        self.assertNotEqual(bqm, original_bqm)
+
+        sample = {v: 1 for v in linear}
+        flipped_sample = sample.copy()
+        flipped_sample[4] = -1
+        self.assertAlmostEqual(bqm.energy(flipped_sample), original_bqm.energy(sample))
+
+        bqm.flip_variable(4)  # should return to original
+        self.assertEqual(bqm, original_bqm)
+
+        #
+
+        # single binary variable
+        bqm = dimod.FastBQM({'a': -1}, {}, 0.0, dimod.BINARY)
+        original_bqm = dimod.FastBQM({'a': -1}, {}, 0.0, dimod.BINARY)
+        bqm.flip_variable('a')
+        self.assertAlmostEqual(bqm.energy({'a': 1}), original_bqm.energy({'a': 0}))
+        self.assertAlmostEqual(bqm.energy({'a': 0}), original_bqm.energy({'a': 1}))
+        self.check_consistent_fastbqm(bqm)
+
+        bqm.flip_variable('a')  # should return to original
+        self.assertEqual(bqm, original_bqm)
+
+        #
+
+        linear = {v: v * -.43 for v in range(10)}
+        quadratic = {(u, v): u * v * -.021 for u, v in itertools.combinations(linear, 2)}
+        offset = -1.2
+        vartype = dimod.BINARY
+        bqm = dimod.FastBQM(linear, quadratic, offset, vartype)
+        original_bqm = dimod.FastBQM(linear, quadratic, offset, vartype)
+
+        bqm.flip_variable(4)
+        self.check_consistent_fastbqm(bqm)
+        self.assertNotEqual(bqm, original_bqm)
+
+        sample = {v: 1 for v in linear}
+        flipped_sample = sample.copy()
+        flipped_sample[4] = 0
+        self.assertAlmostEqual(bqm.energy(flipped_sample), original_bqm.energy(sample))
+
+        bqm.flip_variable(4)  # should return to original
+        self.assertEqual(bqm, original_bqm)
+
+        #
+
+        bqm.flip_variable(100000)  # silent fail
+
 
 class TestVectorBQM(unittest.TestCase):
     @staticmethod

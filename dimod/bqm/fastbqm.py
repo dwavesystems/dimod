@@ -1,3 +1,5 @@
+from __future__ import division
+
 from itertools import chain
 from numbers import Number
 
@@ -11,6 +13,7 @@ import numpy as np
 from dimod.bqm.vectorbqm import VectorBQM
 from dimod.sampleset import as_samples
 from dimod.views import Variables, LinearView, QuadraticView, AdjacencyView
+from dimod.vartypes import Vartype
 
 
 class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
@@ -155,7 +158,7 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
             This example creates a binary quadratic model and then normalizes
             all the biases in the range [-0.4, 0.8].
 
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm = dimod.FastBQM({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
             >>> bqm.normalize([-0.4, 0.8])
             >>> bqm.linear
             {'a': -0.4, 'b': 0.30000000000000004}
@@ -192,6 +195,50 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
 
         if inv_scalar != 0:
             self.scale(1 / inv_scalar)
+
+    def flip_variable(self, v):
+        """Flip variable v in a binary quadratic model.
+
+        Args:
+            v (variable):
+                Variable in the binary quadratic model. If v is not in the binary
+                quadratic model, it is ignored.
+
+        Examples:
+            This example creates a binary quadratic model with two variables and inverts
+            the value of one.
+
+            >>> bqm = dimod.FastBQM({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
+            >>> bqm.flip_variable(1)
+            >>> bqm.linear[1], bqm.linear[2], bqm.quadratic[(1, 2)]
+            (-1.0, 2, -0.5)
+
+        """
+        self.flip_variables([v])
+
+    def flip_variables(self, variables):
+        adj = self.adj
+        linear = self.linear
+
+        variables = set(v for v in variables if v in self)
+
+        if self.vartype is Vartype.SPIN:
+            for v in variables:
+                linear[v] *= -1
+                for u in adj[v]:
+                    adj[u][v] *= -1
+        else:
+            for v in variables:
+
+                self.offset += linear[v]
+                linear[v] *= -1
+
+                for u in adj[v]:
+                    bias = adj[v][u]
+
+                    adj[u][v] *= -1.
+
+                    linear[u] += bias
 
     def energy(self, samples_like, _use_cpp_ext=True):
         energies = self.energies(samples_like, _use_cpp_ext=_use_cpp_ext)
