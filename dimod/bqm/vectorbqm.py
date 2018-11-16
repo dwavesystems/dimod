@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 try:
     from collections.abc import Sized
 except ImportError:
@@ -5,7 +7,7 @@ except ImportError:
 
 import numpy as np
 
-import dimod.bqm.utils as bqmutils
+from dimod.bqm.utils import reduce_coo
 from dimod.decorators import vartype_argument
 from dimod.views import IndexAdjacencyView
 
@@ -56,8 +58,8 @@ class VectorBinaryQuadraticModel(Sized):
             row, col = quadratic.nonzero()
             data = quadratic[row, col]
 
-        irow, icol, qdata = bqmutils.reduce_coo(row, col, data, dtype=dtype, index_dtype=index_dtype,
-                                                copy=True)
+        irow, icol, qdata = reduce_coo(row, col, data, dtype=dtype, index_dtype=index_dtype,
+                                       copy=True)
 
         if np.max(icol, initial=-1) >= num_variables:
             msg = "mismatched linear and quadratic dimensions ({}, {})".format(num_variables, icol[-1])
