@@ -158,62 +158,25 @@ class SampleView(VariableArrayView):
         return str(self)
 
 
-class IndexView(abc.Mapping):
-    __slots__ = '_index', '_data'
-
-    def __init__(self, index, data):
-        self._index = index
-        self._data = data
-
-    def __iter__(self):
-        return iter(self._index)
-
-    def __len__(self):
-        return len(self._index)
-
-    def __getitem__(self, v):
-        return self._data[self._index[v]]
-
-    def __repr__(self):
-        return '{}({}, {})'.format(self.__class__.__name__, self._index, self._data)
-
-    def __str__(self):
-        return str(dict(self))
-
-
-class IndexNeighborView(IndexView):
-    __slots__ = ()
-
-    def __setitem__(self, v, bias):
-        self._data[self._index[v]] = bias
-
-
-class IndexAdjacencyView(IndexView):
-    __slots__ = ()
-
-    def __getitem__(self, v):
-        return IndexNeighborView(self._index[v], self._data)
-
-    def __str__(self):
-        return str({v: dict(neighbourhood) for v, neighbourhood in self.items()})
-
-
 class NeighbourView(abc.Mapping):
-    __slots__ = '_variables', '_ineighbours'
+    __slots__ = '_variables', '_ineighbours', '_qdata'
 
-    def __init__(self, variables, ineighbours):
+    def __init__(self, variables, ineighbours, qdata):
         if not isinstance(variables, Variables):
             raise TypeError
-        if not isinstance(ineighbours, IndexNeighborView):
+        if not isinstance(ineighbours, dict):
+            raise TypeError
+        if not isinstance(qdata, np.ndarray):
             raise TypeError
         self._variables = variables
         self._ineighbours = ineighbours
+        self._qdata = qdata
 
     def __getitem__(self, v):
-        return self._ineighbours[self._variables.index(v)]
+        return self._qdata[self._ineighbours[self._variables.index(v)]]
 
     def __setitem__(self, v, bias):
-        self._ineighbours[self._variables.index(v)] = bias
+        self._qdata[self._ineighbours[self._variables.index(v)]] = bias
 
     def __iter__(self):
         variables = self._variables
@@ -231,18 +194,21 @@ class NeighbourView(abc.Mapping):
 
 
 class AdjacencyView(abc.Mapping):
-    __slots__ = '_variables', '_iadj'
+    __slots__ = '_variables', '_iadj', '_qdata'
 
-    def __init__(self, variables, iadj):
+    def __init__(self, variables, iadj, qdata):
         if not isinstance(variables, Variables):
             raise TypeError
-        if not isinstance(iadj, IndexAdjacencyView):
+        if not isinstance(iadj, dict):
+            raise TypeError
+        if not isinstance(qdata, np.ndarray):
             raise TypeError
         self._variables = variables
         self._iadj = iadj
+        self._qdata = qdata
 
     def __getitem__(self, v):
-        return NeighbourView(self._variables, self._iadj[self._variables.index(v)])
+        return NeighbourView(self._variables, self._iadj[self._variables.index(v)], self._qdata)
 
     def __iter__(self):
         return iter(self._variables)
@@ -265,27 +231,27 @@ class LinearView(VariableArrayView):
 
 
 class QuadraticView(abc.Mapping):
-    __slots__ = 'bqm',
+    __slots__ = '_bqm',
 
     def __init__(self, bqm):
-        self.bqm = bqm
+        self._bqm = bqm
 
     def __getitem__(self, interaction):
         u, v = interaction
-        return self.bqm.adj[u][v]
+        return self._bqm.adj[u][v]
 
     def __setitem__(self, interaction, bias):
         u, v = interaction
-        self.bqm.adj[u][v] = bias
+        self._bqm.adj[u][v] = bias
 
     def __iter__(self):
-        bqm = self.bqm
+        bqm = self._bqm
         variables = bqm.variables
         for r, c in zip(bqm.irow, bqm.icol):
             yield variables[r], variables[c]
 
     def __len__(self):
-        return len(self.bqm.qdata)
+        return len(self._bqm.qdata)
 
     def __str__(self):
         return str(dict(self))

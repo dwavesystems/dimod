@@ -144,6 +144,31 @@ class TestFastBQM(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.energy(([[-1, 1], [1, -1]], 'ab'))
 
+    def test_scale(self):
+        bqm = dimod.FastBQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5)
+        self.assertAlmostEqual(bqm.linear, {0: -1., 1: 1.})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.5})
+        self.assertAlmostEqual(bqm.offset, .5)
+        self.check_consistent_fastbqm(bqm)
+
+        self.assertAlmostEqual(bqm.to_binary().energy({v: v % 2 for v in bqm.linear}),
+                               bqm.to_spin().energy({v: 2 * (v % 2) - 1 for v in bqm.linear}))
+
+        with self.assertRaises(TypeError):
+            bqm.scale('a')
+
+    def test_scale_exclusions(self):
+        bqm = dimod.FastBQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_variables=[0])
+        self.check_consistent_fastbqm(bqm)
+        self.assertEqual(bqm, dimod.FastBQM({0: -2, 1: 1}, {(0, 1): -.5}, .5, dimod.SPIN))
+
+        bqm = dimod.FastBQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_interactions=[(1, 0)])
+        self.check_consistent_fastbqm(bqm)
+        self.assertEqual(bqm, dimod.FastBQM({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
+
 
 class TestVectorBQM(unittest.TestCase):
     @staticmethod
@@ -162,7 +187,7 @@ class TestVectorBQM(unittest.TestCase):
         assert len(vbqm.icol) == len(vbqm.qdata)
 
         for idx, (i, j) in enumerate(zip(vbqm.irow, vbqm.icol)):
-            assert vbqm.iadj[i][j] == vbqm.qdata[idx]
+            assert vbqm.iadj[i][j] == idx
 
         assert vbqm.ldata.dtype is vbqm.dtype
         assert vbqm.qdata.dtype is vbqm.dtype
@@ -193,7 +218,7 @@ class TestVectorBQM(unittest.TestCase):
         vbqm = dimod.VectorBQM(lin, quad, .2, dimod.SPIN)
 
         self.check_consistent_vectorbqm(vbqm)
-        self.assertAlmostEqual(vbqm.iadj[0][1], .2)
+        self.assertAlmostEqual(vbqm.qdata[vbqm.iadj[0][1]], .2)
 
     def test_multiple_constructions(self):
         lins = [[-.5, 0.0],

@@ -9,7 +9,7 @@ import numpy as np
 
 from dimod.bqm.utils import reduce_coo
 from dimod.decorators import vartype_argument
-from dimod.views import IndexAdjacencyView
+from dimod.vartypes import Vartype
 
 
 class VectorBinaryQuadraticModel(Sized):
@@ -65,10 +65,9 @@ class VectorBinaryQuadraticModel(Sized):
             msg = "mismatched linear and quadratic dimensions ({}, {})".format(num_variables, icol[-1])
             raise ValueError(msg)
 
-        index = {v: {} for v in range(num_variables)}
+        self.iadj = iadj = {v: {} for v in range(num_variables)}
         for idx, (ir, ic) in enumerate(zip(irow, icol)):
-            index[ir][ic] = index[ic][ir] = idx
-        self.iadj = IndexAdjacencyView(index, qdata)
+            iadj[ir][ic] = iadj[ic][ir] = idx
 
         self.irow = irow
         self.icol = icol

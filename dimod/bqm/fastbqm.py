@@ -65,7 +65,7 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
                                       dtype=dtype, index_dtype=index_dtype)
 
         self.linear = LinearView(variables, self.ldata)
-        self.adj = adj = AdjacencyView(variables, self.iadj)
+        self.adj = AdjacencyView(variables, self.iadj, self.qdata)
         self.quadratic = QuadraticView(self)
 
     def __contains__(self, v):
@@ -91,6 +91,27 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
 
     def __ne__(self, other):
         return not (self == other)
+
+    def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
+
+        variables = self.variables
+
+        if ignored_variables is None:
+            self.ldata *= scalar
+        else:
+            idx = np.ones(len(self.linear), dtype=bool)
+            idx[[variables.index(v) for v in ignored_variables]] = False
+            self.ldata[idx] *= scalar
+
+        if ignored_interactions is None:
+            self.qdata *= scalar
+        else:
+            iadj = self.iadj
+            idx = np.ones(len(self.quadratic), dtype=bool)
+            idx[[iadj[variables.index(u)][variables.index(v)] for u, v in ignored_interactions]] = False
+            self.qdata[idx] *= scalar
+
+        self.offset *= scalar
 
     def energy(self, samples_like, _use_cpp_ext=True):
         energies = self.energies(samples_like, _use_cpp_ext=_use_cpp_ext)
