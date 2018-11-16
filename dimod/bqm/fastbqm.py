@@ -92,6 +92,14 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
     def __ne__(self, other):
         return not (self == other)
 
+    def energy(self, samples_like, _use_cpp_ext=True):
+        energies = self.energies(samples_like, _use_cpp_ext=_use_cpp_ext)
+
+        if len(energies) != 1:
+            raise ValueError("too many samples given, use 'energies' method instead")
+
+        return energies[0]
+
     def energies(self, samples_like, _use_cpp_ext=True):
         samples, labels = as_samples(samples_like)
 

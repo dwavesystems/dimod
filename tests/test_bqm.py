@@ -129,6 +129,21 @@ class TestFastBQM(unittest.TestCase):
 
         self.assertTrue(all(bqm.energies(([[-1, -1], [+1, -1]], ['b', 'a'])) == [-.5, 1.5]))
 
+    def test_energy(self):
+        samples = [{'a': -1, 'b': +1},
+                   ([-1, +1], 'ab'),
+                   ([+1, -1], 'ba'),
+                   ]
+
+        bqm = dimod.FastBQM({'b': .12}, {'ab': 1.3}, 8.9, dimod.SPIN)
+
+        energies = list(map(bqm.energy, samples))
+        for e, f in zip(energies, energies[1:]):
+            self.assertAlmostEqual(e, f)
+
+        with self.assertRaises(ValueError):
+            bqm.energy(([[-1, 1], [1, -1]], 'ab'))
+
 
 class TestVectorBQM(unittest.TestCase):
     @staticmethod
