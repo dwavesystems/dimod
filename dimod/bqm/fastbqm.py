@@ -1,4 +1,5 @@
 from itertools import chain
+from numbers import Number
 
 try:
     import collections.abc as abc
@@ -93,7 +94,27 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
         return not (self == other)
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
+        """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
+        Args:
+            scalar (number):
+                Value by which to scale the energy range of the binary quadratic model.
+
+        Examples:
+
+            This example creates a binary quadratic model and then scales it to half
+            the original energy range.
+
+            >>> bqm = dimod.FastBQM({'a': -2.0, 'b': 2.0}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm.scale(0.5)
+            >>> bqm.linear['a']
+            -1.0
+            >>> bqm.quadratic[('a', 'b')]
+            -0.5
+            >>> bqm.offset
+            0.5
+
+        """
         variables = self.variables
 
         if ignored_variables is None:
@@ -112,6 +133,65 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
             self.qdata[idx] *= scalar
 
         self.offset *= scalar
+
+    def normalize(self, bias_range=1, quadratic_range=None):
+        """Normalizes the biases of the binary quadratic model such that they
+        fall in the provided range(s), and adjusts the offset appropriately.
+
+        If `quadratic_range` is provided, then `bias_range` will be treated as
+        the range for the linear biases and `quadratic_range` will be used for
+        the range of the quadratic biases.
+
+        Args:
+            bias_range (number/pair):
+                Value/range by which to normalize the all the biases, or if
+                `quadratic_range` is provided, just the linear biases.
+
+            quadratic_range (number/pair):
+                Value/range by which to normalize the quadratic biases.
+
+        Examples:
+
+            This example creates a binary quadratic model and then normalizes
+            all the biases in the range [-0.4, 0.8].
+
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
+            >>> bqm.normalize([-0.4, 0.8])
+            >>> bqm.linear
+            {'a': -0.4, 'b': 0.30000000000000004}
+            >>> bqm.quadratic
+            {('a', 'b'): -0.2}
+            >>> bqm.offset
+            0.2
+
+        """
+
+        def parse_range(r):
+            if isinstance(r, Number):
+                return -abs(r), abs(r)
+            return r
+
+        def min_and_max(iterable):
+            if not iterable:
+                return 0, 0
+            return min(iterable), max(iterable)
+
+        if quadratic_range is None:
+            linear_range, quadratic_range = bias_range, bias_range
+        else:
+            linear_range = bias_range
+
+        lin_range, quad_range = map(parse_range, (linear_range,
+                                                  quadratic_range))
+
+        lin_min, lin_max = min_and_max(self.linear.values())
+        quad_min, quad_max = min_and_max(self.quadratic.values())
+
+        inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
+                         quad_min / quad_range[0], quad_max / quad_range[1])
+
+        if inv_scalar != 0:
+            self.scale(1 / inv_scalar)
 
     def energy(self, samples_like, _use_cpp_ext=True):
         energies = self.energies(samples_like, _use_cpp_ext=_use_cpp_ext)

@@ -169,6 +169,22 @@ class TestFastBQM(unittest.TestCase):
         self.check_consistent_fastbqm(bqm)
         self.assertEqual(bqm, dimod.FastBQM({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
 
+    def test_normalize(self):
+        bqm = dimod.FastBQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.check_consistent_fastbqm(bqm)
+
+        self.assertAlmostEqual(bqm.to_binary().energy({v: v % 2 for v in bqm.linear}),
+                               bqm.to_spin().energy({v: 2 * (v % 2) - 1 for v in bqm.linear}))
+
+        #
+
+        with self.assertRaises(TypeError):
+            bqm.scale('a')
+
 
 class TestVectorBQM(unittest.TestCase):
     @staticmethod
