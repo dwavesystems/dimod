@@ -28,7 +28,6 @@ from collections import namedtuple
 import numpy as np
 
 from dimod.decorators import vartype_argument
-from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 from dimod.views import Variables, SampleView
 
@@ -710,28 +709,11 @@ class SampleSet(Iterable, Sized):
 
         """
         if not inplace:
-            return self.copy().relabel_variables(mapping, inplace=True)
+            other = self.copy()
+            other.relabel_variables(mapping, inplace=True)
+            return other
 
-        try:
-            old_labels = set(mapping.keys())
-            new_labels = set(mapping.values())
-        except TypeError:
-            raise ValueError("mapping targets must be hashable objects")
-
-        for v in self.variables:
-            if v in new_labels and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
-
-        shared = old_labels & new_labels
-        if shared:
-            old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
-
-            self.relabel_variables(old_to_intermediate, inplace=True)
-            self.relabel_variables(intermediate_to_new, inplace=True)
-            return self
-
-        self._variables = Variables(mapping.get(v, v) for v in self.variables)
+        self._variables.relabel(mapping)
         return self
 
     ###############################################################################################

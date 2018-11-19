@@ -15,6 +15,8 @@ from dimod.sampleset import as_samples
 from dimod.views import Variables, LinearView, QuadraticView, AdjacencyView
 from dimod.vartypes import Vartype
 
+__all__ = 'FastBinaryQuadraticModel', 'FastBQM'
+
 
 class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
     __slots__ = 'variables', 'linear', 'quadratic', 'adj'
@@ -243,6 +245,17 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
                     adj[u][v] *= -1.
 
                     linear[u] += bias
+
+    def relabel_variables(self, mapping):
+        """Relabel variables of a binary quadratic model as specified by mapping.
+
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new ones. If an incomplete mapping is
+                provided, unmapped variables retain their current labels.
+
+        """
+        self.variables.relabel(mapping)
 
     ##########################################################################
     # Create new bqms

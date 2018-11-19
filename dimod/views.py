@@ -24,6 +24,8 @@ import numpy as np
 
 from six.moves import zip, map
 
+from dimod.utilities import resolve_label_conflict
+
 
 class CallableDict(abc.Callable, dict):
     """Dict that can be accessed like a function."""
@@ -90,6 +92,35 @@ class Variables(abc.Sequence, abc.Container):
     def count(self, v):
         # everything is unique
         return int(v in self)
+
+    def relabel(self, mapping):
+        try:
+            old_labels = set(mapping)
+            new_labels = set(mapping.values())
+        except TypeError:
+            raise ValueError("mapping targets must be hashable objects")
+
+        for v in new_labels:
+            if v in self and v not in old_labels:
+                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
+                                  "the existing variable of the same name").format(v))
+
+        if any(v in new_labels for v in old_labels):
+            old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
+
+            self.relabel(old_to_intermediate)
+            self.relabel(intermediate_to_new)
+
+            return
+
+        label = self._label
+        index = self.index
+
+        for old, new in mapping.items():
+            label[index[old]] = new
+
+            index[new] = index[old]
+            del index[old]
 
 
 class VariableArrayView(abc.Mapping):
