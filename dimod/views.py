@@ -33,7 +33,7 @@ class CallableDict(abc.Callable, dict):
         try:
             return self[v]
         except KeyError:
-            raise ValueError('missing element {!r}')
+            raise ValueError('missing element {!r}'.format(v))
 
 
 class Variables(abc.Sequence, abc.Container):

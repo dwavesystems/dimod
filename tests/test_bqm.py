@@ -259,6 +259,122 @@ class TestFastBQM(unittest.TestCase):
 
         bqm.flip_variable(100000)  # silent fail
 
+    def test_fix_variable(self):
+        # spin model, fix variable to +1
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm = original_bqm.fix_variable('a', +1)
+
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 1}), original_bqm.to_binary().energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 0}), original_bqm.to_binary().energy({'b': 0, 'a': 1}))
+
+        #
+
+        # spin model with binary built, fix variable to +1
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm = original_bqm.fix_variable('a', +1)
+
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 1}), original_bqm.to_binary().energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 0}), original_bqm.to_binary().energy({'b': 0, 'a': 1}))
+
+        #
+
+        # spin model, fix variable to -1
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm = original_bqm.fix_variable('a', -1)
+
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 1}), original_bqm.to_binary().energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 0}), original_bqm.to_binary().energy({'b': 0, 'a': 0}))
+
+        #
+
+        # spin model with binary built, fix variable to -1
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm = original_bqm.fix_variable('a', -1)
+
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 1}), original_bqm.to_binary().energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_binary().energy({'b': 0}), original_bqm.to_binary().energy({'b': 0, 'a': 0}))
+
+        #
+
+        # binary model, fix variable to +1
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        bqm = original_bqm.fix_variable('a', 1)
+
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.to_spin().energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.to_spin().energy({'b': -1, 'a': +1}))
+
+        #
+
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        bqm = original_bqm.fix_variable('a', 1)
+
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.to_spin().energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.to_spin().energy({'b': -1, 'a': +1}))
+
+        #
+
+        # binary model, fix variable to 0
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        bqm = original_bqm.fix_variable('a', 0)
+
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.to_spin().energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.to_spin().energy({'b': -1, 'a': -1}))
+
+        #
+
+        original_bqm = dimod.FastBQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        bqm = original_bqm.fix_variable('a', 0)
+
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': +1}), original_bqm.to_spin().energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.to_spin().energy({'b': -1}), original_bqm.to_spin().energy({'b': -1, 'a': -1}))
+
+        #
+
+        with self.assertRaises(ValueError):
+            bqm.fix_variable('b', -1)  # spin for binary
+        with self.assertRaises(ValueError):
+            bqm.fix_variable('c', 0)  # 'c' is not a variable
+
+    def test_fix_variables(self):
+
+        num_variables = 100
+
+        def bias(v):
+            return v - (num_variables // 2)
+
+        linear = {v: bias(v) for v in range(num_variables)}
+        quadratic = {(u, v): bias(u)*bias(v) for u, v in itertools.combinations(range(num_variables), 2)}
+
+        original_bqm = dimod.FastBQM(linear, quadratic, 1.2, dimod.SPIN)
+
+        assignments = {1: -1, 2: 1, 56: -1, 53: 1}
+
+        bqm = original_bqm.fix_variables(assignments)
+
+        original_sample = {v: 1 for v in range(num_variables)}
+        original_sample.update(assignments)
+
+        sample = {v: val for v, val in original_sample.items() if v not in assignments}
+
+        self.assertEqual(bqm.energy(sample), original_bqm.energy(original_sample))
+
+
 
 class TestVectorBQM(unittest.TestCase):
     @staticmethod

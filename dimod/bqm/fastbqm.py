@@ -96,6 +96,10 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
     def __ne__(self, other):
         return not (self == other)
 
+    ##########################################################################
+    # In-place
+    ##########################################################################
+
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
         """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
@@ -239,6 +243,62 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
                     adj[u][v] *= -1.
 
                     linear[u] += bias
+
+    ##########################################################################
+    # Create new bqms
+    ##########################################################################
+
+    def copy(self):
+        return self.__class__(self.ldata,
+                              (self.irow, self.icol, self.qdata),
+                              self.offset,
+                              self.vartype,
+                              dtype=self.dtype, index_dtype=self.index_dtype,
+                              labels=self.variables)
+
+    def fix_variable(self, v, val):
+        return self.fix_variables({v: val})
+
+    def fix_variables(self, assignments):
+        if not isinstance(assignments, abc.Mapping):
+            raise TypeError("assignments should be a mapping")
+
+        # dev note: it might be faster to do this in numpy in some cases
+
+        linear = self.linear
+        quadratic = self.quadratic
+        adj = self.adj
+        vartype = self.vartype
+
+        fixed_linear = {v: bias for v, bias in linear.items() if v not in assignments}
+
+        fixed_quadratic = {(u, v): bias for (u, v), bias in quadratic.items()
+                           if u not in assignments and v not in assignments}
+
+        fixed_offset = self.offset
+
+        for v, val in assignments.items():
+            if val not in vartype.value:
+                raise ValueError("expected value to be in {}, received {} instead".format(vartype.value, val))
+
+            fixed_offset += linear[v] * val
+
+            for u, bias in adj[v].items():
+                if u in assignments:
+                    # becomes an offset, we also do this twice
+                    fixed_offset += val * assignments[u] * bias / 2
+                else:
+                    fixed_linear[u] += bias * val
+
+        return self.__class__(fixed_linear,
+                              fixed_quadratic,
+                              fixed_offset,
+                              vartype,
+                              dtype=self.dtype, index_dtype=self.index_dtype)
+
+    ##########################################################################
+    # Methods
+    ##########################################################################
 
     def energy(self, samples_like, _use_cpp_ext=True):
         energies = self.energies(samples_like, _use_cpp_ext=_use_cpp_ext)
