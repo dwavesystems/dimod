@@ -106,52 +106,58 @@ class VectorBinaryQuadraticModel(Sized):
                               dtype=self.dtype, index_dtype=self.index_dtype)
 
     def to_spin(self):
+        other = self.copy()
         if self.vartype is Vartype.SPIN:
-            return self.copy()
+            # we're done!
+            return other
 
-        ldata = self.ldata
-        qdata = self.qdata
-        irow = self.irow
-        icol = self.icol
+        ldata = other.ldata
+        qdata = other.qdata
+
+        irow = other.irow
+        icol = other.icol
 
         # offset
-        offset = .5 * ldata.sum() + .25 * qdata.sum() + self.offset
+        other.offset += .5 * ldata.sum() + .25 * qdata.sum()
 
         # linear
-        linear = .5 * ldata
+        ldata /= 2
         for qi, bias in np.ndenumerate(qdata):
-            linear[irow[qi]] += .25 * bias
-            linear[icol[qi]] += .25 * bias
+            ldata[irow[qi]] += .25 * bias
+            ldata[icol[qi]] += .25 * bias
 
         # quadratic
-        quadratic = (irow, icol, .25 * qdata)
+        qdata /= 4
 
-        return self.__class__(linear, quadratic, offset, Vartype.SPIN,
-                              dtype=self.dtype, index_dtype=self.index_dtype)
+        return other
 
     def to_binary(self):
-        if self.vartype is Vartype.BINARY:
-            return self.copy()
 
-        ldata = self.ldata
-        qdata = self.qdata
-        irow = self.irow
-        icol = self.icol
+        other = self.copy()
+
+        if self.vartype is Vartype.BINARY:
+            # we're done!
+            return other
+
+        ldata = other.ldata
+        qdata = other.qdata
+
+        irow = other.irow
+        icol = other.icol
 
         # offset
-        offset = -ldata.sum() + qdata.sum() + self.offset
+        other.offset += -ldata.sum() + qdata.sum()  # this one makes a new value
 
         # linear
-        linear = 2 * ldata  # makes a new vector of the same dtype
+        ldata *= 2  # modifies in-place
         for qi, bias in np.ndenumerate(qdata):
-            linear[irow[qi]] += -2 * bias
-            linear[icol[qi]] += -2 * bias
+            ldata[irow[qi]] += -2 * bias
+            ldata[icol[qi]] += -2 * bias
 
         # quadratic
-        quadratic = (irow, icol, 4 * self.qdata)
+        qdata *= 4
 
-        return self.__class__(linear, quadratic, offset, Vartype.BINARY,
-                              dtype=self.dtype, index_dtype=self.index_dtype)
+        return other
 
     def energy(self, sample, *args, **kwargs):
         en, = self.energies([sample], *args, **kwargs)  # should only be one
