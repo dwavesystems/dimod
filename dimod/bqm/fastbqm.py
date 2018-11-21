@@ -81,7 +81,13 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
         return iter(self.variables)
 
     def __repr__(self):
-        raise NotImplementedError
+        return "{}({}, {}, {}, '{}', dtype='{}', index_dtype='{}')".format(
+            self.__class__.__name__,
+            self.linear,
+            self.quadratic,
+            self.offset,
+            self.vartype.name,
+            np.dtype(self.dtype).name, np.dtype(self.index_dtype).name)
 
     def __eq__(self, other):
         if self.vartype is not other.vartype:

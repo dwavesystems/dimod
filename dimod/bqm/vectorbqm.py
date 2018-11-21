@@ -129,6 +129,8 @@ class VectorBinaryQuadraticModel(Sized):
         # quadratic
         qdata /= 4
 
+        other.vartype = Vartype.SPIN
+
         return other
 
     def to_binary(self):
@@ -156,6 +158,8 @@ class VectorBinaryQuadraticModel(Sized):
 
         # quadratic
         qdata *= 4
+
+        other.vartype = Vartype.BINARY
 
         return other
 

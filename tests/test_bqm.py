@@ -374,6 +374,43 @@ class TestFastBQM(unittest.TestCase):
 
         self.assertEqual(bqm.energy(sample), original_bqm.energy(original_sample))
 
+    def test_to_binary_to_spin(self):
+        bqm = dimod.FastBQM({'a': .5}, {'ab': -1, 'bc': +1}, 1.5, dimod.SPIN)
+        other = bqm.to_binary().to_spin()
+        self.assertIs(bqm.vartype, other.vartype)
+        self.assertEqual(bqm, other)
+
+    def test_to_binary(self):
+        spin_bqm = dimod.FastBQM({'a': .5}, {'ab': -1, 'bc': +1}, 1.5, dimod.SPIN)
+        binary_bqm = spin_bqm.to_binary()
+        self.assertIs(spin_bqm.vartype, dimod.SPIN)
+        self.assertIs(binary_bqm.vartype, dimod.BINARY)
+
+        variables = 'abc'
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x-1 for v, x in binary_sample.items()}
+
+            self.assertAlmostEqual(binary_bqm.energy(binary_sample),
+                                   spin_bqm.energy(spin_sample))
+
+    def test_to_spin(self):
+        binary_bqm = dimod.FastBQM({'a': .5}, {'ab': -1, 'bc': +1}, 1.5, dimod.BINARY)
+        spin_bqm = binary_bqm.to_spin()
+        self.assertIs(spin_bqm.vartype, dimod.SPIN)
+        self.assertIs(binary_bqm.vartype, dimod.BINARY)
+
+        variables = 'abc'
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x-1 for v, x in binary_sample.items()}
+
+            self.assertAlmostEqual(binary_bqm.energy(binary_sample),
+                                   spin_bqm.energy(spin_sample))
+
+    def test_copy(self):
+        bqm = dimod.FastBQM({'a': .5}, {'ab': -1, 'bc': +1}, 1.5, dimod.BINARY)
+        self.assertEqual(bqm, bqm.copy())
 
 
 class TestVectorBQM(unittest.TestCase):
@@ -513,3 +550,53 @@ class TestVectorBQM(unittest.TestCase):
         energies_np = vbqm.energies(samples, _use_cpp_ext=False)
 
         np.testing.assert_array_almost_equal(energies_np, energies_c)
+
+    def test_to_binary_2var(self):
+        spin_bqm = dimod.VectorBQM([.5, 0], ([0], [1], [-1]), 1.3, dimod.SPIN)
+        binary_bqm = spin_bqm.to_binary()
+
+        for binary_sample in itertools.product((0, 1), repeat=len(binary_bqm)):
+            spin_sample = [2*x-1 for x in binary_sample]
+            self.assertAlmostEqual(binary_bqm.energy(binary_sample), spin_bqm.energy(spin_sample))
+
+    def test_to_spin_2var(self):
+        binary_bqm = dimod.VectorBQM([.5, 0], ([0], [1], [-1]), -1.4, dimod.BINARY)
+        spin_bqm = binary_bqm.to_spin()
+
+        for binary_sample in itertools.product((0, 1), repeat=len(binary_bqm)):
+            spin_sample = [2*x-1 for x in binary_sample]
+            self.assertAlmostEqual(binary_bqm.energy(binary_sample), spin_bqm.energy(spin_sample))
+
+    def test_to_binary_to_spin(self):
+        bqm = dimod.VectorBQM([0, 1, 2], ([0, 1], [1, 2], [-1, -2]), .5, dimod.SPIN)
+
+        other = bqm.to_binary().to_spin()
+
+        self.assertEqual(bqm, other)
+
+
+class Test_sum(unittest.TestCase):
+    def test_pair_spin_spin(self):
+        bqm0 = dimod.FastBQM([0, 1], {(1, 0): 1.5}, 0, dimod.SPIN, dtype=np.float32)
+        bqm1 = dimod.FastBQM([-1, 1, 2], {(0, 1): -1, (1, 2): -1}, 0, dimod.SPIN, dtype=np.float64)
+
+        out = dimod.bqm.sum(bqm0, bqm1)
+
+        self.assertEqual(dimod.FastBQM({0: -1.0, 1: 2.0, 2: 2.0},
+                                       {(0, 1): 0.5, (1, 2): -1.0},
+                                       0.0, 'SPIN'),
+                         out)
+        self.assertIs(out.dtype, np.dtype(np.float64))  # should be the promoted type
+
+    def test_pair_spin_binary(self):
+        bqm0 = dimod.FastBQM([0, 1], {(1, 0): 1.5}, 0, dimod.SPIN, dtype=np.float32)
+        bqm1 = dimod.FastBQM([-1, 1, 2], {(0, 1): -1, (1, 2): -1}, 0, dimod.SPIN, dtype=np.float64)
+
+        out = dimod.bqm.sum(bqm0, bqm1.to_binary())
+
+        self.assertIs(out.vartype, dimod.SPIN)
+        self.assertEqual(dimod.FastBQM({0: -1.0, 1: 2.0, 2: 2.0},
+                                       {(0, 1): 0.5, (1, 2): -1.0},
+                                       0.0, 'SPIN'),
+                         out)
+        self.assertIs(out.dtype, np.dtype(np.float64))  # should be the promoted type

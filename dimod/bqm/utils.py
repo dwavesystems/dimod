@@ -2,6 +2,52 @@ from __future__ import absolute_import
 
 import numpy as np
 
+from dimod.vartypes import Vartype
+
+
+def sum(*bqms):
+    """Sum the given binary quadratic models.
+
+    Args:
+        *bqms (:obj:`.FastBinaryQuadraticModel`)
+
+    Returns:
+        A new bqm with the same type as the first given binary quadratic model.
+
+    """
+
+    if len(bqms) < 1:
+        raise ValueError
+
+    linear = {}
+    quadratic = {}
+    offset = 0.0
+    vartype = bqms[0].vartype
+
+    for bqm in bqms:
+        if bqm.vartype is not vartype:
+            if bqm.vartype is Vartype.SPIN:
+                bqm = bqm.to_binary()
+            else:
+                bqm = bqm.to_spin()
+        assert bqm.vartype is vartype
+
+        for v, bias in bqm.linear.items():
+            if v in linear:
+                linear[v] += bias
+            else:
+                linear[v] = bias
+
+        for inter, bias in bqm.quadratic.items():
+            if inter in quadratic:
+                quadratic[inter] += bias
+            else:
+                quadratic[inter] = bias
+
+        offset += bqm.offset
+
+    return bqms[0].__class__(linear, quadratic, offset, vartype)
+
 
 def reduce_coo(row, col, data, dtype=None, index_dtype=None, copy=True):
     """
