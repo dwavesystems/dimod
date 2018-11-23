@@ -24,6 +24,9 @@ from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
+# import Cython.Compiler.Options
+# Cython.Compiler.Options.annotate = True
+
 # add __version__, __author__, __authoremail__, __description__ to this namespace
 _PY2 = sys.version_info.major == 2
 my_loc = os.path.dirname(os.path.abspath(__file__))
@@ -37,6 +40,8 @@ install_requires = ['numpy>=1.14.0,<2.0.0',
                     'six>=1.10.0,<2.0.0',
                     'jsonschema>=2.6.0,<3.0.0']
 
+setup_requires = ['numpy>=1.14.0,<2.0.0']
+
 extras_require = {'all': ['networkx>=2.0,<3.0',
                           'pandas>=0.22.0,<0.23.0',
                           'pymongo>=3.7.0,<3.8.0'],
@@ -44,6 +49,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
                   ':python_version <= "3.3"': ['enum34>=1.1.6,<2.0.0']}
 
 packages = ['dimod',
+            'dimod.bqm',
             'dimod.core',
             'dimod.embedding',
             'dimod.io',
@@ -75,12 +81,16 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-ext = '.pyx' if USE_CYTHON else '.cpp'
+cppext = '.pyx' if USE_CYTHON else '.cpp'
+cext = '.pyx' if USE_CYTHON else '.c'
 
 extensions = [Extension("dimod.roof_duality._fix_variables",
-                        ['dimod/roof_duality/_fix_variables'+ext,
+                        ['dimod/roof_duality/_fix_variables'+cppext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
-                        include_dirs=['dimod/roof_duality/src/'])]
+                        include_dirs=['dimod/roof_duality/src/']),
+              Extension("dimod.bqm._utils",
+                        ['dimod/bqm/_utils'+cext])
+              ]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
@@ -123,6 +133,11 @@ class ve_build_ext(build_ext):
     # This class allows C extension building to fail.
 
     def run(self):
+
+        import numpy
+
+        self.include_dirs.append(numpy.get_include())
+
         try:
             build_ext.run(self)
         except DistutilsPlatformError:
@@ -153,6 +168,7 @@ def run_setup(cpp):
         license='Apache 2.0',
         packages=packages,
         install_requires=install_requires,
+        setup_requires=setup_requires,
         extras_require=extras_require,
         include_package_data=True,
         classifiers=classifiers,
