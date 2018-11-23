@@ -746,6 +746,17 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm.scale('a')
 
+    def test_scale_exclusions(self):
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_variables=[0])
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -2, 1: 1}, {(0, 1): -.5}, .5, dimod.SPIN))
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_interactions=[(1, 0)])
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
+
     def test_fix_variable(self):
         # spin model, fix variable to +1
         bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
