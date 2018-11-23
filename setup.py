@@ -18,6 +18,7 @@ from __future__ import absolute_import
 
 import sys
 import os
+import re
 
 from setuptools import setup
 from distutils.extension import Extension
@@ -50,6 +51,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 
 packages = ['dimod',
             'dimod.bqm',
+            'dimod.bqm.vectors',
             'dimod.core',
             'dimod.embedding',
             'dimod.io',
@@ -91,6 +93,16 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
               Extension("dimod.bqm._utils",
                         ['dimod/bqm/_utils'+cext])
               ]
+
+# all of the vector extensions
+# todo: test that this works with an sdist
+pattern = re.compile('^(vector_.*).pyx$')
+for subdir, dirs, files in os.walk('./dimod/bqm/vectors'):
+    for file in files:
+        for name in pattern.findall(file):
+            ext = Extension("dimod.bqm.vectors.{}".format(name),
+                            ['dimod/bqm/vectors/{}{}'.format(name, cppext)])
+            extensions.append(ext)
 
 if USE_CYTHON:
     from Cython.Build import cythonize

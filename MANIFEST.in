@@ -1,5 +1,7 @@
 include dimod/io/bqm_json_schema.json
 include dimod/io/sampleset_json_schema.json
-recursive-include dimod/roof_duality/src *.hpp *.cpp
-recursive-include dimod/roof_duality *.cpp *.pyx
-recursive-include dimod/bqm *.c *.pyx
+
+recursive-include dimod/roof_duality *.cpp *.pyx *.hpp
+
+recursive-include dimod/bqm *.cpp *.pyx
+exclude dimod/bqm/vectors/make_vectors.py
