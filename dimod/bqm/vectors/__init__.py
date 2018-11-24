@@ -7,6 +7,8 @@ from dimod.bqm.vectors.vector_npy_int16 import Vector_npy_int16
 from dimod.bqm.vectors.vector_npy_int32 import Vector_npy_int32
 from dimod.bqm.vectors.vector_npy_int64 import Vector_npy_int64
 
+from dimod.bqm.vectors.abc import Vector
+
 
 __all__ = 'vector',
 
@@ -17,19 +19,24 @@ def vector(data=tuple(), dtype=None):
         dtype = np.float64
     else:
         # handle strings etc
-        dtype = np.dtype(dtype).type
+        dtype = np.dtype(dtype)
 
-    if dtype is np.float64:
+    # we can speed this up a lot in the case of Vectors and ndarrays by casting to the approprate
+    # vartype now
+    if isinstance(data, (np.ndarray, Vector)):
+        data = np.asarray(data, dtype=dtype)
+
+    if dtype == np.float64:
         return Vector_npy_float64(data)
-    elif dtype is np.float32:
+    elif dtype == np.float32:
         return Vector_npy_float32(data)
-    elif dtype is np.int8:
+    elif dtype == np.int8:
         return Vector_npy_int8(data)
-    elif dtype is np.int16:
+    elif dtype == np.int16:
         return Vector_npy_int16(data)
-    elif dtype is np.int32:
+    elif dtype == np.int32:
         return Vector_npy_int32(data)
-    elif dtype is np.int64:
+    elif dtype == np.int64:
         return Vector_npy_int64(data)
     else:
-        raise ValueError("unsupported dtype")
+        raise ValueError("unsupported dtype {}".format(dtype.name))

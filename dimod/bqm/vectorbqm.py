@@ -8,12 +8,13 @@ except ImportError:
 import numpy as np
 
 from dimod.bqm.utils import reduce_coo
+from dimod.bqm.vectors import vector
 from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 
 
 class VectorBinaryQuadraticModel(Sized):
-    __slots__ = 'vartype', 'offset', 'ldata', 'irow', 'icol', 'qdata', 'iadj'
+    __slots__ = 'vartype', 'offset', '_ldata', '_irow', '_icol', '_qdata', 'iadj'
 
     @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype,
@@ -29,13 +30,11 @@ class VectorBinaryQuadraticModel(Sized):
         # linear
         # cast to a numpy array or make a copy, also setting the dtype.
         try:
-            self.ldata = ldata = np.array(linear, dtype=dtype)
+            self._ldata = ldata = vector(linear, dtype=dtype)
         except TypeError:
             raise TypeError("linear must be array-like, {} is not allowed".format(type(linear)))
-        if ldata.ndim != 1:
-            raise ValueError("linear must be a vector")
 
-        num_variables, = ldata.shape
+        num_variables = len(ldata)
 
         # quadratic
         if isinstance(quadratic, tuple) and len(quadratic) == 3:
@@ -69,9 +68,25 @@ class VectorBinaryQuadraticModel(Sized):
         for idx, (ir, ic) in enumerate(zip(irow, icol)):
             iadj[ir][ic] = iadj[ic][ir] = idx
 
-        self.irow = irow
-        self.icol = icol
-        self.qdata = qdata
+        self._irow = vector(irow, dtype=index_dtype)
+        self._icol = vector(icol, dtype=index_dtype)
+        self._qdata = vector(qdata, dtype=dtype)
+
+    @property
+    def ldata(self):
+        return np.asarray(self._ldata)
+
+    @property
+    def qdata(self):
+        return np.asarray(self._qdata)
+
+    @property
+    def irow(self):
+        return np.asarray(self._irow)
+
+    @property
+    def icol(self):
+        return np.asarray(self._icol)
 
     @property
     def dtype(self):

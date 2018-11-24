@@ -18,7 +18,7 @@ datatypes = [('npy_float32', 'f'),
              ('npy_int8', 'b'),
              ('npy_int16', 'h'),
              ('npy_int32', 'i'),  # todo: this needs to be tested on 32-bit systems
-             ('npy_int64', 'q'),  # todo: this might be too large for some systems
+             ('npy_int64', 'q'),  # todo: this might be too large for some systems, also probably unnessary for us
              ]
 
 for dtype, form in datatypes:

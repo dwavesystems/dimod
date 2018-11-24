@@ -132,20 +132,23 @@ class FastBinaryQuadraticModel(VectorBQM, abc.Iterable, abc.Container):
         """
         variables = self.variables
 
+        ldata = self.ldata
+        qdata = self.qdata
+
         if ignored_variables is None:
-            self.ldata *= scalar
+            ldata *= scalar
         else:
             idx = np.ones(len(self.linear), dtype=bool)
             idx[[variables.index(v) for v in ignored_variables]] = False
-            self.ldata[idx] *= scalar
+            ldata[idx] *= scalar
 
         if ignored_interactions is None:
-            self.qdata *= scalar
+            qdata *= scalar
         else:
             iadj = self.iadj
             idx = np.ones(len(self.quadratic), dtype=bool)
             idx[[iadj[variables.index(u)][variables.index(v)] for u, v in ignored_interactions]] = False
-            self.qdata[idx] *= scalar
+            qdata[idx] *= scalar
 
         self.offset *= scalar
 

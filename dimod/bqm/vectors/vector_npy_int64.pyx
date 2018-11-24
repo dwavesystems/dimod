@@ -4,12 +4,12 @@
 # NOTE: This is a procedurally generated file. It should not be edited. See vector.pyx.template
 #
 
-import collections.abc as abc
-
 from libcpp.vector cimport vector
 
 import numpy as np
 cimport numpy as np
+
+from dimod.bqm.vectors.abc import Vector
 
 
 ctypedef np.npy_int64 dtype
@@ -24,9 +24,19 @@ cdef class _Vector_npy_int64:
     def __cinit__(self):
         self.biases = vector[dtype]()
 
+
     def __init__(self, iterable=tuple()):
-        for v in iterable:
-            self.biases.push_back(v)
+
+        if not isinstance(iterable, np.ndarray):
+            for v in iterable:
+                self.biases.push_back(v)
+            return
+
+        cdef dtype[:] iterable_view = iterable
+        cdef Py_ssize_t num_biases = len(iterable)
+        cdef Py_ssize_t i
+        for i in range(num_biases):
+            self.biases.push_back(iterable_view[i])
 
     def __getbuffer__(self, Py_buffer *buffer, int flags):
         cdef Py_ssize_t itemsize = sizeof(self.biases[0])
@@ -54,31 +64,27 @@ cdef class _Vector_npy_int64:
         return self.biases.size()
 
     def __getitem__(self, Py_ssize_t i):
-        if i < 0 or i >= self.biases.size():
+        if i >= self.biases.size():
             raise IndexError('index out of range')
         return self.biases[i]
 
     def __delitem__(self, Py_ssize_t i):
-        if i < 0 or i >= self.biases.size():
+        if i >= self.biases.size():
             raise IndexError('assignment index out of range')
         self.biases.erase(self.biases.begin() + i)
 
     def __setitem__(self, Py_ssize_t i, dtype bias):
-        if i < 0 or i >= self.biases.size():
+        if i >= self.biases.size():
             raise IndexError('assignment index out of range')
         self.biases[i] = bias
 
-    def insert(self, Py_ssize_t i, dtype bias):
+    def insert(self, int i, const dtype bias):
+        if i < 0:
+            raise IndexError("assignment index out of range")
         if i >= len(self):
             self.biases.push_back(bias)
         else:
-            self.biases[i] = bias
+            self.biases.insert(self.biases.begin() + i, bias)
 
-class Vector_npy_int64(_Vector_npy_int64, abc.MutableSequence):
+class Vector_npy_int64(_Vector_npy_int64, Vector):
     __slots__ = ()
-
-    def __str__(self):
-        return str(list(self))
-
-    def __repr__(self):
-        return 'vector(%s, dtype=%r' % (self, np.asarray(self).dtype.name)
