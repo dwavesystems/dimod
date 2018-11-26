@@ -21,3 +21,7 @@ class Vector(abc.MutableSequence):
 
     def __eq__(self, other):
         return np.array_equal(self, other)
+
+
+class ViewError(Exception):
+    """"""

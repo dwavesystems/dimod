@@ -4,12 +4,14 @@
 # NOTE: This is a procedurally generated file. It should not be edited. See vector.pyx.template
 #
 
+from cpython cimport Py_buffer
+from cpython.buffer cimport PyBUF_SIMPLE, PyBUF_ND
 from libcpp.vector cimport vector
 
 import numpy as np
 cimport numpy as np
 
-from dimod.bqm.vectors.abc import Vector
+from dimod.bqm.vectors.abc import Vector, ViewError
 
 
 ctypedef np.npy_int32 dtype
@@ -17,6 +19,8 @@ ctypedef np.npy_int32 dtype
 
 cdef class _Vector_npy_int32:
     cdef vector[dtype] biases
+
+    cdef int reference_count
 
     cdef Py_ssize_t shape[1]
     cdef Py_ssize_t strides[1]
@@ -41,6 +45,14 @@ cdef class _Vector_npy_int32:
     def __getbuffer__(self, Py_buffer *buffer, int flags):
         cdef Py_ssize_t itemsize = sizeof(self.biases[0])
 
+        # https://www.python.org/dev/peps/pep-3118/#id6
+        # https://cython.readthedocs.io/en/latest/src/userguide/buffer.html#flags
+        # note that the cython documentation incorrectly implies that PyBUF_ND must be false
+        # vector is both C- and F-contiguous because it is only a single dimension
+        if flags & PyBUF_SIMPLE:
+            # assumes format is unsigned bytes
+            raise BufferError
+
         self.shape[0] = self.biases.size()
 
         self.strides[0] = sizeof(self.biases[0])
@@ -57,8 +69,10 @@ cdef class _Vector_npy_int32:
         buffer.strides = self.strides
         buffer.suboffsets = NULL
 
+        self.reference_count += 1
+
     def __releasebuffer__(self, Py_buffer *buffer):
-        pass
+        self.reference_count -= 1
 
     def __len__(self):
         return self.biases.size()
@@ -69,6 +83,8 @@ cdef class _Vector_npy_int32:
         return self.biases[i]
 
     def __delitem__(self, Py_ssize_t i):
+        if self.reference_count > 0:
+            raise ViewError("can't delete while being viewed")
         if i >= self.biases.size():
             raise IndexError('assignment index out of range')
         self.biases.erase(self.biases.begin() + i)
@@ -79,6 +95,8 @@ cdef class _Vector_npy_int32:
         self.biases[i] = bias
 
     def insert(self, int i, const dtype bias):
+        if self.reference_count > 0:
+            raise ViewError("can't insert while being viewed")
         if i < 0:
             raise IndexError("assignment index out of range")
         if i >= len(self):
