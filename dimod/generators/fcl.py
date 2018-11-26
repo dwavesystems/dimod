@@ -19,7 +19,7 @@ from __future__ import absolute_import
 import itertools
 import random
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 from dimod.vartypes import SPIN
 

@@ -17,7 +17,7 @@ import itertools
 
 import numpy as np
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 
 
 def bqm_bson_encoder(bqm):

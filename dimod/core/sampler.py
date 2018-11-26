@@ -100,7 +100,7 @@ import abc
 
 from six import add_metaclass
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.meta import SamplerABCMeta, samplemixinmethod
 from dimod.vartypes import Vartype

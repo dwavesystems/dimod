@@ -17,7 +17,7 @@ from __future__ import absolute_import
 
 import random
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
 __all__ = ['uniform', 'randint']

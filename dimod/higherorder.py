@@ -20,7 +20,7 @@ from collections import Counter
 
 from six import iteritems
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 

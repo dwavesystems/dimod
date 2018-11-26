@@ -33,9 +33,7 @@ else:
 
 import dimod.testing
 
-from dimod.binary_quadratic_model import *
-import dimod.binary_quadratic_model
-
+from dimod.bqm import BinaryQuadraticModel, OrderedBinaryQuadraticModel
 from dimod.bqm import VectorBinaryQuadraticModel, VectorBQM, FastBinaryQuadraticModel, FastBQM
 
 import dimod.decorators

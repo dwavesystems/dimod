@@ -22,7 +22,7 @@ import numpy as np
 
 from six import iteritems, itervalues
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.bqm.binary_quadratic_model import BinaryQuadraticModel
 from dimod.embedding.chain_breaks import majority_vote, broken_chains
 from dimod.embedding.utils import chain_to_quadratic
 from dimod.response import Response
