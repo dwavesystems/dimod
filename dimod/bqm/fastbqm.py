@@ -12,7 +12,8 @@ import numpy as np
 
 from dimod.bqm.vectorbqm import VectorBQM
 from dimod.sampleset import as_samples
-from dimod.views import Variables, LinearView, QuadraticView, AdjacencyView
+from dimod.views import Variables
+from dimod.bqm.views import LinearView, QuadraticView, AdjacencyView
 from dimod.vartypes import Vartype
 
 __all__ = 'FastBinaryQuadraticModel', 'FastBQM'

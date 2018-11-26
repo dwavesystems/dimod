@@ -29,7 +29,8 @@ import numpy as np
 
 from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
-from dimod.views import Variables, SampleView
+from dimod.variables import Variables
+from dimod.views import SampleView
 
 __all__ = 'SampleSet', 'as_samples'
 
