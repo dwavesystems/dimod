@@ -48,16 +48,19 @@ from __future__ import absolute_import, division
 
 import itertools
 
-from collections import Sized, Container, Iterable, OrderedDict
+from collections import Sized, Container, Iterable, OrderedDict, Mapping
 from numbers import Number
 
 import numpy as np
 
 from six import itervalues, iteritems, iterkeys, viewkeys, PY2
 
+from dimod.bqm.vectors import vector
+from dimod.bqm.views import LinearView
 from dimod.decorators import vartype_argument
 from dimod.response import SampleView
 from dimod.utilities import resolve_label_conflict
+from dimod.variables import MutableVariables
 from dimod.vartypes import Vartype
 
 
@@ -195,8 +198,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     BINARY = Vartype.BINARY
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
-        self.linear = {}
+    def __init__(self, linear, quadratic, offset, vartype, dtype=np.float, **kwargs):
+
+        # linear
+        self._ldata = ldata = vector([], dtype=dtype)
+        self._variables = variables = MutableVariables([])
+        self.linear = LinearView(variables, ldata)
+
         self.quadratic = {}
         self.adj = {}
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
@@ -260,8 +268,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
     @property
     def variables(self):
-        """Return binary quadratic model's variables as a dictionary view object."""
-        return viewkeys(self.linear)
+        """The variables of the bqm."""
+        return self._variables
 
 ##################################################################################################
 # vartype properties
@@ -468,7 +476,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             -2.0
 
         """
-        if isinstance(linear, dict):
+        if isinstance(linear, Mapping):
             for v, bias in iteritems(linear):
                 self.add_variable(v, bias, vartype=vartype)
         else:
@@ -1956,7 +1964,10 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             ({0: 1, 1: -1, 2: 0.5}, {(0, 1): 0.5, (1, 2): 1.5}, 1.4)
 
         """
-        return self.spin.linear, self.spin.quadratic, self.spin.offset
+        linear = {v: float(bias) for v, bias in self.spin.linear.items()}
+        quadratic = {inter: float(bias) for inter, bias in self.spin.quadratic.items()}
+        offset = float(self.spin.offset)
+        return linear, quadratic, offset
 
     @classmethod
     def from_ising(cls, h, J, offset=0.0):

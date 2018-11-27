@@ -5,7 +5,8 @@ except ImportError:
 
 import numpy as np
 
-from dimod.variables import Variables
+from dimod.bqm.vectors.abc import Vector
+from dimod.variables import Variables, MutableVariables
 from dimod.views import VariableArrayView
 
 
@@ -74,11 +75,53 @@ class AdjacencyView(abc.Mapping):
         return str({key: dict(val) for key, val in self.items()})
 
 
-class LinearView(VariableArrayView):
-    __slots__ = ()
+class LinearView(abc.MutableMapping):
+    __slots__ = '_variables', '_data'
+
+    def __init__(self, variables, data):
+
+        if not isinstance(variables, MutableVariables):
+            raise TypeError("variables should be a MutableVariables object")
+        if not isinstance(data, Vector):
+            raise TypeError("data should be a Vector")
+        if len(variables) != len(data):
+            raise ValueError("variables and data should match length")
+
+        self._variables = variables
+        self._data = data
+
+    def __getitem__(self, v):
+        try:
+            return self._data[self._variables.index(v)]
+        except ValueError:
+            raise KeyError('missing element {}'.format(v))
+
+    def __iter__(self):
+        return iter(self._variables)
+
+    def __len__(self):
+        return len(self._variables)
+
+    def __contains__(self, v):
+        return v in self._variables
+
+    def __repr__(self):
+        return '{}({!r}, {!r})'.format(self.__class__.__name__, self._variables, self._data)
+
+    def __str__(self):
+        return str(dict(self))
 
     def __setitem__(self, v, bias):
-        self._data[self._variables.index(v)] = bias
+        if v in self:
+            self._data[self._variables.index(v)] = bias
+        else:
+            self._variables.append(v)
+            self._data.append(bias)
+
+    def __delitem__(self, v):
+        idx = self._variables.index(v)
+        del self._variables[idx]
+        del self._data[idx]
 
 
 class QuadraticView(abc.Mapping):
