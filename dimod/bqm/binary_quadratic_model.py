@@ -56,7 +56,7 @@ import numpy as np
 from six import itervalues, iteritems, iterkeys, viewkeys, PY2
 
 from dimod.bqm.vectors import vector
-from dimod.bqm.views import LinearView
+from dimod.bqm.views import LinearView, QuadraticView, AdjacencyView
 from dimod.decorators import vartype_argument
 from dimod.response import SampleView
 from dimod.utilities import resolve_label_conflict
@@ -198,15 +198,25 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     BINARY = Vartype.BINARY
 
     @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, dtype=np.float, **kwargs):
+    def __init__(self, linear, quadratic, offset, vartype,
+                 dtype=np.float, index_dtype=np.int,
+                 **kwargs):
+
+        self._variables = variables = MutableVariables([])
 
         # linear
         self._ldata = ldata = vector([], dtype=dtype)
-        self._variables = variables = MutableVariables([])
-        self.linear = LinearView(variables, ldata)
 
-        self.quadratic = {}
-        self.adj = {}
+        # quadratic
+        self._irow = irow = vector([], dtype=index_dtype)
+        self._icol = icol = vector([], dtype=index_dtype)
+        self._qdata = qdata = vector([], dtype=dtype)
+        self._iadj = {}
+
+        self.linear = LinearView(self)
+        self.adj = AdjacencyView(self)
+        self.quadratic = QuadraticView(self)
+
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
         self.vartype = vartype
         self.info = kwargs  # any additional kwargs are kept as info (metadata)
@@ -270,6 +280,15 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     def variables(self):
         """The variables of the bqm."""
         return self._variables
+
+    @property
+    def icol(self):
+        return np.asarray(self._icol)
+
+    @property
+    def irow(self):
+        return np.asarray(self._irow)
+
 
 ##################################################################################################
 # vartype properties
@@ -431,8 +450,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         if v in linear:
             linear[v] += bias
         else:
-            linear[v] = bias
-            self.adj[v] = {}
+            self._variables.append(v)
+            self._ldata.append(bias)
+            self._iadj[v] = {}
 
         try:
             self._counterpart.add_variable(v, bias, vartype=self.vartype)
@@ -534,64 +554,39 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         quadratic = self.quadratic
         adj = self.adj
 
+        # so that they exist
+        self.add_variable(u, 0)
+        self.add_variable(v, 0)
+
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
-                bias /= 4.
+                bias /= 4
 
                 self.offset += bias
-
-                if u in linear:
-                    linear[u] += bias
-                else:
-                    linear[u] = bias
-                    self.adj[u] = {}
-
-                if v in linear:
-                    linear[v] += bias
-                else:
-                    linear[v] = bias
-                    self.adj[v] = {}
+                linear[u] += bias
+                linear[v] += bias
 
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
+
                 self.offset += bias
+                linear[u] += -2 * bias
+                linear[v] += -2 * bias
 
-                if u in linear:
-                    linear[u] += -2. * bias
-                else:
-                    linear[u] = -2. * bias
-                    self.adj[u] = {}
-
-                if v in linear:
-                    linear[v] += -2. * bias
-                else:
-                    linear[v] = -2. * bias
-                    self.adj[v] = {}
-
-                bias *= 4.
+                bias *= 4
             else:
                 raise ValueError("unknown vartype")
-        else:
-            if u not in linear:
-                linear[u] = 0.
-                adj[u] = {}
-            if v not in linear:
-                linear[v] = 0.
-                adj[v] = {}
 
         if (v, u) in quadratic:
             quadratic[(v, u)] += bias
-            adj[u][v] += bias
-            adj[v][u] += bias
-        elif (u, v) in quadratic:
-            quadratic[(u, v)] += bias
-            adj[u][v] += bias
-            adj[v][u] += bias
         else:
-            quadratic[(u, v)] = bias
-            adj[u][v] = bias
-            adj[v][u] = bias
+            iu, iv = self.variables.index[u], self.variables.index[v]
+
+            self._irow.append(iu)
+            self._icol.append(iv)
+            self._qdata.append(bias)
+            self._iadj[u][v] = self._iadj[v][u] = len(self._qdata) - 1
 
         try:
             self._counterpart.add_interaction(u, v, bias, vartype=self.vartype)
@@ -636,7 +631,7 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             -1.0
 
         """
-        if isinstance(quadratic, dict):
+        if isinstance(quadratic, Mapping):
             for (u, v), bias in iteritems(quadratic):
                 self.add_interaction(u, v, bias, vartype=vartype)
         else:
@@ -671,25 +666,25 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             True
 
         """
-        linear = self.linear
-        if v in linear:
-            del linear[v]
-        else:
+
+        if v not in self:
             # nothing to remove
             return
 
-        quadratic = self.quadratic
-        adj = self.adj
+        # first remove all the interactions associated with v
+        self.remove_interactions_from(((u, v) for u in self.adj[v]))
 
-        for u in adj[v]:
-            if (u, v) in quadratic:
-                del quadratic[(u, v)]
-            else:
-                del quadratic[(v, u)]
+        iv = self.variables.index[v]
 
-            del adj[u][v]
+        # re-index
+        self.icol[self.icol > iv] -= 1
+        self.irow[self.irow > iv] -= 1
 
-        del adj[v]
+        # remove from variables
+        del self._variables[iv]
+
+        # remove from ldata
+        del self._ldata[iv]
 
         try:
             # invalidates counterpart
@@ -758,19 +753,25 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             1
 
         """
-        quadratic = self.quadratic
-        adj = self.adj
 
         try:
-            del adj[v][u]
+            idx = self._iadj[u][v]
         except KeyError:
-            return  # no interaction with that name
-        del adj[u][v]
+            # silent fail
+            return
 
-        if (u, v) in quadratic:
-            del quadratic[(u, v)]
-        else:
-            del quadratic[(v, u)]
+        del self._icol[idx]
+        del self._irow[idx]
+        del self._qdata[idx]
+
+        variables = self.variables
+
+        # rebuild iadj
+        self._iadj = iadj = {v: {} for v in self.variables}
+        for idx, (iu, iv) in enumerate(zip(self._irow, self._icol)):
+            u = variables[iu]
+            v = variables[iv]
+            iadj[u][v] = iadj[v][u] = idx
 
         try:
             # invalidates counterpart
@@ -906,13 +907,6 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
                 continue
             quadratic[(u, v)] *= scalar
-
-        adj = self.adj
-        for u in adj:
-            for v in adj[u]:
-                if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
-                    continue
-                adj[u][v] *= scalar
 
         self.offset *= scalar
 
@@ -2483,35 +2477,13 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         return bqm
 
 
-class OrderedBinaryQuadraticModel(BinaryQuadraticModel):
-    """Consistently ordered variant of :class:`BinaryQuadraticModel`.
+OrderedBinaryQuadraticModel = BinaryQuadraticModel
+"""Consistently ordered variant of :class:`BinaryQuadraticModel`.
 
-    Uses :class:`collections.OrderedDict` to store the linear and quadratic biases. Note that
-    :attr:`~.BinaryQuadraticModel.adj` remains unordered.
+Uses :class:`collections.OrderedDict` to store the linear and quadratic biases. Note that
+:attr:`~.BinaryQuadraticModel.adj` remains unordered.
 
-    Variables are ordered by insertion. This is well defined if adding the variable/interactions
-    singly, but not when constructed from unordered mappings like dicts.
+Variables are ordered by insertion. This is well defined if adding the variable/interactions
+singly, but not when constructed from unordered mappings like dicts.
 
-    Examples:
-
-        >>> bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
-        >>> bqm.add_variable('a', .5)
-        >>> bqm.add_interaction('a', 'b', 1.5)
-        >>> bqm.linear
-        OrderedDict([('a', 0.5), ('b', 0.0)])
-        >>> bqm.quadratic
-        OrderedDict([(('a', 'b'), 1.5)])
-
-    """
-    @vartype_argument('vartype')
-    def __init__(self, linear, quadratic, offset, vartype, **kwargs):
-        self.linear = OrderedDict()
-        self.quadratic = OrderedDict()
-        self.adj = {}
-        self.offset = offset  # we are agnostic to type, though generally should behave like a number
-        self.vartype = vartype
-        self.info = kwargs  # any additional kwargs are kept as info (metadata)
-
-        # add linear, quadratic
-        self.add_variables_from(linear)
-        self.add_interactions_from(quadratic)
+"""

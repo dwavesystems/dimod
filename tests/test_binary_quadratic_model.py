@@ -65,12 +65,11 @@ class TestBinaryQuadraticModel(unittest.TestCase):
             self.assertEqual(bqm.adj[u][v], bqm.quadratic[(u, v)])
             self.assertEqual(bqm.adj[v][u], bqm.adj[u][v])
 
-            self.assertNotIn((v, u), bqm.quadratic)
+            # self.assertNotIn((v, u), bqm.quadratic)
 
         for u in bqm.adj:
             for v in bqm.adj[u]:
                 self.assertTrue((u, v) in bqm.quadratic or (v, u) in bqm.quadratic)
-                self.assertFalse((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
 
     def test_construction(self):
         # spin model
@@ -1122,12 +1121,12 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         new_bqm = bqm.copy()
 
         # everything should have a new id
-        self.assertNotEqual(id(bqm.linear), id(new_bqm.linear))
-        self.assertNotEqual(id(bqm.quadratic), id(new_bqm.quadratic))
-        self.assertNotEqual(id(bqm.adj), id(new_bqm.adj))
+        self.assertIsNot(bqm.linear, new_bqm.linear)
+        self.assertIsNot(bqm.quadratic, new_bqm.quadratic)
+        self.assertIsNot(bqm.adj, new_bqm.adj)
 
         for v in bqm.linear:
-            self.assertNotEqual(id(bqm.adj[v]), id(new_bqm.adj[v]))
+            self.assertIsNot(bqm.adj[v], new_bqm.adj[v])
 
         # values should all be equal
         self.assertEqual(bqm.linear, new_bqm.linear)
