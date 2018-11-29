@@ -60,6 +60,70 @@ def bqm_index_labels(f):
     return _index_label
 
 
+def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
+    """Returns a decorator which ensures bqm variable labelling and all other
+    specified sample-like inputs are index labelled and consistent.
+
+    Args:
+        samples_arg_names (str):
+            The name of the argument that the user should use to pass in an
+            index labelling for the bqm.
+
+        samples_arg_names (list[str]):
+            The names of the expected sample-like inputs which should be
+            indexed according to the labels passed to the argument
+            `var_labels_arg_name`.
+
+    Returns:
+        Function decorator.
+    """
+
+    def index_label_decorator(f):
+        @wraps(f)
+        def _index_label(sampler, bqm, **kwargs):
+            if not hasattr(bqm, 'linear'):
+                raise TypeError('expected input to be a BinaryQuadraticModel')
+            linear = bqm.linear
+
+            var_labels = kwargs.get(var_labels_arg_name, None)
+            has_samples_input = any(kwargs.get(arg_name, None) is not None
+                                    for arg_name in samples_arg_names)
+
+            if var_labels is None:
+                # if already index-labelled, just continue
+                if all(v in linear for v in range(len(bqm))):
+                    return f(sampler, bqm, **kwargs)
+
+                if has_samples_input:
+                    err_str = ("Argument `{}` must be provided if any of the"
+                               " samples arguments {} are provided and the "
+                               "bqm is not already index-labelled".format(
+                                   var_labels_arg_name,
+                                   samples_arg_names))
+                    raise ValueError(err_str)
+
+                try:
+                    inverse_mapping = dict(enumerate(sorted(linear)))
+                except TypeError:
+                    # in python3 unlike types cannot be sorted
+                    inverse_mapping = dict(enumerate(linear))
+                var_labels = {v: i for i, v in iteritems(inverse_mapping)}
+
+            else:
+                inverse_mapping = {i: v for v, i in iteritems(var_labels)}
+
+            response = f(sampler,
+                         bqm.relabel_variables(var_labels, inplace=False),
+                         **kwargs)
+
+            # unapply the relabeling
+            return response.relabel_variables(inverse_mapping, inplace=True)
+
+        return _index_label
+
+    return index_label_decorator
+
+
 def bqm_structured(f):
     """todo
 
