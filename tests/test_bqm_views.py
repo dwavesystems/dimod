@@ -14,6 +14,10 @@ class TestLinearView(unittest.TestCase):
             self._ldata = vector(biases)
             self._iadj = {v: {} for v in variables}
 
+        @property
+        def ldata(self):
+            return np.asarray(self._ldata)
+
     def test__getitem__contains__(self):
         linear = LinearView(self.MockBQM('abc', [-1, 0, 1]))
 

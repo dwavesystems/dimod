@@ -5,16 +5,22 @@ except ImportError:
 
 import numpy as np
 
-from dimod.bqm.vectors.abc import Vector
-from dimod.variables import Variables, MutableVariables
-from dimod.views import VariableArrayView
 
-
-class LinearView(abc.Mapping):
+class BQMView(abc.Mapping):
     __slots__ = '_bqm',
 
     def __init__(self, bqm):
         self._bqm = bqm
+
+    def __repr__(self):
+        return '{}({!r})'.format(self.__class__.__name__, self._bqm)
+
+    def __str__(self):
+        return str(dict(self))
+
+
+class LinearView(BQMView):
+    __slots__ = ()
 
     def __getitem__(self, v):
         ldata = self._bqm._ldata
@@ -41,11 +47,27 @@ class LinearView(abc.Mapping):
     def __contains__(self, v):
         return v in self._bqm._variables
 
-    def __repr__(self):
-        return '{}({!r})'.format(self.__class__.__name__, self._bqm)
+    def items(self):
+        return LinearItemsView(self)
 
-    def __str__(self):
-        return str(dict(self))
+    def values(self):
+        return LinearValuesView(self)
+
+
+class LinearItemsView(abc.ItemsView):
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        return zip(self._mapping._bqm._variables, self._mapping._bqm.ldata.flat)
+
+
+class LinearValuesView(abc.ValuesView):
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        return iter(self._mapping._bqm.ldata.flat)
 
 
 class NeighbourView(abc.Mapping):
@@ -74,11 +96,8 @@ class NeighbourView(abc.Mapping):
         return str(dict(self))
 
 
-class AdjacencyView(abc.Mapping):
-    __slots__ = '_bqm'
-
-    def __init__(self, bqm):
-        self._bqm = bqm
+class AdjacencyView(BQMView):
+    __slots__ = ()
 
     def __len__(self):
         return len(self._bqm._variables)
@@ -92,18 +111,9 @@ class AdjacencyView(abc.Mapping):
     def __getitem__(self, v):
         return NeighbourView(self._bqm._iadj[v], self._bqm._qdata)
 
-    def __repr__(self):
-        return '{}({!r})'.format(self.__class__.__name__, self._bqm)
 
-    def __str__(self):
-        return str(dict(self))
-
-
-class QuadraticView(abc.Mapping):
-    __slots__ = '_bqm',
-
-    def __init__(self, bqm):
-        self._bqm = bqm
+class QuadraticView(BQMView):
+    __slots__ = ()
 
     def __getitem__(self, interaction):
         u, v = interaction
@@ -126,8 +136,24 @@ class QuadraticView(abc.Mapping):
     def __len__(self):
         return len(self._bqm._qdata)
 
-    def __repr__(self):
-        return '{}({!r})'.format(self.__class__.__name__, self._bqm)
+    def items(self):
+        return QuadraticItemsView(self)
 
-    def __str__(self):
-        return str(dict(self))
+    def values(self):
+        return QuadraticValuesView(self)
+
+
+class QuadraticItemsView(abc.ValuesView):
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        return zip(self._mapping, self._mapping._bqm.qdata.flat)
+
+
+class QuadraticValuesView(abc.ValuesView):
+    __slots__ = ()
+
+    def __iter__(self):
+        # Inherited __init__ puts the Mapping into self._mapping
+        return iter(self._mapping._bqm.qdata.flat)

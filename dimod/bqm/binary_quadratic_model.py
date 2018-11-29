@@ -282,12 +282,20 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         return self._variables
 
     @property
+    def ldata(self):
+        return np.asarray(self._ldata)
+
+    @property
     def icol(self):
         return np.asarray(self._icol)
 
     @property
     def irow(self):
         return np.asarray(self._irow)
+
+    @property
+    def qdata(self):
+        return np.asarray(self._qdata)
 
 
 ##################################################################################################
