@@ -65,7 +65,7 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
     specified sample-like inputs are index labelled and consistent.
 
     Args:
-        samples_arg_names (str):
+        var_labels_arg_name (str):
             The name of the argument that the user should use to pass in an
             index labelling for the bqm.
 
