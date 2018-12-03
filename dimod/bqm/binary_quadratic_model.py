@@ -58,7 +58,7 @@ from six import itervalues, iteritems, iterkeys, viewkeys, PY2
 from dimod.bqm.vectors import vector
 from dimod.bqm.views import LinearView, QuadraticView, AdjacencyView
 from dimod.decorators import vartype_argument
-from dimod.response import SampleView
+from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
 from dimod.variables import MutableVariables
 from dimod.vartypes import Vartype
@@ -217,64 +217,50 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         self.adj = AdjacencyView(self)
         self.quadratic = QuadraticView(self)
 
-        self.offset = offset  # we are agnostic to type, though generally should behave like a number
+        self.offset = np.dtype(dtype).type(0)
         self.vartype = vartype
         self.info = kwargs  # any additional kwargs are kept as info (metadata)
 
         # add linear, quadratic
         self.add_variables_from(linear)
         self.add_interactions_from(quadratic)
-
-    @classmethod
-    def empty(cls, vartype):
-        """Create an empty binary quadratic model.
-
-        Equivalent to instantiating a :class:`.BinaryQuadraticModel` with no bias values
-        and zero offset for the defined :class:`vartype`:
-
-        .. code-block:: python
-
-            BinaryQuadraticModel({}, {}, 0.0, vartype)
-
-        Args:
-            vartype (:class:`.Vartype`/str/set):
-                Variable type for the binary quadratic model. Accepted input values:
-
-                * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-
-        Examples:
-            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        """
-        return cls({}, {}, 0.0, vartype)
+        self.add_offset(offset)
 
     def __repr__(self):
-        return 'BinaryQuadraticModel({}, {}, {}, {})'.format(self.linear, self.quadratic, self.offset, self.vartype)
+        return "{}({!s}, {!s}, {!s}, '{!s}', dtype={!r}, index_dtype={!r})".format(
+            self.__class__.__name__,
+            self.linear,
+            self.quadratic,
+            self.offset,
+            self.vartype.name,
+            self.dtype.name, self.index_dtype.name)
 
     def __eq__(self, other):
-        """Model is equal if and only if linear, adj, offset and vartype are all equal."""
         if not isinstance(other, BinaryQuadraticModel):
             return False
 
-        # NB: adj is invariant of edge order, so check that instead of quadratic
-        return (self.vartype == other.vartype and self.offset == other.offset
-                and self.linear == other.linear and self.adj == other.adj)
+        if self.vartype is not other.vartype:
+            return False
+
+        if self.offset != other.offset:
+            return False
+
+        if self.linear != other.linear:
+            return False
+
+        return self.adj == other.adj
 
     def __ne__(self, other):
-        """Inversion of equality."""
         return not self.__eq__(other)
 
     def __len__(self):
-        """The length is number of variables."""
-        return self.adj.__len__()
+        return len(self.variables)
 
     def __contains__(self, v):
-        """The variables"""
-        return self.adj.__contains__(v)
+        return v in self.variables
 
     def __iter__(self):
-        return self.adj.__iter__()
+        return iter(self.variables)
 
     @property
     def variables(self):
@@ -296,6 +282,14 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
     @property
     def qdata(self):
         return np.asarray(self._qdata)
+
+    @property
+    def dtype(self):
+        return np.result_type(np.asarray(self._ldata), np.asarray(self._qdata), self.offset)
+
+    @property
+    def index_dtype(self):
+        return np.result_type(self.irow, self.icol)
 
 
 ##################################################################################################
@@ -694,6 +688,9 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
         # remove from ldata
         del self._ldata[iv]
 
+        # remove from iadj
+        del self._iadj[v]
+
         try:
             # invalidates counterpart
             del self._counterpart
@@ -891,30 +888,25 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             0.5
 
         """
-        if not isinstance(scalar, Number):
-            raise TypeError("expected scalar to be a Number")
+        variables = self.variables
+
+        ldata = self.ldata
+        qdata = self.qdata
 
         if ignored_variables is None:
-            ignored_variables = set()
-        elif not isinstance(ignored_variables, Container):
-            ignored_variables = set(ignored_variables)
+            ldata *= scalar
+        else:
+            idx = np.ones(len(self.linear), dtype=bool)
+            idx[[variables.index(v) for v in ignored_variables]] = False
+            ldata[idx] *= scalar
 
         if ignored_interactions is None:
-            ignored_interactions = set()
-        elif not isinstance(ignored_interactions, Container):
-            ignored_interactions = set(ignored_interactions)
-
-        linear = self.linear
-        for v in linear:
-            if v in ignored_variables:
-                continue
-            linear[v] *= scalar
-
-        quadratic = self.quadratic
-        for u, v in quadratic:
-            if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
-                continue
-            quadratic[(u, v)] *= scalar
+            qdata *= scalar
+        else:
+            iadj = self._iadj
+            idx = np.ones(len(self.quadratic), dtype=bool)
+            idx[[iadj[u][v] for u, v in ignored_interactions]] = False
+            qdata[idx] *= scalar
 
         self.offset *= scalar
 
@@ -1039,59 +1031,40 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             This example creates a binary quadratic model with two variables and inverts
             the value of one.
 
-            >>> import dimod
-            ...
             >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm.flip_variable(1)
             >>> bqm.linear[1], bqm.linear[2], bqm.quadratic[(1, 2)]
             (-1.0, 2, -0.5)
 
         """
+        self.flip_variables([v])
+
+    def flip_variables(self, variables):
         adj = self.adj
         linear = self.linear
-        quadratic = self.quadratic
 
-        if v not in adj:
-            return
+        variables = set(v for v in variables if v in self)
 
         if self.vartype is Vartype.SPIN:
-            # in this case we just multiply by -1
-            linear[v] *= -1.
-            for u in adj[v]:
-                adj[v][u] *= -1.
-                adj[u][v] *= -1.
-
-                if (u, v) in quadratic:
-                    quadratic[(u, v)] *= -1.
-                elif (v, u) in quadratic:
-                    quadratic[(v, u)] *= -1.
-                else:
-                    raise RuntimeError("quadratic is missing an interaction")
-
-        elif self.vartype is Vartype.BINARY:
-            self.offset += linear[v]
-            linear[v] *= -1
-
-            for u in adj[v]:
-                bias = adj[v][u]
-
-                adj[v][u] *= -1.
-                adj[u][v] *= -1.
-
-                linear[u] += bias
-
-                if (u, v) in quadratic:
-                    quadratic[(u, v)] *= -1.
-                elif (v, u) in quadratic:
-                    quadratic[(v, u)] *= -1.
-                else:
-                    raise RuntimeError("quadratic is missing an interaction")
-
+            for v in variables:
+                linear[v] *= -1
+                for u in adj[v]:
+                    adj[u][v] *= -1
         else:
-            raise RuntimeError("Unexpected vartype")
+            for v in variables:
+
+                self.offset += linear[v]
+                linear[v] *= -1
+
+                for u in adj[v]:
+                    bias = adj[v][u]
+
+                    adj[u][v] *= -1.
+
+                    linear[u] += bias
 
         try:
-            self._counterpart.flip_variable(v)
+            self._counterpart.flip_variables(variables)
         except AttributeError:
             pass
 
@@ -1245,50 +1218,26 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             {('a', 'b'): -1}
 
         """
+        if not inplace:
+            return self.copy().relabel_variables(mapping)
+
+        variables = self.variables
+
+        variables.relabel(mapping)
+
+        # rebuild iadj
+        self._iadj = iadj = {v: {} for v in variables}
+        for idx, (iu, iv) in enumerate(zip(self._irow, self._icol)):
+            u = variables[iu]
+            v = variables[iv]
+            iadj[u][v] = iadj[v][u] = idx
+
         try:
-            old_labels = set(mapping)
-            new_labels = set(itervalues(mapping))
-        except TypeError:
-            raise ValueError("mapping targets must be hashable objects")
+            self._counterpart.relabel_variables(mapping, inplace=True)
+        except AttributeError:
+            pass
 
-        for v in new_labels:
-            if v in self.linear and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
-
-        if inplace:
-            shared = old_labels & new_labels
-            if shared:
-                old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
-
-                self.relabel_variables(old_to_intermediate, inplace=True)
-                self.relabel_variables(intermediate_to_new, inplace=True)
-                return self
-
-            linear = self.linear
-            quadratic = self.quadratic
-            adj = self.adj
-
-            # rebuild linear and adj with the new labels
-            for old in list(linear):
-                if old not in mapping:
-                    continue
-
-                new = mapping[old]
-
-                # get the new interactions that need to be added
-                new_interactions = [(new, v, adj[old][v]) for v in adj[old]]
-
-                self.add_variable(new, linear[old])
-                self.add_interactions_from(new_interactions)
-                self.remove_variable(old)
-
-            return self
-        else:
-            return BinaryQuadraticModel({mapping.get(v, v): bias for v, bias in iteritems(self.linear)},
-                                        {(mapping.get(u, u), mapping.get(v, v)): bias
-                                         for (u, v), bias in iteritems(self.quadratic)},
-                                        self.offset, self.vartype)
+        return self
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
@@ -1325,35 +1274,52 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         if not inplace:
             # create a new model of the appropriate type, then add self's biases to it
-            new_model = BinaryQuadraticModel({}, {}, 0.0, vartype)
-
-            new_model.add_variables_from(self.linear, vartype=self.vartype)
-            new_model.add_interactions_from(self.quadratic, vartype=self.vartype)
-            new_model.add_offset(self.offset)
-
-            return new_model
+            return self.copy().change_vartype(vartype, inplace=True)
 
         # in this case we are doing things in-place, if the desired vartype matches self.vartype,
         # then we don't need to do anything
         if vartype is self.vartype:
             return self
 
+        ldata = self.ldata
+        qdata = self.qdata
+
+        irow = self.irow
+        icol = self.icol
+
         if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
-            linear, quadratic, offset = self.spin_to_binary(self.linear, self.quadratic, self.offset)
+
+            # offset
+            self.offset += -ldata.sum() + qdata.sum()  # this one makes a new value
+
+            # linear
+            ldata *= 2  # modifies in-place
+            for qi, bias in np.ndenumerate(qdata):
+                ldata[irow[qi]] += -2 * bias
+                ldata[icol[qi]] += -2 * bias
+
+            # quadratic
+            qdata *= 4
+
+            self.vartype = Vartype.BINARY
+
         elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
-            linear, quadratic, offset = self.binary_to_spin(self.linear, self.quadratic, self.offset)
+
+            # offset
+            self.offset += .5 * ldata.sum() + .25 * qdata.sum()
+
+            # linear
+            ldata /= 2
+            for qi, bias in np.ndenumerate(qdata):
+                ldata[irow[qi]] += .25 * bias
+                ldata[icol[qi]] += .25 * bias
+
+            # quadratic
+            qdata /= 4
+
+            self.vartype = Vartype.SPIN
         else:
             raise RuntimeError("something has gone wrong. unknown vartype conversion.")
-
-        # drop everything
-        for v in linear:
-            self.remove_variable(v)
-        self.add_offset(-self.offset)
-
-        self.vartype = vartype
-        self.add_variables_from(linear)
-        self.add_interactions_from(quadratic)
-        self.add_offset(offset)
 
         return self
 
@@ -1427,7 +1393,8 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
 
         """
         # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
+        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, dtype=self.dtype,
+                                    index_dtype=self.index_dtype, **self.info)
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
@@ -1472,24 +1439,87 @@ class BinaryQuadraticModel(Sized, Container, Iterable):
             3.5
 
         """
-        linear = self.linear
-        quadratic = self.quadratic
+        try:
+            energy, = self.energies(sample, _use_cpp_ext=True)
+        except IndexError:
+            raise ValueError("too many samples given, use 'energies' method instead")
+        return energy
 
-        if isinstance(sample, SampleView):
-            # because the SampleView object simply reads from an underlying matrix, each read
-            # is relatively expensive.
-            # However, sample.items() is ~10x faster than {sample[v] for v in sample}, therefore
-            # it is much more efficient to dump sample into a dictionary for repeated reads
-            sample = dict(sample)
+    def energies(self, samples_like, _use_cpp_ext=True):
+        samples, labels = as_samples(samples_like)
 
-        en = self.offset
-        en += sum(linear[v] * sample[v] for v in linear)
-        en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
-        return en
+        variables = self.variables
+        ldata = self.ldata
+        row = self.irow
+        col = self.icol
+        qdata = self.qdata
+        offset = self.offset
+
+        if labels != variables:
+
+            # dev note: I think this can be done better
+
+            order = np.asarray([variables.index(v) for v in labels])
+
+            invorder = {j: i for i, j in enumerate(order)}
+
+            ldata = ldata[order]
+
+            row = np.asarray([invorder[i] for i in row])
+            col = np.asarray([invorder[i] for i in col])
+
+        if _use_cpp_ext:
+            try:
+                from dimod.bqm._utils import fast_energy
+                return fast_energy(offset, ldata, row, col, qdata, samples)
+            except ImportError:
+                # no c++ extension
+                pass
+            # except TypeError:
+            #     # dtype is the wrong type
+            #     pass
+
+        try:
+            num_samples, num_variables = samples.shape
+        except ValueError:
+            raise ValueError("samples should be a square array where each row is a sample")
+
+        energy = np.full(num_samples, offset)  # offset
+
+        energy += samples.dot(ldata)  # linear
+
+        energy += (samples[:, row]*samples[:, col]).dot(qdata)  # quadratic
+
+        return energy
+
 
 ##################################################################################################
 # conversions
 ##################################################################################################
+
+    @classmethod
+    def empty(cls, vartype):
+        """Create an empty binary quadratic model.
+
+        Equivalent to instantiating a :class:`.BinaryQuadraticModel` with no bias values
+        and zero offset for the defined :class:`vartype`:
+
+        .. code-block:: python
+
+            BinaryQuadraticModel({}, {}, 0.0, vartype)
+
+        Args:
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :attr:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :attr:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
+
+        """
+        return cls({}, {}, 0.0, vartype)
 
     def to_coo(self, fp=None, vartype_header=False):
         """Serialize the binary quadratic model to a COOrdinate_ format encoding.

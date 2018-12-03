@@ -161,7 +161,7 @@ class TestUnembedResponse(unittest.TestCase):
         self.assertEqual(len(embedded_response) / 2, len(response))  # half chains should be broken
 
         for sample, energy in response.data(['sample', 'energy']):
-            self.assertEqual(bqm.energy(sample), energy)
+            self.assertAlmostEqual(bqm.energy(sample), energy)
 
     @unittest.skipUnless(_networkx, "No networkx installed")
     def test_unembed_response_with_discard_matrix_typical(self):
@@ -182,7 +182,7 @@ class TestUnembedResponse(unittest.TestCase):
         self.assertEqual(len(embedded_response) / 2, len(response))  # half chains should be broken
 
         for sample, energy in response.data(['sample', 'energy']):
-            self.assertEqual(bqm.energy(sample), energy)
+            self.assertAlmostEqual(bqm.energy(sample), energy)
 
     def test_embedding_superset(self):
         # source graph in the embedding is a superset of the bqm
