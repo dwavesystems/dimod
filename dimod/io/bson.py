@@ -23,8 +23,10 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 def bqm_bson_encoder(bqm):
     """todo"""
     num_variables = len(bqm)
-    if num_variables > 2**16:
-        raise ValueError
+
+    index_dtype = np.uint32
+    if num_variables <= 2**16:
+        index_dtype = np.uint16
 
     variable_order = sorted(bqm.linear)
     num_possible_edges = num_variables*(num_variables - 1) // 2
@@ -33,13 +35,18 @@ def bqm_bson_encoder(bqm):
 
     lin, (i, j, _vals), off = bqm.to_numpy_vectors(
         dtype=np.float32,
-        index_dtype=np.uint16,
+        index_dtype=index_dtype,
         sort_indices=as_complete,
         variable_order=variable_order)
 
     if as_complete:
         vals = np.zeros(num_possible_edges, dtype=np.float32)
-        edge_idxs = i*(num_variables - 1) - i*(i+1)//2 + j - 1
+
+        def mul(a, b):
+            return np.multiply(a, b, dtype=np.int64)
+
+        edge_idxs = (mul(i, num_variables - 1) - mul(i, (i+1)//2) -
+                     ((i+1) % 2)*(i//2) + j - 1)
         vals[edge_idxs] = _vals
 
     else:
@@ -52,6 +59,7 @@ def bqm_bson_encoder(bqm):
         "variable_type": "SPIN" if bqm.vartype == bqm.SPIN else "BINARY",
         "offset": off,
         "variable_order": variable_order,
+        "index_dtype": np.dtype(index_dtype).str,
     }
 
     if not as_complete:
@@ -62,17 +70,18 @@ def bqm_bson_encoder(bqm):
 
 
 def bqm_bson_decoder(doc, cls=BinaryQuadraticModel):
-        lin = np.frombuffer(doc["linear"], dtype=np.float32)
-        num_variables = len(lin)
-        vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
-        if doc["as_complete"]:
-            i, j = zip(*itertools.combinations(range(num_variables), 2))
-        else:
-            i = np.frombuffer(doc["quadratic_head"], dtype=np.uint16)
-            j = np.frombuffer(doc["quadratic_tail"], dtype=np.uint16)
+    lin = np.frombuffer(doc["linear"], dtype=np.float32)
+    num_variables = len(lin)
+    vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
+    index_dtype = doc["index_dtype"]
+    if doc["as_complete"]:
+        i, j = zip(*itertools.combinations(range(num_variables), 2))
+    else:
+        i = np.frombuffer(doc["quadratic_head"], dtype=index_dtype)
+        j = np.frombuffer(doc["quadratic_tail"], dtype=index_dtype)
 
-        off = doc["offset"]
+    off = doc["offset"]
 
-        return cls.from_numpy_vectors(lin, (i, j, vals), doc["offset"],
-                                      str(doc["variable_type"]),
-                                      variable_order=doc["variable_order"])
+    return cls.from_numpy_vectors(lin, (i, j, vals), off,
+                                  str(doc["variable_type"]),
+                                  variable_order=doc["variable_order"])
