@@ -21,8 +21,15 @@ environment:
     - PYTHON: "C:\\Python37"
     - PYTHON: "C:\\Python37-x64"
 
+matrix:
+  fast_finish: true
+
+cache:
+  - '%PYTHON%\Lib\site-packages -> requirements.txt'
+  - '%AppData%\pip-cache'
+
 install:
-  - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
+  - "%PYTHON%\\python.exe -m pip install -r requirements.txt --cache-dir %AppData%\\pip-cache"
 
   # for python34-x64
   - echo "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 > "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64/vcvars64.bat"
