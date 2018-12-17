@@ -17,7 +17,15 @@ import unittest
 
 import dimod
 
+try:
+    from dimod import fix_variables
+except ImportError:
+    cpp = False
+else:
+    cpp = True
 
+
+@unittest.skipUnless(cpp, "no cpp extensions built")
 class TestFixVariables(unittest.TestCase):
     def test_3path(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
