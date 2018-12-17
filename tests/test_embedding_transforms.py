@@ -301,8 +301,6 @@ class TestEmbedBQM(unittest.TestCase):
 
         self.assertFalse(he)
         self.assertFalse(Je)
-        self.assertIsInstance(he, dict)
-        self.assertIsInstance(Je, dict)
 
     def test_embed_ising_bad_chain(self):
         h = {}
