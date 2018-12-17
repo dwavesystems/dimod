@@ -94,7 +94,7 @@ class Response(SampleSet):
     @property
     def label_to_idx(self):
         """dict: Maps the variable labels to the column in :attr:`.Response.record`."""
-        return self.variables._index
+        return self.variables.index
 
     ###############################################################################################
     # Constructors
