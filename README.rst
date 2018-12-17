@@ -27,7 +27,7 @@ samplers.
 
 .. index-end-marker1
 
-Learn more about `dimod on Read the Docs <http://dimod.readthedocs.io/en/latest/>`_\ .
+Learn more about `dimod on Read the Docs <https://docs.ocean.dwavesys.com/projects/dimod/en/latest/>`_\ .
 
 Example Usage
 -------------
