@@ -29,7 +29,7 @@ except ImportError:
 else:
     # we only import fix_variables function into the top level namespace if the c++ extension
     # is built
-    from dimod.roof_duality import *
+    from dimod.roof_duality import fix_variables
 
 import dimod.testing
 
