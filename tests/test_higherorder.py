@@ -18,6 +18,7 @@ import itertools
 
 import dimod
 
+from dimod import make_quadratic, poly_energy
 
 class TestMakeQuadratic(unittest.TestCase):
 
@@ -56,19 +57,17 @@ class TestMakeQuadratic(unittest.TestCase):
         self.assertEqual(len(seen_configs), 4)
 
     def test_no_higher_order(self):
-        h = {0: 0, 1: 0, 2: 0}
-        J = {(0, 1): -1, (1, 2): 1}
-        off = 0
+        poly = {(0, 1): -1, (1, 2): 1}
 
-        bqm = dimod.make_quadratic(J, 1.0, dimod.SPIN)
+        bqm = make_quadratic(poly, 1.0, dimod.SPIN)
 
-        variables = set(h).union(*J)
+        variables = set().union(*poly)
         aux_variables = tuple(set(bqm.linear) - variables)
         variables = tuple(variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, h, J, offset=off)
+            energy = poly_energy(sample, poly)
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
@@ -79,20 +78,18 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertAlmostEqual(energy, min(reduced_energies))
 
     def test_simple(self):
-        h = {0: 0, 1: 0, 2: 0}
-        J = {(0, 1, 2): -1}
-        off = 0
+        poly = {(0, 1, 2): -1}
 
-        bqm = dimod.make_quadratic(J, 5.0, dimod.SPIN)
+        bqm = make_quadratic(poly, 5.0, dimod.SPIN)
 
-        variables = set(h).union(*J)
+        variables = set().union(*poly)
         aux_variables = tuple(set(bqm.linear) - variables)
         variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, h, J, offset=off)
+            energy = poly_energy(sample, poly)
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
@@ -103,20 +100,20 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertAlmostEqual(energy, min(reduced_energies))
 
     def test_several_terms(self):
-        h = {0: .4, 1: 0, 2: 0, 3: 0}
-        J = {(0, 1, 2): -1, (1, 2, 3): 1, (0, 2, 3): .5}
-        off = .5
+        poly = {(0, 1, 2): -1, (1, 2, 3): 1, (0, 2, 3): .5,
+                (0,): .4,
+                (): .5}
 
-        bqm = dimod.make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = make_quadratic(poly, 5.0, bqm=dimod.BinaryQuadraticModel.empty(dimod.SPIN))
 
-        variables = set(h).union(*J)
+        variables = set().union(*poly)
         aux_variables = tuple(set(bqm.linear) - variables)
         variables = tuple(variables)
         self.assertTrue(aux_variables)
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, h, J, offset=off)
+            energy = poly_energy(sample, poly)
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
@@ -131,7 +128,11 @@ class TestMakeQuadratic(unittest.TestCase):
         h = {0: 0, 1: 0, 2: 0, 3: 0}
         off = .5
 
-        bqm = dimod.make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        poly = J.copy()
+        poly.update({(v,): bias for v, bias in h.items()})
+        poly[()] = off
+
+        bqm = make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -140,7 +141,7 @@ class TestMakeQuadratic(unittest.TestCase):
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, h, J, offset=off)
+            energy = poly_energy(sample, poly)
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
@@ -153,10 +154,13 @@ class TestMakeQuadratic(unittest.TestCase):
     def test_quad_to_linear(self):
         J = {(0, 1): -1, (0, 1, 2): 1, (0, 1, 3): 1}
         h = {}
-
         off = .5
 
-        bqm = dimod.make_quadratic(J, 10.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        poly = J.copy()
+        poly.update({(v,): bias for v, bias in h.items()})
+        poly[()] = off
+
+        bqm = make_quadratic(J, 10.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -165,7 +169,7 @@ class TestMakeQuadratic(unittest.TestCase):
         for config in itertools.product((-1, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, h, J, offset=off)
+            energy = poly_energy(sample, poly)
 
             reduced_energies = []
             for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
@@ -187,7 +191,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         HUBO = {(0, 1, 2): .5, (0, 1): 1.3, (2, 4, 1): -1, (3, 2): -1}
 
-        bqm = dimod.make_quadratic(HUBO, 1000.0, dimod.BINARY)
+        bqm = make_quadratic(HUBO, 1000.0, dimod.BINARY)
 
         variables = set().union(*HUBO)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -196,7 +200,7 @@ class TestMakeQuadratic(unittest.TestCase):
         for config in itertools.product((0, 1), repeat=len(variables)):
             sample = dict(zip(variables, config))
 
-            energy = poly_energy(sample, {}, HUBO, offset=0.0)
+            energy = poly_energy(sample, HUBO)
 
             reduced_energies = []
             for aux_config in itertools.product((0, 1), repeat=len(aux_variables)):
@@ -205,22 +209,3 @@ class TestMakeQuadratic(unittest.TestCase):
                 reduced_energies.append(bqm.energy(aux_sample))
 
             self.assertAlmostEqual(energy, min(reduced_energies))
-
-
-def poly_energy(sample, h, J, offset=0.0):
-    """calculate the energy of the sample for h, J.
-
-    J can be higher-order.
-    """
-    en = offset
-    en += sum(h[v] * sample[v] for v in h)
-    en += sum(_prod(sample[v] for v in variables) * bias for variables, bias in J.items())
-
-    return en
-
-
-def _prod(iterable):
-    val = 1
-    for v in iterable:
-        val *= v
-    return val
