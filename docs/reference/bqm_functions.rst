@@ -26,6 +26,7 @@ Higher-order Polynomials
    :toctree: generated/
 
    make_quadratic
+   poly_energy
 
 
 Roof-duality
