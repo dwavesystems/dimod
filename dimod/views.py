@@ -13,64 +13,15 @@
 #    limitations under the License.
 #
 # ================================================================================================
-from collections import Sequence, Container, Mapping, ItemsView, ValuesView
-
-import numpy as np
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
 
 from six.moves import zip
 
 
-class VariableIndexView(Sequence, Container):
-    __slots__ = '_label', '_index'
-
-    def __init__(self, iterable):
-        self._index = index = {}
-
-        def _iter():
-            idx = 0
-            for v in iterable:
-                if v in index:
-                    continue
-                index[v] = idx
-                idx += 1
-                yield v
-        self._label = list(_iter())
-
-    def __getitem__(self, i):
-        return self._label[i]
-
-    def __len__(self):
-        return len(self._label)
-
-    def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self._label)
-
-    def __str__(self):
-        return str(self._label)
-
-    def __iter__(self):
-        return iter(self._label)
-
-    def __contains__(self, v):
-        # we can speed this up because we're keeping a dict
-        return v in self._index
-
-    def index(self, v):
-        # we can speed this up because we're keeping a dict
-        try:
-            return self._index[v]
-        except KeyError:
-            raise ValueError('{!r} is not in {}'.format(v, self.__class__.__name__))
-
-    def count(self, v):
-        # everything is unique
-        return int(v in self)
-
-    def __eq__(self, other):
-        return len(self) == len(other) and all(self[idx] == other[idx] for idx in range(len(self)))
-
-
-class IndexView(Mapping):
+class IndexView(abc.Mapping):
     __slots__ = '_variables', '_data'
 
     def __init__(self, variables, data):
@@ -105,7 +56,7 @@ class SampleView(IndexView):
         return str(self)
 
 
-class IndexItemsView(ItemsView):
+class IndexItemsView(abc.ItemsView):
     """Faster read access to the numpy array"""
     __slots__ = ()
 
@@ -114,7 +65,7 @@ class IndexItemsView(ItemsView):
         return zip(self._mapping._variables, self._mapping._data.flat)
 
 
-class IndexValuesView(ValuesView):
+class IndexValuesView(abc.ValuesView):
     """Faster read access to the numpy array"""
     __slots__ = ()
 
