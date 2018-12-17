@@ -110,7 +110,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     if bqm is None:
         if vartype is None:
-            raise ValueError("one of vartype and create_using must be provided")
+            raise ValueError("one of vartype and bqm must be provided")
         bqm = BinaryQuadraticModel.empty(vartype)
     else:
         if not isinstance(bqm, BinaryQuadraticModel):
@@ -191,3 +191,30 @@ def _reduce_degree(bqm, poly, vartype, scale):
             new_poly[interaction] = bias
 
     return _reduce_degree(bqm, new_poly, vartype, scale)
+
+
+def _prod(iterable):
+    val = 1.
+    for v in iterable:
+        val *= v
+    return val
+
+
+def poly_energy(sample, poly):
+    """Create a binary quadratic model from a higher order polynomial.
+
+    Args:
+        sample (dict):
+            Sample for which to calculate the energy, formatted as a dict where keys
+            are variables and values are the value associated with each variable.
+
+        poly (dict):
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
+            variables and `bias` the associated bias.
+
+    Returns:
+        float: The energy of the sample.
+
+    """
+    return sum(_prod(sample[v] for v in variables) * bias
+               for variables, bias in poly.items())
