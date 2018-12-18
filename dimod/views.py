@@ -76,7 +76,7 @@ class IndexValuesView(abc.ValuesView):
         return iter(self._mapping._data.flat)
 
 class Bias(object):
-    """Biases and data associated with a variable or intereraction."""
+    """Biases and data associated with a variable or interaction."""
 
     __slots__ = 'value', '_data'
 
@@ -191,7 +191,7 @@ class QuadraticView(abc.MutableMapping):
     def __getitem__(self, interaction):
         u, v = interaction
         if u == v:
-            raise KeyError
+            raise KeyError("{} is not a neighbour of itself".format(u))
         return self._adj[u][v].value
 
     def __iter__(self):
@@ -223,9 +223,9 @@ class QuadraticView(abc.MutableMapping):
         # we don't know what type we want the biases, so we require that the variables already
         # exist before we can add an interaction between them
         if u not in adj:
-            raise KeyError('{} is not already a variables in the binary quadratic model'.format(u))
+            raise KeyError('{} is not already a variable in the binary quadratic model'.format(u))
         if v not in adj:
-            raise KeyError('{} is not already a variables in the binary quadratic model'.format(v))
+            raise KeyError('{} is not already a variable in the binary quadratic model'.format(v))
 
         if v in adj[u]:
             # adj[u][v] is adj[v][u]
@@ -250,7 +250,7 @@ class QuadraticItemsView(abc.ItemsView):
             yield (u, v), adj[u][v].value
 
 class NeighbourView(abc.Mapping):
-    """Acts as a dictionary `{u: bias, ...}` for the neightbours of a variables `v`.
+    """Acts as a dictionary `{u: bias, ...}` for the neighbours of a variable `v`.
 
     See Also:
         :class:`AdjacencyView`
@@ -266,13 +266,13 @@ class NeighbourView(abc.Mapping):
     def __getitem__(self, v):
         u = self._var
         if u == v:
-            raise KeyError
+            raise KeyError("{} is not a neighbour of itself".format(u))
         return self._adj[u][v].value
 
     def __setitem__(self, u, bias):
         v = self._var
         if u == v:
-            raise KeyError
+            raise KeyError("{} is not a neighbour of itself".format(u))
         self._adj[u][v].value = bias
 
     def __iter__(self):
