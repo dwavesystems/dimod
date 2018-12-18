@@ -18,7 +18,7 @@ try:
 except ImportError:
     import collections as abc
 
-from collections import OrderedDict
+from copy import deepcopy
 
 from six.moves import zip
 
@@ -88,18 +88,27 @@ class Bias(object):
         if data is not None:
             self._data = data
 
+    def __deepcopy__(self, memo):
+        value = self.value
+        try:
+            # if it's hashable then we don't need to keep copying
+            hash(value)
+        except TypeError:
+            
+            value = deepcopy(value, memo=memo)
+
+        memo[id(self)] = new = type(self)(value)
+
+        if hasattr(self, '_data'):
+            new._data = deepcopy(self._data, memo=memo)
+
+        return new
+
     def __repr__(self):
         if hasattr(self, '_data'):
             return '{}({!r}, data={!r})'.format(self.__class__.__name__, self.value, self.data)
         else:
             return '{}({!r})'.format(self.__class__.__name__, self.value)
-
-    def copy(self):
-        if hasattr(self, '_data'):
-            # make a shallow copy of data.
-            return type(self)(self.value, self.data.copy())
-        else:
-            return type(self)(self.value)
 
     @property
     def data(self):

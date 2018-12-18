@@ -53,6 +53,7 @@ try:
 except ImportError:
     import collections as abc
 
+from copy import deepcopy
 from collections import OrderedDict
 from numbers import Number
 
@@ -1368,20 +1369,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 ###################################################################################################
 
     def copy(self):
-        """Create a copy of a BinaryQuadraticModel.
-
-        Returns:
-            :class:`.BinaryQuadraticModel`
-
-        Examples:
-
-            >>> bqm = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
-            >>> bqm2 = bqm.copy()
-
-
-        """
-        # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
+        """Create a copy."""
+        return deepcopy(self)
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
