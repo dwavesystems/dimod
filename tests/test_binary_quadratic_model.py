@@ -1942,18 +1942,3 @@ class TestConvert(unittest.TestCase):
         dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
 
         self.assertEqual(bqm, dec_bqm)
-
-
-class TestOrderedBQM(unittest.TestCase):
-    def test_construction(self):
-        bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
-        bqm.add_variable('a', .5)
-        bqm.add_interaction('c', 'a', 1.5)
-        bqm.add_interaction('a', 'c', -1.)
-        bqm.add_interaction('a', 'b', -1.)
-        bqm.add_variables_from([('b', 1.0), ('c', 1.0)])
-        bqm.add_interaction('e', 'd', 0.0)
-
-        self.assertEqual(bqm.linear, collections.OrderedDict([('a', .5), ('c', 1.), ('b', 1.), ('e', 0.), ('d', 0.)]))
-        self.assertEqual(collections.OrderedDict(bqm.quadratic),
-                         collections.OrderedDict([(('a', 'c'), .5), (('a', 'b'), -1.), (('e', 'd'), 0.0)]))
