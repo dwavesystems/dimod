@@ -75,29 +75,35 @@ class IndexValuesView(abc.ValuesView):
         # Inherited __init__ puts the Mapping into self._mapping
         return iter(self._mapping._data.flat)
 
-class Data(object):
-    __slots__ = 'bias', '_data'
+class Bias(object):
+    """Biases and data associated with a variable or intereraction."""
 
-    def __init__(self, bias, data=None):
-        self.bias = bias
+    __slots__ = 'value', '_data'
 
+    def __init__(self, value, data=None):
+        self.value = value
+
+        # we only create the dictionary when it's needed. Otherwise we would use a lot
+        # of memory on empty dictionaries.
         if data is not None:
             self._data = data
 
     def __repr__(self):
         if hasattr(self, '_data'):
-            return '{}({!r}, data={!r})'.format(self.__class__.__name__, self.bias, self.data)
+            return '{}({!r}, data={!r})'.format(self.__class__.__name__, self.value, self.data)
         else:
-            return '{}({!r})'.format(self.__class__.__name__, self.bias)
+            return '{}({!r})'.format(self.__class__.__name__, self.value)
 
     def copy(self):
         if hasattr(self, '_data'):
-            return type(self)(self.bias, self.data.copy())
+            # make a shallow copy of data.
+            return type(self)(self.value, self.data.copy())
         else:
-            return type(self)(self.bias)
+            return type(self)(self.value)
 
     @property
     def data(self):
+        """dict: data associated with a variable or interaction."""
         try:
             return self._data
         except AttributeError:
@@ -108,6 +114,14 @@ class Data(object):
     
 
 class LinearView(abc.MutableMapping):
+    """Acts as a dictionary `{v: bias, ...}` for the linear biases.
+
+    The linear biases are stored in a dict-of-dicts format, where 'self loops'
+    store the linear biases.
+    So `{v: bias}` is stored `._adj = {v: {v: Bias(bias)}}`.
+
+    """
+
     __slots__ = '_adj',
 
     def __init__(self, bqm):
@@ -121,7 +135,7 @@ class LinearView(abc.MutableMapping):
         del self._adj[v]
 
     def __getitem__(self, v):
-        return self._adj[v][v].bias
+        return self._adj[v][v].value
 
     def __iter__(self):
         return iter(self._adj)
@@ -132,9 +146,9 @@ class LinearView(abc.MutableMapping):
     def __setitem__(self, v, bias):
         adj = self._adj
         if v in adj:
-            adj[v][v].bias = bias
+            adj[v][v].value = bias
         else:
-            adj[v] = {v: Data(bias)}
+            adj[v] = {v: Bias(bias)}
 
     def __str__(self):
         return str(dict(self))
@@ -142,25 +156,25 @@ class LinearView(abc.MutableMapping):
     def items(self):
         return LinearItemsView(self)
 
-class OrderedLinearView(LinearView):
-    def __setitem__(self, v, bias):
-        adj = self._adj
-        if v in adj:
-            adj[v][v].bias = bias
-        else:
-            adj[v] = OrderedDict(v=Data(bias))
-
 
 class LinearItemsView(abc.ItemsView):
-    """Faster items iteration"""
+    """Faster items iteration for LinearView."""
+
     __slots__ = ()
 
     def __iter__(self):
         for v, neighbours in self._mapping._adj.items():
-            yield v, neighbours[v].bias
+            yield v, neighbours[v].value
 
 
 class QuadraticView(abc.MutableMapping):
+    """Acts as a dictionary `{(u, v): bias, ...}` for the quadratic biases.
+
+    The quadratic biases are stored in a dict-of-dicts format. So `{(u, v): bias}` is stored as
+    `._adj = {u: {v: Bias(bias)}, v: {u: Bias(bias)}}`.
+
+    """
+
     __slots__ = '_adj',
 
     def __init__(self, bqm):
@@ -169,7 +183,7 @@ class QuadraticView(abc.MutableMapping):
     def __delitem__(self, interaction):
         u, v = interaction
         if u == v:
-            raise KeyError
+            raise KeyError('{} is not an interaction'.format(interaction))
         adj = self._adj
         del adj[v][u]
         del adj[u][v]
@@ -178,7 +192,7 @@ class QuadraticView(abc.MutableMapping):
         u, v = interaction
         if u == v:
             raise KeyError
-        return self._adj[u][v].bias
+        return self._adj[u][v].value
 
     def __iter__(self):
         seen = set()
@@ -196,21 +210,28 @@ class QuadraticView(abc.MutableMapping):
             seen.add(u)
 
     def __len__(self):
+        # -1 comes from self loops
         return sum(len(neighbours) - 1 for neighbours in self._adj.values()) // 2
 
     def __setitem__(self, interaction, bias):
         u, v = interaction
         if u == v:
-            raise KeyError
+            raise KeyError('{} cannot have an interaction with itself'.format(u))
 
         adj = self._adj
         
+        # we don't know what type we want the biases, so we require that the variables already
+        # exist before we can add an interaction between them
         if u not in adj:
-            raise NotImplementedError
+            raise KeyError('{} is not already a variables in the binary quadratic model'.format(u))
         if v not in adj:
-            raise NotImplementedError
+            raise KeyError('{} is not already a variables in the binary quadratic model'.format(v))
 
-        adj[u][v] = adj[v][u] = Data(bias)
+        if v in adj[u]:
+            # adj[u][v] is adj[v][u]
+            adj[u][v].value = bias
+        else:
+            adj[u][v] = adj[v][u] = Bias(bias)
 
     def __str__(self):
         return str(dict(self))
@@ -226,9 +247,16 @@ class QuadraticItemsView(abc.ItemsView):
     def __iter__(self):
         adj = self._mapping._adj
         for u, v in self._mapping:
-            yield (u, v), adj[u][v].bias
+            yield (u, v), adj[u][v].value
 
 class NeighbourView(abc.Mapping):
+    """Acts as a dictionary `{u: bias, ...}` for the neightbours of a variables `v`.
+
+    See Also:
+        :class:`AdjacencyView`
+
+    """
+
     __slots__ = '_adj', '_var'
 
     def __init__(self, adj, v):
@@ -239,13 +267,13 @@ class NeighbourView(abc.Mapping):
         u = self._var
         if u == v:
             raise KeyError
-        return self._adj[u][v].bias
+        return self._adj[u][v].value
 
     def __setitem__(self, u, bias):
         v = self._var
         if u == v:
             raise KeyError
-        self._adj[u][v].bias = bias
+        self._adj[u][v].value = bias
 
     def __iter__(self):
         v = self._var
@@ -260,6 +288,13 @@ class NeighbourView(abc.Mapping):
         return str(dict(self))
 
 class AdjacencyView(abc.Mapping):
+    """Acts as a dict-of-dicts `{u: {v: bias}, v: {u: bias}}` for the quadratic biases.
+
+    The quadratic biases are stored in a dict-of-dicts format. So `{u: {v: bias}, v: {u: bias}}`
+    is stored as `._adj = {u: {v: Bias(bias)}, v: {u: Bias(bias)}}`.
+
+    """
+
     __slots__ = '_adj',
 
     def __init__(self, bqm):
@@ -267,7 +302,7 @@ class AdjacencyView(abc.Mapping):
 
     def __getitem__(self, v):
         if v not in self._adj:
-            raise KeyError
+            raise KeyError('{} is not a variable'.format(v))
         return NeighbourView(self._adj, v)
 
     def __iter__(self):
