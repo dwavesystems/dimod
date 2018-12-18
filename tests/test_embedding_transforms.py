@@ -193,7 +193,7 @@ class TestUnembedResponse(unittest.TestCase):
                                   dtype=[('sample', 'i1', (8,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
                                   [0, 1, 2, 3, 4, 5, 6, 7], {}, 'SPIN')
         embedding = {0: {0, 4}, 1: {1, 5}, 2: {2, 6}, 3: {3, 7}}
-        bqm = dimod.OrderedBinaryQuadraticModel.from_ising([.1, .2], {(0, 1): 1.5}, 0.0)
+        bqm = dimod.BinaryQuadraticModel.from_ising([.1, .2], {(0, 1): 1.5}, 0.0)
 
         unembedded = dimod.unembed_response(response, embedding, source_bqm=bqm)
 
