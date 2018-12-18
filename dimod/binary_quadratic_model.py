@@ -58,7 +58,7 @@ from numbers import Number
 
 import numpy as np
 
-from six import itervalues, iteritems, iterkeys, viewkeys, PY2
+from six import itervalues, iteritems, iterkeys, PY2
 
 from dimod.decorators import vartype_argument
 from dimod.response import SampleView
@@ -276,7 +276,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     @property
     def variables(self):
         """Return binary quadratic model's variables as a dictionary view object."""
-        return viewkeys(self.linear)
+        if PY2:
+            return set(self.linear)
+        else:
+            return self.linear.keys()
 
 ##################################################################################################
 # vartype properties
