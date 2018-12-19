@@ -49,7 +49,7 @@ artifacts:
   - path: dist\*.whl
 
 before_deploy:
-  - "%PYTHON%\\python.exe -m pip install twine --upgrade --force-reinstall"
+  - "%PYTHON%\\python.exe -m pip install twine"
 
   # set up the pypi credentials
   - "echo [pypi] > %USERPROFILE%\\.pypirc"
