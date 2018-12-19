@@ -65,12 +65,12 @@ class TestBinaryQuadraticModel(unittest.TestCase):
             self.assertEqual(bqm.adj[u][v], bqm.quadratic[(u, v)])
             self.assertEqual(bqm.adj[v][u], bqm.adj[u][v])
 
-            self.assertNotIn((v, u), bqm.quadratic)
+            # self.assertNotIn((v, u), bqm.quadratic)
 
         for u in bqm.adj:
             for v in bqm.adj[u]:
-                self.assertTrue((u, v) in bqm.quadratic or (v, u) in bqm.quadratic)
-                self.assertFalse((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
+                self.assertTrue((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
+                # self.assertFalse((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
 
     def test_construction(self):
         # spin model
@@ -942,7 +942,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         # binary contribution is 0.0
         self.assertEqual(binary_bqm.energy({'a': 0, 'b': 0, 'c': 0}), spin_bqm.energy({'c': -1, 'b': -1}))
 
-    def test_constract_variables(self):
+    def test_contract_variables(self):
         bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.BINARY)
         original_bqm = bqm.copy()
 
@@ -1127,7 +1127,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertNotEqual(id(bqm.adj), id(new_bqm.adj))
 
         for v in bqm.linear:
-            self.assertNotEqual(id(bqm.adj[v]), id(new_bqm.adj[v]))
+            self.assertIsNot(bqm.adj[v], new_bqm.adj[v])
 
         # values should all be equal
         self.assertEqual(bqm.linear, new_bqm.linear)
@@ -1942,18 +1942,3 @@ class TestConvert(unittest.TestCase):
         dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
 
         self.assertEqual(bqm, dec_bqm)
-
-
-class TestOrderedBQM(unittest.TestCase):
-    def test_construction(self):
-        bqm = dimod.OrderedBinaryQuadraticModel.empty(dimod.SPIN)
-        bqm.add_variable('a', .5)
-        bqm.add_interaction('c', 'a', 1.5)
-        bqm.add_interaction('a', 'c', -1.)
-        bqm.add_interaction('a', 'b', -1.)
-        bqm.add_variables_from([('b', 1.0), ('c', 1.0)])
-        bqm.add_interaction('e', 'd', 0.0)
-
-        self.assertEqual(bqm.linear, collections.OrderedDict([('a', .5), ('c', 1.), ('b', 1.), ('e', 0.), ('d', 0.)]))
-        self.assertEqual(bqm.quadratic,
-                         collections.OrderedDict([(('c', 'a'), .5), (('a', 'b'), -1.), (('e', 'd'), 0.0)]))

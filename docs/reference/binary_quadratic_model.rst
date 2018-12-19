@@ -108,9 +108,3 @@ Converting to other types
    BinaryQuadraticModel.to_qubo
    BinaryQuadraticModel.to_pandas_dataframe
    BinaryQuadraticModel.to_serializable
-
-
-OrderedBinaryQuadraticModel
-===========================
-
-.. autoclass:: OrderedBinaryQuadraticModel
