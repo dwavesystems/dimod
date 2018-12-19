@@ -757,6 +757,11 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertConsistentBQM(bqm)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
 
+    def test_fix_variables(self):
+        bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm.fix_variables({'a': -1, 'b': +1})
+
+
     def test_fix_variable(self):
         # spin model, fix variable to +1
         bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)

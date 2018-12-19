@@ -981,6 +981,22 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         self.add_offset(value * linear[v])
         self.remove_variable(v)
 
+    def fix_variables(self, fixed):
+        """Fix the value of the variables and remove it from a binary quadratic model.
+
+        Args:
+            fixed (dict):
+                A dictionary of variable assignments.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0., 'c': 5}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.fix_variables({'a': -1, 'b': +1})
+
+        """
+        for v, val in fixed.items():
+            self.fix_variable(v, val)
+
+
     def flip_variable(self, v):
         """Flip variable v in a binary quadratic model.
 
