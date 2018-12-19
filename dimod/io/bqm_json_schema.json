@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "binary quadratic model schema",
+  "type": "object",
+  "required": ["linear_terms",
+               "info",
+               "offset",
+               "quadratic_terms",
+               "variable_labels",
+               "variable_type",
+               "version"],
+  "properties": {
+    "info": {
+      "type": "object"
+    },
+    "variable_labels": {
+      "type": "array",
+      "items": {
+        "type": ["integer", "string", "array"],
+        "minimum": 0
+      }
+    },
+    "variable_type": {
+      "type":"string",
+      "enum":["SPIN", "BINARY"]
+    },
+    "offset" : {
+      "type": "number"
+    },
+    "linear_terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required":["label", "bias"],
+        "properties": {
+          "label" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "bias":{
+             "type": "number"
+          }
+        }
+      }
+    },
+    "quadratic_terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required":["label_head", "label_tail", "bias"],
+        "properties": {
+          "label_head" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "label_tail" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "bias":{
+             "type": "number"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "object",
+      "required": ["bqm_schema", "dimod"],
+      "properties": {
+        "bqm_schema": {
+          "enum":["1.0.0"]
+        }
+      }
+    }
+  }
+}
