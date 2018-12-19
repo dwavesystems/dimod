@@ -29,7 +29,7 @@ cache:
   - '%AppData%\pip-cache'
 
   # cache the .pyd file
-  - 'dimod\roof_duality\_fix_variables.pyd -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src'
+  - 'dimod\roof_duality\_fix_variables.pyd -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src\compressed_matrix.hpp, dimod\roof_duality\src\fix_variables.cpp, dimod\roof_duality\src\fix_variables.hpp'
 
 install:
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt --cache-dir %AppData%\\pip-cache"
