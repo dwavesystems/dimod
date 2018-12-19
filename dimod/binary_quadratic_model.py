@@ -1896,6 +1896,43 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return cls(linear, quadratic, offset, Vartype.BINARY)
 
+    @classmethod
+    def from_markov_random_field(cls, edges):
+        """
+
+
+        Examples:
+            >>> fixed = {'n01': 1, 'n03': 0. }
+            >>> edges = [['n01', 'n02', 3.0, 4.0, -6.0, 2.0], 
+                         ['n02', 'n04', 5.0, -1.0, -4.0, 2.0], 
+                         ['n03', 'n04', 1.0, 6.0, -6.0, 2.0], 
+                         ['n03', 'n05', -4.0, -3.0, 6.0, 5.0]]
+            ...
+            >>> # generate the markov network in a form that can be solved
+            >>> network = dimod.BinaryQuadraticModel.from_markov_random_field(edges)
+            ...
+            >>> # next we want to clamp/fix some of the variables
+            >>> clamped = network.copy()
+            >>> clamped.fix_variables(fixed)
+            ...
+            >>> # sample
+            >>> samples = dimod.ExactSolver().sample(clamped)
+            >>> samples.first
+            Sample(sample={'n02': 0, 'n04': 1, 'n05': 0}, energy=-1.0, num_occurrences=1)
+
+
+        """
+        bqm = cls.empty(Vartype.BINARY)
+
+        for u, v, phi11, phi10, phi01, phi00 in edges:
+            bqm.add_variable(u, phi10 - phi00)
+            bqm.add_variable(v, phi01 - phi00)
+            bqm.add_interaction(u, v, phi11 - phi10 - phi01 + phi00)
+            bqm.add_offset(phi00)
+
+        return bqm
+
+
     def to_numpy_matrix(self, variable_order=None):
         """Convert a binary quadratic model to NumPy 2D array.
 

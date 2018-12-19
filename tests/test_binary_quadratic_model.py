@@ -1953,3 +1953,13 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
+
+class TestMarkovRandomField(unittest.TestCase):
+    def test_energy_single_interaction(self):
+        edges = [(0, 1, .5, -.1, 3, 0.7)]
+        bqm = dimod.BinaryQuadraticModel.from_markov_random_field(edges)
+
+        self.assertAlmostEqual(bqm.energy({0: 1, 1: 1}), edges[0][2])
+        self.assertAlmostEqual(bqm.energy({0: 1, 1: 0}), edges[0][3])
+        self.assertAlmostEqual(bqm.energy({0: 0, 1: 1}), edges[0][4])
+        self.assertAlmostEqual(bqm.energy({0: 0, 1: 0}), edges[0][5])
