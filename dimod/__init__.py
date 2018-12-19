@@ -33,7 +33,7 @@ else:
 
 import dimod.testing
 
-from dimod.binary_quadratic_model import *
+from dimod.binary_quadratic_model import BinaryQuadraticModel
 import dimod.binary_quadratic_model
 
 import dimod.decorators
