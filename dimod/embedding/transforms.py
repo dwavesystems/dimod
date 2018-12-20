@@ -35,7 +35,8 @@ __all__ = ['embed_bqm',
            ]
 
 
-def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
+def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0,
+              smear_vartype=None):
     """Embed a binary quadratic model onto a target graph.
 
     Args:
@@ -53,6 +54,10 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
         chain_strength (float, optional):
             Magnitude of the quadratic bias (in SPIN-space) applied between variables to create chains. Note
             that the energy penalty of chain breaks is 2 * `chain_strength`.
+
+        smear_vartype (:class:`.Vartype`, optional, default=None):
+            Determine whether the bqm is embedded in SPIN or BINARY space. By default the embedding
+            is done according to the given source_bqm.
 
     Returns:
         :obj:`.BinaryQuadraticModel`: Target binary quadratic model.
@@ -102,6 +107,13 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0):
         >>> # Snipped above response for brevity
 
     """
+    if smear_vartype is Vartype.SPIN and source_bqm.vartype is Vartype.BINARY:
+        return embed_bqm(source_bqm.spin, embedding, target_adjacency,
+                         chain_strength=chain_strength, smear_vartype=None).binary
+    elif smear_vartype is Vartype.BINARY and source_bqm.vartype is Vartype.SPIN:
+        return embed_bqm(source_bqm.binary, embedding, target_adjacency,
+                         chain_strength=chain_strength, smear_vartype=None).spin
+
     # create a new empty binary quadratic model with the same class as source_bqm
     target_bqm = source_bqm.empty(source_bqm.vartype)
 
