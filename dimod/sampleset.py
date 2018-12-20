@@ -793,7 +793,7 @@ class SampleSet(Iterable, Sized):
         import pandas as pd
 
         df = pd.DataFrame(self.record.sample, columns=self.variables)
-        for field in self.record.dtype.fields:
+        for field in sorted(self.record.dtype.fields):  # sort for consistency
             if field == 'sample':
                 continue
 
