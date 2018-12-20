@@ -770,6 +770,37 @@ class SampleSet(Iterable, Sized):
         from dimod.io.json import sampleset_decode_hook
         return sampleset_decode_hook(obj, cls=cls)
 
+    ###############################################################################################
+    # Export to dataframe
+    ###############################################################################################
+
+    def to_pandas_dataframe(self):
+        """Convert a SampleSet to a Pandas DataFrame
+
+        Returns:
+            :obj:`pandas.DataFrame`
+
+        Examples:
+            >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
+                                                        {'a': -1, 'b': -1, 'c': +1}],
+                                                       dimod.SPIN, energy=-.5)
+            >>> samples.to_pandas_dataframe()
+               a  b  c  energy  num_occurrences
+            0 -1  1 -1    -0.5                1
+            1 -1 -1  1    -0.5                1
+
+        """
+        import pandas as pd
+
+        df = pd.DataFrame(self.record.sample, columns=self.variables)
+        for field in self.record.dtype.fields:
+            if field == 'sample':
+                continue
+
+            df.loc[:, field] = self.record[field]
+
+        return df
+
 
 def _samples_dicts_to_array(samples_dicts):
     """Convert an iterable of samples where each sample is a dict to a numpy 2d array. Also

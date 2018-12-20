@@ -21,6 +21,13 @@ import numpy as np
 import dimod
 
 
+try:
+    import pandas as pd
+    _pandas = True
+except ImportError:
+    _pandas = False
+
+
 class TestSampleSet(unittest.TestCase):
     def test_from_samples(self):
 
@@ -158,3 +165,16 @@ class TestSampleSetSerialization(unittest.TestCase):
         s = json.dumps(samples.to_serializable())
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
+
+
+@unittest.skipUnless(_pandas, "no pandas present")
+class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
+    def test_simple(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1, -1], [-1, -1, 1]], 'abc'),
+                                               dimod.SPIN, energy=[-.5, .5])
+        df = samples.to_pandas_dataframe()
+
+        other = pd.DataFrame([[-1, 1, -1, -.5, 1], [-1, -1, 1, .5, 1]],
+                             columns=['a', 'b', 'c', 'energy', 'num_occurrences'])
+
+        pd.testing.assert_frame_equal(df, other, check_dtype=False)
