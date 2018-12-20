@@ -56,8 +56,9 @@ def embed_bqm(source_bqm, embedding, target_adjacency, chain_strength=1.0,
             that the energy penalty of chain breaks is 2 * `chain_strength`.
 
         smear_vartype (:class:`.Vartype`, optional, default=None):
-            Determine whether the bqm is embedded in SPIN or BINARY space. By default the embedding
-            is done according to the given source_bqm.
+            When a single variable is embedded, it's linear bias is 'smeared' evenly over the
+            chain. This parameter determines whether the variable is smeared in SPIN or BINARY
+            space. By default the embedding is done according to the given source_bqm.
 
     Returns:
         :obj:`.BinaryQuadraticModel`: Target binary quadratic model.

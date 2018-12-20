@@ -440,8 +440,6 @@ class TestEmbedBQM(unittest.TestCase):
         # embed
         embedded = dimod.embed_bqm(bqm, embedding, graph, chain_strength=1, smear_vartype=dimod.SPIN)
 
-        print(embedded)
-
         preferred = dimod.BinaryQuadraticModel({'a': 0.0, 'b': 0.0, 'c': 0.0, 'd': 0.0},
                                                {('a', 'c'): 0.5, ('b', 'c'): 0.5, ('c', 'd'): 1.0,
                                                 ('a', 'd'): 1.0, ('a', 'b'): -1.0}, 1.0, dimod.SPIN)
