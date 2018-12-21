@@ -21,42 +21,25 @@ from collections import Counter
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.decorators import vartype_argument
 from dimod.vartypes import Vartype
 import dimod
 from dimod.response import SampleSet
 import numpy as np
 
-__all__ = ['make_quadratic','HigherOrderComposite']
+__all__ = ['make_quadratic']
 
 
-class HigherOrderComposite(dimod.ComposedSampler):
+def penalty_satisfaction(response, bqm):
+    record = response.record
+    label_dict = response.label_to_idx
 
-    def __init__(self, child_sampler):
-        self._children = [child_sampler]
-
-    @property
-    def children(self):
-        return self._children
-
-    @property
-    def parameters(self):
-        param = self.child.parameters.copy()
-        param['penalty_strength'] = []
-        return param
-
-    @property
-    def properties(self):
-        return {'child_properties': self.child.properties.copy()}
-
-    def sample(self, h, J, offset=0, penalty_strength=1.0, **parameters):
-        bqm = BinaryQuadraticModel(linear=h, quadratic={}, offset=0,
-                                   vartype=dimod.SPIN)
-        bqm = make_quadratic(J, penalty_strength, bqm=bqm)
-        response = self.child.sample(bqm, **parameters)
-
-        return polymorph_response(response, h, J, offset, bqm,
-                                  penalty_strength=penalty_strength)
+    penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
+                              record.sample[:, label_dict[qj]]
+                              == record.sample[:,
+                                 label_dict[valdict['product']]]
+                              for (qi, qj), valdict in
+                              bqm.info['reduction'].items()], axis=0)
+    return penalty_vector
 
 
 def polymorph_response(response, h, J, offset, bqm, penalty_strength=None):
@@ -65,7 +48,7 @@ def polymorph_response(response, h, J, offset, bqm, penalty_strength=None):
         sorted(set(h.keys()) | set(v for key in J.keys() for
                                    v in key)))
 
-    penalty_vector = check_penalty_satisfaction(response, bqm)
+    penalty_vector = penalty_satisfaction(response, bqm)
 
     poly = _shifted_poly(h, J, response.label_to_idx)
     energy_vector = np.add(poly_energy(record.sample, poly), offset)
@@ -96,19 +79,6 @@ def polymorph_response(response, h, J, offset, bqm, penalty_strength=None):
     response.info['penalty_stength'] = penalty_strength
     return SampleSet(data, original_variables, response.info,
                      response.vartype)
-
-
-def check_penalty_satisfaction(response, bqm):
-    record = response.record
-    label_dict = response.label_to_idx
-
-    penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
-                              record.sample[:, label_dict[qj]]
-                              == record.sample[:,
-                                 label_dict[valdict['product']]]
-                              for (qi, qj), valdict in
-                              bqm.info['reduction'].items()], axis=0)
-    return penalty_vector
 
 
 def _spin_product(variables):
@@ -276,19 +246,6 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
-def _prod(iterable):
-    val = 1.
-    for v in iterable:
-        val *= v
-    return val
-
-
-def _prod_D(iterable, D):
-    val = [1.] * D
-    for v in iterable:
-        val *= v
-    return val
-
 
 def _shifted_poly(h, j, label_dict):
     poly = {}
@@ -311,7 +268,7 @@ def create_poly(h, J):
 
     Returns
         dict: a higher order problem dict containing both linear,
-    quadratic and n-order terms.
+              quadratic and n-order terms.
 
     """
 
@@ -320,8 +277,23 @@ def create_poly(h, J):
     return poly
 
 
+def _prod(iterable):
+    val = 1.
+    for v in iterable:
+        val *= v
+    return val
+
+
+def _prod_d(iterable, dim):
+    val = [1.] * dim
+    for v in iterable:
+        val *= v
+    return val
+
+
 def poly_energy(sample, poly):
-    """Create a binary quadratic model from a higher order polynomial.
+    """
+    Create a binary quadratic model from a higher order polynomial.
 
     Args:
         sample (dict or (list,np.array)):
@@ -338,13 +310,10 @@ def poly_energy(sample, poly):
         float or list: The energy of the sample(s).
 
     """
-
-    try:
-        _ = len(sample[0])
-        D = len(sample)
-        return sum(_prod_D([sample[:, v] for v in variables], D) * bias
+    if len(np.shape(sample)) == 2:
+        dim = len(sample)
+        return sum(_prod_d([sample[:, v] for v in variables], dim) * bias
                    for variables, bias in poly.items())
-
-    except:
+    else:
         return sum(_prod(sample[v] for v in variables) * bias
                    for variables, bias in poly.items())
