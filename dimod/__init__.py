@@ -38,10 +38,6 @@ import dimod.binary_quadratic_model
 
 import dimod.decorators
 
-# for now, let's just import the most important embedding functions
-from dimod.embedding import embed_bqm, embed_ising, embed_qubo, chain_break_frequency, unembed_response
-import dimod.embedding
-
 import dimod.generators
 
 from dimod.exceptions import *
