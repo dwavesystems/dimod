@@ -815,7 +815,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         """
         self.add_offset(-self.offset)
 
-    def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
+    def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
+              ignore_offset=False):
         """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
         Args:
@@ -827,6 +828,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
             ignored_interactions (iterable[tuple], optional):
                 As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
@@ -870,7 +874,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 continue
             quadratic[(u, v)] *= scalar
 
-        self.offset *= scalar
+        if not ignore_offset:
+            self.offset *= scalar
 
         try:
             self._counterpart.scale(scalar, ignored_variables=ignored_variables,
@@ -878,7 +883,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         except AttributeError:
             pass
 
-    def normalize(self, bias_range=1, quadratic_range=None):
+    def normalize(self, bias_range=1, quadratic_range=None,
+                  ignored_variables=None, ignored_interactions=None,
+                  ignore_offset=False):
         """Normalizes the biases of the binary quadratic model such that they
         fall in the provided range(s), and adjusts the offset appropriately.
 
@@ -893,6 +900,15 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
             quadratic_range (number/pair):
                 Value/range by which to normalize the quadratic biases.
+
+            ignored_variables (iterable, optional):
+                Biases associated with these variables are not scaled.
+
+            ignored_interactions (iterable[tuple], optional):
+                As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
@@ -936,7 +952,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                          quad_min / quad_range[0], quad_max / quad_range[1])
 
         if inv_scalar != 0:
-            self.scale(1 / inv_scalar)
+            self.scale(1 / inv_scalar, ignored_variables=ignored_variables,
+                       ignored_interactions=ignored_interactions,
+                       ignore_offset=ignore_offset)
 
     def fix_variable(self, v, value):
         """Fix the value of a variable and remove it from a binary quadratic model.
