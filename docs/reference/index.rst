@@ -16,7 +16,6 @@ Reference Documentation
    response
    vartypes
    bqm_functions
-   embedding
    exceptions
    utilities
    testing
