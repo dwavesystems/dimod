@@ -746,6 +746,32 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm.scale('a')
 
+    def test_normalize_exclusions(self):
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignored_variables=[0])
+        self.assertAlmostEqual(bqm.linear, {0: -2, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignored_interactions=[(1, 0)])
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -1})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignore_offset=True)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, 1.)
+        self.assertConsistentBQM(bqm)
+
+
     def test_scale_exclusions(self):
         bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.scale(.5, ignored_variables=[0])
@@ -756,6 +782,13 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         bqm.scale(.5, ignored_interactions=[(1, 0)])
         self.assertConsistentBQM(bqm)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignore_offset=True)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1},
+                                                         {(0, 1): -.5},
+                                                         1., dimod.SPIN))
 
     def test_fix_variables(self):
         bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
