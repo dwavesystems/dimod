@@ -5,6 +5,7 @@ import numpy as np
 
 __all__ = ['FixedVariableComposite']
 
+
 class FixedVariableComposite(dimod.ComposedSampler):
 
     def __init__(self, child_sampler):
@@ -31,20 +32,19 @@ class FixedVariableComposite(dimod.ComposedSampler):
         child = self.child
         if fixed_variables is None:
             fixed_variables = fix_variables(source_bqm)
+
         bqm = source_bqm.copy()
+        bqm.fix_variables(fixed_variables)
 
-        for v, val in fixed_variables.items():
-            bqm.fix_variable(v, val)
-
-        if len(bqm.variables)==0:
-            return _fixed_response(fixed_variables,bqm.offset,bqm.vartype)
+        if len(bqm.variables) == 0:
+            return _fixed_response(fixed_variables, bqm.offset, bqm.vartype)
 
         response = child.sample(bqm, **parameters)
-        
+
         return _release_response(response, bqm, fixed_variables)
 
 
-def _fixed_response(fixed_variables,offset,vartype):
+def _fixed_response(fixed_variables, offset, vartype):
     variables = fixed_variables.keys()
 
     samples = np.asarray([list(fixed_variables.values())])
@@ -53,7 +53,8 @@ def _fixed_response(fixed_variables,offset,vartype):
     num_variables = len(fixed_variables)
 
     datatypes = [('sample', np.dtype(np.int8), (num_variables,)),
-                 ('energy', energy.dtype),('num_occurrences',np.dtype(np.int8))]
+                 ('energy', energy.dtype),
+                 ('num_occurrences', np.dtype(np.int8))]
 
     data = np.rec.array(np.empty(1, dtype=datatypes))
 
@@ -61,13 +62,12 @@ def _fixed_response(fixed_variables,offset,vartype):
     data.energy = energy
     data.num_occurrences = 1
 
-    return SampleSet(data, variables, 
-                     {'fixed_variables':fixed_variables},
+    return SampleSet(data, variables,
+                     {'fixed_variables': fixed_variables},
                      vartype)
 
 
 def _release_response(response, bqm, fixed_variables):
-
     original_variables = list(bqm.variables)
     record = response.record
     samples = np.asarray(record.sample)
