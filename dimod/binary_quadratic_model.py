@@ -829,7 +829,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ignored_interactions (iterable[tuple], optional):
                 As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
 
-            ignore_offset (bool): if True, the offset is not scaled
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
@@ -906,7 +907,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ignored_interactions (iterable[tuple], optional):
                 As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
 
-            ignore_offset (bool): if True, the offset is not scaled
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
