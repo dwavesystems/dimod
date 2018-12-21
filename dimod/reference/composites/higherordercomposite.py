@@ -39,7 +39,7 @@ class HigherOrderComposite(dimod.ComposedSampler):
     def properties(self):
         return {'child_properties': self.child.properties.copy()}
 
-    def sample(self, h, J, offset=0, penalty_strength=1.0, **parameters):
+    def sample_ising(self, h, J, offset=0, penalty_strength=1.0, **parameters):
         bqm = BinaryQuadraticModel(linear=h, quadratic={}, offset=0,
                                    vartype=dimod.SPIN)
         bqm = make_quadratic(J, penalty_strength, bqm=bqm)
