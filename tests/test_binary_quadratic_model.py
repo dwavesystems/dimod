@@ -1879,7 +1879,7 @@ class TestConvert(unittest.TestCase):
     def test_to_json_string_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
-        bqm_str = bqm.to_json()
+        bqm_str = json.dumps(bqm.to_serializable())
 
         self.assertIsInstance(bqm_str, str)
 
@@ -1890,7 +1890,7 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        bqm_str = bqm.to_json()
+        bqm_str = json.dumps(bqm.to_serializable())
 
         self.assertIsInstance(bqm_str, str)
 
@@ -1903,7 +1903,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            file.write(bqm.to_json())
+            file.write(json.dumps(bqm.to_serializable()))
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
@@ -1919,7 +1919,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            file.write(bqm.to_json())
+            file.write(json.dumps(bqm.to_serializable()))
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
@@ -1929,7 +1929,7 @@ class TestConvert(unittest.TestCase):
     def test_functional_to_and_from_json_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
 
@@ -1938,7 +1938,7 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
 
@@ -1947,36 +1947,9 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
-
-    def test_bson_dense(self):
-        n = 7
-        bqm = dimod.BinaryQuadraticModel(
-            {0: 1., 1: np.float32(-850.234)}, 
-            {(u, v): u*3.0 + v/2.0 for u in range(n) for v in range(u+1, n)}, 
-            0.0, dimod.BINARY)
-
-        enc_bqm = bqm.to_bson()
-        self.assertIsInstance(enc_bqm, bytes)
-        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
-
-        self.assertEqual(bqm, dec_bqm)
-
-    def test_bson_sparse(self):
-        bqm = dimod.BinaryQuadraticModel(
-            {"a": 1., "b": np.float32(7.0), "c": np.float32(-5.0), 
-             "e": np.float32(4.0)},
-            {("a", "b"): np.float32(-4.0), ("a", "c"): np.float32(6.0), 
-             ("b", "d"): np.float32(5.0)},
-            0.0, dimod.BINARY)
-
-        enc_bqm = bqm.to_bson()
-        self.assertIsInstance(enc_bqm, bytes)
-        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
-
-        self.assertEqual(bqm, dec_bqm)
