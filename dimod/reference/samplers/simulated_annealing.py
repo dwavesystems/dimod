@@ -25,7 +25,7 @@ import math
 from six import itervalues
 
 from dimod.core.sampler import Sampler
-from dimod.response import Response
+from dimod.sampleset import SampleSet
 from dimod.utilities import ising_energy
 from dimod.vartypes import Vartype
 
@@ -42,7 +42,7 @@ class SimulatedAnnealingSampler(Sampler):
         ...
         >>> response = dimod.SimulatedAnnealingSampler().sample_ising(
         ...                  {'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> response.data_vectors['energy']      # doctest: +SKIP
+        >>> response.record.energy      # doctest: +SKIP
         array([-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5])
 
     """
@@ -71,7 +71,7 @@ class SimulatedAnnealingSampler(Sampler):
                 Default is 1000.
 
         Returns:
-            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+            :obj:`.SampleSet`
 
         Note:
             This is a reference implementation, not optimized for speed
@@ -109,7 +109,7 @@ class SimulatedAnnealingSampler(Sampler):
             samples.append(sample)
             energies.append(energy)
 
-        response = Response.from_samples(samples, {'energy': energies}, {}, vartype=Vartype.SPIN)
+        response = SampleSet.from_samples(samples, Vartype.SPIN, energies)
         response.change_vartype(bqm.vartype, offset, inplace=True)
         return response
 

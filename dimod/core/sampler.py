@@ -34,7 +34,7 @@ to create a dimod sampler with the :class:`.Sampler` class.
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.Response.from_samples([sample], {'energy': [energy]})
+            return dimod.SampleSet.from_samples([sample], energy=[energy]})
 
         @property
         def properties(self):
@@ -84,7 +84,7 @@ Below is a more complex version of the same sampler, where the :attr:`properties
             energy = dimod.ising_energy(sample, h, J)
             if verbose:
                 print(sample)
-            return dimod.Response.from_samples([sample], {'energy': [energy]})
+            return dimod.SampleSet.from_samples([sample], energy=[energy]})
 
         @property
         def properties(self):
@@ -122,60 +122,12 @@ class Sampler:
     def parameters(self):
         """dict: A dict where keys are the keyword parameters accepted by the sampler
         methods and values are lists of the properties relevent to each parameter.
-
-        Examples:
-            This example adds a `verbose` parameter to an Ising sampler.
-
-            .. code-block:: python
-
-                class IsingSampler(dimod.Sampler):
-                    def __init__(self):
-                        self._parameters = {'verbose': []}
-
-                    def sample_ising(self, h, J, verbose=False):
-                        sample = linear_ising(h, J) # Implemented elsewhere
-                        energy = dimod.ising_energy(sample, h, J)
-                        if verbose:
-                            print(sample)
-                        return dimod.Response.from_samples([sample], {'energy': [energy]})
-
-                    @property
-                    def properties(self):
-                        return dict()
-
-                    @property
-                    def parameters(self):
-                        return self._parameters
-
         """
         pass
 
     @abc.abstractproperty  # for python2 compatibility
     def properties(self):
         """dict: A dict containing any additional information about the sampler.
-
-        Examples:
-            This example adds a `description` property to an Ising sampler.
-
-            .. code-block:: python
-
-                class IsingSampler(dimod.Sampler):
-                    def __init__(self):
-                        self._properties = {'description': 'an example Ising sampler'}
-
-                    def sample_ising(self, h, J):
-                        sample = linear_ising(h, J) # Implemented elsewhere
-                        energy = dimod.ising_energy(sample, h, J)
-                        return dimod.Response.from_samples([sample], {'energy': [energy]})
-
-                    @property
-                    def properties(self):
-                        return self._properties
-
-                    @property
-                    def parameters(self):
-                        return dict()
-
         """
         pass
 
