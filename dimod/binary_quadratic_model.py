@@ -1534,7 +1534,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             1 1 1.000000
 
         """
-        import dimod.io.coo as coo
+        import dimod.serialization.coo as coo
 
         if fp is None:
             return coo.dumps(self, vartype_header)
@@ -1600,7 +1600,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             True
 
         """
-        import dimod.io.coo as coo
+        import dimod.serialization.coo as coo
 
         if isinstance(obj, str):
             return coo.loads(obj, cls=cls, vartype=vartype)
@@ -1662,12 +1662,12 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         if use_bytes:
-            from dimod.io.bson import bqm_bson_encoder
+            from dimod.serialization.bson import bqm_bson_encoder
 
             return bqm_bson_encoder(self)
         else:
             # we we don't use bytes then use json encoder
-            from dimod.io.json import DimodEncoder
+            from dimod.serialization.json import DimodEncoder
 
             return DimodEncoder().default(self)
 
@@ -1699,8 +1699,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             :func:`json.loads`, :func:`json.load` JSON deserialization functions
 
         """
-        from dimod.io.json import bqm_decode_hook
-        from dimod.io.bson import bqm_bson_decoder
+        from dimod.serialization.json import bqm_decode_hook
+        from dimod.serialization.bson import bqm_bson_decoder
 
         # try decoding with json
         dct = bqm_decode_hook(obj, cls=cls)

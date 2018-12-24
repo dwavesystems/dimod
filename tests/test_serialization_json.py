@@ -20,7 +20,7 @@ import json
 import jsonschema
 
 import dimod
-import dimod.io.json as dson
+import dimod.serialization.json as dson
 
 
 class TestDimodEncoder(unittest.TestCase):
