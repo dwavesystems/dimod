@@ -21,9 +21,9 @@ See `Ocean Glossary <https://docs.ocean.dwavesys.com/en/latest/glossary.html>`_ 
 of technical terms in descriptions of Ocean tools.
 """
 import numpy as np
-from dimod.response import SampleSet
 
-from dimod import ComposedSampler
+from dimod.core.composite import ComposedSampler
+from dimod.response import SampleSet
 
 __all__ = ['FixedVariableComposite']
 
@@ -49,9 +49,9 @@ class FixedVariableComposite(ComposedSampler):
        >>> import dimod
        >>> sampler = dimod.FixedVariableComposite(dimod.ExactSolver())
        >>> linear = {1: -1.3, 4: -0.5}
-       >>> quadratic = {(1,4):-0.6}
-       >>> response = sampler.sample_ising(linear,quadratic,fixed_variables={1:-1})
-       >>> print(response.first)
+       >>> quadratic = {(1, 4): -0.6}
+       >>> response = sampler.sample_ising(linear,quadratic,fixed_variables={1: -1})
+       >>> print(response.first)  # doctest: +SKIP
        Sample(sample={1: -1, 4: -1}, energy=1.2000000000000002, num_occurrences=1)
 
     """
