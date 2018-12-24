@@ -23,7 +23,7 @@ from six.moves import zip
 
 from dimod.core.sampler import Sampler
 from dimod.decorators import bqm_index_labels
-from dimod.response import Response
+from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
 
 __all__ = ['ExactSolver']
@@ -42,7 +42,7 @@ class ExactSolver(Sampler):
         >>> import dimod
         ...
         >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> response.data_vectors['energy']
+        >>> response.record.energy
         array([-1.5, -0.5, -0.5,  2.5])
 
     """
@@ -62,7 +62,7 @@ class ExactSolver(Sampler):
                 Binary quadratic model to be sampled from.
 
         Returns:
-            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+            :obj:`~dimod.SampleSet`
 
 
         Examples:
@@ -81,7 +81,7 @@ class ExactSolver(Sampler):
         off = bqm.binary.offset
 
         if M.shape == (0, 0):
-            return Response.from_samples([], {'energy': []}, {}, bqm.vartype)
+            return SampleSet.from_samples([], bqm.vartype, energy=[])
 
         sample = np.zeros((len(bqm),), dtype=bool)
 
@@ -109,8 +109,7 @@ class ExactSolver(Sampler):
 
         samples, energies = zip(*iter_samples())
 
-        response = Response.from_samples(np.array(samples, dtype='int8'), {'energy': energies}, {},
-                                         vartype=Vartype.BINARY)
+        response = SampleSet.from_samples(np.array(samples, dtype='int8'), Vartype.BINARY, energies)
 
         # make sure the response matches the given vartype, in-place.
         response.change_vartype(bqm.vartype, inplace=True)

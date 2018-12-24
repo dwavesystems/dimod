@@ -107,8 +107,8 @@ def _release_response(response, fixed_variables):
        associated with fixing the variables.
 
     Args:
-        response (:obj:`.Response`):
-            Response from the bqm with fixed variables.
+        response (:obj:`.SampleSet`):
+            Samples from the bqm with fixed variables.
 
         fixed_variables (dict):
             The dict of fixed variables and their assigned values.
@@ -117,7 +117,7 @@ def _release_response(response, fixed_variables):
 
     Returns:
         :obj:`dimod.SampleSet`:
-            Response for the source binary quadratic model.
+            Samples for the source binary quadratic model.
 
     Examples:
        This example uses :class:`.FixedVariableComposite` to instantiate a
