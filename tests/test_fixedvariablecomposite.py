@@ -16,14 +16,13 @@
 
 import unittest
 
-import numpy as np
-
-import dimod
-
-from dimod.reference import FixedVariableComposite, ExactSolver
-from dimod.binary_quadratic_model import BinaryQuadraticModel
-
 import dimod.testing as dtest
+from dimod.vartypes import Vartype
+
+from dimod import BinaryQuadraticModel
+from dimod import FixedVariableComposite, ExactSolver
+from dimod import SampleSet
+
 
 class TestFixedVariableComposite(unittest.TestCase):
 
@@ -34,24 +33,35 @@ class TestFixedVariableComposite(unittest.TestCase):
 
     def test_sample(self):
         bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
-                               quadratic={(1, 4): -0.6},
-                               offset=0,
-                               vartype=dimod.SPIN)
+                                   quadratic={(1, 4): -0.6},
+                                   offset=0,
+                                   vartype=Vartype.SPIN)
 
         fixed_variables = {1: -1}
         sampler = FixedVariableComposite(ExactSolver())
         response = sampler.sample(bqm, fixed_variables=fixed_variables)
 
-        self.assertDictEqual(dict(response.first.sample), {4: -1, 1: -1})
-        self.assertAlmostEquals(response.first.energy,1.2)
+        self.assertEqual(response.first.sample, {4: -1, 1: -1})
+        self.assertAlmostEquals(response.first.energy, 1.2)
 
     def test_empty_bqm(self):
         bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
                                    quadratic={(1, 4): -0.6},
                                    offset=0,
-                                   vartype=dimod.SPIN)
+                                   vartype=Vartype.SPIN)
 
         fixed_variables = {1: -1, 4: -1}
         sampler = FixedVariableComposite(ExactSolver())
         response = sampler.sample(bqm, fixed_variables=fixed_variables)
-        self.assertIsInstance(response, dimod.SampleSet)
+        self.assertIsInstance(response, SampleSet)
+
+    def test_empty_fix(self):
+        linear = {1: -1.3, 4: -0.5}
+        quadratic = {(1, 4): -0.6}
+
+        sampler = FixedVariableComposite(ExactSolver())
+        response = sampler.sample_ising(linear, quadratic)
+        self.assertIsInstance(response, SampleSet)
+
+        self.assertEqual(response.first.sample, {4: 1, 1: 1})
+        self.assertAlmostEquals(response.first.energy, -2.4)
