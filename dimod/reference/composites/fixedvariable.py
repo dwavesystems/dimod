@@ -52,7 +52,7 @@ class FixedVariableComposite(ComposedSampler):
        >>> quadratic = {(1,4):-0.6}
        >>> response = sampler.sample_ising(linear,quadratic,fixed_variables={1:-1})
        >>> print(response.first)
-       Sample(sample={4: -1, 1: -1}, energy=1.2000000000000002, num_occurrences=1)
+       Sample(sample={1: -1, 4: -1}, energy=1.2000000000000002, num_occurrences=1)
 
     """
 
