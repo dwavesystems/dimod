@@ -28,7 +28,7 @@ import jsonschema
 import numpy as np
 
 import dimod
-from dimod.io.json import bqm_json_schema
+from dimod.serialization.json import bqm_json_schema
 
 try:
     import networkx as nx

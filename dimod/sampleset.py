@@ -739,7 +739,7 @@ class SampleSet(Iterable, Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        from dimod.io.json import DimodEncoder
+        from dimod.serialization.json import DimodEncoder
         return DimodEncoder().default(self)
 
     @classmethod
@@ -767,7 +767,7 @@ class SampleSet(Iterable, Sized):
             :meth:`~.SampleSet.to_serializable`
 
         """
-        from dimod.io.json import sampleset_decode_hook
+        from dimod.serialization.json import sampleset_decode_hook
         return sampleset_decode_hook(obj, cls=cls)
 
     ###############################################################################################
