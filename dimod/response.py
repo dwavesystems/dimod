@@ -172,68 +172,6 @@ class Response(SampleSet):
 
         return cls(record, variable_labels, info, vartype)
 
-    ###############################################################################################
-    # Deprecated properties
-    ###############################################################################################
-
-    @property
-    def samples_matrix(self):
-        """:obj:`numpy.ndarray`: Samples as a NumPy 2D array of data type int8.
-
-        Examples:
-            This example shows the samples of dimod package's ExactSolver reference sampler
-            formatted as a NumPy array.
-
-            >>> import dimod
-            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> response.samples_matrix
-            array([[-1, -1],
-                   [ 1, -1],
-                   [ 1,  1],
-                   [-1,  1]])
-
-        Note:
-            Deprecated
-
-        """
-        import warnings
-        warnings.warn("Response.samples_matrix is deprecated, please use Response.record.sample instead.",
-                      DeprecationWarning)
-        return self.record['sample']
-
-    @samples_matrix.setter
-    def samples_matrix(self, mat):
-        import warnings
-        warnings.warn("Response.samples_matrix is deprecated, please use Response.record.sample instead.",
-                      DeprecationWarning)
-        self.record['sample'] = mat
-
-    @property
-    def data_vectors(self):
-        """dict[field, :obj:`numpy.array`/list]: Per-sample data as a dict, where keys are the
-        data labels and values are each a vector of the same length as record.samples.
-
-        Examples:
-            This example shows the returned energies of dimod package's ExactSolver
-            reference sampler.
-
-            >>> import dimod
-            >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-            >>> response.data_vectors['energy']
-            array([-1.5, -0.5, -0.5,  2.5])
-
-
-        Note:
-            Deprecated
-
-        """
-        import warnings
-        warnings.warn("Response.data_vectors is deprecated, please use Response.record instead.",
-                      DeprecationWarning)
-        rec = self.record
-
-        return {field: rec[field] for field in rec.dtype.fields if field != 'sample'}
-
 
 def _samples_dicts_to_array(samples_dicts, labels):
     """Convert an iterable of samples where each sample is a dict to a numpy 2d array. Also
