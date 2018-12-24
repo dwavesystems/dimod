@@ -113,3 +113,24 @@ Methods
    :toctree: generated/
 
    StructureComposite.sample
+
+
+
+Fixed Variable Composite
+------------------------
+
+.. automodule:: dimod.reference.composites.fixedvariable
+
+Class
+~~~~~
+
+.. currentmodule:: dimod.reference.composites
+.. autoclass:: FixedVariableComposite
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   FixedVariableComposite.sample
