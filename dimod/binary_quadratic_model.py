@@ -2103,43 +2103,58 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         """
         linear = self.linear
         quadratic = self.quadratic
-        n = len(linear)
+
+        num_variables = len(linear)
+        num_interactions = len(quadratic)
+
+        irow = np.empty(num_interactions, dtype=index_dtype)
+        icol = np.empty(num_interactions, dtype=index_dtype)
+        qdata = np.empty(num_interactions, dtype=dtype)
 
         if variable_order is None:
-            if not all(v in self.linear for v in range(n)):
+            try:
+                ldata = np.fromiter((linear[v] for v in range(num_variables)), count=num_variables, dtype=dtype)
+            except KeyError:
                 raise ValueError(("if 'variable_order' is not provided, binary quadratic model must be "
                                   "index labeled [0, ..., N-1]"))
-            variable_order = list(range(n))
 
-        labels = {v: idx for idx, v in enumerate(variable_order)}
+            # we could speed this up a lot with cython
+            for idx, ((u, v), bias) in enumerate(quadratic.items()):
+                irow[idx] = u
+                icol[idx] = v
+                qdata[idx] = bias
 
-        lin = np.array([linear[v] for v in variable_order], dtype=dtype)
-
-        if quadratic:
-            if sort_indices:
-                def _iter_quadratic():
-                    for (u, v), bias in iteritems(quadratic):
-                        u = labels[u]
-                        v = labels[v]
-
-                        if u > v:
-                            yield (v, u, bias)
-                        else:
-                            yield (u, v, bias)
-
-                heads, tails, values = zip(*sorted(_iter_quadratic()))
-            else:
-                heads, tails, values = zip(*((labels[u], labels[v], bias) for (u, v), bias in iteritems(quadratic)))
         else:
-            # need to specify a dtype, otherwise they would be cast to float. This might be overwritten
-            # by the user
-            heads = np.array([], dtype=int)
-            tails = np.array([], dtype=int)
-            values = []  # will be cast to float which is fine
+            try:
+                ldata = np.fromiter((linear[v] for v in variable_order), count=num_variables, dtype=dtype)
+            except KeyError:
+                raise ValueError("provided 'variable_order' does not match binary quadratic model")
 
-        return lin, (np.asarray(heads, dtype=index_dtype),
-                     np.asarray(tails, dtype=index_dtype),
-                     np.asarray(values, dtype=dtype)), self.offset
+            label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
+
+            # we could speed this up a lot with cython
+            for idx, ((u, v), bias) in enumerate(quadratic.items()):
+                irow[idx] = label_to_idx[u]
+                icol[idx] = label_to_idx[v]
+                qdata[idx] = bias
+
+        if sort_indices:
+            # row index should be less than col index, this handles upper-triangular vs lower-triangular
+            swaps = irow > icol
+            if swaps.any():
+                # in-place
+                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+
+            # sort lexigraphically
+            order = np.lexsort((irow, icol))
+            if not (order == range(len(order))).all():
+                # copy
+                irow = irow[order]
+                icol = icol[order]
+                qdata = qdata[order]
+
+        return ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)
+
 
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
