@@ -79,6 +79,14 @@ class Response(SampleSet):
 
     __slots__ = ()
 
+    def __init__(self, *args, **kwargs):
+        super(Response, self).__init__(*args, **kwargs)
+
+        import warnings
+
+        warnings.warn("dimod.Response is deprecated, please use dimod.SampleSet instead.",
+                      DeprecationWarning)
+
     ###############################################################################################
     # Properties
     ###############################################################################################
