@@ -42,7 +42,7 @@ class TestFixedVariableComposite(unittest.TestCase):
         response = sampler.sample(bqm, fixed_variables=fixed_variables)
 
         self.assertEqual(response.first.sample, {4: -1, 1: -1})
-        self.assertAlmostEquals(response.first.energy, 1.2)
+        self.assertAlmostEqual(response.first.energy, 1.2)
 
     def test_empty_bqm(self):
         bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
@@ -64,4 +64,4 @@ class TestFixedVariableComposite(unittest.TestCase):
         self.assertIsInstance(response, SampleSet)
 
         self.assertEqual(response.first.sample, {4: 1, 1: 1})
-        self.assertAlmostEquals(response.first.energy, -2.4)
+        self.assertAlmostEqual(response.first.energy, -2.4)
