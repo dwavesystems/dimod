@@ -61,9 +61,9 @@ import numpy as np
 from six import itervalues, iteritems, iterkeys, PY2
 
 from dimod.decorators import vartype_argument
-from dimod.response import SampleView
+from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
-from dimod.views import LinearView, QuadraticView, AdjacencyView
+from dimod.views import LinearView, QuadraticView, AdjacencyView, SampleView
 from dimod.vartypes import Vartype
 
 
@@ -1475,6 +1475,31 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
         return en
 
+    def energies(self, samples_like, dtype=np.float):
+        """Determine the energies of the given samples.
+
+        Args:
+            samples_like (samples_like):
+                A collection of raw samples. `samples_like` is an extension of NumPy's array_like
+                structure. See :func:`.as_samples`.
+
+            dtype (:class:`numpy.dtype`):
+                The data type of the returned energies.
+
+        Returns:
+            :obj:`numpy.ndarray`: The energies.
+
+        """
+        samples, labels = as_samples(samples_like)
+
+        if all(v == idx for idx, v in enumerate(labels)):
+            ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(dtype=dtype)
+        else:
+            ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(variable_order=labels, dtype=dtype)
+
+        energies = samples.dot(ldata) + (samples[:, irow]*samples[:, icol]).dot(qdata) + offset
+        return np.asarray(energies, dtype=dtype)  # handle any type promotions
+
 ##################################################################################################
 # conversions
 ##################################################################################################
@@ -2055,7 +2080,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return bqm
 
-    def to_numpy_vectors(self, variable_order=None, dtype=None, index_dtype=None, sort_indices=False):
+    def to_numpy_vectors(self, variable_order=None, dtype=np.float, index_dtype=np.int64, sort_indices=False):
         """Convert a binary quadratic model to numpy arrays.
 
         Args:

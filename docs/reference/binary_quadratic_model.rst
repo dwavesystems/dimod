@@ -87,6 +87,7 @@ Energy
    :toctree: generated/
 
    BinaryQuadraticModel.energy
+   BinaryQuadraticModel.energies
 
 Converting to other types
 -------------------------
