@@ -174,8 +174,7 @@ class SampleSet(Iterable, Sized):
         >>> import dimod
         >>> import numpy as np
         ...
-        >>> dimod.SampleSet.from_samples(dimod.as_samples(np.ones(5, dtype='int8')),
-        ...                              'BINARY', 0)   # doctest: +SKIP
+        >>> dimod.SampleSet.from_samples(np.ones(5, dtype='int8'), 'BINARY', 0)   # doctest: +SKIP
         SampleSet(rec.array([([1, 1, 1, 1, 1], 0, 1)],
         ...       dtype=[('sample', 'i1', (5,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
         ...       [0, 1, 2, 3, 4], {}, 'BINARY')
