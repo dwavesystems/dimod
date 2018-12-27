@@ -29,7 +29,7 @@ cache:
   - '%AppData%\pip-cache'
 
   # cache the .pyd file
-  - 'dimod\roof_duality\_fix_variables.pyd -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src\compressed_matrix.hpp, dimod\roof_duality\src\fix_variables.cpp, dimod\roof_duality\src\fix_variables.hpp'
+  - dimod\roof_duality\ -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src\compressed_matrix.hpp, dimod\roof_duality\src\fix_variables.cpp, dimod\roof_duality\src\fix_variables.hpp, dimod\roof_duality\fix_variables.py, dimod\roof_duality\__init__.py
 
 install:
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt --cache-dir %AppData%\\pip-cache"
@@ -39,8 +39,7 @@ install:
 
 build_script:
   # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
-  # only build if the .pyd doesn't already exist (it is cached based on the files changing)
-  - "if NOT exist dimod\\roof_duality\\_fix_variables.pyd %PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
+  - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
 
   # build the wheel
   - "%PYTHON%\\python.exe -m pip install wheel"
