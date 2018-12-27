@@ -41,17 +41,14 @@ build_script:
   # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
   - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
 
+test_script:
+  - "%PYTHON%\\python.exe -m unittest discover"
+
+before_deploy:
   # build the wheel
   - "%PYTHON%\\python.exe -m pip install wheel"
   - "%PYTHON%\\python.exe setup.py bdist_wheel"
 
-test_script:
-  - "%PYTHON%\\python.exe -m unittest discover"
-
-artifacts:
-  - path: dist\*.whl
-
-before_deploy:
   - "%PYTHON%\\python.exe -m pip install twine"
 
   # set up the pypi credentials
