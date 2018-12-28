@@ -139,6 +139,12 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(samples,
                          dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
 
+    def test_from_bqm_single_sample(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
+
 
 class TestSampleSetSerialization(unittest.TestCase):
 

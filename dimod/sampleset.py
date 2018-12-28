@@ -374,6 +374,49 @@ class SampleSet(Iterable, Sized):
         return cls(record, variables, info, vartype)
 
     @classmethod
+    def from_samples_bqm(cls, samples_like, bqm, **kwargs):
+        """Build a SampleSet from raw samples using a BinaryQuadraticModel to get energies and vartype.
+
+        Args:
+            samples_like:
+                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+                See :func:`.as_samples`.
+
+            bqm (:obj:`.BinaryQuadraticModel`):
+                A binary quadratic model. It is used to calculate the energies
+                and set the vartype.
+
+            info (dict, optional):
+                Information about the :class:`SampleSet` as a whole formatted as a dict.
+
+            num_occurrences (array_like, optional):
+                Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
+
+            aggregate_samples (bool, optional, default=False):
+                If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            **vectors (array_like):
+                Other per-sample data.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
+            >>> samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+            >>> samples =dimod.SampleSet.from_samples_bqm([[-1, 1], [1, -1]], bqm)
+
+        """
+        # more performant to do this once, here rather than again in bqm.energies
+        # and in cls.from_samples
+        samples_like = as_samples(samples_like)
+
+        energies = bqm.energies(samples_like)
+
+        return cls.from_samples(samples_like, energy=energies, vartype=bqm.vartype, **kwargs)
+
+    @classmethod
     def from_future(cls, future, result_hook=None):
         """Construct a :class:`SampleSet` referencing the result of a future computation.
 

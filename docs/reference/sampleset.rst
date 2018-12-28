@@ -57,6 +57,7 @@ Constructing a Response
    :toctree: generated/
 
    SampleSet.from_samples
+   SampleSet.from_samples_bqm
    SampleSet.from_future
 
 Transformations
