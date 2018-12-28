@@ -76,6 +76,14 @@ Copy
 
    SampleSet.copy
 
+Aggregate
+~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   SampleSet.aggregate
+
 Done
 ~~~~
 

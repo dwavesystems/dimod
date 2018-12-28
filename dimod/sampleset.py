@@ -781,6 +781,33 @@ class SampleSet(Iterable, Sized):
         self._variables.relabel(mapping)
         return self
 
+    def aggregate(self):
+        """Create a new SampleSet with repeated samples aggregated.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Note:
+            :attr:`.SampleSet.record.num_occurrences` are accumulated but no
+            other fields are.
+
+        """
+
+        _, indices, inverse = np.unique(self.record.sample, axis=0,
+                                        return_index=True, return_inverse=True)
+
+        record = self.record[indices]
+
+        # fix the number of occurrences
+        record.num_occurrences = 0
+        for old_idx, new_idx in enumerate(inverse):
+            record[new_idx].num_occurrences += self.record[old_idx].num_occurrences
+
+        # dev note: we don't check the energies as they should be the same
+        # for individual samples
+
+        return self.__class__(record, self.variables, self.info, self.vartype)
+
     ###############################################################################################
     # Serialization
     ###############################################################################################
