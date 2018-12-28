@@ -287,7 +287,8 @@ class SampleSet(Iterable, Sized):
         self._vartype = vartype
 
     @classmethod
-    def from_samples(cls, samples_like, vartype, energy, info=None, num_occurrences=None, **vectors):
+    def from_samples(cls, samples_like, vartype, energy, info=None,
+                     num_occurrences=None, aggregate_samples=False, **vectors):
         """Build a :class:`SampleSet` from raw samples.
 
         Args:
@@ -308,7 +309,10 @@ class SampleSet(Iterable, Sized):
                 Information about the :class:`SampleSet` as a whole formatted as a dict.
 
             num_occurrences (array_like, optional):
-                Number of occurences for each sample. If not provided, defaults to a vector of 1s.
+                Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
+
+            aggregate_samples (bool, optional, default=False):
+                If true, returned :obj:`.SampleSet` will have all unique samples.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -330,6 +334,11 @@ class SampleSet(Iterable, Sized):
 
         .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
         """
+        if aggregate_samples:
+            return cls.from_samples(samples_like, vartype, energy,
+                                    info=info, num_occurrences=num_occurrences,
+                                    aggregate_samples=False,
+                                    **vectors).aggregate()
 
         # get the samples, variable labels
         samples, variables = as_samples(samples_like)
