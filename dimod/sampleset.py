@@ -27,6 +27,8 @@ from collections import namedtuple
 
 import numpy as np
 
+from numpy.lib import recfunctions
+
 from dimod.decorators import vartype_argument
 from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
@@ -145,6 +147,70 @@ def as_samples(samples_like, dtype=None):
         ValueError("expected sample_like to be <= 2 dimensions")
 
     return samples_like, list(range(samples_like.shape[1]))
+
+
+def concatenate(samplesets, defaults=None):
+    """Combine SampleSets.
+
+    Args:
+        samplesets (iterable[:obj:`.SampleSet`):
+            An iterable of sample sets.
+
+        defaults (dict, optional):
+            Dictionary mapping data vector names to the corresponding default values.
+
+    Returns:
+        :obj:`.SampleSet`: A sample set with the same vartype and variable order as the first
+        given in `samplesets`.
+
+    Examples:
+        >>> a = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=-1)
+        >>> b = dimod.SampleSet.from_samples(([-1, +1], 'ba'), dimod.SPIN, energy=-1)
+        >>> ab = dimod.concatenate((a, b))
+        >>> ab.record.sample
+        array([[-1,  1],
+               [ 1, -1]], dtype=int8)
+
+    """
+    if not samplesets:
+        raise ValueError
+
+    itertup = iter(samplesets)
+
+    first = next(itertup)
+    vartype = first.vartype
+    variables = first.variables
+
+    records = [first.record]
+    records.extend(_iter_records(itertup, vartype, variables))
+
+    # dev note: I was able to get ~2x performance boost when trying to
+    # implement the same functionality here by hand (I didn't know that
+    # this function existed then). However I think it is better to use
+    # numpy's function and rely on their testing etc. If however this becomes
+    # a performance bottleneck in the future, it might be worth changing.
+    record = recfunctions.stack_arrays(records, defaults=defaults,
+                                       asrecarray=True, usemask=False)
+
+    return SampleSet(record, variables, {}, vartype)
+
+
+def _iter_records(samplesets, vartype, variables):
+    # coerce each record into the correct vartype and variable-order
+    for samples in samplesets:
+
+        # coerce vartype
+        if samples.vartype is not vartype:
+            samples = samples.change_vartype(vartype, inplace=False)
+
+        if samples.variables != variables:
+            new_record = samples.record.copy()
+            order = [samples.variables.index[v] for v in variables]
+            new_record.sample = samples.record.sample[:, order]
+            yield new_record
+        else:
+            # order matches so we're done
+            yield samples.record
 
 
 class SampleSet(Iterable, Sized):

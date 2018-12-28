@@ -83,3 +83,11 @@ Done
    :toctree: generated/
 
    SampleSet.done
+
+Utility Functions
+=================
+
+.. autosummary::
+   :toctree: generated/
+
+   concatenate
