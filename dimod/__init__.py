@@ -48,7 +48,7 @@ import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
-from dimod.sampleset import *
+from dimod.sampleset import as_samples, SampleSet, concatenate
 
 from dimod.response import *
 import dimod.response
