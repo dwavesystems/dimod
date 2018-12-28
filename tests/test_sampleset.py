@@ -123,6 +123,12 @@ class TestSampleSet(unittest.TestCase):
 
         self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
 
+    def test_from_samples_with_aggregation(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0],
+                                               aggregate_samples=True)
+        self.assertEqual(samples.aggregate(),
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0, num_occurrences=2))
+
     def test_aggregate_simple(self):
         samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0])
 
