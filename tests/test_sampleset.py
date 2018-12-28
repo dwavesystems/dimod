@@ -253,3 +253,7 @@ class Test_concatenate(unittest.TestCase):
 
         self.assertEqual(comb, out)
         np.testing.assert_array_equal(comb.record.sample, out.record.sample)
+
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            dimod.concatenate([])

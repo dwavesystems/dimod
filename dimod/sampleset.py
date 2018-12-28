@@ -172,12 +172,14 @@ def concatenate(samplesets, defaults=None):
                [ 1, -1]], dtype=int8)
 
     """
-    if not samplesets:
-        raise ValueError
 
     itertup = iter(samplesets)
 
-    first = next(itertup)
+    try:
+        first = next(itertup)
+    except StopIteration:
+        raise ValueError("samplesets must contain at least one SampleSet")
+
     vartype = first.vartype
     variables = first.variables
 
