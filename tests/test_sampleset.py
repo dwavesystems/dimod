@@ -123,6 +123,16 @@ class TestSampleSet(unittest.TestCase):
 
         self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
 
+    def test_aggregate_simple(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0])
+
+        self.assertEqual(samples.aggregate(),
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0, num_occurrences=2))
+
+        # original should not be changed
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
+
 
 class TestSampleSetSerialization(unittest.TestCase):
 
