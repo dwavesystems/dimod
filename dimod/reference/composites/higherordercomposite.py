@@ -226,6 +226,6 @@ def polymorph_response(response, h, J, bqm, offset=0,
     data['penalty_satisfaction'] = penalty_vector
     response.info['reduction'] = bqm.info['reduction']
     if penalty_strength is not None:
-        response.info['penalty_stength'] = penalty_strength
+        response.info['penalty_strength'] = penalty_strength
     return SampleSet(data, original_variables, response.info,
                      response.vartype)

@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 
+import numpy as np
 import unittest
 
 import dimod.testing as dtest
@@ -34,11 +35,12 @@ class TestFixedVariableComposite(unittest.TestCase):
 
         sampler = HigherOrderComposite(ExactSolver())
         response = sampler.sample_ising(linear, quadratic, penalty_strength=10,
-                                        keep_penalty_variables=False)
+                                        keep_penalty_variables=False,
+                                        discard_unsatisfied=False)
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1, 2: 1})
         self.assertAlmostEqual(response.first.energy, -3.3)
-        self.assertFalse(response.first.penalty_satisfaction)
+        self.assertFalse(np.prod(response.record.penalty_satisfaction))
 
     def test_discard(self):
         linear = {0: -0.5, 1: -0.3, 2: -0.8}
@@ -50,7 +52,7 @@ class TestFixedVariableComposite(unittest.TestCase):
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1, 2: 1})
         self.assertAlmostEqual(response.first.energy, -3.3)
-        self.assertTrue(response.first.penalty_satisfaction)
+        self.assertTrue(np.prod(response.record.penalty_satisfaction))
 
     def test_penalty_variables(self):
         linear = {0: -0.5, 1: -0.3, 2: -0.8}
