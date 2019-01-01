@@ -57,6 +57,7 @@ Constructing a Response
    :toctree: generated/
 
    SampleSet.from_samples
+   SampleSet.from_samples_bqm
    SampleSet.from_future
 
 Transformations
@@ -76,6 +77,14 @@ Copy
 
    SampleSet.copy
 
+Aggregate
+~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   SampleSet.aggregate
+
 Done
 ~~~~
 
@@ -83,3 +92,11 @@ Done
    :toctree: generated/
 
    SampleSet.done
+
+Utility Functions
+=================
+
+.. autosummary::
+   :toctree: generated/
+
+   concatenate

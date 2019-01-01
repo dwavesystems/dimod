@@ -21,6 +21,13 @@ import numpy as np
 import dimod
 
 
+try:
+    import pandas as pd
+    _pandas = True
+except ImportError:
+    _pandas = False
+
+
 class TestSampleSet(unittest.TestCase):
     def test_from_samples(self):
 
@@ -116,6 +123,28 @@ class TestSampleSet(unittest.TestCase):
 
         self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
 
+    def test_from_samples_with_aggregation(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0],
+                                               aggregate_samples=True)
+        self.assertEqual(samples.aggregate(),
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0, num_occurrences=2))
+
+    def test_aggregate_simple(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0])
+
+        self.assertEqual(samples.aggregate(),
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0, num_occurrences=2))
+
+        # original should not be changed
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
+
+    def test_from_bqm_single_sample(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
+
 
 class TestSampleSetSerialization(unittest.TestCase):
 
@@ -158,3 +187,73 @@ class TestSampleSetSerialization(unittest.TestCase):
         s = json.dumps(samples.to_serializable())
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
+
+
+@unittest.skipUnless(_pandas, "no pandas present")
+class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
+    def test_simple(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1, -1], [-1, -1, 1]], 'abc'),
+                                               dimod.SPIN, energy=[-.5, .5])
+        df = samples.to_pandas_dataframe()
+
+        other = pd.DataFrame([[-1, 1, -1, -.5, 1], [-1, -1, 1, .5, 1]],
+                             columns=['a', 'b', 'c', 'energy', 'num_occurrences'])
+
+        pd.testing.assert_frame_equal(df, other, check_dtype=False)
+
+
+class Test_concatenate(unittest.TestCase):
+    def test_simple(self):
+        ss0 = dimod.SampleSet.from_samples([-1, +1], dimod.SPIN, energy=-1)
+        ss1 = dimod.SampleSet.from_samples([+1, -1], dimod.SPIN, energy=-1)
+        ss2 = dimod.SampleSet.from_samples([[+1, +1], [-1, -1]], dimod.SPIN, energy=[1, 1])
+
+        comb = dimod.concatenate((ss0, ss1, ss2))
+
+        out = dimod.SampleSet.from_samples([[-1, +1], [+1, -1], [+1, +1], [-1, -1]], dimod.SPIN, energy=[-1, -1, 1, 1])
+
+        self.assertEqual(comb, out)
+        np.testing.assert_array_equal(comb.record.sample, out.record.sample)
+
+    def test_variables_order(self):
+        ss0 = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=-1)
+        ss1 = dimod.SampleSet.from_samples(([-1, +1], 'ba'), dimod.SPIN, energy=-1)
+        ss2 = dimod.SampleSet.from_samples(([[+1, +1], [-1, -1]], 'ab'), dimod.SPIN, energy=[1, 1])
+
+        comb = dimod.concatenate((ss0, ss1, ss2))
+
+        out = dimod.SampleSet.from_samples(([[-1, +1], [+1, -1], [+1, +1], [-1, -1]], 'ab'),
+                                           dimod.SPIN, energy=[-1, -1, 1, 1])
+
+        self.assertEqual(comb, out)
+        np.testing.assert_array_equal(comb.record.sample, out.record.sample)
+
+    def test_variables_order(self):
+        ss0 = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=-1)
+        ss1 = dimod.SampleSet.from_samples(([-1, +1], 'ba'), dimod.SPIN, energy=-1)
+        ss2 = dimod.SampleSet.from_samples(([[+1, +1], [-1, -1]], 'ab'), dimod.SPIN, energy=[1, 1])
+
+        comb = dimod.concatenate((ss0, ss1, ss2))
+
+        out = dimod.SampleSet.from_samples(([[-1, +1], [+1, -1], [+1, +1], [-1, -1]], 'ab'),
+                                           dimod.SPIN, energy=[-1, -1, 1, 1])
+
+        self.assertEqual(comb, out)
+        np.testing.assert_array_equal(comb.record.sample, out.record.sample)
+
+    def test_variables_order_and_vartype(self):
+        ss0 = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=-1)
+        ss1 = dimod.SampleSet.from_samples(([-1, +1], 'ba'), dimod.SPIN, energy=-1)
+        ss2 = dimod.SampleSet.from_samples(([[1, 1], [0, 0]], 'ab'), dimod.BINARY, energy=[1, 1])
+
+        comb = dimod.concatenate((ss0, ss1, ss2))
+
+        out = dimod.SampleSet.from_samples(([[-1, +1], [+1, -1], [+1, +1], [-1, -1]], 'ab'),
+                                           dimod.SPIN, energy=[-1, -1, 1, 1])
+
+        self.assertEqual(comb, out)
+        np.testing.assert_array_equal(comb.record.sample, out.record.sample)
+
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            dimod.concatenate([])

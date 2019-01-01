@@ -18,19 +18,9 @@ This module contains asserts that can be used to test the correctness of dimod s
 composites and responses. This is useful for checking that a created sampler correctly fulfills
 the dimod API.
 """
-import warnings
-
 from collections import Mapping, Sequence, Set
 
-
 import dimod
-
-
-def assert_response_correct_energy(response, bqm):
-    """Maintained too keep backwards compatibility. Can be removed for any version greater than 0.7.x"""
-    warnings.warn("assert_response_correct_energy is deprecated, please use assert_response_energies",
-                  DeprecationWarning)
-    assert_response_energies(response, bqm)
 
 
 def assert_sampler_api(sampler):

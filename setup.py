@@ -45,14 +45,14 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 
 packages = ['dimod',
             'dimod.core',
-            'dimod.embedding',
-            'dimod.io',
             'dimod.generators',
             'dimod.reference',
             'dimod.reference.composites',
             'dimod.reference.samplers',
             'dimod.roof_duality',
-            'dimod.testing']
+            'dimod.serialization',
+            'dimod.testing',
+            ]
 
 classifiers = [
     'License :: OSI Approved :: Apache Software License',

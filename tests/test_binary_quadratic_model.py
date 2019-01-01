@@ -28,7 +28,7 @@ import jsonschema
 import numpy as np
 
 import dimod
-from dimod.io.json import bqm_json_schema
+from dimod.serialization.json import bqm_json_schema
 
 try:
     import networkx as nx
@@ -746,6 +746,32 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm.scale('a')
 
+    def test_normalize_exclusions(self):
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignored_variables=[0])
+        self.assertAlmostEqual(bqm.linear, {0: -2, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignored_interactions=[(1, 0)])
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -1})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(.5, ignore_offset=True)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, 1.)
+        self.assertConsistentBQM(bqm)
+
+
     def test_scale_exclusions(self):
         bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.scale(.5, ignored_variables=[0])
@@ -756,6 +782,18 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         bqm.scale(.5, ignored_interactions=[(1, 0)])
         self.assertConsistentBQM(bqm)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
+
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignore_offset=True)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1},
+                                                         {(0, 1): -.5},
+                                                         1., dimod.SPIN))
+
+    def test_fix_variables(self):
+        bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm.fix_variables({'a': -1, 'b': +1})
+
 
     def test_fix_variable(self):
         # spin model, fix variable to +1
@@ -1587,6 +1625,66 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({'a': -1, 'b': 1, 'c': 5},
                                                                     {('a', 'b'): -1, ('b', 'c'): 1}))
 
+    def test_energies_cpp(self):
+        num_variables = 25
+        p = .1
+        num_samples = 10
+
+        linear = np.random.rand(num_variables)
+        row, col = zip(*(pair for pair in itertools.combinations(range(num_variables), 2) if np.random.rand() < p))
+        quad = np.random.rand(len(row))
+
+        h = dict(enumerate(linear))
+        J = {(u, v): b for u, v, b in zip(row, col, quad)}
+
+        bqm = dimod.BinaryQuadraticModel(h, J, np.random.rand(), dimod.BINARY)
+
+        samples = np.random.randint(2, size=(num_samples, num_variables))
+
+        def _energies(bqm, samples):
+
+            row, col = samples.shape
+
+            energies=[]
+            for r in range(row):
+                sample = {c: samples[r, c] for c in range(col)}
+                energies.append(bqm.energy(sample))
+            return energies
+
+        np.testing.assert_array_almost_equal(bqm.energies(samples), _energies(bqm, samples))
+
+
+    def test_energies_misordered(self):
+        h = {0: -2.5, 1: -2.5, 3: -2.5, 4: -5.0, 2: 0.0}
+        J = {(0, 1): 2.5, (0, 3): 2.5, (0, 4): 5.0,
+             (1, 3): 2.5, (1, 4): 5.0, (3, 4): 5.0,
+             (2, 3): -1.0}
+        bqm = dimod.BinaryQuadraticModel(h, J, 10.0, 'SPIN')
+        bqm.relabel_variables(dict(enumerate('abcde')), inplace=True)
+
+        sample = collections.OrderedDict([('a', -1), ('b', -1), ('e', -1), ('c', -1), ('d', 1)])
+
+        en = 10
+        en += sum(sample[v] * b for v, b in bqm.linear.items())
+        en += sum(sample[u] * sample[v] * b for (u, v), b in bqm.quadratic.items())
+        self.assertAlmostEqual(en, bqm.energies(sample))
+
+    def test_energies_all_ordering(self):
+        h = {0: -2.5, 1: -2.5, 3: -2.5, 4: -5.0, 2: 0.0}
+        J = {(0, 1): 2.5, (0, 3): 2.5, (0, 4): 5.0,
+             (1, 3): 2.5, (1, 4): 5.0, (3, 4): 5.0,
+             (2, 3): -1.0}
+        bqm = dimod.BinaryQuadraticModel(h, J, 10.0, 'SPIN')
+
+        for variables in itertools.permutations(bqm.variables, len(bqm)):
+            for config in itertools.product((-1, 1), repeat=len(bqm)):
+                sample = collections.OrderedDict(zip(variables, config))
+
+                en = 10
+                en += sum(sample[v] * b for v, b in h.items())
+                en += sum(sample[u] * sample[v] * b for (u, v), b in J.items())
+                self.assertAlmostEqual(en, bqm.energies(sample))
+
     def test_from_qubo(self):
         Q = {('a', 'a'): 1, ('a', 'b'): -1}
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
@@ -1841,7 +1939,7 @@ class TestConvert(unittest.TestCase):
     def test_to_json_string_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
-        bqm_str = bqm.to_json()
+        bqm_str = json.dumps(bqm.to_serializable())
 
         self.assertIsInstance(bqm_str, str)
 
@@ -1852,7 +1950,7 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        bqm_str = bqm.to_json()
+        bqm_str = json.dumps(bqm.to_serializable())
 
         self.assertIsInstance(bqm_str, str)
 
@@ -1865,7 +1963,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            file.write(bqm.to_json())
+            file.write(json.dumps(bqm.to_serializable()))
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
@@ -1881,7 +1979,7 @@ class TestConvert(unittest.TestCase):
         filename = path.join(tmpdir, 'test.txt')
 
         with open(filename, 'w') as file:
-            file.write(bqm.to_json())
+            file.write(json.dumps(bqm.to_serializable()))
 
         with open(filename, 'r') as file:
             jsonschema.validate(json.load(file), bqm_json_schema)
@@ -1891,7 +1989,7 @@ class TestConvert(unittest.TestCase):
     def test_functional_to_and_from_json_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
 
@@ -1900,7 +1998,7 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
 
@@ -1909,36 +2007,9 @@ class TestConvert(unittest.TestCase):
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_json(bqm.to_json())
+        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
 
         self.assertEqual(bqm, new_bqm)
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
-
-    def test_bson_dense(self):
-        n = 7
-        bqm = dimod.BinaryQuadraticModel(
-            {0: 1., 1: np.float32(-850.234)}, 
-            {(u, v): u*3.0 + v/2.0 for u in range(n) for v in range(u+1, n)}, 
-            0.0, dimod.BINARY)
-
-        enc_bqm = bqm.to_bson()
-        self.assertIsInstance(enc_bqm, bytes)
-        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
-
-        self.assertEqual(bqm, dec_bqm)
-
-    def test_bson_sparse(self):
-        bqm = dimod.BinaryQuadraticModel(
-            {"a": 1., "b": np.float32(7.0), "c": np.float32(-5.0), 
-             "e": np.float32(4.0)},
-            {("a", "b"): np.float32(-4.0), ("a", "c"): np.float32(6.0), 
-             ("b", "d"): np.float32(5.0)},
-            0.0, dimod.BINARY)
-
-        enc_bqm = bqm.to_bson()
-        self.assertIsInstance(enc_bqm, bytes)
-        dec_bqm = dimod.BinaryQuadraticModel.from_bson(enc_bqm)
-
-        self.assertEqual(bqm, dec_bqm)
