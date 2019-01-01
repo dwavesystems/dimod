@@ -113,3 +113,22 @@ Methods
    :toctree: generated/
 
    StructureComposite.sample
+
+Higher Order Composite
+----------------------
+
+.. automodule:: dimod.reference.composites.higherordercomposite
+
+Class
+~~~~~
+
+.. currentmodule:: dimod.reference.composites
+.. autoclass:: HigherOrderComposite
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   HigherOrderComposite.sample_ising

@@ -48,9 +48,9 @@ class HigherOrderComposite(ComposedSampler):
        >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
        >>> linear = {0: -0.5, 1: -0.3, 2: -0.8}
        >>> quadratic = {(0, 1, 2): -1.7}
-       >>> response = sampler.sample_ising(linear,quadratic,penalty_strength=penalty_strength,
-                                     keep_penalty_variables=False,
-                                     discard_unsatisfied=True)
+       >>> response = sampler.sample_ising(linear,quadratic,penalty_strength=2,
+       ...                              keep_penalty_variables=False,
+       ...                              discard_unsatisfied=True)
        >>> print(response.first)  # doctest: +SKIP
        Sample(sample={0: 1, 1: 1, 2: 1}, energy=-3.3, num_occurrences=1, penalty_satisfaction=True)
 

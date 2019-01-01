@@ -106,8 +106,9 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     Examples:
 
+        >>> import dimod
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
-        >>> bqm = make_quadratic(poly, 5.0, dimod.SPIN)
+        >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
     """
 
