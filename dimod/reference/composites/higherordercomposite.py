@@ -14,13 +14,47 @@
 #
 # ================================================================================================
 
+"""
+A composite that convert a higher order polynomial problem into a bqm by
+introducing penalties before sending the bqm to its child sampler.
+"""
+import numpy as np
+
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.higherorder import polymorph_response, make_quadratic
-import dimod
+from dimod.core.composite import ComposedSampler
+from dimod.higherorder import make_quadratic, poly_energy
+from dimod.response import SampleSet
 
 __all__ = ['HigherOrderComposite']
 
-class HigherOrderComposite(dimod.ComposedSampler):
+
+class HigherOrderComposite(ComposedSampler):
+    """Composite to reduce variables of a higher order problem.
+   Inherits from :class:`dimod.ComposedSampler`.
+
+   Reduces a HUBO to bqm by introducing penalties. Energies of the returned
+   samples do not include the penalties.
+
+   Args:
+       sampler (:obj:`dimod.Sampler`):
+            A dimod sampler
+
+   Example:
+       This example uses :class:`.HigherOrderComposite` to instantiate a
+       composed sampler that submits a simple Ising problem to a sampler.
+       The composed sampler creates a bqm from a higher order problem.
+
+       >>> import dimod
+       >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
+       >>> linear = {0: -0.5, 1: -0.3, 2: -0.8}
+       >>> quadratic = {(0, 1, 2): -1.7}
+       >>> response = sampler.sample_ising(linear,quadratic,penalty_strength=penalty_strength,
+                                     keep_penalty_variables=False,
+                                     discard_unsatisfied=True)
+       >>> print(response.first)  # doctest: +SKIP
+       Sample(sample={0: 1, 1: 1, 2: 1}, energy=-3.3, num_occurrences=1, penalty_satisfaction=True)
+
+        """
 
     def __init__(self, child_sampler):
         self._children = [child_sampler]
@@ -39,11 +73,159 @@ class HigherOrderComposite(dimod.ComposedSampler):
     def properties(self):
         return {'child_properties': self.child.properties.copy()}
 
-    def sample_ising(self, h, J, offset=0, penalty_strength=1.0, **parameters):
-        bqm = BinaryQuadraticModel(linear=h, quadratic={}, offset=0,
-                                   vartype=dimod.SPIN)
+    def sample_ising(self, h, J, offset=0, penalty_strength=1.0,
+                     keep_penalty_variables=False,
+                     discard_unsatisfied=False, **parameters):
+        """
+
+        Args:
+            h (dict): linear biases corresponding to the HUBO form
+            J (dict): higher order biases corresponding to the HUBO form
+            offset (float, optional): constant energy offset
+            penalty_strength (float, optional): default is None, if provided,
+                will be added to the info field of the returned sampleset object.
+            keep_penalty_variables (bool, optional): default is True. if False
+                will remove the variables used for penalty from the samples
+            discard_unsatisfied (bool, optional): default is False. If True
+                will discard samples that do not satisfy the penalty conditions.
+            **parameters: Parameters for the sampling method, specified by
+            the child sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+        """
+
+        # solve the problem on the child system
+
+        bqm = BinaryQuadraticModel.from_ising(h, {})
         bqm = make_quadratic(J, penalty_strength, bqm=bqm)
         response = self.child.sample(bqm, **parameters)
 
-        return polymorph_response(response, h, J, offset, bqm,
-                                  penalty_strength=penalty_strength)
+        return polymorph_response(response, h, J, bqm,
+                                  offset=offset,
+                                  penalty_strength=penalty_strength,
+                                  keep_penalty_variables=keep_penalty_variables,
+                                  discard_unsatisfied=discard_unsatisfied)
+
+
+def penalty_satisfaction(response, bqm):
+    """ Given a sampleSet and a bqm object, will calculate the
+
+    Args:
+        response (:obj:`.SampleSet`): Samples corresponding to provided bqm
+        bqm (:class:`.BinaryQuadraticModel`): a bqm object that contains
+            its reduction info.
+
+    Returns:
+        (np.array): a binary array of penalty satisfaction information.
+
+    """
+    record = response.record
+    label_dict = response.label_to_idx
+
+    if len(bqm.info['reduction']) == 0:
+        return np.array([1]*len(record.sample))
+
+    penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
+                              record.sample[:, label_dict[qj]]
+                              == record.sample[:,
+                                 label_dict[valdict['product']]]
+                              for (qi, qj), valdict in
+                              bqm.info['reduction'].items()], axis=0)
+    return penalty_vector
+
+
+def _relabeled_poly(h, j, label_dict):
+    """ given h, j and a relabeling dictionary, will create a polynomial
+    with the new labels
+    Args:
+        h (dict): a dict of linear variables
+        j (dict): a dict of quadratic and higher order variables
+        label_dict (dict): a dict for relabeling e.g. {old_label:new_label}
+
+    Returns:
+        dict: a higher order problem dict that contains linear,
+              quadratic and n-order terms written in a new labeling
+              scheme provided by label_dict
+
+    """
+
+    poly = {}
+    for k, v in h.items():
+        new_tup = (label_dict[k],)
+        poly[new_tup] = v
+    for k, v in j.items():
+        new_tup = tuple((label_dict[vidx] for vidx in list(k)))
+        poly[new_tup] = v
+    return poly
+
+
+def polymorph_response(response, h, J, bqm, offset=0,
+                       penalty_strength=None,
+                       keep_penalty_variables=True,
+                       discard_unsatisfied=False):
+    """ Given a response of a penalized hubo, will convert recalculate take
+    care of penalty information
+    Args:
+        response (:obj:`.SampleSet`): response for a penalized hubo.
+        h (dict): linear biases corresponding to the HUBO form
+        J (dict): higher order biases corresponding to the HUBO form
+        bqm (:obj:`dimod.BinaryQuadraticModel`): Binary quadratic model of the
+            reduced problem.
+        offset (float, optional): constant energy offset
+        penalty_strength (float, optional): default is None, if provided,
+            will be added to the info field of the returned sampleset object.
+        keep_penalty_variables (bool, optional): default is True. if False
+            will remove the variables used for penalty from the samples
+        discard_unsatisfied (bool, optional): default is False. If True
+            will discard samples that do not satisfy the penalty conditions.
+
+    Returns:
+        (:obj:`.SampleSet'): A sampleSet object that has additional penalty
+            information. The energies of samples are calculated for the HUBO
+            ignoring the penalty variables.
+
+    """
+    record = response.record
+    penalty_vector = penalty_satisfaction(response, bqm)
+    original_variables = bqm.variables
+
+    if discard_unsatisfied:
+        samples_to_keep = list(map(bool, list(penalty_vector)))
+        penalty_vector = np.array([True] * np.sum(samples_to_keep))
+    else:
+        samples_to_keep = list(map(bool, [1] * len(record.sample)))
+
+    poly = _relabeled_poly(h, J, response.label_to_idx)
+    samples = record.sample[samples_to_keep]
+    energy_vector = np.add(poly_energy(samples, poly), offset)
+
+    if not keep_penalty_variables:
+        original_variables = set(h).union(*J)
+        idxs = [response.label_to_idx[v] for v in original_variables]
+        samples = np.asarray(samples[:, idxs])
+
+    num_samples, num_variables = np.shape(samples)
+
+    datatypes = [('sample', np.dtype(np.int8), (num_variables,)),
+                 ('energy', energy_vector.dtype),
+                 ('penalty_satisfaction',
+                  penalty_vector.dtype)]
+    datatypes.extend((name, record[name].dtype, record[name].shape[1:])
+                     for name in record.dtype.names if
+                     name not in {'sample',
+                                  'energy'})
+
+    data = np.rec.array(np.empty(num_samples, dtype=datatypes))
+    data.sample = samples
+    data.energy = energy_vector
+    for name in record.dtype.names:
+        if name not in {'sample', 'energy'}:
+            data[name] = record[name][samples_to_keep]
+
+    data['penalty_satisfaction'] = penalty_vector
+    response.info['reduction'] = bqm.info['reduction']
+    if penalty_strength is not None:
+        response.info['penalty_stength'] = penalty_strength
+    return SampleSet(data, original_variables, response.info,
+                     response.vartype)

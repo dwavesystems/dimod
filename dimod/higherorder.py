@@ -22,63 +22,12 @@ from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.vartypes import Vartype
-import dimod
-from dimod.response import SampleSet
 import numpy as np
 
 __all__ = ['make_quadratic']
 
 
-def penalty_satisfaction(response, bqm):
-    record = response.record
-    label_dict = response.label_to_idx
 
-    penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
-                              record.sample[:, label_dict[qj]]
-                              == record.sample[:,
-                                 label_dict[valdict['product']]]
-                              for (qi, qj), valdict in
-                              bqm.info['reduction'].items()], axis=0)
-    return penalty_vector
-
-
-def polymorph_response(response, h, J, offset, bqm, penalty_strength=None):
-    record = response.record
-    original_variables = set(
-        sorted(set(h.keys()) | set(v for key in J.keys() for
-                                   v in key)))
-
-    penalty_vector = penalty_satisfaction(response, bqm)
-
-    poly = _shifted_poly(h, J, response.label_to_idx)
-    energy_vector = np.add(poly_energy(record.sample, poly), offset)
-    idxs = [response.label_to_idx[v] for v in original_variables]
-    samples = np.asarray(record.sample[:, idxs])
-    num_samples, num_variables = np.shape(samples)
-
-    datatypes = [('sample', np.dtype(np.int8), (num_variables,)),
-                 ('energy', energy_vector.dtype),
-                 ('penalty_satisfaction',
-                  penalty_vector.dtype)]
-
-    datatypes.extend((name, record[name].dtype, record[name].shape[1:])
-                     for name in record.dtype.names if
-                     name not in {'sample',
-                                  'energy'})
-
-    data = np.rec.array(np.empty(num_samples, dtype=datatypes))
-
-    data.sample = samples
-    data.energy = energy_vector
-    for name in record.dtype.names:
-        if name not in {'sample', 'energy'}:
-            data[name] = record[name]
-
-    data['penalty_satisfaction'] = penalty_vector
-    response.info['reduction'] = bqm.info['reduction']
-    response.info['penalty_stength'] = penalty_strength
-    return SampleSet(data, original_variables, response.info,
-                     response.vartype)
 
 
 def _spin_product(variables):
@@ -187,6 +136,10 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
 
 def _reduce_degree(bqm, poly, vartype, scale):
+    """
+    helper function of make_quadratic
+
+    """
     if all(len(term) <= 2 for term in poly):
         # termination criteria, we are already quadratic
         bqm.add_interactions_from(poly)
@@ -246,34 +199,22 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
-
-def _shifted_poly(h, j, label_dict):
-    poly = {}
-    for k, v in h.items():
-        new_tup = (label_dict[k],)
-        poly[new_tup] = v
-    for k, v in j.items():
-        new_tup = tuple(sorted((label_dict[vidx] for vidx in list(k))))
-        poly[new_tup] = v
-    return poly
-
-
-def create_poly(h, J):
-    """ given h,J creates a single polynomial dict.
+def create_poly(h, j):
+    """ given h,j creates a single polynomial dict.
     all h's will turn into tuples.
 
     Args:
         h (dict): a dict of linear variables
-        J (dict): a dict of quadratic and higher order variables
+        j (dict): a dict of quadratic and higher order variables
 
     Returns
-        dict: a higher order problem dict containing both linear,
+        dict: a higher order problem dict that contains linear,
               quadratic and n-order terms.
 
     """
 
     poly = {(k,): v for k, v in h.items()}
-    poly.update(J)
+    poly.update(j)
     return poly
 
 
@@ -293,7 +234,8 @@ def _prod_d(iterable, dim):
 
 def poly_energy(sample, poly):
     """
-    Create a binary quadratic model from a higher order polynomial.
+    Calculate energy of sample(s) that are solutions to a higher order problem
+    provided by poly.
 
     Args:
         sample (dict or (list,np.array)):
