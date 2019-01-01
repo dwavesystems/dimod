@@ -61,8 +61,7 @@ class TestFixedVariableComposite(unittest.TestCase):
                                         keep_penalty_variables=True,
                                         discard_unsatisfied=True)
 
-        self.assertEqual(response.first.sample,
-                         {0: 1, 1: 1, 2: 1, '0*1': 1, 'aux0,1': -1})
+        self.assertEqual(len(response.first.sample),5)
         self.assertAlmostEqual(response.first.energy, -3.3)
         self.assertTrue(response.first.penalty_satisfaction)
 
