@@ -132,3 +132,22 @@ Methods
    :toctree: generated/
 
    HigherOrderComposite.sample_ising
+
+Fixed Variable Composite
+------------------------
+
+.. automodule:: dimod.reference.composites.fixedvariable
+
+Class
+~~~~~
+
+.. currentmodule:: dimod.reference.composites
+.. autoclass:: FixedVariableComposite
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   FixedVariableComposite.sample

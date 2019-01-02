@@ -27,6 +27,8 @@ from collections import namedtuple
 
 import numpy as np
 
+from numpy.lib import recfunctions
+
 from dimod.decorators import vartype_argument
 from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
@@ -147,6 +149,72 @@ def as_samples(samples_like, dtype=None):
     return samples_like, list(range(samples_like.shape[1]))
 
 
+def concatenate(samplesets, defaults=None):
+    """Combine SampleSets.
+
+    Args:
+        samplesets (iterable[:obj:`.SampleSet`):
+            An iterable of sample sets.
+
+        defaults (dict, optional):
+            Dictionary mapping data vector names to the corresponding default values.
+
+    Returns:
+        :obj:`.SampleSet`: A sample set with the same vartype and variable order as the first
+        given in `samplesets`.
+
+    Examples:
+        >>> a = dimod.SampleSet.from_samples(([-1, +1], 'ab'), dimod.SPIN, energy=-1)
+        >>> b = dimod.SampleSet.from_samples(([-1, +1], 'ba'), dimod.SPIN, energy=-1)
+        >>> ab = dimod.concatenate((a, b))
+        >>> ab.record.sample
+        array([[-1,  1],
+               [ 1, -1]], dtype=int8)
+
+    """
+
+    itertup = iter(samplesets)
+
+    try:
+        first = next(itertup)
+    except StopIteration:
+        raise ValueError("samplesets must contain at least one SampleSet")
+
+    vartype = first.vartype
+    variables = first.variables
+
+    records = [first.record]
+    records.extend(_iter_records(itertup, vartype, variables))
+
+    # dev note: I was able to get ~2x performance boost when trying to
+    # implement the same functionality here by hand (I didn't know that
+    # this function existed then). However I think it is better to use
+    # numpy's function and rely on their testing etc. If however this becomes
+    # a performance bottleneck in the future, it might be worth changing.
+    record = recfunctions.stack_arrays(records, defaults=defaults,
+                                       asrecarray=True, usemask=False)
+
+    return SampleSet(record, variables, {}, vartype)
+
+
+def _iter_records(samplesets, vartype, variables):
+    # coerce each record into the correct vartype and variable-order
+    for samples in samplesets:
+
+        # coerce vartype
+        if samples.vartype is not vartype:
+            samples = samples.change_vartype(vartype, inplace=False)
+
+        if samples.variables != variables:
+            new_record = samples.record.copy()
+            order = [samples.variables.index[v] for v in variables]
+            new_record.sample = samples.record.sample[:, order]
+            yield new_record
+        else:
+            # order matches so we're done
+            yield samples.record
+
+
 class SampleSet(Iterable, Sized):
     """Samples and any other data returned by dimod samplers.
 
@@ -174,8 +242,7 @@ class SampleSet(Iterable, Sized):
         >>> import dimod
         >>> import numpy as np
         ...
-        >>> dimod.SampleSet.from_samples(dimod.as_samples(np.ones(5, dtype='int8')),
-        ...                              'BINARY', 0)   # doctest: +SKIP
+        >>> dimod.SampleSet.from_samples(np.ones(5, dtype='int8'), 'BINARY', 0)   # doctest: +SKIP
         SampleSet(rec.array([([1, 1, 1, 1, 1], 0, 1)],
         ...       dtype=[('sample', 'i1', (5,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
         ...       [0, 1, 2, 3, 4], {}, 'BINARY')
@@ -222,7 +289,8 @@ class SampleSet(Iterable, Sized):
         self._vartype = vartype
 
     @classmethod
-    def from_samples(cls, samples_like, vartype, energy, info=None, num_occurrences=None, **vectors):
+    def from_samples(cls, samples_like, vartype, energy, info=None,
+                     num_occurrences=None, aggregate_samples=False, **vectors):
         """Build a :class:`SampleSet` from raw samples.
 
         Args:
@@ -243,7 +311,10 @@ class SampleSet(Iterable, Sized):
                 Information about the :class:`SampleSet` as a whole formatted as a dict.
 
             num_occurrences (array_like, optional):
-                Number of occurences for each sample. If not provided, defaults to a vector of 1s.
+                Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
+
+            aggregate_samples (bool, optional, default=False):
+                If true, returned :obj:`.SampleSet` will have all unique samples.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -265,6 +336,11 @@ class SampleSet(Iterable, Sized):
 
         .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
         """
+        if aggregate_samples:
+            return cls.from_samples(samples_like, vartype, energy,
+                                    info=info, num_occurrences=num_occurrences,
+                                    aggregate_samples=False,
+                                    **vectors).aggregate()
 
         # get the samples, variable labels
         samples, variables = as_samples(samples_like)
@@ -298,6 +374,49 @@ class SampleSet(Iterable, Sized):
             info = {}
 
         return cls(record, variables, info, vartype)
+
+    @classmethod
+    def from_samples_bqm(cls, samples_like, bqm, **kwargs):
+        """Build a SampleSet from raw samples using a BinaryQuadraticModel to get energies and vartype.
+
+        Args:
+            samples_like:
+                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+                See :func:`.as_samples`.
+
+            bqm (:obj:`.BinaryQuadraticModel`):
+                A binary quadratic model. It is used to calculate the energies
+                and set the vartype.
+
+            info (dict, optional):
+                Information about the :class:`SampleSet` as a whole formatted as a dict.
+
+            num_occurrences (array_like, optional):
+                Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
+
+            aggregate_samples (bool, optional, default=False):
+                If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            **vectors (array_like):
+                Other per-sample data.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
+            >>> samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+            >>> samples =dimod.SampleSet.from_samples_bqm([[-1, 1], [1, -1]], bqm)
+
+        """
+        # more performant to do this once, here rather than again in bqm.energies
+        # and in cls.from_samples
+        samples_like = as_samples(samples_like)
+
+        energies = bqm.energies(samples_like)
+
+        return cls.from_samples(samples_like, energy=energies, vartype=bqm.vartype, **kwargs)
 
     @classmethod
     def from_future(cls, future, result_hook=None):
@@ -716,6 +835,33 @@ class SampleSet(Iterable, Sized):
         self._variables.relabel(mapping)
         return self
 
+    def aggregate(self):
+        """Create a new SampleSet with repeated samples aggregated.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Note:
+            :attr:`.SampleSet.record.num_occurrences` are accumulated but no
+            other fields are.
+
+        """
+
+        _, indices, inverse = np.unique(self.record.sample, axis=0,
+                                        return_index=True, return_inverse=True)
+
+        record = self.record[indices]
+
+        # fix the number of occurrences
+        record.num_occurrences = 0
+        for old_idx, new_idx in enumerate(inverse):
+            record[new_idx].num_occurrences += self.record[old_idx].num_occurrences
+
+        # dev note: we don't check the energies as they should be the same
+        # for individual samples
+
+        return self.__class__(record, self.variables, self.info, self.vartype)
+
     ###############################################################################################
     # Serialization
     ###############################################################################################
@@ -739,7 +885,7 @@ class SampleSet(Iterable, Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        from dimod.io.json import DimodEncoder
+        from dimod.serialization.json import DimodEncoder
         return DimodEncoder().default(self)
 
     @classmethod
@@ -767,8 +913,39 @@ class SampleSet(Iterable, Sized):
             :meth:`~.SampleSet.to_serializable`
 
         """
-        from dimod.io.json import sampleset_decode_hook
+        from dimod.serialization.json import sampleset_decode_hook
         return sampleset_decode_hook(obj, cls=cls)
+
+    ###############################################################################################
+    # Export to dataframe
+    ###############################################################################################
+
+    def to_pandas_dataframe(self):
+        """Convert a SampleSet to a Pandas DataFrame
+
+        Returns:
+            :obj:`pandas.DataFrame`
+
+        Examples:
+            >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
+                                                        {'a': -1, 'b': -1, 'c': +1}],
+                                                       dimod.SPIN, energy=-.5)
+            >>> samples.to_pandas_dataframe()
+               a  b  c  energy  num_occurrences
+            0 -1  1 -1    -0.5                1
+            1 -1 -1  1    -0.5                1
+
+        """
+        import pandas as pd
+
+        df = pd.DataFrame(self.record.sample, columns=self.variables)
+        for field in sorted(self.record.dtype.fields):  # sort for consistency
+            if field == 'sample':
+                continue
+
+            df.loc[:, field] = self.record[field]
+
+        return df
 
 
 def _samples_dicts_to_array(samples_dicts):

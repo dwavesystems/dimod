@@ -74,43 +74,6 @@ class IndexValuesView(abc.ValuesView):
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
         return iter(self._mapping._data.flat)
-
-class Bias(object):
-    """Biases and data associated with a variable or interaction."""
-
-    __slots__ = 'value', '_data'
-
-    def __init__(self, value, data=None):
-        self.value = value
-
-        # we only create the dictionary when it's needed. Otherwise we would use a lot
-        # of memory on empty dictionaries.
-        if data is not None:
-            self._data = data
-
-    def __repr__(self):
-        if hasattr(self, '_data'):
-            return '{}({!r}, data={!r})'.format(self.__class__.__name__, self.value, self.data)
-        else:
-            return '{}({!r})'.format(self.__class__.__name__, self.value)
-
-    def copy(self):
-        if hasattr(self, '_data'):
-            # make a shallow copy of data.
-            return type(self)(self.value, self.data.copy())
-        else:
-            return type(self)(self.value)
-
-    @property
-    def data(self):
-        """dict: data associated with a variable or interaction."""
-        try:
-            return self._data
-        except AttributeError:
-            pass
-
-        self._data = data = {}
-        return data
     
 
 class LinearView(abc.MutableMapping):
@@ -135,7 +98,7 @@ class LinearView(abc.MutableMapping):
         del self._adj[v]
 
     def __getitem__(self, v):
-        return self._adj[v][v].value
+        return self._adj[v][v]
 
     def __iter__(self):
         return iter(self._adj)
@@ -146,9 +109,9 @@ class LinearView(abc.MutableMapping):
     def __setitem__(self, v, bias):
         adj = self._adj
         if v in adj:
-            adj[v][v].value = bias
+            adj[v][v] = bias
         else:
-            adj[v] = {v: Bias(bias)}
+            adj[v] = {v: bias}
 
     def __str__(self):
         return str(dict(self))
@@ -164,7 +127,7 @@ class LinearItemsView(abc.ItemsView):
 
     def __iter__(self):
         for v, neighbours in self._mapping._adj.items():
-            yield v, neighbours[v].value
+            yield v, neighbours[v]
 
 
 class QuadraticView(abc.MutableMapping):
@@ -191,8 +154,8 @@ class QuadraticView(abc.MutableMapping):
     def __getitem__(self, interaction):
         u, v = interaction
         if u == v:
-            raise KeyError("{} is not a neighbour of itself".format(u))
-        return self._adj[u][v].value
+            raise KeyError('{} cannot have an interaction with itself'.format(u))
+        return self._adj[u][v]
 
     def __iter__(self):
         seen = set()
@@ -227,11 +190,7 @@ class QuadraticView(abc.MutableMapping):
         if v not in adj:
             raise KeyError('{} is not already a variable in the binary quadratic model'.format(v))
 
-        if v in adj[u]:
-            # adj[u][v] is adj[v][u]
-            adj[u][v].value = bias
-        else:
-            adj[u][v] = adj[v][u] = Bias(bias)
+        adj[u][v] = adj[v][u] = bias
 
     def __str__(self):
         return str(dict(self))
@@ -247,7 +206,8 @@ class QuadraticItemsView(abc.ItemsView):
     def __iter__(self):
         adj = self._mapping._adj
         for u, v in self._mapping:
-            yield (u, v), adj[u][v].value
+            yield (u, v), adj[u][v]
+
 
 class NeighbourView(abc.Mapping):
     """Acts as a dictionary `{u: bias, ...}` for the neighbours of a variable `v`.
@@ -266,14 +226,17 @@ class NeighbourView(abc.Mapping):
     def __getitem__(self, v):
         u = self._var
         if u == v:
-            raise KeyError("{} is not a neighbour of itself".format(u))
-        return self._adj[u][v].value
+            raise KeyError('{} cannot have an interaction with itself'.format(u))
+        return self._adj[u][v]
 
     def __setitem__(self, u, bias):
         v = self._var
         if u == v:
-            raise KeyError("{} is not a neighbour of itself".format(u))
-        self._adj[u][v].value = bias
+            raise KeyError('{} cannot have an interaction with itself'.format(u))
+        adj = self._adj
+        if u not in adj:
+            raise KeyError('{} is not an interaction'.format((u, v)))
+        adj[v][u] = adj[u][v] = bias
 
     def __iter__(self):
         v = self._var
@@ -286,6 +249,7 @@ class NeighbourView(abc.Mapping):
 
     def __str__(self):
         return str(dict(self))
+
 
 class AdjacencyView(abc.Mapping):
     """Acts as a dict-of-dicts `{u: {v: bias}, v: {u: bias}}` for the quadratic biases.

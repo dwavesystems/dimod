@@ -28,6 +28,9 @@ cache:
   - '%PYTHON%\Lib\site-packages -> requirements.txt'
   - '%AppData%\pip-cache'
 
+  # cache the .pyd file
+  - dimod\roof_duality\ -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src\compressed_matrix.hpp, dimod\roof_duality\src\fix_variables.cpp, dimod\roof_duality\src\fix_variables.hpp, dimod\roof_duality\fix_variables.py, dimod\roof_duality\__init__.py
+
 install:
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt --cache-dir %AppData%\\pip-cache"
 
@@ -38,18 +41,13 @@ build_script:
   # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
   - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
 
-  # build the wheel
-  - "%PYTHON%\\python.exe -m pip install wheel"
-  - "%PYTHON%\\python.exe setup.py bdist_wheel"
-
 test_script:
   - "%PYTHON%\\python.exe -m unittest discover"
 
-artifacts:
-  - path: dist\*.whl
-
 before_deploy:
-  - "%PYTHON%\\python.exe -m pip install twine"
+  # build the wheel (only if deploying)
+  - "%PYTHON%\\python.exe -m pip install wheel twine"
+  - "if [%APPVEYOR_REPO_TAG%]==[true] %PYTHON%\\python.exe setup.py bdist_wheel"
 
   # set up the pypi credentials
   - "echo [pypi] > %USERPROFILE%\\.pypirc"
@@ -57,4 +55,4 @@ before_deploy:
   - "echo password: %password% >> %USERPROFILE%\\.pypirc"
 
 deploy_script:
-  - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] if NOT [%CPPDEBUG%]==[1] %PYTHON%\\python.exe -m twine upload --skip-existing dist\\*.whl"
+  - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] %PYTHON%\\python.exe -m twine upload --skip-existing dist\\*.whl"

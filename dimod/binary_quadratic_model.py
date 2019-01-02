@@ -61,9 +61,9 @@ import numpy as np
 from six import itervalues, iteritems, iterkeys, PY2
 
 from dimod.decorators import vartype_argument
-from dimod.response import SampleView
+from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
-from dimod.views import LinearView, QuadraticView, AdjacencyView
+from dimod.views import LinearView, QuadraticView, AdjacencyView, SampleView
 from dimod.vartypes import Vartype
 
 
@@ -815,7 +815,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         """
         self.add_offset(-self.offset)
 
-    def scale(self, scalar, ignored_variables=None, ignored_interactions=None):
+    def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
+              ignore_offset=False):
         """Multiply by the specified scalar all the biases and offset of a binary quadratic model.
 
         Args:
@@ -827,6 +828,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
             ignored_interactions (iterable[tuple], optional):
                 As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
@@ -870,7 +874,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 continue
             quadratic[(u, v)] *= scalar
 
-        self.offset *= scalar
+        if not ignore_offset:
+            self.offset *= scalar
 
         try:
             self._counterpart.scale(scalar, ignored_variables=ignored_variables,
@@ -878,7 +883,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         except AttributeError:
             pass
 
-    def normalize(self, bias_range=1, quadratic_range=None):
+    def normalize(self, bias_range=1, quadratic_range=None,
+                  ignored_variables=None, ignored_interactions=None,
+                  ignore_offset=False):
         """Normalizes the biases of the binary quadratic model such that they
         fall in the provided range(s), and adjusts the offset appropriately.
 
@@ -893,6 +900,15 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
             quadratic_range (number/pair):
                 Value/range by which to normalize the quadratic biases.
+
+            ignored_variables (iterable, optional):
+                Biases associated with these variables are not scaled.
+
+            ignored_interactions (iterable[tuple], optional):
+                As an iterable of 2-tuples. Biases associated with these interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
 
         Examples:
 
@@ -936,7 +952,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                          quad_min / quad_range[0], quad_max / quad_range[1])
 
         if inv_scalar != 0:
-            self.scale(1 / inv_scalar)
+            self.scale(1 / inv_scalar, ignored_variables=ignored_variables,
+                       ignored_interactions=ignored_interactions,
+                       ignore_offset=ignore_offset)
 
     def fix_variable(self, v, value):
         """Fix the value of a variable and remove it from a binary quadratic model.
@@ -980,6 +998,22 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         self.add_offset(value * linear[v])
         self.remove_variable(v)
+
+    def fix_variables(self, fixed):
+        """Fix the value of the variables and remove it from a binary quadratic model.
+
+        Args:
+            fixed (dict):
+                A dictionary of variable assignments.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -.5, 'b': 0., 'c': 5}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+            >>> bqm.fix_variables({'a': -1, 'b': +1})
+
+        """
+        for v, val in fixed.items():
+            self.fix_variable(v, val)
+
 
     def flip_variable(self, v):
         """Flip variable v in a binary quadratic model.
@@ -1441,6 +1475,31 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
         return en
 
+    def energies(self, samples_like, dtype=np.float):
+        """Determine the energies of the given samples.
+
+        Args:
+            samples_like (samples_like):
+                A collection of raw samples. `samples_like` is an extension of NumPy's array_like
+                structure. See :func:`.as_samples`.
+
+            dtype (:class:`numpy.dtype`):
+                The data type of the returned energies.
+
+        Returns:
+            :obj:`numpy.ndarray`: The energies.
+
+        """
+        samples, labels = as_samples(samples_like)
+
+        if all(v == idx for idx, v in enumerate(labels)):
+            ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(dtype=dtype)
+        else:
+            ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(variable_order=labels, dtype=dtype)
+
+        energies = samples.dot(ldata) + (samples[:, irow]*samples[:, icol]).dot(qdata) + offset
+        return np.asarray(energies, dtype=dtype)  # handle any type promotions
+
 ##################################################################################################
 # conversions
 ##################################################################################################
@@ -1500,7 +1559,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             1 1 1.000000
 
         """
-        import dimod.io.coo as coo
+        import dimod.serialization.coo as coo
 
         if fp is None:
             return coo.dumps(self, vartype_header)
@@ -1566,7 +1625,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             True
 
         """
-        import dimod.io.coo as coo
+        import dimod.serialization.coo as coo
 
         if isinstance(obj, str):
             return coo.loads(obj, cls=cls, vartype=vartype)
@@ -1628,12 +1687,12 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         if use_bytes:
-            from dimod.io.bson import bqm_bson_encoder
+            from dimod.serialization.bson import bqm_bson_encoder
 
             return bqm_bson_encoder(self)
         else:
             # we we don't use bytes then use json encoder
-            from dimod.io.json import DimodEncoder
+            from dimod.serialization.json import DimodEncoder
 
             return DimodEncoder().default(self)
 
@@ -1665,8 +1724,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             :func:`json.loads`, :func:`json.load` JSON deserialization functions
 
         """
-        from dimod.io.json import bqm_decode_hook
-        from dimod.io.bson import bqm_bson_decoder
+        from dimod.serialization.json import bqm_decode_hook
+        from dimod.serialization.bson import bqm_bson_decoder
 
         # try decoding with json
         dct = bqm_decode_hook(obj, cls=cls)
@@ -1676,176 +1735,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         # if not json assume bson
         return bqm_bson_decoder(obj, cls=cls)
 
-    def to_json(self):
-        """Serialize the binary quadratic model using JSON.
-
-        Returns:
-            str: Bnary quadratic model serialized in accordance with `BQM schema`_.
-
-        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
-
-        Examples:
-            This example shows a serialized binary quadratic model in JSON encoding for
-            schema version 1.0.0.
-
-            .. code-block:: json
-
-                {
-                    "linear_terms": [
-                        {"bias": 1.0, "label": 0},
-                        {"bias": -1.0, "label": 1}
-                    ],
-                    "info": {},
-                    "offset": 0.5,
-                    "quadratic_terms": [
-                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
-                    ],
-                    "variable_labels": [0, 1],
-                    "variable_type": "SPIN",
-                    "version": {
-                        "bqm_schema": "1.0.0",
-                        "dimod": "0.6.3"
-                    }
-                }
-
-            This is an example of writing a binary quadratic model to a JSON-format string.
-
-            >>> import dimod
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> bqm.to_json()  # doctest: +SKIP
-            {"info": {},
-             "linear_terms": [{"bias": -1.0, "label": "a"},
-                              {"bias": 1.0, "label": "b"}],
-             "offset": 0.0,
-             "quadratic_terms": [{"bias": -1.0, "label_head": "b", "label_tail": "a"}],
-             "variable_labels": ["a", "b"], "variable_type": "SPIN",
-             "version": {"bqm_schema": "1.0.0", "dimod": "0.6.3"}}
-
-            This is an example of writing a binary quadratic model to a JSON-format file.
-
-            >>> import dimod
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
-            ...     file.write(bqm.to_json())
-
-        """
-        import warnings
-        warnings.warn(("BinaryQuadraticModel.to_json is deprecated, use "
-                       "`json.dumps(bqm.to_serializable())` instead."),
-                      DeprecationWarning)
-        import json
-        return json.dumps(self.to_serializable(use_bytes=False), sort_keys=True)
-
-    @classmethod
-    def from_json(cls, obj):
-        """Deserialize a binary quadratic model from a JSON encoding.
-
-        Args:
-            obj: (str/file):
-                Either a string or a `.read()`-supporting `file object`_
-                that represents linear and quadratic biases for a binary quadratic model
-                formatted in accordance to the current `BQM schema`_ .
-
-        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
-        .. _BQM schema: https://github.com/dwavesystems/dimod/blob/master/dimod/io/bqm_json_schema.json
-
-        Examples:
-            This example shows a serialized binary quadratic model in JSON encoding
-            for schema version 1.0.0.
-
-            .. code-block:: json
-
-                {
-                    "linear_terms": [
-                        {"bias": 1.0, "label": 0},
-                        {"bias": -1.0, "label": 1}
-                    ],
-                    "info": {},
-                    "offset": 0.5,
-                    "quadratic_terms": [
-                        {"bias": 0.5, "label_head": 1, "label_tail": 0}
-                    ],
-                    "variable_labels": [0, 1],
-                    "variable_type": "SPIN",
-                    "version": {
-                        "bqm_schema": "1.0.0",
-                        "dimod": "0.6.3"
-                    }
-                }
-
-            This example saves a binary quadratic model to a JSON-format file and creates
-            a new model by reading the saved file.
-
-            >>> import dimod
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> with open('tmp.txt', 'w') as file:  # doctest: +SKIP
-            ...     bqm.to_json(file)
-            >>> with open('tmp.txt', 'r') as file:  # doctest: +SKIP
-            ...     new_bqm = dimod.BinaryQuadraticModel.from_json(file)
-
-        """
-        import json
-        from dimod.io.json import bqm_decode_hook
-
-        import warnings
-        warnings.warn(("BinaryQuadraticModel.from_json is deprecated, use "
-                       "`BinaryQuadraticModel.from_serializable(json.loads(obj))` instead."),
-                      DeprecationWarning)
-
-        if isinstance(obj, str):
-            return cls.from_serializable(json.loads(obj))
-
-        return json.load(obj, object_hook=lambda d: bqm_decode_hook(d, cls=cls))
-
-    def to_bson(self):
-        """Serialize a binary quadratic model to an efficient BSON format.
-
-        Returns:
-            bytes: BSON formatted bytes representing the original BQM.
-
-        """
-        import bson
-
-        import warnings
-        warnings.warn(("BinaryQuadraticModel.to_bson is deprecated, use "
-                       "`bson.BSON.encode(bqm.to_serializable(use_bytes=True))` instead."),
-                      DeprecationWarning)
-
-        dct = self.to_serializable(use_bytes=True)
-
-        if PY2:
-            # in python2 bytes are not stored in binary objects by pymongo unless they have been
-            # wrapped in bson.binary.Binary
-            for key in ['linear', 'quadratic_vals', 'quadratic_head', 'quadratic_tail']:
-                if key in dct:
-                    dct[key] = bson.binary.Binary(dct[key])
-                else:
-                    assert dct['as_complete']
-
-        return bson.BSON.encode(dct)
-
-    @classmethod
-    def from_bson(cls, obj):
-        """Deserialize a binary quadratic model from a BSON encoding.
-
-        Args:
-            obj (bytes):
-                Byte string that represents linear and quadratic biases as
-                encoded by :meth:`.to_bson`.
-
-        Returns:
-            :obj:`.BinaryQuadraticModel`: The corresponding binary quadratic
-            model.
-
-        """
-        import bson
-
-        import warnings
-        warnings.warn(("BinaryQuadraticModel.from_bson is deprecated, use "
-                       "`BinaryQuadraticModel.from_serializable(bson.BSON.decode(obj))` instead."),
-                      DeprecationWarning)
-
-        return cls.from_serializable(bson.BSON.decode(obj))
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
@@ -2191,7 +2080,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return bqm
 
-    def to_numpy_vectors(self, variable_order=None, dtype=None, index_dtype=None, sort_indices=False):
+    def to_numpy_vectors(self, variable_order=None, dtype=np.float, index_dtype=np.int64, sort_indices=False):
         """Convert a binary quadratic model to numpy arrays.
 
         Args:
@@ -2239,43 +2128,58 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         """
         linear = self.linear
         quadratic = self.quadratic
-        n = len(linear)
+
+        num_variables = len(linear)
+        num_interactions = len(quadratic)
+
+        irow = np.empty(num_interactions, dtype=index_dtype)
+        icol = np.empty(num_interactions, dtype=index_dtype)
+        qdata = np.empty(num_interactions, dtype=dtype)
 
         if variable_order is None:
-            if not all(v in self.linear for v in range(n)):
+            try:
+                ldata = np.fromiter((linear[v] for v in range(num_variables)), count=num_variables, dtype=dtype)
+            except KeyError:
                 raise ValueError(("if 'variable_order' is not provided, binary quadratic model must be "
                                   "index labeled [0, ..., N-1]"))
-            variable_order = list(range(n))
 
-        labels = {v: idx for idx, v in enumerate(variable_order)}
+            # we could speed this up a lot with cython
+            for idx, ((u, v), bias) in enumerate(quadratic.items()):
+                irow[idx] = u
+                icol[idx] = v
+                qdata[idx] = bias
 
-        lin = np.array([linear[v] for v in variable_order], dtype=dtype)
-
-        if quadratic:
-            if sort_indices:
-                def _iter_quadratic():
-                    for (u, v), bias in iteritems(quadratic):
-                        u = labels[u]
-                        v = labels[v]
-
-                        if u > v:
-                            yield (v, u, bias)
-                        else:
-                            yield (u, v, bias)
-
-                heads, tails, values = zip(*sorted(_iter_quadratic()))
-            else:
-                heads, tails, values = zip(*((labels[u], labels[v], bias) for (u, v), bias in iteritems(quadratic)))
         else:
-            # need to specify a dtype, otherwise they would be cast to float. This might be overwritten
-            # by the user
-            heads = np.array([], dtype=int)
-            tails = np.array([], dtype=int)
-            values = []  # will be cast to float which is fine
+            try:
+                ldata = np.fromiter((linear[v] for v in variable_order), count=num_variables, dtype=dtype)
+            except KeyError:
+                raise ValueError("provided 'variable_order' does not match binary quadratic model")
 
-        return lin, (np.asarray(heads, dtype=index_dtype),
-                     np.asarray(tails, dtype=index_dtype),
-                     np.asarray(values, dtype=dtype)), self.offset
+            label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
+
+            # we could speed this up a lot with cython
+            for idx, ((u, v), bias) in enumerate(quadratic.items()):
+                irow[idx] = label_to_idx[u]
+                icol[idx] = label_to_idx[v]
+                qdata[idx] = bias
+
+        if sort_indices:
+            # row index should be less than col index, this handles upper-triangular vs lower-triangular
+            swaps = irow > icol
+            if swaps.any():
+                # in-place
+                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+
+            # sort lexigraphically
+            order = np.lexsort((irow, icol))
+            if not (order == range(len(order))).all():
+                # copy
+                irow = irow[order]
+                icol = icol[order]
+                qdata = qdata[order]
+
+        return ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)
+
 
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):

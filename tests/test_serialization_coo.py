@@ -20,7 +20,7 @@ import shutil
 import os
 
 import dimod
-import dimod.io.coo as coo
+import dimod.serialization.coo as coo
 
 
 class TestCOO(unittest.TestCase):

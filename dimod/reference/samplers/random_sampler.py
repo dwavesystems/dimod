@@ -19,7 +19,7 @@ A random sampler for unit testing and debugging.
 from random import choice
 
 from dimod.core.sampler import Sampler
-from dimod.response import Response, SampleView
+from dimod.sampleset import SampleSet
 
 __all__ = ['RandomSampler']
 
@@ -50,13 +50,14 @@ class RandomSampler(Sampler):
         """Give random samples for a binary quadratic model.
 
         Args:
-            bqm (:obj:`~dimod.BinaryQuadraticModel`):
+            bqm (:obj:`.BinaryQuadraticModel`):
                 Binary quadratic model to be sampled from.
-            num_reads (int, optional):
+
+            num_reads (int, optional, default=10):
                 Number of reads.
 
         Returns:
-            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+            :obj:`.SampleSet`
 
         Notes:
             For each variable in each sample, the value is chosen by a coin flip.
@@ -88,4 +89,4 @@ class RandomSampler(Sampler):
 
         samples, energies = zip(*_itersample())
 
-        return Response.from_samples(samples, {'energy': energies}, {}, vartype=bqm.vartype)
+        return SampleSet.from_samples(samples, bqm.vartype, energies)

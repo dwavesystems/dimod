@@ -30,7 +30,7 @@ import numpy as np
 from dimod.core.composite import Composite
 from dimod.core.sampler import Sampler
 from dimod.core.structured import Structured
-from dimod.response import Response
+from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
 
 __all__ = ['SpinReversalTransformComposite']
@@ -106,7 +106,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
                 has a 50% probability of being selected.
 
         Returns:
-            :obj:`~dimod.Response`: A `dimod` :obj:`.~dimod.Response` object.
+            :obj:`.SampleSet`
 
         Examples:
             This example runs 100 spin reversals applied to one variable of a QUBO problem.
@@ -142,7 +142,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
             flipped_response = self.child.sample(bqm, **kwargs)
 
-            tf_idxs = [flipped_response.label_to_idx[v] for v in flipped_response.variable_labels]
+            tf_idxs = [flipped_response.variables.index[v] for v in flipped_response.variables]
 
             if bqm.vartype is Vartype.SPIN:
                 flipped_response.record.sample[:, tf_idxs] = -1 * flipped_response.record.sample[:, tf_idxs]
@@ -163,6 +163,6 @@ class SpinReversalTransformComposite(Sampler, Composite):
         for resp in responses:
             info.update(resp.info)
 
-        labels = responses[0].variable_labels
+        labels = responses[0].variables
 
-        return Response(record, labels, info, vartype)
+        return SampleSet(record, labels, info, vartype)
