@@ -121,7 +121,7 @@ def penalty_satisfaction(response, bqm):
 
     """
     record = response.record
-    label_dict = response.label_to_idx
+    label_dict = response.variables.index
 
     if len(bqm.info['reduction']) == 0:
         return np.array([1]*len(record.sample))
