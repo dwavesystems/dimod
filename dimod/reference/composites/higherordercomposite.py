@@ -196,13 +196,13 @@ def polymorph_response(response, h, J, bqm, offset=0,
     else:
         samples_to_keep = list(map(bool, [1] * len(record.sample)))
 
-    poly = _relabeled_poly(h, J, response.label_to_idx)
+    poly = _relabeled_poly(h, J, response.variables.index)
     samples = record.sample[samples_to_keep]
     energy_vector = np.add(poly_energy(samples, poly), offset)
 
     if not keep_penalty_variables:
         original_variables = set(h).union(*J)
-        idxs = [response.label_to_idx[v] for v in original_variables]
+        idxs = [response.variables.index[v] for v in original_variables]
         samples = np.asarray(samples[:, idxs])
 
     num_samples, num_variables = np.shape(samples)
