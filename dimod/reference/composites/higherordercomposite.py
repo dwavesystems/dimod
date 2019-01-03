@@ -29,10 +29,7 @@ __all__ = ['HigherOrderComposite']
 
 
 class HigherOrderComposite(ComposedSampler):
-    """Composite to reduce variables of a higher order problem.
-   Inherits from :class:`dimod.ComposedSampler`.
-
-   Reduces a HUBO to bqm by introducing penalties. Energies of the returned
+    """Reduces a HUBO to bqm by introducing penalties. Energies of the returned
    samples do not include the penalties.
 
    Args:
@@ -52,7 +49,8 @@ class HigherOrderComposite(ComposedSampler):
        ...                              keep_penalty_variables=False,
        ...                              discard_unsatisfied=True)
        >>> print(response.first)  # doctest: +SKIP
-       Sample(sample={0: 1, 1: 1, 2: 1}, energy=-3.3, num_occurrences=1, penalty_satisfaction=True)
+       Sample(sample={0: 1, 1: 1, 2: 1}, energy=-3.3, num_occurrences=1,
+              penalty_satisfaction=True)
 
         """
 
@@ -76,18 +74,27 @@ class HigherOrderComposite(ComposedSampler):
     def sample_ising(self, h, J, offset=0, penalty_strength=1.0,
                      keep_penalty_variables=False,
                      discard_unsatisfied=False, **parameters):
-        """
+        """ Takes in linear variables in h and quadratic and higher order
+        terms in J. Introducing penalties, reduces the higher-order problem
+        into a quadratic problem and send it to its child sampler.
 
         Args:
             h (dict): linear biases corresponding to the HUBO form
+
             J (dict): higher order biases corresponding to the HUBO form
+
             offset (float, optional): constant energy offset
-            penalty_strength (float, optional): default is None, if provided,
-                will be added to the info field of the returned sampleset object.
+
+            penalty_strength (float, optional): Strength of the reduction constraint.
+                Insufficient strength can result in the binary quadratic model
+                not having the same minimization as the polynomial.
+
             keep_penalty_variables (bool, optional): default is True. if False
                 will remove the variables used for penalty from the samples
+
             discard_unsatisfied (bool, optional): default is False. If True
                 will discard samples that do not satisfy the penalty conditions.
+
             **parameters: Parameters for the sampling method, specified by
             the child sampler.
 
@@ -113,11 +120,12 @@ def penalty_satisfaction(response, bqm):
 
     Args:
         response (:obj:`.SampleSet`): Samples corresponding to provided bqm
-        bqm (:class:`.BinaryQuadraticModel`): a bqm object that contains
+
+        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
             its reduction info.
 
     Returns:
-        (np.array): a binary array of penalty satisfaction information.
+        :obj:`numpy.ndarray`: a binary array of penalty satisfaction information.
 
     """
     record = response.record
@@ -140,7 +148,9 @@ def _relabeled_poly(h, j, label_dict):
     with the new labels
     Args:
         h (dict): a dict of linear variables
+
         j (dict): a dict of quadratic and higher order variables
+
         label_dict (dict): a dict for relabeling e.g. {old_label:new_label}
 
     Returns:
@@ -164,19 +174,27 @@ def polymorph_response(response, h, J, bqm, offset=0,
                        penalty_strength=None,
                        keep_penalty_variables=True,
                        discard_unsatisfied=False):
-    """ Given a response of a penalized hubo, will convert recalculate take
+    """ Given a response of a penalized HUBO, will convert recalculate take
     care of penalty information
+
     Args:
         response (:obj:`.SampleSet`): response for a penalized hubo.
+
         h (dict): linear biases corresponding to the HUBO form
+
         J (dict): higher order biases corresponding to the HUBO form
+
         bqm (:obj:`dimod.BinaryQuadraticModel`): Binary quadratic model of the
             reduced problem.
+
         offset (float, optional): constant energy offset
+
         penalty_strength (float, optional): default is None, if provided,
-            will be added to the info field of the returned sampleset object.
+            will be added to the info field of the returned sampleSet object.
+
         keep_penalty_variables (bool, optional): default is True. if False
             will remove the variables used for penalty from the samples
+
         discard_unsatisfied (bool, optional): default is False. If True
             will discard samples that do not satisfy the penalty conditions.
 

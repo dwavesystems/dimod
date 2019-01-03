@@ -200,13 +200,13 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
-def create_poly(h, j):
+def create_poly(linear, quadratic):
     """ given h,j creates a single polynomial dict.
     all h's will turn into tuples.
 
     Args:
-        h (dict): a dict of linear variables
-        j (dict): a dict of quadratic and higher order variables
+        linear (dict): linear variables
+        quadratic (dict): quadratic and higher order variables
 
     Returns
         dict: a higher order problem dict that contains linear,
@@ -214,8 +214,8 @@ def create_poly(h, j):
 
     """
 
-    poly = {(k,): v for k, v in h.items()}
-    poly.update(j)
+    poly = {(k,): v for k, v in linear.items()}
+    poly.update(quadratic)
     return poly
 
 
