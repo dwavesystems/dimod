@@ -250,7 +250,7 @@ def poly_energy(sample, poly):
             tuple of variables and `bias` the associated bias.
 
     Returns:
-        float or list: The energy of the sample(s).
+        float/list: The energy of the sample(s).
 
     """
     if len(np.shape(sample)) == 2:
