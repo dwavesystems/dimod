@@ -427,21 +427,22 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
-                bias /= 2.
+                bias /= 2
                 self.offset += bias
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
                 self.offset -= bias
-                bias *= 2.
+                bias *= 2
             else:
                 raise ValueError("unknown vartype")
 
-        # add the variable to linear and adj
-        linear = self.linear
-        if v in linear:
-            linear[v] += bias
+        # we used to do this using self.linear but working directly with _adj
+        # is much faster
+        _adj = self._adj
+        if v in _adj:
+            _adj[v][v] += bias
         else:
-            linear[v] = bias
+            _adj[v] = {v: bias}
 
         try:
             self._counterpart.add_variable(v, bias, vartype=self.vartype)
@@ -539,38 +540,35 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
 
-        linear = self.linear
-        quadratic = self.quadratic
-        adj = self.adj
-
-        # so that they exist
-        self.add_variable(u, 0.0)
-        self.add_variable(v, 0.0)
-
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
                 bias /= 4
 
-                self.offset += bias
-                linear[u] += bias
-                linear[v] += bias
+                self.add_offset(bias)
+                self.add_variable(u, bias)
+                self.add_variable(v, bias)
 
             elif self.vartype is Vartype.BINARY and vartype is Vartype.SPIN:
                 # convert from spin to binary
 
-                self.offset += bias
-                linear[u] += -2 * bias
-                linear[v] += -2 * bias
+                self.add_offset(bias)
+                self.add_variable(u, -2 * bias)
+                self.add_variable(v, -2 * bias)
 
                 bias *= 4
             else:
                 raise ValueError("unknown vartype")
-
-        if (v, u) in quadratic:
-            quadratic[(v, u)] += bias
         else:
-            quadratic[(u, v)] = bias
+            # so that they exist
+            self.add_variable(u, 0)
+            self.add_variable(v, 0)
+
+        _adj = self._adj
+        if u in _adj[v]:
+            _adj[u][v] = _adj[v][u] = _adj[u][v] + bias
+        else:
+            _adj[u][v] = _adj[v][u] = bias
 
         try:
             self._counterpart.add_interaction(u, v, bias, vartype=self.vartype)
