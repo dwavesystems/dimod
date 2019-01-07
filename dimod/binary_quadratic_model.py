@@ -1807,7 +1807,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ({0: 1, 1: -1, 2: 0.5}, {(0, 1): 0.5, (1, 2): 1.5}, 1.4)
 
         """
-        return self.spin.linear, self.spin.quadratic, self.spin.offset
+        # cast to a dict
+        return dict(self.spin.linear), dict(self.spin.quadratic), self.spin.offset
 
     @classmethod
     def from_ising(cls, h, J, offset=0.0):
@@ -1842,7 +1843,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             BinaryQuadraticModel({1: 1, 2: 2, 3: 3, 4: 4}, {(1, 2): 12, (1, 3): 13, (1, 4): 14, (2, 3): 23, (3, 4): 34, (2, 4): 24}, 0.0, Vartype.SPIN)
 
         """
-        if isinstance(h, list):
+        if not isinstance(h, abc.Mapping):
             h = dict(enumerate(h))
 
         return cls(h, J, offset, Vartype.SPIN)
@@ -1872,14 +1873,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ({(0, 0): 1.0, (0, 1): 2.0, (1, 1): -6.0, (1, 2): 6.0, (2, 2): -2.0}, 2.9)
 
         """
-        qubo = {}
-
-        for v, bias in iteritems(self.binary.linear):
-            qubo[(v, v)] = bias
-
-        for edge, bias in iteritems(self.binary.quadratic):
-            qubo[edge] = bias
-
+        qubo = dict(self.binary.quadratic)
+        qubo.update(((v, v), bias) for v, bias in iteritems(self.binary.linear))
         return qubo, self.binary.offset
 
     @classmethod
