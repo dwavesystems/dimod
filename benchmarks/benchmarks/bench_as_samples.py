@@ -35,7 +35,7 @@ class NumpyArray(Benchmark):
         dimod.as_samples(self.arr100x100)
 
     def time_empty_labelled(self):
-        dimod.as_samples((self.empty, self.labels100))
+        dimod.as_samples((self.empty, []))
 
     def time_100x100_labelled(self):
         dimod.as_samples((self.arr100x100, self.labels100))
