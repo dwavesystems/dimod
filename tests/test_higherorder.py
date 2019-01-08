@@ -18,7 +18,7 @@ import itertools
 
 import dimod
 
-from dimod import make_quadratic, poly_energy
+from dimod import make_quadratic, poly_energy, poly_energies
 
 class TestMakeQuadratic(unittest.TestCase):
 
@@ -209,3 +209,35 @@ class TestMakeQuadratic(unittest.TestCase):
                 reduced_energies.append(bqm.energy(aux_sample))
 
             self.assertAlmostEqual(energy, min(reduced_energies))
+
+    def test_poly_energies(self):
+        from dimod.higherorder import create_poly
+
+        linear = {0:1.0,1:1.0}
+        j = {(0,1,2):0.5}
+        poly = create_poly(linear,j)
+        samples = [[1, 1, -1], [1, -1, 1], [1, 1, 1], [-1, 1, -1]]
+
+        en = poly_energies(samples, poly)
+        self.assertItemsEqual(en,[1.5,-0.5,2.5,0.5])
+
+        en = poly_energy(samples[0], poly)
+        self.assertAlmostEqual(en, 1.5)
+
+        with self.assertRaises(ValueError):
+            poly_energy(samples,poly)
+
+        poly = {('a',): 1.0, ('b',): 1.0, ('a', 'b', 'c'): 0.5}
+        samples = [{'a': 1, 'b': 1, 'c': -1},
+                   {'a': 1, 'b': -1, 'c': 1},
+                   {'a': 1, 'b': 1, 'c': 1},
+                   {'a': -1, 'b': 1, 'c': -1}]
+        en = poly_energies(samples, poly)
+        self.assertItemsEqual(en,[1.5,-0.5,2.5,0.5])
+
+        en = poly_energy(samples[0], poly)
+        self.assertAlmostEqual(en, 1.5)
+
+        with self.assertRaises(ValueError):
+            poly_energy(samples,poly)
+
