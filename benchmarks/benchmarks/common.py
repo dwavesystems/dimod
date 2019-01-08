@@ -16,4 +16,4 @@
 
 
 class Benchmark(object):
-    goal_time = 0.25
+    repeat = (1, 1000, .5)
