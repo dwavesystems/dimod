@@ -4,12 +4,10 @@
 Samples
 =======
 
-This module is under development as a possible replacement for :obj:`.Response`.
-
 sample_like Objects
 ===================
 
-.. automodule:: dimod.sampleset
+.. currentmodule:: dimod
 
 .. autosummary::
    :toctree: generated/
@@ -22,7 +20,6 @@ SampleSet
 Class
 -----
 
-.. currentmodule:: dimod
 .. autoclass:: SampleSet
 
 Properties
