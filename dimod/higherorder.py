@@ -18,11 +18,16 @@ import itertools
 
 from collections import Counter
 
+from numbers import Number
+
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.sampleset import as_samples
 from dimod.vartypes import Vartype
+
 import numpy as np
+
 
 __all__ = ['make_quadratic']
 
@@ -233,13 +238,42 @@ def _prod_d(iterable, dim):
     return val
 
 
-def poly_energy(sample, poly):
+def poly_energy(sample,poly):
+    """
+    Calculate energy of a sample that is a solution to a higher order problem
+    provided by poly.
+
+    Args:
+        sample (dict or (list,np.array)):
+            Sample for which to calculate the energy, formatted as a dict
+            where keys are variables and values are the value associated with
+            each variable. If formatted as a list or np.array, the terms in
+            poly dict must be provided as variable order.
+
+        poly (dict):
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a
+            tuple of variables and `bias` the associated bias.
+
+    Returns:
+        float/list: The energy of the sample(s).
+
+    """
+    if isinstance(sample,dict):
+        return poly_energies(sample, poly)
+
+    if not isinstance(sample[0],Number):
+        raise ValueError('poly_energy accepts a single sample. For multiple '
+                         'samples use poly_energies')
+    else:
+        return poly_energies(sample, poly)
+
+def poly_energies(samples_like, poly):
     """
     Calculate energy of sample(s) that are solutions to a higher order problem
     provided by poly.
 
     Args:
-        sample (dict or (list,np.array)):
+        sample (samples_like):
             Sample(s) for which to calculate the energy, formatted as a dict 
             where keys are variables and values are the value associated with 
             each variable. If formatted as a list or np.array, the terms in 
@@ -250,13 +284,17 @@ def poly_energy(sample, poly):
             tuple of variables and `bias` the associated bias.
 
     Returns:
-        float or list: The energy of the sample(s).
+        float/list: The energy of the sample(s).
 
     """
+    sample,labels = as_samples(samples_like)
+    idx, label = zip(*enumerate(labels))
+    labeldict = dict(zip(label, idx))
+
     if len(np.shape(sample)) == 2:
         dim = len(sample)
-        return sum(_prod_d([sample[:, v] for v in variables], dim) * bias
-                   for variables, bias in poly.items())
+        return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
+                           dim) * bias for variables, bias in poly.items())
     else:
-        return sum(_prod(sample[v] for v in variables) * bias
+        return sum(_prod(sample[labeldict[v]] for v in variables) * bias
                    for variables, bias in poly.items())

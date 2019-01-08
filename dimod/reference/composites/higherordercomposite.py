@@ -22,7 +22,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import make_quadratic, poly_energy
+from dimod.higherorder import make_quadratic, poly_energies
 from dimod.response import SampleSet
 
 __all__ = ['HigherOrderComposite']
@@ -216,7 +216,7 @@ def polymorph_response(response, h, J, bqm, offset=0,
 
     poly = _relabeled_poly(h, J, response.variables.index)
     samples = record.sample[samples_to_keep]
-    energy_vector = np.add(poly_energy(samples, poly), offset)
+    energy_vector = np.add(poly_energies(samples, poly), offset)
 
     if not keep_penalty_variables:
         original_variables = set(h).union(*J)
