@@ -13,16 +13,14 @@
 #    limitations under the License.
 #
 # ================================================================================================
-"""
-Samples can be provided in many forms, generally referred to as samples_like, an extension
-of NumPy's array_like_ to allow for arbitrary variable labels.
-
-.. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
-
-"""
 import itertools
+import numbers
 
-from collections import Iterable, Sized, Mapping, Iterator
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from collections import namedtuple
 
 import numpy as np
@@ -30,32 +28,39 @@ import numpy as np
 from numpy.lib import recfunctions
 
 from dimod.decorators import vartype_argument
-from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 from dimod.views import SampleView
 from dimod.variables import Variables
 
-__all__ = 'SampleSet', 'as_samples'
+__all__ = 'as_samples', 'concatenate', 'SampleSet'
 
 
-def as_samples(samples_like, dtype=None):
+def as_samples(samples_like, dtype=None, copy=False, order='C'):
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
         samples_like (samples_like):
-            A collection of raw samples. `samples_like` is an extension of NumPy's array_like_
-            structure. See examples below.
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like_ structure. See examples below.
 
         dtype (data-type, optional):
-            dtype for the returned samples array. If not provided, it is either derived from
-            `samples_like`, if that object has a dtype, or set to :class:`numpy.int8`.
+            dtype for the returned samples array. If not provided, it is either
+            derived from `samples_like`, if that object has a dtype, or set to
+            :class:`numpy.int8`.
+
+        copy (bool, optional, default=False):
+            If true, then samples_like is guaranteed to be copied, otherwise
+            it is only copied if necessary.
+
+        order ({'K', 'A', 'C', 'F'}, optional, default='C'):
+            Specify the memory layout of the array. See :func:`numpy.array`.
 
     Returns:
         tuple: A 2-tuple containing:
 
             :obj:`numpy.ndarray`: Samples.
 
-            list: Variable labels as a list.
+            list: Variable labels
 
     Examples:
         The following examples convert a variety of samples_like objects:
@@ -99,54 +104,74 @@ def as_samples(samples_like, dtype=None):
                 [0, 0],
                 [0, 0]], dtype=int8), ['in', 'out'])
 
-    .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
-
-    if isinstance(samples_like, Iterator):
-        raise TypeError('samples_like cannot be an iterator')
-
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
-        # (samples_like, labels)
         samples_like, labels = samples_like
 
-        samples, __ = as_samples(samples_like)
+        if not isinstance(labels, list) and labels is not None:
+            labels = list(labels)
+    else:
+        labels = None
 
-        labels = list(labels)  # coerce and/or shallow copy
+    if isinstance(samples_like, abc.Iterator):
+        # if we don't check this case we can get unexpected behaviour where an
+        # iterator can be depleted
+        raise TypeError('samples_like cannot be an iterator')
 
-        if len(labels) != samples.shape[1]:
-            raise ValueError("labels and samples_like dimensions do not match")
+    if isinstance(samples_like, abc.Mapping):
+        return as_samples(([samples_like], labels), dtype=dtype)
 
-        return samples, labels
+    if (isinstance(samples_like, list) and samples_like and
+            isinstance(samples_like[0], numbers.Number)):
+        # this is not actually necessary but it speeds up the
+        # samples_like = [1, 0, 1,...] case significantly
+        return as_samples(([samples_like], labels), dtype=dtype)
 
-    # if no ` is specified and the array_like doesn't already have a dtype, we default to int8
+    if not isinstance(samples_like, np.ndarray):
+        if any(isinstance(sample, abc.Mapping) for sample in samples_like):
+            # go through samples-like, turning the dicts into lists
+            samples_like, old = list(samples_like), samples_like
+
+            if labels is None:
+                first = samples_like[0]
+                if isinstance(first, abc.Mapping):
+                    labels = list(first)
+                else:
+                    labels = list(range(len(first)))
+
+            for idx, sample in enumerate(old):
+                if isinstance(sample, abc.Mapping):
+                    try:
+                        samples_like[idx] = [sample[v] for v in labels]
+                    except KeyError:
+                        raise ValueError("samples_like and labels do not match")
+
     if dtype is None and not hasattr(samples_like, 'dtype'):
         dtype = np.int8
 
-    if len(samples_like) == 0:
-        return np.empty((0, 0), dtype=dtype), []
+    # samples-like should now be array-like
+    arr = np.array(samples_like, dtype=dtype, copy=copy, order=order)
 
-    if isinstance(samples_like, Mapping):
-        return as_samples([samples_like], dtype=dtype)
+    if arr.ndim > 2:
+        raise ValueError("expected samples_like to be <= 2 dimensions")
+    if arr.ndim < 2:
+        if arr.size:
+            arr = np.atleast_2d(arr)
+        elif labels:  # is not None and len > 0
+            arr = arr.reshape((0, len(labels)))
+        else:
+            arr = arr.reshape((0, 0))
 
-    if isinstance(samples_like, Iterable) and all(isinstance(sample, Mapping) for sample in samples_like):
-        # list of dicts
-        return _samples_dicts_to_array(samples_like)
-
-    # anything else should be array_like, which covers ndarrays, lists of lists, etc
-
-    try:
-        samples_like = np.asarray(samples_like, dtype=dtype)
-    except (ValueError, TypeError):
-        raise TypeError("unknown format for samples_like")
-
-    # want 2D array
-    if samples_like.ndim == 1:
-        samples_like = np.expand_dims(samples_like, 0)
-    elif samples_like.ndim > 2:
-        ValueError("expected sample_like to be <= 2 dimensions")
-
-    return samples_like, list(range(samples_like.shape[1]))
+    # ok we're basically done, just need to check against the labels
+    if labels is None:
+        return arr, list(range(arr.shape[1]))
+    elif len(labels) != arr.shape[1]:
+        print(arr, arr.shape, samples_like, labels, len(labels))
+        raise ValueError("samples_like and labels dimensions do not match")
+    else:
+        return arr, labels
 
 
 def concatenate(samplesets, defaults=None):
@@ -215,7 +240,7 @@ def _iter_records(samplesets, vartype, variables):
             yield samples.record
 
 
-class SampleSet(Iterable, Sized):
+class SampleSet(abc.Iterable, abc.Sized):
     """Samples and any other data returned by dimod samplers.
 
     Args:
@@ -946,30 +971,3 @@ class SampleSet(Iterable, Sized):
             df.loc[:, field] = self.record[field]
 
         return df
-
-
-def _samples_dicts_to_array(samples_dicts):
-    """Convert an iterable of samples where each sample is a dict to a numpy 2d array. Also
-    determines the labels is they are None.
-    """
-    itersamples = iter(samples_dicts)
-
-    first_sample = next(itersamples)
-
-    labels = list(first_sample)
-
-    num_variables = len(labels)
-
-    def _iter_samples():
-        yield np.fromiter((first_sample[v] for v in labels),
-                          count=num_variables, dtype=np.int8)
-
-        try:
-            for sample in itersamples:
-                yield np.fromiter((sample[v] for v in labels),
-                                  count=num_variables, dtype=np.int8)
-        except KeyError:
-            msg = ("Each dict in 'samples' must have the same keys.")
-            raise ValueError(msg)
-
-    return np.stack(list(_iter_samples())), labels

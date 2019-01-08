@@ -19,9 +19,7 @@ import copy
 import numpy as np
 import dimod
 
-
-class Benchmark(object):
-    goal_time = 0.25
+from benchmarks.common import Benchmark
 
 
 class Construction(Benchmark):

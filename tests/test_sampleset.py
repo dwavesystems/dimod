@@ -16,6 +16,8 @@
 import unittest
 import json
 
+from collections import OrderedDict
+
 import numpy as np
 
 import dimod
@@ -26,6 +28,102 @@ try:
     _pandas = True
 except ImportError:
     _pandas = False
+
+
+class Test_as_samples(unittest.TestCase):
+
+    def test_copy_false(self):
+        samples_like = np.ones((5, 5))
+        labels = list('abcde')
+        arr, lab = dimod.as_samples((samples_like, labels))
+        np.testing.assert_array_equal(arr, np.ones((5, 5)))
+        self.assertEqual(lab, list('abcde'))
+        self.assertIs(labels, lab)
+        self.assertTrue(np.shares_memory(arr, samples_like))
+
+    def test_dict_with_inconsistent_labels(self):
+        with self.assertRaises(ValueError):
+            dimod.as_samples(({'a': -1}, 'b'))
+
+    def test_dict_with_labels(self):
+        arr, labels = dimod.as_samples(({'a': -1}, 'a'))
+        np.testing.assert_array_equal(arr, [[-1]])
+        self.assertEqual(labels, ['a'])
+
+    def test_empty_dict(self):
+        # one sample, no labels
+        arr, labels = dimod.as_samples({})
+        np.testing.assert_array_equal(arr, np.zeros((1, 0)))
+        self.assertEqual(labels, [])
+
+    def test_empty_list(self):
+        # no samples, no labels
+        arr, labels = dimod.as_samples([])
+        np.testing.assert_array_equal(arr, np.zeros((0, 0)))
+        self.assertEqual(labels, [])
+
+    def test_empty_list_labelled(self):
+        # no samples, no labels
+        arr, labels = dimod.as_samples(([], []))
+        np.testing.assert_array_equal(arr, np.zeros((0, 0)))
+        self.assertEqual(labels, [])
+
+        # no samples, 1 label
+        arr, labels = dimod.as_samples(([], ['a']))
+        np.testing.assert_array_equal(arr, np.zeros((0, 1)))
+        self.assertEqual(labels, ['a'])
+
+        # no samples, 2 labels
+        arr, labels = dimod.as_samples(([], ['a', 'b']))
+        np.testing.assert_array_equal(arr, np.zeros((0, 2)))
+        self.assertEqual(labels, ['a', 'b'])
+
+    def test_empty_ndarray(self):
+        arr, labels = dimod.as_samples(np.ones(0))
+        np.testing.assert_array_equal(arr, np.zeros((0, 0)))
+        self.assertEqual(labels, [])
+
+    def test_iterator(self):
+        with self.assertRaises(TypeError):
+            dimod.as_samples(([-1] for _ in range(10)))
+
+    def test_iterator_labelled(self):
+        with self.assertRaises(TypeError):
+            dimod.as_samples(([-1] for _ in range(10)), 'a')
+
+    def test_list_of_empty(self):
+        arr, labels = dimod.as_samples([[], [], []])
+        np.testing.assert_array_equal(arr, np.empty((3, 0)))
+        self.assertEqual(labels, [])
+
+        arr, labels = dimod.as_samples([{}, {}, {}])
+        np.testing.assert_array_equal(arr, np.empty((3, 0)))
+        self.assertEqual(labels, [])
+
+        arr, labels = dimod.as_samples(np.empty((3, 0)))
+        np.testing.assert_array_equal(arr, np.empty((3, 0)))
+        self.assertEqual(labels, [])
+
+    def test_mixed_sampletype(self):
+        s1 = [0, 1]
+        s2 = OrderedDict([(1, 0), (0, 1)])
+        s3 = OrderedDict([(0, 1), (1, 0)])
+
+        arr, labels = dimod.as_samples([s1, s2, s3])
+        np.testing.assert_array_equal(arr, [[0, 1], [1, 0], [1, 0]])
+        self.assertEqual(labels, [0, 1])
+
+    def test_ndarray(self):
+        arr, labels = dimod.as_samples(np.ones(5, dtype=np.int32))
+        np.testing.assert_array_equal(arr, np.ones((1, 5)))
+        self.assertEqual(labels, list(range(5)))
+        self.assertEqual(arr.dtype, np.int32)
+
+    def test_ndarray_labelled(self):
+        arr, labels = dimod.as_samples((np.ones(5, dtype=np.int32), 'abcde'))
+        np.testing.assert_array_equal(arr, np.ones((1, 5)))
+        self.assertEqual(labels, ['a', 'b', 'c', 'd', 'e'])
+        self.assertEqual(arr.dtype, np.int32)
 
 
 class TestSampleSet(unittest.TestCase):
@@ -118,8 +216,6 @@ class TestSampleSet(unittest.TestCase):
     def test_from_samples_empty(self):
 
         self.assertEqual(len(dimod.SampleSet.from_samples([], dimod.SPIN, energy=[], a=1)), 0)
-
-        self.assertEqual(len(dimod.SampleSet.from_samples({}, dimod.SPIN, energy=[], a=1)), 0)
 
         self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
 
