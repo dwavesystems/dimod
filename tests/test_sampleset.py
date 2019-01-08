@@ -217,8 +217,6 @@ class TestSampleSet(unittest.TestCase):
 
         self.assertEqual(len(dimod.SampleSet.from_samples([], dimod.SPIN, energy=[], a=1)), 0)
 
-        self.assertEqual(len(dimod.SampleSet.from_samples({}, dimod.SPIN, energy=[], a=1)), 0)
-
         self.assertEqual(len(dimod.SampleSet.from_samples(np.empty((0, 0)), dimod.SPIN, energy=[], a=1)), 0)
 
     def test_from_samples_with_aggregation(self):
