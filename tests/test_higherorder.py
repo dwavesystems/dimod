@@ -13,12 +13,12 @@
 #    limitations under the License.
 #
 # ================================================================================================
-import unittest
 import itertools
+import unittest
 
 import dimod
-
 from dimod import make_quadratic, poly_energy, poly_energies
+
 
 class TestMakeQuadratic(unittest.TestCase):
 
@@ -30,7 +30,8 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertIn(v, bqm)
         self.assertEqual(len(bqm), 4)  # has an auxiliary variable
 
-        for sample, energy in dimod.ExactSolver().sample(bqm).data(['sample', 'energy']):
+        for sample, energy in dimod.ExactSolver().sample(bqm).data(
+                ['sample', 'energy']):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
             if sample['a'] * sample['b'] != sample['p']:
@@ -47,7 +48,8 @@ class TestMakeQuadratic(unittest.TestCase):
         self.assertEqual(len(bqm), 3)
 
         seen_configs = set()
-        for sample, energy in dimod.ExactSolver().sample(bqm).data(['sample', 'energy']):
+        for sample, energy in dimod.ExactSolver().sample(bqm).data(
+                ['sample', 'energy']):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
                 seen_configs.add(tuple(sample[v] for v in variables))
@@ -70,7 +72,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, poly)
 
             reduced_energies = []
-            for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((-1, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -92,7 +95,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, poly)
 
             reduced_energies = []
-            for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((-1, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -104,7 +108,8 @@ class TestMakeQuadratic(unittest.TestCase):
                 (0,): .4,
                 (): .5}
 
-        bqm = make_quadratic(poly, 5.0, bqm=dimod.BinaryQuadraticModel.empty(dimod.SPIN))
+        bqm = make_quadratic(poly, 5.0,
+                             bqm=dimod.BinaryQuadraticModel.empty(dimod.SPIN))
 
         variables = set().union(*poly)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -116,7 +121,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, poly)
 
             reduced_energies = []
-            for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((-1, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -132,7 +138,9 @@ class TestMakeQuadratic(unittest.TestCase):
         poly.update({(v,): bias for v, bias in h.items()})
         poly[()] = off
 
-        bqm = make_quadratic(J, 5.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = make_quadratic(J, 5.0,
+                             bqm=dimod.BinaryQuadraticModel.from_ising(h, {},
+                                                                       off))
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -144,7 +152,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, poly)
 
             reduced_energies = []
-            for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((-1, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -160,7 +169,9 @@ class TestMakeQuadratic(unittest.TestCase):
         poly.update({(v,): bias for v, bias in h.items()})
         poly[()] = off
 
-        bqm = make_quadratic(J, 10.0, bqm=dimod.BinaryQuadraticModel.from_ising(h, {}, off))
+        bqm = make_quadratic(J, 10.0,
+                             bqm=dimod.BinaryQuadraticModel.from_ising(h, {},
+                                                                       off))
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(bqm.linear) - variables)
@@ -172,7 +183,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, poly)
 
             reduced_energies = []
-            for aux_config in itertools.product((-1, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((-1, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -185,7 +197,8 @@ class TestMakeQuadratic(unittest.TestCase):
 
         bqm = dimod.make_quadratic(poly, 10.0, dimod.BINARY)
 
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: .5}, {}, 1.3, dimod.BINARY))
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: .5}, {}, 1.3,
+                                                         dimod.BINARY))
 
     def test_binary_polynomial(self):
 
@@ -203,7 +216,8 @@ class TestMakeQuadratic(unittest.TestCase):
             energy = poly_energy(sample, HUBO)
 
             reduced_energies = []
-            for aux_config in itertools.product((0, 1), repeat=len(aux_variables)):
+            for aux_config in itertools.product((0, 1),
+                                                repeat=len(aux_variables)):
                 aux_sample = dict(zip(aux_variables, aux_config))
                 aux_sample.update(sample)
                 reduced_energies.append(bqm.energy(aux_sample))
@@ -213,19 +227,19 @@ class TestMakeQuadratic(unittest.TestCase):
     def test_poly_energies(self):
         from dimod.higherorder import create_poly
 
-        linear = {0:1.0,1:1.0}
-        j = {(0,1,2):0.5}
-        poly = create_poly(linear,j)
+        linear = {0: 1.0, 1: 1.0}
+        j = {(0, 1, 2): 0.5}
+        poly = create_poly(linear, j)
         samples = [[1, 1, -1], [1, -1, 1], [1, 1, 1], [-1, 1, -1]]
 
         en = poly_energies(samples, poly)
-        self.assertItemsEqual(en,[1.5,-0.5,2.5,0.5])
+        self.assertListEqual(list(en), [1.5, -0.5, 2.5, 0.5])
 
         en = poly_energy(samples[0], poly)
         self.assertAlmostEqual(en, 1.5)
 
         with self.assertRaises(ValueError):
-            poly_energy(samples,poly)
+            poly_energy(samples, poly)
 
         poly = {('a',): 1.0, ('b',): 1.0, ('a', 'b', 'c'): 0.5}
         samples = [{'a': 1, 'b': 1, 'c': -1},
@@ -233,11 +247,10 @@ class TestMakeQuadratic(unittest.TestCase):
                    {'a': 1, 'b': 1, 'c': 1},
                    {'a': -1, 'b': 1, 'c': -1}]
         en = poly_energies(samples, poly)
-        self.assertItemsEqual(en,[1.5,-0.5,2.5,0.5])
+        self.assertListEqual(list(en), [1.5, -0.5, 2.5, 0.5])
 
         en = poly_energy(samples[0], poly)
         self.assertAlmostEqual(en, 1.5)
 
         with self.assertRaises(ValueError):
-            poly_energy(samples,poly)
-
+            poly_energy(samples, poly)

@@ -15,24 +15,17 @@
 # ================================================================================================
 
 import itertools
-
 from collections import Counter
-
 from numbers import Number
 
+import numpy as np
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.vartypes import Vartype
 
-import numpy as np
-
-
 __all__ = ['make_quadratic']
-
-
-
 
 
 def _spin_product(variables):
@@ -238,7 +231,7 @@ def _prod_d(iterable, dim):
     return val
 
 
-def poly_energy(sample,poly):
+def poly_energy(sample, poly):
     """
     Calculate energy of a sample that is a solution to a higher order problem
     provided by poly.
@@ -258,14 +251,15 @@ def poly_energy(sample,poly):
         float/list: The energy of the sample(s).
 
     """
-    if isinstance(sample,dict):
+    if isinstance(sample, dict):
         return poly_energies(sample, poly)
 
-    if not isinstance(sample[0],Number):
+    if not isinstance(sample[0], Number):
         raise ValueError('poly_energy accepts a single sample. For multiple '
                          'samples use poly_energies')
     else:
         return poly_energies(sample, poly)
+
 
 def poly_energies(samples_like, poly):
     """
@@ -287,14 +281,14 @@ def poly_energies(samples_like, poly):
         float/list: The energy of the sample(s).
 
     """
-    sample,labels = as_samples(samples_like)
+    sample, labels = as_samples(samples_like)
     idx, label = zip(*enumerate(labels))
     labeldict = dict(zip(label, idx))
 
-    if len(np.shape(sample)) == 2:
+    if np.shape(sample)[0] > 1:
         dim = len(sample)
         return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
                            dim) * bias for variables, bias in poly.items())
     else:
-        return sum(_prod(sample[labeldict[v]] for v in variables) * bias
+        return sum(_prod(sample[0][labeldict[v]] for v in variables) * bias
                    for variables, bias in poly.items())
