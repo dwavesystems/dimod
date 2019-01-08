@@ -52,7 +52,7 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
             If true, then samples_like is guaranteed to be copied, otherwise
             it is only copied if necessary.
 
-        order ({‘K’, ‘A’, ‘C’, ‘F’}, optional, default='C'):
+        order ({'K', 'A', 'C', 'F'}, optional, default='C'):
             Specify the memory layout of the array. See :func:`numpy.array`.
 
     Returns:
