@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 import itertools
+import numbers
 
 try:
     import collections.abc as abc
@@ -120,6 +121,12 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         raise TypeError('samples_like cannot be an iterator')
 
     if isinstance(samples_like, abc.Mapping):
+        return as_samples(([samples_like], labels), dtype=dtype)
+
+    if (isinstance(samples_like, list) and samples_like and
+            isinstance(samples_like[0], numbers.Number)):
+        # this is not actually necessary but it speeds up the
+        # samples_like = [1, 0, 1,...] case significantly
         return as_samples(([samples_like], labels), dtype=dtype)
 
     if not isinstance(samples_like, np.ndarray):
