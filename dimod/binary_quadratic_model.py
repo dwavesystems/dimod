@@ -560,9 +560,20 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             else:
                 raise ValueError("unknown vartype")
         else:
-            # so that they exist
-            self.add_variable(u, 0)
-            self.add_variable(v, 0)
+            # so that they exist.
+
+            # developer note: we could  try to match the type of the quadratic
+            # bias with type(bias)(0), but this sometimes fails. We could also
+            # put it in a try-except but I am not so sure that it will fail
+            # predictably. I think it is better to just use python int 0 as it
+            # is most likely to be compatible with other numeric types.
+
+            # We don't actually need to do the check whether is is present but
+            # it is slightly faster to do so.
+            if u not in self:
+                self.add_variable(u, 0)
+            if v not in self:
+                self.add_variable(v, 0)
 
         _adj = self._adj
         if u in _adj[v]:
