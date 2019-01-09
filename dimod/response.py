@@ -17,7 +17,6 @@ from __future__ import division
 
 import itertools
 
-from collections import ItemsView, Iterable, Mapping, Sized, ValuesView
 from collections import namedtuple
 
 import numpy as np

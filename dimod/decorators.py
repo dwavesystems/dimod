@@ -17,7 +17,11 @@
 import inspect
 import itertools
 
-from collections import Sequence
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from functools import wraps
 from numbers import Integral
 
@@ -266,7 +270,7 @@ def graph_argument(*arg_names):
                 # an integer, cast to a complete graph
                 kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
 
-            elif isinstance(G, Sequence) and len(G) == 2:
+            elif isinstance(G, abc.Sequence) and len(G) == 2:
                 # is a pair nodes/edges
                 if isinstance(G[0], integer_types):
                     # if nodes is an int
