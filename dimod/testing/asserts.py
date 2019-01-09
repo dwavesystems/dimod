@@ -18,7 +18,10 @@ This module contains asserts that can be used to test the correctness of dimod s
 composites and responses. This is useful for checking that a created sampler correctly fulfills
 the dimod API.
 """
-from collections import Mapping, Sequence, Set
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
 
 import dimod
 
@@ -58,12 +61,12 @@ def assert_sampler_api(sampler):
     msg = "instantiated sampler must have a 'parameters' property, set to a Mapping"
     assert hasattr(sampler, 'parameters'), msg
     assert not callable(sampler.parameters), msg
-    assert isinstance(sampler.parameters, Mapping), msg
+    assert isinstance(sampler.parameters, abc.Mapping), msg
 
     msg = "instantiated sampler must have a 'properties' property, set to a Mapping"
     assert hasattr(sampler, 'properties'), msg
     assert not callable(sampler.properties), msg
-    assert isinstance(sampler.properties, Mapping), msg
+    assert isinstance(sampler.properties, abc.Mapping), msg
 
 
 def assert_composite_api(composed_sampler):
@@ -90,7 +93,7 @@ def assert_composite_api(composed_sampler):
 
     msg = "instantiated composed sampler must have a 'children' property, set to a list (or Sequence)"
     assert hasattr(composed_sampler, 'children'), msg
-    assert isinstance(composed_sampler.children, Sequence), msg
+    assert isinstance(composed_sampler.children, abc.Sequence), msg
 
     msg = "instantiated composed sampler must have a 'child' property, set to one of sampler.children"
     assert hasattr(composed_sampler, 'child'), msg
@@ -123,24 +126,24 @@ def assert_structured_api(sampler):
     msg = ("instantiated structured sampler must have an 'adjacency' property formatted as a dict "
            "where the keys are the nodes and the values are sets of all node adjacency to the key")
     assert hasattr(sampler, 'adjacency'), msg
-    assert isinstance(sampler.adjacency, Mapping), msg
+    assert isinstance(sampler.adjacency, abc.Mapping), msg
     for u, neighborhood in sampler.adjacency.items():
-        assert isinstance(neighborhood, Set), msg
+        assert isinstance(neighborhood, abc.Set), msg
         for v in neighborhood:
             assert v in sampler.adjacency, msg
             assert u in sampler.adjacency[v], msg
 
     msg = "instantiated structured sampler must have a 'nodelist' property, set to a list"
     assert hasattr(sampler, 'nodelist'), msg
-    assert isinstance(sampler.nodelist, Sequence), msg
+    assert isinstance(sampler.nodelist, abc.Sequence), msg
     for v in sampler.nodelist:
         assert v in sampler.adjacency, msg
 
     msg = "instantiated structured sampler must have a 'edge' property, set to a list of 2-lists/tuples"
     assert hasattr(sampler, 'edgelist'), msg
-    assert isinstance(sampler.edgelist, Sequence), msg
+    assert isinstance(sampler.edgelist, abc.Sequence), msg
     for edge in sampler.edgelist:
-        assert isinstance(edge, Sequence), msg
+        assert isinstance(edge, abc.Sequence), msg
         assert len(edge) == 2, msg
 
         u, v = edge
@@ -181,7 +184,7 @@ def assert_response_energies(response, bqm, precision=7):
     assert isinstance(response, dimod.SampleSet), "expected response to be a dimod SampleSet object"
 
     for sample, energy in response.data(['sample', 'energy']):
-        assert isinstance(sample, Mapping), "'for sample in response', each sample should be a Mapping"
+        assert isinstance(sample, abc.Mapping), "'for sample in response', each sample should be a Mapping"
 
         for v, value in sample.items():
             assert v in bqm.linear, 'sample contains a variable not in the given bqm'
