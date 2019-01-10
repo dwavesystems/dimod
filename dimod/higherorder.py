@@ -104,7 +104,6 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     Examples:
 
-        >>> import dimod
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
         >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
@@ -135,10 +134,8 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
 
 def _reduce_degree(bqm, poly, vartype, scale):
-    """
-    helper function of make_quadratic
+    """helper function for make_quadratic"""
 
-    """
     if all(len(term) <= 2 for term in poly):
         # termination criteria, we are already quadratic
         bqm.add_interactions_from(poly)
@@ -198,13 +195,12 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
-def create_poly(linear, quadratic):
-    """ given h,j creates a single polynomial dict.
-    all h's will turn into tuples.
+def create_poly(linear, higherorder):
+    """Creates a polynomial dict
 
     Args:
         linear (dict): linear variables
-        quadratic (dict): quadratic and higher order variables
+        higherorder (dict): quadratic and higher order variables
 
     Returns
         dict: a higher order problem dict that contains linear,
@@ -213,7 +209,7 @@ def create_poly(linear, quadratic):
     """
 
     poly = {(k,): v for k, v in linear.items()}
-    poly.update(quadratic)
+    poly.update(higherorder)
     return poly
 
 
@@ -232,12 +228,10 @@ def _prod_d(iterable, dim):
 
 
 def poly_energy(sample, poly):
-    """
-    Calculate energy of a sample that is a solution to a higher order problem
-    provided by poly.
+    """Calculates energy of a sample from a higher order polynomial.
 
     Args:
-        sample (dict or (list,np.array)):
+        sample (dict/list/:obj:`numpy.ndarray`):
             Sample for which to calculate the energy, formatted as a dict
             where keys are variables and values are the value associated with
             each variable. If formatted as a list or np.array, the terms in
@@ -248,7 +242,7 @@ def poly_energy(sample, poly):
             tuple of variables and `bias` the associated bias.
 
     Returns:
-        float/list: The energy of the sample(s).
+        float/list: The energy of the sample.
 
     """
     if isinstance(sample, dict):
@@ -262,20 +256,18 @@ def poly_energy(sample, poly):
 
 
 def poly_energies(samples_like, poly):
-    """
-    Calculate energy of sample(s) that are solutions to a higher order problem
-    provided by poly.
+    """Calculates energy of samples from a higher order polynomial.
 
     Args:
         sample (samples_like):
-            Sample(s) for which to calculate the energy, formatted as a dict 
-            where keys are variables and values are the value associated with 
-            each variable. If formatted as a list or np.array, the terms in 
-            poly dict must be provided as variable order.
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like structure. See :func:`.as_samples`.
 
         poly (dict):
             Polynomial as a dict of form {term: bias, ...}, where `term` is a 
-            tuple of variables and `bias` the associated bias.
+            tuple of variables and `bias` the associated bias. Variable
+            labeling/indexing of terms in poly dict must match that of the
+            sample(s).
 
     Returns:
         float/list: The energy of the sample(s).

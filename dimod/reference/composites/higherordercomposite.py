@@ -29,8 +29,9 @@ __all__ = ['HigherOrderComposite']
 
 
 class HigherOrderComposite(ComposedSampler):
-    """Reduces a HUBO to bqm by introducing penalties. Energies of the returned
-   samples do not include the penalties.
+    """Reduces a HUBO to bqm by introducing penalties.
+
+    Energies of the returned samples do not include the penalties.
 
    Args:
        sampler (:obj:`dimod.Sampler`):
@@ -41,7 +42,6 @@ class HigherOrderComposite(ComposedSampler):
        composed sampler that submits a simple Ising problem to a sampler.
        The composed sampler creates a bqm from a higher order problem.
 
-       >>> import dimod
        >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
        >>> linear = {0: -0.5, 1: -0.3, 2: -0.8}
        >>> quadratic = {(0, 1, 2): -1.7}
@@ -74,7 +74,9 @@ class HigherOrderComposite(ComposedSampler):
     def sample_ising(self, h, J, offset=0, penalty_strength=1.0,
                      keep_penalty_variables=False,
                      discard_unsatisfied=False, **parameters):
-        """ Takes in linear variables in h and quadratic and higher order
+        """ Sample from the problem provided by h, J, offset.
+
+        Takes in linear variables in h and quadratic and higher order
         terms in J. Introducing penalties, reduces the higher-order problem
         into a quadratic problem and send it to its child sampler.
 
@@ -116,7 +118,11 @@ class HigherOrderComposite(ComposedSampler):
 
 
 def penalty_satisfaction(response, bqm):
-    """ Given a sampleSet and a bqm object, will calculate the
+    """ Creates a penalty satisfaction list
+
+    Given a sampleSet and a bqm object, will create a binary list informing
+    whether the penalties introduced during degree reduction are satisfied for
+    each sample in sampleSet
 
     Args:
         response (:obj:`.SampleSet`): Samples corresponding to provided bqm
@@ -125,14 +131,14 @@ def penalty_satisfaction(response, bqm):
             its reduction info.
 
     Returns:
-        :obj:`numpy.ndarray`: a binary array of penalty satisfaction information.
+        :obj:`numpy.ndarray`: a binary array of penalty satisfaction information
 
     """
     record = response.record
     label_dict = response.variables.index
 
     if len(bqm.info['reduction']) == 0:
-        return np.array([1]*len(record.sample))
+        return np.array([1] * len(record.sample))
 
     penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
                               record.sample[:, label_dict[qj]]
@@ -144,8 +150,11 @@ def penalty_satisfaction(response, bqm):
 
 
 def _relabeled_poly(h, j, label_dict):
-    """ given h, j and a relabeling dictionary, will create a polynomial
+    """ Creates relabeled polynomial dict.
+
+    given h, j and a relabeling dictionary, will create a polynomial
     with the new labels
+
     Args:
         h (dict): a dict of linear variables
 
@@ -174,8 +183,11 @@ def polymorph_response(response, h, J, bqm, offset=0,
                        penalty_strength=None,
                        keep_penalty_variables=True,
                        discard_unsatisfied=False):
-    """ Given a response of a penalized HUBO, will convert recalculate take
-    care of penalty information
+    """ Transforms the sampleset for the higher order problem.
+
+    Given a response of a penalized HUBO, this function creates a new sampleset
+    object, taking into account penalty information and calculates the
+    energies of samples for the higherorder problem.
 
     Args:
         response (:obj:`.SampleSet`): response for a penalized hubo.
