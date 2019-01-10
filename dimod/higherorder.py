@@ -16,7 +16,6 @@
 
 import itertools
 from collections import Counter
-from numbers import Number
 
 import numpy as np
 from six import iteritems
@@ -227,32 +226,33 @@ def _prod_d(iterable, dim):
     return val
 
 
-def poly_energy(sample, poly):
+def poly_energy(sample_like, poly):
     """Calculates energy of a sample from a higher order polynomial.
 
     Args:
-        sample (dict/list/:obj:`numpy.ndarray`):
-            Sample for which to calculate the energy, formatted as a dict
-            where keys are variables and values are the value associated with
-            each variable. If formatted as a list or np.array, the terms in
-            poly dict must be provided as variable order.
+         sample (samples_like):
+            A raw sample. `samples_like` is an extension of NumPy's
+            array_like structure. See :func:`.as_samples`.
 
         poly (dict):
             Polynomial as a dict of form {term: bias, ...}, where `term` is a
             tuple of variables and `bias` the associated bias.
 
     Returns:
-        float/list: The energy of the sample.
+        float: The energy of the sample.
 
     """
-    if isinstance(sample, dict):
-        return poly_energies(sample, poly)
+    sample, labels = as_samples(sample_like)
+    idx, label = zip(*enumerate(labels))
+    labeldict = dict(zip(label, idx))
+    num_samples = len(sample)
 
-    if not isinstance(sample[0], Number):
+    if num_samples > 1:
         raise ValueError('poly_energy accepts a single sample. For multiple '
                          'samples use poly_energies')
     else:
-        return poly_energies(sample, poly)
+        return sum(_prod(sample[0][labeldict[v]] for v in variables) * bias
+                   for variables, bias in poly.items())
 
 
 def poly_energies(samples_like, poly):
@@ -270,17 +270,13 @@ def poly_energies(samples_like, poly):
             sample(s).
 
     Returns:
-        float/list: The energy of the sample(s).
+        list/:obj:`numpy.ndarray`: The energy of the sample(s).
 
     """
     sample, labels = as_samples(samples_like)
     idx, label = zip(*enumerate(labels))
     labeldict = dict(zip(label, idx))
 
-    if np.shape(sample)[0] > 1:
-        dim = len(sample)
-        return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
-                           dim) * bias for variables, bias in poly.items())
-    else:
-        return sum(_prod(sample[0][labeldict[v]] for v in variables) * bias
-                   for variables, bias in poly.items())
+    num_samples = len(sample)
+    return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
+                       num_samples) * bias for variables, bias in poly.items())
