@@ -308,6 +308,12 @@ class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
         pd.testing.assert_frame_equal(df, other, check_dtype=False)
 
 
+class TestSampleSet_first(unittest.TestCase):
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            dimod.SampleSet.from_samples([], dimod.SPIN, energy=[]).first
+
+
 class Test_concatenate(unittest.TestCase):
     def test_simple(self):
         ss0 = dimod.SampleSet.from_samples([-1, +1], dimod.SPIN, energy=-1)

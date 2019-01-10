@@ -559,12 +559,20 @@ class SampleSet(abc.Iterable, abc.Sized):
     def first(self):
         """Sample with the lowest-energy.
 
+        Raises:
+            ValueError: If empty.
+
         Example:
 
-            >>> sampleset.first   # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 1}, {('a', 'b'): 1})
+            >>> sampleset.first
             Sample(sample={'a': -1, 'b': -1}, energy=-1.0, num_occurrences=1)
+
         """
-        return next(self.data(sorted_by='energy', name='Sample'))
+        try:
+            return next(self.data(sorted_by='energy', name='Sample'))
+        except StopIteration:
+            raise ValueError('{} is empty'.format(self.__class__.__name__))
 
     @property
     def info(self):
