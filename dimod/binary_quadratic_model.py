@@ -66,6 +66,8 @@ from dimod.utilities import resolve_label_conflict
 from dimod.views import LinearView, QuadraticView, AdjacencyView, SampleView
 from dimod.vartypes import Vartype
 
+__all__ = 'BinaryQuadraticModel', 'BQM'
+
 
 class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     """Encodes a binary quadratic model.
@@ -2340,3 +2342,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             bqm.add_interaction(u, v, 0.0)
 
         return bqm
+
+
+BQM = BinaryQuadraticModel
+"""Alias for :obj:`.BinaryQuadraticModel`"""
