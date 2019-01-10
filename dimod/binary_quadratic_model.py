@@ -1854,7 +1854,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             BinaryQuadraticModel({1: 1, 2: 2, 3: 3, 4: 4}, {(1, 2): 12, (1, 3): 13, (1, 4): 14, (2, 3): 23, (3, 4): 34, (2, 4): 24}, 0.0, Vartype.SPIN)
 
         """
-        if not isinstance(h, abc.Mapping):
+        if isinstance(h, abc.Sequence):
             h = dict(enumerate(h))
 
         return cls(h, J, offset, Vartype.SPIN)
