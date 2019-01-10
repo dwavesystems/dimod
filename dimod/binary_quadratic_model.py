@@ -858,8 +858,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             0.5
 
         """
-        if not isinstance(scalar, Number):
-            raise TypeError("expected scalar to be a Number")
 
         if ignored_variables is None:
             ignored_variables = set()
