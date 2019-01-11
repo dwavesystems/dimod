@@ -683,7 +683,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             for sample in itertools.islice(self.samples(n=None, sorted_by=sorted_by), n):
                 yield sample
 
-    def data(self, fields=None, sorted_by='energy', name='Sample'):
+    def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False):
         """Iterate over the data in the :class:`SampleSet`.
 
         Args:
@@ -697,6 +697,9 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             name (str/None, optional, default='Sample'):
                 Name of the yielded namedtuples or None to yield regular tuples.
+
+            reverse (bool, optional, default=False):
+                If True, yield in reverse order.
 
         Yields:
             namedtuple/tuple: The data in the :class:`SampleSet`, in the order specified by the input
@@ -735,6 +738,9 @@ class SampleSet(abc.Iterable, abc.Sized):
             order = np.arange(len(self))
         else:
             order = np.argsort(record[sorted_by])
+
+        if reverse:
+            order = np.flip(order)
 
         if name is None:
             # yielding a tuple

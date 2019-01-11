@@ -242,6 +242,16 @@ class TestSampleSet(unittest.TestCase):
                          dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
 
 
+class TestSampleSetIteration(unittest.TestCase):
+    def test_data_reverse(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        sampleset = dimod.SampleSet.from_samples_bqm([{'a': -1, 'b': 1}, {'a': 1, 'b': 1}], bqm)
+
+        samples = list(sampleset.data())
+        reversed_samples = list(sampleset.data(reverse=True))
+        self.assertEqual(samples, list(reversed(reversed_samples)))
+
+
 class TestSampleSetSerialization(unittest.TestCase):
 
     def test_functional_simple_shapes(self):
