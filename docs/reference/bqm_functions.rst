@@ -27,6 +27,8 @@ Higher-order Polynomials
 
    make_quadratic
    poly_energy
+   poly_energies
+   create_poly
 
 
 Roof-duality

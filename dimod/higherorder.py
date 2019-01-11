@@ -15,13 +15,13 @@
 # ================================================================================================
 
 import itertools
-
 from collections import Counter
 
+import numpy as np
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.decorators import vartype_argument
+from dimod.sampleset import as_samples
 from dimod.vartypes import Vartype
 
 __all__ = ['make_quadratic']
@@ -104,7 +104,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     Examples:
 
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
-        >>> bqm = make_quadratic(poly, 5.0, dimod.SPIN)
+        >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
     """
 
@@ -133,6 +133,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
 
 def _reduce_degree(bqm, poly, vartype, scale):
+    """helper function for make_quadratic"""
 
     if all(len(term) <= 2 for term in poly):
         # termination criteria, we are already quadratic
@@ -193,6 +194,24 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
+def create_poly(linear, higherorder):
+    """Creates a polynomial dict
+
+    Args:
+        linear (dict): linear variables
+        higherorder (dict): quadratic and higher order variables
+
+    Returns
+        dict: a higher order problem dict that contains linear,
+              quadratic and n-order terms.
+
+    """
+
+    poly = {(k,): v for k, v in linear.items()}
+    poly.update(higherorder)
+    return poly
+
+
 def _prod(iterable):
     val = 1.
     for v in iterable:
@@ -200,21 +219,64 @@ def _prod(iterable):
     return val
 
 
-def poly_energy(sample, poly):
-    """Create a binary quadratic model from a higher order polynomial.
+def _prod_d(iterable, dim):
+    val = [1.] * dim
+    for v in iterable:
+        val *= v
+    return val
+
+
+def poly_energy(sample_like, poly):
+    """Calculates energy of a sample from a higher order polynomial.
 
     Args:
-        sample (dict):
-            Sample for which to calculate the energy, formatted as a dict where keys
-            are variables and values are the value associated with each variable.
+         sample (samples_like):
+            A raw sample. `samples_like` is an extension of NumPy's
+            array_like structure. See :func:`.as_samples`.
 
         poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
-            variables and `bias` the associated bias.
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a
+            tuple of variables and `bias` the associated bias.
 
     Returns:
         float: The energy of the sample.
 
     """
-    return sum(_prod(sample[v] for v in variables) * bias
-               for variables, bias in poly.items())
+    sample, labels = as_samples(sample_like)
+    idx, label = zip(*enumerate(labels))
+    labeldict = dict(zip(label, idx))
+    num_samples = len(sample)
+
+    if num_samples > 1:
+        raise ValueError('poly_energy accepts a single sample. For multiple '
+                         'samples use poly_energies')
+    else:
+        return sum(_prod(sample[0][labeldict[v]] for v in variables) * bias
+                   for variables, bias in poly.items())
+
+
+def poly_energies(samples_like, poly):
+    """Calculates energy of samples from a higher order polynomial.
+
+    Args:
+        sample (samples_like):
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like structure. See :func:`.as_samples`.
+
+        poly (dict):
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a 
+            tuple of variables and `bias` the associated bias. Variable
+            labeling/indexing of terms in poly dict must match that of the
+            sample(s).
+
+    Returns:
+        list/:obj:`numpy.ndarray`: The energy of the sample(s).
+
+    """
+    sample, labels = as_samples(samples_like)
+    idx, label = zip(*enumerate(labels))
+    labeldict = dict(zip(label, idx))
+
+    num_samples = len(sample)
+    return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
+                       num_samples) * bias for variables, bias in poly.items())
