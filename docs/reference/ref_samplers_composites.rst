@@ -151,3 +151,23 @@ Methods
    :toctree: generated/
 
    FixedVariableComposite.sample
+
+Scale Composite
+---------------
+
+.. automodule:: dimod.reference.composites.scalecomposite
+
+Class
+~~~~~
+
+.. currentmodule:: dimod.reference.composites
+.. autoclass:: ScaleComposite
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ScaleComposite.sample
+   ScaleComposite.sample_ising
