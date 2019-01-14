@@ -28,6 +28,126 @@ class TestScaleComposite(unittest.TestCase):
 
         dtest.assert_sampler_api(sampler)
 
+    def test_sample_hising_nonescale(self):
+        linear = {'a': -4.0, 'b': -4.0, 'c': -4.0}
+        quadratic = {('a', 'b', 'c'): 3.2}
+        offset = 5
+        sampler = ScaleComposite(HigherOrderComposite(
+            SimulatedAnnealingSampler()))
+
+        response = sampler.sample_ising(linear, quadratic,
+                                        offset=offset,
+                                        num_reads=100,
+                                        penalty_strength=5.0,
+                                        )
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': 1, 'c': 1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.8)
+
+    def test_sample_hising_ranges(self):
+        linear = {'a': -4.0, 'b': -4.0, 'c': -4.0}
+        quadratic = {('a', 'b', 'c'): 3.2}
+        offset = 5
+        sampler = ScaleComposite(HigherOrderComposite(
+            SimulatedAnnealingSampler()))
+
+        response = sampler.sample_ising(linear, quadratic,
+                                        offset=offset,
+                                        num_reads=100, bias_range=2,
+                                        penalty_strength=5.0,
+                                        )
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': 1, 'c': 1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.8)
+
+        response = sampler.sample_ising(linear, quadratic,
+                                        offset=offset,
+                                        num_reads=100, quadratic_range=(-1, 2),
+                                        penalty_strength=5.0,
+                                        )
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': 1, 'c': 1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.8)
+
+        response = sampler.sample_ising(linear, quadratic,
+                                        offset=offset,
+                                        num_reads=100, quadratic_range=-2,
+                                        bias_range=(-1, 3),
+                                        penalty_strength=5.0,
+                                        )
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': 1, 'c': 1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.8)
+
+    def test_sample_scale_none(self):
+        linear = {'a': -4.0, 'b': -4.0}
+        quadratic = {('a', 'b'): 3.2}
+
+        sampler = ScaleComposite(SimulatedAnnealingSampler())
+        bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
+        response = sampler.sample(bqm,
+                                  ignored_variables=['a'],
+                                  ignored_interactions=[('a', 'b')],
+                                  num_reads=100)
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': -1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.2)
+
+    def test_sample_ranges(self):
+        linear = {'a': -4.0, 'b': -4.0}
+        quadratic = {('a', 'b'): 3.2}
+
+        sampler = ScaleComposite(SimulatedAnnealingSampler())
+        bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
+        response = sampler.sample(bqm,
+                                  ignored_variables=['a'],
+                                  ignored_interactions=[('a', 'b')],
+                                  num_reads=100, bias_range=-2)
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': -1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.2)
+
+        response = sampler.sample(bqm,
+                                  ignored_variables=['a'],
+                                  ignored_interactions=[('a', 'b')],
+                                  num_reads=100, quadratic_range=(-1.2, 2))
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': -1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.2)
+
+        response = sampler.sample(bqm,
+                                  ignored_variables=['a'],
+                                  ignored_interactions=[('a', 'b')],
+                                  num_reads=100, bias_range=(-1, 3),
+                                  quadratic_range=3)
+        samples = [(s, e) for s, e, in
+                   response.aggregate().data(['sample', 'energy'],
+                                             sorted_by='num_occurrences',
+                                             reverse=True)]
+        self.assertEqual({'a': 1, 'b': -1}, samples[0][0])
+        self.assertAlmostEqual(samples[0][1], -3.2)
+
     def test_sample_ising(self):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
