@@ -552,8 +552,8 @@ class SampleSet(abc.Iterable, abc.Sized):
                                                self.vartype.name)
 
     def __str__(self):
-        from dimod.serialization.format import SampleSetFormatter
-        return SampleSetFormatter(self).to_string()
+        from dimod.serialization.format import sampleset_to_string
+        return sampleset_to_string(self)   # use default parameters
 
     ###############################################################################################
     # Properties
