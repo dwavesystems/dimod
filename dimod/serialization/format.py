@@ -12,132 +12,201 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+
+# developer note: It is hard to provide code examples for these because doing
+# so will overwrite the settings in sphinx's setup.
+
+import numbers
+
 from itertools import islice
 
 import numpy as np
 
 import dimod
 
+_format_options = {
+    'linewidth': 79,
+    'precision': 6,
+    'max_samples': 50,
+    'sorted_by': 'energy',
+    'column_fill': '  ',  # between columns, private
+}
+# NB: Some of these are 'private' in that they are not documented in
+# set_printoptions
 
-class PassVar(object):
-    def __str__(self):
-        return '..'
+
+def set_printoptions(**kwargs):
+    """Set print options globally.
+
+    Args:
+        linewidth (int, optional):
+            The maximum number of characters to a single line. Default is 75.
+
+        precision (int, optional):
+            Number of digits of precision for floating point output. Default is
+            6.
+
+        max_samples (int, optional):
+            The maximum number of samples printed, summation is used if
+            exceeded. Default is 50.
+
+        sorted_by (str/None, optional):
+            Selects the field used to sort the samples when printing samplesets.
+            If None, samples are printed in record order. Default is 'energy'.
+
+    Note:
+        All arguments must be provided as keyword arguments.
+
+    """
+    _format_options.update(kwargs)
 
 
-class SampleSetFormatter(object):
+def _spinstr(v):
+    return '-1' if v <= 0 else '+1'
 
-    min_column_width = 2
-    column_space = 2
 
-    max_rows = 40
-    max_columns = 12  # 17
-    header = True
-    footer = True
-    index = True
+def _binarystr(v):
+    return '0' if v <= 0 else '1'
 
-    def __init__(self, sampleset):
 
-        self.sampleset = sampleset
+def _numstr(val, precision=6):
+    if isinstance(val, numbers.Integral):
+        return str(int(val))
+    return np.format_float_positional(val, unique=True, precision=precision,
+                                      trim='0')
 
-        # sampleset's size/shape/fields won't change, so we can build the (empty)
-        # array
 
-        nrows = min(self.max_rows,
-                    (len(sampleset) +  # one row for header
-                        self.header +  # two for footer
-                        2*self.footer))
-        nrows -= 2*self.footer  # two rows for footer
+def _total_width(widths, fill_width):
+    return widths.sum() + fill_width*(len(widths) - 1)
 
-        ncols = min(self.max_columns,
-                    (len(sampleset.variables) +
-                        len(sampleset.record.dtype.names) - 1 +
-                        self.index))
 
-        self.char = char = np.full((nrows, ncols), '', dtype=object)
+def _column_formatting(charr, energy_idx, options):
+    """Make columns all the same width and limit the total width"""
 
-        # get columns
-        self.fields = fields = [field for field in sampleset.record.dtype.names
-                                if field != 'sample']
+    column_fill = options['column_fill']
+    linewidth = options['linewidth']
 
-        max_variables = self.max_columns - len(fields) - self.index
-        if len(sampleset.variables) > max_variables:
-            variables = sampleset.variables[:max_variables-2]
-            variables.append(PassVar())
-            variables.append(sampleset.variables[-1])
-        else:
-            # we can do all the variables
-            variables = sampleset.variables
-        variable_labels = list(map(str, variables))
-        self.variables = variables
+    lenfunc = np.frompyfunc(len, 1, 1)
 
-        if self.header:
-            char[0, :] = ['']*self.index + variable_labels + fields
+    column_widths = lenfunc(charr).max(axis=0)
 
-    def to_string(self):
-        sampleset = self.sampleset
-        num_samples = len(sampleset)
-        char = self.char
-        nrows, ncols = char.shape
+    if _total_width(column_widths, len(column_fill)) > linewidth:
+        idxs = np.ones(len(column_widths), dtype=bool)
+        idxs[energy_idx - 2] = False
 
-        variables = self.variables
-        fields = self.fields
+        new_charr = charr[:, idxs]
+        new_energy_idx = energy_idx - 1
 
-        if sampleset.vartype is dimod.SPIN:
-            def _str(datum, v):
-                if isinstance(v, PassVar):
-                    return str(v)
-                return '+1' if datum.sample[v] > 0 else '-1'
-        else:
-            def _str(datum, v):
-                if isinstance(v, PassVar):
-                    return str(v)
-                return '1' if datum.sample[v] > 0 else '0'
+        new_charr[:, new_energy_idx - 2] = '..'
 
-        ci = 1*self.header
-        for i, datum in enumerate(sampleset.data()):
-            row = [str(i)]*self.header
-            row.extend(_str(datum, v) for v in variables)
-            row.extend(str(getattr(datum, field)) for field in fields)
+        return _column_formatting(new_charr, energy_idx-1, options)
 
-            char[ci, :] = row
-            ci += 1
+    for ci in range(1, charr.shape[1]):  # skip index
+        width = lenfunc(charr[:, ci]).max()
 
-            if ci >= nrows:
+        def fmt(s):
+            return s.rjust(width)
+
+        # apply to column
+        charr[:, ci] = np.frompyfunc(fmt, 1, 1)(charr[:, ci])
+
+    width = lenfunc(charr[:, 0]).max()
+
+    def fmt(s):
+        return s.ljust(width)
+
+    # apply to column
+    charr[:, 0] = np.frompyfunc(fmt, 1, 1)(charr[:, 0])
+
+    return '\n'.join(column_fill.join(row) for row in charr)
+
+
+def sampleset_to_string(sampleset, **kwargs):
+    """Get the string representation of a sampleset.
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            A sample set.
+
+        **kwargs:
+            Any keyword arguments will override the printing defaults. See
+            :func:`.set_printoptions` for argument descriptions.
+
+    Returns:
+        str
+
+    """
+
+    # todo: _format overrides
+    options = _format_options.copy()
+    options.update(kwargs)
+
+    max_samples = options['max_samples']
+    sorted_by = options['sorted_by']
+    precision = options['precision']
+
+    fields = [field for field in sampleset.record.dtype.names
+              if field != 'sample']
+    variables = sampleset.variables
+
+    #
+    # let's assume it fits our width and just worry about number of rows for now
+    #
+
+    # variables + index + (fields - 'sample') so the index/'sample' cancel
+    ncols = len(sampleset.variables) + len(sampleset.record.dtype.names)
+
+    nrows = min(max_samples, len(sampleset)) + 1  # +1 for the header
+
+    charr = np.empty((nrows, ncols), dtype=object)
+
+    # set up the header
+
+    var_headers = [str(v) for v in variables]
+    field_headers = [field if len(field) <= 7 else field[:7]+'.'  # limit to 7 characters
+                     for field in fields]
+    charr[0, :] = [''] + var_headers + field_headers
+
+    #
+    # now populate the samples/dtypes
+    #
+
+    if sampleset.vartype is dimod.SPIN:
+        splfmt = _spinstr
+    else:
+        splfmt = _binarystr
+
+    def _row_from_datum(index, datum):
+        row = [str(index)]
+        row.extend(splfmt(datum.sample[v]) for v in variables)
+        row.extend(_numstr(getattr(datum, field)) for field in fields)
+        return row
+
+    if len(sampleset) > max_samples:
+        for ci, datum in enumerate(sampleset.data(sorted_by=sorted_by), start=1):
+            if ci > max_samples - 2:  # 3 = header + skiprow + lastrow
                 break
 
-        if num_samples > nrows - self.header:
-            char[-2, :] = '..'
+            charr[ci, :] = _row_from_datum(ci-1, datum)
 
-            # last line
-            datum = next(iter(sampleset.data(reverse=True)))  # get the last sample
-            row = [str(num_samples-1)]*self.header
-            row.extend(_str(datum, v) for v in variables)
-            row.extend(str(getattr(datum, field)) for field in fields)
-            char[-1, :] = row
+        # skip row
+        charr[-2, :] = '..'
 
-        # formatting
+        # last row
+        datum = next(iter(sampleset.data(reverse=True)))  # get the last sample
+        charr[-1, :] = _row_from_datum(len(sampleset) - 1, datum)
 
-        lenfunc = np.frompyfunc(len, 1, 1)
+    else:
+        for ci, datum in enumerate(sampleset.data(sorted_by=sorted_by), start=1):
+            charr[ci, :] = _row_from_datum(ci-1, datum)
 
-        for ci in range(self.index, ncols):
-            width = max(lenfunc(char[:, ci]).max(), self.min_column_width) + self.column_space
+    #
+    # format and limit the number of columns
+    #
 
-            def fmt(s):
-                return s.rjust(width)
+    charr_str = _column_formatting(charr, len(variables)+1, options)
 
-            # apply to column
-            char[:, ci] = np.frompyfunc(fmt, 1, 1)(char[:, ci])
+    footer = '\n\n[ {} rows, {} variables ]'.format(len(sampleset), len(sampleset.variables))
 
-        if self.index:
-            width = max(lenfunc(char[:, 0]).max(), self.min_column_width)
-
-            def fmt(s):
-                return s.ljust(width)
-
-            # apply to column
-            char[:, 0] = np.frompyfunc(fmt, 1, 1)(char[:, 0])
-
-        footer = '\n\n[ {} rows, {} variables ]'.format(len(sampleset), len(sampleset.variables))
-
-        return '\n'.join(''.join(row) for row in char) + self.footer*footer
+    return charr_str + footer

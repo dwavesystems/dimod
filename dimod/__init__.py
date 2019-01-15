@@ -50,6 +50,8 @@ from dimod.package_info import __version__, __author__, __authoremail__, __descr
 
 from dimod.sampleset import as_samples, concatenate, SampleSet
 
+from dimod.serialization.format import set_printoptions
+
 from dimod.response import *
 import dimod.response
 
