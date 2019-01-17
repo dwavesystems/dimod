@@ -203,7 +203,10 @@ class ScaleComposite(ComposedSampler):
         # handle HUBO
         child = self.child
         if scalar is None:
-            scalar = _calc_norm_coeff(h, J, bias_range, quadratic_range)
+            scalar = _calc_norm_coeff(h, J, bias_range, quadratic_range,
+                                      ignored_variables=ignored_variables,
+                                      ignored_interactions=ignored_interactions
+                                      )
         h_sc = dict(h)
         J_sc = dict(J)
         if scalar != 1:
@@ -221,7 +224,8 @@ class ScaleComposite(ComposedSampler):
         return response
 
 
-def _calc_norm_coeff(h, J, bias_range, quadratic_range):
+def _calc_norm_coeff(h, J, bias_range, quadratic_range,ignored_variables=None,
+                               ignored_interactions=None):
     """Helper function to calculate normalization coefficient"""
 
     def parse_range(r):
@@ -242,8 +246,10 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range):
     lin_range, quad_range = map(parse_range, (linear_range,
                                               quadratic_range))
 
-    lin_min, lin_max = min_and_max(h.values())
-    quad_min, quad_max = min_and_max(J.values())
+    lin_min, lin_max = min_and_max([v for k, v in h.items()
+                                    if k not in ignored_variables])
+    quad_min, quad_max = min_and_max([v for k, v in J.items()
+                                      if k not in ignored_interactions])
 
     inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
                      quad_min / quad_range[0], quad_max / quad_range[1])
