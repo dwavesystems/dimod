@@ -77,7 +77,14 @@ class ScaleComposite(ComposedSampler):
 
     @property
     def parameters(self):
-        return self.child.parameters.copy()
+        param = self.child.parameters.copy()
+        param['scalar'] = []
+        param['bias_range'] = []
+        param['quadratic_range'] = []
+        param['ignored_variables'] = []
+        param['ignored_interactions'] = []
+        param['ignore_offset'] = []
+        return param
 
     @property
     def properties(self):
