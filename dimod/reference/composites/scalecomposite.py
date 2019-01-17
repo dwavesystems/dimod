@@ -134,17 +134,21 @@ class ScaleComposite(ComposedSampler):
 
         bqm_copy = bqm.copy()
         if scalar is None:
-            bqm_copy.normalize(bias_range, quadratic_range,
-                               ignored_variables=ignored_variables,
-                               ignored_interactions=ignored_interactions,
-                               ignore_offset=ignore_offset)
-        else:
-            bqm_copy.scale(scalar, ignored_variables=ignored_variables,
-                           ignored_interactions=ignored_interactions,
-                           ignore_offset=ignore_offset)
+            scalar = _calc_norm_coeff(bqm_copy.linear, bqm_copy.quadratic,
+                                      bias_range, quadratic_range,
+                                      ignored_variables=ignored_variables,
+                                      ignored_interactions=ignored_interactions)
+
+        bqm_copy.scale(scalar, ignored_variables=ignored_variables,
+                       ignored_interactions=ignored_interactions,
+                       ignore_offset=ignore_offset)
+
         response = child.sample(bqm_copy, **parameters)
 
-        response.record.energy = bqm.energies((response.record.sample,
+        if len(ignored_interactions)+len(ignored_variables)+ignore_offset == 0:
+            response.record.energy = np.divide(response.record.energy,2.0)
+        else:
+            response.record.energy = bqm.energies((response.record.sample,
                                                response.variables))
         return response
 
@@ -224,8 +228,8 @@ class ScaleComposite(ComposedSampler):
         return response
 
 
-def _calc_norm_coeff(h, J, bias_range, quadratic_range,ignored_variables=None,
-                               ignored_interactions=None):
+def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
+                     ignored_interactions=None):
     """Helper function to calculate normalization coefficient"""
 
     def parse_range(r):
@@ -253,6 +257,7 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range,ignored_variables=None,
 
     inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
                      quad_min / quad_range[0], quad_max / quad_range[1])
+
     if inv_scalar != 0:
         return 1. / inv_scalar
     else:
