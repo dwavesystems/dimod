@@ -151,9 +151,9 @@ class ScaleComposite(ComposedSampler):
         ranges.
 
         Args:
-            h (dict): linear biases corresponding to the HUBO form
+            h (dict): linear biases
 
-            J (dict): higher order biases corresponding to the HUBO form
+            J (dict): quadratic or higher order biases
 
             offset (float, optional): constant energy offset
 
