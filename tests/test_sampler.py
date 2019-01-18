@@ -285,7 +285,7 @@ class TestSamplerClass(unittest.TestCase):
                 return dimod.SampleSet.from_samples_bqm(samples, bqm)
 
         sampler = Ising()
-        cbqm = CountBQM.from_ising({0: -3}, {})
+        cbqm = CountBQM.from_ising({0: -3}, {(0, 1): -1.5}, offset=1.3)
         sampleset = sampler.sample(cbqm)
         dimod.testing.assert_response_energies(sampleset, cbqm)
 
@@ -309,6 +309,6 @@ class TestSamplerClass(unittest.TestCase):
                 return dimod.SampleSet.from_samples_bqm(samples, bqm)
 
         sampler = Qubo()
-        cbqm = CountBQM.from_qubo({(0, 0): -3})
+        cbqm = CountBQM.from_qubo({(0, 0): -3, (1, 0): 1.5}, offset=.5)
         sampleset = sampler.sample(cbqm)
         dimod.testing.assert_response_energies(sampleset, cbqm)
