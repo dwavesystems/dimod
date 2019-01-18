@@ -132,6 +132,10 @@ class ScaleComposite(ComposedSampler):
 
         child = self.child
 
+        ignored_variables, ignored_interactions = _check_params(
+            ignored_interactions=ignored_interactions,
+            ignored_variables=ignored_variables)
+
         bqm_copy = bqm.copy()
         if scalar is None:
             scalar = _calc_norm_coeff(bqm_copy.linear, bqm_copy.quadratic,
@@ -145,11 +149,12 @@ class ScaleComposite(ComposedSampler):
 
         response = child.sample(bqm_copy, **parameters)
 
-        if len(ignored_interactions)+len(ignored_variables)+ignore_offset == 0:
-            response.record.energy = np.divide(response.record.energy,2.0)
+        if len(ignored_interactions) + len(
+                ignored_variables) + ignore_offset == 0:
+            response.record.energy = np.divide(response.record.energy, scalar)
         else:
             response.record.energy = bqm.energies((response.record.sample,
-                                               response.variables))
+                                                   response.variables))
         return response
 
     def sample_ising(self, h, J, offset=0, scalar=None,
@@ -195,6 +200,11 @@ class ScaleComposite(ComposedSampler):
 
         """
 
+        ignored_variables, ignored_interactions = _check_params(
+            ignored_interactions=ignored_interactions,
+            ignored_variables=ignored_variables)
+
+        # if quadratic, create a bqm and send to sample
         if max(map(len, J.keys())) == 2:
             bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
             return self.sample(bqm, scalar=scalar,
@@ -228,9 +238,28 @@ class ScaleComposite(ComposedSampler):
         return response
 
 
+def _check_params(ignored_interactions=None, ignored_variables=None):
+    """Helper for sample methods"""
+
+    if ignored_variables is None:
+        ignored_variables = set()
+    elif not isinstance(ignored_variables, abc.Container):
+        ignored_variables = set(ignored_variables)
+
+    if ignored_interactions is None:
+        ignored_interactions = set()
+    elif not isinstance(ignored_interactions, abc.Container):
+        ignored_interactions = set(ignored_interactions)
+
+    return ignored_variables, ignored_interactions
+
+
 def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
                      ignored_interactions=None):
     """Helper function to calculate normalization coefficient"""
+
+    if ignored_variables is None or ignored_interactions is None:
+        raise ValueError('ignored interactions or variables cannot be None')
 
     def parse_range(r):
         if isinstance(r, Number):
@@ -272,16 +301,8 @@ def _scale(h, j, offset, scalar,
     if not isinstance(scalar, Number):
         raise TypeError("expected scalar to be a Number")
 
-    if ignored_variables is None:
-        ignored_variables = set()
-    elif not isinstance(ignored_variables, abc.Container):
-        ignored_variables = set(ignored_variables)
-
-    if ignored_interactions is None:
-        ignored_interactions = set()
-    elif not isinstance(ignored_interactions, abc.Container):
-        ignored_interactions = set(ignored_interactions)
-
+    if ignored_variables is None or ignored_interactions is None:
+        raise ValueError('ignored interactions or variables cannot be None')
     j_sc = {}
     for u, v in j.items():
         if u in ignored_interactions:
