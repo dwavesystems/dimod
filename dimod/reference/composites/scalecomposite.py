@@ -56,15 +56,9 @@ class ScaleComposite(ComposedSampler):
 
        >>> linear = {'a': -4.0, 'b': -4.0}
        >>> quadratic = {('a', 'b'): 3.2}
-       >>> sampler = dimod.ScaleComposite(dimod.SimulatedAnnealingSampler())
+       >>> sampler = dimod.ScaleComposite(dimod.ExactSolver())
        >>> response = sampler.sample_ising(linear, quadratic, scalar=0.5,
        ...                ignored_interactions=[('a','b')],num_reads = 100)
-       >>> print(response.aggregate().record) # doctest: +SKIP
-       >>> response = sampler.sample_ising(linear, quadratic, scalar=0.5,
-       ...                                              num_reads = 100)
-       >>> print(response.aggregate().record) # doctest: +SKIP
-       [([-1,  1], -3.2, 58) ([ 1, -1], -3.2, 42)]
-       [([1, 1], -4.8, 100)]
 
     """
 
@@ -129,33 +123,23 @@ class ScaleComposite(ComposedSampler):
             :obj:`dimod.SampleSet`
 
         """
-
-        child = self.child
-
         ignored_variables, ignored_interactions = _check_params(
             ignored_interactions=ignored_interactions,
             ignored_variables=ignored_variables)
 
-        bqm_copy = bqm.copy()
-        if scalar is None:
-            scalar = _calc_norm_coeff(bqm_copy.linear, bqm_copy.quadratic,
-                                      bias_range, quadratic_range,
-                                      ignored_variables=ignored_variables,
-                                      ignored_interactions=ignored_interactions)
-
-        bqm_copy.scale(scalar, ignored_variables=ignored_variables,
-                       ignored_interactions=ignored_interactions,
-                       ignore_offset=ignore_offset)
-
+        child = self.child
+        bqm_copy = _scaled_bqm(bqm, scalar=scalar,
+                               bias_range=bias_range,
+                               quadratic_range=quadratic_range,
+                               ignored_variables=ignored_variables,
+                               ignored_interactions=ignored_interactions,
+                               ignore_offset=ignore_offset)
         response = child.sample(bqm_copy, **parameters)
 
-        if len(ignored_interactions) + len(
-                ignored_variables) + ignore_offset == 0:
-            response.record.energy = np.divide(response.record.energy, scalar)
-        else:
-            response.record.energy = bqm.energies((response.record.sample,
-                                                   response.variables))
-        return response
+        return _scale_back_response(bqm, response, bqm_copy.info['scalar'],
+                                    ignored_variables=ignored_variables,
+                                    ignored_interactions=ignored_interactions,
+                                    ignore_offset=ignore_offset)
 
     def sample_ising(self, h, J, offset=0, scalar=None,
                      bias_range=1, quadratic_range=None,
@@ -200,11 +184,8 @@ class ScaleComposite(ComposedSampler):
 
         """
 
-        ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
-
         # if quadratic, create a bqm and send to sample
+
         if max(map(len, J.keys())) == 2:
             bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
             return self.sample(bqm, scalar=scalar,
@@ -215,20 +196,19 @@ class ScaleComposite(ComposedSampler):
                                ignore_offset=ignore_offset, **parameters)
 
         # handle HUBO
+
+        ignored_variables, ignored_interactions = _check_params(
+            ignored_interactions=ignored_interactions,
+            ignored_variables=ignored_variables)
+
         child = self.child
-        if scalar is None:
-            scalar = _calc_norm_coeff(h, J, bias_range, quadratic_range,
-                                      ignored_variables=ignored_variables,
-                                      ignored_interactions=ignored_interactions
-                                      )
-        h_sc = dict(h)
-        J_sc = dict(J)
-        if scalar != 1:
-            h_sc, J_sc, offset_sc = _scale(h, J, offset, scalar,
-                                           ignored_variables=ignored_variables,
-                                           ignored_interactions=
-                                           ignored_interactions,
-                                           ignore_offset=ignore_offset)
+        h_sc, J_sc, offset_sc = _scaled_hubo(h, J, offset=offset,
+                                             scalar=scalar,
+                                             bias_range=bias_range,
+                                             quadratic_range=quadratic_range,
+                                             ignored_variables=ignored_variables,
+                                             ignored_interactions=ignored_interactions,
+                                             ignore_offset=ignore_offset)
         response = child.sample_ising(h_sc, J_sc, offset=offset_sc,
                                       **parameters)
 
@@ -236,6 +216,18 @@ class ScaleComposite(ComposedSampler):
         response.record.energy = np.add(poly_energies(response.record.sample,
                                                       poly), offset)
         return response
+
+
+def _scale_back_response(bqm, response, scalar, ignored_interactions=None,
+                         ignored_variables=None, ignore_offset=None):
+    """Helper function to scale back the response of sample method"""
+    if len(ignored_interactions) + len(
+            ignored_variables) + ignore_offset == 0:
+        response.record.energy = np.divide(response.record.energy, scalar)
+    else:
+        response.record.energy = bqm.energies((response.record.sample,
+                                               response.variables))
+    return response
 
 
 def _check_params(ignored_interactions=None, ignored_variables=None):
@@ -293,31 +285,61 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
         return 1.
 
 
-def _scale(h, j, offset, scalar,
-           ignored_variables=None,
-           ignored_interactions=None,
-           ignore_offset=False):
-    """Helper function to calculate scale of a problem"""
+def _scaled_bqm(bqm, scalar=None, bias_range=1, quadratic_range=None,
+                ignored_variables=None, ignored_interactions=None,
+                ignore_offset=False):
+    """Helper function of sample for scaling"""
+
+    bqm_copy = bqm.copy()
+    if scalar is None:
+        scalar = _calc_norm_coeff(bqm_copy.linear, bqm_copy.quadratic,
+                                  bias_range, quadratic_range,
+                                  ignored_variables=ignored_variables,
+                                  ignored_interactions=ignored_interactions)
+
+    bqm_copy.scale(scalar, ignored_variables=ignored_variables,
+                   ignored_interactions=ignored_interactions,
+                   ignore_offset=ignore_offset)
+    bqm_copy.info.update({'scalar': scalar})
+    return bqm_copy
+
+
+def _scaled_hubo(h, j, offset=0, scalar=None, bias_range=1,
+                 quadratic_range=None,
+                 ignored_variables=None,
+                 ignored_interactions=None,
+                 ignore_offset=False):
+    """Helper function of sample_ising for scaling"""
+
+    if scalar is None:
+        scalar = _calc_norm_coeff(h, j, bias_range, quadratic_range,
+                                  ignored_variables=ignored_variables,
+                                  ignored_interactions=ignored_interactions
+                                  )
+    h_sc = dict(h)
+    j_sc = dict(j)
+    offset_sc = offset
     if not isinstance(scalar, Number):
         raise TypeError("expected scalar to be a Number")
 
-    if ignored_variables is None or ignored_interactions is None:
-        raise ValueError('ignored interactions or variables cannot be None')
-    j_sc = {}
-    for u, v in j.items():
-        if u in ignored_interactions:
-            j_sc[u] = v
-        else:
-            j_sc[u] = v * scalar
+    if scalar != 1:
+        if ignored_variables is None or ignored_interactions is None:
+            raise ValueError('ignored interactions or variables cannot be None')
+        j_sc = {}
+        for u, v in j.items():
+            if u in ignored_interactions:
+                j_sc[u] = v
+            else:
+                j_sc[u] = v * scalar
 
-    if not ignore_offset:
-        offset = offset * scalar
+        if not ignore_offset:
+            offset_sc = offset * scalar
 
-    h_sc = {}
-    for k, v in h.items():
-        if k not in ignored_variables:
-            h_sc[k] = v * scalar
-        else:
-            h_sc[k] = v
+        h_sc = {}
+        for k, v in h.items():
+            if k in ignored_variables:
+                h_sc[k] = v
+            else:
+                h_sc[k] = v * scalar
 
-    return h_sc, j_sc, offset
+    return h_sc, j_sc, offset_sc
