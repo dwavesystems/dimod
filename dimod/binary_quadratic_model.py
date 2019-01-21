@@ -60,6 +60,7 @@ import numpy as np
 
 from six import itervalues, iteritems, iterkeys, PY2
 
+from dimod.cyutils import _CYUTILS
 from dimod.decorators import vartype_argument
 from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
@@ -1499,7 +1500,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
         return en
 
-    def energies(self, samples_like, dtype=np.float):
+    def energies(self, samples_like, dtype=np.float, _use_cpp=True):
         """Determine the energies of the given samples.
 
         Args:
@@ -1520,6 +1521,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(dtype=dtype)
         else:
             ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(variable_order=labels, dtype=dtype)
+
+        if _CYUTILS and _use_cpp:
+            from dimod.cyutils import fast_energy
+            return np.asarray(fast_energy(ldata, irow, icol, qdata, offset, samples), dtype=dtype)
 
         energies = samples.dot(ldata) + (samples[:, irow]*samples[:, icol]).dot(qdata) + offset
         return np.asarray(energies, dtype=dtype)  # handle any type promotions

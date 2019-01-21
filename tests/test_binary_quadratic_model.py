@@ -1632,66 +1632,6 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({'a': -1, 'b': 1, 'c': 5},
                                                                     {('a', 'b'): -1, ('b', 'c'): 1}))
 
-    def test_energies_cpp(self):
-        num_variables = 25
-        p = .1
-        num_samples = 10
-
-        linear = np.random.rand(num_variables)
-        row, col = zip(*(pair for pair in itertools.combinations(range(num_variables), 2) if np.random.rand() < p))
-        quad = np.random.rand(len(row))
-
-        h = dict(enumerate(linear))
-        J = {(u, v): b for u, v, b in zip(row, col, quad)}
-
-        bqm = dimod.BinaryQuadraticModel(h, J, np.random.rand(), dimod.BINARY)
-
-        samples = np.random.randint(2, size=(num_samples, num_variables))
-
-        def _energies(bqm, samples):
-
-            row, col = samples.shape
-
-            energies=[]
-            for r in range(row):
-                sample = {c: samples[r, c] for c in range(col)}
-                energies.append(bqm.energy(sample))
-            return energies
-
-        np.testing.assert_array_almost_equal(bqm.energies(samples), _energies(bqm, samples))
-
-
-    def test_energies_misordered(self):
-        h = {0: -2.5, 1: -2.5, 3: -2.5, 4: -5.0, 2: 0.0}
-        J = {(0, 1): 2.5, (0, 3): 2.5, (0, 4): 5.0,
-             (1, 3): 2.5, (1, 4): 5.0, (3, 4): 5.0,
-             (2, 3): -1.0}
-        bqm = dimod.BinaryQuadraticModel(h, J, 10.0, 'SPIN')
-        bqm.relabel_variables(dict(enumerate('abcde')), inplace=True)
-
-        sample = collections.OrderedDict([('a', -1), ('b', -1), ('e', -1), ('c', -1), ('d', 1)])
-
-        en = 10
-        en += sum(sample[v] * b for v, b in bqm.linear.items())
-        en += sum(sample[u] * sample[v] * b for (u, v), b in bqm.quadratic.items())
-        self.assertAlmostEqual(en, bqm.energies(sample))
-
-    def test_energies_all_ordering(self):
-        h = {0: -2.5, 1: -2.5, 3: -2.5, 4: -5.0, 2: 0.0}
-        J = {(0, 1): 2.5, (0, 3): 2.5, (0, 4): 5.0,
-             (1, 3): 2.5, (1, 4): 5.0, (3, 4): 5.0,
-             (2, 3): -1.0}
-        bqm = dimod.BinaryQuadraticModel(h, J, 10.0, 'SPIN')
-
-        for variables in itertools.permutations(bqm.variables, len(bqm)):
-            for config in itertools.product((-1, 1), repeat=len(bqm)):
-                sample = collections.OrderedDict(zip(variables, config))
-
-                en = 10
-                en += sum(sample[v] * b for v, b in h.items())
-                en += sum(sample[u] * sample[v] * b for (u, v), b in J.items())
-                self.assertAlmostEqual(en, bqm.energies(sample))
-
     def test_from_qubo(self):
         Q = {('a', 'a'): 1, ('a', 'b'): -1}
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
@@ -2020,3 +1960,65 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
+
+
+class TestEnergies(unittest.TestCase):
+    def test_energies_energy(self):
+        # compare .energies and .energy
+        num_variables = 25
+        p = .1
+        num_samples = 10
+
+        linear = np.random.rand(num_variables)
+        row, col = zip(*(pair for pair in itertools.combinations(range(num_variables), 2) if np.random.rand() < p))
+        quad = np.random.rand(len(row))
+
+        h = dict(enumerate(linear))
+        J = {(u, v): b for u, v, b in zip(row, col, quad)}
+
+        bqm = dimod.BinaryQuadraticModel(h, J, np.random.rand(), dimod.BINARY)
+
+        samples = np.random.randint(2, size=(num_samples, num_variables))
+
+        def _energies(bqm, samples):
+
+            row, col = samples.shape
+
+            energies = []
+            for r in range(row):
+                sample = {c: samples[r, c] for c in range(col)}
+                energies.append(bqm.energy(sample))
+            return energies
+
+        np.testing.assert_array_almost_equal(bqm.energies(samples), _energies(bqm, samples))
+
+    def test_all_orderings(self):
+        h = {0: -2.5, 1: -2.5, 3: -2.5, 4: -5.0, 2: 0.0}
+        J = {(0, 1): 2.5, (0, 3): 2.5, (0, 4): 5.0,
+             (1, 3): 2.5, (1, 4): 5.0, (3, 4): 5.0,
+             (2, 3): -1.0}
+        off = 10.
+        bqm = dimod.BinaryQuadraticModel(h, J, off, 'SPIN')
+
+        for variables in itertools.permutations(bqm.variables, len(bqm)):
+            for config in itertools.product((-1, 1), repeat=len(bqm)):
+                sample = collections.OrderedDict(zip(variables, config))
+
+                en = off
+                en += sum(sample[v] * b for v, b in h.items())
+                en += sum(sample[u] * sample[v] * b for (u, v), b in J.items())
+                self.assertAlmostEqual(en, bqm.energies(sample))
+
+    def test_cyutil(self):
+        # test with and without cyutils
+        h = {'a': -1.5}
+        J = {'ab': 1.3, 'bc': -1}
+        off = 0.6
+        bqm = dimod.BinaryQuadraticModel(h, J, off, dimod.BINARY)
+
+        samples = [[0, 1, 0], [1, 1, 1], [0, 0, 0]]
+
+        cyenergies = bqm.energies((samples, 'abc'))
+        npenergies = bqm.energies((samples, 'abc'), _use_cpp=False)
+
+        np.testing.assert_array_almost_equal(cyenergies, npenergies)

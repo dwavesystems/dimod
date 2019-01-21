@@ -103,6 +103,7 @@ ENV/
 
 # cython intermediate files
 dimod/roof_duality/_fix_variables.cpp
+dimod/cyutils/_energy.cpp
 
 # benchmarking stuff
 benchmarks/html/

@@ -1,2 +1,3 @@
 recursive-include dimod/serialization *.json
 recursive-include dimod/roof_duality *.cpp *.pyx *.hpp
+recursive-include dimod/cyutils *.cpp *.pyx *.hpp
