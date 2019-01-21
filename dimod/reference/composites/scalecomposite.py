@@ -58,7 +58,7 @@ class ScaleComposite(ComposedSampler):
        >>> quadratic = {('a', 'b'): 3.2}
        >>> sampler = dimod.ScaleComposite(dimod.ExactSolver())
        >>> response = sampler.sample_ising(linear, quadratic, scalar=0.5,
-       ...                ignored_interactions=[('a','b')],num_reads = 100)
+       ...                ignored_interactions=[('a','b')])
 
     """
 
