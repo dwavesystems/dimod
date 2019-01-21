@@ -31,7 +31,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import poly_energies, _relabeled_poly
+from dimod.higherorder import poly_energies, _relabeled_poly, check_isin
 
 __all__ = ['ScaleComposite']
 
@@ -274,7 +274,8 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
     lin_min, lin_max = min_and_max([v for k, v in h.items()
                                     if k not in ignored_variables])
     quad_min, quad_max = min_and_max([v for k, v in J.items()
-                                      if k not in ignored_interactions])
+                                      if not check_isin(k,
+                                                        ignored_interactions)])
 
     inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
                      quad_min / quad_range[0], quad_max / quad_range[1])
