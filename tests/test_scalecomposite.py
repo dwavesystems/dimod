@@ -88,7 +88,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b'): 3.2}
 
         ignored_variables, ignored_interactions = _check_params()
-        bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5)
+        bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5.0)
         bqm_new = _scaled_bqm(bqm,
                               bias_range=2,
                               ignored_interactions=ignored_interactions,
@@ -99,11 +99,11 @@ class TestScaleComposite(unittest.TestCase):
                k, v in linear.items()}
         Jsc = {k: v / sc if k not in ignored_interactions else v for
                k, v in quadratic.items()}
-        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5 / 2.)
+        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0 / 2.)
         self.assertEqual(bqm_scaled, bqm_new)
 
         ignored_variables, ignored_interactions = _check_params()
-        bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5)
+        bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5.0)
         bqm_new = _scaled_bqm(bqm,
                               bias_range=2,
                               ignored_interactions=ignored_interactions,
@@ -115,7 +115,7 @@ class TestScaleComposite(unittest.TestCase):
                k, v in linear.items()}
         Jsc = {k: v / sc if k not in ignored_interactions else v for
                k, v in quadratic.items()}
-        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5)
+        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0)
         self.assertEqual(bqm_scaled, bqm_new)
 
         bqm_new = _scaled_bqm(bqm,
@@ -129,7 +129,7 @@ class TestScaleComposite(unittest.TestCase):
         Jsc = {k: v / sc if k not in ignored_interactions else v for
                k, v in quadratic.items()}
 
-        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5. / sc)
+        bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0 / sc)
         self.assertEqual(bqm_scaled, bqm_new)
 
         ignored_variables = ['a', 'b']
@@ -163,7 +163,7 @@ class TestScaleComposite(unittest.TestCase):
                               ignored_interactions=ignored_interactions,
                               ignored_variables=ignored_variables)
 
-        sc = 4
+        sc = 4.
         hsc = {k: v / sc if k not in ignored_variables else v for
                k, v in linear.items()}
         Jsc = {k: v / sc if k not in ignored_interactions else v for
