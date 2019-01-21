@@ -255,7 +255,7 @@ class TestScaleComposite(unittest.TestCase):
                                              ignored_interactions=ignored_interactions,
                                              ignored_variables=ignored_variables)
 
-        sc = 4
+        sc = 4.
         hsc = {k: v / sc if k not in ignored_variables else v for
                k, v in linear.items()}
         self.assertEqual(hsc, hnew)
