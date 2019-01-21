@@ -311,3 +311,7 @@ def poly_energies(samples_like, poly):
     return np.sum([_prod_d([sample[:, labeldict[v]] for v in variables],
                        num_samples) * bias for variables, bias in poly.items()],
                   axis=0)
+
+
+def check_isin(key, key_list):
+    return np.sum(set(key) == set(key_tmp) for key_tmp in key_list)
