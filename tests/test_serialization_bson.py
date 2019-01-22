@@ -2,6 +2,7 @@ import unittest
 import dimod
 from dimod.serialization.bson import bqm_bson_decoder, bqm_bson_encoder
 import numpy as np
+from six import PY3
 
 
 try:
@@ -26,7 +27,8 @@ class TestBSONSerialization(unittest.TestCase):
             'quadratic_head': b'',
             'quadratic_tail': b'',
         }
-        self.assertDictEqual(encoded, expected_encoding)
+        if PY3:
+            self.assertDictEqual(encoded, expected_encoding)
         decoded = bqm_bson_decoder(encoded)
         self.assertEqual(bqm, decoded)
 
@@ -44,7 +46,8 @@ class TestBSONSerialization(unittest.TestCase):
             'quadratic_head': b'',
             'quadratic_tail': b'',
         }
-        self.assertDictEqual(encoded, expected_encoding)
+        if PY3:
+            self.assertDictEqual(encoded, expected_encoding)
         decoded = bqm_bson_decoder(encoded)
         self.assertEqual(bqm, decoded)
 
