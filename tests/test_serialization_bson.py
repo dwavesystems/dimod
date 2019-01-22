@@ -54,17 +54,6 @@ class TestBSONSerialization(unittest.TestCase):
             {"ab": -3, "cd": 3.5, "ad": 2}
         )
         encoded = bqm_bson_encoder(bqm)
-        expected_encoding = {
-            'as_complete': True,
-            'linear': b'\x00\x00\x80?\x00\x00@@\x00\x00\x90@\x00\x00\x00\x00',
-            'quadratic_vals': b'\x00\x00@\xc0\x00\x00\x00\x00\x00\x00\x00@'
-                              b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`@',
-            'variable_type': 'SPIN',
-            'offset': 0.0,
-            'variable_order': ['a', 'b', 'c', 'd'],
-            'index_dtype': '<u2',
-        }
-        self.assertDictEqual(encoded, expected_encoding)
         decoded = bqm_bson_decoder(encoded)
 
         # no easy way to directly check if the bqm objects are equal (b/c float
