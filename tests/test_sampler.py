@@ -264,3 +264,51 @@ class TestSamplerClass(unittest.TestCase):
         expected_resp = dimod.Response.from_samples([[1]], {"energy": [-3]}, {}, dimod.BINARY)
         np.testing.assert_almost_equal(resp.record.sample, expected_resp.record.sample)
         np.testing.assert_almost_equal(resp.record.energy, expected_resp.record.energy)
+
+    def test_spin_bqm_to_sample_ising(self):
+
+        class CountBQM(dimod.BinaryQuadraticModel):
+            # should never have vartype changed
+            def change_vartype(self, *args, **kwargs):
+                raise RuntimeError
+
+            def to_qubo(self):
+                raise RuntimeError
+
+        class Ising(dimod.Sampler):
+            parameters = None
+            properties = None
+
+            def sample_ising(self, h, J):
+                bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
+                samples = [1]*len(bqm)
+                return dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        sampler = Ising()
+        cbqm = CountBQM.from_ising({0: -3}, {(0, 1): -1.5}, offset=1.3)
+        sampleset = sampler.sample(cbqm)
+        dimod.testing.assert_response_energies(sampleset, cbqm)
+
+    def test_binary_bqm_to_sample_qubo(self):
+
+        class CountBQM(dimod.BinaryQuadraticModel):
+            # should never have vartype changed
+            def change_vartype(self, *args, **kwargs):
+                raise RuntimeError
+
+            def to_ising(self):
+                raise RuntimeError
+
+        class Qubo(dimod.Sampler):
+            parameters = None
+            properties = None
+
+            def sample_qubo(self, Q):
+                bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+                samples = [1]*len(bqm)
+                return dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        sampler = Qubo()
+        cbqm = CountBQM.from_qubo({(0, 0): -3, (1, 0): 1.5}, offset=.5)
+        sampleset = sampler.sample(cbqm)
+        dimod.testing.assert_response_energies(sampleset, cbqm)
