@@ -74,7 +74,22 @@ class TestBSONSerialization(unittest.TestCase):
         np.testing.assert_almost_equal(bqm.to_numpy_matrix(var_order),
                                        decoded.to_numpy_matrix(var_order))
 
-    
+    def test_complex_variable_names(test):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN,
+                                         tag=5)
+        encoded = bqm_bson_encoder(bqm)
+        decoded = bqm_bson_decoder(encoded)
+
+        # no easy way to directly check if the bqm objects are equal (b/c float
+        # precision, missing edges), so for now check if the qubo matrices are
+        # the same
+        var_order = list(bqm.variables)
+        np.testing.assert_almost_equal(bqm.to_numpy_matrix(var_order),
+                                       decoded.to_numpy_matrix(var_order),
+                                       decimal=6)
+
     @unittest.skipUnless(_bson_imported, "no pymongo bson installed")
     def test_bsonable(self):
         bqm = dimod.BinaryQuadraticModel.from_ising(
