@@ -12,6 +12,7 @@ API Asserts
 .. autosummary::
    :toctree: generated/
 
+   assert_bqm_almost_equal
    assert_composite_api
    assert_sampler_api
    assert_structured_api
