@@ -38,6 +38,7 @@ def bqm_bson_encoder(bqm):
         index_dtype=index_dtype,
         sort_indices=as_complete,
         variable_order=variable_order)
+    off = float(off)
 
     if as_complete:
         vals = np.zeros(num_possible_edges, dtype=np.float32)
