@@ -13,15 +13,26 @@
 #    limitations under the License.
 #
 # ================================================================================================
+from __future__ import absolute_import
 import itertools
 
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
+from six import PY2
+
 
 def bqm_bson_encoder(bqm):
     """todo"""
+
+    if PY2:
+        try:
+            import bson
+        except ImportError:
+            raise ImportError("Package `bson` from `pymongo` required for "
+                              "bson encoding in python 2")
+
     num_variables = len(bqm)
 
     index_dtype = np.uint32
@@ -53,10 +64,14 @@ def bqm_bson_encoder(bqm):
     else:
         vals = _vals
 
+    lvals, qvals = lin.tobytes(), vals.tobytes()
+    if PY2:
+        lvals, qvals = bson.Binary(lvals), bson.Binary(qvals)
+
     doc = {
         "as_complete": as_complete,
-        "linear": lin.tobytes(),
-        "quadratic_vals": vals.tobytes(),
+        "linear": lvals,
+        "quadratic_vals": qvals,
         "variable_type": "SPIN" if bqm.vartype == bqm.SPIN else "BINARY",
         "offset": off,
         "variable_order": variable_order,
@@ -64,8 +79,11 @@ def bqm_bson_encoder(bqm):
     }
 
     if not as_complete:
-        doc["quadratic_head"] = i.tobytes()
-        doc["quadratic_tail"] = j.tobytes()
+        ii, jj = i.tobytes(), j.tobytes()
+        if PY2:
+            ii, jj = bson.Binary(ii), bson.Binary(jj)
+        doc["quadratic_head"] = ii
+        doc["quadratic_tail"] = jj
 
     return doc
 
