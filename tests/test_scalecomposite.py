@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,15 +13,6 @@
 #    limitations under the License.
 #
 # ================================================================================================
-
-# class ScalingChecker(dimod.Sampler):
-#     def __init__(self, originalbqm, scalar):
-#         self.bqm = originalbqm.copy()
-#         self.bqm.scale(scalar)
-#     def sample(self, bqm):
-#         assert self.bqm == bqm
-#         return ExactSolver().sample(bqm)
-#     def sample_ising(self,h, J):
 
 import unittest
 
@@ -87,12 +78,14 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5.0)
-        bqm_new = _scaled_bqm(bqm,
-                              bias_range=2,
-                              ignored_interactions=ignored_interactions,
-                              ignored_variables=ignored_variables)
+        scalar = None
+        quadratic_range = None
+        ignore_offset = False
+        bqm_new = _scaled_bqm(bqm, scalar, 2, quadratic_range,
+                              ignored_variables, ignored_interactions,
+                              ignore_offset)
 
         sc = 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -102,13 +95,11 @@ class TestScaleComposite(unittest.TestCase):
         bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0 / 2.)
         self.assertEqual(bqm_scaled, bqm_new)
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5.0)
-        bqm_new = _scaled_bqm(bqm,
-                              bias_range=2,
-                              ignored_interactions=ignored_interactions,
-                              ignored_variables=ignored_variables,
-                              ignore_offset=True)
+        bqm_new = _scaled_bqm(bqm, scalar, 2, quadratic_range,
+                              ignored_variables, ignored_interactions,
+                              True)
 
         sc = 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -118,10 +109,9 @@ class TestScaleComposite(unittest.TestCase):
         bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0)
         self.assertEqual(bqm_scaled, bqm_new)
 
-        bqm_new = _scaled_bqm(bqm,
-                              quadratic_range=(-1, 0.4),
-                              ignored_interactions=ignored_interactions,
-                              ignored_variables=ignored_variables)
+        bqm_new = _scaled_bqm(bqm, scalar, 1, (-1, 0.4),
+                              ignored_variables, ignored_interactions,
+                              ignore_offset)
 
         sc = 3.2 / 0.4
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -135,13 +125,12 @@ class TestScaleComposite(unittest.TestCase):
         ignored_variables = ['a', 'b']
         ignored_interactions = None
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
-        bqm_new = _scaled_bqm(bqm,
-                              bias_range=(-2, 2),
-                              ignored_interactions=ignored_interactions,
-                              ignored_variables=ignored_variables)
+
+        bqm_new = _scaled_bqm(bqm, scalar, (2, 2), quadratic_range,
+                              ignored_variables, ignored_interactions,
+                              ignore_offset)
 
         sc = 3.2 / 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -155,13 +144,12 @@ class TestScaleComposite(unittest.TestCase):
         ignored_variables = None
         ignored_interactions = [('a', 'b')]
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
+
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
-        bqm_new = _scaled_bqm(bqm,
-                              quadratic_range=0.5,
-                              ignored_interactions=ignored_interactions,
-                              ignored_variables=ignored_variables)
+        bqm_new = _scaled_bqm(bqm, scalar, 1, 0.5,
+                              ignored_variables, ignored_interactions,
+                              ignore_offset)
 
         sc = 4.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -179,13 +167,11 @@ class TestScaleComposite(unittest.TestCase):
         ignored_variables = None
         ignored_interactions = None
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
 
-        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset=offset,
-                                             bias_range=2,
-                                             ignored_interactions=ignored_interactions,
-                                             ignored_variables=ignored_variables)
+        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset,
+                                             None, 2, None, ignored_variables,
+                                             ignored_interactions, False)
 
         sc = 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -196,11 +182,9 @@ class TestScaleComposite(unittest.TestCase):
         self.assertEqual(Jsc, jnew)
         self.assertEqual(offsetnew, offset / sc)
 
-        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset=offset,
-                                             bias_range=2,
-                                             ignored_interactions=ignored_interactions,
-                                             ignored_variables=ignored_variables,
-                                             ignore_offset=True)
+        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset,
+                                             None, 2, None, ignored_variables,
+                                             ignored_interactions, True)
 
         sc = 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -211,10 +195,10 @@ class TestScaleComposite(unittest.TestCase):
         self.assertEqual(Jsc, jnew)
         self.assertEqual(offsetnew, offset)
 
-        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset=offset,
-                                             quadratic_range=(-1, 0.4),
-                                             ignored_interactions=ignored_interactions,
-                                             ignored_variables=ignored_variables)
+        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset,
+                                             None, 1, (-1, 0.4),
+                                             ignored_variables,
+                                             ignored_interactions, False)
 
         sc = 3.2 / 0.4
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -228,13 +212,12 @@ class TestScaleComposite(unittest.TestCase):
         ignored_variables = ['a', 'b']
         ignored_interactions = None
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
 
-        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset=offset,
-                                             bias_range=(-2, 2),
-                                             ignored_interactions=ignored_interactions,
-                                             ignored_variables=ignored_variables)
+        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset,
+                                             None, (-2, 2), None,
+                                             ignored_variables,
+                                             ignored_interactions, False)
         sc = 3.2 / 2.
         hsc = {k: v / sc if k not in ignored_variables else v for
                k, v in linear.items()}
@@ -247,13 +230,11 @@ class TestScaleComposite(unittest.TestCase):
         ignored_variables = None
         ignored_interactions = [('a', 'b', 'c')]
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
 
-        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset=offset,
-                                             quadratic_range=0.5,
-                                             ignored_interactions=ignored_interactions,
-                                             ignored_variables=ignored_variables)
+        hnew, jnew, offsetnew = _scaled_hubo(linear, quadratic, offset,
+                                             None, 1, 0.5, ignored_variables,
+                                             ignored_interactions, False)
 
         sc = 4.
         hsc = {k: v / sc if k not in ignored_variables else v for
@@ -269,7 +250,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
 
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -290,7 +271,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0, 'c': -4.0}
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                penalty_strength=5.,
@@ -309,7 +290,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0, 'c': -4.0}
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
 
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -345,7 +326,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0, 'c': -4.0}
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                penalty_strength=5.,
@@ -366,7 +347,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables)
@@ -379,8 +360,7 @@ class TestScaleComposite(unittest.TestCase):
     def test_sample_bias_range(self):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
-
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -395,7 +375,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -419,7 +399,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -435,7 +415,7 @@ class TestScaleComposite(unittest.TestCase):
         linear = {'a': -4.0, 'b': -4.0}
         quadratic = {('a', 'b'): 3.2}
         offset = 5
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables)
         sampler = ScaleComposite(ScalingChecker(ExactSolver(), h=linear,
@@ -450,7 +430,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b'): 3.2}
         offset = 5
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=[('a', 'b')])
+            None, [('a', 'b')])
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                scalar=0.5
@@ -469,7 +449,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b'): 3.2}
         offset = 5
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -488,7 +468,7 @@ class TestScaleComposite(unittest.TestCase):
         offset = 5
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -505,7 +485,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
 
-        ignored_variables, ignored_interactions = _check_params()
+        ignored_variables, ignored_interactions = _check_params(None, None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -524,7 +504,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b'): 3.2}
         offset = 5
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=[('a', 'b')])
+            None, [('a', 'b')])
 
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -545,7 +525,7 @@ class TestScaleComposite(unittest.TestCase):
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
 
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=[('a', 'b')])
+            None, [('a', 'b')])
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -562,7 +542,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=[('a', 'b', 'c')])
+            None, [('a', 'b', 'c')])
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -581,7 +561,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b'): 3.2}
         offset = 5
         ignored_variables, ignored_interactions = _check_params(
-            ignored_variables=['a'])
+            ['a'], None)
 
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
@@ -601,7 +581,7 @@ class TestScaleComposite(unittest.TestCase):
         offset = 5
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=offset)
         ignored_variables, ignored_interactions = _check_params(
-            ignored_variables=['a'])
+            ['a'], None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
@@ -618,7 +598,7 @@ class TestScaleComposite(unittest.TestCase):
         quadratic = {('a', 'b', 'c'): 3.2}
         offset = 5
         ignored_variables, ignored_interactions = _check_params(
-            ignored_variables=['a'])
+            ['a'], None)
         comp_parameters = dict(ignored_interactions=ignored_interactions,
                                ignored_variables=ignored_variables,
                                ignore_offset=True,
