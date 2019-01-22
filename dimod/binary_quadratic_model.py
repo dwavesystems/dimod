@@ -946,6 +946,16 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 return 0, 0
             return min(iterable), max(iterable)
 
+        if ignored_variables is None:
+            ignored_variables = set()
+        elif not isinstance(ignored_variables, abc.Container):
+            ignored_variables = set(ignored_variables)
+
+        if ignored_interactions is None:
+            ignored_interactions = set()
+        elif not isinstance(ignored_interactions, abc.Container):
+            ignored_interactions = set(ignored_interactions)
+
         if quadratic_range is None:
             linear_range, quadratic_range = bias_range, bias_range
         else:
@@ -954,8 +964,13 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         lin_range, quad_range = map(parse_range, (linear_range,
                                                   quadratic_range))
 
-        lin_min, lin_max = min_and_max(self.linear.values())
-        quad_min, quad_max = min_and_max(self.quadratic.values())
+        lin_min, lin_max = min_and_max([v for k, v in self.linear.items()
+                                    if k not in ignored_variables])
+        quad_min, quad_max = min_and_max([v for (a,b),
+                                                v in self.quadratic.items()
+                                          if ((a, b) not in ignored_interactions
+                                              and (b, a) not in
+                                              ignored_interactions)])
 
         inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
                          quad_min / quad_range[0], quad_max / quad_range[1])
