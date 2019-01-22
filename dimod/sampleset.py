@@ -695,7 +695,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             for sample in itertools.islice(self.samples(n=None, sorted_by=sorted_by), n):
                 yield sample
 
-    def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False):
+    def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False,
+             sample_dict_cast=True):
         """Iterate over the data in the :class:`SampleSet`.
 
         Args:
@@ -712,6 +713,11 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             reverse (bool, optional, default=False):
                 If True, yield in reverse order.
+
+            sample_dict_cast (bool, optional, default=False):
+                If True, samples are returned as dicts rather than
+                `.SampleView`s. Note that this can lead to very heavy memory
+                usage.
 
         Yields:
             namedtuple/tuple: The data in the :class:`SampleSet`, in the order specified by the input
@@ -768,7 +774,10 @@ class SampleSet(abc.Iterable, abc.Sized):
         def _values(idx):
             for field in fields:
                 if field == 'sample':
-                    yield SampleView(self.variables, record.sample[idx, :])
+                    sample = SampleView(self.variables, record.sample[idx, :])
+                    if sample_dict_cast:
+                        sample = dict(sample)
+                    yield sample
                 else:
                     yield record[field][idx]
 
