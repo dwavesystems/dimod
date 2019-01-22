@@ -194,6 +194,36 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
+def _relabeled_poly(h, j, label_dict):
+    """ Creates relabeled polynomial dict.
+
+    given h, j and a relabeling dictionary, will create a polynomial
+    with the new labels
+
+    Args:
+        h (dict): a dict of linear variables
+
+        j (dict): a dict of quadratic and higher order variables
+
+        label_dict (dict): a dict for relabeling e.g. {old_label:new_label}
+
+    Returns:
+        dict: a higher order problem dict that contains linear,
+              quadratic and n-order terms written in a new labeling
+              scheme provided by label_dict
+
+    """
+
+    poly = {}
+    for k, v in h.items():
+        new_tup = (label_dict[k],)
+        poly[new_tup] = v
+    for k, v in j.items():
+        new_tup = tuple((label_dict[vidx] for vidx in list(k)))
+        poly[new_tup] = v
+    return poly
+
+
 def create_poly(linear, higherorder):
     """Creates a polynomial dict
 
@@ -278,5 +308,10 @@ def poly_energies(samples_like, poly):
     labeldict = dict(zip(label, idx))
 
     num_samples = len(sample)
-    return sum(_prod_d([sample[:, labeldict[v]] for v in variables],
-                       num_samples) * bias for variables, bias in poly.items())
+    return np.sum([_prod_d([sample[:, labeldict[v]] for v in variables],
+                       num_samples) * bias for variables, bias in poly.items()],
+                  axis=0)
+
+
+def check_isin(key, key_list):
+    return np.sum(set(key) == set(key_tmp) for key_tmp in key_list)
