@@ -972,7 +972,7 @@ class SampleSet(abc.Iterable, abc.Sized):
     # Export to dataframe
     ###############################################################################################
 
-    def to_pandas_dataframe(self):
+    def to_pandas_dataframe(self, sample_column=False):
         """Convert a SampleSet to a Pandas DataFrame
 
         Returns:
@@ -986,15 +986,25 @@ class SampleSet(abc.Iterable, abc.Sized):
                a  b  c  energy  num_occurrences
             0 -1  1 -1    -0.5                1
             1 -1 -1  1    -0.5                1
+            >>> samples.to_pandas_dataframe(sample_column=True)
+                                   sample  energy  num_occurrences
+            0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
+            1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1
 
         """
         import pandas as pd
 
-        df = pd.DataFrame(self.record.sample, columns=self.variables)
-        for field in sorted(self.record.dtype.fields):  # sort for consistency
-            if field == 'sample':
-                continue
+        if sample_column:
+            df = pd.DataFrame(self.data(sorted_by=None, sample_dict_cast=True))
 
-            df.loc[:, field] = self.record[field]
+        else:
+            # work directly with the record, it's much faster
+            df = pd.DataFrame(self.record.sample, columns=self.variables)
+
+            for field in sorted(self.record.dtype.fields):  # sort for consistency
+                if field == 'sample':
+                    continue
+
+                df.loc[:, field] = self.record[field]
 
         return df

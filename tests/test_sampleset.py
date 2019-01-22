@@ -307,6 +307,17 @@ class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
 
         pd.testing.assert_frame_equal(df, other, check_dtype=False)
 
+    def test_sample_column(self):
+        samples = dimod.SampleSet.from_samples(([[-1, 1, -1], [-1, -1, 1]], 'abc'),
+                                               dimod.SPIN, energy=[-.5, .5])
+        df = samples.to_pandas_dataframe(sample_column=True)
+
+        other = pd.DataFrame([[{'a': -1, 'b': 1, 'c': -1}, -0.5, 1],
+                              [{'a': -1, 'b': -1, 'c': 1}, 0.5, 1]],
+                             columns=['sample', 'energy', 'num_occurrences'])
+
+        pd.testing.assert_frame_equal(df, other, check_dtype=False)
+
 
 class TestSampleSet_first(unittest.TestCase):
     def test_empty(self):
