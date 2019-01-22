@@ -29,7 +29,7 @@ def bqm_bson_encoder(bqm):
         index_dtype = np.uint16
 
     variable_order = sorted(bqm.linear)
-    num_possible_edges = num_variables*(num_variables - 1) // 2
+    num_possible_edges = max(num_variables*(num_variables - 1) // 2, 1)
     density = len(bqm.quadratic) / num_possible_edges
     as_complete = density >= 0.5
 
