@@ -30,7 +30,7 @@ def bqm_bson_encoder(bqm):
 
     variable_order = list(bqm.variables)
     num_possible_edges = max(num_variables*(num_variables - 1) // 2, 1)
-    density = len(bqm.quadratic) / num_possible_edges
+    density = len(bqm.quadratic) / float(num_possible_edges)
     as_complete = density >= 0.5
 
     lin, (i, j, _vals), off = bqm.to_numpy_vectors(
