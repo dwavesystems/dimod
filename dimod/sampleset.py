@@ -28,9 +28,10 @@ import numpy as np
 from numpy.lib import recfunctions
 
 from dimod.decorators import vartype_argument
+from dimod.serialization.format import sampleset_to_string
+from dimod.variables import Variables
 from dimod.vartypes import Vartype
 from dimod.views import SampleView
-from dimod.variables import Variables
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
@@ -550,6 +551,9 @@ class SampleSet(abc.Iterable, abc.Sized):
                                                self.variables,
                                                self.info,
                                                self.vartype.name)
+
+    def __str__(self):
+        return sampleset_to_string(self)   # use default parameters
 
     ###############################################################################################
     # Properties

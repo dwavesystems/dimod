@@ -135,16 +135,32 @@ class Sampler:
     def sample(self, bqm, **parameters):
         """Samples from a binary quadratic model using an implemented sample method.
         """
+
+        # we try to use the matching sample method if possible
         if bqm.vartype is Vartype.SPIN:
-            Q, offset = bqm.to_qubo()
-            response = self.sample_qubo(Q, **parameters)
-            response.change_vartype(Vartype.SPIN, energy_offset=offset)
-            return response
+            if not getattr(self.sample_ising, '__issamplemixin__', False):
+                # sample_ising is implemented
+                h, J, offset = bqm.to_ising()
+                sampleset = self.sample_ising(h, J, **parameters)
+                sampleset.record.energy += offset
+                return sampleset
+            else:
+                Q, offset = bqm.to_qubo()
+                sampleset = self.sample_qubo(Q, **parameters)
+                sampleset.change_vartype(Vartype.SPIN, energy_offset=offset)
+                return sampleset
         elif bqm.vartype is Vartype.BINARY:
-            h, J, offset = bqm.to_ising()
-            response = self.sample_ising(h, J, **parameters)
-            response.change_vartype(Vartype.BINARY, energy_offset=offset)
-            return response
+            if not getattr(self.sample_qubo, '__issamplemixin__', False):
+                # sample_qubo is implemented
+                Q, offset = bqm.to_qubo()
+                sampleset = self.sample_qubo(Q, **parameters)
+                sampleset.record.energy += offset
+                return sampleset
+            else:
+                h, J, offset = bqm.to_ising()
+                sampleset = self.sample_ising(h, J, **parameters)
+                sampleset.change_vartype(Vartype.BINARY, energy_offset=offset)
+                return sampleset
         else:
             raise RuntimeError("binary quadratic model has an unknown vartype")
 
@@ -153,13 +169,11 @@ class Sampler:
         """Samples from an Ising model using an implemented sample method.
         """
         bqm = BinaryQuadraticModel.from_ising(h, J)
-        response = self.sample(bqm, **parameters)
-        return response
+        return self.sample(bqm, **parameters)
 
     @samplemixinmethod
     def sample_qubo(self, Q, **parameters):
         """Samples from a QUBO using an implemented sample method.
         """
         bqm = BinaryQuadraticModel.from_qubo(Q)
-        response = self.sample(bqm, **parameters)
-        return response
+        return self.sample(bqm, **parameters)
