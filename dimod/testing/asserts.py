@@ -194,3 +194,61 @@ def assert_response_energies(response, bqm, precision=7):
                 assert v in sample, "bqm contains a variable not in sample"
 
         assert round(bqm.energy(sample) - energy, precision) == 0
+
+
+def assert_bqm_almost_equal(actual, desired, places=7,
+                            ignore_zero_interactions=False):
+    """Test if two bqm have almost equal biases.
+
+    Args:
+        actual (:obj:`.BinaryQuadraticModel`)
+
+        desired (:obj:`.BinaryQuadraticModel`)
+
+        places (int, optional, default=7):
+            Bias equality is computed as :code:`round(b0 - b1, places) == 0`
+
+        ignore_zero_interactions (bool, optional, default=False):
+            If true, interactions with 0 bias are ignored.
+
+    """
+    assert isinstance(actual, dimod.BinaryQuadraticModel), "not a binary quadratic model"
+    assert isinstance(desired, dimod.BinaryQuadraticModel), "not a binary quadratic model"
+
+    # vartype should match
+    assert actual.vartype is desired.vartype, "unlike vartype"
+
+    # variables should match
+    variables_diff = set(actual).symmetric_difference(desired)
+    if variables_diff:
+        v = variables_diff.pop()
+        msg = "{!r} is not a shared variable".format(v)
+        raise AssertionError(msg)
+
+    # offset
+    if round(actual.offset - desired.offset, places):
+        msg = 'offsets {} != {}'.format(desired.offset, actual.offset)
+        raise AssertionError(msg)
+
+    # linear biases - we already checked variables
+    for v, bias in desired.linear.items():
+        if round(bias - actual.linear[v], places):
+            msg = 'linear bias associated with {!r} does not match, {!r} != {!r}'
+            raise AssertionError(msg.format(v, bias, actual.linear[v]))
+
+    default = 0 if ignore_zero_interactions else None
+
+    for inter, bias in actual.quadratic.items():
+        other_bias = desired.quadratic.get(inter, default)
+        if other_bias is None:
+            raise AssertionError('{!r} is not a shared interaction'.format(inter))
+        if round(bias - other_bias, places):
+            msg = 'quadratic bias associated with {!r} does not match, {!r} != {!r}'
+            raise AssertionError(msg.format(inter, bias, other_bias))
+    for inter, bias in desired.quadratic.items():
+        other_bias = actual.quadratic.get(inter, default)
+        if other_bias is None:
+            raise AssertionError('{!r} is not a shared interaction'.format(inter))
+        if round(bias - other_bias, places):
+            msg = 'quadratic bias associated with {!r} does not match, {!r} != {!r}'
+            raise AssertionError(msg.format(inter, bias, other_bias))
