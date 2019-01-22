@@ -14,7 +14,8 @@
 #
 # ================================================================================================
 
-from dimod.reference.composites.spin_transform import *
-from dimod.reference.composites.structure import *
 from dimod.reference.composites.fixedvariable import *
 from dimod.reference.composites.higherordercomposite import *
+from dimod.reference.composites.scalecomposite import *
+from dimod.reference.composites.spin_transform import *
+from dimod.reference.composites.structure import *

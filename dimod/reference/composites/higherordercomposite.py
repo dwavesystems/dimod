@@ -22,7 +22,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import make_quadratic, poly_energies
+from dimod.higherorder import make_quadratic, poly_energies, _relabeled_poly
 from dimod.response import SampleSet
 
 __all__ = ['HigherOrderComposite']
@@ -147,36 +147,6 @@ def penalty_satisfaction(response, bqm):
                               for (qi, qj), valdict in
                               bqm.info['reduction'].items()], axis=0)
     return penalty_vector
-
-
-def _relabeled_poly(h, j, label_dict):
-    """ Creates relabeled polynomial dict.
-
-    given h, j and a relabeling dictionary, will create a polynomial
-    with the new labels
-
-    Args:
-        h (dict): a dict of linear variables
-
-        j (dict): a dict of quadratic and higher order variables
-
-        label_dict (dict): a dict for relabeling e.g. {old_label:new_label}
-
-    Returns:
-        dict: a higher order problem dict that contains linear,
-              quadratic and n-order terms written in a new labeling
-              scheme provided by label_dict
-
-    """
-
-    poly = {}
-    for k, v in h.items():
-        new_tup = (label_dict[k],)
-        poly[new_tup] = v
-    for k, v in j.items():
-        new_tup = tuple((label_dict[vidx] for vidx in list(k)))
-        poly[new_tup] = v
-    return poly
 
 
 def polymorph_response(response, h, J, bqm, offset=0,
