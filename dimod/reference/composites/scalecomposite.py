@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 #
 # ================================================================================================
 """
-A composite that fixes the variables provided and removes them from the
-bqm object before sending to its child sampler.
+A composite that scales problem variables as directed. if scalar is not given
+calculates it based on quadratic and bias ranges.
 
 See `Ocean Glossary <https://docs.ocean.dwavesys.com/en/latest/glossary.html>`_ for explanations
 of technical terms in descriptions of Ocean tools.
@@ -72,12 +72,12 @@ class ScaleComposite(ComposedSampler):
     @property
     def parameters(self):
         param = self.child.parameters.copy()
-        param['scalar'] = []
-        param['bias_range'] = []
-        param['quadratic_range'] = []
-        param['ignored_variables'] = []
-        param['ignored_interactions'] = []
-        param['ignore_offset'] = []
+        param.update({'scalar': [],
+                      'bias_range': [],
+                      'quadratic_range': [],
+                      'ignored_variables': [],
+                      'ignored_interactions': [],
+                      'ignore_offset': []})
         return param
 
     @property
@@ -124,22 +124,17 @@ class ScaleComposite(ComposedSampler):
 
         """
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables, ignored_interactions)
 
         child = self.child
-        bqm_copy = _scaled_bqm(bqm, scalar=scalar,
-                               bias_range=bias_range,
-                               quadratic_range=quadratic_range,
-                               ignored_variables=ignored_variables,
-                               ignored_interactions=ignored_interactions,
-                               ignore_offset=ignore_offset)
+        bqm_copy = _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
+                               ignored_variables, ignored_interactions,
+                               ignore_offset)
         response = child.sample(bqm_copy, **parameters)
 
         return _scale_back_response(bqm, response, bqm_copy.info['scalar'],
-                                    ignored_variables=ignored_variables,
-                                    ignored_interactions=ignored_interactions,
-                                    ignore_offset=ignore_offset)
+                                    ignored_variables, ignored_interactions,
+                                    ignore_offset)
 
     def sample_ising(self, h, J, offset=0, scalar=None,
                      bias_range=1, quadratic_range=None,
@@ -198,17 +193,14 @@ class ScaleComposite(ComposedSampler):
         # handle HUBO
 
         ignored_variables, ignored_interactions = _check_params(
-            ignored_interactions=ignored_interactions,
-            ignored_variables=ignored_variables)
+            ignored_variables,
+            ignored_interactions)
 
         child = self.child
-        h_sc, J_sc, offset_sc = _scaled_hubo(h, J, offset=offset,
-                                             scalar=scalar,
-                                             bias_range=bias_range,
-                                             quadratic_range=quadratic_range,
-                                             ignored_variables=ignored_variables,
-                                             ignored_interactions=ignored_interactions,
-                                             ignore_offset=ignore_offset)
+        h_sc, J_sc, offset_sc = _scaled_hubo(h, J, offset, scalar, bias_range,
+                                             quadratic_range, ignored_variables,
+                                             ignored_interactions,
+                                             ignore_offset)
         response = child.sample_ising(h_sc, J_sc, offset=offset_sc,
                                       **parameters)
 
@@ -218,8 +210,8 @@ class ScaleComposite(ComposedSampler):
         return response
 
 
-def _scale_back_response(bqm, response, scalar, ignored_interactions=None,
-                         ignored_variables=None, ignore_offset=None):
+def _scale_back_response(bqm, response, scalar, ignored_interactions,
+                         ignored_variables, ignore_offset):
     """Helper function to scale back the response of sample method"""
     if len(ignored_interactions) + len(
             ignored_variables) + ignore_offset == 0:
@@ -230,7 +222,7 @@ def _scale_back_response(bqm, response, scalar, ignored_interactions=None,
     return response
 
 
-def _check_params(ignored_interactions=None, ignored_variables=None):
+def _check_params(ignored_variables, ignored_interactions):
     """Helper for sample methods"""
 
     if ignored_variables is None:
@@ -246,8 +238,8 @@ def _check_params(ignored_interactions=None, ignored_variables=None):
     return ignored_variables, ignored_interactions
 
 
-def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
-                     ignored_interactions=None):
+def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables,
+                     ignored_interactions):
     """Helper function to calculate normalization coefficient"""
 
     if ignored_variables is None or ignored_interactions is None:
@@ -286,17 +278,16 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables=None,
         return 1.
 
 
-def _scaled_bqm(bqm, scalar=None, bias_range=1, quadratic_range=None,
-                ignored_variables=None, ignored_interactions=None,
-                ignore_offset=False):
+def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
+                ignored_variables, ignored_interactions,
+                ignore_offset):
     """Helper function of sample for scaling"""
 
     bqm_copy = bqm.copy()
     if scalar is None:
         scalar = _calc_norm_coeff(bqm_copy.linear, bqm_copy.quadratic,
                                   bias_range, quadratic_range,
-                                  ignored_variables=ignored_variables,
-                                  ignored_interactions=ignored_interactions)
+                                  ignored_variables, ignored_interactions)
 
     bqm_copy.scale(scalar, ignored_variables=ignored_variables,
                    ignored_interactions=ignored_interactions,
@@ -305,18 +296,16 @@ def _scaled_bqm(bqm, scalar=None, bias_range=1, quadratic_range=None,
     return bqm_copy
 
 
-def _scaled_hubo(h, j, offset=0, scalar=None, bias_range=1,
-                 quadratic_range=None,
-                 ignored_variables=None,
-                 ignored_interactions=None,
-                 ignore_offset=False):
+def _scaled_hubo(h, j, offset, scalar, bias_range,
+                 quadratic_range,
+                 ignored_variables,
+                 ignored_interactions,
+                 ignore_offset):
     """Helper function of sample_ising for scaling"""
 
     if scalar is None:
         scalar = _calc_norm_coeff(h, j, bias_range, quadratic_range,
-                                  ignored_variables=ignored_variables,
-                                  ignored_interactions=ignored_interactions
-                                  )
+                                  ignored_variables, ignored_interactions)
     h_sc = dict(h)
     j_sc = dict(j)
     offset_sc = offset

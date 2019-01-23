@@ -771,6 +771,13 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertAlmostEqual(bqm.offset, 1.)
         self.assertConsistentBQM(bqm)
 
+        bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -5}, 1.,
+                                         dimod.SPIN)
+        bqm.normalize(0.5, ignored_interactions=[(0, 1)])
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -5})
+        self.assertAlmostEqual(bqm.offset, 0.25)
+        self.assertConsistentBQM(bqm)
 
     def test_scale_exclusions(self):
         bqm = dimod.BinaryQuadraticModel({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
