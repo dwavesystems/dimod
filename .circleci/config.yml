@@ -4,6 +4,11 @@ jobs:
     docker:
       - image: circleci/python:3.7-stretch
 
+    environment:
+      # openmp detects the cores of the cpu, not the number the thread has
+      # access to
+      OMP_NUM_THREADS: 2
+
     working_directory: ~/repo
 
     steps:
