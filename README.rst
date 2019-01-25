@@ -82,8 +82,15 @@ To install from source:
     pip install -r requirements.txt
     python setup.py install
 
-Note that for an installation from source some functionality requires that your
-system have Boost C++ libraries installed. 
+C++ Extensions
+~~~~~~~~~~~~~~
+
+`dimod` includes some optional C++ extensions that improve performance and add
+functionality. To install from source with these extensions your system must:
+
+    * Have the [Boost C++ libraries](https://www.boost.org/) installed
+    * If OSX, have [OpenMP](https://openmp.llvm.org/) installed by running
+    `brew install libomp`
 
 .. installation-end-marker
 
