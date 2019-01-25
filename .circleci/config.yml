@@ -96,15 +96,20 @@ jobs:
     steps: 
       - checkout
 
-      - run: 
-          name: install pyenv
-          command: |
-            brew install pyenv
-
       - run: &install-boost-osx-template
           name: install boost
           command: |
             brew install boost
+
+      - run: &install-openmp-osx-template
+          name: install openmp
+          command: |
+            brew install libomp
+
+      - run: &install-pyenv-osx-template
+          name: install pyenv
+          command: |
+            brew install pyenv
 
       - restore_cache:
           keys:
@@ -275,12 +280,11 @@ jobs:
     steps: 
       - checkout
 
-      - run: 
-          name: install pyenv
-          command: |
-            brew install pyenv
-
       - run: *install-boost-osx-template
+
+      - run: *install-openmp-osx-template
+
+      - run: *install-pyenv-osx-template
 
       - restore_cache:
           keys:
