@@ -171,3 +171,22 @@ Methods
 
    ScaleComposite.sample
    ScaleComposite.sample_ising
+
+Trim Composite
+--------------
+
+.. automodule:: dimod.reference.composites.trimcomposite
+
+Class
+~~~~~
+
+.. currentmodule:: dimod.reference.composites
+.. autoclass:: TrimComposite
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   TrimComposite.sample
