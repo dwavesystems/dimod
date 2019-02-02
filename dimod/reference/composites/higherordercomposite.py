@@ -22,7 +22,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import make_quadratic, poly_energies, _relabeled_poly
+from dimod.higherorder.utils import make_quadratic, poly_energies, _relabeled_poly
 from dimod.response import SampleSet
 
 __all__ = ['HigherOrderComposite']

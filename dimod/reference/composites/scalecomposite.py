@@ -31,7 +31,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import poly_energies, _relabeled_poly, check_isin
+from dimod.higherorder.utils import poly_energies, _relabeled_poly, check_isin
 
 __all__ = ['ScaleComposite']
 
