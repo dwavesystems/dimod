@@ -16,6 +16,8 @@
 import itertools
 import unittest
 
+import numpy as np
+
 import dimod
 from dimod.higherorder import Polynomial
 
@@ -54,3 +56,11 @@ class Test__getitems__(unittest.TestCase):
     def test_repeated_term(self):
         poly = Polynomial({'ab': 1, 'ba': 1, ('a', 'b'): 1, ('b', 'a'): 1})
         self.assertEqual(poly['ab'], 4)
+
+
+class Test_energies(unittest.TestCase):
+    def test_single_variable(self):
+        poly = Polynomial({'a': -1})
+
+        energies = poly.energies(([[-1], [1]], ['a']))
+        np.testing.assert_array_equal(energies, [1, -1])

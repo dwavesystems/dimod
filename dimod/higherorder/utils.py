@@ -21,6 +21,7 @@ import numpy as np
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.higherorder.polynomial import Polynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import Vartype
 
@@ -272,17 +273,7 @@ def poly_energy(sample_like, poly):
         float: The energy of the sample.
 
     """
-    sample, labels = as_samples(sample_like)
-    idx, label = zip(*enumerate(labels))
-    labeldict = dict(zip(label, idx))
-    num_samples = len(sample)
-
-    if num_samples > 1:
-        raise ValueError('poly_energy accepts a single sample. For multiple '
-                         'samples use poly_energies')
-    else:
-        return sum(_prod(sample[0][labeldict[v]] for v in variables) * bias
-                   for variables, bias in poly.items())
+    return Polynomial(poly).energy(sample_like)
 
 
 def poly_energies(samples_like, poly):
@@ -303,14 +294,7 @@ def poly_energies(samples_like, poly):
         list/:obj:`numpy.ndarray`: The energy of the sample(s).
 
     """
-    sample, labels = as_samples(samples_like)
-    idx, label = zip(*enumerate(labels))
-    labeldict = dict(zip(label, idx))
-
-    num_samples = len(sample)
-    return np.sum([_prod_d([sample[:, labeldict[v]] for v in variables],
-                       num_samples) * bias for variables, bias in poly.items()],
-                  axis=0)
+    return Polynomial(poly).energies(samples_like)
 
 
 def check_isin(key, key_list):
