@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,9 +12,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# ============================================================================
+import abc
 
-from dimod.core.composite import Composite, ComposedSampler
-from dimod.core.polysampler import PolySampler
-from dimod.core.sampler import Sampler
-from dimod.core.structured import Structured
+from six import add_metaclass
+
+__all__ = 'PolySampler',
+
+
+@add_metaclass(abc.ABCMeta)
+class PolySampler:
+    """Sampler/Composite supports binary polynomials.
+    
+    Binary polynomials are an extension of binary quadratic models that allow
+    higher-order interactions.
+    
+    """
+    @abc.abstractmethod
+    def sample_poly(self, polynomial, **kwargs):
+        """Sample from a higher-order polynomial."""
+        pass
