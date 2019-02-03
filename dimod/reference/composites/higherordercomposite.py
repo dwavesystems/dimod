@@ -18,17 +18,21 @@
 A composite that convert a higher order polynomial problem into a bqm by
 introducing penalties before sending the bqm to its child sampler.
 """
+import warnings
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
+from dimod.core.polysampler import PolySampler
+from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies, _relabeled_poly
 from dimod.response import SampleSet
 
 __all__ = ['HigherOrderComposite']
 
 
-class HigherOrderComposite(ComposedSampler):
+class HigherOrderComposite(ComposedSampler, PolySampler):
     """Reduces a HUBO to bqm by introducing penalties.
 
     Energies of the returned samples do not include the penalties.
@@ -104,14 +108,25 @@ class HigherOrderComposite(ComposedSampler):
             :obj:`dimod.SampleSet`
         """
 
-        # solve the problem on the child system
+        if any(len(interaction) > 2 for interaction in J):
+            msg = ("support for higher-order Ising problems in .sample_ising "
+                   "is deprecated. Use sampler.sample_poly(BinaryPolynomial.from_ising(h, J)) "
+                   "instead.")
+            warnings.warn(msg, DeprecationWarning)
 
-        bqm = BinaryQuadraticModel.from_ising(h, {})
-        bqm = make_quadratic(J, penalty_strength, bqm=bqm)
+        poly = BinaryPolynomial.from_ising(h, J, offset=offset)
+        return self.sample_poly(poly, penalty_strength=penalty_strength,
+                                keep_penalty_variables=keep_penalty_variables,
+                                discard_unsatisfied=discard_unsatisfied, **parameters)
+
+    def sample_poly(self, poly, penalty_strength=1.0,
+                    keep_penalty_variables=False,
+                    discard_unsatisfied=False, **parameters):
+
+        bqm = make_quadratic(poly, penalty_strength, vartype=poly.vartype)
         response = self.child.sample(bqm, **parameters)
 
-        return polymorph_response(response, h, J, bqm,
-                                  offset=offset,
+        return polymorph_response(response, poly, bqm,
                                   penalty_strength=penalty_strength,
                                   keep_penalty_variables=keep_penalty_variables,
                                   discard_unsatisfied=discard_unsatisfied)
@@ -149,7 +164,7 @@ def penalty_satisfaction(response, bqm):
     return penalty_vector
 
 
-def polymorph_response(response, h, J, bqm, offset=0,
+def polymorph_response(response, poly, bqm,
                        penalty_strength=None,
                        keep_penalty_variables=True,
                        discard_unsatisfied=False):
@@ -196,12 +211,11 @@ def polymorph_response(response, h, J, bqm, offset=0,
     else:
         samples_to_keep = list(map(bool, [1] * len(record.sample)))
 
-    poly = _relabeled_poly(h, J, response.variables.index)
     samples = record.sample[samples_to_keep]
-    energy_vector = np.add(poly_energies(samples, poly), offset)
+    energy_vector = poly.energies((samples, response.variables))
 
     if not keep_penalty_variables:
-        original_variables = set(h).union(*J)
+        original_variables = poly.variables
         idxs = [response.variables.index[v] for v in original_variables]
         samples = np.asarray(samples[:, idxs])
 
