@@ -14,6 +14,14 @@ sample_like Objects
 
    as_samples
 
+Utility Functions
+=================
+
+.. autosummary::
+   :toctree: generated/
+
+   concatenate
+
 SampleSet
 =========
 
@@ -28,72 +36,30 @@ Properties
 .. autosummary::
    :toctree: generated/
 
+   SampleSet.first
+   SampleSet.info
    SampleSet.record
    SampleSet.variables
-   SampleSet.info
    SampleSet.vartype
-   SampleSet.first
 
 
 Methods
 -------
 
-Viewing a Response
-~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   SampleSet.samples
-   SampleSet.data
-
-Constructing a Response
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   SampleSet.from_samples
-   SampleSet.from_samples_bqm
-   SampleSet.from_future
-
-Transformations
-~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   SampleSet.change_vartype
-   SampleSet.relabel_variables
-
-Copy
-~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   SampleSet.copy
-
-Aggregate
-~~~~~~~~~
-
 .. autosummary::
    :toctree: generated/
 
    SampleSet.aggregate
-
-Done
-~~~~
-
-.. autosummary::
-   :toctree: generated/
-
+   SampleSet.change_vartype
+   SampleSet.copy
+   SampleSet.data
    SampleSet.done
-
-Utility Functions
-=================
-
-.. autosummary::
-   :toctree: generated/
-
-   concatenate
+   SampleSet.from_future
+   SampleSet.from_samples
+   SampleSet.from_samples_bqm
+   SampleSet.from_serializable
+   SampleSet.relabel_variables
+   SampleSet.samples
+   SampleSet.to_pandas_dataframe
+   SampleSet.to_serializable
+   SampleSet.truncate
