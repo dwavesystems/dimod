@@ -17,6 +17,11 @@
 import sys
 import inspect
 
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from collections import namedtuple
 
 _PY2 = sys.version_info.major == 2
@@ -25,6 +30,9 @@ if _PY2:
 
     def getargspec(f):
         return inspect.getargspec(f)
+
+    def SortKey(obj):
+        return obj
 
 else:
 
@@ -35,3 +43,25 @@ else:
         # FullArgSpec(args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations)
 
         return _ArgSpec(argspec.args, argspec.varargs, argspec.varkw, argspec.defaults)
+
+    # Based on an answer https://stackoverflow.com/a/34757114/8766655
+    # by kindall https://stackoverflow.com/users/416467/kindall
+    class SortKey(object):
+        def __init__(self, obj):
+            self.obj = obj
+
+        def __lt__(self, other):
+            try:
+                return self.obj < other.obj
+            except TypeError:
+                pass
+
+            if isinstance(self.obj, type(other.obj)):
+                if not isinstance(self.obj, abc.Sequence):
+                    raise TypeError("cannot compare types")
+                for v0, v1 in zip(self.obj, other.obj):
+                    if SortKey(v0) < SortKey(v1):
+                        return True
+                return len(self.obj) < len(other.obj)
+
+            return type(self.obj).__name__ < type(other.obj).__name__
