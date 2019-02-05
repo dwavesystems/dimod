@@ -912,7 +912,51 @@ class SampleSet(abc.Iterable, abc.Sized):
         # dev note: we don't check the energies as they should be the same
         # for individual samples
 
-        return self.__class__(record, self.variables, self.info, self.vartype)
+        return type(self)(record, self.variables, self.info, self.vartype)
+
+    def truncate(self, n, sorted_by='energy'):
+        """Create a new SampleSet with rows truncated after n.
+
+        Args:
+            n (int):
+                Maximum number of rows in the returned sample set.
+
+            sorted_by (str/None, optional, default='energy'):
+                Selects the record field used to sort the samples before
+                truncating. Note that sample order is maintained in the
+                underlying array.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+            >>> sampleset = dimod.SampleSet.from_samples(np.ones((5, 5)), dimod.SPIN, energy=5)
+            >>> print(sampleset)
+                0   1   2   3   4  energy  num_occ.
+            0  +1  +1  +1  +1  +1       5         1
+            1  +1  +1  +1  +1  +1       5         1
+            2  +1  +1  +1  +1  +1       5         1
+            3  +1  +1  +1  +1  +1       5         1
+            4  +1  +1  +1  +1  +1       5         1
+
+            [ 5 rows, 5 variables ]
+            >>> print(sampleset.truncate(2))
+                0   1   2   3   4  energy  num_occ.
+            0  +1  +1  +1  +1  +1       5         1
+            1  +1  +1  +1  +1  +1       5         1
+
+            [ 2 rows, 5 variables ]
+
+        """
+        record = self.record
+
+        if sorted_by is None:
+            record = record[:n]
+        else:
+            sort_indices = np.argsort(record[sorted_by])
+            record = record[sort_indices[:n]]
+
+        return type(self)(record, self.variables, self.info, self.vartype)
 
     ###############################################################################################
     # Serialization
