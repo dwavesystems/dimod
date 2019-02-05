@@ -243,17 +243,17 @@ class TestSampleSet(unittest.TestCase):
 
     def test_truncate(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
-        samples = dimod.SampleSet.from_samples_bqm(np.triu(np.ones(100)), bqm.binary)
+        samples = dimod.SampleSet.from_samples_bqm(np.tril(np.ones(100)), bqm.binary)
 
         # by default should be in reverse order
         new = samples.truncate(10)
         self.assertEqual(len(new), 10)
         for n, sample in enumerate(new.samples()):
             for v, val in sample.items():
-                if v >= n:
-                    self.assertEqual(val, 1)
-                else:
+                if v > 100 - n - 1:
                     self.assertEqual(val, 0)
+                else:
+                    self.assertEqual(val, 1)
 
     def test_truncate_unordered(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
