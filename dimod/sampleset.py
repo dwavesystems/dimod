@@ -29,6 +29,7 @@ import numpy as np
 
 from numpy.lib import recfunctions
 
+from dimod.compatibility23 import SortKey
 from dimod.decorators import vartype_argument
 from dimod.package_info import __version__
 from dimod.serialization.format import Formatter
@@ -40,7 +41,8 @@ from dimod.views import SampleView
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
 
-def as_samples(samples_like, dtype=None, copy=False, order='C'):
+def as_samples(samples_like, dtype=None, copy=False, order='C',
+               sort_labels=False):
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
@@ -59,6 +61,10 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
 
         order ({'K', 'A', 'C', 'F'}, optional, default='C'):
             Specify the memory layout of the array. See :func:`numpy.array`.
+
+        sort_labels (bool, optional, default=False):
+            If True, array/labels are returned with the columns sorted by
+            variable label.
 
     Returns:
         tuple: A 2-tuple containing:
@@ -112,6 +118,14 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
+    if sort_labels:
+        arr, labels = as_samples(samples_like, dtype=dtype, copy=copy,
+                                 order=order, sort_labels=False)
+
+        reidx = sorted(range(len(labels)), key=lambda idx: SortKey(labels[idx]))
+
+        return arr[:, reidx], [labels[i] for i in reidx]
+
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
         samples_like, labels = samples_like
 
@@ -173,7 +187,6 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     if labels is None:
         return arr, list(range(arr.shape[1]))
     elif len(labels) != arr.shape[1]:
-        print(arr, arr.shape, samples_like, labels, len(labels))
         raise ValueError("samples_like and labels dimensions do not match")
     else:
         return arr, labels
