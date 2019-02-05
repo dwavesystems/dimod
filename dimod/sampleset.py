@@ -122,7 +122,14 @@ def as_samples(samples_like, dtype=None, copy=False, order='C',
         arr, labels = as_samples(samples_like, dtype=dtype, copy=copy,
                                  order=order, sort_labels=False)
 
-        reidx = sorted(range(len(labels)), key=lambda idx: SortKey(labels[idx]))
+        # we want to optimize the case where we can sort the labels natively.
+        # if the labels are of unlike types then we catch that case in the
+        # except block and use python2-style sorting
+        try:
+            reidx = sorted(range(len(labels)), key=labels.__getitem__)
+        except TypeError:
+            # python3 does not allow sorting of unlike-types
+            reidx = sorted(range(len(labels)), key=lambda idx: SortKey(labels[idx]))
 
         return arr[:, reidx], [labels[i] for i in reidx]
 
