@@ -333,7 +333,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @classmethod
     def from_samples(cls, samples_like, vartype, energy, info=None,
-                     num_occurrences=None, aggregate_samples=False, **vectors):
+                     num_occurrences=None, aggregate_samples=False,
+                     sort_labels=True, **vectors):
         """Build a :class:`SampleSet` from raw samples.
 
         Args:
@@ -358,6 +359,9 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             aggregate_samples (bool, optional, default=False):
                 If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            sort_labels (bool, optional, default=True):
+                If true, :attr:`.SampleSet.variables` will be in sorted-order.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -386,7 +390,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                                     **vectors).aggregate()
 
         # get the samples, variable labels
-        samples, variables = as_samples(samples_like)
+        samples, variables = as_samples(samples_like, sort_labels=sort_labels)
 
         num_samples, num_variables = samples.shape
 
@@ -439,6 +443,9 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             aggregate_samples (bool, optional, default=False):
                 If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            sort_labels (bool, optional, default=True):
+                If true, :attr:`.SampleSet.variables` will be in sorted-order.
 
             **vectors (array_like):
                 Other per-sample data.
