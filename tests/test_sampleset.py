@@ -126,6 +126,14 @@ class Test_as_samples(unittest.TestCase):
         self.assertEqual(labels, ['a', 'b', 'c', 'd', 'e'])
         self.assertEqual(arr.dtype, np.int32)
 
+    def test_sort_labels(self):
+        arr, labels = dimod.as_samples(([0, 1, 0, 1, 0],
+                                        [('a', 'b'), (1, 'c'), (1, 'c', 'a'), 1, 0]),
+                                       sort_labels=True)
+
+        self.assertEqual(labels, [0, 1, (1, 'c'), (1, 'c', 'a'), ('a', 'b')])
+        np.testing.assert_array_equal(arr, [[0, 1, 1, 0, 0]])
+
 
 class TestConstruction(unittest.TestCase):
     def test_from_samples(self):
