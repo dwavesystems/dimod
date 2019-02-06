@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 import sys
 import inspect
@@ -49,6 +49,7 @@ else:
     class SortKey(object):
         def __init__(self, obj):
             self.obj = obj
+            self.name = type(self.obj).__name__
 
         def __lt__(self, other):
             try:
@@ -56,12 +57,18 @@ else:
             except TypeError:
                 pass
 
-            if isinstance(self.obj, type(other.obj)):
-                if not isinstance(self.obj, abc.Sequence):
-                    raise TypeError("cannot compare types")
-                for v0, v1 in zip(self.obj, other.obj):
-                    if SortKey(v0) < SortKey(v1):
-                        return True
-                return len(self.obj) < len(other.obj)
+            if self.name == other.name:
 
-            return type(self.obj).__name__ < type(other.obj).__name__
+                if isinstance(self.obj, abc.Sequence):
+                    # this case happens when there are two sequences of the same type
+                    # that have nested objects that python3 cannot compare
+                    return [SortKey(v) for v in self.obj] < [SortKey(v) for v in other.obj]
+
+                # if they are of the same type but they failed the original
+                # try-catch block and they are not a sequence then we can't
+                # resolve the order (this happens for instance with dicts which
+                # python2 can sort but not in python3)
+                msg = "cannot sort types {!r} and {!r}"
+                raise TypeError(msg.format(self.obj.__name__, other.obj.__name__))
+
+            return self.name < other.name
