@@ -29,3 +29,13 @@ class TestSortKey(unittest.TestCase):
         s0 = [[0, 1], 1]
         s1 = [(0, 1), 1]
         self.assertLess(SortKey(s0), SortKey(s1))
+
+    def test_greater(self):
+        s0 = [0, 1, [2]]
+        s1 = [0, 1, 2]
+        self.assertFalse(SortKey(s0) < SortKey(s1))
+
+    def test_prefix(self):
+        s0 = [0, 1, [2]]
+        s1 = [0, 1]
+        self.assertFalse(SortKey(s0) < SortKey(s1))
