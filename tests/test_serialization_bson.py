@@ -2,7 +2,7 @@ import unittest
 import dimod
 from dimod.serialization.bson import bqm_bson_decoder, bqm_bson_encoder
 import numpy as np
-from six import PY3
+from six import PY2, PY3
 
 
 try:
@@ -88,5 +88,6 @@ class TestBSONSerialization(unittest.TestCase):
             {"a": 1, "b": 3, "c": 4.5, "d": 0},
             {"ab": -3, "cd": 3.5, "ad": 2}
         )
-        encoded = bqm_bson_encoder(bqm)
+        encoded = bqm_bson_encoder(bqm,
+                                   bytes_type=(bson.Binary if PY2 else bytes))
         bson.BSON.encode(encoded)
