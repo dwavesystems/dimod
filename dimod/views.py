@@ -74,9 +74,24 @@ class IndexValuesView(abc.ValuesView):
     def __iter__(self):
         # Inherited __init__ puts the Mapping into self._mapping
         return iter(self._mapping._data.flat)
-    
 
-class LinearView(abc.MutableMapping):
+
+class BQMView(object):
+    __slots__ = '_adj',
+
+    def __init__(self, bqm):
+        self._adj = bqm._adj
+
+    # support python2 pickle
+    def __getstate__(self):
+        return {'_adj': self._adj}
+
+    # support python2 pickle
+    def __setstate__(self, state):
+        self._adj = state['_adj']
+
+
+class LinearView(BQMView, abc.MutableMapping):
     """Acts as a dictionary `{v: bias, ...}` for the linear biases.
 
     The linear biases are stored in a dict-of-dicts format, where 'self loops'
@@ -84,11 +99,6 @@ class LinearView(abc.MutableMapping):
     So `{v: bias}` is stored `._adj = {v: {v: Bias(bias)}}`.
 
     """
-
-    __slots__ = '_adj',
-
-    def __init__(self, bqm):
-        self._adj = bqm._adj
 
     def __delitem__(self, v):
         if v not in self:
@@ -130,18 +140,13 @@ class LinearItemsView(abc.ItemsView):
             yield v, neighbours[v]
 
 
-class QuadraticView(abc.MutableMapping):
+class QuadraticView(BQMView, abc.MutableMapping):
     """Acts as a dictionary `{(u, v): bias, ...}` for the quadratic biases.
 
     The quadratic biases are stored in a dict-of-dicts format. So `{(u, v): bias}` is stored as
     `._adj = {u: {v: Bias(bias)}, v: {u: Bias(bias)}}`.
 
     """
-
-    __slots__ = '_adj',
-
-    def __init__(self, bqm):
-        self._adj = bqm._adj
 
     def __delitem__(self, interaction):
         u, v = interaction
@@ -182,7 +187,7 @@ class QuadraticView(abc.MutableMapping):
             raise KeyError('{} cannot have an interaction with itself'.format(u))
 
         adj = self._adj
-        
+
         # we don't know what type we want the biases, so we require that the variables already
         # exist before we can add an interaction between them
         if u not in adj:
@@ -251,18 +256,13 @@ class NeighbourView(abc.Mapping):
         return str(dict(self))
 
 
-class AdjacencyView(abc.Mapping):
+class AdjacencyView(BQMView, abc.Mapping):
     """Acts as a dict-of-dicts `{u: {v: bias}, v: {u: bias}}` for the quadratic biases.
 
     The quadratic biases are stored in a dict-of-dicts format. So `{u: {v: bias}, v: {u: bias}}`
     is stored as `._adj = {u: {v: Bias(bias)}, v: {u: Bias(bias)}}`.
 
     """
-
-    __slots__ = '_adj',
-
-    def __init__(self, bqm):
-        self._adj = bqm._adj
 
     def __getitem__(self, v):
         if v not in self._adj:
