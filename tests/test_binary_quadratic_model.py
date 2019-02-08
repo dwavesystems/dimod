@@ -21,6 +21,7 @@ import tempfile
 import shutil
 import json
 import collections
+import pickle
 
 from os import path
 
@@ -1382,6 +1383,27 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         self.assertIn('a', model.spin.linear)
         self.assertNotIn(0, model.spin.linear)
+
+    def test_pickle_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+        retrieved = pickle.loads(pickle.dumps(bqm))
+        self.assertEqual(bqm, retrieved)
+
+    def test_consistency_after_retrieve(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+        retrieved = pickle.loads(pickle.dumps(bqm))
+        # make sure the retrieved one was reconstructed properly
+        retrieved.add_variable('a', -1)
+        bqm.add_variable('a', -1)
+        retrieved.add_interaction(0, 1, -.5)
+        bqm.add_interaction(0, 1, -.5)
+        self.assertEqual(bqm, retrieved)
+        self.assertConsistentBQM(retrieved)
+
+    def test_pickle_full(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': -1}, {'ab': 1, 'bc': -1})
+        retrieved = pickle.loads(pickle.dumps(bqm))
+        self.assertEqual(bqm, retrieved)
 
 
 class TestConvert(unittest.TestCase):
