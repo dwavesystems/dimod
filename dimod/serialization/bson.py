@@ -13,25 +13,16 @@
 #    limitations under the License.
 #
 # ================================================================================================
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 import itertools
 
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
-from six import PY2
 
-
-def bqm_bson_encoder(bqm):
+def bqm_bson_encoder(bqm, bytes_type=bytes):
     """todo"""
-
-    if PY2:
-        try:
-            import bson
-        except ImportError:
-            raise ImportError("Package `bson` from `pymongo` required for "
-                              "bson encoding in python 2")
 
     num_variables = len(bqm)
 
@@ -39,9 +30,12 @@ def bqm_bson_encoder(bqm):
     if num_variables <= 2**16:
         index_dtype = np.uint16
 
-    variable_order = list(bqm.variables)
+    try:
+        variable_order = sorted(bqm.variables)
+    except TypeError:
+        variable_order = list(bqm.variables)
     num_possible_edges = max(num_variables*(num_variables - 1) // 2, 1)
-    density = len(bqm.quadratic) / float(num_possible_edges)
+    density = len(bqm.quadratic) / num_possible_edges
     as_complete = density >= 0.5
 
     lin, (i, j, _vals), off = bqm.to_numpy_vectors(
@@ -64,9 +58,7 @@ def bqm_bson_encoder(bqm):
     else:
         vals = _vals
 
-    lvals, qvals = lin.tobytes(), vals.tobytes()
-    if PY2:
-        lvals, qvals = bson.Binary(lvals), bson.Binary(qvals)
+    lvals, qvals = bytes_type(lin.tobytes()), bytes_type(vals.tobytes())
 
     doc = {
         "as_complete": as_complete,
@@ -79,9 +71,7 @@ def bqm_bson_encoder(bqm):
     }
 
     if not as_complete:
-        ii, jj = i.tobytes(), j.tobytes()
-        if PY2:
-            ii, jj = bson.Binary(ii), bson.Binary(jj)
+        ii, jj = bytes_type(i.tobytes()), bytes_type(j.tobytes())
         doc["quadratic_head"] = ii
         doc["quadratic_tail"] = jj
 
