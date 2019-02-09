@@ -21,7 +21,7 @@ import numpy as np
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
 
-def bqm_bson_encoder(bqm, bytes_type=bytes):
+def bqm_bson_encoder(bqm, bytes_type=bytes, bias_dtype=np.float32):
     """todo"""
 
     num_variables = len(bqm)
@@ -39,14 +39,14 @@ def bqm_bson_encoder(bqm, bytes_type=bytes):
     as_complete = density >= 0.5
 
     lin, (i, j, _vals), off = bqm.to_numpy_vectors(
-        dtype=np.float32,
+        dtype=bias_dtype,
         index_dtype=index_dtype,
         sort_indices=as_complete,
         variable_order=variable_order)
     off = float(off)
 
     if as_complete:
-        vals = np.zeros(num_possible_edges, dtype=np.float32)
+        vals = np.zeros(num_possible_edges, dtype=bias_dtype)
 
         def mul(a, b):
             return np.multiply(a, b, dtype=np.int64)
@@ -68,6 +68,7 @@ def bqm_bson_encoder(bqm, bytes_type=bytes):
         "offset": off,
         "variable_order": variable_order,
         "index_dtype": np.dtype(index_dtype).str,
+        "bias_dtype": np.dtype(bias_dtype).str,
     }
 
     if not as_complete:
@@ -79,10 +80,10 @@ def bqm_bson_encoder(bqm, bytes_type=bytes):
 
 
 def bqm_bson_decoder(doc, cls=BinaryQuadraticModel):
-    lin = np.frombuffer(doc["linear"], dtype=np.float32)
+    bias_dtype, index_dtype = doc["bias_dtype"], doc["index_dtype"]
+    lin = np.frombuffer(doc["linear"], dtype=bias_dtype)
     num_variables = len(lin)
-    vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
-    index_dtype = doc["index_dtype"]
+    vals = np.frombuffer(doc["quadratic_vals"], dtype=bias_dtype)
     if doc["as_complete"]:
         i, j = zip(*itertools.combinations(range(num_variables), 2))
     else:

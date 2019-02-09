@@ -17,7 +17,7 @@ import unittest
 import dimod
 from dimod.serialization.bson import bqm_bson_decoder, bqm_bson_encoder
 import numpy as np
-from six import PY2, PY3
+from six import PY2
 
 
 try:
@@ -39,11 +39,11 @@ class TestBSONSerialization(unittest.TestCase):
             'offset': 0.0,
             'variable_order': [],
             'index_dtype': '<u2',
+            'bias_dtype': '<f4',
             'quadratic_head': b'',
             'quadratic_tail': b'',
         }
-        if PY3:
-            self.assertDictEqual(encoded, expected_encoding)
+        self.assertDictEqual(encoded, expected_encoding)
         decoded = bqm_bson_decoder(encoded)
         self.assertEqual(bqm, decoded)
 
@@ -58,11 +58,11 @@ class TestBSONSerialization(unittest.TestCase):
             'offset': 0.0,
             'variable_order': ['a'],
             'index_dtype': '<u2',
+            'bias_dtype': '<f4',
             'quadratic_head': b'',
             'quadratic_tail': b'',
         }
-        if PY3:
-            self.assertDictEqual(encoded, expected_encoding)
+        self.assertDictEqual(encoded, expected_encoding)
         decoded = bqm_bson_decoder(encoded)
         self.assertEqual(bqm, decoded)
 
@@ -81,7 +81,7 @@ class TestBSONSerialization(unittest.TestCase):
         np.testing.assert_almost_equal(bqm.to_numpy_matrix(var_order),
                                        decoded.to_numpy_matrix(var_order))
 
-    def test_complex_variable_names(test):
+    def test_complex_variable_names(self):
         linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
         quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN,
@@ -106,3 +106,26 @@ class TestBSONSerialization(unittest.TestCase):
         encoded = bqm_bson_encoder(bqm,
                                    bytes_type=(bson.Binary if PY2 else bytes))
         bson.BSON.encode(encoded)
+
+    def test_bias_dtype(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising(
+            {"a": 1, "b": 3, "c": 4.5, "d": 0},
+            {"ab": -3, "cd": 3.5, "ad": 2},
+        )
+        encoded = bqm_bson_encoder(bqm, bias_dtype=np.float16)
+        expected_encoding = {
+            'as_complete': True,
+            'linear': b'\x00<\x00B\x80D\x00\x00',
+            'quadratic_vals': b'\x00\xc2\x00\x00\x00@\x00\x00\x00\x00\x00C',
+            'variable_type': 'SPIN',
+            'offset': 0.0,
+            'variable_order': ['a', 'b', 'c', 'd'],
+            'index_dtype': '<u2',
+            'bias_dtype': '<f2'
+        }
+        self.assertDictEqual(encoded, expected_encoding)
+        decoded = bqm_bson_decoder(encoded)
+        var_order = list(bqm.variables)
+        np.testing.assert_almost_equal(bqm.to_numpy_matrix(var_order),
+                                       decoded.to_numpy_matrix(var_order),
+                                       decimal=6)
