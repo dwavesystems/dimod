@@ -1656,12 +1656,17 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return coo.load(obj, cls=cls, vartype=vartype)
 
-    def to_serializable(self, use_bytes=False, bytes_type=bytes):
+    def to_serializable(self, use_bytes=False, bias_dtype=np.float32,
+                        bytes_type=bytes):
         """Convert the binary quadratic model to a serializable object.
 
         Args:
             use_bytes (bool, optional, default=False):
                 If True, a compact representation representing the biases as bytes is used.
+
+            bias_dtype (numpy.dtype, optional, default=numpy.float32):
+                If `use_bytes` is True, this numpy dtype will be used to
+                represent the bias values in the serialized format.
 
             bytes_types (class, optional, default=bytes):
                 This class will be used to wrap the bytes objects in the
@@ -1714,7 +1719,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if use_bytes:
             from dimod.serialization.bson import bqm_bson_encoder
 
-            return bqm_bson_encoder(self, bytes_type=bytes_type)
+            return bqm_bson_encoder(self, bias_dtype=bias_dtype,
+                                    bytes_type=bytes_type)
         else:
             # we we don't use bytes then use json encoder
             from dimod.serialization.json import DimodEncoder
