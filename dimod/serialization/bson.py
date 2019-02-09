@@ -13,6 +13,7 @@
 #    limitations under the License.
 #
 # ================================================================================================
+from __future__ import absolute_import, division
 import itertools
 
 import numpy as np
@@ -20,27 +21,32 @@ import numpy as np
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
 
-def bqm_bson_encoder(bqm):
+def bqm_bson_encoder(bqm, bytes_type=bytes, bias_dtype=np.float32):
     """todo"""
+
     num_variables = len(bqm)
 
     index_dtype = np.uint32
     if num_variables <= 2**16:
         index_dtype = np.uint16
 
-    variable_order = sorted(bqm.linear)
-    num_possible_edges = num_variables*(num_variables - 1) // 2
+    try:
+        variable_order = sorted(bqm.variables)
+    except TypeError:
+        variable_order = list(bqm.variables)
+    num_possible_edges = max(num_variables*(num_variables - 1) // 2, 1)
     density = len(bqm.quadratic) / num_possible_edges
     as_complete = density >= 0.5
 
     lin, (i, j, _vals), off = bqm.to_numpy_vectors(
-        dtype=np.float32,
+        dtype=bias_dtype,
         index_dtype=index_dtype,
         sort_indices=as_complete,
         variable_order=variable_order)
+    off = float(off)
 
     if as_complete:
-        vals = np.zeros(num_possible_edges, dtype=np.float32)
+        vals = np.zeros(num_possible_edges, dtype=bias_dtype)
 
         def mul(a, b):
             return np.multiply(a, b, dtype=np.int64)
@@ -52,28 +58,32 @@ def bqm_bson_encoder(bqm):
     else:
         vals = _vals
 
+    lvals, qvals = bytes_type(lin.tobytes()), bytes_type(vals.tobytes())
+
     doc = {
         "as_complete": as_complete,
-        "linear": lin.tobytes(),
-        "quadratic_vals": vals.tobytes(),
+        "linear": lvals,
+        "quadratic_vals": qvals,
         "variable_type": "SPIN" if bqm.vartype == bqm.SPIN else "BINARY",
         "offset": off,
         "variable_order": variable_order,
         "index_dtype": np.dtype(index_dtype).str,
+        "bias_dtype": np.dtype(bias_dtype).str,
     }
 
     if not as_complete:
-        doc["quadratic_head"] = i.tobytes()
-        doc["quadratic_tail"] = j.tobytes()
+        ii, jj = bytes_type(i.tobytes()), bytes_type(j.tobytes())
+        doc["quadratic_head"] = ii
+        doc["quadratic_tail"] = jj
 
     return doc
 
 
 def bqm_bson_decoder(doc, cls=BinaryQuadraticModel):
-    lin = np.frombuffer(doc["linear"], dtype=np.float32)
+    bias_dtype, index_dtype = doc["bias_dtype"], doc["index_dtype"]
+    lin = np.frombuffer(doc["linear"], dtype=bias_dtype)
     num_variables = len(lin)
-    vals = np.frombuffer(doc["quadratic_vals"], dtype=np.float32)
-    index_dtype = doc["index_dtype"]
+    vals = np.frombuffer(doc["quadratic_vals"], dtype=bias_dtype)
     if doc["as_complete"]:
         i, j = zip(*itertools.combinations(range(num_variables), 2))
     else:
