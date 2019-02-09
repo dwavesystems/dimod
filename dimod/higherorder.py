@@ -314,4 +314,4 @@ def poly_energies(samples_like, poly):
 
 
 def check_isin(key, key_list):
-    return np.sum(set(key) == set(key_tmp) for key_tmp in key_list)
+    return sum(set(key) == set(key_tmp) for key_tmp in key_list)

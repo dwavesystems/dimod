@@ -30,7 +30,7 @@ import numpy as np
 from dimod.core.composite import Composite
 from dimod.core.sampler import Sampler
 from dimod.core.structured import Structured
-from dimod.sampleset import SampleSet
+from dimod.sampleset import SampleSet, concatenate
 from dimod.vartypes import Vartype
 
 __all__ = ['SpinReversalTransformComposite']
@@ -151,18 +151,4 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
             responses.append(flipped_response)
 
-        # # stack the records
-        record = np.rec.array(np.hstack((resp.record for resp in responses)))
-
-        vartypes = set(resp.vartype for resp in responses)
-        if len(vartypes) > 1:
-            raise RuntimeError("inconsistent vartypes returned")
-        vartype = vartypes.pop()
-
-        info = {}
-        for resp in responses:
-            info.update(resp.info)
-
-        labels = responses[0].variables
-
-        return SampleSet(record, labels, info, vartype)
+        return concatenate(responses)
