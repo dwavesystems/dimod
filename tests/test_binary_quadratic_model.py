@@ -2020,3 +2020,10 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 5)
         self.assertIn(('a', "complex key"), new_bqm.linear)
+
+    def test_bson_serialization(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN,
+                                         tag=5)
+        byte_serializable = bqm.to_serializable(use_bytes=True)

@@ -1656,12 +1656,23 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return coo.load(obj, cls=cls, vartype=vartype)
 
-    def to_serializable(self, use_bytes=False):
+    def to_serializable(self, use_bytes=False, bias_dtype=np.float32,
+                        bytes_type=bytes):
         """Convert the binary quadratic model to a serializable object.
 
         Args:
             use_bytes (bool, optional, default=False):
                 If True, a compact representation representing the biases as bytes is used.
+
+            bias_dtype (numpy.dtype, optional, default=numpy.float32):
+                If `use_bytes` is True, this numpy dtype will be used to
+                represent the bias values in the serialized format.
+
+            bytes_types (class, optional, default=bytes):
+                This class will be used to wrap the bytes objects in the
+                serialization if `use_bytes` is true. Useful for when using
+                Python 2 and using BSON encoding, which will not accept the raw
+                `bytes` type, so `bson.Binary` can be used instead.
 
         Returns:
             dict: An object that can be serialized.
@@ -1692,12 +1703,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> import bson
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> doc = bqm.to_serializable(use_bytes=True)
-            >>> for key in ['linear', 'quadratic_vals', 'quadratic_head', 'quadratic_tail']:
-            >>>     if key in doc:
-            >>>         doc[key] = bson.binary.Binary(doc[key])
-            >>>     else:
-            >>>         assert doc['as_complete']
+            >>> doc = bqm.to_serializable(use_bytes=True, bytes_type=bson.Binary)
             >>> b = bson.BSON.encode(doc)
 
         See also:
@@ -1713,7 +1719,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if use_bytes:
             from dimod.serialization.bson import bqm_bson_encoder
 
-            return bqm_bson_encoder(self)
+            return bqm_bson_encoder(self, bias_dtype=bias_dtype,
+                                    bytes_type=bytes_type)
         else:
             # we we don't use bytes then use json encoder
             from dimod.serialization.json import DimodEncoder
