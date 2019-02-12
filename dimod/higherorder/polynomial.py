@@ -18,6 +18,8 @@ try:
 except ImportError:
     import collections as abc
 
+from numbers import Number
+
 import numpy as np
 
 from dimod.decorators import vartype_argument
@@ -151,6 +153,58 @@ class BinaryPolynomial(abc.MutableMapping):
 
         return self
 
+    def normalize(self, bias_range=1, poly_range=None,
+                  ignored_terms=None):
+
+        def parse_range(r):
+            if isinstance(r, Number):
+                return -abs(r), abs(r)
+            return r
+
+        if ignored_terms is None:
+            ignored_terms = set()
+        else:
+            ignored_terms = {asfrozenset(term) for term in ignored_terms}
+
+        if poly_range is None:
+            linear_range, poly_range = bias_range, bias_range
+        else:
+            linear_range = bias_range
+
+        lin_range, poly_range = map(parse_range, (linear_range, poly_range))
+
+        # determine the current ranges for linear, higherorder
+        lmin = lmax = 0
+        pmin = pmax = 0
+        for term, bias in self.items():
+            if len(term) == 1:
+                if bias < lmin:
+                    lmin = bias
+                if bias > lmax:
+                    lmax = bias
+            elif len(term) > 1:
+                if bias < lmin:
+                    pmin = bias
+                if bias > lmax:
+                    pmax = bias
+
+        inv_scalar = max(lmin / lin_range[0], lmax / lin_range[1],
+                         pmin / poly_range[0], pmax / poly_range[1])
+
+        if inv_scalar != 0:
+            self.scale(1 / inv_scalar, ignored_terms=ignored_terms)
+
+    def scale(self, scalar, ignored_terms=None):
+
+        if ignored_terms is None:
+            ignored_terms = set()
+        else:
+            ignored_terms = {asfrozenset(term) for term in ignored_terms}
+
+        for term in self:
+            if term not in ignored_terms:
+                self[term] *= scalar
+
     @classmethod
     def from_hising(cls, h, J, offset=None):
         poly = {(k,): v for k, v in h.items()}
@@ -159,10 +213,30 @@ class BinaryPolynomial(abc.MutableMapping):
             poly[frozenset([])] = offset
         return cls(poly, Vartype.SPIN)
 
+    def to_hising(self):
+        h = {}
+        J = {}
+        offset = 0
+        for term, bias in self.items():
+            if len(term) == 0:
+                offset += bias
+            elif len(term) == 1:
+                v, = term
+                h[v] = bias
+            else:
+                J[tuple(term)] = bias
+
+        return h, J, offset
+
     @classmethod
     def from_hubo(cls, H, offset=None):
         if offset is not None:
             poly[frozenset([])] = offset
+
+    def to_hubo(self):
+        H = {tuple(term): bias for term, bias in self.items() if term}
+        offset = self[tuple()] if tuple() in self else 0
+        return H, offset
 
     def copy(self):
         return self.__class__(self, self.vartype)
