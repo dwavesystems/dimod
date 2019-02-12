@@ -18,21 +18,17 @@
 A composite that convert a higher order polynomial problem into a bqm by
 introducing penalties before sending the bqm to its child sampler.
 """
-import warnings
-
 import numpy as np
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.core.composite import ComposedSampler
-from dimod.core.polysampler import PolySampler
+from dimod.core.polysampler import ComposedPolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
-from dimod.higherorder.utils import make_quadratic, poly_energies, _relabeled_poly
+from dimod.higherorder.utils import make_quadratic, poly_energies
 from dimod.response import SampleSet
 
-__all__ = ['HigherOrderComposite']
+__all__ = 'HigherOrderComposite',
 
 
-class HigherOrderComposite(ComposedSampler, PolySampler):
+class HigherOrderComposite(ComposedPolySampler):
     """Reduces a HUBO to bqm by introducing penalties.
 
     Energies of the returned samples do not include the penalties.
@@ -75,9 +71,14 @@ class HigherOrderComposite(ComposedSampler, PolySampler):
     def properties(self):
         return {'child_properties': self.child.properties.copy()}
 
-    def sample_ising(self, h, J, offset=0, penalty_strength=1.0,
-                     keep_penalty_variables=False,
-                     discard_unsatisfied=False, **parameters):
+    def sample_ising(self, h, J, offset=0, *args, **kwargs):
+        if offset:
+            J[()] = offset
+        return ComposedPolySampler.sample_ising(self, h, J, *args, **kwargs)
+
+    def sample_poly(self, poly, penalty_strength=1.0,
+                    keep_penalty_variables=False,
+                    discard_unsatisfied=False, **parameters):
         """ Sample from the problem provided by h, J, offset.
 
         Takes in linear variables in h and quadratic and higher order
@@ -106,22 +107,8 @@ class HigherOrderComposite(ComposedSampler, PolySampler):
 
         Returns:
             :obj:`dimod.SampleSet`
+
         """
-
-        if any(len(interaction) > 2 for interaction in J):
-            msg = ("support for higher-order Ising problems in .sample_ising "
-                   "is deprecated. Use sampler.sample_poly(BinaryPolynomial.from_ising(h, J)) "
-                   "instead.")
-            warnings.warn(msg, DeprecationWarning)
-
-        poly = BinaryPolynomial.from_ising(h, J, offset=offset)
-        return self.sample_poly(poly, penalty_strength=penalty_strength,
-                                keep_penalty_variables=keep_penalty_variables,
-                                discard_unsatisfied=discard_unsatisfied, **parameters)
-
-    def sample_poly(self, poly, penalty_strength=1.0,
-                    keep_penalty_variables=False,
-                    discard_unsatisfied=False, **parameters):
 
         bqm = make_quadratic(poly, penalty_strength, vartype=poly.vartype)
         response = self.child.sample(bqm, **parameters)
