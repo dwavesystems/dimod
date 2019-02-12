@@ -17,18 +17,31 @@ import abc
 
 from six import add_metaclass
 
-__all__ = 'PolySampler',
+from dimod.core.composite import Composite
+from dimod.higherorder.polynomial import BinaryPolynomial
+
+__all__ = 'PolySampler', 'ComposedPolySampler'
 
 
 @add_metaclass(abc.ABCMeta)
 class PolySampler:
-    """Sampler/Composite supports binary polynomials.
-    
+    """Sampler supports binary polynomials.
+
     Binary polynomials are an extension of binary quadratic models that allow
     higher-order interactions.
-    
+
     """
     @abc.abstractmethod
     def sample_poly(self, polynomial, **kwargs):
         """Sample from a higher-order polynomial."""
         pass
+
+    def sample_hising(self, h, J, **kwargs):
+        return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
+
+    def sample_hubo(self, H, **kwargs):
+        return self.sample_poly(BinaryPolynomial.from_hubo(H), **kwargs)
+
+
+class ComposedPolySampler(PolySampler, Composite):
+    pass
