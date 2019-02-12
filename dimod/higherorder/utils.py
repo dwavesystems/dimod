@@ -12,16 +12,19 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 import itertools
+import warnings
+
 from collections import Counter
 
 import numpy as np
+
 from six import iteritems
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.higherorder.polynomial import Polynomial
+from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import Vartype
 
@@ -273,7 +276,13 @@ def poly_energy(sample_like, poly):
         float: The energy of the sample.
 
     """
-    return Polynomial(poly).energy(sample_like)
+
+    msg = ("poly_energy is deprecated and will be remobed in dimod 0.9.0."
+           "In the future, use BinaryPolynomial.energy")
+    warnings.warn(msg, DeprecationWarning)
+    # dev note the vartype is not used in the energy calculation and this will
+    # be deprecated in the future
+    return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
 def poly_energies(samples_like, poly):
@@ -285,7 +294,7 @@ def poly_energies(samples_like, poly):
             NumPy's array_like structure. See :func:`.as_samples`.
 
         poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a 
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a
             tuple of variables and `bias` the associated bias. Variable
             labeling/indexing of terms in poly dict must match that of the
             sample(s).
@@ -294,7 +303,12 @@ def poly_energies(samples_like, poly):
         list/:obj:`numpy.ndarray`: The energy of the sample(s).
 
     """
-    return Polynomial(poly).energies(samples_like)
+    msg = ("poly_energies is deprecated and will be remobed in dimod 0.9.0."
+           "In the future, use BinaryPolynomial.energies")
+    warnings.warn(msg, DeprecationWarning)
+    # dev note the vartype is not used in the energy calculation and this will
+    # be deprecated in the future
+    return BinaryPolynomial(poly, 'SPIN').energies(samples_like)
 
 
 def check_isin(key, key_list):
