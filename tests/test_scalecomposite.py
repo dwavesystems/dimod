@@ -18,12 +18,12 @@ import unittest
 
 import dimod.testing as dtest
 from dimod import ExactSolver, ScaleComposite, HigherOrderComposite, \
-    BinaryQuadraticModel, Sampler
+    BinaryQuadraticModel, Sampler, PolySampler
 from dimod.reference.composites.scalecomposite import _scaled_hubo, \
     _check_params, _scaled_bqm
 
 
-class ScalingChecker(Sampler):
+class ScalingChecker(Sampler, PolySampler):
     def __init__(self, child_sampler, bqm=None, h=None, J=None, offset=0,
                  scalar=None, bias_range=1, quadratic_range=None,
                  ignored_variables=None, ignored_interactions=None,
@@ -60,6 +60,15 @@ class ScalingChecker(Sampler):
         assert self.J == J
         assert self.offset == offset
         return self.child.sample_ising(h, J, offset=offset, **parameters)
+
+    def sample_poly(self, poly, **parameters):
+        h, J, offset = poly.to_hising()
+        assert self.h == h
+        selfJ = {frozenset(term): bias for term, bias in self.J.items()}
+        J = {frozenset(term): bias for term, bias in J.items()}
+        assert selfJ == J
+        assert self.offset == offset
+        return self.child.sample_poly(poly, **parameters)
 
     def parameters(self):
         return self.child.parameters()

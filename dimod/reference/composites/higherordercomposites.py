@@ -12,20 +12,21 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-
+# =============================================================================
 """
 A composite that convert a higher order polynomial problem into a bqm by
 introducing penalties before sending the bqm to its child sampler.
 """
+from __future__ import division
+
 import numpy as np
 
-from dimod.core.polysampler import ComposedPolySampler
+from dimod.core.polysampler import ComposedPolySampler, PolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
 from dimod.response import SampleSet
 
-__all__ = 'HigherOrderComposite',
+__all__ = 'HigherOrderComposite', 'PolyScaleComposite'
 
 
 class HigherOrderComposite(ComposedPolySampler):
@@ -230,3 +231,68 @@ def polymorph_response(response, poly, bqm,
         response.info['penalty_strength'] = penalty_strength
     return SampleSet(data, original_variables, response.info,
                      response.vartype)
+
+
+class PolyScaleComposite(ComposedPolySampler):
+
+    def __init__(self, child):
+        if not isinstance(child, PolySampler):
+            raise TypeError("Child sampler must be a PolySampler")
+        self._children = [child]
+
+    @property
+    def children(self):
+        return self._children
+
+    @property
+    def parameters(self):
+        param = self.child.parameters.copy()
+        param.update({'scalar': [],
+                      'bias_range': [],
+                      'poly_range': [],
+                      'ignored_variables': [],
+                      'ignored_interactions': [],
+                      'ignore_offset': []})
+        return param
+
+    @property
+    def properties(self):
+        return {'child_properties': self.child.properties.copy()}
+
+    def sample_poly(self, poly, scalar=None, bias_range=1, poly_range=None,
+                    ignored_terms=None, **parameters):
+
+        if ignored_terms is None:
+            ignored_terms = set()
+        else:
+            ignored_terms = {frozenset(term) for term in ignored_terms}
+
+        # scale and normalize happen in-place so we need to make a copy
+        original, poly = poly, poly.copy()
+
+        if scalar is not None:
+            poly.scale(scalar, ignored_terms=ignored_terms)
+        else:
+            poly.normalize(bias_range=bias_range, poly_range=poly_range,
+                           ignored_terms=ignored_terms)
+
+            # we need to know how much we scaled by, which we can do by looking
+            # at the biases
+            try:
+                v = next((v for v, bias in poly.items() if bias))
+            except StopIteration:
+                # nothing to scale
+                scalar = 1
+            else:
+                scalar = poly[v] / original[v]
+
+        sampleset = self.child.sample_poly(poly, **parameters)
+
+        if ignored_terms:
+            # we need to recalculate the energy
+            sampleset.record.energy = original.energies((sampleset.record.sample,
+                                                         sampleset.variables))
+        else:
+            sampleset.record.energy /= scalar
+
+        return sampleset
