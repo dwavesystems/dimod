@@ -32,6 +32,19 @@ class PolySampler:
     higher-order interactions.
 
     """
+    @abc.abstractproperty  # for python2 compatibility
+    def parameters(self):
+        """dict: A dict where keys are the keyword parameters accepted by the sampler
+        methods and values are lists of the properties relevent to each parameter.
+        """
+        pass
+
+    @abc.abstractproperty  # for python2 compatibility
+    def properties(self):
+        """dict: A dict containing any additional information about the sampler.
+        """
+        pass
+
     @abc.abstractmethod
     def sample_poly(self, polynomial, **kwargs):
         """Sample from a higher-order polynomial."""
