@@ -67,3 +67,37 @@ class Test_energies(unittest.TestCase):
 
         energies = poly.energies(([[-1], [1]], ['a']))
         np.testing.assert_array_equal(energies, [1, -1])
+
+
+class TestScale(unittest.TestCase):
+    def test_single_variable(self):
+        poly = BinaryPolynomial({'a': -1}, 'SPIN')
+        poly.scale(.5)
+        self.assertEqual(poly['a'], -.5)
+
+    def test_typical(self):
+        poly = BinaryPolynomial({'a': 1, 'ab': 1, '': 1}, 'BINARY')
+        poly.scale(2)
+        self.assertEqual(poly['a'], 2)
+        self.assertEqual(poly['ba'], 2)
+        self.assertEqual(poly[tuple()], 2)
+
+    def test_ignore_terms(self):
+        poly = BinaryPolynomial({'a': 1, 'ab': 1, '': 1}, 'BINARY')
+        poly.scale(2, ignored_terms=['', 'ba'])
+        self.assertEqual(poly['a'], 2)
+        self.assertEqual(poly['ba'], 1)
+        self.assertEqual(poly[tuple()], 1)
+
+
+class TestNormalize(unittest.TestCase):
+    def test_empty(self):
+        poly = BinaryPolynomial({}, 'SPIN')
+        poly.normalize()
+
+    def test_typical(self):
+        poly = BinaryPolynomial({'a': 1, 'ab': 1, '': 1}, 'BINARY')
+        poly.normalize(.5)
+        self.assertEqual(poly['a'], .5)
+        self.assertEqual(poly['ba'], .5)
+        self.assertEqual(poly[tuple()], .5)
