@@ -198,68 +198,6 @@ def _reduce_degree(bqm, poly, vartype, scale):
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
 
-def _relabeled_poly(h, j, label_dict):
-    """ Creates relabeled polynomial dict.
-
-    given h, j and a relabeling dictionary, will create a polynomial
-    with the new labels
-
-    Args:
-        h (dict): a dict of linear variables
-
-        j (dict): a dict of quadratic and higher order variables
-
-        label_dict (dict): a dict for relabeling e.g. {old_label:new_label}
-
-    Returns:
-        dict: a higher order problem dict that contains linear,
-              quadratic and n-order terms written in a new labeling
-              scheme provided by label_dict
-
-    """
-
-    poly = {}
-    for k, v in h.items():
-        new_tup = (label_dict[k],)
-        poly[new_tup] = v
-    for k, v in j.items():
-        new_tup = tuple((label_dict[vidx] for vidx in list(k)))
-        poly[new_tup] = v
-    return poly
-
-
-def create_poly(linear, higherorder):
-    """Creates a polynomial dict
-
-    Args:
-        linear (dict): linear variables
-        higherorder (dict): quadratic and higher order variables
-
-    Returns
-        dict: a higher order problem dict that contains linear,
-              quadratic and n-order terms.
-
-    """
-
-    poly = {(k,): v for k, v in linear.items()}
-    poly.update(higherorder)
-    return poly
-
-
-def _prod(iterable):
-    val = 1.
-    for v in iterable:
-        val *= v
-    return val
-
-
-def _prod_d(iterable, dim):
-    val = [1.] * dim
-    for v in iterable:
-        val *= v
-    return val
-
-
 def poly_energy(sample_like, poly):
     """Calculates energy of a sample from a higher order polynomial.
 
@@ -309,7 +247,3 @@ def poly_energies(samples_like, poly):
     # dev note the vartype is not used in the energy calculation and this will
     # be deprecated in the future
     return BinaryPolynomial(poly, 'SPIN').energies(samples_like)
-
-
-def check_isin(key, key_list):
-    return sum(set(key) == set(key_tmp) for key_tmp in key_list)

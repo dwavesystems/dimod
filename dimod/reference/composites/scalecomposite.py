@@ -31,9 +31,8 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder.utils import poly_energies, _relabeled_poly, check_isin
 
-__all__ = ['ScaleComposite']
+__all__ = 'ScaleComposite',
 
 
 class ScaleComposite(ComposedSampler):
@@ -301,40 +300,5 @@ def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
     return bqm_copy
 
 
-def _scaled_hubo(h, j, offset, scalar, bias_range,
-                 quadratic_range,
-                 ignored_variables,
-                 ignored_interactions,
-                 ignore_offset):
-    """Helper function of sample_ising for scaling"""
-
-    if scalar is None:
-        scalar = _calc_norm_coeff(h, j, bias_range, quadratic_range,
-                                  ignored_variables, ignored_interactions)
-    h_sc = dict(h)
-    j_sc = dict(j)
-    offset_sc = offset
-    if not isinstance(scalar, Number):
-        raise TypeError("expected scalar to be a Number")
-
-    if scalar != 1:
-        if ignored_variables is None or ignored_interactions is None:
-            raise ValueError('ignored interactions or variables cannot be None')
-        j_sc = {}
-        for u, v in j.items():
-            if u in ignored_interactions:
-                j_sc[u] = v
-            else:
-                j_sc[u] = v * scalar
-
-        if not ignore_offset:
-            offset_sc = offset * scalar
-
-        h_sc = {}
-        for k, v in h.items():
-            if k in ignored_variables:
-                h_sc[k] = v
-            else:
-                h_sc[k] = v * scalar
-
-    return h_sc, j_sc, offset_sc
+def check_isin(key, key_list):
+    return sum(set(key) == set(key_tmp) for key_tmp in key_list)
