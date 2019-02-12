@@ -14,5 +14,5 @@
 #
 # ============================================================================
 
-from dimod.higherorder.polynomial import Polynomial, BinaryPolynomial
+from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energy, poly_energies

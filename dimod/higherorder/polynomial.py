@@ -25,29 +25,48 @@ from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
 from dimod.vartypes import Vartype
 
+__all__ = 'BinaryPolynomial',
+
+
 def asfrozenset(term):
     """Convert to frozenset if it is not already"""
     return term if isinstance(term, frozenset) else frozenset(term)
 
 
-class Polynomial(abc.MutableMapping):
-    def __init__(self, poly):
+class BinaryPolynomial(abc.MutableMapping):
+    @vartype_argument('vartype')
+    def __init__(self, poly, vartype):
         if isinstance(poly, abc.Mapping):
             poly = poly.items()
-         
+
         # we need to aggregate the repeated terms
-        self._terms = terms = {}        
+        self._terms = terms = {}
         for term, bias in ((asfrozenset(term), bias) for term, bias in poly):
             if term in terms:
                 terms[term] += bias
             else:
                 terms[term] = bias
 
+        self.vartype = vartype
+
     def __contains__(self, term):
         return asfrozenset(term) in self._terms
 
     def __delitem__(self, term):
         del self._terms[asfrozenset(term)]
+
+    def __eq__(self, other):
+        if not isinstance(other, BinaryPolynomial):
+            try:
+                other = type(self)(other, self.vartype)
+            except Exception:
+                # not a polynomial
+                return False
+
+        return self.vartype == other.vartype and self._terms == other._terms
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def __getitem__(self, term):
         return self._terms[asfrozenset(term)]
@@ -98,7 +117,6 @@ class Polynomial(abc.MutableMapping):
 
         return energies
 
-
     def relabel_variables(self, mapping, inplace=True):
 
         if not inplace:
@@ -133,19 +151,18 @@ class Polynomial(abc.MutableMapping):
 
         return self
 
-class BinaryPolynomial(Polynomial):
-    @vartype_argument('vartype')
-    def __init__(self, poly, vartype):
-        Polynomial.__init__(self, poly)
-        self.vartype = vartype
-
     @classmethod
-    def from_ising(cls, h, J, offset=None):  
+    def from_hising(cls, h, J, offset=None):
         poly = {(k,): v for k, v in h.items()}
         poly.update(J)
         if offset is not None:
             poly[frozenset([])] = offset
         return cls(poly, Vartype.SPIN)
+
+    @classmethod
+    def from_hubo(cls, H, offset=None):
+        if offset is not None:
+            poly[frozenset([])] = offset
 
     def copy(self):
         return self.__class__(self, self.vartype)
