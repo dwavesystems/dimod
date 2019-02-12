@@ -225,11 +225,9 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertAlmostEqual(energy, min(reduced_energies))
 
     def test_poly_energies(self):
-        from dimod.higherorder.utils import create_poly
-
         linear = {0: 1.0, 1: 1.0}
         j = {(0, 1, 2): 0.5}
-        poly = create_poly(linear, j)
+        poly = dimod.BinaryPolynomial.from_hising(linear, j)
         samples = [[1, 1, -1], [1, -1, 1], [1, 1, 1], [-1, 1, -1]]
 
         en = poly_energies(samples, poly)

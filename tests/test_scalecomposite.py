@@ -19,8 +19,49 @@ import unittest
 import dimod.testing as dtest
 from dimod import ExactSolver, ScaleComposite, HigherOrderComposite, \
     BinaryQuadraticModel, Sampler, PolySampler
-from dimod.reference.composites.scalecomposite import _scaled_hubo, \
-    _check_params, _scaled_bqm
+from dimod.reference.composites.scalecomposite import _check_params, _scaled_bqm, _calc_norm_coeff
+
+
+from numbers import Number
+
+
+def _scaled_hubo(h, j, offset, scalar, bias_range,
+                 quadratic_range,
+                 ignored_variables,
+                 ignored_interactions,
+                 ignore_offset):
+    """Helper function of sample_ising for scaling"""
+
+    if scalar is None:
+        scalar = _calc_norm_coeff(h, j, bias_range, quadratic_range,
+                                  ignored_variables, ignored_interactions)
+    h_sc = dict(h)
+    j_sc = dict(j)
+    offset_sc = offset
+    if not isinstance(scalar, Number):
+        raise TypeError("expected scalar to be a Number")
+
+    if scalar != 1:
+        if ignored_variables is None or ignored_interactions is None:
+            raise ValueError('ignored interactions or variables cannot be None')
+        j_sc = {}
+        for u, v in j.items():
+            if u in ignored_interactions:
+                j_sc[u] = v
+            else:
+                j_sc[u] = v * scalar
+
+        if not ignore_offset:
+            offset_sc = offset * scalar
+
+        h_sc = {}
+        for k, v in h.items():
+            if k in ignored_variables:
+                h_sc[k] = v
+            else:
+                h_sc[k] = v * scalar
+
+    return h_sc, j_sc, offset_sc
 
 
 class ScalingChecker(Sampler, PolySampler):
