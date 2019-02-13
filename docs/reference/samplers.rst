@@ -45,6 +45,16 @@ ABCs.
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
           :attr:`~.Composite.child`
+    *   - :class:`.PolySampler`
+        -
+        - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`
+        - :meth:`~.PolySampler.sample_poly`
+        - :meth:`~.PolySampler.sample_hising`, :meth:`~.PolySampler.sample_hubo`
+    *   - :class:`.ComposedPolySampler`
+        - :class:`.PolySampler`, :class:`.Composite`
+        - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`, :attr:`~.Composite.children`
+        - :meth:`~.Sampler.sample_poly`
+        - :meth:`~.Sampler.sample_hising`, :meth:`~.Sampler.sample_hubo`, :attr:`~.Composite.child`
 
 The table shows, for example, that the :class:`.Sampler` class requires that you implement
 the :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties` properties and at least
@@ -141,3 +151,43 @@ Mixin Properties
 
    Structured.adjacency
    Structured.structure
+
+
+Creating a Binary Polynomial Sampler
+====================================
+
+.. automodule:: dimod.core.polysampler
+
+.. currentmodule:: dimod
+.. autoclass:: PolySampler
+
+Abstract Properties
+-------------------
+
+.. autosummary::
+   :toctree: generated/
+
+   PolySampler.parameters
+   PolySampler.properties
+
+Abstract Methods
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+   PolySampler.sample_poly
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   PolySampler.sample_hising
+   PolySampler.sample_hubo
+
+Creating a Composed Binary Polynomial Sampler
+=============================================
+
+.. autoclass:: ComposedPolySampler

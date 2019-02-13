@@ -8,29 +8,6 @@ Functional interface to BQM methods and assorted utilities.
 
 .. currentmodule:: dimod
 
-Embedding
-=========
-
-See :ref:`embedding`.
-
-.. autosummary::
-   :toctree: generated/
-
-   embed_bqm
-
-
-Higher-order Polynomials
-========================
-
-.. autosummary::
-   :toctree: generated/
-
-   make_quadratic
-   poly_energy
-   poly_energies
-   create_poly
-
-
 Roof-duality
 ============
 

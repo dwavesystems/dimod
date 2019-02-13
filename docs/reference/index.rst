@@ -16,6 +16,7 @@ Reference Documentation
    response
    vartypes
    bqm_functions
+   higherorder
    exceptions
    utilities
    testing
