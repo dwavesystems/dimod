@@ -35,6 +35,18 @@ class TestConstruction(unittest.TestCase):
         poly = BinaryPolynomial({'ab': 1, 'ba': 1, ('a', 'b'): 1, ('b', 'a'): 1}, 'SPIN')
         self.assertEqual(poly, BinaryPolynomial({'ab': 4}, 'SPIN'))
 
+    def test_squares_binary(self):
+        poly = BinaryPolynomial({'aa': -1}, dimod.BINARY)
+        self.assertEqual(poly['a'], -1)
+
+    def test_squares_spin(self):
+        poly = BinaryPolynomial({'aa': -1}, dimod.SPIN)
+        self.assertEqual(poly[()], -1)
+
+    def test_cubes_spin(self):
+        poly = BinaryPolynomial({'aaa': -1}, dimod.SPIN)
+        self.assertEqual(poly['a'], -1)
+
 
 class Test__contains__(unittest.TestCase):
     def test_single_term(self):
@@ -43,6 +55,21 @@ class Test__contains__(unittest.TestCase):
         self.assertIn('ba', poly)
         self.assertIn(('a', 'b'), poly)
         self.assertIn(('b', 'a'), poly)
+
+
+class Test__del__(unittest.TestCase):
+    def test_typical(self):
+        poly = BinaryPolynomial({'ab': -1, 'a': 1, 'b': 1}, 'BINARY')
+        self.assertEqual(len(poly), 3)
+        del poly[('a', 'b')]
+        self.assertEqual(len(poly), 2)
+
+
+class Test__eq__(unittest.TestCase):
+    def test_unlike_types(self):
+        polydict = {'ab': -1, 'a': 1, 'b': 1}
+        self.assertEqual(BinaryPolynomial(polydict, 'SPIN'), polydict)
+        self.assertNotEqual(BinaryPolynomial(polydict, 'SPIN'), 1)
 
 
 class Test__len__(unittest.TestCase):
@@ -67,6 +94,16 @@ class Test_energies(unittest.TestCase):
 
         energies = poly.energies(([[-1], [1]], ['a']))
         np.testing.assert_array_equal(energies, [1, -1])
+
+
+class TestDegree(unittest.TestCase):
+    def test_degree0(self):
+        poly = BinaryPolynomial.from_hising({}, {}, 0)
+        self.assertEqual(poly.degree, 0)
+
+    def test_degree3(self):
+        poly = BinaryPolynomial.from_hubo({'abc': -1}, 0)
+        self.assertEqual(poly.degree, 3)
 
 
 class TestScale(unittest.TestCase):
