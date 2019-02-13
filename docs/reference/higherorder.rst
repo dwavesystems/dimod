@@ -28,8 +28,10 @@ Methods
    BinaryPolynomial.normalize
    BinaryPolynomial.relabel_variables
    BinaryPolynomial.scale
+   BinaryPolynomial.to_binary
    BinaryPolynomial.to_hising
    BinaryPolynomial.to_hubo
+   BinaryPolynomial.to_spin
 
 Reducing to a Binary Quadratic Model
 ====================================
