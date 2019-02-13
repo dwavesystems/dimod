@@ -18,7 +18,7 @@ Composites that convert binary quadratic model samplers into polynomial samplers
 or that work with binary polynomials.
 
 Higher-order composites implement three sampling methods (similar to
-:class:`.Sampler`s):
+:class:`.Sampler`):
 
 * :meth:`.PolySampler.sample_poly`
 * :meth:`.PolySampler.sample_hising`
