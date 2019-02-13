@@ -36,6 +36,57 @@ def asfrozenset(term):
 
 
 class BinaryPolynomial(abc.MutableMapping):
+    """A polynomial with binary variables and real-valued coefficients.
+
+    Args:
+        poly (mapping/iterable):
+            Polynomial as a mapping of form {term: bias, ...}, where `term` is
+            a collection of variables and `bias` the associated bias. It can also
+            be an iterable of 2-tuples (term, bias).
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    Attributes:
+        degree (int):
+            The degree of the polynomial.
+
+        variables (set):
+            The variables.
+
+        vartype (:class:`.Vartype`):
+            One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+
+    Examples:
+
+        Binary polynomials can be constructed in many different ways. The
+        following are all equivalent
+
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1})
+        >>> poly = dimod.BinaryPolynomial({('a',): -1, ('a', 'b'): 1})
+        >>> poly = dimod.BinaryPolynomial([('a', -1), (('a', 'b'), 1)])
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': .5, 'ba': .5})
+
+        Binary polynomials act a mutable mappings but the terms can be accessed with
+        any sequence.
+
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1})
+        >>> poly['ab']
+        1
+        >>> poly['ba']
+        1
+        >>> poly[{'a', 'b'}]
+        1
+        >>> poly[('a', 'b')]
+        1
+        >>> poly['cd'] = 4
+        >>> poly['dc']
+        4
+
+    """
     @vartype_argument('vartype')
     def __init__(self, poly, vartype):
         if isinstance(poly, abc.Mapping):
@@ -43,11 +94,24 @@ class BinaryPolynomial(abc.MutableMapping):
 
         # we need to aggregate the repeated terms
         self._terms = terms = {}
-        for term, bias in ((asfrozenset(term), bias) for term, bias in poly):
-            if term in terms:
-                terms[term] += bias
+        for term, bias in poly:
+
+            fsterm = asfrozenset(term)
+
+            # when SPIN-valued, s^2 == 1, so we need to handle that case
+            # in BINARY, x^2 == x
+            if len(fsterm) < len(term) and vartype is Vartype.SPIN:
+                new = set()
+                term = tuple(term)  # make sure it has .count
+                for v in fsterm:
+                    if term.count(v) % 2:
+                        new.add(v)
+                fsterm = frozenset(new)
+
+            if fsterm in terms:
+                terms[fsterm] += bias
             else:
-                terms[term] = bias
+                terms[fsterm] = bias
 
         self.vartype = vartype
 
@@ -87,23 +151,53 @@ class BinaryPolynomial(abc.MutableMapping):
 
     @property
     def variables(self):
+        """Variables of the polynomial."""
         return set().union(*self._terms)
 
     @property
     def degree(self):
+        """Degree of the polynomial."""
         if len(self) == 0:
             return 0
-        return max(map(len, self._terms.values()))
+        return max(map(len, self._terms))
 
     def copy(self):
-        """Make a shallow copy"""
-        return self.__class__(self)
+        """Create a shallow copy."""
+        return type(self)(self, self.vartype)
 
     def energy(self, sample_like, dtype=np.float):
+        """The energy of the given sample.
+
+        Args:
+            sample_like (samples_like):
+                A raw samples. `sample_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (:class:`numpy.dtype`, optional):
+                The data type of the returned energies. Defaults to float.
+
+        Returns:
+            The energy.
+
+        """
         energy, = self.energies(sample_like, dtype=dtype)
         return energy
 
     def energies(self, samples_like, dtype=np.float):
+        """The energies of the given samples.
+
+        Args:
+            samples_like (samples_like):
+                A collection of raw samples. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (:class:`numpy.dtype`, optional):
+                The data type of the returned energies. Defaults to float.
+
+        Returns:
+            :obj:`numpy.ndarray`: The energies.
+
+        """
         samples, labels = as_samples(samples_like)
         idx, label = zip(*enumerate(labels))
         labeldict = dict(zip(label, idx))
@@ -120,7 +214,23 @@ class BinaryPolynomial(abc.MutableMapping):
         return energies
 
     def relabel_variables(self, mapping, inplace=True):
+        """Relabel variables of a binary polynomial as specified by mapping.
 
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
+
+            inplace (bool, optional, default=True):
+                If True, the binary polynomial is updated in-place; otherwise, a
+                new binary polynomial is returned.
+
+        Returns:
+            :class:`.BinaryPolynomial`: A binary polynomial with the variables
+            relabeled. If `inplace` is set to True, returns itself.
+
+        """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -153,8 +263,26 @@ class BinaryPolynomial(abc.MutableMapping):
 
         return self
 
-    def normalize(self, bias_range=1, poly_range=None,
-                  ignored_terms=None):
+    def normalize(self, bias_range=1, poly_range=None, ignored_terms=None):
+        """Normalizes the biases of the binary polynomial such that they fall in
+        the provided range(s).
+
+        If `poly_range` is provided, then `bias_range` will be treated as
+        the range for the linear biases and `poly_range` will be used for
+        the range of the other biases.
+
+        Args:
+            bias_range (number/pair):
+                Value/range by which to normalize the all the biases, or if
+                `poly_range` is provided, just the linear biases.
+
+            poly_range (number/pair, optional):
+                Value/range by which to normalize the higher order biases.
+
+            ignored_terms (iterable, optional):
+                Biases associated with these terms are not scaled.
+
+        """
 
         def parse_range(r):
             if isinstance(r, Number):
@@ -195,6 +323,16 @@ class BinaryPolynomial(abc.MutableMapping):
             self.scale(1 / inv_scalar, ignored_terms=ignored_terms)
 
     def scale(self, scalar, ignored_terms=None):
+        """Multiply the polynomial by the given scalar.
+
+        Args:
+            scalar (number):
+                Value to multiply the polynomial by.
+
+            ignored_terms (iterable, optional):
+                Biases associated with these terms are not scaled.
+
+        """
 
         if ignored_terms is None:
             ignored_terms = set()
@@ -207,6 +345,25 @@ class BinaryPolynomial(abc.MutableMapping):
 
     @classmethod
     def from_hising(cls, h, J, offset=None):
+        """Construct a binary polynomial from a higher-order Ising problem.
+
+        Args:
+            h (dict):
+                The linear biases.
+
+            J (dict):
+                The higher-order biases.
+
+            offset (optional, default=0.0):
+                Constant offset applied to the model.
+
+        Returns:
+            :obj:`.BinaryPolynomial`
+
+        Examples:
+            >>> poly = dimod.BinaryPolynomial.from_hising({'a': 2}, {'ab': -1}, 0)
+
+        """
         poly = {(k,): v for k, v in h.items()}
         poly.update(J)
         if offset is not None:
@@ -214,6 +371,20 @@ class BinaryPolynomial(abc.MutableMapping):
         return cls(poly, Vartype.SPIN)
 
     def to_hising(self):
+        """Construct a higher-order Ising problem from a binary polynomial.
+
+        Returns:
+            tuple: A 3-tuple of the form (`h`, `J`, `offset`) where `h` includes
+            the linear biases, `J` has the higher-order biases and `offset` is
+            the linear offset.
+
+        Examples:
+            >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1, 'abc': -1})
+            >>> h, J, off = poly.to_hising()
+            >>> h
+            {'a': -1}
+
+        """
         h = {}
         J = {}
         offset = 0
@@ -230,13 +401,35 @@ class BinaryPolynomial(abc.MutableMapping):
 
     @classmethod
     def from_hubo(cls, H, offset=None):
+        """Construct a binary polynomial from a higher-order unconstrained
+        binary optimization (HUBO) problem.
+
+        Args:
+            H (dict):
+                Coefficients of a higher-order unconstrained binary optimization
+                (HUBO) model.
+
+        Returns:
+            :obj:`.BinaryPolynomial`
+
+        Examples:
+            >>> poly = dimod.BinaryPolynomial.from_hubo({('a', 'b', 'c'): -1})
+
+        """
+        poly = cls(H, Vartype.BINARY)
         if offset is not None:
-            poly[frozenset([])] = offset
+            poly[()] = poly.get((), 0) + offset
+        return poly
 
     def to_hubo(self):
+        """Construct a higher-order unconstrained binary optimization (HUBO)
+        problem from a binary polynomial.
+
+        Returns:
+            tuple: A 2-tuple of the form (`H`, `offset`) where `H` is the HUBO
+            and `offset` is the linear offset.
+
+        """
         H = {tuple(term): bias for term, bias in self.items() if term}
         offset = self[tuple()] if tuple() in self else 0
         return H, offset
-
-    def copy(self):
-        return self.__class__(self, self.vartype)
