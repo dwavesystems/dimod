@@ -126,6 +126,11 @@ class TestScale(unittest.TestCase):
         self.assertEqual(poly['ba'], 1)
         self.assertEqual(poly[tuple()], 1)
 
+    def test_scale_by_float(self):
+        poly = BinaryPolynomial({'a': 4}, 'SPIN')
+        poly.scale(.25)
+        self.assertEqual(poly['a'], 1)
+
 
 class TestNormalize(unittest.TestCase):
     def test_empty(self):
@@ -138,3 +143,9 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(poly['a'], .5)
         self.assertEqual(poly['ba'], .5)
         self.assertEqual(poly[tuple()], .5)
+
+    def test_int_division(self):
+        # we use division which previous caused issues in python2
+        poly = BinaryPolynomial({'a': 4}, 'SPIN')
+        poly.normalize(bias_range=1, poly_range=None, ignored_terms=[])
+        self.assertEqual(poly['a'], 1)

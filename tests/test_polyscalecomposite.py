@@ -34,9 +34,9 @@ class RangeLimitedSampler(dimod.PolySampler):
             raise RuntimeError
 
         samples = np.ones((num_reads, len(poly.variables))), list(poly.variables)
-
-        return dimod.SampleSet.from_samples(samples, vartype=poly.vartype,
-                                            energy=poly.energies(samples))
+        sampleset = dimod.SampleSet.from_samples(samples, vartype=poly.vartype,
+                                                 energy=poly.energies(samples))
+        return sampleset
 
 
 class TestConstruction(unittest.TestCase):
@@ -55,7 +55,6 @@ class TestConstruction(unittest.TestCase):
 class TestSampleHising(unittest.TestCase):
     def test_all_zero(self):
         sampler = PolyScaleComposite(RangeLimitedSampler())
-
         sampler.sample_hising({'a': 0}, {'ab': 0, 'bc': 0, 'abc': 0})
 
     def test_empty(self):
@@ -77,6 +76,26 @@ class TestSampleHising(unittest.TestCase):
         sampler = PolyScaleComposite(RangeLimitedSampler())
         with self.assertRaises(RuntimeError):
             sampler.sample_hising({'a': 4}, {}, scalar=1)
+
+    def test_all_energies(self):
+        sampler = PolyScaleComposite(HigherOrderComposite(ExactSolver()))
+
+        h = {'a': -1, 'b': 4}
+        J = {'abc': -1, 'ab': 1, 'aaa': .5}
+
+        sampleset = sampler.sample_hising(h, J, discard_unsatisfied=True)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            en = 0
+            for v, bias in h.items():
+                en += sample[v] * bias
+            for term, bias in J.items():
+                val = bias
+                for v in term:
+                    val *= sample[v]
+                en += val
+
+            self.assertAlmostEqual(energy, en)
 
 
 class TestSampleHubo(unittest.TestCase):
