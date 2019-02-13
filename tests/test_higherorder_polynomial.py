@@ -97,6 +97,10 @@ class Test_energies(unittest.TestCase):
 
 
 class TestDegree(unittest.TestCase):
+    def test_empty(self):
+        poly = BinaryPolynomial([], 'BINARY')
+        self.assertEqual(poly.degree, 0)
+
     def test_degree0(self):
         poly = BinaryPolynomial.from_hising({}, {}, 0)
         self.assertEqual(poly.degree, 0)
@@ -149,3 +153,110 @@ class TestNormalize(unittest.TestCase):
         poly = BinaryPolynomial({'a': 4}, 'SPIN')
         poly.normalize(bias_range=1, poly_range=None, ignored_terms=[])
         self.assertEqual(poly['a'], 1)
+
+
+class TestRelabel(unittest.TestCase):
+    def test_swap_partial(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1}, 'BINARY')
+        poly.relabel_variables({'b': 'c', 'c': 'b'})
+        self.assertEqual(poly, {'abc': 1, 'bc': 1, 'ac': -1})
+
+    def test_copy(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1}, 'BINARY')
+        new = poly.relabel_variables({'a': 'z'}, inplace=False)
+        self.assertEqual(new, {'zbc': 1, 'bc': 1, 'zb': -1})
+        self.assertEqual(poly, {'abc': 1, 'bc': 1, 'ab': -1})
+
+
+class Test_to_binary(unittest.TestCase):
+    def test_energy_equivalence_only_offset(self):
+        spipoly = BinaryPolynomial({'': 5}, 'SPIN')
+        binpoly = spipoly.to_binary()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+    def test_energy_equivalence_only_linear(self):
+        spipoly = BinaryPolynomial({'a': 5, 'b': -3}, 'SPIN')
+        binpoly = spipoly.to_binary()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+    def test_energy_equivalence(self):
+        spipoly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1, '': 0}, 'SPIN')
+        binpoly = spipoly.to_binary()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+
+class Test_to_spin(unittest.TestCase):
+    def test_energy_equivalence_only_offset(self):
+        binpoly = BinaryPolynomial({'': 5}, 'BINARY')
+        spipoly = binpoly.to_spin()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+    def test_energy_equivalence_only_linear(self):
+        binpoly = BinaryPolynomial({'a': 5, 'b': -3}, 'BINARY')
+        spipoly = binpoly.to_spin()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+    def test_energy_equivalence(self):
+        binpoly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1, '': 0}, 'BINARY')
+        spipoly = binpoly.to_spin()
+
+        variables = list(binpoly.variables)
+        for config in itertools.product((0, 1), repeat=len(variables)):
+            binary_sample = dict(zip(variables, config))
+            spin_sample = {v: 2*x - 1 for v, x in binary_sample.items()}
+            self.assertAlmostEqual(spipoly.energy(spin_sample), binpoly.energy(binary_sample))
+
+
+class TestHUBO(unittest.TestCase):
+    # .to_hubo and .from_hubo
+    def test_binary(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1, '': 0}, 'BINARY')
+        H, off = poly.to_hubo()
+        new = BinaryPolynomial.from_hubo(H, off)
+        self.assertEqual(poly, new)
+
+    def test_spin(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1, '': 0}, 'SPIN')
+        H, off = poly.to_hubo()
+        new = BinaryPolynomial.from_hubo(H, off)
+        self.assertEqual(poly, new.to_spin())
+
+
+class TestHising(unittest.TestCase):
+    # .to_hising and .from_hising
+    def test_binary(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1}, 'BINARY')
+        h, J, off = poly.to_hising()
+        new = BinaryPolynomial.from_hising(h, J, off)
+        self.assertEqual(poly, new.to_binary())
+
+    def test_spin(self):
+        poly = BinaryPolynomial({'abc': 1, 'bc': 1, 'ab': -1}, 'SPIN')
+        h, J, off = poly.to_hising()
+        new = BinaryPolynomial.from_hising(h, J, off)
+        self.assertEqual(poly, new)

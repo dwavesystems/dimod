@@ -15,6 +15,8 @@
 # ============================================================================
 from __future__ import division
 
+import itertools
+
 try:
     import collections.abc as abc
 except ImportError:
@@ -131,7 +133,16 @@ class BinaryPolynomial(abc.MutableMapping):
                 # not a polynomial
                 return False
 
-        return self.vartype == other.vartype and self._terms == other._terms
+        if self.vartype != other.vartype:
+            return False
+
+        for term, bias in self.items():
+            if bias and other[term] != bias:
+                return False
+        for term, bias in other.items():
+            if bias and self[term] != bias:
+                return False
+        return True
 
     def __ne__(self, other):
         return not (self == other)
@@ -391,6 +402,9 @@ class BinaryPolynomial(abc.MutableMapping):
             {'a': -1}
 
         """
+        if self.vartype is Vartype.BINARY:
+            return self.to_spin().to_hising()
+
         h = {}
         J = {}
         offset = 0
@@ -436,6 +450,78 @@ class BinaryPolynomial(abc.MutableMapping):
             and `offset` is the linear offset.
 
         """
+        if self.vartype is Vartype.SPIN:
+            return self.to_binary().to_hubo()
+
         H = {tuple(term): bias for term, bias in self.items() if term}
         offset = self[tuple()] if tuple() in self else 0
         return H, offset
+
+    def to_binary(self, copy=False):
+        """Return a binary polynomial over `{0, 1}` variables.
+
+        Args:
+            copy (optional, default=False):
+                If True, the returned polynomial is always a copy. Otherwise,
+                if the polynomial is binary-valued already it returns itself.
+
+        Returns:
+            :obj:`.BinaryPolynomial`
+
+        """
+        if self.vartype is Vartype.BINARY:
+            if copy:
+                return self.copy()
+            else:
+                return self
+
+        new = BinaryPolynomial({}, Vartype.BINARY)
+
+        # s = 2x - 1
+        for term, bias in self.items():
+            for t in map(frozenset, powerset(term)):
+                newbias = bias * 2**len(t) * (-1)**(len(term) - len(t))
+
+                if t in new:
+                    new[t] += newbias
+                else:
+                    new[t] = newbias
+
+        return new
+
+    def to_spin(self, copy=False):
+        """Return a binary polynomial over `{-1, +1}` variables.
+
+        Args:
+            copy (optional, default=False):
+                If True, the returned polynomial is always a copy. Otherwise,
+                if the polynomial is spin-valued already it returns itself.
+
+        Returns:
+            :obj:`.BinaryPolynomial`
+
+        """
+        if self.vartype is Vartype.SPIN:
+            if copy:
+                return self.copy()
+            else:
+                return self
+
+        new = BinaryPolynomial({}, Vartype.SPIN)
+
+        # x = (s + 1) / 2
+        for term, bias in self.items():
+            newbias = bias / (2**len(term))
+
+            for t in map(frozenset, powerset(term)):
+                if t in new:
+                    new[t] += newbias
+                else:
+                    new[t] = newbias
+
+        return new
+
+
+def powerset(iterable):
+    return itertools.chain.from_iterable(itertools.combinations(iterable, r)
+                                         for r in range(len(iterable)+1))
