@@ -147,7 +147,8 @@ class BinaryPolynomial(abc.MutableMapping):
         self._terms[asfrozenset(term)] = bias
 
     def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self._terms)
+        return '{!s}({!r}, {!r})'.format(self.__class__.__name__,
+                                         self._terms, self.vartype.name)
 
     @property
     def variables(self):
