@@ -15,7 +15,7 @@
 # ============================================================================
 """
 It is possible to construct samplers that handle binary polynomials - problems
-that have binary variables but they are not constrainted to quadratic
+that have binary variables but they are not constrained to quadratic
 interactions.
 
 """
@@ -41,7 +41,7 @@ class PolySampler:
     @abc.abstractproperty  # for python2 compatibility
     def parameters(self):
         """dict: A dict where keys are the keyword parameters accepted by the sampler
-        methods and values are lists of the properties relevent to each parameter.
+        methods and values are lists of the properties relevant to each parameter.
         """
         pass
 
@@ -79,9 +79,9 @@ class PolySampler:
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
 
     def sample_hubo(self, H, **kwargs):
-        """Sample from a higher-order unconstrainted binary optimization problem.
+        """Sample from a higher-order unconstrained binary optimization problem.
 
-        Convert the given higher-order unconstrainted binary optimization
+        Convert the given higher-order unconstrained binary optimization
         problem to a :obj:`.BinaryPolynomial` and invoke `sample_poly`.
 
         Args:
@@ -102,7 +102,9 @@ class PolySampler:
                "0.9.0. In the future, when using PolySamplers, you should use "
                ".sample_poly")
         warnings.warn(msg, DeprecationWarning)
-        return self.sample_hising(bqm.linear, bqm.quadratic, *args, **kwargs)
+        poly = BinaryPolynomial(bqm.quadratic)
+        poly.update(((v,), bias) for v, bias in bqm.linear.items())
+        return self.sample_poly(poly, *args, **kwargs)
 
     def sample_ising(self, *args, **kwargs):
         msg = ("PolySampler.sample_ising is deprecated and will be removed in dimod "
