@@ -14,8 +14,16 @@
 #
 # =============================================================================
 """
-A composite that convert a higher order polynomial problem into a bqm by
-introducing penalties before sending the bqm to its child sampler.
+Composites that convert binary quadratic model samplers into polynomial samplers
+or that work with binary polynomials.
+
+Higher-order composites implement three sampling methods (similar to
+:class:`.Sampler`s):
+
+* :meth:`.PolySampler.sample_poly`
+* :meth:`.PolySampler.sample_hising`
+* :meth:`.PolySampler.sample_hubo`
+
 """
 from __future__ import division
 
@@ -30,28 +38,28 @@ __all__ = 'HigherOrderComposite', 'PolyScaleComposite'
 
 
 class HigherOrderComposite(ComposedPolySampler):
-    """Reduces a HUBO to bqm by introducing penalties.
+    """Convert a binary quadratic model sampler to a binary polynomial sampler.
 
     Energies of the returned samples do not include the penalties.
 
-   Args:
-       sampler (:obj:`dimod.Sampler`):
+    Args:
+        sampler (:obj:`dimod.Sampler`):
             A dimod sampler
 
-   Example:
-       This example uses :class:`.HigherOrderComposite` to instantiate a
-       composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler creates a bqm from a higher order problem.
+    Example:
+        This example uses :class:`.HigherOrderComposite` to instantiate a
+        composed sampler that submits a simple Ising problem to a sampler.
+        The composed sampler creates a bqm from a higher order problem.
 
-       >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
-       >>> linear = {0: -0.5, 1: -0.3, 2: -0.8}
-       >>> quadratic = {(0, 1, 2): -1.7}
-       >>> response = sampler.sample_ising(linear,quadratic,penalty_strength=2,
-       ...                              keep_penalty_variables=False,
-       ...                              discard_unsatisfied=True)
-       >>> print(response.first)  # doctest: +SKIP
-       Sample(sample={0: 1, 1: 1, 2: 1}, energy=-3.3, num_occurrences=1,
-              penalty_satisfaction=True)
+        >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
+        >>> h = {0: -0.5, 1: -0.3, 2: -0.8}
+        >>> J = {(0, 1, 2): -1.7}
+        >>> sampleset = sampler.sample_hising(h, J, discard_unsatisfied=True)
+        >>> sampleset.first # doctest: +SKIP
+        Sample(sample={0: 1, 1: 1, 2: 1},
+               energy=-3.3,
+               num_occurrences=1,
+               penalty_satisfaction=True)
 
         """
 
@@ -60,12 +68,15 @@ class HigherOrderComposite(ComposedPolySampler):
 
     @property
     def children(self):
+        """A list containing the wrapped sampler."""
         return self._children
 
     @property
     def parameters(self):
         param = self.child.parameters.copy()
         param['penalty_strength'] = []
+        param['discard_unsatisfied'] = []
+        param['keep_penalty_variables'] = []
         return param
 
     @property
@@ -73,6 +84,7 @@ class HigherOrderComposite(ComposedPolySampler):
         return {'child_properties': self.child.properties.copy()}
 
     def sample_ising(self, h, J, offset=0, *args, **kwargs):
+        # need to handle offset input for backwards compatibility
         if offset:
             J[()] = offset
         return ComposedPolySampler.sample_ising(self, h, J, *args, **kwargs)
@@ -80,18 +92,15 @@ class HigherOrderComposite(ComposedPolySampler):
     def sample_poly(self, poly, penalty_strength=1.0,
                     keep_penalty_variables=False,
                     discard_unsatisfied=False, **parameters):
-        """ Sample from the problem provided by h, J, offset.
+        """Sample from the given binary polynomial.
 
-        Takes in linear variables in h and quadratic and higher order
-        terms in J. Introducing penalties, reduces the higher-order problem
-        into a quadratic problem and send it to its child sampler.
+        Takes the given binary polynomial, introduces penalties, reduces the
+        higher-order problem into a quadratic problem and sends it to its child
+        sampler.
 
         Args:
-            h (dict): linear biases corresponding to the HUBO form
-
-            J (dict): higher order biases corresponding to the HUBO form
-
-            offset (float, optional): constant energy offset
+            poly (:obj:`.BinaryPolynomial`):
+                A binary polynomial.
 
             penalty_strength (float, optional): Strength of the reduction constraint.
                 Insufficient strength can result in the binary quadratic model
@@ -165,9 +174,8 @@ def polymorph_response(response, poly, bqm,
     Args:
         response (:obj:`.SampleSet`): response for a penalized hubo.
 
-        h (dict): linear biases corresponding to the HUBO form
-
-        J (dict): higher order biases corresponding to the HUBO form
+        poly (:obj:`.BinaryPolynomial`):
+            A binary polynomial.
 
         bqm (:obj:`dimod.BinaryQuadraticModel`): Binary quadratic model of the
             reduced problem.
@@ -234,6 +242,24 @@ def polymorph_response(response, poly, bqm,
 
 
 class PolyScaleComposite(ComposedPolySampler):
+    """Composite to scale biases of a binary polynomial.
+
+    Args:
+        child (:obj:`.PolySampler`):
+            A binary polynomial sampler.
+
+    Examples:
+       This example uses :class:`.ScaleComposite` to instantiate a
+       composed sampler that submits a simple higher-order Ising problem to a
+       sampler.
+
+       >>> linear = {'a': -4.0, 'b': -4.0}
+       >>> quadratic = {('a', 'b'): 3.2, ('a', 'b', 'c'): 1}
+       >>> sampler = dimod.ScaleComposite(dimod.ExactSolver())
+       >>> response = sampler.sample_hising(linear, quadratic, scalar=0.5,
+       ...                ignored_interactions=[('a','b')])
+
+    """
 
     def __init__(self, child):
         if not isinstance(child, PolySampler):
@@ -242,6 +268,7 @@ class PolyScaleComposite(ComposedPolySampler):
 
     @property
     def children(self):
+        """The child sampler in a list"""
         return self._children
 
     @property
@@ -261,6 +288,33 @@ class PolyScaleComposite(ComposedPolySampler):
 
     def sample_poly(self, poly, scalar=None, bias_range=1, poly_range=None,
                     ignored_terms=None, **parameters):
+        """Scale and sample from the given binary polynomial.
+
+        Ff scalar is not given, problem is scaled based on bias and polynomial
+        ranges. See :meth:`.BinaryPolynomial.scale` and
+        :meth:`.BinaryPolynomial.normalize`
+
+        Args:
+            poly (obj:`.BinaryPolynomial`): A binary polynomial.
+
+            scalar (number, optional):
+                Value by which to scale the energy range of the binary polynomial.
+
+            bias_range (number/pair, optional, default=1):
+                Value/range by which to normalize the all the biases, or if
+                `poly_range` is provided, just the linear biases.
+
+            poly_range (number/pair, optional):
+                Value/range by which to normalize the higher order biases.
+
+            ignored_terms (iterable, optional):
+                Biases associated with these terms are not scaled.
+
+            **parameters:
+                Other parameters for the sampling method, specified by
+                the child sampler.
+
+        """
 
         if ignored_terms is None:
             ignored_terms = set()
