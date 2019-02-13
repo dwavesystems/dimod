@@ -255,9 +255,9 @@ class PolyScaleComposite(ComposedPolySampler):
 
        >>> linear = {'a': -4.0, 'b': -4.0}
        >>> quadratic = {('a', 'b'): 3.2, ('a', 'b', 'c'): 1}
-       >>> sampler = dimod.ScaleComposite(dimod.ExactSolver())
+       >>> sampler = dimod.PolyScaleComposite(dimod.HigherOrderComposite(dimod.ExactSolver()))
        >>> response = sampler.sample_hising(linear, quadratic, scalar=0.5,
-       ...                ignored_interactions=[('a','b')])
+       ...                ignored_terms=[('a','b')])
 
     """
 
@@ -277,9 +277,8 @@ class PolyScaleComposite(ComposedPolySampler):
         param.update({'scalar': [],
                       'bias_range': [],
                       'poly_range': [],
-                      'ignored_variables': [],
-                      'ignored_interactions': [],
-                      'ignore_offset': []})
+                      'ignored_terms': [],
+                      })
         return param
 
     @property

@@ -65,15 +65,15 @@ class BinaryPolynomial(abc.MutableMapping):
         Binary polynomials can be constructed in many different ways. The
         following are all equivalent
 
-        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1})
-        >>> poly = dimod.BinaryPolynomial({('a',): -1, ('a', 'b'): 1})
-        >>> poly = dimod.BinaryPolynomial([('a', -1), (('a', 'b'), 1)])
-        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': .5, 'ba': .5})
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1}, dimod.SPIN)
+        >>> poly = dimod.BinaryPolynomial({('a',): -1, ('a', 'b'): 1}, dimod.SPIN)
+        >>> poly = dimod.BinaryPolynomial([('a', -1), (('a', 'b'), 1)], dimod.SPIN)
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': .5, 'ba': .5}, dimod.SPIN)
 
         Binary polynomials act a mutable mappings but the terms can be accessed with
         any sequence.
 
-        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1})
+        >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1}, dimod.BINARY)
         >>> poly['ab']
         1
         >>> poly['ba']
