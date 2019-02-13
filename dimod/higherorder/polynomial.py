@@ -199,8 +199,11 @@ class BinaryPolynomial(abc.MutableMapping):
 
         """
         samples, labels = as_samples(samples_like)
-        idx, label = zip(*enumerate(labels))
-        labeldict = dict(zip(label, idx))
+        if labels:
+            idx, label = zip(*enumerate(labels))
+            labeldict = dict(zip(label, idx))
+        else:
+            labeldict = {}
 
         num_samples = samples.shape[0]
 

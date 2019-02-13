@@ -15,9 +15,28 @@
 # =============================================================================
 import unittest
 
+import numpy as np
+
 import dimod
 
 from dimod import PolyScaleComposite, HigherOrderComposite, ExactSolver
+
+
+class RangeLimitedSampler(dimod.PolySampler):
+    parameters = None
+    properties = None
+
+    def sample_poly(self, poly, num_reads=1):
+
+        if any(bias > 1 for bias in poly.values()):
+            raise RuntimeError
+        if any(bias < -1 for bias in poly.values()):
+            raise RuntimeError
+
+        samples = np.ones((num_reads, len(poly.variables))), list(poly.variables)
+
+        return dimod.SampleSet.from_samples(samples, vartype=poly.vartype,
+                                            energy=poly.energies(samples))
 
 
 class TestConstruction(unittest.TestCase):
@@ -32,16 +51,45 @@ class TestConstruction(unittest.TestCase):
         with self.assertRaises(TypeError):
             PolyScaleComposite(ExactSolver())
 
-# todo: check all-zero with normalize
-
 
 class TestSampleHising(unittest.TestCase):
-    pass
+    def test_all_zero(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+
+        sampler.sample_hising({'a': 0}, {'ab': 0, 'bc': 0, 'abc': 0})
+
+    def test_empty(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        samples = sampler.sample_hising({}, {})
+        self.assertEqual(len(samples.variables), 0)
+
+    def test_normalizing(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        samples = sampler.sample_hising({'a': 4}, {})
+        self.assertEqual(samples.first.energy, 4)
+
+    def test_scale(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        samples = sampler.sample_hising({'a': 4}, {}, scalar=.25)
+        self.assertEqual(samples.first.energy, 4)
+
+    def test_fail_scale(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        with self.assertRaises(RuntimeError):
+            sampler.sample_hising({'a': 4}, {}, scalar=1)
 
 
 class TestSampleHubo(unittest.TestCase):
-    pass
+    def test_empty(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        samples = sampler.sample_hubo({})
+        self.assertEqual(len(samples.variables), 0)
 
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        samples = sampler.sample_hubo({'a': 4}, scalar=.25)
+        self.assertEqual(samples.first.energy, 4)
 
-class TestSamplePoly(unittest.TestCase):
-    pass
+    def test_fail_scale(self):
+        sampler = PolyScaleComposite(RangeLimitedSampler())
+        with self.assertRaises(RuntimeError):
+            sampler.sample_hubo({'a': 4}, scalar=1)
