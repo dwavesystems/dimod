@@ -13,6 +13,12 @@
 #    limitations under the License.
 #
 # ============================================================================
+"""
+It is possible to construct samplers that handle binary polynomials - problems
+that have binary variables but they are not constrainted to quadratic
+interactions.
+
+"""
 import abc
 import warnings
 
@@ -51,9 +57,44 @@ class PolySampler:
         pass
 
     def sample_hising(self, h, J, **kwargs):
+        """Sample from a higher-order Ising model.
+
+        Convert the given higher-order Ising model to a :obj:`.BinaryPolynomial`
+        and invoke `sample_poly`.
+
+        Args:
+            h (dict):
+                The linear biases of the Ising problem.
+
+            J (dict):
+                The quadratic biases of the Ising problem.
+
+            **kwargs:
+                See `sample_poly` for additional keyword definitions.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        """
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
 
     def sample_hubo(self, H, **kwargs):
+        """Sample from a higher-order unconstrainted binary optimization problem.
+
+        Convert the given higher-order unconstrainted binary optimization
+        problem to a :obj:`.BinaryPolynomial` and invoke `sample_poly`.
+
+        Args:
+            H (dict):
+                The coefficients of the HUBO.
+
+            **kwargs:
+                See `sample_poly` for additional keyword definitions.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        """
         return self.sample_poly(BinaryPolynomial.from_hubo(H), **kwargs)
 
     def sample(self, bqm, *args, **kwargs):
@@ -79,4 +120,7 @@ class PolySampler:
 
 
 class ComposedPolySampler(PolySampler, Composite):
+    """Abstract base class for dimod composed polynomial samplers.
+
+    Inherits from :class:`.PolySampler` and :class:`.Composite`."""
     pass
