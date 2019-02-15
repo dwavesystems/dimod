@@ -97,18 +97,23 @@ class LinearView(BQMView, abc.MutableMapping):
     The linear biases are stored in a dict-of-dicts format, where 'self loops'
     store the linear biases.
     So `{v: bias}` is stored `._adj = {v: {v: Bias(bias)}}`.
+    If v is not in ._adj[v] then the bias is treated as 0.
 
     """
 
     def __delitem__(self, v):
         if v not in self:
             raise KeyError
-        if len(self._adj[v]) > 1:
+        adj = self._adj
+        if len(adj[v]) - (v in adj[v]) > 0:
             raise ValueError("there are interactions associated with {} that must be deleted first".format(v))
-        del self._adj[v]
+        del adj[v]
 
     def __getitem__(self, v):
-        return self._adj[v][v]
+        # developer note: we could try to match the type with other biases in
+        # the bqm, but I think it is better to just use python int 0 as it
+        # is most likely to be compatible with other numeric types.
+        return self._adj[v].get(v, 0)
 
     def __iter__(self):
         return iter(self._adj)
@@ -137,7 +142,8 @@ class LinearItemsView(abc.ItemsView):
 
     def __iter__(self):
         for v, neighbours in self._mapping._adj.items():
-            yield v, neighbours[v]
+            # see note in LinearView.__getitem__
+            yield v, neighbours.get(v, 0)
 
 
 class QuadraticView(BQMView, abc.MutableMapping):
@@ -178,8 +184,9 @@ class QuadraticView(BQMView, abc.MutableMapping):
             seen.add(u)
 
     def __len__(self):
-        # -1 comes from self loops
-        return sum(len(neighbours) - 1 for neighbours in self._adj.values()) // 2
+        # remove the self-loops
+        return sum(len(neighbours) - (v in neighbours)
+                   for v, neighbours in self._adj.items()) // 2
 
     def __setitem__(self, interaction, bias):
         u, v = interaction
@@ -250,7 +257,9 @@ class NeighbourView(abc.Mapping):
                 yield u
 
     def __len__(self):
-        return len(self._adj[self._var]) - 1  # ignore self
+        v = self._var
+        neighbours = self._adj[v]
+        return len(neighbours) - (v in neighbours)  # ignore self
 
     def __str__(self):
         return str(dict(self))

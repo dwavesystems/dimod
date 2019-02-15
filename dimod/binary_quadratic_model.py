@@ -442,7 +442,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         # is much faster
         _adj = self._adj
         if v in _adj:
-            _adj[v][v] += bias
+            if v in _adj[v]:
+                _adj[v][v] += bias
+            else:
+                _adj[v][v] = bias
         else:
             _adj[v] = {v: bias}
 
@@ -542,6 +545,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if u == v:
             raise ValueError("no self-loops allowed, therefore ({}, {}) is not an allowed interaction".format(u, v))
 
+        _adj = self._adj
+
         if vartype is not None and vartype is not self.vartype:
             if self.vartype is Vartype.SPIN and vartype is Vartype.BINARY:
                 # convert from binary to spin
@@ -563,21 +568,11 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 raise ValueError("unknown vartype")
         else:
             # so that they exist.
-
-            # developer note: we could  try to match the type of the quadratic
-            # bias with type(bias)(0), but this sometimes fails. We could also
-            # put it in a try-except but I am not so sure that it will fail
-            # predictably. I think it is better to just use python int 0 as it
-            # is most likely to be compatible with other numeric types.
-
-            # We don't actually need to do the check whether is is present but
-            # it is slightly faster to do so.
             if u not in self:
-                self.add_variable(u, 0)
+                _adj[u] = {}
             if v not in self:
-                self.add_variable(v, 0)
+                _adj[v] = {}
 
-        _adj = self._adj
         if u in _adj[v]:
             _adj[u][v] = _adj[v][u] = _adj[u][v] + bias
         else:
@@ -1214,7 +1209,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         # finally remove v
         self.remove_variable(v)
-
 
 ###################################################################################################
 # transformations
@@ -2205,7 +2199,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 qdata = qdata[order]
 
         return ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)
-
 
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
