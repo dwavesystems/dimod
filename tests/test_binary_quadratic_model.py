@@ -73,6 +73,9 @@ class TestBinaryQuadraticModel(unittest.TestCase):
                 self.assertTrue((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
                 # self.assertFalse((u, v) in bqm.quadratic and (v, u) in bqm.quadratic)
 
+        self.assertEqual(len(bqm.quadratic), len(set(bqm.quadratic)))
+        self.assertEqual(len(bqm.variables), len(bqm.linear))
+
     def test_construction(self):
         # spin model
         linear = {0: 1, 1: -1, 2: .5}
@@ -2049,3 +2052,13 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN,
                                          tag=5)
         byte_serializable = bqm.to_serializable(use_bytes=True)
+
+
+class TestZeroField(unittest.TestCase):
+    # test when there are only quadratic biases
+    def test_one_interaction(self):
+        bqm = dimod.BinaryQuadraticModel({}, {'ab': -1}, 0, dimod.SPIN)
+        self.assertEqual(bqm.linear, {'a': 0, 'b': 0})
+        self.assertEqual(bqm.adj, {'a': {'b': -1}, 'b': {'a': -1}})
+        self.assertEqual(set(bqm.linear.keys()), {'a', 'b'})
+        self.assertEqual(set(bqm.linear.items()), {('a', 0), ('b', 0)})
