@@ -172,16 +172,28 @@ Methods
    ScaleComposite.sample
    ScaleComposite.sample_ising
 
-Trim Composite
---------------
+Truncate Composite
+------------------
 
-.. automodule:: dimod.reference.composites.trimcomposite
+.. automodule:: dimod.reference.composites.truncatecomposite
 
 Class
 ~~~~~
 
 .. currentmodule:: dimod.reference.composites
-.. autoclass:: TrimComposite
+.. autoclass:: TruncateComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   TruncateComposite.child
+   TruncateComposite.children
+   TruncateComposite.parameters
+   TruncateComposite.properties
+
 
 Methods
 ~~~~~~~
@@ -189,4 +201,6 @@ Methods
 .. autosummary::
    :toctree: generated/
 
-   TrimComposite.sample
+   TruncateComposite.sample
+   TruncateComposite.sample_ising
+   TruncateComposite.sample_qubo
