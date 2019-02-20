@@ -64,10 +64,10 @@ class PolySampler:
 
         Args:
             h (dict):
-                The linear biases of the Ising problem.
+                The variable biases of the Ising problem.
 
             J (dict):
-                The quadratic biases of the Ising problem.
+                The interaction biases of the Ising problem.
 
             **kwargs:
                 See `sample_poly` for additional keyword definitions.

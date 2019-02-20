@@ -180,8 +180,6 @@ def polymorph_response(response, poly, bqm,
         bqm (:obj:`dimod.BinaryQuadraticModel`): Binary quadratic model of the
             reduced problem.
 
-        offset (float, optional): constant energy offset
-
         penalty_strength (float, optional): default is None, if provided,
             will be added to the info field of the returned sampleSet object.
 
@@ -249,9 +247,6 @@ class PolyScaleComposite(ComposedPolySampler):
             A binary polynomial sampler.
 
     Examples:
-       This example uses :class:`.ScaleComposite` to instantiate a
-       composed sampler that submits a simple higher-order Ising problem to a
-       sampler.
 
        >>> linear = {'a': -4.0, 'b': -4.0}
        >>> quadratic = {('a', 'b'): 3.2, ('a', 'b', 'c'): 1}
@@ -289,7 +284,7 @@ class PolyScaleComposite(ComposedPolySampler):
                     ignored_terms=None, **parameters):
         """Scale and sample from the given binary polynomial.
 
-        Ff scalar is not given, problem is scaled based on bias and polynomial
+        If scalar is not given, problem is scaled based on bias and polynomial
         ranges. See :meth:`.BinaryPolynomial.scale` and
         :meth:`.BinaryPolynomial.normalize`
 
