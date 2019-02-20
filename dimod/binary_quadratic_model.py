@@ -960,7 +960,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                                                   quadratic_range))
 
         lin_min, lin_max = min_and_max([v for k, v in self.linear.items()
-                                    if k not in ignored_variables])
+                                     if k not in ignored_variables])
         quad_min, quad_max = min_and_max([v for (a,b),
                                                 v in self.quadratic.items()
                                           if ((a, b) not in ignored_interactions

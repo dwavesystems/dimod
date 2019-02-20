@@ -24,11 +24,6 @@ from dimod import HigherOrderComposite, ExactSolver
 
 class TestFixedVariableComposite(unittest.TestCase):
 
-    def test_instantiation_smoketest(self):
-        sampler = HigherOrderComposite(ExactSolver())
-
-        dtest.assert_sampler_api(sampler)
-
     def test_sample(self):
         linear = {0: -0.5, 1: -0.3, 2: -0.8}
         quadratic = {(0, 1, 2): -1.7}
@@ -63,7 +58,7 @@ class TestFixedVariableComposite(unittest.TestCase):
                                         keep_penalty_variables=True,
                                         discard_unsatisfied=True)
 
-        self.assertEqual(len(response.first.sample),5)
+        self.assertEqual(len(response.first.sample), 5)
         self.assertAlmostEqual(response.first.energy, -3.3)
         self.assertTrue(response.first.penalty_satisfaction)
 

@@ -31,9 +31,8 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
-from dimod.higherorder import poly_energies, _relabeled_poly, check_isin
 
-__all__ = ['ScaleComposite']
+__all__ = 'ScaleComposite',
 
 
 class ScaleComposite(ComposedSampler):
@@ -179,35 +178,40 @@ class ScaleComposite(ComposedSampler):
 
         """
 
-        # if quadratic, create a bqm and send to sample
+        if any(len(inter) > 2 for inter in J):
+            # handle HUBO
+            import warnings
+            msg = ("Support for higher order Ising models in ScaleComposite is "
+                   "deprecated and will be removed in dimod 0.9.0. Please use "
+                   "PolyScaleComposite.sample_hising instead.")
+            warnings.warn(msg, DeprecationWarning)
 
-        if max(map(len, J.keys())) == 2:
-            bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
-            return self.sample(bqm, scalar=scalar,
-                               bias_range=bias_range,
-                               quadratic_range=quadratic_range,
-                               ignored_variables=ignored_variables,
-                               ignored_interactions=ignored_interactions,
-                               ignore_offset=ignore_offset, **parameters)
+            from dimod.reference.composites.higherordercomposites import PolyScaleComposite
+            from dimod.higherorder.polynomial import BinaryPolynomial
 
-        # handle HUBO
+            poly = BinaryPolynomial.from_hising(h, J, offset=offset)
 
-        ignored_variables, ignored_interactions = _check_params(
-            ignored_variables,
-            ignored_interactions)
+            ignored_terms = set()
+            if ignored_variables is not None:
+                ignored_terms.update(frozenset(v) for v in ignored_variables)
+            if ignored_interactions is not None:
+                ignored_terms.update(frozenset(inter) for inter in ignored_interactions)
+            if ignore_offset:
+                ignored_terms.add(frozenset())
 
-        child = self.child
-        h_sc, J_sc, offset_sc = _scaled_hubo(h, J, offset, scalar, bias_range,
-                                             quadratic_range, ignored_variables,
-                                             ignored_interactions,
-                                             ignore_offset)
-        response = child.sample_ising(h_sc, J_sc, offset=offset_sc,
-                                      **parameters)
+            return PolyScaleComposite(self.child).sample_poly(poly, scalar=scalar,
+                                                              bias_range=bias_range,
+                                                              poly_range=quadratic_range,
+                                                              ignored_terms=ignored_terms,
+                                                              **parameters)
 
-        poly = _relabeled_poly(h, J, response.variables.index)
-        response.record.energy = np.add(poly_energies(response.record.sample,
-                                                      poly), offset)
-        return response
+        bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
+        return self.sample(bqm, scalar=scalar,
+                           bias_range=bias_range,
+                           quadratic_range=quadratic_range,
+                           ignored_variables=ignored_variables,
+                           ignored_interactions=ignored_interactions,
+                           ignore_offset=ignore_offset, **parameters)
 
 
 def _scale_back_response(bqm, response, scalar, ignored_interactions,
@@ -296,40 +300,5 @@ def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
     return bqm_copy
 
 
-def _scaled_hubo(h, j, offset, scalar, bias_range,
-                 quadratic_range,
-                 ignored_variables,
-                 ignored_interactions,
-                 ignore_offset):
-    """Helper function of sample_ising for scaling"""
-
-    if scalar is None:
-        scalar = _calc_norm_coeff(h, j, bias_range, quadratic_range,
-                                  ignored_variables, ignored_interactions)
-    h_sc = dict(h)
-    j_sc = dict(j)
-    offset_sc = offset
-    if not isinstance(scalar, Number):
-        raise TypeError("expected scalar to be a Number")
-
-    if scalar != 1:
-        if ignored_variables is None or ignored_interactions is None:
-            raise ValueError('ignored interactions or variables cannot be None')
-        j_sc = {}
-        for u, v in j.items():
-            if u in ignored_interactions:
-                j_sc[u] = v
-            else:
-                j_sc[u] = v * scalar
-
-        if not ignore_offset:
-            offset_sc = offset * scalar
-
-        h_sc = {}
-        for k, v in h.items():
-            if k in ignored_variables:
-                h_sc[k] = v
-            else:
-                h_sc[k] = v * scalar
-
-    return h_sc, j_sc, offset_sc
+def check_isin(key, key_list):
+    return sum(set(key) == set(key_tmp) for key_tmp in key_list)

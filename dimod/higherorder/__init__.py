@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,11 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# ============================================================================
 
-from dimod.reference.composites.fixedvariable import *
-from dimod.reference.composites.higherordercomposites import *
-from dimod.reference.composites.scalecomposite import *
-from dimod.reference.composites.spin_transform import *
-from dimod.reference.composites.structure import *
-from dimod.reference.composites.truncatecomposite import TruncateComposite
+from dimod.higherorder.polynomial import BinaryPolynomial
+from dimod.higherorder.utils import make_quadratic, poly_energy, poly_energies
