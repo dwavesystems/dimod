@@ -322,16 +322,17 @@ class BinaryPolynomial(abc.MutableMapping):
         lmin = lmax = 0
         pmin = pmax = 0
         for term, bias in self.items():
+
+            if term in ignored_terms:
+                # we don't use the ignored terms to calculate the scaling
+                continue
+
             if len(term) == 1:
-                if bias < lmin:
-                    lmin = bias
-                if bias > lmax:
-                    lmax = bias
+                lmin = min(bias, lmin)
+                lmax = max(bias, lmax)
             elif len(term) > 1:
-                if bias < lmin:
-                    pmin = bias
-                if bias > lmax:
-                    pmax = bias
+                pmin = min(bias, pmin)
+                pmax = max(bias, pmax)
 
         inv_scalar = max(lmin / lin_range[0], lmax / lin_range[1],
                          pmin / poly_range[0], pmax / poly_range[1])
