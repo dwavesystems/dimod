@@ -29,6 +29,10 @@ class TestConstruction(unittest.TestCase):
 
         self.assertEqual(sampler.parameters, {})
 
+    def test_0(self):
+        with self.assertRaises(ValueError):
+            TruncateComposite(ExactSolver(), 0)
+
 
 class TestSample(unittest.TestCase):
     def test_sampleset_shorter(self):
@@ -38,7 +42,7 @@ class TestSample(unittest.TestCase):
         sampler = TruncateComposite(ExactSolver(), 10)
         samples = sampler.sample_ising(h, J)
 
-        # we should see 2**n rows
+        # we should see 2**n < 10 rows
         self.assertEqual(len(samples), 8)
 
     def test_sampleset_trim(self):
@@ -48,7 +52,6 @@ class TestSample(unittest.TestCase):
         sampler = TruncateComposite(ExactSolver(), 6)
         samples = sampler.sample_ising(h, J)
 
-        # we should see 2**n rows
         self.assertEqual(len(samples), 6)
 
     def test_with_aggration(self):
@@ -60,5 +63,4 @@ class TestSample(unittest.TestCase):
         sampler = TruncateComposite(ExactSolver(), 6, aggregate=True)
         samples = sampler.sample_ising(h, J)
 
-        # we should see 2**n rows
         self.assertEqual(len(samples), 6)
