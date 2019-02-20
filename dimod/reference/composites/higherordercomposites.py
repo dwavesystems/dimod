@@ -327,7 +327,8 @@ class PolyScaleComposite(ComposedPolySampler):
             # we need to know how much we scaled by, which we can do by looking
             # at the biases
             try:
-                v = next((v for v, bias in original.items() if bias))
+                v = next(v for v, bias in original.items()
+                         if bias and v not in ignored_terms)
             except StopIteration:
                 # nothing to scale
                 scalar = 1
