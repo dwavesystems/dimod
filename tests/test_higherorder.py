@@ -24,7 +24,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
     def test__spin_prod(self):
 
-        bqm = dimod.higherorder._spin_product(['a', 'b', 'p', 'aux'])
+        bqm = dimod.higherorder.utils._spin_product(['a', 'b', 'p', 'aux'])
 
         for v in ['a', 'b', 'p', 'aux']:
             self.assertIn(v, bqm)
@@ -41,7 +41,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         variables = ['a', 'b', 'p']
 
-        bqm = dimod.higherorder._binary_product(variables)
+        bqm = dimod.higherorder.utils._binary_product(variables)
 
         for v in variables:
             self.assertIn(v, bqm)
@@ -225,11 +225,9 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertAlmostEqual(energy, min(reduced_energies))
 
     def test_poly_energies(self):
-        from dimod.higherorder import create_poly
-
         linear = {0: 1.0, 1: 1.0}
         j = {(0, 1, 2): 0.5}
-        poly = create_poly(linear, j)
+        poly = dimod.BinaryPolynomial.from_hising(linear, j)
         samples = [[1, 1, -1], [1, -1, 1], [1, 1, 1], [-1, 1, -1]]
 
         en = poly_energies(samples, poly)
