@@ -184,7 +184,7 @@ class BinaryPolynomial(abc.MutableMapping):
 
         Args:
             sample_like (samples_like):
-                A raw samples. `sample_like` is an extension of
+                A raw sample. `sample_like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (:class:`numpy.dtype`, optional):
