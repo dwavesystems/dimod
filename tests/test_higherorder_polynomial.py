@@ -154,6 +154,12 @@ class TestNormalize(unittest.TestCase):
         poly.normalize(bias_range=1, poly_range=None, ignored_terms=[])
         self.assertEqual(poly['a'], 1)
 
+    def test_ignored(self):
+        poly = BinaryPolynomial({'a': 4, 'b': 2}, 'SPIN')
+        poly.normalize(bias_range=1, poly_range=None, ignored_terms=['a'])
+        self.assertEqual(poly['a'], 4)  # should not be scaled or used in calcs
+        self.assertEqual(poly['b'], 1)  # should be normalized correctly
+
 
 class TestRelabel(unittest.TestCase):
     def test_swap_partial(self):
