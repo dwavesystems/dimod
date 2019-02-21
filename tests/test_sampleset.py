@@ -360,6 +360,24 @@ class TestFirst(unittest.TestCase):
             dimod.SampleSet.from_samples([], dimod.SPIN, energy=[]).first
 
 
+class TestDataVectors(unittest.TestCase):
+    # SampleSet.data_vectors property
+    def test_empty(self):
+        ss = dimod.SampleSet.from_samples([], dimod.SPIN, energy=[])
+
+        self.assertEqual(set(ss.data_vectors), {'energy', 'num_occurrences'})
+        for field, vector in ss.data_vectors.items():
+            np.testing.assert_array_equal(vector, [])
+
+    def test_view(self):
+        # make sure that the vectors are views
+        ss = dimod.SampleSet.from_samples([[-1, 1], [1, 1]], dimod.SPIN, energy=[5, 5])
+
+        self.assertEqual(set(ss.data_vectors), {'energy', 'num_occurrences'})
+        for field, vector in ss.data_vectors.items():
+            np.shares_memory(vector, ss.record)
+
+
 class Test_concatenate(unittest.TestCase):
     def test_simple(self):
         ss0 = dimod.SampleSet.from_samples([-1, +1], dimod.SPIN, energy=-1)
