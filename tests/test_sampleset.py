@@ -31,6 +31,7 @@ except ImportError:
 
 
 class Test_as_samples(unittest.TestCase):
+    # tests for as_samples function
 
     def test_copy_false(self):
         samples_like = np.ones((5, 5))
@@ -126,7 +127,7 @@ class Test_as_samples(unittest.TestCase):
         self.assertEqual(arr.dtype, np.int32)
 
 
-class TestSampleSet(unittest.TestCase):
+class TestConstruction(unittest.TestCase):
     def test_from_samples(self):
 
         nv = 5
@@ -197,17 +198,6 @@ class TestSampleSet(unittest.TestCase):
         with self.assertRaises(ValueError):
             dimod.SampleSet.from_samples(np.ones((3, 5)), dimod.SPIN, energy=[5, 5])
 
-    def test_eq_ordered(self):
-        # samplesets should be equal regardless of variable order
-        ss0 = dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0)
-        ss1 = dimod.SampleSet.from_samples(([1, -1], 'ba'), dimod.SPIN, energy=0.0)
-        ss2 = dimod.SampleSet.from_samples(([1, -1], 'ab'), dimod.SPIN, energy=0.0)
-        ss3 = dimod.SampleSet.from_samples(([1, -1], 'ac'), dimod.SPIN, energy=0.0)
-
-        self.assertEqual(ss0, ss1)
-        self.assertNotEqual(ss0, ss2)
-        self.assertNotEqual(ss1, ss3)
-
     def test_shorter_samples(self):
         ss = dimod.SampleSet.from_samples(np.ones((100, 5), dtype='int8'), dimod.BINARY, energy=np.ones(100))
 
@@ -225,6 +215,27 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(samples.aggregate(),
                          dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0, num_occurrences=2))
 
+    def test_from_bqm_single_sample(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
+
+
+class TestEq(unittest.TestCase):
+    def test_ordered(self):
+        # samplesets should be equal regardless of variable order
+        ss0 = dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=0.0)
+        ss1 = dimod.SampleSet.from_samples(([1, -1], 'ba'), dimod.SPIN, energy=0.0)
+        ss2 = dimod.SampleSet.from_samples(([1, -1], 'ab'), dimod.SPIN, energy=0.0)
+        ss3 = dimod.SampleSet.from_samples(([1, -1], 'ac'), dimod.SPIN, energy=0.0)
+
+        self.assertEqual(ss0, ss1)
+        self.assertNotEqual(ss0, ss2)
+        self.assertNotEqual(ss1, ss3)
+
+
+class TestAggregate(unittest.TestCase):
     def test_aggregate_simple(self):
         samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0])
 
@@ -235,13 +246,9 @@ class TestSampleSet(unittest.TestCase):
         self.assertEqual(samples,
                          dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
 
-    def test_from_bqm_single_sample(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
-        samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
-        self.assertEqual(samples,
-                         dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
 
-    def test_truncate(self):
+class TestTruncate(unittest.TestCase):
+    def test_typical(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
         samples = dimod.SampleSet.from_samples_bqm(np.tril(np.ones(100)), bqm.binary)
 
@@ -255,7 +262,7 @@ class TestSampleSet(unittest.TestCase):
                 else:
                     self.assertEqual(val, 1)
 
-    def test_truncate_unordered(self):
+    def test_unordered(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
         samples = dimod.SampleSet.from_samples_bqm(np.triu(np.ones(100)), bqm.binary)
 
@@ -270,7 +277,7 @@ class TestSampleSet(unittest.TestCase):
                     self.assertEqual(val, 1)
 
 
-class TestSampleSetIteration(unittest.TestCase):
+class TestIteration(unittest.TestCase):
     def test_data_reverse(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
         sampleset = dimod.SampleSet.from_samples_bqm([{'a': -1, 'b': 1}, {'a': 1, 'b': 1}], bqm)
@@ -280,8 +287,7 @@ class TestSampleSetIteration(unittest.TestCase):
         self.assertEqual(samples, list(reversed(reversed_samples)))
 
 
-class TestSampleSetSerialization(unittest.TestCase):
-
+class TestSerialization(unittest.TestCase):
     def test_functional_simple_shapes(self):
         for ns in range(1, 9):
             for nv in range(1, 15):
@@ -324,7 +330,7 @@ class TestSampleSetSerialization(unittest.TestCase):
 
 
 @unittest.skipUnless(_pandas, "no pandas present")
-class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
+class TestPandas(unittest.TestCase):
     def test_simple(self):
         samples = dimod.SampleSet.from_samples(([[-1, 1, -1], [-1, -1, 1]], 'abc'),
                                                dimod.SPIN, energy=[-.5, .5])
@@ -347,7 +353,8 @@ class TestSampleSet_to_pandas_dataframe(unittest.TestCase):
         pd.testing.assert_frame_equal(df, other, check_dtype=False)
 
 
-class TestSampleSet_first(unittest.TestCase):
+class TestFirst(unittest.TestCase):
+    # SampleSet.first property
     def test_empty(self):
         with self.assertRaises(ValueError):
             dimod.SampleSet.from_samples([], dimod.SPIN, energy=[]).first
