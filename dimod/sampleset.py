@@ -722,7 +722,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                 yield sample
 
     def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False,
-             sample_dict_cast=True):
+             sample_dict_cast=True, index=False):
         """Iterate over the data in the :class:`SampleSet`.
 
         Args:
@@ -744,6 +744,10 @@ class SampleSet(abc.Iterable, abc.Sized):
                 If True, samples are returned as dicts rather than
                 `.SampleView`s. Note that this can lead to very heavy memory
                 usage.
+
+            index (bool, optional, default=False):
+                If True, `datum.idx` gives the corresponding index of the
+                :attr:`.SampleSet.record`.
 
         Yields:
             namedtuple/tuple: The data in the :class:`SampleSet`, in the order specified by the input
@@ -777,9 +781,14 @@ class SampleSet(abc.Iterable, abc.Sized):
             # make sure that sample, energy is first
             fields = self._REQUIRED_FIELDS + [field for field in record.dtype.fields
                                               if field not in self._REQUIRED_FIELDS]
+            if index:
+                fields.append('idx')
 
         if sorted_by is None:
             order = np.arange(len(self))
+        elif index:
+            # we want a stable sort but it can be slower
+            order = np.argsort(record[sorted_by], kind='stable')
         else:
             order = np.argsort(record[sorted_by])
 
@@ -804,6 +813,8 @@ class SampleSet(abc.Iterable, abc.Sized):
                     if sample_dict_cast:
                         sample = dict(sample)
                     yield sample
+                elif field == 'idx':
+                    yield idx
                 else:
                     yield record[field][idx]
 
