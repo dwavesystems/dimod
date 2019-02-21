@@ -560,6 +560,32 @@ class SampleSet(abc.Iterable, abc.Sized):
     ###############################################################################################
 
     @property
+    def data_vectors(self):
+        """The per-sample data in a vector.
+
+        Returns:
+            dict: A dict where the keys are the fields in the record and the
+            values are the corresponding arrays.
+
+        Examples:
+            >>> sampleset = dimod.SampleSet.from_samples([[-1, 1], [1, 1]], dimod.SPIN,
+                                                         energy=[-1, 1])
+            >>> sampleset.data_vectors['energy']
+            array([-1,  1])
+
+            Note that this is equivalent to, and less performant than:
+
+            >>> sampleset = dimod.SampleSet.from_samples([[-1, 1], [1, 1]], dimod.SPIN,
+                                                         energy=[-1, 1])
+            >>> sampleset.record['energy']
+            array([-1,  1])
+
+
+        """
+        return {field: self.record[field] for field in self.record.dtype.names
+                if field != 'sample'}
+
+    @property
     def first(self):
         """Sample with the lowest-energy.
 
