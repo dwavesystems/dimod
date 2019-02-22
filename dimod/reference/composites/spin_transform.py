@@ -87,8 +87,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
             # todo something like Structured.__init__(self)
             raise NotImplementedError
 
-        self.parameters = parameters = {'num_spin_reversal_transforms': [],
-                                        'spin_reversal_variables': []}
+        self.parameters = parameters = {'spin_reversal_variables': []}
         parameters.update(child.parameters)
 
         self.properties = {'child_properties': child.properties}
@@ -99,11 +98,12 @@ class SpinReversalTransformComposite(Sampler, Composite):
         Args:
             bqm (:obj:`~dimod.BinaryQuadraticModel`):
                 Binary quadratic model to be sampled from.
+
             num_spin_reversal_transforms (integer, optional, default=2):
                 Number of spin reversal transform runs.
-            spin_reversal_variables (list/dict, optional, default=None):
-                Variables to which to apply the spin reversal. If None, every variable
-                has a 50% probability of being selected.
+
+            spin_reversal_variables (list/dict, optional):
+                Deprecated and no longer functional.
 
         Returns:
             :obj:`.SampleSet`
@@ -125,24 +125,32 @@ class SpinReversalTransformComposite(Sampler, Composite):
             Sample(sample={'a': 0, 'b': 1}, energy=-1.0)
 
         """
+
+        if spin_reversal_variables is not None:
+            # this kwarg does not actually make sense for multiple SRTs. To
+            # get the same functionality a user should apply them by hand
+            # to their BQM before submitting.
+            import warnings
+            warnings.warn("'spin_reversal_variables' kwarg is deprecated and no longer functions.",
+                          DeprecationWarning)
+
         # make a main response
         responses = []
 
+        flipped_bqm = bqm.copy()
+        transform = {v: False for v in bqm.variables}
+
         for ii in range(num_spin_reversal_transforms):
-            if spin_reversal_variables is None:
-                # apply spin transform to each variable with 50% chance
-                transform = list(v for v in bqm.linear if random() > .5)
-            else:
-                transform = list(spin_reversal_variables)
+            # flip each variable with a 50% chance
+            for v in bqm:
+                if random() > .5:
+                    transform[v] = not transform[v]
+                    flipped_bqm.flip_variable(v)
 
-            flipped_bqm = bqm.copy()
+            flipped_response = self.child.sample(flipped_bqm, **kwargs)
 
-            for v in transform:
-                flipped_bqm.flip_variable(v)
-
-            flipped_response = self.child.sample(bqm, **kwargs)
-
-            tf_idxs = [flipped_response.variables.index[v] for v in flipped_response.variables]
+            tf_idxs = [flipped_response.variables.index(v)
+                       for v, flip in transform.items() if flip]
 
             if bqm.vartype is Vartype.SPIN:
                 flipped_response.record.sample[:, tf_idxs] = -1 * flipped_response.record.sample[:, tf_idxs]
