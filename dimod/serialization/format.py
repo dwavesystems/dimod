@@ -242,10 +242,10 @@ class Formatter(object):
     def format(self, obj, **kwargs):
         """Return the formatted representation of the object as a string."""
         sio = StringIO()
-        self.print(obj, stream=sio, **kwargs)
+        self.fprint(obj, stream=sio, **kwargs)
         return sio.getvalue()
 
-    def print(self, obj, stream=None, **kwargs):
+    def fprint(self, obj, stream=None, **kwargs):
         """Prints the formatted representation of the object on stream"""
         if stream is None:
             stream = sys.stdout
