@@ -26,9 +26,11 @@ except ImportError:
     import collections as abc
 
 from collections import deque
-from io import StringIO
 
 import numpy as np
+
+from six import StringIO
+from six.moves import map
 
 import dimod
 
