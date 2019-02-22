@@ -16,12 +16,167 @@
 import unittest
 
 import dimod
-from dimod.serialization.format import sampleset_to_string
+import numpy as np
+
+from dimod.serialization.format import Formatter
 
 
-class Test_sampleset_to_string(unittest.TestCase):
-    def test_smoke(self):
-        # test that nothing falls down or explodes, most 'tests' would be in
-        # the doctests
-        samples = dimod.ExactSolver().sample_ising({v: -v - 1 for v in range(5)}, {})
-        str(samples)
+class TestUnknownType(unittest.TestCase):
+    def test_int(self):
+        with self.assertRaises(TypeError):
+            Formatter().format(5)
+
+
+class TestSampleSet(unittest.TestCase):
+    def test_empty(self):
+        empty = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        s = Formatter(width=80).format(empty)
+
+        target = '\n'.join(['Empty SampleSet',
+                            "Record Fields: ['sample', 'energy', 'num_occurrences']",
+                            "Variables: []",
+                            "['BINARY', 0 rows, 0 samples, 0 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_empty_width_50(self):
+        empty = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        s = Formatter(width=50).format(empty)
+
+        target = '\n'.join(['Empty SampleSet',
+                            "Record Fields: ['sample', 'energy', ...]",
+                            "Variables: []",
+                            "['BINARY', 0 rows, 0 samples, 0 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_empty_with_variables(self):
+        samples = dimod.SampleSet.from_samples(([], 'abcdefghijklmnopqrstuvwxyz'),
+                                               dimod.SPIN, energy=[])
+        s = Formatter(width=49).format(samples)
+
+        target = '\n'.join(['Empty SampleSet',
+                            "Record Fields: ['sample', 'energy', ...]",
+                            "Variables: ['a', 'b', 'c', 'd', 'e', 'f', 'g', ...]",
+                            "['SPIN', 0 rows, 0 samples, 26 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_triu_binary(self):
+        arr = np.triu(np.ones((5, 5)))
+        variables = [0, 1, 'a', 'b', 'c']
+
+        samples = dimod.SampleSet.from_samples((arr, variables),
+                                               dimod.BINARY, energy=[4., 3, 2, 1, 0])
+
+        s = Formatter(width=79, depth=None).format(samples)
+
+        target = '\n'.join(["   0  1  a  b  c energy num_oc.",
+                            "4  0  0  0  0  1    0.0       1",
+                            "3  0  0  0  1  1    1.0       1",
+                            "2  0  0  1  1  1    2.0       1",
+                            "1  0  1  1  1  1    3.0       1",
+                            "0  1  1  1  1  1    4.0       1",
+                            "['BINARY', 5 rows, 5 samples, 5 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_triu_spin(self):
+        arr = np.triu(np.ones((5, 5)))
+        variables = [0, 1, 'a', 'b', 'c']
+
+        samples = dimod.SampleSet.from_samples((2*arr-1, variables),
+                                               dimod.SPIN, energy=[4., 3, 2, 1, 0])
+
+        s = Formatter(width=79, depth=None).format(samples)
+
+        target = '\n'.join(["   0  1  a  b  c energy num_oc.",
+                            "4 -1 -1 -1 -1 +1    0.0       1",
+                            "3 -1 -1 -1 +1 +1    1.0       1",
+                            "2 -1 -1 +1 +1 +1    2.0       1",
+                            "1 -1 +1 +1 +1 +1    3.0       1",
+                            "0 +1 +1 +1 +1 +1    4.0       1",
+                            "['SPIN', 5 rows, 5 samples, 5 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_triu_row_summation(self):
+        arr = np.triu(np.ones((5, 5)))
+        variables = [0, 1, 'a', 'b', 'c']
+
+        samples = dimod.SampleSet.from_samples((arr, variables),
+                                               dimod.BINARY, energy=[4., 3, 2, 1, 0])
+
+        s = Formatter(width=79, depth=4).format(samples)
+
+        target = '\n'.join(["   0  1  a  b  c energy num_oc.",
+                            "4  0  0  0  0  1    0.0       1",
+                            "3  0  0  0  1  1    1.0       1",
+                            "...",
+                            "0  1  1  1  1  1    4.0       1",
+                            "['BINARY', 5 rows, 5 samples, 5 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_triu_col_summation(self):
+        arr = np.triu(np.ones((5, 5)))
+        variables = [0, 1, 'a', 'b', 'c']
+
+        samples = dimod.SampleSet.from_samples((arr, variables),
+                                               dimod.BINARY, energy=[4., 3, 2, 1, 0])
+
+        s = Formatter(width=30, depth=None).format(samples)
+
+        # without summation length would be 31
+
+        target = '\n'.join(["   0  1 ...  c energy num_oc.",
+                            "4  0  0 ...  1    0.0       1",
+                            "3  0  0 ...  1    1.0       1",
+                            "2  0  0 ...  1    2.0       1",
+                            "1  0  1 ...  1    3.0       1",
+                            "0  1  1 ...  1    4.0       1",
+                            "['BINARY',",
+                            " 5 rows,",
+                            " 5 samples,",
+                            " 5 variables]"])
+
+        self.assertEqual(s, target)
+
+    def test_additional_fields_summation(self):
+        arr = np.ones((2, 5))
+        variables = list(range(5))
+
+        samples = dimod.SampleSet.from_samples((arr, variables),
+                                               dimod.BINARY, energy=1,
+                                               other=[5, 6],
+                                               anotherother=[234029348023948234, 3])
+        s = Formatter(width=30, depth=None).format(samples)
+
+        target = '\n'.join(["   0 ...  4 energy num_oc. ...",
+                            "0  1 ...  1      1       1 ...",
+                            "1  1 ...  1      1       1 ...",
+                            "['BINARY',",
+                            " 2 rows,",
+                            " 2 samples,",
+                            " 5 variables]"])
+
+        self.assertEqual(target, s)
+
+    def test_additional_fields(self):
+        arr = np.ones((2, 5))
+        variables = list(range(5))
+
+        samples = dimod.SampleSet.from_samples((arr, variables),
+                                               dimod.BINARY, energy=1,
+                                               other=[5, 6],
+                                               anotherother=[234029348023948234, object()])
+        s = Formatter(width=79, depth=None).format(samples)
+
+        target = '\n'.join(["   0  1  2  3  4 energy num_oc. anothe. other",
+                            "0  1  1  1  1  1      1       1 2340...     5",
+                            "1  1  1  1  1  1      1       1 <obj...     6",
+                            "['BINARY', 2 rows, 2 samples, 5 variables]"])
+
+        self.assertEqual(target, s)

@@ -18,42 +18,43 @@
 # so will overwrite the settings in sphinx's setup.
 
 import numbers
+import sys
 
-from itertools import islice
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
+from collections import deque
+from io import StringIO
 
 import numpy as np
 
 import dimod
 
+__all__ = 'set_printoptions', 'Formatter'
+
 _format_options = {
-    'linewidth': 79,
-    'precision': 6,
-    'max_samples': 50,
+    'width': 79,
+    'depth': None,
     'sorted_by': 'energy',
-    'column_fill': '  ',  # between columns, private
 }
-# NB: Some of these are 'private' in that they are not documented in
-# set_printoptions
 
 
 def set_printoptions(**kwargs):
     """Set print options globally.
 
     Args:
-        linewidth (int, optional):
-            The maximum number of characters to a single line. Default is 75.
+        width (int, optional, default=79):
+            The maximum number of characters to a single line.
 
-        precision (int, optional):
-            Number of digits of precision for floating point output. Default is
-            6.
+        depth (int, optional, default=None):
+            The maximum number of rows printed, summation is used if
+            exceeded. Default is unlimited.
 
-        max_samples (int, optional):
-            The maximum number of samples printed, summation is used if
-            exceeded. Default is 50.
-
-        sorted_by (str/None, optional):
+        sorted_by (str/None, optional, default='energy'):
             Selects the field used to sort the samples when printing samplesets.
-            If None, samples are printed in record order. Default is 'energy'.
+            If None, samples are printed in record order.
 
     Note:
         All arguments must be provided as keyword arguments.
@@ -62,151 +63,347 @@ def set_printoptions(**kwargs):
     _format_options.update(kwargs)
 
 
-def _spinstr(v):
-    return '-1' if v <= 0 else '+1'
+def _spinstr(v, rjust=0):
+    s = '-1' if v <= 0 else '+1'
+    return s.rjust(rjust)
 
 
-def _binarystr(v):
-    return '0' if v <= 0 else '1'
+def _binarystr(v, rjust=0):
+    s = '0' if v <= 0 else '1'
+    return s.rjust(rjust)
 
 
-def _numstr(val, precision=6):
-    if isinstance(val, numbers.Integral):
-        return str(int(val))
-    return np.format_float_positional(val, unique=True, precision=precision,
-                                      trim='0')
+class _SampleTable(object):
+    """Creates the table for printing samples. Acts like a deque in that
+    it can be rotated and appended on either side.
+    """
+    def __init__(self, space_length=1):
+        self.deque = deque()
+        self.items_length = 0
+        self.space_length = space_length  # space between columns
+
+    @property
+    def ncol(self):
+        return len(self.deque)
+
+    @property
+    def width(self):
+        """the width of the table if made into a string"""
+        return self.items_length + (self.ncol - 1)*self.space_length
+
+    def append(self, header, f, _left=False):
+        """Add a column to the table.
+
+        Args:
+            header (str):
+                Column header
+
+            f (function(datum)->str):
+                Makes the row string from the datum. Str returned by f should
+                have the same width as header.
+
+        """
+        self.items_length += len(header)
+        if _left:
+            self.deque.appendleft((header, f))
+        else:
+            self.deque.append((header, f))
+
+    def appendleft(self, header, f):
+        self.append(header, f, _left=True)
+
+    def append_index(self, num_rows):
+        """Add an index column.
+
+        Left justified, width is determined by the space needed to print the
+        largest index.
+        """
+        width = len(str(num_rows - 1))
+
+        def f(datum):
+            return str(datum.idx).ljust(width)
+        header = ' '*width
+
+        self.append(header, f)
+
+    def append_sample(self, v, vartype, _left=False):
+        """Add a sample column"""
+        vstr = str(v).rjust(2)  # the variable will be len 0, or 1
+        length = len(vstr)
+
+        if vartype is dimod.SPIN:
+            def f(datum):
+                return _spinstr(datum.sample[v], rjust=length)
+        else:
+            def f(datum):
+                return _binarystr(datum.sample[v], rjust=length)
+
+        self.append(vstr, f, _left=_left)
+
+    def appendleft_sample(self, v, vartype):
+        self.append_sample(v, vartype, _left=True)
+
+    def append_vector(self, name, vector, _left=False):
+        """Add a data vectors column."""
+        if np.issubdtype(vector.dtype, np.integer):
+            # determine the length we need
+            largest = str(max(vector.max(), vector.min(), key=abs))
+            length = max(len(largest), min(7, len(name)))  # how many spaces we need to represent
+
+            if len(name) > length:
+                header = name[:length-1] + '.'
+            else:
+                header = name.rjust(length)
+
+            def f(datum):
+                return str(getattr(datum, name)).rjust(length)
+        elif np.issubdtype(vector.dtype, np.floating):
+            largest = np.format_float_positional(max(vector.max(), vector.min(), key=abs),
+                                                 precision=6, trim='0')
+            length = max(len(largest), min(7, len(name)))  # how many spaces we need to represent
+            if len(name) > length:
+                header = name[:length-1] + '.'
+            else:
+                header = name.rjust(length)
+
+            def f(datum):
+                return np.format_float_positional(getattr(datum, name),
+                                                  precision=6, trim='0',
+                                                  ).rjust(length)
+        else:
+            length = 7
+            if len(name) > length:
+                header = name[:length-1] + '.'
+            else:
+                header = name.rjust(length)
+
+            def f(datum):
+                r = repr(getattr(datum, name))
+                if len(r) > length:
+                    r = r[:length-3] + '...'
+                return r.rjust(length)
+
+        self.append(header, f, _left=_left)
+
+    def appendleft_vector(self, name, vector):
+        self.append_vector(name, vector, _left=True)
+
+    def dump_to_list(self):
+        """deconstructs self into a list"""
+        return [self.deque.popleft() for _ in range(self.ncol)]
+
+    def pop(self):
+        header, _ = self.deque.pop()
+        self.items_length -= len(header)
+
+    def popleft(self):
+        header, _ = self.deque.popleft()
+        self.items_length -= len(header)
+
+    def rotate(self, r):
+        self.deque.rotate(r)
 
 
-def _total_width(widths, fill_width):
-    return widths.sum() + fill_width*(len(widths) - 1)
-
-
-def _column_formatting(charr, energy_idx, options):
-    """Make columns all the same width and limit the total width"""
-
-    column_fill = options['column_fill']
-    linewidth = options['linewidth']
-
-    lenfunc = np.frompyfunc(len, 1, 1)
-
-    column_widths = lenfunc(charr).max(axis=0)
-
-    if _total_width(column_widths, len(column_fill)) > linewidth:
-        idxs = np.ones(len(column_widths), dtype=bool)
-        idxs[energy_idx - 2] = False
-
-        new_charr = charr[:, idxs]
-        new_energy_idx = energy_idx - 1
-
-        new_charr[:, new_energy_idx - 2] = '..'
-
-        return _column_formatting(new_charr, energy_idx-1, options)
-
-    for ci in range(1, charr.shape[1]):  # skip index
-        width = lenfunc(charr[:, ci]).max()
-
-        def fmt(s):
-            return s.rjust(width)
-
-        # apply to column
-        charr[:, ci] = np.frompyfunc(fmt, 1, 1)(charr[:, ci])
-
-    width = lenfunc(charr[:, 0]).max()
-
-    def fmt(s):
-        return s.ljust(width)
-
-    # apply to column
-    charr[:, 0] = np.frompyfunc(fmt, 1, 1)(charr[:, 0])
-
-    return '\n'.join(column_fill.join(row) for row in charr)
-
-
-def sampleset_to_string(sampleset, **kwargs):
-    """Get the string representation of a sampleset.
+class Formatter(object):
+    """Used to create nice string formats for dimod objects.
 
     Args:
-        sampleset (:obj:`.SampleSet`):
-            A sample set.
+        width (int, optional, default=79):
+            The maximum number of characters to a single line.
 
-        **kwargs:
-            Any keyword arguments will override the printing defaults. See
-            :func:`.set_printoptions` for argument descriptions.
+        depth (int, optional, default=None):
+            The maximum number of rows printed, summation is used if
+            exceeded. Default is unlimited.
 
-    Returns:
-        str
+        sorted_by (str/None, optional, default='energy'):
+            Selects the field used to sort the samples when printing samplesets.
+            If None, samples are printed in record order.
+
+    Examples:
+        >>> from dimod.serialization.format import Formatter
+        >>> sampleset = dimod.SampleSet.from_samples(([-1, 1], ['a', 'b']), dimod.SPIN, energy=1)
+        >>> Formatter(width=45).print(sampleset)
+           a  b energy num_oc.
+        0 -1 +1      1       1
+        ['SPIN', 1 rows, 1 samples, 2 variables]
+        >>> Formatter(width=30).print(sampleset)
+           a  b energy num_oc.
+        0 -1 +1      1       1
+        ['SPIN',
+         1 rows,
+         1 samples,
+         2 variables]
 
     """
+    def __init__(self, **kwargs):
+        self.options = options = _format_options.copy()
+        options.update(kwargs)
 
-    # todo: _format overrides
-    options = _format_options.copy()
-    options.update(kwargs)
+    def format(self, obj, **kwargs):
+        """Return the formatted representation of the object as a string."""
+        sio = StringIO()
+        self.print(obj, stream=sio, **kwargs)
+        return sio.getvalue()
 
-    max_samples = options['max_samples']
-    sorted_by = options['sorted_by']
-    precision = options['precision']
+    def print(self, obj, stream=None, **kwargs):
+        """Prints the formatted representation of the object on stream"""
+        if stream is None:
+            stream = sys.stdout
 
-    fields = [field for field in sampleset.record.dtype.names
-              if field != 'sample']
-    variables = sampleset.variables
+        options = self.options
+        options.update(kwargs)
 
-    #
-    # let's assume it fits our width and just worry about number of rows for now
-    #
+        if type(obj) is dimod.SampleSet:
+            self._print_sampleset(obj, stream, **options)
+            return
 
-    # variables + index + (fields - 'sample') so the index/'sample' cancel
-    ncols = len(sampleset.variables) + len(sampleset.record.dtype.names)
+        raise TypeError("cannot format type {}".format(type(obj)))
 
-    nrows = min(max_samples, len(sampleset)) + 1  # +1 for the header
+    def _print_sampleset(self, sampleset, stream,
+                         width, depth, sorted_by,
+                         **other):
 
-    charr = np.empty((nrows, ncols), dtype=object)
+        if len(sampleset) > 0:
+            self._print_samples(sampleset, stream, width, depth, sorted_by)
+        else:
+            stream.write('Empty SampleSet\n')
 
-    # set up the header
+            # write the data vectors
+            stream.write('Record Fields: [')
+            self._print_items(sampleset.record.dtype.names, stream, width - len('Data Vectors: [') - 1)
+            stream.write(']\n')
 
-    var_headers = [str(v) for v in variables]
-    field_headers = [field if len(field) <= 7 else field[:7]+'.'  # limit to 7 characters
-                     for field in fields]
-    charr[0, :] = [''] + var_headers + field_headers
+            # write the variables
+            stream.write('Variables: [')
+            self._print_items(sampleset.variables, stream, width - len('Variables: [') - 1)
+            stream.write(']\n')
 
-    #
-    # now populate the samples/dtypes
-    #
+        # add the footer
+        stream.write('[')
+        footer = [repr(sampleset.vartype.name),
+                  '{} rows'.format(len(sampleset)),
+                  '{} samples'.format(sampleset.record.num_occurrences.sum()),
+                  '{} variables'.format(len(sampleset.variables))
+                  ]
+        if sum(map(len, footer)) + (len(footer) - 1)*2 > width - 2:
+            # if the footer won't fit in width
+            stream.write(',\n '.join(footer))
+        else:
+            # if width the minimum footer object then we don't respect it
+            stream.write(', '.join(footer))
+        stream.write(']')
 
-    if sampleset.vartype is dimod.SPIN:
-        splfmt = _spinstr
-    else:
-        splfmt = _binarystr
+    def _print_samples(self, sampleset, stream, width, depth, sorted_by):
+        if len(sampleset) == 0:
+            raise ValueError("Cannot print empty samplesets")
 
-    def _row_from_datum(index, datum):
-        row = [str(index)]
-        row.extend(splfmt(datum.sample[v]) for v in variables)
-        row.extend(_numstr(getattr(datum, field)) for field in fields)
-        return row
+        # we need to know what goes into each row. We know we will use
+        # datum as returned by sampleset.data() to populate the values,
+        # so let's store our row formatters in the following form:
+        #   row[(header, f(datum): str)]
 
-    if len(sampleset) > max_samples:
-        for ci, datum in enumerate(sampleset.data(sorted_by=sorted_by), start=1):
-            if ci > max_samples - 2:  # 3 = header + skiprow + lastrow
+        table = _SampleTable()
+
+        # there are a minimum set of headers:
+        #     idx energy num_oc.
+        table.append_index(len(sampleset))
+        table.append_vector('energy', sampleset.record.energy)
+        table.append_vector('num_occurrences', sampleset.record.num_occurrences)
+
+        # if there are more vectors, let's just put a placeholder in for now
+        # we might replace it later if we still have space
+        if len(sampleset.record.dtype.names) > len(sampleset._REQUIRED_FIELDS):
+            table.append('...', lambda _: '...')
+
+        # next we want to add variables until we run out of width
+        table.rotate(-1)  # move the index to the end
+        num_added = 0
+        for v in sampleset.variables:
+            table.append_sample(v, sampleset.vartype)
+            num_added += 1
+
+            if table.width > width:
+                # we've run out of space, need to make room for the last
+                # variable and a spacer
+                last = sampleset.variables[-1]
+
+                table.appendleft_sample(last, sampleset.vartype)
+                table.appendleft('...', lambda _: '...')
+
+                while table.width > width:
+                    # remove variables until we have space for the last one
+                    table.pop()
+                    num_added -= 1
+
+                break
+        table.rotate(num_added + 1)  # move the index back to the front
+
+        # finally any remaining space should be used for other fields. We assume
+        # at this point that deque looks like [idx variables energy num_occ. ...]
+        other_fields = set(sampleset.record.dtype.names).difference(sampleset._REQUIRED_FIELDS)
+        if other_fields:
+            num_added = 0
+            while len(other_fields):
+                name = min(other_fields, key=len)
+
+                table.appendleft_vector(name, sampleset.record[name])
+                other_fields.remove(name)
+                num_added += 1
+
+                if table.width > width:
+                    table.popleft()
+                    num_added -= 1
+                    break
+            else:
+                # we have no other fields to add
+                assert len(other_fields) == 0
+                table.pop()  # remove the summary
+            table.rotate(-num_added)  # put index back at the front
+
+        # turn rows into a list because we're done rotating etc
+        rows = table.dump_to_list()
+
+        # ok, now let's print.
+        stream.write(' '.join(header for header, _ in rows))
+        stream.write('\n')
+
+        if depth is None:
+            depth = float('inf')
+
+        for idx, datum in enumerate(sampleset.data(index=True)):
+            stream.write(' '.join(f(datum) for _, f in rows))
+            stream.write('\n')
+
+            if idx + 3 >= depth and len(sampleset) > depth:
+                stream.write('...\n')
+                datum = next(sampleset.data(reverse=True, index=True))  # get the last one
+                stream.write(' '.join(f(datum) for _, f in rows))
+                stream.write('\n')
                 break
 
-            charr[ci, :] = _row_from_datum(ci-1, datum)
+    def _print_items(self, iterable, stream, width):
 
-        # skip row
-        charr[-2, :] = '..'
+        iterator = map(repr, iterable)
 
-        # last row
-        datum = next(iter(sampleset.data(reverse=True)))  # get the last sample
-        charr[-1, :] = _row_from_datum(len(sampleset) - 1, datum)
+        try:
+            first = next(iterator)
+        except StopIteration:
+            # nothing to represent
+            return
+        else:
+            # we could check width here but honestly that seems like
+            # an edge case not worth considering
+            stream.write(first)
+            width -= len(first)
 
-    else:
-        for ci, datum in enumerate(sampleset.data(sorted_by=sorted_by), start=1):
-            charr[ci, :] = _row_from_datum(ci-1, datum)
+        for item in iterator:
+            # we're not the first object
+            stream.write(', ')
+            width -= 2
 
-    #
-    # format and limit the number of columns
-    #
+            if len(item) > width - 3:
+                stream.write('...')
+                break
 
-    charr_str = _column_formatting(charr, len(variables)+1, options)
-
-    footer = '\n\n[ {} rows, {} variables ]'.format(len(sampleset), len(sampleset.variables))
-
-    return charr_str + footer
+            stream.write(item)
+            width -= len(item)
