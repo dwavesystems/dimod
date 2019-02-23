@@ -13,7 +13,10 @@
 #    limitations under the License.
 #
 # ================================================================================================
+import base64
 import itertools
+import io
+import json
 import numbers
 
 try:
@@ -28,6 +31,7 @@ import numpy as np
 from numpy.lib import recfunctions
 
 from dimod.decorators import vartype_argument
+from dimod.package_info import __version__
 from dimod.serialization.format import sampleset_to_string
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -988,8 +992,21 @@ class SampleSet(abc.Iterable, abc.Sized):
     # Serialization
     ###############################################################################################
 
-    def to_serializable(self):
+    def to_serializable(self, use_bytes=False, bytes_type=bytes):
         """Convert a :class:`SampleSet` to a serializable object.
+
+        Note that the contents of the :attr:`.SampleSet.info` field are assumed
+        to be serializable.
+
+        Args:
+            use_bytes (bool, optional, default=False):
+                If True, a compact representation representing the biases as bytes is used.
+
+            bytes_types (class, optional, default=bytes):
+                This class will be used to wrap the bytes objects in the
+                serialization if `use_bytes` is true. Useful for when using
+                Python 2 and using BSON encoding, which will not accept the raw
+                `bytes` type, so `bson.Binary` can be used instead.
 
         Returns:
             dict: Object that can be serialized.
@@ -1007,8 +1024,26 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        from dimod.serialization.json import DimodEncoder
-        return DimodEncoder().default(self)
+        schema_version = "2.0.0"
+
+        bio = io.BytesIO()
+        np.savez(bio, sample=np.packbits(self.record.sample > 0), **self.data_vectors)
+
+        if use_bytes:
+            record = bytes_type(bio.getvalue())  # bytes() does not make a copy
+        else:
+            record = base64.b64encode(bio.getvalue()).decode("UTF-8")
+
+        return {"type": "SampleSet",
+                "record": record,
+                "sample_dtype": str(self.record.sample.dtype),  # need this to unpack
+                "sample_shape": self.record.sample.shape,  # need this to unpack
+                "variable_type": self.vartype.name,
+                "info": self.info,
+                "version": {"dimod": __version__,
+                            "sampleset_schema": schema_version},
+                "variable_labels": list(self.variables),
+                "use_bytes": bool(use_bytes)}
 
     @classmethod
     def from_serializable(cls, obj):
@@ -1035,8 +1070,33 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.to_serializable`
 
         """
-        from dimod.serialization.json import sampleset_decode_hook
-        return sampleset_decode_hook(obj, cls=cls)
+        schema_version = "2.0.0"
+
+        if obj["version"]['sampleset_schema'] == "1.0.0":
+            from dimod.serialization.json import sampleset_decode_hook
+            return sampleset_decode_hook(obj, cls=cls)
+        elif obj["version"]['sampleset_schema'] != schema_version:
+            raise ValueError("cannot load legacy serialization formats")
+
+        vartype = Vartype[obj['variable_type']]
+
+        if obj['use_bytes']:
+            vectors = dict(np.load(io.BytesIO(obj['record'])))
+        else:
+            vectors = dict(np.load(io.BytesIO(base64.b64decode(obj['record']))))
+
+        # get the samples and unpack then
+        shape = obj['sample_shape']
+        dtype = obj['sample_dtype']
+        sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
+
+        # conver to the correct dtype
+        if vartype is Vartype.SPIN:
+            sample = np.asarray(2*sample-1, dtype=dtype)
+
+        variables = obj['variable_labels']
+
+        return cls.from_samples((sample, variables), vartype, **vectors)
 
     ###############################################################################################
     # Export to dataframe
