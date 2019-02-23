@@ -164,19 +164,7 @@ class DimodEncoder(json.JSONEncoder):
             return json_dict
 
         elif isinstance(obj, SampleSet):
-
-            if obj.vartype is Vartype.SPIN:
-                vartype_string = 'SPIN'
-            elif obj.vartype is Vartype.BINARY:
-                vartype_string = 'BINARY'
-            else:
-                raise RuntimeError("unknown vartype")
-
-            return {"record": _pack_record(obj.record),
-                    "variable_type": vartype_string,
-                    "info": obj.info,
-                    "version": {"dimod": __version__, "sampleset_schema": json_schema_version},
-                    "variable_labels": list(obj.variables)}
+            return obj.to_serializable()
 
         return json.JSONEncoder.default(self, obj)
 

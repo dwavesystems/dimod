@@ -288,6 +288,28 @@ class TestIteration(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
+    def test_empty_with_bytes(self):
+        sampleset = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        dct = sampleset.to_serializable(use_bytes=True)
+
+        new = dimod.SampleSet.from_serializable(dct)
+
+        self.assertEqual(sampleset, new)
+
+    def test_triu_with_bytes(self):
+        num_variables = 100
+        num_samples = 100
+        samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        dct = sampleset.to_serializable(use_bytes=True)
+
+        new = dimod.SampleSet.from_serializable(dct)
+
+        self.assertEqual(sampleset, new)
+
     def test_functional_simple_shapes(self):
         for ns in range(1, 9):
             for nv in range(1, 15):
