@@ -25,11 +25,9 @@ import pickle
 
 from os import path
 
-import jsonschema
 import numpy as np
 
 import dimod
-from dimod.serialization.json import bqm_json_schema
 
 try:
     import networkx as nx
@@ -2001,7 +1999,7 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
 
-    def test_serializable_bytes_empty_v1(self):
+    def test_from_serializable_bytes_empty_v1(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
         s = {'as_complete': False,
@@ -2033,90 +2031,122 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
 
-    def test_to_json_string_empty(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        bqm_str = json.dumps(bqm.to_serializable())
-
-        self.assertIsInstance(bqm_str, str)
-
-        jsonschema.validate(json.loads(bqm_str), bqm_json_schema)
-
-    def test_to_json_string(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        bqm_str = json.dumps(bqm.to_serializable())
-
-        self.assertIsInstance(bqm_str, str)
-
-        jsonschema.validate(json.loads(bqm_str), bqm_json_schema)
-
-    def test_to_json_file_empty(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.txt')
-
-        with open(filename, 'w') as file:
-            file.write(json.dumps(bqm.to_serializable()))
-
-        with open(filename, 'r') as file:
-            jsonschema.validate(json.load(file), bqm_json_schema)
-
-        shutil.rmtree(tmpdir)
-
-    def test_to_json_file(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.txt')
-
-        with open(filename, 'w') as file:
-            file.write(json.dumps(bqm.to_serializable()))
-
-        with open(filename, 'r') as file:
-            jsonschema.validate(json.load(file), bqm_json_schema)
-
-        shutil.rmtree(tmpdir)
-
-    def test_functional_to_and_from_json_empty(self):
+    def test_from_serializable_empty_v2(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
+        s = {'basetype': 'BinaryQuadraticModel',
+             'type': 'BinaryQuadraticModel',
+             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
+             'variable_labels': [], 'variable_type': 'SPIN', 'info': {},
+             'offset': 0.0, 'use_bytes': False,
+             'linear_biases': [], 'quadratic_biases': [],
+             'quadratic_head': [], 'quadratic_tail': []}
 
-        self.assertEqual(bqm, new_bqm)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
 
-    def test_functional_to_and_from_json(self):
+    def test_from_serializable_v2(self):
         linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
+        s = {'basetype': 'BinaryQuadraticModel',
+             'type': 'BinaryQuadraticModel',
+             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
+             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
+             'variable_type': 'SPIN', 'info': {}, 'offset': 3.0,
+             'use_bytes': False,
+             'linear_biases': [-1.0, 1.0, 3.0, 0.0, 0.0, 0.0],
+             'quadratic_biases': [1.0, 3.0, -1.0],
+             'quadratic_head': [0, 3, 0],
+             'quadratic_tail': [3, 4, 5]}
 
-        self.assertEqual(bqm, new_bqm)
+        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
 
-    def test_functional_to_and_from_json_with_info(self):
+    def test_from_serializable_bytes_empty_v2(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'type': 'BinaryQuadraticModel',
+             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
+             'variable_labels': [], 'variable_type': 'SPIN', 'info': {},
+             'offset': 0.0, 'use_bytes': True,
+             'linear_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (0,), }                                                            \n",
+             'quadratic_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (0,), }                                                            \n",
+             'quadratic_head': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (0,), }                                                            \n",
+             'quadratic_tail': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (0,), }                                                            \n"}
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
+
+    def test_from_serializable_bytes_v2(self):
         linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'type': 'BinaryQuadraticModel',
+             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
+             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
+             'variable_type': 'SPIN', 'info': {}, 'offset': 3.0,
+             'use_bytes': True,
+             'linear_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (6,), }                                                            \n\x00\x00\x80\xbf\x00\x00\x80?\x00\x00@@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+             'quadratic_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (3,), }                                                            \n\x00\x00\x80?\x00\x00@@\x00\x00\x80\xbf",
+             'quadratic_head': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (3,), }                                                            \n\x00\x00\x03\x00\x00\x00",
+             'quadratic_tail': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (3,), }                                                            \n\x03\x00\x04\x00\x05\x00"}
+
+        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
+
+    def test_functional_empty(self):
+        # round trip
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable())
+
+        self.assertEqual(bqm, new)
+
+    def test_functional(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable())
+
+        self.assertEqual(bqm, new)
+
+    def test_functional_info(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
 
-        new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(json.dumps(bqm.to_serializable())))
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable())
 
-        self.assertEqual(bqm, new_bqm)
-        self.assertIn('tag', new_bqm.info)
-        self.assertEqual(new_bqm.info['tag'], 5)
-        self.assertIn(('a', "complex key"), new_bqm.linear)
+        self.assertEqual(bqm, new)
+        self.assertEqual(bqm.info, {"tag": 5})
 
-    def test_bson_serialization(self):
+    def test_functional_bytes_empty(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
+
+        self.assertEqual(bqm, new)
+
+    def test_functional_bytes(self):
         linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN,
-                                         tag=5)
-        byte_serializable = bqm.to_serializable(use_bytes=True)
+        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
+
+        self.assertEqual(bqm, new)
+
+    def test_functional_bytes_info(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
+
+        new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
+
+        self.assertEqual(bqm, new)
+        self.assertEqual(bqm.info, {"tag": 5})
 
 
 class TestZeroField(unittest.TestCase):
