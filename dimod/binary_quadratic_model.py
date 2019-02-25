@@ -1760,7 +1760,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         # if not json assume bson
         return bqm_bson_decoder(obj, cls=cls)
 
-
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
 
