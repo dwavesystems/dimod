@@ -350,7 +350,7 @@ class TestSerialization(unittest.TestCase):
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
 
-    def test_from_serializable_empty(self):
+    def test_from_serializable_empty_v1(self):
         samples = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
 
         s = """
@@ -363,7 +363,7 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
 
-    def test_from_serializable_empty_variables(self):
+    def test_from_serializable_empty_variables_v1(self):
         samples = dimod.SampleSet.from_samples(([], 'abcd'), dimod.BINARY, energy=[])
 
         s = """
@@ -376,7 +376,7 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
 
-    def test_from_serializable_triu(self):
+    def test_from_serializable_triu_v1(self):
         samples = dimod.SampleSet.from_samples(np.triu(np.ones((10, 10))),
                                                dimod.BINARY,
                                                energy=np.arange(-1, 1, 10))

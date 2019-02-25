@@ -1756,6 +1756,26 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         return doc
 
     @classmethod
+    def _from_serializable_v1(cls, obj):
+        # deprecated
+        import warnings
+
+        msg = ("bqm is serialized with a deprecated format and will no longer "
+               "work in dimod 0.9.0.")
+        warnings.warn(msg)
+
+        from dimod.serialization.json import bqm_decode_hook
+        from dimod.serialization.bson import bqm_bson_decoder
+
+        # try decoding with json
+        dct = bqm_decode_hook(obj, cls=cls)
+        if isinstance(dct, cls):
+            return dct
+
+        # if not json assume bson
+        return bqm_bson_decoder(obj, cls=cls)
+
+    @classmethod
     def from_serializable(cls, obj):
         """Deserialize a binary quadratic model.
 
@@ -1784,18 +1804,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         if obj.get("version", {"bqm_schema": "1.0.0"})["bqm_schema"] != "2.0.0":
-            from dimod.serialization.json import bqm_decode_hook
-            from dimod.serialization.bson import bqm_bson_decoder
+            return cls._from_serializable_v1(obj)
 
-            # try decoding with json
-            dct = bqm_decode_hook(obj, cls=cls)
-            if isinstance(dct, cls):
-                return dct
-
-            # if not json assume bson
-            return bqm_bson_decoder(obj, cls=cls)
-
-        variables = obj["variable_labels"]
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
 
         if obj["use_bytes"]:
             ldata = bytes2array(obj["linear_biases"])
@@ -1814,7 +1826,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         return cls.from_numpy_vectors(ldata,
                                       (irow, icol, qdata),
                                       offset,
-                                      vartype,
+                                      str(vartype),  # handle unicode for py2
                                       variable_order=variables)
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):

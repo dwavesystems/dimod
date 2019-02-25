@@ -1045,7 +1045,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             for name in record:
                 record[name] = base64.b64encode(record[name]).decode("UTF-8")
 
-        return {"type": "SampleSet",
+        return {"basetype": "SampleSet",
+                "type": type(self).__name__,
                 "record": record,
                 "sample_dtype": str(self.record.sample.dtype),  # need this to unpack
                 "sample_shape": self.record.sample.shape,  # need this to unpack
