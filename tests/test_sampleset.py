@@ -328,6 +328,50 @@ class TestSerialization(unittest.TestCase):
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
 
+    def test_from_serializable_empty(self):
+        samples = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        s = """
+        {"record": {"sample": {"data": "", "shape": [0, 0], "dtype": "int8"},
+                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
+                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": []}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
+
+    def test_from_serializable_empty_variables(self):
+        samples = dimod.SampleSet.from_samples(([], 'abcd'), dimod.BINARY, energy=[])
+
+        s = """
+        {"record": {"sample": {"data": "", "shape": [0, 4], "dtype": "int8"},
+                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
+                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": ["a", "b", "c", "d"]}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
+
+    def test_from_serializable_triu(self):
+        samples = dimod.SampleSet.from_samples(np.triu(np.ones((10, 10))),
+                                               dimod.BINARY,
+                                               energy=np.arange(-1, 1, 10))
+
+        s = """
+        {"record": {"sample": {"data": "/9/z/H8PwfA8BwDAEA==",
+                               "shape": [10, 10], "dtype": "float64"},
+                    "energy": {"data": "//////////////////////////////////////////////////////////////////////////////////////////////////////////8=",
+                               "shape": [10], "dtype": "int64"},
+                    "num_occurrences": {"data": "AQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAA=",
+                               "shape": [10], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
+
 
 @unittest.skipUnless(_pandas, "no pandas present")
 class TestPandas(unittest.TestCase):
