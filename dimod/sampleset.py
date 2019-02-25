@@ -1085,7 +1085,14 @@ class SampleSet(abc.Iterable, abc.Sized):
         schema_version = "2.0.0"
 
         if obj["version"]['sampleset_schema'] == "1.0.0":
+            import warnings
+
+            msg = ("sampleset is serialized with a deprecated format and will no longer "
+                   "work in dimod 0.9.0.")
+            warnings.warn(msg)
+
             from dimod.serialization.json import sampleset_decode_hook
+
             return sampleset_decode_hook(obj, cls=cls)
         elif obj["version"]['sampleset_schema'] != schema_version:
             raise ValueError("cannot load legacy serialization formats")

@@ -13,6 +13,33 @@
 #    limitations under the License.
 #
 # =============================================================================
+"""
+JSON-encoding of dimod objects.
+
+Examples:
+
+    >>> import json
+    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
+    ...
+    >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
+    >>> s = json.dumps(bqm, cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> bqm == new
+    True
+    ...
+    >>> sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=5)
+    >>> s = json.dumps(sampleset, cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> sampleset == new
+    True
+    ...
+    >>> # now inside a list
+    >>> s = json.dumps([sampleset, bqm], cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> new == [sampleset, bqm]
+    True
+
+"""
 
 from __future__ import absolute_import
 
@@ -36,7 +63,8 @@ __all__ = 'DimodEncoder', 'DimodDecoder', 'dimod_object_hook'
 
 
 class DimodEncoder(json.JSONEncoder):
-    """Subclass the JSONEncoder for dimod objects."""
+    """Subclass the JSONEncoder for dimod objects.
+    """
     def default(self, obj):
         if isinstance(obj, (SampleSet, BinaryQuadraticModel)):
             return obj.to_serializable()
@@ -59,7 +87,12 @@ def _is_bqm_v2(obj):
 
 
 def dimod_object_hook(obj):
-    """JSON-decoding for dimod objects."""
+    """JSON-decoding for dimod objects.
+
+    See Also:
+        :class:`json.JSONDecoder` for using custom decoders.
+
+    """
     if _is_sampleset_v2(obj):
         # in the future we could handle subtypes but right now we just have the
         # one
