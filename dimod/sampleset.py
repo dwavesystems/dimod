@@ -15,7 +15,6 @@
 # ================================================================================================
 import base64
 import itertools
-import io
 import json
 import numbers
 
@@ -33,6 +32,7 @@ from numpy.lib import recfunctions
 from dimod.decorators import vartype_argument
 from dimod.package_info import __version__
 from dimod.serialization.format import Formatter
+from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
 from dimod.views import SampleView
@@ -1013,7 +1013,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             use_bytes (bool, optional, default=False):
                 If True, a compact representation representing the biases as bytes is used.
 
-            bytes_types (class, optional, default=bytes):
+            bytes_type (class, optional, default=bytes):
                 This class will be used to wrap the bytes objects in the
                 serialization if `use_bytes` is true. Useful for when using
                 Python 2 and using BSON encoding, which will not accept the raw
@@ -1037,13 +1037,13 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         schema_version = "2.0.0"
 
-        bio = io.BytesIO()
-        np.savez(bio, sample=np.packbits(self.record.sample > 0), **self.data_vectors)
+        record = {name: array2bytes(vector)
+                  for name, vector in self.data_vectors.items()}
+        record['sample'] = array2bytes(np.packbits(self.record.sample > 0))
 
-        if use_bytes:
-            record = bytes_type(bio.getvalue())  # bytes() does not make a copy
-        else:
-            record = base64.b64encode(bio.getvalue()).decode("UTF-8")
+        if not use_bytes:
+            for name in record:
+                record[name] = base64.b64encode(record[name]).decode("UTF-8")
 
         return {"type": "SampleSet",
                 "record": record,
@@ -1092,16 +1092,18 @@ class SampleSet(abc.Iterable, abc.Sized):
         vartype = Vartype[obj['variable_type']]
 
         if obj['use_bytes']:
-            vectors = dict(np.load(io.BytesIO(obj['record'])))
+            record = obj['record']
         else:
-            vectors = dict(np.load(io.BytesIO(base64.b64decode(obj['record']))))
+            record = {name: base64.b64decode(vector) for name, vector in obj['record'].items()}
+
+        vectors = {name: bytes2array(vector) for name, vector in record.items()}
 
         # get the samples and unpack then
         shape = obj['sample_shape']
         dtype = obj['sample_dtype']
         sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
 
-        # conver to the correct dtype
+        # convert to the correct dtype
         if vartype is Vartype.SPIN:
             sample = np.asarray(2*sample-1, dtype=dtype)
 
