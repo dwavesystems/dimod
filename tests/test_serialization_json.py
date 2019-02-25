@@ -12,46 +12,81 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-
+# =============================================================================
 import unittest
 import json
 
-import jsonschema
+import numpy as np
 
 import dimod
-import dimod.serialization.json as dson
+
+from dimod.serialization.json import DimodEncoder, DimodDecoder
 
 
-class TestDimodEncoder(unittest.TestCase):
-    def test_empty_bqm(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+class TestEncode(unittest.TestCase):
+    def test_builtin(self):
+        # non-dimod objects
+        obj = [0, 'a', [0, 'a']]
 
-        dct = dson.DimodEncoder().default(bqm)
+        # shouldn't be any different than without the encoder
+        self.assertEqual(json.dumps(obj), json.dumps(obj, cls=DimodEncoder))
 
-        self.assertEqual(dct,
-                         {'linear_terms': [],
-                          'quadratic_terms': [],
-                          'offset': 0.0,
-                          'variable_type': 'SPIN',
-                          'version': {'dimod': dimod.__version__, 'bqm_schema': '1.0.0'},
-                          'variable_labels': [], 'info': {}})
 
-        jsonschema.validate(dct, dson.bqm_json_schema)
+class TestDecoder(unittest.TestCase):
+    def test_builtin(self):
+        # non-dimod objects
+        s = '[0, "a", [0, "a"]]'
 
-    def test_bqm_labels(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({'a': -1, 0: 1, (0,): -1, ((0,),): 1.5},
-                                                    {('a', 0): -1, ('a', (0,)): 1, (0, (0,)): .5})
+        # shouldn't be any different than without the encoder
+        self.assertEqual(json.loads(s), json.loads(s, cls=DimodDecoder))
 
-        dct = dson.DimodEncoder().default(bqm)
 
-        jsonschema.validate(dct, dson.bqm_json_schema)
+class TestFunctional(unittest.TestCase):
+    def test_builtin(self):
+        # non-dimod objects
+        obj = [0, 'a', [0, 'a']]
 
-    def test_bqm_complex(self):
+        new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
+
+    def test_sampleset_empty(self):
+        obj = dimod.SampleSet.from_samples([], dimod.SPIN, energy=[])
+
+        new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
+
+    def test_sampleset_triu(self):
+        num_variables = 100
+        num_samples = 100
+        samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+        obj = dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
+
+    def test_binary_quadratic_model(self):
         linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
+        quadratic = {('a', 'c'): 3, ('b', 'c'): -3., ('a', 3): -1}
+        obj = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
+
+    def test_all_three(self):
+        builtin = [0, 'a', [0, 'a']]
+
+        num_variables = 100
+        num_samples = 100
+        samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 3, ('b', 'c'): -3., ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        dct = dson.DimodEncoder().default(bqm)
+        obj = [builtin, sampleset, bqm]
 
-        jsonschema.validate(dct, dson.bqm_json_schema)
+        new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
