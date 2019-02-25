@@ -1765,15 +1765,28 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         warnings.warn(msg)
 
         from dimod.serialization.json import bqm_decode_hook
-        from dimod.serialization.bson import bqm_bson_decoder
 
         # try decoding with json
         dct = bqm_decode_hook(obj, cls=cls)
         if isinstance(dct, cls):
             return dct
 
-        # if not json assume bson
-        return bqm_bson_decoder(obj, cls=cls)
+        # assume if not json then binary-type
+        bias_dtype, index_dtype = obj["bias_dtype"], obj["index_dtype"]
+        lin = np.frombuffer(obj["linear"], dtype=bias_dtype)
+        num_variables = len(lin)
+        vals = np.frombuffer(obj["quadratic_vals"], dtype=bias_dtype)
+        if obj["as_complete"]:
+            i, j = zip(*itertools.combinations(range(num_variables), 2))
+        else:
+            i = np.frombuffer(obj["quadratic_head"], dtype=index_dtype)
+            j = np.frombuffer(obj["quadratic_tail"], dtype=index_dtype)
+
+        off = obj["offset"]
+
+        return cls.from_numpy_vectors(lin, (i, j, vals), off,
+                                      str(obj["variable_type"]),
+                                      variable_order=obj["variable_order"])
 
     @classmethod
     def from_serializable(cls, obj):
