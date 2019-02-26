@@ -288,6 +288,28 @@ class TestIteration(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
+    def test_empty_with_bytes(self):
+        sampleset = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        dct = sampleset.to_serializable(use_bytes=True)
+
+        new = dimod.SampleSet.from_serializable(dct)
+
+        self.assertEqual(sampleset, new)
+
+    def test_triu_with_bytes(self):
+        num_variables = 100
+        num_samples = 100
+        samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        dct = sampleset.to_serializable(use_bytes=True)
+
+        new = dimod.SampleSet.from_serializable(dct)
+
+        self.assertEqual(sampleset, new)
+
     def test_functional_simple_shapes(self):
         for ns in range(1, 9):
             for nv in range(1, 15):
@@ -327,6 +349,50 @@ class TestSerialization(unittest.TestCase):
         s = json.dumps(samples.to_serializable())
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
+
+    def test_from_serializable_empty_v1(self):
+        samples = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
+
+        s = """
+        {"record": {"sample": {"data": "", "shape": [0, 0], "dtype": "int8"},
+                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
+                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": []}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
+
+    def test_from_serializable_empty_variables_v1(self):
+        samples = dimod.SampleSet.from_samples(([], 'abcd'), dimod.BINARY, energy=[])
+
+        s = """
+        {"record": {"sample": {"data": "", "shape": [0, 4], "dtype": "int8"},
+                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
+                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": ["a", "b", "c", "d"]}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
+
+    def test_from_serializable_triu_v1(self):
+        samples = dimod.SampleSet.from_samples(np.triu(np.ones((10, 10))),
+                                               dimod.BINARY,
+                                               energy=np.arange(-1, 1, 10))
+
+        s = """
+        {"record": {"sample": {"data": "/9/z/H8PwfA8BwDAEA==",
+                               "shape": [10, 10], "dtype": "float64"},
+                    "energy": {"data": "//////////////////////////////////////////////////////////////////////////////////////////////////////////8=",
+                               "shape": [10], "dtype": "int64"},
+                    "num_occurrences": {"data": "AQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAA=",
+                               "shape": [10], "dtype": "int64"}},
+         "variable_type": "BINARY", "info": {},
+         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
+         "variable_labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}"""
+
+        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
 
 
 @unittest.skipUnless(_pandas, "no pandas present")
