@@ -34,7 +34,7 @@ from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
 from dimod.response import SampleSet
 
-__all__ = 'HigherOrderComposite', 'PolyScaleComposite'
+__all__ = 'HigherOrderComposite', 'PolyScaleComposite', 'PolyTruncateComposite'
 
 
 class HigherOrderComposite(ComposedPolySampler):
@@ -345,3 +345,72 @@ class PolyScaleComposite(ComposedPolySampler):
             sampleset.record.energy /= scalar
 
         return sampleset
+
+
+class PolyTruncateComposite(ComposedPolySampler):
+    """Composite to truncate the returned samples
+
+    Post-processing is expensive and sometimes one might want to only
+    treat the lowest energy samples. This composite layer allows one to
+    pre-select the samples within a multi-composite pipeline
+
+    Args:
+        child_sampler (:obj:`dimod.PolySampler`):
+            A dimod binary polynomial sampler.
+
+        n (int):
+            Maximum number of rows in the returned sample set.
+
+        sorted_by (str/None, optional, default='energy'):
+            Selects the record field used to sort the samples before
+            truncating. Note that sample order is maintained in the
+            underlying array.
+
+        aggregate (bool, optional, default=False):
+            If True, aggregate the samples before truncating.
+
+    Note:
+        If aggregate is True :attr:`.SampleSet.record.num_occurrences` are
+        accumulated but no other fields are.
+
+    """
+    def __init__(self, child_sampler, n, sorted_by='energy', aggregate=False):
+
+        if n < 1:
+            raise ValueError('n should be a positive integer, recived {}'.format(n))
+
+        self._children = [child_sampler]
+        self._truncate_kwargs = dict(n=n, sorted_by=sorted_by)
+        self._aggregate = aggregate
+
+    @property
+    def children(self):
+        return self._children
+
+    @property
+    def parameters(self):
+        return self.child.parameters.copy()
+
+    @property
+    def properties(self):
+        return {'child_properties': self.child.properties.copy()}
+
+    def sample_poly(self, poly, **kwargs):
+        """Sample from the binary polynomial and truncate output.
+
+        Args:
+            poly (obj:`.BinaryPolynomial`): A binary polynomial.
+
+            **kwargs:
+                Parameters for the sampling method, specified by the child
+                sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+
+        """
+        tkw = self._truncate_kwargs
+        if self._aggregate:
+            return self.child.sample_poly(poly, **kwargs).aggregate().truncate(**tkw)
+        else:
+            return self.child.sample_poly(poly, **kwargs).truncate(**tkw)
