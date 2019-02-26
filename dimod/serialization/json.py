@@ -12,7 +12,40 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+"""
+JSON-encoding of dimod objects.
+
+Examples:
+
+    >>> import json
+    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
+    ...
+    >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
+    >>> s = json.dumps(bqm, cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> bqm == new
+    True
+
+    >>> import json
+    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
+    ...
+    >>> sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=5)
+    >>> s = json.dumps(sampleset, cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> sampleset == new
+    True
+
+    >>> import json
+    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
+    ...
+    >>> # now inside a list
+    >>> s = json.dumps([sampleset, bqm], cls=DimodEncoder)
+    >>> new = json.loads(s, cls=DimodDecoder)
+    >>> new == [sampleset, bqm]
+    True
+
+"""
 
 from __future__ import absolute_import
 
@@ -21,7 +54,6 @@ import base64
 import operator
 
 from functools import reduce
-from pkg_resources import resource_filename
 
 import jsonschema
 import numpy as np
@@ -33,13 +65,186 @@ from dimod.package_info import __version__
 from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
 
+__all__ = 'DimodEncoder', 'DimodDecoder', 'dimod_object_hook'
+
+
+class DimodEncoder(json.JSONEncoder):
+    """Subclass the JSONEncoder for dimod objects.
+    """
+    def default(self, obj):
+        if isinstance(obj, (SampleSet, BinaryQuadraticModel)):
+            return obj.to_serializable()
+
+        return json.JSONEncoder.default(self, obj)
+
+
+def _is_sampleset_v2(obj):
+    if obj.get("basetype", "") != "SampleSet":
+        return False
+    # we could do more checking but probably this is sufficient
+    return True
+
+
+def _is_bqm_v2(obj):
+    if obj.get("basetype", "") != "BinaryQuadraticModel":
+        return False
+    # we could do more checking but probably this is sufficient
+    return True
+
+
+def dimod_object_hook(obj):
+    """JSON-decoding for dimod objects.
+
+    See Also:
+        :class:`json.JSONDecoder` for using custom decoders.
+
+    """
+    if _is_sampleset_v2(obj):
+        # in the future we could handle subtypes but right now we just have the
+        # one
+        return SampleSet.from_serializable(obj)
+    elif _is_bqm_v2(obj):
+        # in the future we could handle subtypes but right now we just have the
+        # one
+        return BinaryQuadraticModel.from_serializable(obj)
+    return obj
+
+
+class DimodDecoder(json.JSONDecoder):
+    """Subclass the JSONDecoder for dimod objects.
+
+    Uses :func:`.dimod_object_hook`.
+    """
+    def __init__(self, *args, **kwargs):
+        json.JSONDecoder.__init__(self, object_hook=dimod_object_hook, *args, **kwargs)
+
+
+###############################################################################
+# Deprecated
+# legacy decoding formats
+###############################################################################
+
 json_schema_version = "1.0.0"
 
-with open(resource_filename(__name__, 'bqm_json_schema.json'), 'r') as schema_file:
-    bqm_json_schema = json.load(schema_file)
+bqm_json_schema_v1 = {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "binary quadratic model schema",
+  "type": "object",
+  "required": ["linear_terms",
+               "info",
+               "offset",
+               "quadratic_terms",
+               "variable_labels",
+               "variable_type",
+               "version"],
+  "properties": {
+    "info": {
+      "type": "object"
+    },
+    "variable_labels": {
+      "type": "array",
+      "items": {
+        "type": ["integer", "string", "array"],
+        "minimum": 0
+      }
+    },
+    "variable_type": {
+      "type":"string",
+      "enum":["SPIN", "BINARY"]
+    },
+    "offset" : {
+      "type": "number"
+    },
+    "linear_terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required":["label", "bias"],
+        "properties": {
+          "label" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "bias":{
+             "type": "number"
+          }
+        }
+      }
+    },
+    "quadratic_terms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required":["label_head", "label_tail", "bias"],
+        "properties": {
+          "label_head" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "label_tail" : {
+            "type": ["integer", "string", "array"],
+            "minimum": 0
+          },
+          "bias":{
+             "type": "number"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "object",
+      "required": ["bqm_schema", "dimod"],
+      "properties": {
+        "bqm_schema": {
+          "enum":["1.0.0"]
+        }
+      }
+    }
+  }
+}
 
-with open(resource_filename(__name__, 'sampleset_json_schema.json'), 'r') as schema_file:
-    sampleset_json_schema = json.load(schema_file)
+
+sampleset_json_schema_v1 = {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "sample set schema",
+  "type": "object",
+  "required": ["record",
+               "info",
+               "variable_labels",
+               "variable_type",
+               "version"],
+  "properties": {
+    "record": {
+        "type": "object",
+        "required": ["sample",
+                     "energy",
+                     "num_occurrences"]
+    },
+    "info": {
+      "type": "object"
+    },
+    "variable_labels": {
+      "type": "array",
+      "items": {
+        "type": ["integer", "string", "array"],
+        "minimum": 0
+      }
+    },
+    "variable_type": {
+      "type":"string",
+      "enum":["SPIN", "BINARY"]
+    },
+    "version": {
+      "type": "object",
+      "required": ["sampleset_schema", "dimod"],
+      "properties": {
+        "sampleset_schema": {
+          "enum":["1.0.0"]
+        }
+      }
+    }
+  }
+}
 
 
 def _decode_label(label):
@@ -106,12 +311,12 @@ def _unpack_record(obj, vartype):
 
 
 def bqm_decode_hook(dct, cls=None):
-    """Decode hook as can be used with json.loads."""
+    # deprecated
 
     if cls is None:
         cls = BinaryQuadraticModel
 
-    if jsonschema.Draft4Validator(bqm_json_schema).is_valid(dct):
+    if jsonschema.Draft4Validator(bqm_json_schema_v1).is_valid(dct):
         # BinaryQuadraticModel
 
         linear = {_decode_label(obj['label']): obj['bias'] for obj in dct['linear_terms']}
@@ -126,12 +331,12 @@ def bqm_decode_hook(dct, cls=None):
 
 
 def sampleset_decode_hook(dct, cls=None):
-    """Decode hook as can be used with json.loads."""
+    # deprecated
 
     if cls is None:
         cls = SampleSet
 
-    if jsonschema.Draft4Validator(sampleset_json_schema).is_valid(dct):
+    if jsonschema.Draft4Validator(sampleset_json_schema_v1).is_valid(dct):
         # SampleSet
 
         vartype = Vartype[dct['variable_type']]
@@ -139,66 +344,3 @@ def sampleset_decode_hook(dct, cls=None):
         return cls(record, dct['variable_labels'], dct['info'], vartype)
 
     return dct
-
-
-class DimodEncoder(json.JSONEncoder):
-    """Subclass the JSONEncoder for dimod objects."""
-    def default(self, obj):
-
-        if isinstance(obj, BinaryQuadraticModel):
-
-            if obj.vartype is Vartype.SPIN:
-                vartype_string = 'SPIN'
-            elif obj.vartype is Vartype.BINARY:
-                vartype_string = 'BINARY'
-            else:
-                raise RuntimeError("unknown vartype")
-
-            json_dict = {"linear_terms": list(self._linear_biases(obj.linear)),
-                         "quadratic_terms": list(self._quadratic_biases(obj.quadratic)),
-                         "offset": obj.offset,
-                         "variable_type": vartype_string,
-                         "version": {"dimod": __version__, "bqm_schema": json_schema_version},
-                         "variable_labels": list(self._variable_labels(obj.linear)),
-                         "info": obj.info}
-            return json_dict
-
-        elif isinstance(obj, SampleSet):
-
-            if obj.vartype is Vartype.SPIN:
-                vartype_string = 'SPIN'
-            elif obj.vartype is Vartype.BINARY:
-                vartype_string = 'BINARY'
-            else:
-                raise RuntimeError("unknown vartype")
-
-            return {"record": _pack_record(obj.record),
-                    "variable_type": vartype_string,
-                    "info": obj.info,
-                    "version": {"dimod": __version__, "sampleset_schema": json_schema_version},
-                    "variable_labels": list(obj.variables)}
-
-        return json.JSONEncoder.default(self, obj)
-
-    @staticmethod
-    def _linear_biases(linear):
-        for v, bias in iteritems(linear):
-            if isinstance(v, tuple):
-                v = json.loads(json.dumps(v))  # handles nested tuples
-            yield {"bias": bias, "label": v}
-
-    @staticmethod
-    def _quadratic_biases(quadratic):
-        for (u, v), bias in iteritems(quadratic):
-            if isinstance(u, tuple):
-                u = _encode_label(u)  # handles nested tuples
-            if isinstance(v, tuple):
-                v = _encode_label(v)  # handles nested tuples
-            yield {"bias": bias, "label_head": u, "label_tail": v}
-
-    @staticmethod
-    def _variable_labels(linear):
-        for u in linear:
-            if isinstance(u, tuple):
-                u = _encode_label(u)  # handles nested tuples
-            yield u

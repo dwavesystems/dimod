@@ -53,7 +53,6 @@ try:
 except ImportError:
     import collections as abc
 
-from collections import OrderedDict
 from numbers import Number
 
 import numpy as np
@@ -61,6 +60,7 @@ import numpy as np
 from six import itervalues, iteritems, iterkeys, PY2
 
 from dimod.decorators import vartype_argument
+from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
 from dimod.views import LinearView, QuadraticView, AdjacencyView, SampleView
@@ -1662,7 +1662,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 If `use_bytes` is True, this numpy dtype will be used to
                 represent the bias values in the serialized format.
 
-            bytes_types (class, optional, default=bytes):
+            bytes_type (class, optional, default=bytes):
                 This class will be used to wrap the bytes objects in the
                 serialization if `use_bytes` is true. Useful for when using
                 Python 2 and using BSON encoding, which will not accept the raw
@@ -1710,16 +1710,83 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         .. _BSON: http://bsonspec.org/
 
         """
+        from dimod.package_info import __version__
+        schema_version = "2.0.0"
+
+        try:
+            variables = sorted(self.variables)
+        except TypeError:
+            # sorting unlike types in py3
+            variables = list(self.variables)
+
+        num_variables = len(variables)
+
+        # when doing byte encoding we can use less space depending on the
+        # total number of variables
+        index_dtype = np.uint16 if num_variables <= 2**16 else np.uint32
+
+        ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(
+            dtype=bias_dtype,
+            index_dtype=index_dtype,
+            sort_indices=True,
+            variable_order=variables)
+
+        doc = {"basetype": "BinaryQuadraticModel",
+               "type": type(self).__name__,
+               "version": {"dimod": __version__,
+                           "bqm_schema": schema_version},
+               "variable_labels": variables,
+               "variable_type": self.vartype.name,
+               "info": self.info,
+               "offset": float(offset),
+               "use_bytes": bool(use_bytes)
+               }
+
         if use_bytes:
-            from dimod.serialization.bson import bqm_bson_encoder
-
-            return bqm_bson_encoder(self, bias_dtype=bias_dtype,
-                                    bytes_type=bytes_type)
+            doc.update({'linear_biases': array2bytes(ldata, bytes_type=bytes_type),
+                        'quadratic_biases': array2bytes(qdata, bytes_type=bytes_type),
+                        'quadratic_head': array2bytes(irow, bytes_type=bytes_type),
+                        'quadratic_tail': array2bytes(icol, bytes_type=bytes_type)})
         else:
-            # we we don't use bytes then use json encoder
-            from dimod.serialization.json import DimodEncoder
+            doc.update({'linear_biases': ldata.tolist(),
+                        'quadratic_biases': qdata.tolist(),
+                        'quadratic_head': irow.tolist(),
+                        'quadratic_tail': icol.tolist()})
 
-            return DimodEncoder().default(self)
+        return doc
+
+    @classmethod
+    def _from_serializable_v1(cls, obj):
+        # deprecated
+        import warnings
+
+        msg = ("bqm is serialized with a deprecated format and will no longer "
+               "work in dimod 0.9.0.")
+        warnings.warn(msg)
+
+        from dimod.serialization.json import bqm_decode_hook
+
+        # try decoding with json
+        dct = bqm_decode_hook(obj, cls=cls)
+        if isinstance(dct, cls):
+            return dct
+
+        # assume if not json then binary-type
+        bias_dtype, index_dtype = obj["bias_dtype"], obj["index_dtype"]
+        lin = np.frombuffer(obj["linear"], dtype=bias_dtype)
+        num_variables = len(lin)
+        vals = np.frombuffer(obj["quadratic_vals"], dtype=bias_dtype)
+        if obj["as_complete"]:
+            i, j = zip(*itertools.combinations(range(num_variables), 2))
+        else:
+            i = np.frombuffer(obj["quadratic_head"], dtype=index_dtype)
+            j = np.frombuffer(obj["quadratic_tail"], dtype=index_dtype)
+
+        off = obj["offset"]
+
+        return cls.from_numpy_vectors(lin, (i, j, vals), off,
+                                      str(obj["variable_type"]),
+                                      variable_order=obj["variable_order"])
 
     @classmethod
     def from_serializable(cls, obj):
@@ -1749,17 +1816,31 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             :func:`json.loads`, :func:`json.load` JSON deserialization functions
 
         """
-        from dimod.serialization.json import bqm_decode_hook
-        from dimod.serialization.bson import bqm_bson_decoder
+        if obj.get("version", {"bqm_schema": "1.0.0"})["bqm_schema"] != "2.0.0":
+            return cls._from_serializable_v1(obj)
 
-        # try decoding with json
-        dct = bqm_decode_hook(obj, cls=cls)
-        if isinstance(dct, cls):
-            return dct
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
 
-        # if not json assume bson
-        return bqm_bson_decoder(obj, cls=cls)
+        if obj["use_bytes"]:
+            ldata = bytes2array(obj["linear_biases"])
+            qdata = bytes2array(obj["quadratic_biases"])
+            irow = bytes2array(obj["quadratic_head"])
+            icol = bytes2array(obj["quadratic_tail"])
+        else:
+            ldata = obj["linear_biases"]
+            qdata = obj["quadratic_biases"]
+            irow = obj["quadratic_head"]
+            icol = obj["quadratic_tail"]
 
+        offset = obj["offset"]
+        vartype = obj["variable_type"]
+
+        return cls.from_numpy_vectors(ldata,
+                                      (irow, icol, qdata),
+                                      offset,
+                                      str(vartype),  # handle unicode for py2
+                                      variable_order=variables)
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
