@@ -102,3 +102,29 @@ Methods
    PolyScaleComposite.sample_poly
    PolyScaleComposite.sample_hising
    PolyScaleComposite.sample_hubo
+
+PolyTruncateComposite
+---------------------
+
+.. autoclass:: PolyTruncateComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   PolyTruncateComposite.child
+   PolyTruncateComposite.children
+   PolyTruncateComposite.parameters
+   PolyTruncateComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   PolyTruncateComposite.sample_poly
+   PolyTruncateComposite.sample_hising
+   PolyTruncateComposite.sample_hubo
