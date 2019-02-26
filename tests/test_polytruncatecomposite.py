@@ -13,25 +13,23 @@
 #    limitations under the License.
 #
 # =============================================================================
-
 import unittest
 
 import dimod.testing as dtest
-from dimod import BinaryQuadraticModel
-from dimod import TruncateComposite, ExactSolver
+from dimod import BinaryQuadraticModel, HigherOrderComposite
+from dimod import PolyTruncateComposite, ExactSolver
 
 
 class TestConstruction(unittest.TestCase):
     def test_10(self):
-        sampler = TruncateComposite(ExactSolver(), 10)
-        dtest.assert_sampler_api(sampler)
+        sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 10)
         dtest.assert_composite_api(sampler)
 
-        self.assertEqual(sampler.parameters, {})
+        self.assertEqual(sampler.parameters, sampler.child.parameters)
 
     def test_0(self):
         with self.assertRaises(ValueError):
-            TruncateComposite(ExactSolver(), 0)
+            PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 0)
 
 
 class TestSample(unittest.TestCase):
@@ -39,7 +37,7 @@ class TestSample(unittest.TestCase):
         h = {'a': -4.0, 'b': -4.0, 'c': 0}
         J = {('a', 'b'): 3.2}
 
-        sampler = TruncateComposite(ExactSolver(), 10)
+        sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 10)
         samples = sampler.sample_ising(h, J)
 
         # we should see 2**n < 10 rows
@@ -49,7 +47,7 @@ class TestSample(unittest.TestCase):
         h = {'a': -4.0, 'b': -4.0, 'c': 0}
         J = {('a', 'b'): 3.2}
 
-        sampler = TruncateComposite(ExactSolver(), 6)
+        sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 6)
         samples = sampler.sample_ising(h, J)
 
         self.assertEqual(len(samples), 6)
@@ -60,7 +58,7 @@ class TestSample(unittest.TestCase):
         h = {'a': -4.0, 'b': -4.0, 'c': 0}
         J = {('a', 'b'): 3.2}
 
-        sampler = TruncateComposite(ExactSolver(), 6, aggregate=True)
+        sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 6, aggregate=True)
         samples = sampler.sample_ising(h, J)
 
         self.assertEqual(len(samples), 6)

@@ -97,7 +97,6 @@ def assert_composite_api(composed_sampler):
 
     msg = "instantiated composed sampler must have a 'child' property, set to one of sampler.children"
     assert hasattr(composed_sampler, 'child'), msg
-    assert isinstance(composed_sampler.child, dimod.Sampler), msg
     assert composed_sampler.child in composed_sampler.children, msg
 
 
