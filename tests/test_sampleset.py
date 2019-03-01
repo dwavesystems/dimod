@@ -221,6 +221,16 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(samples,
                          dimod.SampleSet.from_samples(([-1, 1], 'ab'), dimod.SPIN, energy=1))
 
+    def test_from_bqm_with_sorting(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): -1, (1, 2): -1})
+
+        raw = np.triu(np.ones((3, 3)))
+        variables = [2, 1, 0]
+
+        samples = dimod.SampleSet.from_samples_bqm((raw, variables), bqm)
+        self.assertEqual(samples.variables, [0, 1, 2])
+        np.testing.assert_array_equal(np.flip(raw, 1), samples.record.sample)
+
 
 class TestEq(unittest.TestCase):
     def test_ordered(self):

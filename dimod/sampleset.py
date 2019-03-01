@@ -173,7 +173,6 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     if labels is None:
         return arr, list(range(arr.shape[1]))
     elif len(labels) != arr.shape[1]:
-        print(arr, arr.shape, samples_like, labels, len(labels))
         raise ValueError("samples_like and labels dimensions do not match")
     else:
         return arr, labels
@@ -320,7 +319,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @classmethod
     def from_samples(cls, samples_like, vartype, energy, info=None,
-                     num_occurrences=None, aggregate_samples=False, **vectors):
+                     num_occurrences=None, aggregate_samples=False,
+                     sort_labels=True, **vectors):
         """Build a :class:`SampleSet` from raw samples.
 
         Args:
@@ -345,6 +345,11 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             aggregate_samples (bool, optional, default=False):
                 If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            sort_labels (bool, optional, default=True):
+                If true, :attr:`.SampleSet.variables` will be in sorted-order.
+                Note that mixed types are not sortable in which case the given
+                order will be maintained.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -374,6 +379,19 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         # get the samples, variable labels
         samples, variables = as_samples(samples_like)
+
+        if sort_labels and variables:  # need something to sort
+            try:
+                reindex, new_variables = zip(*sorted(enumerate(variables),
+                                                     key=lambda tup: tup[1]))
+            except TypeError:
+                # unlike types are not sortable in python3, so we do nothing
+                pass
+            else:
+                if new_variables != variables:
+                    # avoid the copy if possible
+                    samples = samples[:, reindex]
+                    variables = new_variables
 
         num_samples, num_variables = samples.shape
 
@@ -426,6 +444,11 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             aggregate_samples (bool, optional, default=False):
                 If true, returned :obj:`.SampleSet` will have all unique samples.
+
+            sort_labels (bool, optional, default=True):
+                If true, :attr:`.SampleSet.variables` will be in sorted-order.
+                Note that mixed types are not sortable in which case the given
+                order will be maintained.
 
             **vectors (array_like):
                 Other per-sample data.
