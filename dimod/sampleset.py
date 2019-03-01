@@ -29,7 +29,6 @@ import numpy as np
 
 from numpy.lib import recfunctions
 
-from dimod.compatibility23 import SortKey
 from dimod.decorators import vartype_argument
 from dimod.package_info import __version__
 from dimod.serialization.format import Formatter
@@ -41,8 +40,7 @@ from dimod.views import SampleView
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
 
-def as_samples(samples_like, dtype=None, copy=False, order='C',
-               sort_labels=False):
+def as_samples(samples_like, dtype=None, copy=False, order='C'):
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
@@ -61,10 +59,6 @@ def as_samples(samples_like, dtype=None, copy=False, order='C',
 
         order ({'K', 'A', 'C', 'F'}, optional, default='C'):
             Specify the memory layout of the array. See :func:`numpy.array`.
-
-        sort_labels (bool, optional, default=False):
-            If True, array/labels are returned with the columns sorted by
-            variable label.
 
     Returns:
         tuple: A 2-tuple containing:
@@ -118,21 +112,6 @@ def as_samples(samples_like, dtype=None, copy=False, order='C',
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
-    if sort_labels:
-        arr, labels = as_samples(samples_like, dtype=dtype, copy=copy,
-                                 order=order, sort_labels=False)
-
-        # we want to optimize the case where we can sort the labels natively.
-        # if the labels are of unlike types then we catch that case in the
-        # except block and use python2-style sorting
-        try:
-            reidx = sorted(range(len(labels)), key=labels.__getitem__)
-        except TypeError:
-            # python3 does not allow sorting of unlike-types
-            reidx = sorted(range(len(labels)), key=lambda idx: SortKey(labels[idx]))
-
-        return arr[:, reidx], [labels[i] for i in reidx]
-
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
         samples_like, labels = samples_like
 
@@ -369,6 +348,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sort_labels (bool, optional, default=True):
                 If true, :attr:`.SampleSet.variables` will be in sorted-order.
+                Note that mixed types are not sortable in which case the given
+                order will be maintained.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -397,7 +378,16 @@ class SampleSet(abc.Iterable, abc.Sized):
                                     **vectors).aggregate()
 
         # get the samples, variable labels
-        samples, variables = as_samples(samples_like, sort_labels=sort_labels)
+        samples, variables = as_samples(samples_like)
+
+        if sort_labels and variables:  # need something to sort
+            try:
+                reindex, variables = zip(*sorted(enumerate(variables), key=lambda tup: tup[1]))
+            except TypeError:
+                # unlike types are not sortable in python3, so we do nothing
+                pass
+            else:
+                samples = samples[:, reindex]
 
         num_samples, num_variables = samples.shape
 
@@ -453,6 +443,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sort_labels (bool, optional, default=True):
                 If true, :attr:`.SampleSet.variables` will be in sorted-order.
+                Note that mixed types are not sortable in which case the given
+                order will be maintained.
 
             **vectors (array_like):
                 Other per-sample data.
