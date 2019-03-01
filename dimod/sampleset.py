@@ -382,12 +382,16 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         if sort_labels and variables:  # need something to sort
             try:
-                reindex, variables = zip(*sorted(enumerate(variables), key=lambda tup: tup[1]))
+                reindex, new_variables = zip(*sorted(enumerate(variables),
+                                                     key=lambda tup: tup[1]))
             except TypeError:
                 # unlike types are not sortable in python3, so we do nothing
                 pass
             else:
-                samples = samples[:, reindex]
+                if new_variables != variables:
+                    # avoid the copy if possible
+                    samples = samples[:, reindex]
+                    variables = new_variables
 
         num_samples, num_variables = samples.shape
 
