@@ -18,9 +18,16 @@ import json
 
 import numpy as np
 
+try:
+    import simplejson
+except ImportError:
+    _simplejson = False
+else:
+    _simplejson = True
+
 import dimod
 
-from dimod.serialization.json import DimodEncoder, DimodDecoder
+from dimod.serialization.json import DimodEncoder, DimodDecoder, dimod_object_hook
 
 
 class TestEncode(unittest.TestCase):
@@ -89,4 +96,26 @@ class TestFunctional(unittest.TestCase):
         obj = [builtin, sampleset, bqm]
 
         new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(obj, new)
+
+
+@unittest.skipUnless(_simplejson, "simplejson is not installed")
+class TestSimpleJson(unittest.TestCase):
+    def test_all_three_functional(self):
+        builtin = [0, 'a', [0, 'a']]
+
+        num_variables = 100
+        num_samples = 100
+        samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm)
+
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 3, ('b', 'c'): -3., ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        obj = [builtin, sampleset, bqm]
+
+        # no encoder, uses ._asdict
+        new = simplejson.loads(simplejson.dumps(obj), object_hook=dimod_object_hook)
         self.assertEqual(obj, new)
