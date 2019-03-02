@@ -1755,6 +1755,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         return doc
 
+    def _asdict(self):
+        # support simplejson encoding
+        return self.to_serializable()
+
     @classmethod
     def _from_serializable_v1(cls, obj):
         # deprecated

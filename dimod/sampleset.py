@@ -1080,6 +1080,10 @@ class SampleSet(abc.Iterable, abc.Sized):
                 "variable_labels": list(self.variables),
                 "use_bytes": bool(use_bytes)}
 
+    def _asdict(self):
+        # support simplejson encoding
+        return self.to_serializable()
+
     @classmethod
     def from_serializable(cls, obj):
         """Deserialize a :class:`SampleSet`.
