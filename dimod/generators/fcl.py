@@ -18,6 +18,7 @@ from __future__ import absolute_import
 
 import itertools
 
+import numpy as np
 import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -80,7 +81,7 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         raise ValueError("max_failed_cycles should be a positive integer")
 
     if seed is None:
-        seed = numpy.random.randint(65536)
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
 
     # G = nx.Graph(edges)
