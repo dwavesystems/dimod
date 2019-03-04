@@ -12,21 +12,25 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 from __future__ import absolute_import
 
-import random
+from random import choice
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.decorators import graph_argument
 from dimod.vartypes import SPIN
 
 __all__ = ['chimera_anticluster']
 
 
-def chimera_anticluster(m, n=None, t=4, multiplier=3.0, cls=BinaryQuadraticModel):
+@graph_argument('subgraph', allow_None=True)
+def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
+                        cls=BinaryQuadraticModel, subgraph=None):
     """Generate an anticluster problem on a Chimera lattice.
 
-    An anticluster problem has weak interactions within a tile and strong interactions outside.
+    An anticluster problem has weak interactions within a tile and strong
+    interactions between tiles.
 
     Args:
         m (int):
@@ -35,14 +39,18 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0, cls=BinaryQuadraticModel
         n (int, optional, default=m):
             Number of columns in the Chimera lattice.
 
-        t (int, optiona, default=t):
+        t (int, optional, default=t):
             Size of the shore within each Chimera tile.
 
-        multiplier (number):
+        multiplier (number, optional, default=3.0):
             Strength of the intertile edges.
 
-        cls (:class:`.BinaryQuadraticModel`):
+        cls (class, optional, default=:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
+
+        subgraph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
+            A subgraph of a Chimera(m, n, t) graph to build the anticluster
+            problem on.
 
     Returns:
         :obj:`.BinaryQuadraticModel`: spin-valued binary quadratic model.
@@ -56,12 +64,34 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0, cls=BinaryQuadraticModel
     t = int(t)
 
     # only defined for Ising problems
-    linear = {}
+    bqm = cls.empty(SPIN)
 
-    quadratic = {edge: random.choice((-1., 1.)) for edge in _iter_chimera_tile_edges(m, n, t)}
-    quadratic.update({edge: multiplier*random.choice((-1., 1.)) for edge in _iter_chimera_intertile_edges(m, n, t)})
+    bqm.add_interactions_from((u, v, choice((-1., 1.)))
+                              for u, v in _iter_chimera_tile_edges(m, n, t))
+    bqm.add_interactions_from((u, v, choice((-multiplier, multiplier)))
+                              for u, v in _iter_chimera_intertile_edges(m, n, t))
 
-    return cls(linear, quadratic, 0.0, SPIN)
+    if subgraph is not None:
+        nodes, edges = subgraph
+
+        subbqm = cls.empty(SPIN)
+
+        try:
+            subbqm.add_variables_from((v, bqm.linear[v]) for v in nodes)
+
+        except KeyError:
+            msg = "given 'subgraph' contains nodes not in Chimera({}, {}, {})".format(m, n, t)
+            raise ValueError(msg)
+
+        try:
+            subbqm.add_interactions_from((u, v, bqm.adj[u][v]) for u, v in edges)
+        except KeyError:
+            msg = "given 'subgraph' contains edges not in Chimera({}, {}, {})".format(m, n, t)
+            raise ValueError(msg)
+
+        bqm = subbqm
+
+    return bqm
 
 
 def _iter_chimera_tile_edges(m, n, t):
