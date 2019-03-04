@@ -15,6 +15,7 @@
 # ================================================================================================
 from __future__ import absolute_import
 
+import numpy as np
 import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -55,7 +56,7 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
 
     """
     if seed is None:
-        seed = numpy.random.randint(65536)
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
 
     variables, edges = graph
@@ -107,7 +108,7 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
     """
     if seed is None:
-        seed = numpy.random.randint(65536)
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
 
     variables, edges = graph

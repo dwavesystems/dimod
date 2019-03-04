@@ -61,7 +61,7 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
 
     """
     if seed is None:
-        seed = numpy.random.randint(65536)
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
 
     m = int(m)
