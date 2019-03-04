@@ -15,7 +15,8 @@
 # ================================================================================================
 from __future__ import absolute_import
 
-import random
+import numpy as np
+import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
@@ -24,7 +25,8 @@ __all__ = ['uniform', 'randint']
 
 
 @graph_argument('graph')
-def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
+def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
+            seed=None):
     """Generate a bqm with random biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
@@ -49,16 +51,34 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     """
-    nodes, edges = graph
-    return cls(((n, random.uniform(low, high)) for n in nodes),
-               ((u, v, random.uniform(low, high)) for u, v in edges),
-               random.uniform(low, high),
-               vartype)
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    r = numpy.random.RandomState(seed)
+
+    variables, edges = graph
+
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    ldata = r.uniform(low, high, size=len(variables))
+    qdata = r.uniform(low, high, size=len(irow))
+    offset = r.uniform(low, high)
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=variables)
 
 
 @graph_argument('graph')
-def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
+def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
+            seed=None):
     """Generate a bqm with random biases and offset.
 
     Biases and offset are integer-valued in range [low, high] inclusive.
@@ -83,9 +103,27 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     """
-    nodes, edges = graph
-    return cls(((n, random.randint(low, high)) for n in nodes),
-               ((u, v, random.randint(low, high)) for u, v in edges),
-               0.0,
-               vartype)
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    r = numpy.random.RandomState(seed)
+
+    variables, edges = graph
+
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    # high+1 for inclusive range
+    ldata = r.randint(low, high+1, size=len(variables))
+    qdata = r.randint(low, high+1, size=len(irow))
+    offset = r.randint(low, high+1)
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=variables)

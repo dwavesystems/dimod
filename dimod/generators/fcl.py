@@ -17,7 +17,9 @@
 from __future__ import absolute_import
 
 import itertools
-import random
+
+import numpy as np
+import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
@@ -27,7 +29,8 @@ __all__ = ['frustrated_loop']
 
 
 @graph_argument('graph')
-def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(), max_failed_cycles=100):
+def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
+                    max_failed_cycles=100, seed=None):
     """Generate a frustrated loop problem.
 
     A (generic) frustrated loop (FL) problem is a sum of Hamiltonians, each generated from a single
@@ -59,6 +62,9 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         max_failed_cycles (int, optional, default=100):
             Maximum number of failures to find a cycle before terminating.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     .. [HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
 
@@ -67,9 +73,16 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
 
     """
     nodes, edges = graph
-    assert num_cycles > 0
-    assert R > 0
-    assert max_failed_cycles > 0
+    if num_cycles <= 0:
+        raise ValueError("num_cycles should be a positive integer")
+    if R <= 0:
+        raise ValueError("R should be a positive integer")
+    if max_failed_cycles <= 0:
+        raise ValueError("max_failed_cycles should be a positive integer")
+
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    r = numpy.random.RandomState(seed)
 
     # G = nx.Graph(edges)
     # J = collections.defaultdict(int)
@@ -89,7 +102,7 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
     good_cycles = 0
     while good_cycles < num_cycles and failed_cycles < max_failed_cycles:
 
-        cycle = _random_cycle(adj)
+        cycle = _random_cycle(adj, r)
 
         # if the cycle failed or it is otherwise invalid, mark as failed and continue
         if cycle is None or not all(pred(cycle) for pred in cycle_predicates):
@@ -102,7 +115,7 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         cycle_J = {(cycle[i - 1], cycle[i]): -1. for i in range(len(cycle))}
 
         # randomly select an edge and flip it
-        idx = random.randrange(len(cycle))
+        idx = r.randint(len(cycle))
         cycle_J[(cycle[idx - 1], cycle[idx])] *= -1.
 
         # update the bqm
@@ -119,11 +132,11 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
     return bqm
 
 
-def _random_cycle(adj):
+def _random_cycle(adj, random_state):
     """Find a cycle using a random graph walk."""
 
     # step through idx values in adj to pick a random one, random.choice does not work on dicts
-    n = random.randrange(len(adj))
+    n = random_state.randint(len(adj))
     for idx, v in enumerate(adj):
         if idx == n:
             break
@@ -145,7 +158,7 @@ def _random_cycle(adj):
             return None
 
         # get a random neighbor
-        u = random.choice(neighbors)
+        u = random_state.choice(neighbors)
         if u in visited:
             # if we've seen this neighbour, then we have a cycle starting from it
             return walk[visited[u]:]
