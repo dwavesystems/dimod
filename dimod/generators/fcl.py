@@ -27,7 +27,8 @@ __all__ = ['frustrated_loop']
 
 
 @graph_argument('graph')
-def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(), max_failed_cycles=100):
+def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
+                    max_failed_cycles=100, seed=None):
     """Generate a frustrated loop problem.
 
     A (generic) frustrated loop (FL) problem is a sum of Hamiltonians, each generated from a single
@@ -59,6 +60,9 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         max_failed_cycles (int, optional, default=100):
             Maximum number of failures to find a cycle before terminating.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     .. [HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
 
@@ -70,6 +74,9 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
     assert num_cycles > 0
     assert R > 0
     assert max_failed_cycles > 0
+
+    if seed is not None:
+        random.seed(seed)
 
     # G = nx.Graph(edges)
     # J = collections.defaultdict(int)

@@ -24,7 +24,8 @@ __all__ = ['uniform', 'randint']
 
 
 @graph_argument('graph')
-def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
+def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
+            seed=None):
     """Generate a bqm with random biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
@@ -49,8 +50,15 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     """
     nodes, edges = graph
+
+    if seed is not None:
+        random.seed(seed)
+
     return cls(((n, random.uniform(low, high)) for n in nodes),
                ((u, v, random.uniform(low, high)) for u, v in edges),
                random.uniform(low, high),
@@ -58,7 +66,8 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel):
 
 
 @graph_argument('graph')
-def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
+def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
+            seed=None):
     """Generate a bqm with random biases and offset.
 
     Biases and offset are integer-valued in range [low, high] inclusive.
@@ -83,8 +92,15 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel):
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     """
     nodes, edges = graph
+
+    if seed is not None:
+        random.seed(seed)
+
     return cls(((n, random.randint(low, high)) for n in nodes),
                ((u, v, random.randint(low, high)) for u, v in edges),
                0.0,

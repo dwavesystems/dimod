@@ -15,6 +15,8 @@
 # =============================================================================
 from __future__ import absolute_import
 
+import random
+
 from random import choice
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -26,7 +28,7 @@ __all__ = ['chimera_anticluster']
 
 @graph_argument('subgraph', allow_None=True)
 def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
-                        cls=BinaryQuadraticModel, subgraph=None):
+                        cls=BinaryQuadraticModel, subgraph=None, seed=None):
     """Generate an anticluster problem on a Chimera lattice.
 
     An anticluster problem has weak interactions within a tile and strong
@@ -52,10 +54,16 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
             A subgraph of a Chimera(m, n, t) graph to build the anticluster
             problem on.
 
+        seed (int, optional, default=None):
+            Random seed.
+
     Returns:
         :obj:`.BinaryQuadraticModel`: spin-valued binary quadratic model.
 
     """
+    if seed is not None:
+        random.seed(seed)
+
     m = int(m)
     if n is None:
         n = m

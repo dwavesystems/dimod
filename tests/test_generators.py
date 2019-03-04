@@ -33,6 +33,16 @@ class TestRandomUniform(unittest.TestCase):
         self.assertEqual(len(bqm), 1)
         self.assertIn(0, bqm.variables)
 
+    def test_seed(self):
+        bqm0 = dimod.generators.random.uniform(1, dimod.BINARY, seed=506)
+        bqm1 = dimod.generators.random.uniform(1, dimod.BINARY, seed=506)
+
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.random.uniform(1, dimod.BINARY, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
+
 
 class TestRandomRandint(unittest.TestCase):
     def test_singleton(self):
@@ -41,6 +51,16 @@ class TestRandomRandint(unittest.TestCase):
         # should have a single node
         self.assertEqual(len(bqm), 1)
         self.assertIn(0, bqm.variables)
+
+    def test_seed(self):
+        bqm0 = dimod.generators.random.randint(1, dimod.BINARY, seed=506)
+        bqm1 = dimod.generators.random.randint(1, dimod.BINARY, seed=506)
+
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.random.randint(1, dimod.BINARY, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
 
 
 class TestChimeraAnticluster(unittest.TestCase):
@@ -90,9 +110,19 @@ class TestChimeraAnticluster(unittest.TestCase):
         with self.assertRaises(ValueError):
             dimod.generators.chimera_anticluster(1, subgraph=subgraph)
 
+    def test_seed(self):
+        bqm0 = dimod.generators.chimera_anticluster(2, 1, 3, seed=506)
+        bqm1 = dimod.generators.chimera_anticluster(2, 1, 3, seed=506)
 
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.chimera_anticluster(2, 1, 3, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
+
+
+@unittest.skipUnless(_networkx, "no networkx installed")
 class TestFCL(unittest.TestCase):
-    @unittest.skipUnless(_networkx, "no networkx installed")
     def test_singletile(self):
         G = nx.Graph()
 
@@ -108,3 +138,19 @@ class TestFCL(unittest.TestCase):
             for j in range(4, 8):
                 self.assertIn(i, bqm.adj)
                 self.assertIn(j, bqm.adj[i])
+
+    def test_seed(self):
+        G = nx.Graph()
+
+        for u in range(4):
+            for v in range(4, 8):
+                G.add_edge(u, v)
+
+        bqm0 = dimod.generators.frustrated_loop(G, 10, seed=506)
+        bqm1 = dimod.generators.frustrated_loop(G, 10, seed=506)
+
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.frustrated_loop(G, 10, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
