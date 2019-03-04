@@ -15,9 +15,8 @@
 # =============================================================================
 from __future__ import absolute_import
 
-import random
-
-from random import choice
+import numpy as np
+import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
@@ -61,8 +60,9 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
         :obj:`.BinaryQuadraticModel`: spin-valued binary quadratic model.
 
     """
-    if seed is not None:
-        random.seed(seed)
+    if seed is None:
+        seed = numpy.random.randint(65536)
+    r = numpy.random.RandomState(seed)
 
     m = int(m)
     if n is None:
@@ -71,13 +71,27 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
         n = int(n)
     t = int(t)
 
-    # only defined for Ising problems
-    bqm = cls.empty(SPIN)
+    ldata = np.zeros(m*n*t*2)  # number of nodes
 
-    bqm.add_interactions_from((u, v, choice((-1., 1.)))
-                              for u, v in _iter_chimera_tile_edges(m, n, t))
-    bqm.add_interactions_from((u, v, choice((-multiplier, multiplier)))
-                              for u, v in _iter_chimera_intertile_edges(m, n, t))
+    if m and n and t:
+        inrow, incol = zip(*_iter_chimera_tile_edges(m, n, t))
+
+        if m > 1 or n > 1:
+            outrow, outcol = zip(*_iter_chimera_intertile_edges(m, n, t))
+        else:
+            outrow = outcol = tuple()
+
+        qdata = r.choice((-1., 1.), size=len(inrow)+len(outrow))
+
+        qdata[len(inrow):] *= multiplier
+
+        irow = inrow + outrow
+        icol = incol + outcol
+
+    else:
+        irow = icol = qdata = tuple()
+
+    bqm = cls.from_numpy_vectors(ldata, (irow, icol, qdata), 0.0, SPIN)
 
     if subgraph is not None:
         nodes, edges = subgraph

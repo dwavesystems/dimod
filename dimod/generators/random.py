@@ -15,7 +15,7 @@
 # ================================================================================================
 from __future__ import absolute_import
 
-import random
+import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
@@ -54,15 +54,25 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
             Random seed.
 
     """
-    nodes, edges = graph
+    if seed is None:
+        seed = numpy.random.randint(65536)
+    r = numpy.random.RandomState(seed)
 
-    if seed is not None:
-        random.seed(seed)
+    variables, edges = graph
 
-    return cls(((n, random.uniform(low, high)) for n in nodes),
-               ((u, v, random.uniform(low, high)) for u, v in edges),
-               random.uniform(low, high),
-               vartype)
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    ldata = r.uniform(low, high, size=len(variables))
+    qdata = r.uniform(low, high, size=len(irow))
+    offset = r.uniform(low, high)
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=variables)
 
 
 @graph_argument('graph')
@@ -96,12 +106,23 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
             Random seed.
 
     """
-    nodes, edges = graph
+    if seed is None:
+        seed = numpy.random.randint(65536)
+    r = numpy.random.RandomState(seed)
 
-    if seed is not None:
-        random.seed(seed)
+    variables, edges = graph
 
-    return cls(((n, random.randint(low, high)) for n in nodes),
-               ((u, v, random.randint(low, high)) for u, v in edges),
-               0.0,
-               vartype)
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    # high+1 for inclusive range
+    ldata = r.randint(low, high+1, size=len(variables))
+    qdata = r.randint(low, high+1, size=len(irow))
+    offset = r.randint(low, high+1)
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=variables)

@@ -33,6 +33,12 @@ class TestRandomUniform(unittest.TestCase):
         self.assertEqual(len(bqm), 1)
         self.assertIn(0, bqm.variables)
 
+    def test_empty(self):
+        bqm = dimod.generators.random.uniform(0, dimod.BINARY)
+
+        # should have a single node
+        self.assertEqual(len(bqm), 0)
+
     def test_seed(self):
         bqm0 = dimod.generators.random.uniform(1, dimod.BINARY, seed=506)
         bqm1 = dimod.generators.random.uniform(1, dimod.BINARY, seed=506)
@@ -52,13 +58,19 @@ class TestRandomRandint(unittest.TestCase):
         self.assertEqual(len(bqm), 1)
         self.assertIn(0, bqm.variables)
 
+    def test_empty(self):
+        bqm = dimod.generators.random.randint(0, dimod.BINARY)
+
+        # should have a single node
+        self.assertEqual(len(bqm), 0)
+
     def test_seed(self):
-        bqm0 = dimod.generators.random.randint(1, dimod.BINARY, seed=506)
-        bqm1 = dimod.generators.random.randint(1, dimod.BINARY, seed=506)
+        bqm0 = dimod.generators.random.randint(100, dimod.BINARY, seed=506)
+        bqm1 = dimod.generators.random.randint(100, dimod.BINARY, seed=506)
 
         self.assertEqual(bqm0, bqm1)
 
-        bqm2 = dimod.generators.random.randint(1, dimod.BINARY, seed=123)
+        bqm2 = dimod.generators.random.randint(100, dimod.BINARY, seed=123)
 
         self.assertNotEqual(bqm2, bqm1)
 
@@ -119,6 +131,12 @@ class TestChimeraAnticluster(unittest.TestCase):
         bqm2 = dimod.generators.chimera_anticluster(2, 1, 3, seed=123)
 
         self.assertNotEqual(bqm2, bqm1)
+
+    def test_empty(self):
+        bqm = dimod.generators.chimera_anticluster(0)
+
+        # should have a single node
+        self.assertEqual(len(bqm), 0)
 
 
 @unittest.skipUnless(_networkx, "no networkx installed")
