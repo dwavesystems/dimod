@@ -55,9 +55,44 @@ class TestChimeraAnticluster(unittest.TestCase):
                 self.assertIn(j, bqm.adj[i])
                 self.assertIn(bqm.adj[i][j], (-1, 1))
 
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_multitile(self):
+        bqm = dimod.generators.chimera_anticluster(2, multiplier=4)
+
+        self.assertEqual(set(bqm.linear.values()), {0})
+
+        for (u, v), bias in bqm.quadratic.items():
+            if u // 8 == v // 8:
+                self.assertIn(bias, {-1, 1})
+            else:
+                self.assertIn(bias, {-4, 4})
+
+    def test_singletile_subgraph(self):
+        subgraph = ([0, 1, 2, 3, 4, 5, 6],
+                    [(0, 4), (0, 5), (0, 6),
+                     (1, 4), (1, 5), (1, 6),
+                     (2, 4), (2, 5),
+                     (3, 4), (3, 5), (3, 6)])
+        bqm = dimod.generators.chimera_anticluster(1, subgraph=subgraph)
+
+        self.assertEqual(len(bqm), 7)
+        self.assertEqual(len(bqm.quadratic), 11)
+
+        nodes, edges = subgraph
+        for v in nodes:
+            self.assertEqual(bqm.linear[v], 0)
+        for u, v in edges:
+            self.assertIn(bqm.quadratic[(u, v)], {-1, 1})
+
+    def test_singletile_not_subgraph(self):
+        subgraph = ([0, 'a'], [(0, 1)])
+
+        with self.assertRaises(ValueError):
+            dimod.generators.chimera_anticluster(1, subgraph=subgraph)
+
 
 class TestFCL(unittest.TestCase):
-    @unittest.skipUnless(_networkx, "no networks installed")
+    @unittest.skipUnless(_networkx, "no networkx installed")
     def test_singletile(self):
         G = nx.Graph()
 
