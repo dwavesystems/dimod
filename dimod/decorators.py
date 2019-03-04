@@ -248,10 +248,40 @@ def vartype_argument(*arg_names):
     return _vartype_arg
 
 
-def graph_argument(*arg_names):
+def _is_integer(a):
+    if isinstance(a, integer_types):
+        return True
+    if hasattr(a, "is_integer") and a.is_integer():
+        return True
+    return False
+
+
+# we would like to do graph_argument(*arg_names, allow_None=False), but python2...
+def graph_argument(*arg_names, **options):
+    """Coerce given graphs into a consisent form.
+
+    Args:
+        *arg_names (optional, default='G'):
+            The names of the arguments for input graphs.
+
+        allow_None (bool, optional, default=False):
+            Allow None as an input graph in which case it is passed through as
+            None.
+
+    """
+
     # by default, constrain only one argument, the 'G`
     if not arg_names:
         arg_names = ['G']
+
+    # we only allow one option allow_None
+    allow_None = options.pop("allow_None", False)
+    if options:
+        # to keep it consistent with python3
+        # behaviour like graph_argument(*arg_names, allow_None=False)
+        key, _ = options.popitem()
+        msg = "graph_argument() for an unexpected keyword argument '{}'".format(key)
+        raise TypeError(msg)
 
     def _graph_arg(f):
         argspec = getargspec(f)
@@ -266,7 +296,7 @@ def graph_argument(*arg_names):
                 # networkx or perhaps a named tuple
                 kwargs[name] = (list(G.nodes), list(G.edges))
 
-            elif isinstance(G, integer_types):
+            elif _is_integer(G):
                 # an integer, cast to a complete graph
                 kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
 
@@ -276,9 +306,9 @@ def graph_argument(*arg_names):
                     # if nodes is an int
                     kwargs[name] = (list(range(G[0])), G[1])
 
-            elif isinstance(G, float) and G.is_integer():
-                G = int(G)
-                kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
+            elif allow_None and G is None:
+                # allow None to be passed through
+                return G
 
             else:
                 raise ValueError('Unexpected graph input form')

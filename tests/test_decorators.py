@@ -174,3 +174,25 @@ class TestGraphArgument(unittest.TestCase):
             self.assertIn(n, range(N))
         for edge in edges:
             self.assertIn(edge, edgelist)
+
+    def test_allow_None_False(self):
+        @graph_argument('G')
+        def f(G=None):
+            return G
+
+        with self.assertRaises(ValueError):
+            f()
+
+    def test_allow_None_True(self):
+
+        @graph_argument('G', allow_None=True)
+        def f(G=None):
+            return G
+
+        self.assertIs(f(), None)
+
+    def test_other_kwarg(self):
+        with self.assertRaises(TypeError):
+            @graph_argument('G', b=True)
+            def f(G):
+                pass
