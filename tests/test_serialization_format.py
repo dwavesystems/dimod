@@ -180,3 +180,29 @@ class TestSampleSet(unittest.TestCase):
                             "['BINARY', 2 rows, 2 samples, 5 variables]"])
 
         self.assertEqual(target, s)
+
+
+class TestResponse(unittest.TestCase):
+    # note that Response is deprecated, but we should support printing until
+    # it's aliased to SampleSet
+    def test_triu_spin(self):
+        arr = np.triu(np.ones((5, 5)))
+        variables = [0, 1, 'a', 'b', 'c']
+
+        samples = dimod.Response.from_samples(2*arr-1,
+                                              {'energy': [4., 3, 2, 1, 0]},
+                                              info={},
+                                              vartype=dimod.SPIN,
+                                              variable_labels=variables)
+
+        s = Formatter(width=79, depth=None).format(samples)
+
+        target = '\n'.join(["   0  1  a  b  c energy num_oc.",
+                            "4 -1 -1 -1 -1 +1    0.0       1",
+                            "3 -1 -1 -1 +1 +1    1.0       1",
+                            "2 -1 -1 +1 +1 +1    2.0       1",
+                            "1 -1 +1 +1 +1 +1    3.0       1",
+                            "0 +1 +1 +1 +1 +1    4.0       1",
+                            "['SPIN', 5 rows, 5 samples, 5 variables]"])
+
+        self.assertEqual(s, target)

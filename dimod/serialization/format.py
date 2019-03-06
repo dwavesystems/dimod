@@ -255,7 +255,7 @@ class Formatter(object):
         options = self.options
         options.update(kwargs)
 
-        if type(obj) is dimod.SampleSet:
+        if isinstance(obj, dimod.SampleSet):
             self._print_sampleset(obj, stream, **options)
             return
 
