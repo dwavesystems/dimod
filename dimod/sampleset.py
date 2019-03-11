@@ -948,7 +948,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
-        self._variables.relabel(mapping)
+        self.variables.relabel(mapping)
         return self
 
     def aggregate(self):
