@@ -12,7 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-from dimod.generators.chimera import *
-from dimod.generators.fcl import *
-from dimod.generators.random import *
+# =============================================================================
+from dimod.generators.chimera import chimera_anticluster
+from dimod.generators.constraints import combinations
+from dimod.generators.fcl import frustrated_loop
+from dimod.generators.random import uniform, randint
