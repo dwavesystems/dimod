@@ -12,7 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+import itertools
 import unittest
 
 import dimod
@@ -172,3 +173,47 @@ class TestFCL(unittest.TestCase):
         bqm2 = dimod.generators.frustrated_loop(G, 10, seed=123)
 
         self.assertNotEqual(bqm2, bqm1)
+
+
+class TestCombinations(unittest.TestCase):
+
+    def check_combinations(self, variables, k, bqm, strength):
+        self.assertEqual(len(bqm), len(variables))
+
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if sum(val == 1 for val in sample.values()) == k:
+                self.assertEqual(energy, 0)
+            else:
+                self.assertGreaterEqual(energy, strength)
+
+    def test_2_choose_1(self):
+        bqm = dimod.generators.combinations(2, 1)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.check_combinations(range(2), 1, bqm, 1)
+
+    def test_5_choose_3(self):
+        bqm = dimod.generators.combinations('abcde', 3)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.check_combinations('abcde', 3, bqm, 1)
+
+    def test_5_choose_3_spin(self):
+        bqm = dimod.generators.combinations('abcde', 3, vartype='SPIN')
+
+        self.assertIs(bqm.vartype, dimod.SPIN)
+        self.check_combinations('abcde', 3, bqm, 1)
+
+    def test_5_choose_3_strength_4(self):
+        bqm = dimod.generators.combinations('abcde', 3, strength=4.)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.check_combinations('abcde', 3, bqm, 4)
+
+    def test_3_choose_0(self):
+        bqm = dimod.generators.combinations(3, 0)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.check_combinations(range(3), 0, bqm, 1)
