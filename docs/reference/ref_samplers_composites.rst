@@ -153,6 +153,38 @@ Methods
    ScaleComposite.sample
    ScaleComposite.sample_ising
 
+Roof Duality Composite
+----------------------
+
+Class
+~~~~~
+
+.. currentModule:: dimod.reference.composites.fixedvariable
+.. autoclass:: RoofDualityComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   RoofDualityComposite.child
+   RoofDualityComposite.children
+   RoofDualityComposite.parameters
+   RoofDualityComposite.properties
+
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   RoofDualityComposite.sample
+   RoofDualityComposite.sample_ising
+   RoofDualityComposite.sample_qubo
+
+
 Truncate Composite
 ------------------
 

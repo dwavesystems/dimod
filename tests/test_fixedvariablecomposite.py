@@ -12,16 +12,25 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 import unittest
 
 import dimod.testing as dtest
 from dimod.vartypes import Vartype
 
+import dimod
+
 from dimod import BinaryQuadraticModel
-from dimod import FixedVariableComposite, ExactSolver
+from dimod import FixedVariableComposite, ExactSolver, RoofDualityComposite
 from dimod import SampleSet
+
+try:
+    from dimod import fix_variables
+except ImportError:
+    cpp = False
+else:
+    cpp = True
 
 
 class TestFixedVariableComposite(unittest.TestCase):
@@ -65,3 +74,49 @@ class TestFixedVariableComposite(unittest.TestCase):
 
         self.assertEqual(response.first.sample, {4: 1, 1: 1})
         self.assertAlmostEqual(response.first.energy, -2.4)
+
+
+class TestRoofDualityComposite(unittest.TestCase):
+    @unittest.skipIf(cpp, "cpp extensions built")
+    def test_nocpp_error(self):
+        with self.assertRaises(ImportError):
+            RoofDualityComposite(dimod.ExactSolver()).sample_ising({}, {})
+
+    @unittest.skipUnless(cpp, "no cpp extensions built")
+    def test_construction(self):
+        sampler = RoofDualityComposite(dimod.ExactSolver())
+        dtest.assert_sampler_api(sampler)
+
+    @unittest.skipUnless(cpp, "no cpp extensions built")
+    def test_3path(self):
+        sampler = RoofDualityComposite(dimod.ExactSolver())
+        sampleset = sampler.sample_ising({'a': 10},  {'ab': -1, 'bc': 1})
+
+        # all should be fixed
+        self.assertEqual(len(sampleset), 0)
+        self.assertEqual(set(sampleset.variables), set('abc'))
+
+    @unittest.skipUnless(cpp, "no cpp extensions built")
+    def test_triangle(self):
+        sampler = RoofDualityComposite(dimod.ExactSolver())
+
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1, 'bc': -1, 'ac': -1})
+
+        # two equally good solutions
+        sampleset = sampler.sample(bqm)
+
+        self.assertEqual(set(sampleset.variables), set('abc'))
+        dimod.testing.assert_response_energies(sampleset, bqm)
+
+    @unittest.skipUnless(cpp, "no cpp extensions built")
+    def test_triangle_sampling_mode_off(self):
+        sampler = RoofDualityComposite(dimod.ExactSolver())
+
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1, 'bc': -1, 'ac': -1})
+
+        # two equally good solutions, but with sampling mode off it will pick one
+        sampleset = sampler.sample(bqm, sampling_mode=False)
+
+        self.assertEqual(set(sampleset.variables), set('abc'))
+        self.assertEqual(len(sampleset), 0)  # all should be fixed
+        dimod.testing.assert_response_energies(sampleset, bqm)
