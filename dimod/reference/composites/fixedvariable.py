@@ -23,13 +23,15 @@ of technical terms in descriptions of Ocean tools.
 import numpy as np
 
 from dimod.core.composite import ComposedSampler
-from dimod.response import SampleSet
+from dimod.roof_duality import fix_variables
+from dimod.sampleset import SampleSet
 
-__all__ = ['FixedVariableComposite']
+
+__all__ = 'FixedVariableComposite', 'RoofDualityComposite'
 
 
 class FixedVariableComposite(ComposedSampler):
-    """Composite to fix variables of a problem to provided, assigned values
+    """Composite to fix variables of a problem to provided.
 
     Inherits from :class:`dimod.ComposedSampler`.
 
@@ -65,7 +67,9 @@ class FixedVariableComposite(ComposedSampler):
 
     @property
     def parameters(self):
-        return self.child.parameters.copy()
+        params = self.child.parameters.copy()
+        params['fixed_variables'] = []
+        return params
 
     @property
     def properties(self):
@@ -170,3 +174,55 @@ def _release_response(response, fixed_variables):
 
     return SampleSet(data, original_variables, response.info,
                      response.vartype)
+
+
+class RoofDualityComposite(FixedVariableComposite):
+    """Uses roof duality to assign some variables before invoking child sampler.
+
+    Uses the :func:`~dimod.roof_duality.fix_variables` function to determine
+    variable assignments, then fixes them before calling the child sampler.
+    Returned samples include the fixed variables.
+
+    Args:
+       child (:obj:`dimod.Sampler`):
+            A dimod sampler. Used to sample the bqm after variables have been
+            fixed.
+
+    See also:
+        :func:`~dimod.roof_duality.fix_variables` for a description of the
+        algorithm.
+
+    """
+
+    @property
+    def parameters(self):
+        params = self.child.parameters.copy()
+        params['sampling_mode'] = []
+        return params
+
+    def sample(self, bqm, sampling_mode=True, **parameters):
+        """Sample from the provided binary quadratic model.
+
+        Uses the :func:`~dimod.roof_duality.fix_variables` function to determine
+        which variables to fix.
+
+        Args:
+            bqm (:obj:`dimod.BinaryQuadraticModel`):
+                Binary quadratic model to be sampled from.
+
+            sampling_mode (bool, optional, default=True):
+                In sampling mode, only roof-duality is used. When
+                `sampling_mode` is false, strongly connected components are used
+                to fix more variables, but in some optimal solutions these
+                variables may take different values.
+
+            **parameters:
+                Parameters for the child sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+
+        """
+        # use roof-duality to decide which variables to fix
+        parameters['fixed_variables'] = fix_variables(bqm, sampling_mode=sampling_mode)
+        return super(RoofDualityComposite, self).sample(bqm, **parameters)
