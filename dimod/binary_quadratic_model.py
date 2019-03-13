@@ -1323,9 +1323,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
             >>> bqm_spin.offset, bqm_spin.vartype
-            (0.5, <Vartype.SPIN: frozenset([1, -1])>)
+            (0.5, <Vartype.SPIN: frozenset({1, -1})>)
             >>> bqm_qubo.offset, bqm_qubo.vartype
-            (-2.0, <Vartype.BINARY: frozenset([0, 1])>)
+            (-2.0, <Vartype.BINARY: frozenset({0, 1})>)
 
         """
 
@@ -1687,7 +1687,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> import bson
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> b = bson.BSON.encode(bqm.to_serializable(use_bytes=True))
+            >>> doc = bqm.to_serializable(use_bytes=True)
+            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
 
             Encode using BSON in python 2.7. Because :class:`bytes` is an alias for :class:`str`,
             we need to signal to the encoder that it should encode the biases and labels as binary
@@ -1698,7 +1699,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> doc = bqm.to_serializable(use_bytes=True, bytes_type=bson.Binary)
-            >>> b = bson.BSON.encode(doc)
+            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
 
         See also:
             :meth:`~.BinaryQuadraticModel.from_serializable`
@@ -2013,7 +2014,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> model.linear    # doctest: +SKIP
             {0: -1, 1: -1}
             >>> model.vartype
-            <Vartype.BINARY: frozenset([0, 1])>
+            <Vartype.BINARY: frozenset({0, 1})>
 
         """
         linear = {}
@@ -2318,7 +2319,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> linear_vector = np.asarray([-1, 1])
             >>> quadratic_vectors = (np.asarray([0]), np.asarray([1]), np.asarray([-1.0]))
             >>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear_vector, quadratic_vectors, 0.0, dimod.SPIN)
-            >>> bqm.quadratic
+            >>> print(bqm.quadratic)
             {(0, 1): -1.0}
 
         """
@@ -2364,7 +2365,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
             ...                                    1.4,
             ...                                    dimod.BINARY)
-            >>> model.to_pandas_dataframe()
+            >>> model.to_pandas_dataframe()  # doctest: +SKIP
                  a    b    c
             a  1.1  0.5  0.0
             b  0.0 -1.0  1.5
@@ -2423,7 +2424,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> model.offset
             2.5
             >>> model.vartype
-            <Vartype.BINARY: frozenset([0, 1])>
+            <Vartype.BINARY: frozenset({0, 1})>
 
         """
         if interactions is None:

@@ -397,7 +397,7 @@ class BinaryPolynomial(abc.MutableMapping):
             the linear offset.
 
         Examples:
-            >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1, 'abc': -1})
+            >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1, 'abc': -1}, dimod.SPIN)
             >>> h, J, off = poly.to_hising()
             >>> h
             {'a': -1}
