@@ -12,10 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 """
-The :class:`.Sampler` abstract base class (`ABC <https://docs.python.org/3.6/library/abc.html#module-abc>`_\ )
-helps you create new dimod samplers.
+The :class:`.Sampler` abstract base class (see :mod:`abc`) helps you create new
+dimod samplers.
 
 Any new dimod sampler must define a subclass of :class:`.Sampler` that implements
 abstract properties :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties`
@@ -133,7 +133,27 @@ class Sampler:
 
     @samplemixinmethod
     def sample(self, bqm, **parameters):
-        """Samples from a binary quadratic model using an implemented sample method.
+        """Sample from a binary quadratic model.
+
+        This method is inherited from the :class:`.Sampler` base class.
+
+        Converts the binary quadratic model to either Ising and QUBO format and
+        then invokes the implemented sampling method (one of
+        :meth:`.sample_ising` or :meth:`.sample_qubo`).
+
+        Args:
+            :obj:`.BinaryQuadraticModel`:
+                A binary quadratic model.
+
+            **kwargs:
+                See the implemented sampling for additional keyword definitions.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        See also:
+            :meth:`.sample_ising`, :meth:`.sample_qubo`
+
         """
 
         # we try to use the matching sample method if possible
@@ -166,14 +186,61 @@ class Sampler:
 
     @samplemixinmethod
     def sample_ising(self, h, J, **parameters):
-        """Samples from an Ising model using an implemented sample method.
+        """Samples from an Ising model using the implemented sample method.
+
+        This method is inherited from the :class:`.Sampler` base class.
+
+        Converts the Ising model into a :obj:`.BinaryQuadraticModel` and then
+        calls :meth:`.sample`.
+
+        Args:
+            h (dict/list):
+                Linear biases of the Ising problem. If a dict, should be of the
+                form `{v: bias, ...}` where is a spin-valued variable and `bias`
+                is its associated bias. If a list, it is treated as a list of
+                biases where the indices are the variable labels.
+
+            J (dict[(variable, variable), bias]):
+                Quadratic biases of the Ising problem.
+
+            **kwargs:
+                See the implemented sampling for additional keyword definitions.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        See also:
+            :meth:`.sample`, :meth:`.sample_qubo`
+
         """
         bqm = BinaryQuadraticModel.from_ising(h, J)
         return self.sample(bqm, **parameters)
 
     @samplemixinmethod
     def sample_qubo(self, Q, **parameters):
-        """Samples from a QUBO using an implemented sample method.
+        """Samples from a QUBO using the implemented sample method.
+
+        This method is inherited from the :class:`.Sampler` base class.
+
+        Converts the QUBO into a :obj:`.BinaryQuadraticModel` and then
+        calls :meth:`.sample`.
+
+        Args:
+            Q (dict):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
+                where `u`, `v`, are binary-valued variables and `bias` is their
+                associated coefficient.
+
+            **kwargs:
+                See the implemented sampling for additional keyword definitions.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        See also:
+            :meth:`.sample`, :meth:`.sample_ising`
+
         """
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
