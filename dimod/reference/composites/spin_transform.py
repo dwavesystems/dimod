@@ -47,12 +47,6 @@ class SpinReversalTransformComposite(Sampler, Composite):
     Args:
         sampler: A `dimod` sampler object.
 
-    Attributes:
-        children (list):
-            [`sampler`] where `sampler` is the input sampler.
-        structure:
-            Inherited from input `sampler`.
-
     Examples:
         This example composes a dimod ExactSolver sampler with spin transforms then
         uses it to sample an Ising problem.

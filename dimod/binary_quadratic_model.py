@@ -20,13 +20,13 @@ Ising and quadratic unconstrained binary optimization (QUBO) models
 used by samplers such as the D-Wave system.
 
 The :term:`Ising` model is an objective function of :math:`N` variables
-:math:`\bf s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
+:math:`s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
 are the biases and :math:`J_{i,j}` the couplings (interactions) between spins.
 
 .. math::
 
     \\text{Ising:} \\qquad  E(\\bf{s}|\\bf{h},\\bf{J})
-    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\}
+    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\\}
     \\qquad\\qquad s_i\\in\\{-1,+1\\}
 
 
