@@ -161,7 +161,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: circleci/python:3.5-jessie
+      - image: circleci/python:3.7-stretch # as of march 2019 RTD uses 3.7
 
     working_directory: ~/repo
 
