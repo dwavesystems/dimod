@@ -42,7 +42,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
     Spin reversal transforms (or "gauge transformations") are applied
     by flipping the spin of variables in the Ising problem. After
     sampling the transformed Ising problem, the same bits are flipped in the
-    resulting sample.
+    resulting sample [#km]_.
 
     Args:
         sampler: A `dimod` sampler object.
@@ -71,7 +71,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
     References
     ----------
-    .. [KM] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
+    .. [#km] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
         for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
         2014.
 
