@@ -74,74 +74,20 @@ __all__ = ['Composite', 'ComposedSampler']
 class Composite:
     """Abstract base class for dimod composites.
 
-    Provides the :attr:`~.Composite.child` mixin property and defines the :attr:`~.Composite.children`
+    Provides the :attr:`.child` mixin property and defines the :attr:`~.Composite.children`
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
     """
     @abc.abstractproperty
     def children(self):
-        """list[ :obj:`.Sampler`]: List of samplers (or composed samplers).
-
-        This abstract property must be implemented.
-
-
-        Examples:
-            These examples define the supported samplers for the composed sampler upon instantiation.
-
-            .. code-block:: python
-
-                class MyComposite(dimod.Composite):
-                    def __init__(self, *children):
-                        self._children = list(children)
-
-                    @property
-                    def children(self):
-                        return self._children
-
-            .. code-block:: python
-
-                class AnotherComposite(dimod.Composite):
-                    self.children = None
-                    def __init__(self, child_sampler):
-                        self.children = [child_sampler]
+        """list[ :obj:`.Sampler`]: List of child samplers that that are used by
+        this composite.
         """
         pass
 
     @property
     def child(self):
-        """First child in :attr:`~.Composite.children`.
-
-        Examples:
-            This example pseudocode defines a composed sampler that uses the first supported
-            sampler in a composite's list of samplers on a binary quadratic model.
-
-            .. code-block:: python
-
-                class MyComposedSampler(Sampler, Composite):
-
-                    children = None
-                    parameters = None
-                    properties = None
-
-                    def __init__(self, child):
-                        self.children = [child]
-
-                        self.parameters = child.parameters.copy()  # propagate parameters
-                        self.parameters['my_additional_parameter'] = []
-
-                        self.properties = child.properties.copy()  # propagate properties
-
-                    # Implementation of the composite's functionality
-                    def sample(self, bqm, my_additional_parameter, **kwargs):
-                        # Overwrite the abstract sample method.
-                        # Additional parameters must have defaults
-
-                        # Samples are obtained from the sampler by using the `child` property:
-                        # response = self.child.sample(bqm, **kwargs)
-
-                        raise NotImplementedError
-
-        """
+        """:obj:`.Sampler`: The child sampler. First sampler in :attr:`.children`."""
         try:
             return self.children[0]
         except IndexError:
