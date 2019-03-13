@@ -161,12 +161,14 @@ jobs:
 
   test-doctest:
     docker:
-      - image: circleci/python:3.5-jessie
+      - image: circleci/python:3.7-stretch # as of march 2019 RTD uses 3.7
 
     working_directory: ~/repo
 
     steps:
       - checkout
+
+      - run: *install-boost-linux-template
 
       - restore_cache: *restore-cache-template
 
@@ -192,7 +194,7 @@ jobs:
           name: doctest
           command: |
             . env/bin/activate
-            make -C docs/ doctest
+            make -C docs/ html doctest
 
 ##################################################################################################
 # Deploy

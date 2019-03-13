@@ -20,13 +20,13 @@ Ising and quadratic unconstrained binary optimization (QUBO) models
 used by samplers such as the D-Wave system.
 
 The :term:`Ising` model is an objective function of :math:`N` variables
-:math:`\bf s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
+:math:`s=[s_1,...,s_N]` corresponding to physical Ising spins, where :math:`h_i`
 are the biases and :math:`J_{i,j}` the couplings (interactions) between spins.
 
 .. math::
 
     \\text{Ising:} \\qquad  E(\\bf{s}|\\bf{h},\\bf{J})
-    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\}
+    = \\left\\{ \\sum_{i=1}^N h_i s_i + \\sum_{i<j}^N J_{i,j} s_i s_j  \\right\\}
     \\qquad\\qquad s_i\\in\\{-1,+1\\}
 
 
@@ -916,19 +916,19 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         Examples:
 
-            This example creates a binary quadratic model and then normalizes
-            all the biases in the range [-0.4, 0.8].
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5},
+            ...                                  {('a', 'b'): -1.0},
+            ...                                  1.0, dimod.SPIN)
+            >>> max(abs(bias) for bias in bqm.linear.values())
+            2.0
+            >>> max(abs(bias) for bias in bqm.quadratic.values())
+            1.0
+            >>> bqm.normalize([-1.0, 1.0])
+            >>> max(abs(bias) for bias in bqm.linear.values())
+            1.0
+            >>> max(abs(bias) for bias in bqm.quadratic.values())
+            0.5
 
-            >>> import dimod
-            ...
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
-            >>> bqm.normalize([-0.4, 0.8])
-            >>> bqm.linear
-            {'a': -0.4, 'b': 0.30000000000000004}
-            >>> bqm.quadratic
-            {('a', 'b'): -0.2}
-            >>> bqm.offset
-            0.2
         """
 
         def parse_range(r):
@@ -960,9 +960,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                                                   quadratic_range))
 
         lin_min, lin_max = min_and_max([v for k, v in self.linear.items()
-                                     if k not in ignored_variables])
-        quad_min, quad_max = min_and_max([v for (a,b),
-                                                v in self.quadratic.items()
+                                        if k not in ignored_variables])
+        quad_min, quad_max = min_and_max([v for (a, b), v in self.quadratic.items()
                                           if ((a, b) not in ignored_interactions
                                               and (b, a) not in
                                               ignored_interactions)])
@@ -1323,9 +1322,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> bqm_spin = dimod.BinaryQuadraticModel({1: 1, 2: 2}, {(1, 2): 0.5}, 0.5, dimod.SPIN)
             >>> bqm_qubo = bqm_spin.change_vartype('BINARY', inplace=False)
             >>> bqm_spin.offset, bqm_spin.vartype
-            (0.5, <Vartype.SPIN: frozenset([1, -1])>)
+            (0.5, <Vartype.SPIN: frozenset({1, -1})>)
             >>> bqm_qubo.offset, bqm_qubo.vartype
-            (-2.0, <Vartype.BINARY: frozenset([0, 1])>)
+            (-2.0, <Vartype.BINARY: frozenset({0, 1})>)
 
         """
 
@@ -1687,7 +1686,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> import bson
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> b = bson.BSON.encode(bqm.to_serializable(use_bytes=True))
+            >>> doc = bqm.to_serializable(use_bytes=True)
+            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
 
             Encode using BSON in python 2.7. Because :class:`bytes` is an alias for :class:`str`,
             we need to signal to the encoder that it should encode the biases and labels as binary
@@ -1698,7 +1698,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> doc = bqm.to_serializable(use_bytes=True, bytes_type=bson.Binary)
-            >>> b = bson.BSON.encode(doc)
+            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
 
         See also:
             :meth:`~.BinaryQuadraticModel.from_serializable`
@@ -2013,7 +2013,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> model.linear    # doctest: +SKIP
             {0: -1, 1: -1}
             >>> model.vartype
-            <Vartype.BINARY: frozenset([0, 1])>
+            <Vartype.BINARY: frozenset({0, 1})>
 
         """
         linear = {}
@@ -2318,7 +2318,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> linear_vector = np.asarray([-1, 1])
             >>> quadratic_vectors = (np.asarray([0]), np.asarray([1]), np.asarray([-1.0]))
             >>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear_vector, quadratic_vectors, 0.0, dimod.SPIN)
-            >>> bqm.quadratic
+            >>> print(bqm.quadratic)
             {(0, 1): -1.0}
 
         """
@@ -2364,7 +2364,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             ...                                    {('a', 'b'): .5, ('b', 'c'): 1.5},
             ...                                    1.4,
             ...                                    dimod.BINARY)
-            >>> model.to_pandas_dataframe()
+            >>> model.to_pandas_dataframe()  # doctest: +SKIP
                  a    b    c
             a  1.1  0.5  0.0
             b  0.0 -1.0  1.5
@@ -2423,7 +2423,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             >>> model.offset
             2.5
             >>> model.vartype
-            <Vartype.BINARY: frozenset([0, 1])>
+            <Vartype.BINARY: frozenset({0, 1})>
 
         """
         if interactions is None:
