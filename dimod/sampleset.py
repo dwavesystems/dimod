@@ -770,7 +770,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sample_dict_cast (bool, optional, default=False):
                 If True, samples are returned as dicts rather than
-                `.SampleView`s. Note that this can lead to very heavy memory
+                :class:`.SampleView`. Note that this can lead to very heavy memory
                 usage.
 
             index (bool, optional, default=False):
