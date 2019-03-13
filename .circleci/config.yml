@@ -189,6 +189,12 @@ jobs:
       - run: *build-ext-template
 
       - run:
+          name: build docs
+          command: |
+            . env/bin/activate
+            make -C docs/ html
+
+      - run:
           name: doctest
           command: |
             . env/bin/activate
