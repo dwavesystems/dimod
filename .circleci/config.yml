@@ -168,6 +168,8 @@ jobs:
     steps:
       - checkout
 
+      - run: *install-boost-linux-template
+
       - restore_cache: *restore-cache-template
 
       - run:
@@ -189,16 +191,10 @@ jobs:
       - run: *build-ext-template
 
       - run:
-          name: build docs
-          command: |
-            . env/bin/activate
-            make -C docs/ html
-
-      - run:
           name: doctest
           command: |
             . env/bin/activate
-            make -C docs/ doctest
+            make -C docs/ html doctest
 
 ##################################################################################################
 # Deploy
