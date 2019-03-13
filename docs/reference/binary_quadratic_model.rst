@@ -61,6 +61,7 @@ Transformations
    BinaryQuadraticModel.fix_variable
    BinaryQuadraticModel.fix_variables
    BinaryQuadraticModel.flip_variable
+   BinaryQuadraticModel.normalize
    BinaryQuadraticModel.relabel_variables
    BinaryQuadraticModel.scale
 
@@ -89,8 +90,8 @@ Energy
    BinaryQuadraticModel.energy
    BinaryQuadraticModel.energies
 
-Converting to other types
--------------------------
+Converting to and from other formats
+------------------------------------
 
 .. autosummary::
    :toctree: generated/

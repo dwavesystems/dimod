@@ -44,15 +44,12 @@ Reducing to a Binary Quadratic Model
    make_quadratic
 
 
-Higher-order Composites
-=======================
+HigherOrderComposite
+====================
 
 .. automodule:: dimod.reference.composites.higherordercomposites
 
 .. currentmodule:: dimod.reference.composites.higherordercomposites
-
-HigherOrderComposite
---------------------
 
 .. autoclass:: HigherOrderComposite
 
@@ -78,7 +75,7 @@ Methods
    HigherOrderComposite.sample_hubo
 
 PolyScaleComposite
-------------------
+==================
 
 .. autoclass:: PolyScaleComposite
 
@@ -104,7 +101,7 @@ Methods
    PolyScaleComposite.sample_hubo
 
 PolyTruncateComposite
----------------------
+=====================
 
 .. autoclass:: PolyTruncateComposite
 

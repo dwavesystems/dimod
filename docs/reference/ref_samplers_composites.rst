@@ -74,7 +74,10 @@ Methods
 Composites
 ==========
 
+.. currentmodule:: dimod.reference.composites
+
 .. automodule:: dimod.reference.composites
+
 
 Spin Reversal Transform Composite
 ---------------------------------
@@ -84,8 +87,18 @@ Spin Reversal Transform Composite
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.composites
 .. autoclass:: SpinReversalTransformComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   SpinReversalTransformComposite.child
+   SpinReversalTransformComposite.children
+   SpinReversalTransformComposite.parameters
+   SpinReversalTransformComposite.properties
 
 Methods
 ~~~~~~~
@@ -94,6 +107,8 @@ Methods
    :toctree: generated/
 
    SpinReversalTransformComposite.sample
+   SpinReversalTransformComposite.sample_ising
+   SpinReversalTransformComposite.sample_qubo
 
 Structured Composite
 --------------------
@@ -103,8 +118,18 @@ Structured Composite
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.composites
 .. autoclass:: StructureComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   StructureComposite.child
+   StructureComposite.children
+   StructureComposite.parameters
+   StructureComposite.properties
 
 Methods
 ~~~~~~~
@@ -113,6 +138,8 @@ Methods
    :toctree: generated/
 
    StructureComposite.sample
+   StructureComposite.sample_ising
+   StructureComposite.sample_qubo
 
 Fixed Variable Composite
 ------------------------
@@ -122,8 +149,18 @@ Fixed Variable Composite
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.composites
 .. autoclass:: FixedVariableComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   FixedVariableComposite.child
+   FixedVariableComposite.children
+   FixedVariableComposite.parameters
+   FixedVariableComposite.properties
 
 Methods
 ~~~~~~~
@@ -132,26 +169,8 @@ Methods
    :toctree: generated/
 
    FixedVariableComposite.sample
-
-Scale Composite
----------------
-
-.. automodule:: dimod.reference.composites.scalecomposite
-
-Class
-~~~~~
-
-.. currentmodule:: dimod.reference.composites
-.. autoclass:: ScaleComposite
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ScaleComposite.sample
-   ScaleComposite.sample_ising
+   FixedVariableComposite.sample_ising
+   FixedVariableComposite.sample_qubo
 
 Roof Duality Composite
 ----------------------
@@ -159,7 +178,6 @@ Roof Duality Composite
 Class
 ~~~~~
 
-.. currentModule:: dimod.reference.composites.fixedvariable
 .. autoclass:: RoofDualityComposite
 
 Properties
@@ -184,6 +202,37 @@ Methods
    RoofDualityComposite.sample_ising
    RoofDualityComposite.sample_qubo
 
+Scale Composite
+---------------
+
+.. automodule:: dimod.reference.composites.scalecomposite
+
+Class
+~~~~~
+
+.. autoclass:: ScaleComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ScaleComposite.child
+   ScaleComposite.children
+   ScaleComposite.parameters
+   ScaleComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ScaleComposite.sample
+   ScaleComposite.sample_ising
+   ScaleComposite.sample_qubo
+
 
 Truncate Composite
 ------------------
@@ -193,7 +242,6 @@ Truncate Composite
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.composites
 .. autoclass:: TruncateComposite
 
 Properties
