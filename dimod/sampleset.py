@@ -72,14 +72,16 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
 
         NumPy arrays
 
+        >>> import numpy as np
+        ...
         >>> dimod.as_samples(np.ones(5, dtype='int8'))
         (array([[1, 1, 1, 1, 1]], dtype=int8), [0, 1, 2, 3, 4])
         >>> dimod.as_samples(np.zeros((5, 2), dtype='int8'))
         (array([[0, 0],
-                [0, 0],
-                [0, 0],
-                [0, 0],
-                [0, 0]], dtype=int8), [0, 1])
+               [0, 0],
+               [0, 0],
+               [0, 0],
+               [0, 0]], dtype=int8), [0, 1])
 
         Lists
 
@@ -87,8 +89,8 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         (array([[-1,  1, -1]], dtype=int8), [0, 1, 2])
         >>> dimod.as_samples([[-1], [+1], [-1]])
         (array([[-1],
-                [ 1],
-                [-1]], dtype=int8), [0])
+               [ 1],
+               [-1]], dtype=int8), [0])
 
         Dicts
 
@@ -104,10 +106,10 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         (array([[-1,  1, -1]], dtype=int8), ['a', 'b', 'c'])
         >>> dimod.as_samples((np.zeros((5, 2), dtype='int8'), ['in', 'out']))
         (array([[0, 0],
-                [0, 0],
-                [0, 0],
-                [0, 0],
-                [0, 0]], dtype=int8), ['in', 'out'])
+               [0, 0],
+               [0, 0],
+               [0, 0],
+               [0, 0]], dtype=int8), ['in', 'out'])
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
@@ -460,7 +462,6 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
             >>> samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
-            >>> samples =dimod.SampleSet.from_samples_bqm([[-1, 1], [1, -1]], bqm)
 
         """
         # more performant to do this once, here rather than again in bqm.energies
@@ -623,7 +624,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': 1}, {('a', 'b'): 1})
             >>> sampleset.first
-            Sample(sample={'a': -1, 'b': -1}, energy=-1.0, num_occurrences=1)
+            Sample(sample={'a': -1, 'b': 1}, energy=-2.0, num_occurrences=1)
 
         """
         try:
@@ -994,22 +995,23 @@ class SampleSet(abc.Iterable, abc.Sized):
             :obj:`.SampleSet`
 
         Examples:
+
+            >>> import numpy as np
+            ...
             >>> sampleset = dimod.SampleSet.from_samples(np.ones((5, 5)), dimod.SPIN, energy=5)
             >>> print(sampleset)
-                0   1   2   3   4  energy  num_occ.
-            0  +1  +1  +1  +1  +1       5         1
-            1  +1  +1  +1  +1  +1       5         1
-            2  +1  +1  +1  +1  +1       5         1
-            3  +1  +1  +1  +1  +1       5         1
-            4  +1  +1  +1  +1  +1       5         1
-
-            [ 5 rows, 5 variables ]
+               0  1  2  3  4 energy num_oc.
+            0 +1 +1 +1 +1 +1      5       1
+            1 +1 +1 +1 +1 +1      5       1
+            2 +1 +1 +1 +1 +1      5       1
+            3 +1 +1 +1 +1 +1      5       1
+            4 +1 +1 +1 +1 +1      5       1
+            ['SPIN', 5 rows, 5 samples, 5 variables]
             >>> print(sampleset.truncate(2))
-                0   1   2   3   4  energy  num_occ.
-            0  +1  +1  +1  +1  +1       5         1
-            1  +1  +1  +1  +1  +1       5         1
-
-            [ 2 rows, 5 variables ]
+               0  1  2  3  4 energy num_oc.
+            0 +1 +1 +1 +1 +1      5       1
+            1 +1 +1 +1 +1 +1      5       1
+            ['SPIN', 2 rows, 2 samples, 5 variables]
 
         """
         record = self.record
@@ -1158,13 +1160,13 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Examples:
             >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
-                                                        {'a': -1, 'b': -1, 'c': +1}],
-                                                       dimod.SPIN, energy=-.5)
-            >>> samples.to_pandas_dataframe()
+            ...                                         {'a': -1, 'b': -1, 'c': +1}],
+            ...                                        dimod.SPIN, energy=-.5)
+            >>> samples.to_pandas_dataframe()  # doctest: +SKIP
                a  b  c  energy  num_occurrences
             0 -1  1 -1    -0.5                1
             1 -1 -1  1    -0.5                1
-            >>> samples.to_pandas_dataframe(sample_column=True)
+            >>> samples.to_pandas_dataframe(sample_column=True)  # doctest: +SKIP
                                    sample  energy  num_occurrences
             0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1

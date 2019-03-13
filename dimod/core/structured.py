@@ -145,7 +145,7 @@ class Structured:
             ...     def edgelist(self):
             ...         return [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
             >>> K4sampler = K4StructuredClass()
-            >>> K4sampler.adjacency.keys()
+            >>> list(K4sampler.adjacency.keys())
             [1, 2, 3, 4]
 
         """
