@@ -916,19 +916,19 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         Examples:
 
-            This example creates a binary quadratic model and then normalizes
-            all the biases in the range [-0.4, 0.8].
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5},
+            ...                                  {('a', 'b'): -1.0},
+            ...                                  1.0, dimod.SPIN)
+            >>> max(abs(bias) for bias in bqm.linear.values())
+            2.0
+            >>> max(abs(bias) for bias in bqm.quadratic.values())
+            1.0
+            >>> bqm.normalize([-1.0, 1.0])
+            >>> max(abs(bias) for bias in bqm.linear.values())
+            1.0
+            >>> max(abs(bias) for bias in bqm.quadratic.values())
+            0.5
 
-            >>> import dimod
-            ...
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -2.0, 'b': 1.5}, {('a', 'b'): -1.0}, 1.0, dimod.SPIN)
-            >>> bqm.normalize([-0.4, 0.8])
-            >>> bqm.linear
-            {'a': -0.4, 'b': 0.30000000000000004}
-            >>> bqm.quadratic
-            {('a', 'b'): -0.2}
-            >>> bqm.offset
-            0.2
         """
 
         def parse_range(r):
@@ -960,9 +960,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                                                   quadratic_range))
 
         lin_min, lin_max = min_and_max([v for k, v in self.linear.items()
-                                     if k not in ignored_variables])
-        quad_min, quad_max = min_and_max([v for (a,b),
-                                                v in self.quadratic.items()
+                                        if k not in ignored_variables])
+        quad_min, quad_max = min_and_max([v for (a, b), v in self.quadratic.items()
                                           if ((a, b) not in ignored_interactions
                                               and (b, a) not in
                                               ignored_interactions)])
