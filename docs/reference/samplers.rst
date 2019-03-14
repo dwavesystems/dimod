@@ -1,8 +1,8 @@
 .. _sampler:
 
-=======================
-Samplers and Composites
-=======================
+===============================
+API for Samplers and Composites
+===============================
 
 You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
 providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),

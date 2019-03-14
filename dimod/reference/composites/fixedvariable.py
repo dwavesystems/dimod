@@ -14,8 +14,8 @@
 #
 # =============================================================================
 """
-A composite that fixes the variables provided and removes them from the
-bqm object before sending to its child sampler.
+A composite that fixes the variables provided and removes them from the binary
+quadratic model before sending to its child sampler.
 """
 import numpy as np
 
@@ -28,8 +28,6 @@ __all__ = ['FixedVariableComposite']
 
 class FixedVariableComposite(ComposedSampler):
     """Composite to fix variables of a problem to provided.
-
-    Inherits from :class:`dimod.ComposedSampler`.
 
     Fixes variables of a bqm and modifies linear and quadratic terms
     accordingly. Returned samples include the fixed variable
@@ -44,13 +42,10 @@ class FixedVariableComposite(ComposedSampler):
        The composed sampler fixes a variable and modifies linear and quadratic
        biases according.
 
-       >>> import dimod
+       >>> h = {1: -1.3, 4: -0.5}
+       >>> J = {(1, 4): -0.6}
        >>> sampler = dimod.FixedVariableComposite(dimod.ExactSolver())
-       >>> linear = {1: -1.3, 4: -0.5}
-       >>> quadratic = {(1, 4): -0.6}
-       >>> response = sampler.sample_ising(linear,quadratic,fixed_variables={1: -1})
-       >>> print(response.first)  # doctest: +SKIP
-       Sample(sample={1: -1, 4: -1}, energy=1.2000000000000002, num_occurrences=1)
+       >>> sampleset = sampler.sample_ising(h, J, fixed_variables={1: -1})
 
     """
 

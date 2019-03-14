@@ -14,7 +14,12 @@
 #
 # ================================================================================================
 """
-An exact classical solver that calculates the energy of all possible samples.
+A solver that calculates the energy of all possible samples.
+
+Note:
+    This sampler is designed for use in testing. Because it calculates the
+    energy for every possible sample, it is very slow.
+
 """
 import itertools
 
@@ -39,11 +44,27 @@ class ExactSolver(Sampler):
     Examples:
         This example solves a two-variable Ising model.
 
-        >>> import dimod
-        ...
-        >>> response = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> response.record.energy
-        array([-1.5, -0.5, -0.5,  2.5])
+        >>> h = {'a': -0.5, 'b': 1.0}
+        >>> J = {('a', 'b'): -1.5}
+        >>> sampleset = dimod.ExactSolver().sample_ising(h, J)
+        >>> print(sampleset)
+           a  b energy num_oc.
+        0 -1 -1   -2.0       1
+        2 +1 +1   -1.0       1
+        1 +1 -1    0.0       1
+        3 -1 +1    3.0       1
+        ['SPIN', 4 rows, 4 samples, 2 variables]
+
+        This example solves a two-variable QUBO.
+
+        >>> Q = {('a', 'b'): 2.0, ('a', 'a'): 1.0, ('b', 'b'): -0.5}
+        >>> sampleset = dimod.ExactSolver().sample_qubo(Q)
+
+
+        This example solves a two-variable binary quadratic model
+
+        >>> bqm = dimod.BinaryQuadraticModel({'a': 1.5}, {('a', 'b'): -1}, 0.0, 'SPIN')
+        >>> sampleset = dimod.ExactSolver().sample(bqm)
 
     """
     properties = None
@@ -63,18 +84,6 @@ class ExactSolver(Sampler):
 
         Returns:
             :obj:`~dimod.SampleSet`
-
-
-        Examples:
-            This example provides samples for a two-variable Ising model.
-
-            >>> import dimod
-            ...
-            >>> sampler = dimod.ExactSolver()
-            >>> bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 1.0}, {(0, 1): 0.5}, -0.5, dimod.SPIN)
-            >>> response = sampler.sample(bqm)
-            >>> response.data_vectors['energy']
-            array([-1., -2.,  1.,  0.])
 
         """
         M = bqm.binary.to_numpy_matrix()

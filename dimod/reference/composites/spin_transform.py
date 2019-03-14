@@ -51,8 +51,6 @@ class SpinReversalTransformComposite(Sampler, Composite):
         This example composes a dimod ExactSolver sampler with spin transforms then
         uses it to sample an Ising problem.
 
-        >>> import dimod
-        ...
         >>> # Compose the sampler
         >>> base_sampler = dimod.ExactSolver()
         >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
