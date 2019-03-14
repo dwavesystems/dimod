@@ -13,6 +13,17 @@
 #    limitations under the License.
 #
 # =============================================================================
+"""A composite that uses the roof duality algorithm [#bht]_ [#bh]_ to fix some
+variables in the binary quadratic model before passing it on to its child
+sampler.
+
+.. [#bht] Boros, E., P.L. Hammer, G. Tavares. Preprocessing of Unconstraint
+    Quadratic Binary Optimization. Rutcor Research Report 10-2006, April, 2006.
+
+.. [#bh] Boros, E., P.L. Hammer. Pseudo-Boolean optimization. Discrete Applied
+    Mathematics 123, (2002), pp. 155-225
+
+"""
 
 from dimod.reference.composites.fixedvariable import FixedVariableComposite
 from dimod.roof_duality import fix_variables
@@ -31,10 +42,6 @@ class RoofDualityComposite(FixedVariableComposite):
        child (:obj:`dimod.Sampler`):
             A dimod sampler. Used to sample the bqm after variables have been
             fixed.
-
-    See also:
-        :func:`~dimod.roof_duality.fix_variables` for a description of the
-        algorithm.
 
     """
 
