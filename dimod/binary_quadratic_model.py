@@ -1928,9 +1928,11 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
 
         Args:
-            h (dict[variable, bias]/list[bias]):
-                Linear biases of the Ising problem. If a list, the list's indices are used
-                as variable labels.
+            h (dict/list):
+                Linear biases of the Ising problem. If a dict, should be of the
+                form `{v: bias, ...}` where is a spin-valued variable and `bias`
+                is its associated bias. If a list, it is treated as a list of
+                biases where the indices are the variable labels.
 
             J (dict[(variable, variable), bias]):
                 Quadratic biases of the Ising problem.
@@ -1995,7 +1997,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         Args:
             Q (dict):
-                Coefficients of a quadratic unconstrained binary optimization (QUBO) model.
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
+                where `u`, `v`, are binary-valued variables and `bias` is their
+                associated coefficient.
 
             offset (optional, default=0.0):
                 Constant offset applied to the model.
