@@ -716,31 +716,44 @@ class SampleSet(abc.Iterable, abc.Sized):
         return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
 
     def samples(self, n=None, sorted_by='energy'):
-        """Iterate over the samples in the :class:`SampleSet`.
+        """Return an iterable over the samples.
 
         Args:
             n (int, optional, default=None):
-                Maximum number of samples to yield. If None, all are yielded.
+                Maximum number of samples to return in the view.
 
             sorted_by (str/None, optional, default='energy'):
-                Selects the record field used to sort the samples. If None, samples are yielded
-                in record order.
+                Selects the record field used to sort the samples. If None,
+                samples are returned in record order.
 
-        Yields:
-            :obj:`.SampleView`: A view object mapping variable labels to values. Acts as
-            a read-only dict.
+        Returns:
+            :obj:`.SamplesArray`: A view object mapping variable labels to
+            values.
 
         Examples:
 
-            >>> import dimod
-            ...
-            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.0, 'b': 0.0}, {('a', 'b'): -1})
-            >>> for sample in sampleset.samples():   # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
+            ...                                              {('a', 'b'): 1})
+            >>> for sample in sampleset.samples():
             ...     print(sample)
+            {'a': -1, 'b': 1}
+            {'a': 1, 'b': -1}
             {'a': -1, 'b': -1}
             {'a': 1, 'b': 1}
-            {'a': 1, 'b': -1}
+
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
+            ...                                              {('a', 'b'): 1})
+            >>> samples = sampleset.samples()
+            >>> samples[0]
             {'a': -1, 'b': 1}
+            >>> samples[0, 'a']
+            -1
+            >>> samples[0, ['b', 'a']]
+            array([ 1, -1], dtype=int8)
+            >>> samples[1:, ['a', 'b']]
+            array([[ 1, -1],
+                   [-1, -1],
+                   [ 1,  1]], dtype=int8)
 
         """
         if n is not None:
