@@ -17,7 +17,7 @@
 variables in the binary quadratic model before passing it on to its child
 sampler.
 
-.. [#bht] Boros, E., P.L. Hammer, G. Tavares. Preprocessing of Unconstraint
+.. [#bht] Boros, E., P.L. Hammer, G. Tavares. Preprocessing of Unconstrained
     Quadratic Binary Optimization. Rutcor Research Report 10-2006, April, 2006.
 
 .. [#bh] Boros, E., P.L. Hammer. Pseudo-Boolean optimization. Discrete Applied

@@ -60,7 +60,7 @@ class PolySampler:
         """Sample from a higher-order Ising model.
 
         Convert the given higher-order Ising model to a :obj:`.BinaryPolynomial`
-        and then calls :meth:`.sample_poly`.
+        and call :meth:`.sample_poly`.
 
         Args:
             h (dict):

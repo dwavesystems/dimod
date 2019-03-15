@@ -92,7 +92,7 @@ class Structured:
     @abc.abstractproperty
     def edgelist(self):
         """list: Edges/interactions allowed by the sampler in the form
-        `[(u, v), ...]`
+        `[(u, v), ...]`.
         """
         pass
 
