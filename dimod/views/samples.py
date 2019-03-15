@@ -18,6 +18,8 @@ try:
 except ImportError:
     import collections as abc
 
+import numpy as np
+
 from six.moves import zip
 
 from dimod.variables import Variables
@@ -82,8 +84,13 @@ class SamplesArray(abc.Sequence):
 
     def __getitem__(self, index):
         if isinstance(index, tuple):
-            # multiindex, we'd like to do this in the future
-            raise IndexError("multiindexing is not yet implemented")
+            # multiindex
+            try:
+                row, col = index
+            except ValueError:
+                raise IndexError("too many indices")
+
+            return self._getmultiindex(row, col)
 
         elif isinstance(index, int):
             # single row
@@ -92,6 +99,35 @@ class SamplesArray(abc.Sequence):
         else:
             # multiple rows
             return type(self)(self._samples[index, :], self._variables)
+
+    def _getmultiindex(self, row, col):
+
+        variables = self._variables
+        samples = self._samples
+
+        if col in variables:
+            # single variable
+
+            if isinstance(row, int):
+                # return a single value
+                return self[row][col]
+
+            # return a vector
+            return samples[row, variables.index(col)]
+
+        # multiple variables
+        try:
+            index = (row, [variables.index[v] for v in col])
+        except (TypeError):
+            raise KeyError('{!r} is not a variable in samples'.format(col))
+
+        if isinstance(row, (abc.Sequence, np.ndarray)):
+            # we know that column is a sequence (because we just constructed it)
+            # so we have triggered advanced indexing which we don't want. Use
+            # ix_ to get back to basic indexing
+            index = np.ix_(row, [variables.index[v] for v in col])
+
+        return samples[index]
 
     def __iter__(self):
         # __iter__ is a mixin for Sequence but we can speed it up by

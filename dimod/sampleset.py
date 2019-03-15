@@ -747,11 +747,10 @@ class SampleSet(abc.Iterable, abc.Sized):
             return self.samples(sorted_by=sorted_by)[:n]
 
         if sorted_by is None:
-            order = slice(None)
+            samples = self.record.sample
         else:
             order = np.argsort(self.record[sorted_by])
-
-        samples = self.record.sample[order]
+            samples = self.record.sample[order]
 
         return SamplesArray(samples, self.variables)
 
