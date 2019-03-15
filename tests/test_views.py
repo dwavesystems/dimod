@@ -23,9 +23,10 @@ from dimod.views.samples import SamplesArray
 class TestSamplesArray(unittest.TestCase):
     # SampleSet.samples
     def setUp(self):
-        self.s3x3 = SamplesArray(np.triu(np.ones((3, 3))), ['a', 0, ('b', 1)])
+        self.s3x3 = SamplesArray(np.triu(np.ones((3, 3), dtype='int8')),
+                                 ['a', 0, ('b', 1)])
 
-    def test_single_row(self):
+    def test_singlerow(self):
         self.assertEqual(self.s3x3[0], {'a': 1, 0: 1, ('b', 1): 1})
         self.assertEqual(self.s3x3[1], {'a': 0, 0: 1, ('b', 1): 1})
         self.assertEqual(self.s3x3[2], {'a': 0, 0: 0, ('b', 1): 1})
@@ -47,3 +48,40 @@ class TestSamplesArray(unittest.TestCase):
 
         np.testing.assert_array_equal(new._samples, [[1, 1, 1], [0, 0, 1]])
         self.assertEqual(new._variables, self.s3x3._variables)
+
+    def test_too_many_indices(self):
+        with self.assertRaises(IndexError):
+            self.s3x3[0, 1, 2]
+
+    def test_singlerow_single_column(self):
+        self.assertEqual(self.s3x3[0, 'a'], 1)
+        self.assertEqual(self.s3x3[1, 'a'], 0)
+        self.assertEqual(self.s3x3[0, 0], 1)
+        self.assertEqual(self.s3x3[2, 0], 0)
+        self.assertEqual(self.s3x3[0, ('b', 1)], 1)
+
+    def test_multirow_singlecolumn(self):
+        np.testing.assert_array_equal(self.s3x3[:, 'a'], [1, 0, 0])
+        np.testing.assert_array_equal(self.s3x3[1:, 'a'], [0, 0])
+        np.testing.assert_array_equal(self.s3x3[[0, 2], 0], [1, 0])
+
+    def test_singlerow_multicolumn(self):
+        np.testing.assert_array_equal(self.s3x3[1, ['a', 0]], [0, 1])
+
+    def test_multirow_multicolumn(self):
+        np.testing.assert_array_equal(self.s3x3[:, ['a', 0]], [[1, 1], [0, 1], [0, 0]])
+        np.testing.assert_array_equal(self.s3x3[1:, ['a', 0]], [[0, 1], [0, 0]])
+        np.testing.assert_array_equal(self.s3x3[0:3:2, ['a', 0]], [[1, 1], [0, 0]])
+        np.testing.assert_array_equal(self.s3x3[[0, 2], ['a', 0]], [[1, 1], [0, 0]])
+
+    def test_column_miss(self):
+        with self.assertRaises(KeyError):
+            self.s3x3[0, 'c']
+        with self.assertRaises(KeyError):
+            self.s3x3[0:2, ['a', 'c']]
+        with self.assertRaises(KeyError):
+            self.s3x3[0, 3]
+
+    def test_column_slice(self):
+        with self.assertRaises(KeyError):
+            self.s3x3[0, :]
