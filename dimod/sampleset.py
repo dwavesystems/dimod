@@ -35,7 +35,7 @@ from dimod.serialization.format import Formatter
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
-from dimod.views.samples import SampleView
+from dimod.views.samples import SampleView, SamplesArray
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
@@ -541,7 +541,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     def __iter__(self):
         """Iterate over the samples, low energy to high."""
-        return self.samples(sorted_by='energy')
+        # need to make it an iterator rather than just an iterable
+        return iter(self.samples(sorted_by='energy'))
 
     def __eq__(self, other):
         """SampleSet equality."""
@@ -742,12 +743,17 @@ class SampleSet(abc.Iterable, abc.Sized):
             {'a': -1, 'b': 1}
 
         """
-        if n is None:
-            for sample, in self.data(['sample'], sorted_by=sorted_by, name=None):
-                yield sample
+        if n is not None:
+            return self.samples(sorted_by=sorted_by)[:n]
+
+        if sorted_by is None:
+            order = slice(None)
         else:
-            for sample in itertools.islice(self.samples(n=None, sorted_by=sorted_by), n):
-                yield sample
+            order = np.argsort(self.record[sorted_by])
+
+        samples = self.record.sample[order]
+
+        return SamplesArray(samples, self.variables)
 
     def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False,
              sample_dict_cast=True, index=False):
@@ -837,7 +843,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         def _values(idx):
             for field in fields:
                 if field == 'sample':
-                    sample = SampleView(self.variables, record.sample[idx, :])
+                    sample = SampleView(record.sample[idx, :], self.variables)
                     if sample_dict_cast:
                         sample = dict(sample)
                     yield sample

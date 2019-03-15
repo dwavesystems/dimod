@@ -170,7 +170,7 @@ class TestConstruction(unittest.TestCase):
 
         # ss0.samples() is an iterator, so let's just use that
         with self.assertRaises(TypeError):
-            dimod.SampleSet.from_samples(ss0.samples(), dimod.BINARY, energy=ss0.record.energy)
+            dimod.SampleSet.from_samples(iter(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)
 
         # should work for iterable
         ss1 = dimod.SampleSet.from_samples(list(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)

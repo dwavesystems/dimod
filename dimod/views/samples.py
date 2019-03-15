@@ -20,11 +20,13 @@ except ImportError:
 
 from six.moves import zip
 
+from dimod.variables import Variables
 
-class IndexView(abc.Mapping):
+
+class SampleView(abc.Mapping):
     __slots__ = '_variables', '_data'
 
-    def __init__(self, variables, data):
+    def __init__(self, data, variables):
         self._variables = variables
         self._data = data
 
@@ -38,9 +40,6 @@ class IndexView(abc.Mapping):
         return len(self._variables)
 
     def __repr__(self):
-        return '{}({}, {})'.format(self.__class__.__name__, self._variables, self._data)
-
-    def __str__(self):
         return str(dict(self))
 
     def values(self):
@@ -68,7 +67,38 @@ class IndexValuesView(abc.ValuesView):
         return iter(self._mapping._data.flat)
 
 
-class SampleView(IndexView):
-    """View each row of the samples record as if it was a dict."""
-    def __repr__(self):
-        return str(self)
+class SamplesArray(abc.Sequence):
+    __slots__ = ('_samples', '_variables')
+
+    def __init__(self, samples, variables):
+        self._samples = samples
+
+        if isinstance(variables, Variables):
+            # we will be treating this as immutable so we don't need to
+            # recreate it
+            self._variables = variables
+        else:
+            self._variables = Variables(variables)
+
+    def __getitem__(self, index):
+        if isinstance(index, tuple):
+            # multiindex, we'd like to do this in the future
+            raise IndexError("multiindexing is not yet implemented")
+
+        elif isinstance(index, int):
+            # single row
+            return SampleView(self._samples[index, :], self._variables)
+
+        else:
+            # multiple rows
+            return type(self)(self._samples[index, :], self._variables)
+
+    def __iter__(self):
+        # __iter__ is a mixin for Sequence but we can speed it up by
+        # implementing it ourselves
+        variables = self._variables
+        for row in self._samples:
+            yield SampleView(row, variables)
+
+    def __len__(self):
+        return self._samples.shape[0]
