@@ -75,7 +75,11 @@ class Variables(abc.Sequence, abc.Set):
 
     def __contains__(self, v):
         # we can speed this up because we're keeping a dict
-        return v in self.index
+        try:
+            return v in self.index
+        except TypeError:
+            # unhashable objects
+            return False
 
     def __ne__(self, other):
         return not (self == other)
