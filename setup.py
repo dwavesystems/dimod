@@ -53,6 +53,7 @@ packages = ['dimod',
             'dimod.roof_duality',
             'dimod.serialization',
             'dimod.testing',
+            'dimod.views',
             ]
 
 classifiers = [
