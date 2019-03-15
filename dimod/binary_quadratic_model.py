@@ -63,7 +63,8 @@ from dimod.decorators import vartype_argument
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
-from dimod.views import LinearView, QuadraticView, AdjacencyView, SampleView
+from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
+from dimod.views.samples import SampleView
 from dimod.vartypes import Vartype
 
 __all__ = 'BinaryQuadraticModel', 'BQM'

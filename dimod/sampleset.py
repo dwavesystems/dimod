@@ -35,7 +35,7 @@ from dimod.serialization.format import Formatter
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
-from dimod.views import SampleView
+from dimod.views.samples import SampleView
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
