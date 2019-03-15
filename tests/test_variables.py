@@ -47,3 +47,11 @@ class TestVariables(unittest.TestCase):
         self.assertEqual(len(variables), 5)
         variables = Variables('aaaaa')
         self.assertEqual(len(variables), 1)
+
+    def test_contains_unhashable(self):
+        variables = Variables(range(5))
+        self.assertFalse([0] in variables)
+
+    def test_count_unhashable(self):
+        variables = Variables(range(5))
+        self.assertEqual(variables.count([5]), 0)
