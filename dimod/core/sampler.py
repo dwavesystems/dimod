@@ -137,8 +137,8 @@ class Sampler:
 
         This method is inherited from the :class:`.Sampler` base class.
 
-        Converts the binary quadratic model to either Ising and QUBO format and
-        then invokes the implemented sampling method (one of
+        Converts the binary quadratic model to either Ising or QUBO format and
+        then invokes an implemented sampling method (one of
         :meth:`.sample_ising` or :meth:`.sample_qubo`).
 
         Args:
@@ -186,7 +186,7 @@ class Sampler:
 
     @samplemixinmethod
     def sample_ising(self, h, J, **parameters):
-        """Samples from an Ising model using the implemented sample method.
+        """Sample from an Ising model using the implemented sample method.
 
         This method is inherited from the :class:`.Sampler` base class.
 
@@ -218,7 +218,7 @@ class Sampler:
 
     @samplemixinmethod
     def sample_qubo(self, Q, **parameters):
-        """Samples from a QUBO using the implemented sample method.
+        """Sample from a QUBO using the implemented sample method.
 
         This method is inherited from the :class:`.Sampler` base class.
 

@@ -1930,7 +1930,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         Args:
             h (dict/list):
                 Linear biases of the Ising problem. If a dict, should be of the
-                form `{v: bias, ...}` where is a spin-valued variable and `bias`
+                form `{v: bias, ...}` where v is a spin-valued variable and `bias`
                 is its associated bias. If a list, it is treated as a list of
                 biases where the indices are the variable labels.
 
