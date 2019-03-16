@@ -12,9 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 """
-A random sampler for unit testing and debugging.
+A sampler that gives random samples.
 """
 from random import choice
 
@@ -25,22 +25,14 @@ __all__ = ['RandomSampler']
 
 
 class RandomSampler(Sampler):
-    """A sampler that gives random samples for testing.
-
-    Examples:
-        This example provides random samples for a two-variable QUBO model.
-
-        >>> import dimod
-        ...
-        >>> response = dimod.RandomSampler().sample_qubo({(0, 0): -1, (1, 1): -1, (0, 1): 2}, num_reads=5)
-        >>> len(response)
-        5
-        >>> print(next(response.data()))      # doctest: +SKIP
-        Sample(sample={0: 1, 1: 0}, energy=-1.0)
-
-    """
+    """A sampler that gives random samples for testing."""
     properties = None
+
     parameters = None
+    """dict: Keyword arguments accepted by the sampling methods.
+
+    Contents are exactly `{'num_reads': []}`
+    """
 
     def __init__(self):
         self.parameters = {'num_reads': []}
@@ -48,6 +40,8 @@ class RandomSampler(Sampler):
 
     def sample(self, bqm, num_reads=10):
         """Give random samples for a binary quadratic model.
+
+        Variable assignments are chosen by coin flip.
 
         Args:
             bqm (:obj:`.BinaryQuadraticModel`):
@@ -58,24 +52,6 @@ class RandomSampler(Sampler):
 
         Returns:
             :obj:`.SampleSet`
-
-        Notes:
-            For each variable in each sample, the value is chosen by a coin flip.
-
-        Examples:
-            This example provides samples for a two-variable Ising model.
-
-            >>> import dimod
-            ...
-            >>> sampler = dimod.RandomSampler()
-            >>> h = {0: -1, 1: -1}
-            >>> J = {(0, 1): -1}
-            >>> bqm = dimod.BinaryQuadraticModel(h, J, -0.5, dimod.SPIN)
-            >>> response = sampler.sample(bqm, num_reads=3)
-            >>> len(response)
-            3
-            >>> response.data_vectors['energy']        # doctest: +SKIP
-            array([ 0.5, -3.5,  0.5])
 
         """
         values = tuple(bqm.vartype.value)

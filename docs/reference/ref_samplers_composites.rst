@@ -1,28 +1,28 @@
 .. _ref_samplers:
 
-=================================
-Reference Samplers and Composites
-=================================
+=======================
+Samplers and Composites
+=======================
 
 The `dimod` package includes several example samplers and composed samplers.
+
+.. contents::
+    :depth: 3
 
 Samplers
 ========
 
-.. attention:: The reference samplers included in the `dimod` package are intended as an aid for
-    coding and testing; they are not optimized for performance or intended for benchmarking.
-
 .. automodule:: dimod.reference.samplers
+.. currentmodule:: dimod.reference.samplers
 
-Exact Sampler
--------------
+Exact Solver
+------------
 
 .. automodule:: dimod.reference.samplers.exact_solver
 
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.samplers
 .. autoclass:: ExactSolver
 
 Methods
@@ -32,25 +32,8 @@ Methods
    :toctree: generated/
 
    ExactSolver.sample
-
-Simulated Annealing
--------------------
-
-.. automodule:: dimod.reference.samplers.simulated_annealing
-
-Class
-~~~~~
-
-.. currentmodule:: dimod.reference.samplers
-.. autoclass:: SimulatedAnnealingSampler
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   SimulatedAnnealingSampler.sample
+   ExactSolver.sample_ising
+   ExactSolver.sample_qubo
 
 Random Sampler
 --------------
@@ -60,8 +43,15 @@ Random Sampler
 Class
 ~~~~~
 
-.. currentmodule:: dimod.reference.samplers
 .. autoclass:: RandomSampler
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   RandomSampler.parameters
 
 Methods
 ~~~~~~~
@@ -70,6 +60,37 @@ Methods
    :toctree: generated/
 
    RandomSampler.sample
+   RandomSampler.sample_ising
+   RandomSampler.sample_qubo
+
+Simulated Annealing Sampler
+---------------------------
+
+.. automodule:: dimod.reference.samplers.simulated_annealing
+
+Class
+~~~~~
+
+.. autoclass:: SimulatedAnnealingSampler
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   SimulatedAnnealingSampler.parameters
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   SimulatedAnnealingSampler.sample
+   SimulatedAnnealingSampler.sample_ising
+   SimulatedAnnealingSampler.sample_qubo
+
 
 Composites
 ==========
@@ -77,6 +98,104 @@ Composites
 .. currentmodule:: dimod.reference.composites
 
 .. automodule:: dimod.reference.composites
+
+
+Fixed Variable Composite
+------------------------
+
+.. automodule:: dimod.reference.composites.fixedvariable
+
+Class
+~~~~~
+
+.. autoclass:: FixedVariableComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   FixedVariableComposite.child
+   FixedVariableComposite.children
+   FixedVariableComposite.parameters
+   FixedVariableComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   FixedVariableComposite.sample
+   FixedVariableComposite.sample_ising
+   FixedVariableComposite.sample_qubo
+
+
+Roof Duality Composite
+----------------------
+
+.. automodule:: dimod.reference.composites.roofduality
+
+Class
+~~~~~
+
+.. autoclass:: RoofDualityComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   RoofDualityComposite.child
+   RoofDualityComposite.children
+   RoofDualityComposite.parameters
+   RoofDualityComposite.properties
+
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   RoofDualityComposite.sample
+   RoofDualityComposite.sample_ising
+   RoofDualityComposite.sample_qubo
+
+
+Scale Composite
+---------------
+
+.. automodule:: dimod.reference.composites.scalecomposite
+
+Class
+~~~~~
+
+.. autoclass:: ScaleComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ScaleComposite.child
+   ScaleComposite.children
+   ScaleComposite.parameters
+   ScaleComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ScaleComposite.sample
+   ScaleComposite.sample_ising
+   ScaleComposite.sample_qubo
+
 
 
 Spin Reversal Transform Composite
@@ -140,98 +259,6 @@ Methods
    StructureComposite.sample
    StructureComposite.sample_ising
    StructureComposite.sample_qubo
-
-Fixed Variable Composite
-------------------------
-
-.. automodule:: dimod.reference.composites.fixedvariable
-
-Class
-~~~~~
-
-.. autoclass:: FixedVariableComposite
-
-Properties
-~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   FixedVariableComposite.child
-   FixedVariableComposite.children
-   FixedVariableComposite.parameters
-   FixedVariableComposite.properties
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   FixedVariableComposite.sample
-   FixedVariableComposite.sample_ising
-   FixedVariableComposite.sample_qubo
-
-Roof Duality Composite
-----------------------
-
-Class
-~~~~~
-
-.. autoclass:: RoofDualityComposite
-
-Properties
-~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   RoofDualityComposite.child
-   RoofDualityComposite.children
-   RoofDualityComposite.parameters
-   RoofDualityComposite.properties
-
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   RoofDualityComposite.sample
-   RoofDualityComposite.sample_ising
-   RoofDualityComposite.sample_qubo
-
-Scale Composite
----------------
-
-.. automodule:: dimod.reference.composites.scalecomposite
-
-Class
-~~~~~
-
-.. autoclass:: ScaleComposite
-
-Properties
-~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ScaleComposite.child
-   ScaleComposite.children
-   ScaleComposite.parameters
-   ScaleComposite.properties
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ScaleComposite.sample
-   ScaleComposite.sample_ising
-   ScaleComposite.sample_qubo
 
 
 Truncate Composite

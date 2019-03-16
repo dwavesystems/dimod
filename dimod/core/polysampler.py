@@ -60,20 +60,28 @@ class PolySampler:
         """Sample from a higher-order Ising model.
 
         Convert the given higher-order Ising model to a :obj:`.BinaryPolynomial`
-        and invoke `sample_poly`.
+        and call :meth:`.sample_poly`.
 
         Args:
             h (dict):
-                The variable biases of the Ising problem.
+                The variable biases of the Ising problem. Should be a dict of
+                the form `{v: bias, ...}` where `v` is a variable in the
+                polynomial and `bias` is its associated coefficient.
 
             J (dict):
-                The interaction biases of the Ising problem.
+                The interaction biases of the Ising problem. Should be a dict of
+                the form `{(u, v, ...): bias}` where `u`, `v`, are spin-valued
+                variables in the polynomial and `bias` is their associated
+                coefficient.
 
             **kwargs:
-                See `sample_poly` for additional keyword definitions.
+                See :meth:`.sample_poly` for additional keyword definitions.
 
         Returns:
             :obj:`.SampleSet`
+
+        See also:
+            :meth:`.sample_poly`, :meth:`.sample_hubo`
 
         """
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
@@ -82,17 +90,24 @@ class PolySampler:
         """Sample from a higher-order unconstrained binary optimization problem.
 
         Convert the given higher-order unconstrained binary optimization
-        problem to a :obj:`.BinaryPolynomial` and invoke `sample_poly`.
+        problem to a :obj:`.BinaryPolynomial` and then call
+        :meth:`.sample_poly`.
 
         Args:
             H (dict):
-                The coefficients of the HUBO.
+                The coefficients of the HUBO. Should be a dict of the form
+                {(u, v, ...): bias, ...} where `u`, `v`, are binary-valued
+                variables in the polynomial and `bias` is their associated
+                coefficient.
 
             **kwargs:
-                See `sample_poly` for additional keyword definitions.
+                See :meth:`.sample_poly` for additional keyword definitions.
 
         Returns:
             :obj:`.SampleSet`
+
+        See also:
+            :meth:`.sample_poly`, :meth:`.sample_hising`
 
         """
         return self.sample_poly(BinaryPolynomial.from_hubo(H), **kwargs)
