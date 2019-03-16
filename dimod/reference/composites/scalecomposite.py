@@ -12,13 +12,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 """
 A composite that scales problem variables as directed. if scalar is not given
 calculates it based on quadratic and bias ranges.
 
-See `Ocean Glossary <https://docs.ocean.dwavesys.com/en/latest/glossary.html>`_ for explanations
-of technical terms in descriptions of Ocean tools.
 """
 try:
     import collections.abc as abc
@@ -38,8 +36,6 @@ __all__ = 'ScaleComposite',
 class ScaleComposite(ComposedSampler):
     """Composite to scale variables of a problem
 
-    Inherits from :class:`dimod.ComposedSampler`.
-
     Scales the variables of a bqm and modifies linear and quadratic terms
     accordingly.
 
@@ -53,10 +49,10 @@ class ScaleComposite(ComposedSampler):
        The composed sampler scales linear, quadratic biases and offset as
        indicated by options.
 
-       >>> linear = {'a': -4.0, 'b': -4.0}
-       >>> quadratic = {('a', 'b'): 3.2}
+       >>> h = {'a': -4.0, 'b': -4.0}
+       >>> J = {('a', 'b'): 3.2}
        >>> sampler = dimod.ScaleComposite(dimod.ExactSolver())
-       >>> response = sampler.sample_ising(linear, quadratic, scalar=0.5,
+       >>> response = sampler.sample_ising(h, J, scalar=0.5,
        ...                ignored_interactions=[('a','b')])
 
     """

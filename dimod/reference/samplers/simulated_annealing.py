@@ -12,12 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 """
 A reference implementation of a simulated annealing sampler.
 
-:std:doc:`dwave_neal <neal:index>` (https://github.com/dwavesystems/dwave-neal)
-is a more performant implementation of simulated annealing you can use for solving problems.
+:obj:`neal.sampler.SimulatedAnnealingSampler`
+is a more performant implementation of simulated annealing you can use for
+solving problems.
 """
 import random
 import math
@@ -38,16 +39,18 @@ class SimulatedAnnealingSampler(Sampler):
     Examples:
         This example solves a two-variable Ising model.
 
-        >>> import dimod
-        ...
-        >>> response = dimod.SimulatedAnnealingSampler().sample_ising(
-        ...                  {'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> response.record.energy      # doctest: +SKIP
-        array([-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5])
+        >>> h = {'a': -0.5, 'b': 1.0}
+        >>> J = {('a', 'b'): -1.5}
+        >>> sampleset = dimod.SimulatedAnnealingSampler().sample_ising(h, J)
 
     """
     properties = None
+
     parameters = None
+    """dict: Keyword arguments accepted by the sampling methods.
+
+    Contents are exactly `{'beta_range': [], num_reads': [], 'num_sweeps': []}`
+    """
 
     def __init__(self):
         self.parameters = {'num_reads': [],
@@ -59,16 +62,20 @@ class SimulatedAnnealingSampler(Sampler):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
-            bqm (:obj:`~dimod.BinaryQuadraticModel`):
+            bqm (:obj:`.BinaryQuadraticModel`):
                 Binary quadratic model to be sampled from.
+
             beta_range (tuple, optional): Beginning and end of the beta schedule
                 (beta is the inverse temperature) as a 2-tuple. The schedule is applied
                 linearly in beta. Default is chosen based on the total bias associated
                 with each node.
-            num_reads (int, optional): Number of reads. Each sample is the result of
-                a single run of the simulated annealing algorithm.
-            num_sweeps (int, optional): Number of sweeps or steps.
-                Default is 1000.
+
+            num_reads (int, optional, default=10):
+                Number of reads. Each sample is the result of a single run of
+                the simulated annealing algorithm.
+
+            num_sweeps (int, optional, default=1000):
+                Number of sweeps or steps.
 
         Returns:
             :obj:`.SampleSet`
@@ -76,18 +83,6 @@ class SimulatedAnnealingSampler(Sampler):
         Note:
             This is a reference implementation, not optimized for speed
             and therefore not an appropriate sampler for benchmarking.
-
-        Examples:
-            This example provides samples for a two-variable QUBO model.
-
-            >>> import dimod
-            ...
-            >>> sampler = dimod.SimulatedAnnealingSampler()
-            >>> Q = {(0, 0): -1, (1, 1): -1, (0, 1): 2}
-            >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q, offset = 0.0)
-            >>> response = sampler.sample(bqm, num_reads=2)
-            >>> response.data_vectors['energy']        # doctest: +SKIP
-            array([-1., -1.])
 
         """
 

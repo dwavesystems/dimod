@@ -86,68 +86,21 @@ class Structured:
     """
     @abc.abstractproperty
     def nodelist(self):
-        """list: Nodes/variables allowed by the sampler formatted as a list.
-
-        Examples:
-            This example defines the `nodelist` for a structured sampler that can only sample
-            from a binary quadratic model with two variables.
-
-            .. code-block:: python
-
-                class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-                    @property
-                    def nodelist(self):
-                        return [0, 1]
-
-                    # Remaining properties and code for the sampler
-
-        """
+        """list: Nodes/variables allowed by the sampler."""
         pass
 
     @abc.abstractproperty
     def edgelist(self):
-        """list[(node, node)]: Edges/interactions allowed by the sampler, formatted as
-        a list where each edge/interaction is a 2-tuple.
-
-        Examples:
-            This example defines the `edgelist` for a structured sampler that can only sample
-            from a binary quadratic model with a single interaction between two variables.
-
-            .. code-block:: python
-
-                class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
-                    @property
-                    def edgelist(self):
-                        return [(0, 1)]
-
-                    # Remaining properties and code for the sampler
-
+        """list: Edges/interactions allowed by the sampler in the form
+        `[(u, v), ...]`.
         """
         pass
 
     @property
     def adjacency(self):
-        """dict[variable, set]: Adjacency structure formatted as a dict, where keys are the
-        nodes of the structured sampler and values are sets of all adjacent nodes for
-        each key node.
-
-        Examples:
-            This example shows the adjacencies for a placeholder structured sampler that
-            samples only from the K4 complete graph, where each of the four nodes connects
-            to all the other nodes.
-
-            >>> class K4StructuredClass(dimod.Structured):
-            ...     @property
-            ...     def nodelist(self):
-            ...         return [1, 2, 3, 4]
-            ...
-            ...     @property
-            ...     def edgelist(self):
-            ...         return [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
-            >>> K4sampler = K4StructuredClass()
-            >>> list(K4sampler.adjacency.keys())
-            [1, 2, 3, 4]
-
+        """dict[variable, set]: Adjacency structure formatted as a dict, where
+        keys are the nodes of the structured sampler and values are sets of all
+        adjacent nodes for each key node.
         """
         if not hasattr(self, '_adjacency'):
             adjacency = {v: set() for v in self.nodelist}
@@ -162,27 +115,9 @@ class Structured:
 
     @property
     def structure(self):
-        """Structure of the structured sampler formatted as a :class:`~collections.namedtuple`
-        :samp:`Structure(nodelist, edgelist, adjacency)`, where the 3-tuple values are
-        the :attr:`~.Structured.nodelist` and :attr:`~.Structured.edgelist` properties
-        and :meth:`~.Structured.adjacency` method.
-
-        Examples:
-            This example shows the structure of a placeholder structured sampler that
-            samples only from the K3 complete graph, where each of the three nodes connects
-            to all the other nodes.
-
-            >>> class K3StructuredClass(dimod.Structured):
-            ...     @property
-            ...     def nodelist(self):
-            ...         return [1, 2, 3]
-            ...
-            ...     @property
-            ...     def edgelist(self):
-            ...         return [(1, 2), (1, 3), (2, 3)]
-            >>> K3sampler = K3StructuredClass()
-            >>> K3sampler.structure.edgelist
-            [(1, 2), (1, 3), (2, 3)]
-
+        """Structure of the structured sampler formatted as a
+        :class:`~collections.namedtuple`, `Structure(nodelist, edgelist, adjacency)`,
+        where the 3-tuple values are the :attr:`.nodelist` and :attr:`.edgelist`
+        properties and :meth:`.adjacency` method.
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
