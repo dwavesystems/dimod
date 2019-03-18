@@ -10,6 +10,7 @@ Reference Documentation
    :maxdepth: 2
 
    binary_quadratic_model
+   generators
    samplers
    ref_samplers_composites
    sampleset

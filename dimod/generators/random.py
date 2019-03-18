@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 from __future__ import absolute_import
 
 import numpy as np
@@ -53,6 +53,9 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
 
         seed (int, optional, default=None):
             Random seed.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`
 
     """
     if seed is None:
@@ -105,6 +108,9 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
         seed (int, optional, default=None):
             Random seed.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`
 
     """
     if seed is None:

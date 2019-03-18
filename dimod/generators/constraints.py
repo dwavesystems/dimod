@@ -34,7 +34,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
     for each of the k-combinations of its variables.
 
     The energy for the binary quadratic model is given by
-    :math:`(\sum_{i} x_i - k)`.
+    :math:`(\sum_{i} x_i - k)^2`.
 
     Args:
         n (int/list/set):
@@ -59,7 +59,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
 
     Examples:
 
-        >>> bqm = dimod.generators(['a', 'b', 'c'], 2)
+        >>> bqm = dimod.generators.combinations(['a', 'b', 'c'], 2)
         >>> bqm.energy({'a': 1, 'b': 0, 'c': 1})
         0.0
         >>> bqm.energy({'a': 1, 'b': 1, 'c': 1})
@@ -71,7 +71,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
         >>> bqm.energy({0: 0, 1: 0, 2: 1, 3: 1, 4: 0})
         1.0
 
-        >>> bqm = dimod.generators(['a', 'b', 'c'], 2, strength=3.0)
+        >>> bqm = dimod.generators.combinations(['a', 'b', 'c'], 2, strength=3.0)
         >>> bqm.energy({'a': 1, 'b': 0, 'c': 1})
         0.0
         >>> bqm.energy({'a': 1, 'b': 1, 'c': 1})
