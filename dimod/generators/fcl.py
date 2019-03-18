@@ -35,15 +35,15 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
 
     A (generic) frustrated loop (FL) problem is a sum of Hamiltonians, each generated from a single
     "good" loop.
-        1. Generate a loop by random walking on the support graph.
-        2. If the cycle is "good" (according to provided predicates), continue, else go to 1.
-        3. Choose one edge of the loop to be anti-ferromagnetic; all other edges are ferromagnetic.
-        4. Add the loop's coupler values to the FL problem.
+    1. Generate a loop by random walking on the support graph.
+    2. If the cycle is "good" (according to provided predicates), continue, else go to 1.
+    3. Choose one edge of the loop to be anti-ferromagnetic; all other edges are ferromagnetic.
+    4. Add the loop's coupler values to the FL problem.
     If at any time the magnitude of a coupler in the FL problem exceeds a given precision `R`,
     remove that coupler from consideration in the loop generation procedure.
 
     This is a generic generator of FL problems that encompasses both the original FL problem
-    definition from [HJARTL]_ and the limited FL problem definition from [KLH]_
+    definition from [#HJARTL]_ and the limited FL problem definition from [#KLH]_
 
     Args:
         graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
@@ -65,10 +65,10 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         seed (int, optional, default=None):
             Random seed.
 
-    .. [HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
+    .. [#HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
 
-    .. [KLH] King, A.D., T. Lanting, R. Harris. Performance of a quantum annealer on range-limited
+    .. [#KLH] King, A.D., T. Lanting, R. Harris. Performance of a quantum annealer on range-limited
         constraint satisfaction problems. https://arxiv.org/abs/1502.02098
 
     """
