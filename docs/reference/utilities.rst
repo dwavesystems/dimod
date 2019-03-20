@@ -2,6 +2,15 @@
 Utilities
 =========
 
+Energy Calculations
+===================
+
+.. autosummary::
+   :toctree: generated/
+
+   ising_energy
+   qubo_energy
+
 Serialization
 =============
 
@@ -25,14 +34,7 @@ Functions
 
 .. currentmodule:: dimod.utilities
 
-Energy Calculations
-===================
 
-.. autosummary::
-   :toctree: generated/
-
-   ising_energy
-   qubo_energy
 
 Vartype Conversion
 ==================
