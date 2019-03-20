@@ -13,11 +13,6 @@
 #    limitations under the License.
 #
 # =============================================================================
-"""
-This module contains asserts that can be used to test the correctness of dimod
-samplers, composites and sample sets. This is useful for checking that a created
-sampler correctly fulfills the dimod API.
-"""
 try:
     import collections.abc as abc
 except ImportError:

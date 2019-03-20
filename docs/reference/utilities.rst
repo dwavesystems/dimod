@@ -57,7 +57,7 @@ Functions
 Testing
 =======
 
-.. automodule:: dimod.testing.asserts
+.. automodule:: dimod.testing
 
 .. currentmodule:: dimod.testing.asserts
 
