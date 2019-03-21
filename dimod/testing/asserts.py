@@ -12,12 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-"""
-This module contains asserts that can be used to test the correctness of dimod samplers,
-composites and responses. This is useful for checking that a created sampler correctly fulfills
-the dimod API.
-"""
+# =============================================================================
 try:
     import collections.abc as abc
 except ImportError:
@@ -162,28 +157,56 @@ def assert_response_energies(response, bqm, precision=7):
             The binary quadratic model used to generate the samples.
 
         precision (int, optional, default=7):
-            Equality of energy is tested by calculating the difference between the `response`'s
-            sample energy and that returned by `bqm`'s :meth:`~.BinaryQuadraticModel.energy`,
-            rounding to the closest multiple of 10 to the power minus `precision`.
+            Equality of energy is tested by calculating the difference between
+            the `response`'s sample energy and that returned by `bqm`'s
+            :meth:`~.BinaryQuadraticModel.energy`, rounding to the closest
+            multiple of 10 to the power minus `precision`.
 
     Raises:
-        AssertionError: If any of the samples in the response do not match their associated energy.
+        AssertionError: If any of the samples in the response do not match their
+        associated energy.
+
+    See also:
+        :func:`.assert_sampleset_energies`
+
+    """
+    return assert_sampleset_energies(response, bqm, precision)
+
+
+def assert_sampleset_energies(sampleset, bqm, precision=7):
+    """Assert that each sample in the given sampleset has the correct energy.
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            The sample set as returned by a dimod sampler.
+
+        bqm (:obj:`.BinaryQuadraticModel`):
+            The binary quadratic model used to generate the samples.
+
+        precision (int, optional, default=7):
+            Equality of energy is tested by calculating the difference between
+            the `response`'s sample energy and that returned by `bqm`'s
+            :meth:`~.BinaryQuadraticModel.energy`, rounding to the closest
+            multiple of 10 to the power minus `precision`.
+
+    Raises:
+        AssertionError: If any of the samples in the sample set do not match
+        their associated energy.
 
     Examples:
 
-        >>> import dimod
-        >>> import dimod.testing as dtest
+        >>> import dimod.testing
         ...
         >>> sampler = dimod.ExactSolver()
         >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): -1})
-        >>> response = sampler.sample(bqm)
-        >>> dtest.assert_response_energies(response, bqm)
+        >>> sampleset = sampler.sample(bqm)
+        >>> dimod.testing.assert_response_energies(sampleset, bqm)
 
     """
-    assert isinstance(response, dimod.SampleSet), "expected response to be a dimod SampleSet object"
+    assert isinstance(sampleset, dimod.SampleSet), "expected sampleset to be a dimod SampleSet object"
 
-    for sample, energy in response.data(['sample', 'energy']):
-        assert isinstance(sample, abc.Mapping), "'for sample in response', each sample should be a Mapping"
+    for sample, energy in sampleset.data(['sample', 'energy']):
+        assert isinstance(sample, abc.Mapping), "'for sample in sampleset', each sample should be a Mapping"
 
         for v, value in sample.items():
             assert v in bqm.linear, 'sample contains a variable not in the given bqm'

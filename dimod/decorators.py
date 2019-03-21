@@ -12,7 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+"""Decorators can be imported from the :mod:`dimod.decorators` namespace. For
+example:
+
+>>> from dimod.decorators import vartype_argument
+
+"""
 
 import inspect
 import itertools
@@ -34,7 +40,13 @@ from dimod.vartypes import Vartype
 
 
 def bqm_index_labels(f):
-    """todo
+    """Decorator to convert a bqm to index-labels and relabel the sample set
+    output.
+
+    Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
+    function or method to accept a :obj:`.BinaryQuadraticModel` as the second
+    input and to return a :obj:`.SampleSet`.
+
     """
 
     @wraps(f)
@@ -63,13 +75,13 @@ def bqm_index_labels(f):
 
 
 def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
-    """Returns a decorator which ensures bqm variable labelling and all other
-    specified sample-like inputs are index labelled and consistent.
+    """Returns a decorator which ensures bqm variable labeling and all other
+    specified sample-like inputs are index labeled and consistent.
 
     Args:
         var_labels_arg_name (str):
             The name of the argument that the user should use to pass in an
-            index labelling for the bqm.
+            index labeling for the bqm.
 
         samples_arg_names (list[str]):
             The names of the expected sample-like inputs which should be
@@ -127,9 +139,12 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
 
 
 def bqm_structured(f):
-    """todo
+    """Decorator to raise an error if the given bqm does not match the sampler's
+    structure.
 
-    makes sure bqm has the appropriate structure
+    Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
+    function or method to accept a :obj:`.BinaryQuadraticModel` as the second
+    input and for the :class:`.Sampler` to also be :class:`.Structured`.
     """
 
     @wraps(f)
@@ -167,7 +182,10 @@ def vartype_argument(*arg_names):
         Function decorator.
 
     Examples:
-        >>> @dimod.vartype_argument()
+
+        >>> from dimod.decorators import vartype_argument
+
+        >>> @vartype_argument()
         ... def f(x, vartype):
         ...     print(vartype)
         ...
@@ -176,7 +194,7 @@ def vartype_argument(*arg_names):
         >>> f(1, vartype='SPIN')
         Vartype.SPIN
 
-        >>> @dimod.vartype_argument('y')
+        >>> @vartype_argument('y')
         ... def f(x, y):
         ...     print(y)
         ...
@@ -185,7 +203,7 @@ def vartype_argument(*arg_names):
         >>> f(1, y='SPIN')
         Vartype.SPIN
 
-        >>> @dimod.vartype_argument('z')
+        >>> @vartype_argument('z')
         ... def f(x, **kwargs):
         ...     print(kwargs['z'])
         ...
@@ -194,7 +212,9 @@ def vartype_argument(*arg_names):
 
     Note:
         The function decorated can explicitly list (name) vartype arguments
-        constrained by :func:`vartype_argument`, or it can use a keyword arguments `dict`.
+        constrained by :func:`vartype_argument`, or it can use a keyword
+        arguments `dict`.
+
     """
     # by default, constrain only one argument, the 'vartype`
     if not arg_names:
@@ -258,7 +278,11 @@ def _is_integer(a):
 
 # we would like to do graph_argument(*arg_names, allow_None=False), but python2...
 def graph_argument(*arg_names, **options):
-    """Coerce given graphs into a consisent form.
+    """Decorator to coerce given graph arguments into a consistent form.
+
+    The wrapped function will accept either an integer n, interpreted as a
+    complete graph of size n, or a nodes/edges pair, or a NetworkX graph. The
+    argument will then be converted into a nodes/edges 2-tuple.
 
     Args:
         *arg_names (optional, default='G'):

@@ -20,4 +20,3 @@ Reference Documentation
    higherorder
    exceptions
    utilities
-   testing
