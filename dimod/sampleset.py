@@ -35,7 +35,7 @@ from dimod.serialization.format import Formatter
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
-from dimod.views.samples import SampleView
+from dimod.views.samples import SampleView, SamplesArray
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
 
@@ -541,7 +541,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     def __iter__(self):
         """Iterate over the samples, low energy to high."""
-        return self.samples(sorted_by='energy')
+        # need to make it an iterator rather than just an iterable
+        return iter(self.samples(sorted_by='energy'))
 
     def __eq__(self, other):
         """SampleSet equality."""
@@ -715,39 +716,56 @@ class SampleSet(abc.Iterable, abc.Sized):
         return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
 
     def samples(self, n=None, sorted_by='energy'):
-        """Iterate over the samples in the :class:`SampleSet`.
+        """Return an iterable over the samples.
 
         Args:
             n (int, optional, default=None):
-                Maximum number of samples to yield. If None, all are yielded.
+                Maximum number of samples to return in the view.
 
             sorted_by (str/None, optional, default='energy'):
-                Selects the record field used to sort the samples. If None, samples are yielded
-                in record order.
+                Selects the record field used to sort the samples. If None,
+                samples are returned in record order.
 
-        Yields:
-            :obj:`.SampleView`: A view object mapping variable labels to values. Acts as
-            a read-only dict.
+        Returns:
+            :obj:`.SamplesArray`: A view object mapping variable labels to
+            values.
 
         Examples:
 
-            >>> import dimod
-            ...
-            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.0, 'b': 0.0}, {('a', 'b'): -1})
-            >>> for sample in sampleset.samples():   # doctest: +SKIP
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
+            ...                                              {('a', 'b'): 1})
+            >>> for sample in sampleset.samples():
             ...     print(sample)
+            {'a': -1, 'b': 1}
+            {'a': 1, 'b': -1}
             {'a': -1, 'b': -1}
             {'a': 1, 'b': 1}
-            {'a': 1, 'b': -1}
+
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
+            ...                                              {('a', 'b'): 1})
+            >>> samples = sampleset.samples()
+            >>> samples[0]
             {'a': -1, 'b': 1}
+            >>> samples[0, 'a']
+            -1
+            >>> samples[0, ['b', 'a']]
+            array([ 1, -1], dtype=int8)
+            >>> samples[1:, ['a', 'b']]
+            array([[ 1, -1],
+                   [-1, -1],
+                   [ 1,  1]], dtype=int8)
 
         """
-        if n is None:
-            for sample, in self.data(['sample'], sorted_by=sorted_by, name=None):
-                yield sample
+        if n is not None:
+            return self.samples(sorted_by=sorted_by)[:n]
+
+        if sorted_by is None:
+            samples = self.record.sample
         else:
-            for sample in itertools.islice(self.samples(n=None, sorted_by=sorted_by), n):
-                yield sample
+            order = np.argsort(self.record[sorted_by])
+            samples = self.record.sample[order]
+
+        return SamplesArray(samples, self.variables)
 
     def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False,
              sample_dict_cast=True, index=False):
@@ -837,7 +855,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         def _values(idx):
             for field in fields:
                 if field == 'sample':
-                    sample = SampleView(self.variables, record.sample[idx, :])
+                    sample = SampleView(record.sample[idx, :], self.variables)
                     if sample_dict_cast:
                         sample = dict(sample)
                     yield sample
