@@ -257,6 +257,52 @@ class TestAggregate(unittest.TestCase):
                          dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
 
 
+class TestAppend(unittest.TestCase):
+    def test_sampleset1_append1(self):
+        sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=0)
+        new = sampleset.append({'c': -1, 'd': -1})
+
+        target = dimod.SampleSet.from_samples({'a': -1, 'b': 1, 'c': -1, 'd': -1}, dimod.SPIN, energy=0)
+
+        self.assertEqual(new, target)
+
+    def test_sampleset2_append1(self):
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
+                                                 dimod.SPIN, energy=0)
+        new = sampleset.append({'c': -1, 'd': -1})
+
+        target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
+                                               {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
+                                              dimod.SPIN, energy=0)
+
+        self.assertEqual(new, target)
+
+    def test_sampleset2_append2(self):
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
+                                                 dimod.SPIN, energy=0)
+        new = sampleset.append([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}])
+
+        target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
+                                               {'a': -1, 'b': -1, 'c': 1, 'd': 1}],
+                                              dimod.SPIN, energy=0)
+
+        self.assertEqual(new, target)
+
+    def test_sampleset2_append3(self):
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
+                                                 dimod.SPIN, energy=0)
+
+        with self.assertRaises(ValueError):
+            sampleset.append([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}, {'c': -1, 'd': -1}])
+
+    def test_overlapping_variables(self):
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
+                                                 dimod.SPIN, energy=0)
+
+        with self.assertRaises(ValueError):
+            sampleset.append([{'c': -1, 'd': -1, 'a': -1}])
+
+
 class TestTruncate(unittest.TestCase):
     def test_typical(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})

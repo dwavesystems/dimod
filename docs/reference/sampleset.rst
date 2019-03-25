@@ -50,6 +50,7 @@ Methods
    :toctree: generated/
 
    SampleSet.aggregate
+   SampleSet.append
    SampleSet.change_vartype
    SampleSet.copy
    SampleSet.data
