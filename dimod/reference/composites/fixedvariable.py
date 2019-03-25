@@ -91,77 +91,12 @@ class FixedVariableComposite(ComposedSampler):
             fixed_variables = {}
 
         bqm_copy.fix_variables(fixed_variables)
-        response = child.sample(bqm_copy, **parameters)
-        return _release_response(response, fixed_variables)
+        sampleset = child.sample(bqm_copy, **parameters)
 
-
-def _release_response(response, fixed_variables):
-    """will add the fixed variables and their assigned values to the samples
-       of the response object. Energies of the response do not change since
-       in fixing step the offset is populated by the constant energy shift
-       associated with fixing the variables.
-
-    Args:
-        response (:obj:`.SampleSet`):
-            Samples from the bqm with fixed variables.
-
-        fixed_variables (dict):
-            The dict of fixed variables and their assigned values.
-            These are the variables that will be added back to the samples
-            of the response object.
-
-    Returns:
-        :obj:`dimod.SampleSet`:
-            Samples for the source binary quadratic model.
-
-    Examples:
-       This example uses :class:`.FixedVariableComposite` to instantiate a
-       composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler fixes a variable and modifies linear and quadratic
-       biases according.
-
-       >>> import dimod
-       >>> sampler = dimod.FixedVariableComposite(dimod.ExactSolver())
-       >>> h = {'d': -4}
-       >>> J = {('a', 'b'): 1, ('b', 'c'): 1, ('a', 'c'): 1, ('c', 'd'): -.1}
-       >>> bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
-       >>> fixed_variables = dimod.roof_duality.fix_variables(bqm)
-       >>> response = sampler.sample(bqm, fixed_variables=fixed_variables)
-       >>> print(response.first)
-       Sample(sample={'a': -1, 'b': 1, 'c': 1, 'd': 1}, energy=-5.1, num_occurrences=1)
-
-    """
-
-    record = response.record
-    original_variables = list(response.variables)
-    samples = np.asarray(record.sample)
-    energy = np.asarray(record.energy)
-
-    num_samples, num_variables = np.shape(samples)
-    num_variables += len(fixed_variables)
-
-    if len(fixed_variables) > 0:
-        b = []
-        for v, val in fixed_variables.items():
-            original_variables.append(v)
-            b.append([val] * num_samples)
-        samples = np.concatenate((samples, np.transpose(b)), axis=1)
-
-    datatypes = [('sample', np.dtype(np.int8), (num_variables,)),
-                 ('energy', energy.dtype)]
-
-    datatypes.extend((name, record[name].dtype, record[name].shape[1:])
-                     for name in record.dtype.names if
-                     name not in {'sample',
-                                  'energy'})
-
-    data = np.rec.array(np.empty(num_samples, dtype=datatypes))
-
-    data.sample = samples
-    data.energy = energy
-    for name in record.dtype.names:
-        if name not in {'sample', 'energy'}:
-            data[name] = record[name]
-
-    return SampleSet(data, original_variables, response.info,
-                     response.vartype)
+        if len(sampleset):
+            return sampleset.append(fixed_variables)
+        elif fixed_variables:
+            return type(sampleset).from_samples_bqm(fixed_variables, bqm=bqm)
+        else:
+            # no fixed variables and sampleset is empty
+            return sampleset
