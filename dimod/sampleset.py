@@ -114,6 +114,11 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
+    if isinstance(samples_like, SampleSet):
+        # we implicitely support this by handling an iterable of mapping but
+        # it is much faster to just do this here.
+        return samples_like.record.sample, list(samples_like.variables)
+
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
         samples_like, labels = samples_like
 
