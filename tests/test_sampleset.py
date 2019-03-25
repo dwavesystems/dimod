@@ -302,6 +302,18 @@ class TestAppend(unittest.TestCase):
         with self.assertRaises(ValueError):
             sampleset.append([{'c': -1, 'd': -1, 'a': -1}])
 
+    def test_two_samplesets(self):
+        sampleset0 = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
+                                                  dimod.SPIN, energy=[-2, 2])
+        sampleset1 = dimod.SampleSet.from_samples([{'c': -1, 'd': 1}, {'c': -1, 'd': -1}],
+                                                  dimod.SPIN, energy=[-1, 1])
+
+        target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': 1},
+                                               {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
+                                              dimod.SPIN, energy=[-3, 3])
+
+        self.assertEqual(sampleset0.append(sampleset1), target)
+
 
 class TestTruncate(unittest.TestCase):
     def test_typical(self):

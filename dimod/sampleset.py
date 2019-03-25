@@ -1014,9 +1014,9 @@ class SampleSet(abc.Iterable, abc.Sized):
                 case the given order will be maintained.
 
         Returns:
-            :obj:`.SampleSet`: A new sample set with the samples appended. Note
-            that the returned sample set's energies are taken from the base
-            sample set.
+            :obj:`.SampleSet`: A new sample set with the samples appended. If
+            `samples_like` is another sample set then the returned sample set
+            has the sum of the energies.
 
         Examples:
 
@@ -1031,16 +1031,18 @@ class SampleSet(abc.Iterable, abc.Sized):
             1 +1 +1 -1    1.0       1
             ['SPIN', 2 rows, 2 samples, 3 variables]
 
-            >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
-            ...                                           {'a': +1, 'b': +1}],
-            ...                                          dimod.SPIN,
-            ...                                          energy=[-1.0, 1.0])
-            >>> new = sampleset.append([{'c': -1}, {'c': 1}])
+            Append another sampleset to the original above.
+
+            >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
+            ...                                         {'c': +1, 'd': +1}],
+            ...                                        dimod.SPIN,
+            ...                                        energy=[-2.0, 1.0])
+            >>> new = sampleset.append(another)
             >>> print(new)
-               a  b  c energy num_oc.
-            0 -1 +1 -1   -1.0       1
-            1 +1 +1 +1    1.0       1
-            ['SPIN', 2 rows, 2 samples, 3 variables]
+               a  b  c  d energy num_oc.
+            0 -1 +1 -1 +1   -3.0       1
+            1 +1 +1 +1 +1    2.0       1
+            ['SPIN', 2 rows, 2 samples, 4 variables]
 
         """
         samples, labels = as_samples(samples_like)
@@ -1068,11 +1070,16 @@ class SampleSet(abc.Iterable, abc.Sized):
         new_variables = list(variables) + labels
         new_samples = np.hstack((self.record.sample, samples))
 
-        return type(self).from_samples((new_samples, new_variables),
-                                       self.vartype,
-                                       info=dict(self.info),  # make a copy
-                                       sort_labels=sort_labels,
-                                       **self.data_vectors)
+        new = type(self).from_samples((new_samples, new_variables),
+                                      self.vartype,
+                                      info=dict(self.info),  # make a copy
+                                      sort_labels=sort_labels,
+                                      **self.data_vectors)
+
+        if isinstance(samples_like, SampleSet):
+            new.record.energy += samples_like.record.energy
+
+        return new
 
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
