@@ -997,6 +997,83 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return type(self)(record, self.variables, self.info, self.vartype)
 
+    def append(self, samples_like, sort_labels=True):
+        """Create a new sampleset with the given samples added.
+
+        Empty sample sets cannot be appended to.
+
+        Args:
+            samples_like:
+                Samples to add to the sample set. Should either be a single
+                sample or should match the length of the sample set. See
+                :func:`.as_samples` for what is allowed to be `samples_like`.
+
+            sort_labels (bool, optional, default=True):
+                If true, returned :attr:`.SampleSet.variables` will be in
+                sorted-order. Note that mixed types are not sortable in which
+                case the given order will be maintained.
+
+        Returns:
+            :obj:`.SampleSet`: A new sample set with the samples appended. Note
+            that the returned sample set's energies are taken from the base
+            sample set.
+
+        Examples:
+
+            >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
+            ...                                           {'a': +1, 'b': +1}],
+            ...                                          dimod.SPIN,
+            ...                                          energy=[-1.0, 1.0])
+            >>> new = sampleset.append({'c': -1})
+            >>> print(new)
+               a  b  c energy num_oc.
+            0 -1 +1 -1   -1.0       1
+            1 +1 +1 -1    1.0       1
+            ['SPIN', 2 rows, 2 samples, 3 variables]
+
+            >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
+            ...                                           {'a': +1, 'b': +1}],
+            ...                                          dimod.SPIN,
+            ...                                          energy=[-1.0, 1.0])
+            >>> new = sampleset.append([{'c': -1}, {'c': 1}])
+            >>> print(new)
+               a  b  c energy num_oc.
+            0 -1 +1 -1   -1.0       1
+            1 +1 +1 +1    1.0       1
+            ['SPIN', 2 rows, 2 samples, 3 variables]
+
+        """
+        samples, labels = as_samples(samples_like)
+
+        num_samples = len(self)
+
+        # we don't handle multiple values
+        if samples.shape[0] == num_samples:
+            # we don't need to do anything, it's already the correct shape
+            pass
+        elif samples.shape[0] == 1 and num_samples:
+            samples = np.repeat(samples, num_samples, axis=0)
+        else:
+            msg = ("mismatched shape. The samples to append should either be "
+                   "a single sample or should match the length of the sample "
+                   "set. Empty sample sets cannot be appended to.")
+            raise ValueError(msg)
+
+        # append requires the new variables to be unique
+        variables = self.variables
+        if any(v in variables for v in labels):
+            msg = "Appended samples cannot contain variables in sample set"
+            raise ValueError(msg)
+
+        new_variables = list(variables) + labels
+        new_samples = np.hstack((self.record.sample, samples))
+
+        return type(self).from_samples((new_samples, new_variables),
+                                       self.vartype,
+                                       info=dict(self.info),  # make a copy
+                                       sort_labels=sort_labels,
+                                       **self.data_vectors)
+
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
 
