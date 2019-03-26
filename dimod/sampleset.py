@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 import base64
+import copy
 import itertools
 import json
 import numbers
@@ -114,6 +115,11 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
+    if isinstance(samples_like, SampleSet):
+        # we implicitely support this by handling an iterable of mapping but
+        # it is much faster to just do this here.
+        return samples_like.record.sample, list(samples_like.variables)
+
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
         samples_like, labels = samples_like
 
@@ -995,7 +1001,87 @@ class SampleSet(abc.Iterable, abc.Sized):
         # dev note: we don't check the energies as they should be the same
         # for individual samples
 
-        return type(self)(record, self.variables, self.info, self.vartype)
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
+
+    def append_variables(self, samples_like, sort_labels=True):
+        """Create a new sampleset with the given variables with values added.
+
+        Not defined for empty sample sets. Note that when `sample_like` is
+        a :obj:`.SampleSet`, the data vectors and info are ignored.
+
+        Args:
+            samples_like:
+                Samples to add to the sample set. Should either be a single
+                sample or should match the length of the sample set. See
+                :func:`.as_samples` for what is allowed to be `samples_like`.
+
+            sort_labels (bool, optional, default=True):
+                If true, returned :attr:`.SampleSet.variables` will be in
+                sorted-order. Note that mixed types are not sortable in which
+                case the given order will be maintained.
+
+        Returns:
+            :obj:`.SampleSet`: A new sample set with the variables/values added.
+
+        Examples:
+
+            >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
+            ...                                           {'a': +1, 'b': +1}],
+            ...                                          dimod.SPIN,
+            ...                                          energy=[-1.0, 1.0])
+            >>> new = sampleset.append_variables({'c': -1})
+            >>> print(new)
+               a  b  c energy num_oc.
+            0 -1 +1 -1   -1.0       1
+            1 +1 +1 -1    1.0       1
+            ['SPIN', 2 rows, 2 samples, 3 variables]
+
+            Add variables from another sampleset to the original above. Note
+            that the energies do not change.
+
+            >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
+            ...                                         {'c': +1, 'd': +1}],
+            ...                                        dimod.SPIN,
+            ...                                        energy=[-2.0, 1.0])
+            >>> new = sampleset.append_variables(another)
+            >>> print(new)
+               a  b  c  d energy num_oc.
+            0 -1 +1 -1 +1   -1.0       1
+            1 +1 +1 +1 +1    1.0       1
+            ['SPIN', 2 rows, 2 samples, 4 variables]
+
+        """
+        samples, labels = as_samples(samples_like)
+
+        num_samples = len(self)
+
+        # we don't handle multiple values
+        if samples.shape[0] == num_samples:
+            # we don't need to do anything, it's already the correct shape
+            pass
+        elif samples.shape[0] == 1 and num_samples:
+            samples = np.repeat(samples, num_samples, axis=0)
+        else:
+            msg = ("mismatched shape. The samples to append should either be "
+                   "a single sample or should match the length of the sample "
+                   "set. Empty sample sets cannot be appended to.")
+            raise ValueError(msg)
+
+        # append requires the new variables to be unique
+        variables = self.variables
+        if any(v in variables for v in labels):
+            msg = "Appended samples cannot contain variables in sample set"
+            raise ValueError(msg)
+
+        new_variables = list(variables) + labels
+        new_samples = np.hstack((self.record.sample, samples))
+
+        return type(self).from_samples((new_samples, new_variables),
+                                       self.vartype,
+                                       info=copy.deepcopy(self.info),  # make a copy
+                                       sort_labels=sort_labels,
+                                       **self.data_vectors)
 
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
@@ -1040,7 +1126,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             sort_indices = np.argsort(record[sorted_by])
             record = record[sort_indices[:n]]
 
-        return type(self)(record, self.variables, self.info, self.vartype)
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
 
     ###############################################################################################
     # Serialization

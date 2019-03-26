@@ -92,8 +92,8 @@ class TestRoofDualityComposite(unittest.TestCase):
         sampler = RoofDualityComposite(dimod.ExactSolver())
         sampleset = sampler.sample_ising({'a': 10},  {'ab': -1, 'bc': 1})
 
-        # all should be fixed
-        self.assertEqual(len(sampleset), 0)
+        # all should be fixed, so should just see one
+        self.assertEqual(len(sampleset), 1)
         self.assertEqual(set(sampleset.variables), set('abc'))
 
     @unittest.skipUnless(cpp, "no cpp extensions built")
@@ -118,5 +118,5 @@ class TestRoofDualityComposite(unittest.TestCase):
         sampleset = sampler.sample(bqm, sampling_mode=False)
 
         self.assertEqual(set(sampleset.variables), set('abc'))
-        self.assertEqual(len(sampleset), 0)  # all should be fixed
+        self.assertEqual(len(sampleset), 1)  # all should be fixed
         dimod.testing.assert_response_energies(sampleset, bqm)
