@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 import base64
+import copy
 import itertools
 import json
 import numbers
@@ -1005,7 +1006,8 @@ class SampleSet(abc.Iterable, abc.Sized):
     def append_variables(self, samples_like, sort_labels=True):
         """Create a new sampleset with the given variables with values added.
 
-        Empty sample sets cannot be appended to.
+        Not defined for empty sample sets. Note that when `sample_like` is
+        a :obj:`.SampleSet`, the data vectors and info are ignored.
 
         Args:
             samples_like:
@@ -1019,9 +1021,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                 case the given order will be maintained.
 
         Returns:
-            :obj:`.SampleSet`: A new sample set with the samples appended. If
-            `samples_like` is another sample set then the returned sample set
-            has the sum of the energies.
+            :obj:`.SampleSet`: A new sample set with the variables/values added.
 
         Examples:
 
@@ -1036,7 +1036,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             1 +1 +1 -1    1.0       1
             ['SPIN', 2 rows, 2 samples, 3 variables]
 
-            Append another sampleset to the original above.
+            Add variables from another sampleset to the original above. Note
+            that the energies do not change.
 
             >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
             ...                                         {'c': +1, 'd': +1}],
@@ -1045,8 +1046,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> new = sampleset.append_variables(another)
             >>> print(new)
                a  b  c  d energy num_oc.
-            0 -1 +1 -1 +1   -3.0       1
-            1 +1 +1 +1 +1    2.0       1
+            0 -1 +1 -1 +1   -1.0       1
+            1 +1 +1 +1 +1    1.0       1
             ['SPIN', 2 rows, 2 samples, 4 variables]
 
         """
@@ -1075,16 +1076,11 @@ class SampleSet(abc.Iterable, abc.Sized):
         new_variables = list(variables) + labels
         new_samples = np.hstack((self.record.sample, samples))
 
-        new = type(self).from_samples((new_samples, new_variables),
-                                      self.vartype,
-                                      info=dict(self.info),  # make a copy
-                                      sort_labels=sort_labels,
-                                      **self.data_vectors)
-
-        if isinstance(samples_like, SampleSet):
-            new.record.energy += samples_like.record.energy
-
-        return new
+        return type(self).from_samples((new_samples, new_variables),
+                                       self.vartype,
+                                       info=dict(self.info),  # make a copy
+                                       sort_labels=sort_labels,
+                                       **self.data_vectors)
 
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
