@@ -1001,7 +1001,8 @@ class SampleSet(abc.Iterable, abc.Sized):
         # dev note: we don't check the energies as they should be the same
         # for individual samples
 
-        return type(self)(record, self.variables, self.info, self.vartype)
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
 
     def append_variables(self, samples_like, sort_labels=True):
         """Create a new sampleset with the given variables with values added.
@@ -1078,7 +1079,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return type(self).from_samples((new_samples, new_variables),
                                        self.vartype,
-                                       info=dict(self.info),  # make a copy
+                                       info=copy.deepcopy(self.info),  # make a copy
                                        sort_labels=sort_labels,
                                        **self.data_vectors)
 
@@ -1125,7 +1126,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             sort_indices = np.argsort(record[sorted_by])
             record = record[sort_indices[:n]]
 
-        return type(self)(record, self.variables, self.info, self.vartype)
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
 
     ###############################################################################################
     # Serialization
