@@ -1002,8 +1002,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return type(self)(record, self.variables, self.info, self.vartype)
 
-    def append(self, samples_like, sort_labels=True):
-        """Create a new sampleset with the given samples added.
+    def append_variables(self, samples_like, sort_labels=True):
+        """Create a new sampleset with the given variables with values added.
 
         Empty sample sets cannot be appended to.
 
@@ -1029,7 +1029,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             ...                                           {'a': +1, 'b': +1}],
             ...                                          dimod.SPIN,
             ...                                          energy=[-1.0, 1.0])
-            >>> new = sampleset.append({'c': -1})
+            >>> new = sampleset.append_variables({'c': -1})
             >>> print(new)
                a  b  c energy num_oc.
             0 -1 +1 -1   -1.0       1
@@ -1042,7 +1042,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             ...                                         {'c': +1, 'd': +1}],
             ...                                        dimod.SPIN,
             ...                                        energy=[-2.0, 1.0])
-            >>> new = sampleset.append(another)
+            >>> new = sampleset.append_variables(another)
             >>> print(new)
                a  b  c  d energy num_oc.
             0 -1 +1 -1 +1   -3.0       1
