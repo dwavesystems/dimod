@@ -98,6 +98,7 @@ Converting to and from other formats
 
    BinaryQuadraticModel.from_coo
    BinaryQuadraticModel.from_ising
+   BinaryQuadraticModel.from_networkx_graph
    BinaryQuadraticModel.from_numpy_matrix
    BinaryQuadraticModel.from_numpy_vectors
    BinaryQuadraticModel.from_qubo
