@@ -94,7 +94,7 @@ class FixedVariableComposite(ComposedSampler):
         sampleset = child.sample(bqm_copy, **parameters)
 
         if len(sampleset):
-            return sampleset.append(fixed_variables)
+            return sampleset.append_variables(fixed_variables)
         elif fixed_variables:
             return type(sampleset).from_samples_bqm(fixed_variables, bqm=bqm)
         else:
