@@ -2157,3 +2157,32 @@ class TestZeroField(unittest.TestCase):
         self.assertEqual(bqm.adj, {'a': {'b': -1}, 'b': {'a': -1}})
         self.assertEqual(set(bqm.linear.keys()), {'a', 'b'})
         self.assertEqual(set(bqm.linear.items()), {('a', 0), ('b', 0)})
+
+
+@unittest.skipUnless(_networkx, "NetworkX is not installed")
+class TestFromNetworkxGraph(unittest.TestCase):
+    def test_empty(self):
+        G = nx.Graph()
+        G.vartype = 'SPIN'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        self.assertEqual(len(bqm), 0)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    def test_no_biases(self):
+        G = nx.complete_graph(5)
+        G.vartype = 'BINARY'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.assertEqual(set(bqm.variables), set(range(5)))
+        for u, v in itertools.combinations(range(5), 2):
+            self.assertEqual(bqm.adj[u][v], 0)
+            self.assertEqual(bqm.linear[v], 0)
+        self.assertEqual(len(bqm.quadratic), len(G.edges))
+
+    def test_functional(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
+                                                    {'bc': 1, 'cd': -4},
+                                                    offset=6)
+        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
+        self.assertEqual(bqm, new)

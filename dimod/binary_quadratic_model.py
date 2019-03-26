@@ -1851,9 +1851,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         """Convert a binary quadratic model to NetworkX graph format.
 
         Args:
-            node_attribute_name (hashable):
+            node_attribute_name (hashable, optional, default='bias'):
                 Attribute name for linear biases.
-            edge_attribute_name (hashable):
+
+            edge_attribute_name (hashable, optional, default='bias'):
                 Attribute name for quadratic biases.
 
         Returns:
@@ -1895,6 +1896,62 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         BQM.vartype = self.vartype
 
         return BQM
+
+    @classmethod
+    def from_networkx_graph(cls, G, vartype=None, node_attribute_name='bias',
+                            edge_attribute_name='bias'):
+        """Create a binary quadratic model from a NetworkX graph.
+
+        Args:
+            G (:obj:`networkx.Graph`):
+                A NetworkX graph with biases stored as node/edge attributes.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input
+                values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the `G` should have a vartype attribute. If
+                `vartype` is provided and `G.vartype` exists then the argument
+                overrides the property.
+
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases. If the node does not have a
+                matching attribute then the bias defaults to 0.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases. If the edge does not have a
+                matching attribute then the bias defaults to 0.
+
+        Returns:
+            :obj:`.BinaryQuadraticModel`
+
+        Examples:
+
+            >>> import networkx as nx
+            ...
+            >>> G = nx.Graph()
+            >>> G.add_node('a', bias=.5)
+            >>> G.add_edge('a', 'b', bias=-1)
+            >>> bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G, 'SPIN')
+            >>> bqm.adj['a']['b']
+            -1
+
+        """
+        if vartype is None:
+            if not hasattr(G, 'vartype'):
+                msg = ("either 'vartype' argument must be provided or "
+                       "the given graph should have a vartype attribute.")
+                raise ValueError(msg)
+            vartype = G.vartype
+
+        linear = G.nodes(data=node_attribute_name, default=0)
+        quadratic = G.edges(data=edge_attribute_name, default=0)
+        offset = getattr(G, 'offset', 0)
+
+        return cls(linear, quadratic, offset, vartype)
 
     def to_ising(self):
         """Converts a binary quadratic model to Ising format.
