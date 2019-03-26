@@ -310,7 +310,7 @@ class TestAppend(unittest.TestCase):
 
         target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': 1},
                                                {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
-                                              dimod.SPIN, energy=[-3, 3])
+                                              dimod.SPIN, energy=[-2, 2])
 
         self.assertEqual(sampleset0.append_variables(sampleset1), target)
 
