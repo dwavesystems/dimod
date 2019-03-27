@@ -43,7 +43,11 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
                   ':python_version == "2.7"': ['futures'],
                   ':python_version <= "3.3"': ['enum34>=1.1.6,<2.0.0']}
 
+setup_requires = ['numpy>=1.15.0,<2.0.0',
+                  ]
+
 packages = ['dimod',
+            'dimod.bqm',
             'dimod.core',
             'dimod.generators',
             'dimod.higherorder',
@@ -82,7 +86,12 @@ ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
-                        include_dirs=['dimod/roof_duality/src/'])]
+                        include_dirs=['dimod/roof_duality/src/']),
+              Extension("dimod.bqm.cyfrozenbqm",
+                        ["dimod/bqm/cyfrozenbqm"+ext]),
+              Extension("dimod.bqm.coo_sort",
+                        ["dimod/bqm/coo_sort"+ext]),
+              ]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
@@ -125,6 +134,11 @@ class ve_build_ext(build_ext):
     # This class allows C extension building to fail.
 
     def run(self):
+
+        # need access to numpy's include files
+        import numpy
+        self.include_dirs.append(numpy.get_include())
+
         try:
             build_ext.run(self)
         except DistutilsPlatformError:
@@ -155,6 +169,7 @@ def run_setup(cpp):
         license='Apache 2.0',
         packages=packages,
         install_requires=install_requires,
+        setup_requires=setup_requires,
         extras_require=extras_require,
         include_package_data=True,
         classifiers=classifiers,
