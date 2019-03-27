@@ -7,6 +7,8 @@ except ImportError:
 
 import numpy as np
 
+from dimod.bqm.coo_sort import coo_sort
+
 
 def reduce_coo(row, col, data):
     """
@@ -51,19 +53,7 @@ def reduce_coo(row, col, data):
         # empty arrays are already sorted
         return row, col, data
 
-    # row index should be less than col index, this handles upper-triangular vs lower-triangular
-    swaps = row > col
-    if swaps.any():
-        # in-place
-        row[swaps], col[swaps] = col[swaps], row[swaps]
-
-    # sort lexigraphically
-    order = np.lexsort((col, row))
-    if not (order == range(len(order))).all():  # the test is pretty slow but saves a copy
-        # copy
-        row = row[order]
-        col = col[order]
-        data = data[order]
+    coo_sort(row, col, data)
 
     # reduce unique
     unique = ((row[1:] != row[:-1]) | (col[1:] != col[:-1]))
