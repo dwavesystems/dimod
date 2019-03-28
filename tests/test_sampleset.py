@@ -22,6 +22,11 @@ import numpy as np
 
 import dimod
 
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 
 try:
     import pandas as pd
@@ -353,6 +358,14 @@ class TestIteration(unittest.TestCase):
         samples = list(sampleset.data())
         reversed_samples = list(sampleset.data(reverse=True))
         self.assertEqual(samples, list(reversed(reversed_samples)))
+
+    def test_iterator(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        sampleset = dimod.SampleSet.from_samples_bqm([{'a': -1, 'b': 1}, {'a': 1, 'b': 1}], bqm)
+        self.assertIsInstance(sampleset.samples(), abc.Iterator)
+        self.assertIsInstance(sampleset.samples(n=2), abc.Iterator)
+        spl = next(sampleset.samples())
+        self.assertEqual(spl, {'a': 1, 'b': 1})
 
 
 class TestSerialization(unittest.TestCase):

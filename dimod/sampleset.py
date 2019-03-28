@@ -763,7 +763,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         """
         if n is not None:
-            return self.samples(sorted_by=sorted_by)[:n]
+            return itertools.islice(self.samples(sorted_by=sorted_by), n)
 
         if sorted_by is None:
             samples = self.record.sample
@@ -771,7 +771,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             order = np.argsort(self.record[sorted_by])
             samples = self.record.sample[order]
 
-        return SamplesArray(samples, self.variables)
+        return iter(SamplesArray(samples, self.variables))
 
     def data(self, fields=None, sorted_by='energy', name='Sample', reverse=False,
              sample_dict_cast=True, index=False):
