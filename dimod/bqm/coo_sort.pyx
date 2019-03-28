@@ -1,7 +1,5 @@
-# cython: language_level = 3
+# cython: language_level = 3, boundscheck=False, wraparound=False
 # distutils: language = c++
-
-from libcpp cimport bool
 
 import numpy as np
 cimport numpy as np
@@ -63,8 +61,7 @@ cdef Py_ssize_t partition_coo(index_type[:] irow, index_type[:] icol, bias_type[
     if less(irow, icol, high, low):
         swap(irow, icol, qdata, low, high)
     if less(irow, icol, mid, high):
-        swap(irow, icol, qdata, low, high)
-
+        swap(irow, icol, qdata, mid, high)
 
     cdef Py_ssize_t pi = high    
 
@@ -82,11 +79,11 @@ cdef Py_ssize_t partition_coo(index_type[:] irow, index_type[:] icol, bias_type[
 
     return i
 
-cdef bool less(index_type[:] irow, index_type[:] icol, Py_ssize_t a, Py_ssize_t b):
+cdef inline bint less(index_type[:] irow, index_type[:] icol, Py_ssize_t a, Py_ssize_t b):
     """Return True if a < b"""
     return irow[a] < irow[b] or (irow[a] == irow[b] and icol[a] < icol[b])
 
-cdef void swap(index_type[:] irow, index_type[:] icol, bias_type[:] qdata,
+cdef inline void swap(index_type[:] irow, index_type[:] icol, bias_type[:] qdata,
                Py_ssize_t a, Py_ssize_t b):
     # swap the data
     irow[a], irow[b] = irow[b], irow[a]
