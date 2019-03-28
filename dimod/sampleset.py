@@ -747,20 +747,6 @@ class SampleSet(abc.Iterable, abc.Sized):
             {'a': -1, 'b': -1}
             {'a': 1, 'b': 1}
 
-            >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
-            ...                                              {('a', 'b'): 1})
-            >>> samples = sampleset.samples()
-            >>> samples[0]
-            {'a': -1, 'b': 1}
-            >>> samples[0, 'a']
-            -1
-            >>> samples[0, ['b', 'a']]
-            array([ 1, -1], dtype=int8)
-            >>> samples[1:, ['a', 'b']]
-            array([[ 1, -1],
-                   [-1, -1],
-                   [ 1,  1]], dtype=int8)
-
         """
         if n is not None:
             return itertools.islice(self.samples(sorted_by=sorted_by), n)
