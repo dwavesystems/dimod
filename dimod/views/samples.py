@@ -69,8 +69,10 @@ class IndexValuesView(abc.ValuesView):
         return iter(self._mapping._data.flat)
 
 
-class SamplesArray(abc.Sequence):
-    __slots__ = ('_samples', '_variables')
+# developer note: Iterator functionality is deprecated
+class SamplesArray(abc.Sequence, abc.Iterator):
+    __slots__ = ('_samples', '_variables',
+                 '_itercount')  # used for deprecated iteration feature
 
     def __init__(self, samples, variables):
         self._samples = samples
@@ -135,6 +137,21 @@ class SamplesArray(abc.Sequence):
         variables = self._variables
         for row in self._samples:
             yield SampleView(row, variables)
+
+    def __next__(self):
+        import warnings
+        msg = ("SampleSet.samples() will return an iterable not an iterator in "
+               "the future")
+        warnings.warn(msg, DeprecationWarning)
+
+        itercount = getattr(self, '_itercount', 0)
+        if itercount < len(self):
+            self._itercount = itercount + 1
+            return self[itercount]
+        raise StopIteration
+
+    next = __next__  # for python2
+
 
     def __len__(self):
         return self._samples.shape[0]
