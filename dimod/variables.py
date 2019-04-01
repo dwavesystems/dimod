@@ -30,10 +30,9 @@ class CallableDict(abc.Callable, dict):
     __slots__ = ()
 
     def __call__(self, v):
-        try:
-            return self[v]
-        except KeyError:
+        if v not in self:
             raise ValueError('missing element {!r}'.format(v))
+        return self[v]
 
 
 class Variables(abc.Sequence, abc.Set):
