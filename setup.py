@@ -87,10 +87,8 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
-              Extension("dimod.bqm.cyfrozenbqm",
-                        ["dimod/bqm/cyfrozenbqm"+ext]),
-              Extension("dimod.bqm.coo_sort",
-                        ["dimod/bqm/coo_sort"+ext]),
+              Extension("dimod.bqm.cyutils.coo_sort",
+                        ["dimod/bqm/cyutils/coo_sort"+ext]),
               ]
 
 if USE_CYTHON:

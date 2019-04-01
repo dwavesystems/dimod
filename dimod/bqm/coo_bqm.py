@@ -7,7 +7,9 @@ except ImportError:
 
 import numpy as np
 
-from dimod.bqm.coo_sort import coo_sort
+from dimod.variables import Variables
+from dimod.vartypes import SPIN
+from dimod.bqm.cyutils import coo_sort
 
 
 def reduce_coo(row, col, data):
@@ -164,7 +166,17 @@ class QuadraticCooView(abc.Mapping):
         return str(dict(self))
 
 
+class LabelledQuadraticCooView(abc.Mapping):
+    pass
+
+
 class FrozenBinaryQuadraticModelCoo():
+    __slots__ = ['ldata',
+                 'irow', 'icol', 'qdata',
+                 'vartype',
+                 'is_sorted',
+                 'linear', 'quadratic', 'offset',
+                 ]
 
     def __init__(self, linear, quadratic, offset, vartype,
                  variable_order=None,
@@ -188,7 +200,9 @@ class FrozenBinaryQuadraticModelCoo():
             self.is_sorted = is_sorted = True
             irow, icol, qdata = reduce_coo(irow, icol, qdata)
         else:
-            self.is_sorted = is_sorted = False
+            # we're not sure if it's sorted or not, but we want bqm.is_sorted
+            # to evaluate as False
+            self.is_sorted = is_sorted = None
 
         self.irow = irow
         self.icol = icol
@@ -206,9 +220,35 @@ class FrozenBinaryQuadraticModelCoo():
             # assume that it's a sequence of hashables for now
             variable_to_idx = OrderedDict((v, idx) for idx, v in enumerate(variable_order))
 
-            self.linear = LabelledLinearArrayView(ldata, variable_to_idx)
+            # todo: check length
 
             raise NotImplementedError
 
+            self.linear = LabelledLinearArrayView(ldata, variable_to_idx)
+            self.quadratic = LabelledQuadraticCooView(irow, icol, qdata,
+                                                      variable_to_idx)
 
-# FrozenBQM = FrozenBinaryQuadraticModelCoo
+    @classmethod
+    def from_ising(cls, h, J, offset=0,
+                   bias_dtype=np.float, index_dtype=np.int,
+                   sort_and_reduce=False):
+        # assume everything is integer-labeled for now
+        num_variables = len(h)
+        num_interactions = len(J)
+
+        ldata = np.fromiter((h[v] for v in range(num_variables)),
+                            count=num_variables, dtype=bias_dtype)
+
+        irow = np.empty(num_interactions, dtype=index_dtype)
+        icol = np.empty(num_interactions, dtype=index_dtype)
+        qdata = np.empty(num_interactions, dtype=bias_dtype)
+
+        # we could probably speed this up with cython
+        for idx, ((u, v), bias) in enumerate(J.items()):
+            irow[idx] = u
+            icol[idx] = v
+            qdata[idx] = bias
+
+        return cls(ldata, (irow, icol, qdata), offset, SPIN,
+                   bias_dtype=bias_dtype, index_dtype=index_dtype,
+                   sort_and_reduce=sort_and_reduce, copy=False)
