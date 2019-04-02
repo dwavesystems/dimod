@@ -1084,18 +1084,27 @@ class SampleSet(abc.Iterable, abc.Sized):
                                        **self.data_vectors)
 
     def lowest(self, rtol=1.e-5, atol=1.e-8):
-        """Return a SampleSet containing the samples with the lowest energy.
+        """Return a sample set containing the lowest-energy samples.
+
+        A sample is included if it's energy is within tolerance of the lowest
+        energy in the sample set. The following equation is used to determine
+        if two values are equivalent:
+
+        absolute(`a` - `b`) <= (`atol` + `rtol` * absolute(`b`))
+
+        See :func:`numpy.isclose` for additional details and caveats.
 
         Args:
             rtol (float, optional, default=1.e-5):
-                The relative tolerance. See :func:`numpy.isclose`.
+                The relative tolerance (see above).
 
             atol (float, optional, default=1.e-8):
-                The absolute tolerance. See :func:`numpy.isclose`.
+                The absolute tolerance (see above).
 
         Returns:
-            :obj:`.SampleSet`: A new sample set containing the samples with an
-            energy within tolerance of the minimum energy of the sample set.
+            :obj:`.SampleSet`: A new sample set containing the lowest energy
+            samples as delimited by configured tolerances from the lowest energy
+            sample in the current sample set.
 
         Examples:
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': .001},
@@ -1111,9 +1120,9 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['SPIN', 2 rows, 2 samples, 2 variables]
 
         Note:
-            The energy is relative to the lowest energy in the sample set. This
-            is not the same as the ground energy which is the lowest possible
-            energy for a binary quadratic model over all possible samples.
+            "Lowest energy" is the lowest energy in the sample set. This is not
+            the always the "ground energy" which is the lowest energy possible
+            for a binary quadratic model.
 
         """
 
