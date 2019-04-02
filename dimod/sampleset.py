@@ -1084,7 +1084,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                                        **self.data_vectors)
 
     def lowest(self, rtol=1.e-5, atol=1.e-8):
-        """Return a SampleSet containing only the samples with minimal energy.
+        """Return a SampleSet containing the samples with the lowest energy.
 
         Args:
             rtol (float, optional, default=1.e-5):
@@ -1095,7 +1095,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Returns:
             :obj:`.SampleSet`: A new sample set containing the samples with an
-            energy within tolerance of the minimal energy.
+            energy within tolerance of the minimum energy of the sample set.
 
         Examples:
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': .001},
