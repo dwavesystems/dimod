@@ -1083,6 +1083,50 @@ class SampleSet(abc.Iterable, abc.Sized):
                                        sort_labels=sort_labels,
                                        **self.data_vectors)
 
+    def lowest(self, rtol=1.e-5, atol=1.e-8):
+        """Return a SampleSet containing only the samples with minimal energy.
+
+        Args:
+            rtol (float, optional, default=1.e-5):
+                The relative tolerance. See :func:`numpy.isclose`.
+
+            atol (float, optional, default=1.e-8):
+                The absolute tolerance. See :func:`numpy.isclose`.
+
+        Returns:
+            :obj:`.SampleSet`: A new sample set containing the samples with an
+            energy within tolerance of the minimal energy.
+
+        Examples:
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': .001},
+                                                             {('a', 'b'): -1})
+            >>> print(sampleset.lowest())
+               a  b energy num_oc.
+            0 -1 -1 -1.001       1
+            ['SPIN', 1 rows, 1 samples, 2 variables]
+            >>> print(sampleset.lowest(atol=.1))
+               a  b energy num_oc.
+            0 -1 -1 -1.001       1
+            1 +1 +1 -0.999       1
+            ['SPIN', 2 rows, 2 samples, 2 variables]
+
+        """
+
+        if len(self) == 0:
+            # empty so all are lowest
+            return self.copy()
+
+        record = self.record
+
+        # want all the rows within tolerance of the minimal energy
+        close = np.isclose(record.energy,
+                           np.min(record.energy),
+                           rtol=rtol, atol=atol)
+        record = record[close]
+
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
+
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
 
