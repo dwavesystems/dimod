@@ -320,6 +320,22 @@ class TestAppend(unittest.TestCase):
         self.assertEqual(sampleset0.append_variables(sampleset1), target)
 
 
+class TestLowest(unittest.TestCase):
+    def test_all_equal(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 0})
+        self.assertEqual(sampleset, sampleset.lowest())
+
+    def test_empty(self):
+        sampleset = dimod.SampleSet.from_samples(([], 'ab'), energy=[], vartype=dimod.SPIN)
+        self.assertEqual(sampleset, sampleset.lowest())
+
+    def test_tolerance(self):
+        sampleset = dimod.ExactSolver().sample_ising({'a': .001}, {('a', 'b'): -1})
+
+        self.assertEqual(sampleset.lowest(atol=.1), sampleset.truncate(2))
+        self.assertEqual(sampleset.lowest(atol=0), sampleset.truncate(1))
+
+
 class TestTruncate(unittest.TestCase):
     def test_typical(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
