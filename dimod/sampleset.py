@@ -1083,6 +1083,64 @@ class SampleSet(abc.Iterable, abc.Sized):
                                        sort_labels=sort_labels,
                                        **self.data_vectors)
 
+    def lowest(self, rtol=1.e-5, atol=1.e-8):
+        """Return a sample set containing the lowest-energy samples.
+
+        A sample is included if its energy is within tolerance of the lowest
+        energy in the sample set. The following equation is used to determine
+        if two values are equivalent:
+
+        absolute(`a` - `b`) <= (`atol` + `rtol` * absolute(`b`))
+
+        See :func:`numpy.isclose` for additional details and caveats.
+
+        Args:
+            rtol (float, optional, default=1.e-5):
+                The relative tolerance (see above).
+
+            atol (float, optional, default=1.e-8):
+                The absolute tolerance (see above).
+
+        Returns:
+            :obj:`.SampleSet`: A new sample set containing the lowest energy
+            samples as delimited by configured tolerances from the lowest energy
+            sample in the current sample set.
+
+        Examples:
+            >>> sampleset = dimod.ExactSolver().sample_ising({'a': .001},
+            ...                                              {('a', 'b'): -1})
+            >>> print(sampleset.lowest())
+               a  b energy num_oc.
+            0 -1 -1 -1.001       1
+            ['SPIN', 1 rows, 1 samples, 2 variables]
+            >>> print(sampleset.lowest(atol=.1))
+               a  b energy num_oc.
+            0 -1 -1 -1.001       1
+            1 +1 +1 -0.999       1
+            ['SPIN', 2 rows, 2 samples, 2 variables]
+
+        Note:
+            "Lowest energy" is the lowest energy in the sample set. This is not
+            always the "ground energy" which is the lowest energy possible
+            for a binary quadratic model.
+
+        """
+
+        if len(self) == 0:
+            # empty so all are lowest
+            return self.copy()
+
+        record = self.record
+
+        # want all the rows within tolerance of the minimal energy
+        close = np.isclose(record.energy,
+                           np.min(record.energy),
+                           rtol=rtol, atol=atol)
+        record = record[close]
+
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
+
     def truncate(self, n, sorted_by='energy'):
         """Create a new SampleSet with rows truncated after n.
 
