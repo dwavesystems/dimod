@@ -1099,7 +1099,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Examples:
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': .001},
-                                                             {('a', 'b'): -1})
+            ...                                              {('a', 'b'): -1})
             >>> print(sampleset.lowest())
                a  b energy num_oc.
             0 -1 -1 -1.001       1
@@ -1109,6 +1109,11 @@ class SampleSet(abc.Iterable, abc.Sized):
             0 -1 -1 -1.001       1
             1 +1 +1 -0.999       1
             ['SPIN', 2 rows, 2 samples, 2 variables]
+
+        Note:
+            The energy is relative to the lowest energy in the sample set. This
+            is not the same as the ground energy which is the lowest possible
+            energy for a binary quadratic model over all possible samples.
 
         """
 
