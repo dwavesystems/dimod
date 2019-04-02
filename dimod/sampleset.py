@@ -1086,7 +1086,7 @@ class SampleSet(abc.Iterable, abc.Sized):
     def lowest(self, rtol=1.e-5, atol=1.e-8):
         """Return a sample set containing the lowest-energy samples.
 
-        A sample is included if it's energy is within tolerance of the lowest
+        A sample is included if its energy is within tolerance of the lowest
         energy in the sample set. The following equation is used to determine
         if two values are equivalent:
 
@@ -1121,7 +1121,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Note:
             "Lowest energy" is the lowest energy in the sample set. This is not
-            the always the "ground energy" which is the lowest energy possible
+            always the "ground energy" which is the lowest energy possible
             for a binary quadratic model.
 
         """
