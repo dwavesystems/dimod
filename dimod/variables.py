@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 try:
     import collections.abc as abc
 except ImportError:
@@ -22,6 +22,7 @@ from operator import eq
 
 from dimod.utilities import resolve_label_conflict
 
+from six import PY2
 from six.moves import map
 
 
@@ -98,16 +99,20 @@ class Variables(abc.Sequence, abc.Set):
         return int(v in self)
 
     def relabel(self, mapping):
-        try:
+
+        if PY2:
             old_labels = set(mapping)
-            new_labels = set(mapping.values())
-        except TypeError:
-            raise ValueError("mapping targets must be hashable objects")
+            new_labels = set(mapping.itervalues())
+        else:
+            # in python 3 these are already collections so don't need to copy
+            old_labels = mapping.keys()
+            new_labels = mapping.values()
 
         for v in new_labels:
             if v in self and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
+                msg = ("A variable cannot be relabeled {!r} without also "
+                       "relabeling the existing variable of the same name")
+                raise ValueError(msg.format(v))
 
         if any(v in new_labels for v in old_labels):
             old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
@@ -123,5 +128,10 @@ class Variables(abc.Sequence, abc.Set):
         for old, new in mapping.items():
             label[index[old]] = new
 
-            index[new] = index[old]
+            try:
+                index[new] = index[old]
+            except TypeError:
+                # when new labels are not hashable
+                raise ValueError("mapping targets must be hashable objects")
+
             del index[old]
