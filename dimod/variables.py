@@ -102,7 +102,14 @@ class Variables(abc.Sequence, abc.Set):
 
         if PY2:
             old_labels = set(mapping)
-            new_labels = set(mapping.itervalues())
+
+            # this try-catch is duplicated below so that when python 2 is
+            # deprecated this one can be removed
+            try:
+                new_labels = set(mapping.itervalues())
+            except TypeError:
+                # when new labels are not hashable
+                raise ValueError("mapping targets must be hashable objects")
         else:
             # in python 3 these are already collections so don't need to copy
             old_labels = mapping.keys()
