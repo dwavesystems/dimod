@@ -12,26 +12,22 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-
+# =============================================================================
 import unittest
+
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
 
 from dimod.variables import Variables
 
 
-class TestVariables(unittest.TestCase):
+class TestDuplicates(unittest.TestCase):
     def test_duplicates(self):
         # should have no duplicates
         variables = Variables(['a', 'b', 'c', 'b'])
         self.assertEqual(list(variables), ['a', 'b', 'c'])
-
-    def test_iterable(self):
-        variables = Variables('abcdef')
-        self.assertEqual(list(variables), list('abcdef'))
-
-    def test_index(self):
-        variables = Variables(range(5))
-        self.assertEqual(variables.index(4), 4)
 
     def test_count(self):
         variables = Variables([1, 1, 1, 4, 5])
@@ -43,15 +39,70 @@ class TestVariables(unittest.TestCase):
                 self.assertEqual(variables.count(v), 0)
 
     def test_len(self):
-        variables = Variables(range(5))
-        self.assertEqual(len(variables), 5)
         variables = Variables('aaaaa')
         self.assertEqual(len(variables), 1)
 
+
+class TestList(unittest.TestCase):
+    iterable = list(range(5))
+
+    def test_index_api(self):
+        variables = Variables(self.iterable)
+        self.assertTrue(hasattr(variables, 'index'))
+        self.assertTrue(callable(variables.index))
+        self.assertTrue(isinstance(variables.index, abc.Mapping))
+
     def test_contains_unhashable(self):
-        variables = Variables(range(5))
-        self.assertFalse([0] in variables)
+        variables = Variables(self.iterable)
+        self.assertFalse([] in variables)
 
     def test_count_unhashable(self):
-        variables = Variables(range(5))
-        self.assertEqual(variables.count([5]), 0)
+        variables = Variables(self.iterable)
+        self.assertEqual(variables.count([]), 0)
+
+    def test_index(self):
+        variables = Variables(self.iterable)
+        for idx, v in enumerate(self.iterable):
+            self.assertEqual(variables.index(v), idx)
+
+    def test_iterable(self):
+        variables = Variables(self.iterable)
+        self.assertEqual(list(variables), list(self.iterable))
+
+    def test_equality(self):
+        variables = Variables(self.iterable)
+        self.assertEqual(variables, self.iterable)
+
+    def test_len(self):
+        variables = Variables(self.iterable)
+        self.assertEqual(len(variables), len(self.iterable))
+
+    def test_relabel_conflict(self):
+        variables = Variables(self.iterable)
+
+        iterable = self.iterable
+        target = [iterable[-i] for i in range(len(iterable))]
+        mapping = dict(zip(iterable, target))
+
+        variables.relabel(mapping)
+
+        self.assertEqual(variables, target)
+
+    def test_relabel_not_hashable(self):
+        variables = Variables(self.iterable)
+        mapping = {v: [v] for v in variables}
+        with self.assertRaises(ValueError):
+            variables.relabel(mapping)
+
+
+class TestMixed(TestList):
+    # misc hashable objects
+    iterable = [0, ('b',), 2.1, 'c', frozenset('d')]
+
+
+class TestRange(TestList):
+    iterable = range(5)
+
+
+class TestString(TestList):
+    iterable = 'abcde'
