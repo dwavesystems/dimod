@@ -81,7 +81,11 @@ class TestList(unittest.TestCase):
         variables = Variables(self.iterable)
 
         iterable = self.iterable
+
+        # want a relabelling with identity relabels and that maps to the same
+        # set of labels as the original
         target = [iterable[-i] for i in range(len(iterable))]
+
         mapping = dict(zip(iterable, target))
 
         variables.relabel(mapping)

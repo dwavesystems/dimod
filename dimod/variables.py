@@ -101,7 +101,7 @@ class Variables(abc.Sequence, abc.Set):
     def relabel(self, mapping):
 
         if PY2:
-            old_labels = set(mapping)
+            old_labels = mapping  # treat this as a set rather than a dict
 
             # this try-catch is duplicated below so that when python 2 is
             # deprecated this one can be removed
