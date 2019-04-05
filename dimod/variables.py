@@ -22,7 +22,7 @@ from operator import eq
 
 from dimod.utilities import resolve_label_conflict
 
-from six import PY2
+from six import PY3
 from six.moves import map
 
 
@@ -100,8 +100,14 @@ class Variables(abc.Sequence, abc.Set):
 
     def relabel(self, mapping):
 
-        if PY2:
-            old_labels = mapping  # treat this as a set rather than a dict
+        if PY3:
+            old_labels = mapping.keys()
+            new_labels = mapping.values()
+        else:
+            # we actually want old_labels to be a keysview like in python3
+            # but since we don't get that in python2 we just use the mapping
+            # itself and treat it as a set rather than a dict.
+            old_labels = mapping
 
             # this try-catch is duplicated below so that when python 2 is
             # deprecated this one can be removed
@@ -110,10 +116,6 @@ class Variables(abc.Sequence, abc.Set):
             except TypeError:
                 # when new labels are not hashable
                 raise ValueError("mapping targets must be hashable objects")
-        else:
-            # in python 3 these are already collections so don't need to copy
-            old_labels = mapping.keys()
-            new_labels = mapping.values()
 
         for v in new_labels:
             if v in self and v not in old_labels:
