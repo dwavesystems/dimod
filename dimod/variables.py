@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 try:
     import collections.abc as abc
 except ImportError:
@@ -22,6 +22,7 @@ from operator import eq
 
 from dimod.utilities import resolve_label_conflict
 
+from six import PY3
 from six.moves import map
 
 
@@ -30,10 +31,9 @@ class CallableDict(abc.Callable, dict):
     __slots__ = ()
 
     def __call__(self, v):
-        try:
-            return self[v]
-        except KeyError:
+        if v not in self:
             raise ValueError('missing element {!r}'.format(v))
+        return self[v]
 
 
 class Variables(abc.Sequence, abc.Set):
@@ -99,16 +99,27 @@ class Variables(abc.Sequence, abc.Set):
         return int(v in self)
 
     def relabel(self, mapping):
+
+        # put the new labels into a set for fast lookup
         try:
-            old_labels = set(mapping)
             new_labels = set(mapping.values())
         except TypeError:
+            # when new labels are not hashable
             raise ValueError("mapping targets must be hashable objects")
+
+        if PY3:
+            old_labels = mapping.keys()
+        else:
+            # we actually want old_labels to be a keysview like in python3
+            # but since we don't get that in python2 we just use the mapping
+            # itself and treat it as a set rather than a dict.
+            old_labels = mapping
 
         for v in new_labels:
             if v in self and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
+                msg = ("A variable cannot be relabeled {!r} without also "
+                       "relabeling the existing variable of the same name")
+                raise ValueError(msg.format(v))
 
         if any(v in new_labels for v in old_labels):
             old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
@@ -123,6 +134,5 @@ class Variables(abc.Sequence, abc.Set):
 
         for old, new in mapping.items():
             label[index[old]] = new
-
             index[new] = index[old]
             del index[old]
