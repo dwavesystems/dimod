@@ -1,4 +1,19 @@
-from collections import OrderedDict
+# Copyright 2019 D-Wave Systems Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+# =============================================================================
+from itertools import chain
 
 try:
     import collections.abc as abc
@@ -7,121 +22,51 @@ except ImportError:
 
 import numpy as np
 
+from dimod.bqm.cyutils import coo_sort
+from dimod.decorators import vartype_argument
 from dimod.variables import Variables
 from dimod.vartypes import SPIN
-from dimod.bqm.cyutils import coo_sort
+
+__all__ = ['CooBinaryQuadraticModel',
+           'CooBQM',
+           ]
 
 
-def reduce_coo(row, col, data):
-    """
-    """
-    # method adapted from scipy's coo_matrix
-    #
-    # Copyright (c) 2001, 2002 Enthought, Inc.
-    # All rights reserved.
-    #
-    # Copyright (c) 2003-2017 SciPy Developers.
-    # All rights reserved.
-    #
-    # Redistribution and use in source and binary forms, with or without
-    # modification, are permitted provided that the following conditions are met:
-    #
-    #   a. Redistributions of source code must retain the above copyright notice,
-    #      this list of conditions and the following disclaimer.
-    #   b. Redistributions in binary form must reproduce the above copyright
-    #      notice, this list of conditions and the following disclaimer in the
-    #      documentation and/or other materials provided with the distribution.
-    #   c. Neither the name of Enthought nor the names of the SciPy Developers
-    #      may be used to endorse or promote products derived from this software
-    #      without specific prior written permission.
-    #
-    # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-    # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-    # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-    # ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
-    # BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    # OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-    # THE POSSIBILITY OF SUCH DAMAGE.
-    #
-
-    if row.ndim != 1 or col.ndim != 1 or data.ndim != 1 or len(row) != len(col) or len(col) != len(data):
-        raise ValueError("row, col and data should all be vectors of equal length")
-
-    if len(row) == 0:
-        # empty arrays are already sorted
-        return row, col, data
-
-    coo_sort(row, col, data)
-
-    # reduce unique
-    unique = ((row[1:] != row[:-1]) | (col[1:] != col[:-1]))
-    if not unique.all():
-        # copy
-        unique = np.append(True, unique)
-
-        row = row[unique]
-        col = col[unique]
-
-        unique_idxs, = np.nonzero(unique)
-        data = np.add.reduceat(data, unique_idxs, dtype=data.dtype)
-
-    return row, col, data
-
-
-class LinearArrayView(abc.Mapping):
-    def __init__(self, ldata):
-        self.ldata = ldata
-
-    def __getitem__(self, vi):
-        # todo, should return a KeyError, not an IndexError
-        return self.ldata[vi]
-
-    def __iter__(self):
-        return iter(range(len(self)))
-
-    def __len__(self):
-        return self.ldata.shape[0]
-
-    def __repr__(self):
-        # note: this does not actually construct the object but under the
-        # assumption that users won't actually want to construct this directly
-        # it does make for much more readable printing
-        # todo: do this without casting to a dict first
-        return str(dict(self))
-
-
-class LabelledLinearArrayView(LinearArrayView):
-    def __init__(self, ldata, variable_to_idx):
-        super(LabelledLinearArrayView, self).__init__(ldata)
-        self.variable_to_idx = variable_to_idx
-
-    def __getitem__(self, v):
-        return self.ldata[self.variable_to_idx[v]]
-
-    def __iter__(self):
-        return iter(self.variable_to_idx)
-
-
-class QuadraticCooView(abc.Mapping):
-    # todo: overwrite iteritems and iterkeys to make them much much faster.
-    # also that will deal with duplicates for printing the dict for instance
-
+class Flags(object):
+    # todo: look into enum.Flag
     def __init__(self, bqm):
         self.bqm = bqm
 
-    def __getitem__(self, tup):
-        iu, iv = tup
+        self.sorted = None  # unknown, falsy
 
+
+class ArrayLinearView(abc.Mapping):
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getitem__(self, v):
+        return self.bqm.ldata[self.bqm.variables.index[v]]
+
+    def __iter__(self):
+        return iter(self.bqm.variables)
+
+    def __len__(self):
+        return len(self.bqm.variables)
+
+
+class CooQuadraticView(abc.Mapping):
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getitem__(self, interaction):
         bqm = self.bqm
         irow = bqm.irow
         icol = bqm.icol
         qdata = bqm.qdata
 
-        if bqm.is_sorted:
+        iu, iv = map(bqm.variables.index, interaction)
+
+        if bqm.flags.sorted:
             # O(log(|E|))
             if iu > iv:
                 iu, iv = iv, iu
@@ -130,7 +75,7 @@ class QuadraticCooView(abc.Mapping):
 
             # we could search a smaller window for the right bound by using the
             # number of variables in the BQM but I am not sure if we want to
-            # assume that length of bqm exists
+            # assume that length of bqm.linear exists
             off = np.searchsorted(irow[left:], iu, side='right')
 
             idx = left + np.searchsorted(icol[left:left+off], iv, side='left')
@@ -139,11 +84,9 @@ class QuadraticCooView(abc.Mapping):
                 return qdata[idx]
         else:
             # O(|E|)
-            # note this is ~100x faster than using a loop for 25000000 biases
-            # at 225000000 biases the mask version is still faster than the
-            # loop version was at 25000000
             # if we cythonized it we could avoid making the mask which would
-            # save on memory
+            # save on memory. Creating the mask is faster than iterating in
+            # python with a list
             mask = ((irow == iu) & (icol == iv)) ^ ((irow == iv) & (icol == iu))
             if np.any(mask):
                 return np.sum(qdata[mask])
@@ -153,102 +96,116 @@ class QuadraticCooView(abc.Mapping):
     def __iter__(self):
         # note: duplicates will appear if not de-duplicated
         bqm = self.bqm
-        return iter(zip(bqm.irow, bqm.icol))
+        variables = bqm.variables
+        for iu, iv in zip(bqm.irow, bqm.icol):
+            yield variables[iu], variables[iv]
 
     def __len__(self):
-        return len(self.bqm.irow)
+        return len(self.bqm.qdata)
 
-    def __repr__(self):
-        # note: this does not actually construct the object but under the
-        # assumption that users won't actually want to construct this directly
-        # it does make for much more readable printing
-        # todo: do this without casting to a dict first
-        return str(dict(self))
+    def items(self):
+        return CooQuadraticItemsView(self)
 
 
-class LabelledQuadraticCooView(abc.Mapping):
-    pass
+class CooQuadraticItemsView(abc.ItemsView):
+    def __iter__(self):
+        # much faster than doing the O(|E|) or O(log|E|) bias lookups each time
+        bqm = self._mapping.bqm
+        variables = bqm.variables
+        for iu, iv, bias in zip(bqm.irow, bqm.icol, bqm.qdata):
+            yield (variables[iu], variables[iv]), bias
 
 
-class FrozenBinaryQuadraticModelCoo():
-    __slots__ = ['ldata',
-                 'irow', 'icol', 'qdata',
-                 'vartype',
-                 'is_sorted',
-                 'linear', 'quadratic', 'offset',
-                 ]
+class CooBinaryQuadraticModel(object):
 
+    @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype,
-                 variable_order=None,
-                 bias_dtype=np.float, index_dtype=np.int,
-                 copy=False,
-                 sort_and_reduce=False
-                 ):
+                 variables=None,
+                 dtype=np.float, index_dtype=np.int,
+                 copy=True, sort_and_reduce=False):
+
+        self.flags = Flags(self)
+
+        self.dtype = dtype = np.dtype(dtype)
+        self.index_dtype = index_dtype = np.dtype(index_dtype)
 
         # linear
-        self.ldata = ldata = np.array(linear, dtype=bias_dtype, copy=copy)\
+        self.ldata = ldata = np.array(linear, dtype=dtype, copy=copy)
 
         # quadratic
         irow, icol, qdata = quadratic
         irow = np.array(irow, dtype=index_dtype, copy=copy)
         icol = np.array(icol, dtype=index_dtype, copy=copy)
-        qdata = np.array(qdata, dtype=bias_dtype, copy=copy)
+        qdata = np.array(qdata, dtype=dtype, copy=copy)
 
         # todo: check that they are all 1dim, same length etc
 
         if sort_and_reduce:
-            self.is_sorted = is_sorted = True
-            irow, icol, qdata = reduce_coo(irow, icol, qdata)
-        else:
-            # we're not sure if it's sorted or not, but we want bqm.is_sorted
-            # to evaluate as False
-            self.is_sorted = is_sorted = None
+            coo_sort(irow, icol, qdata)  # in-place
+
+            # reduce unique
+            unique = ((irow[1:] != icol[:-1]) | (icol[1:] != icol[:-1]))
+            if not unique.all():
+                # copy
+                unique = np.append(True, unique)
+
+                irow = irow[unique]
+                icol = icol[unique]
+
+                unique_idxs, = np.nonzero(unique)
+                qdata = np.add.reduceat(qdata, unique_idxs, dtype=dtype)
+
+            self.flags.sorted = True
 
         self.irow = irow
         self.icol = icol
         self.qdata = qdata
 
         # offset
-        self.offset = np.dtype(bias_dtype).type(offset)
+        self.offset = dtype.type(offset)
+
+        # vartype
+        self.vartype = vartype
+
+        # variables
+        if not copy and isinstance(variables, Variables):
+            self.variables = variables
+        else:
+            self.variables = Variables(variables)
 
         # views
-        if variable_order is None:
-            self.linear = LinearArrayView(ldata)
-
-            self.quadratic = QuadraticCooView(self)
-        else:
-            # assume that it's a sequence of hashables for now
-            variable_to_idx = OrderedDict((v, idx) for idx, v in enumerate(variable_order))
-
-            # todo: check length
-
-            raise NotImplementedError
-
-            self.linear = LabelledLinearArrayView(ldata, variable_to_idx)
-            self.quadratic = LabelledQuadraticCooView(irow, icol, qdata,
-                                                      variable_to_idx)
+        self.linear = ArrayLinearView(self)
+        self.quadratic = CooQuadraticView(self)
 
     @classmethod
     def from_ising(cls, h, J, offset=0,
-                   bias_dtype=np.float, index_dtype=np.int,
-                   sort_and_reduce=False):
-        # assume everything is integer-labeled for now
-        num_variables = len(h)
-        num_interactions = len(J)
+                   dtype=np.float, index_dtype=np.int):
 
-        ldata = np.fromiter((h[v] for v in range(num_variables)),
-                            count=num_variables, dtype=bias_dtype)
+        # get all of the labels
+        variables = Variables(chain(h, chain(*J)))
+
+        # get the quadratic
+        num_interactions = len(J)
 
         irow = np.empty(num_interactions, dtype=index_dtype)
         icol = np.empty(num_interactions, dtype=index_dtype)
-        qdata = np.empty(num_interactions, dtype=bias_dtype)
+        qdata = np.empty(num_interactions, dtype=dtype)
 
         # we could probably speed this up with cython
         for idx, ((u, v), bias) in enumerate(J.items()):
-            irow[idx] = u
-            icol[idx] = v
+            irow[idx] = variables.index[u]
+            icol[idx] = variables.index[v]
             qdata[idx] = bias
 
+        # next linear
+        ldata = np.fromiter((h.get(v, 0) for v in variables),
+                            count=len(variables), dtype=dtype)
+
         return cls(ldata, (irow, icol, qdata), offset, SPIN,
-                   bias_dtype=bias_dtype, index_dtype=index_dtype,
-                   sort_and_reduce=sort_and_reduce, copy=False)
+                   variables=variables,
+                   dtype=dtype, index_dtype=index_dtype,
+                   sort_and_reduce=True,
+                   copy=False)  # we just made these objects so no need to copy
+
+
+CooBQM = CooBinaryQuadraticModel
