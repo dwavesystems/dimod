@@ -1,33 +1,56 @@
+# Copyright 2018 D-Wave Systems Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+# ================================================================================================
 """
-A collection of utility functions useful for Samplers.
+Utility functions useful for samplers.
 """
+import itertools
 
-import sys
-
-from collections import defaultdict
+from six import iteritems, itervalues
 
 __all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
 
-PY2 = sys.version_info[0] == 2
-if PY2:
-    iteritems = lambda d: d.iteritems()
-else:
-    iteritems = lambda d: d.items()
 
+def ising_energy(sample, h, J, offset=0.0):
+    """Calculate the energy for the specified sample of an Ising model.
 
-def ising_energy(h, J, sample):
-    """Calculate the Ising energy of the given sample.
+    Energy of a sample for a binary quadratic model is defined as a sum, offset
+    by the constant energy offset associated with the model, of
+    the sample multipled by the linear bias of the variable and
+    all its interactions. For an Ising model,
 
-    H(s) = sum_i h_i * s_i + sum_(i, j) J_(i,j) * s_i * s_j
+    .. math::
 
-    https://en.wikipedia.org/wiki/Ising_model
+        E(\mathbf{s}) = \sum_v h_v s_v + \sum_{u,v} J_{u,v} s_u s_v + c
+
+    where :math:`s_v` is the sample, :math:`h_v` is the linear bias, :math:`J_{u,v}`
+    the quadratic bias (interactions), and :math:`c` the energy offset.
 
     Args:
-        h: The linear biases in a dict of the form {var: bias, ...}.
-        J: The quadratic biases in a dict of the form
-        {(var0, var1): bias, ...}.
-        sample: A dict of spins of the form {var: spin, ...} where
-        each spin is either -1 or 1.
+        sample (dict[variable, spin]):
+            Sample for a binary quadratic model as a dict of form {v: spin, ...},
+            where keys are variables of the model and values are spins (either -1 or 1).
+        h (dict[variable, bias]):
+            Linear biases as a dict of the form {v: bias, ...}, where keys are variables of
+            the model and values are biases.
+        J (dict[(variable, variable), bias]):
+           Quadratic biases as a dict of the form {(u, v): bias, ...}, where keys
+           are 2-tuples of variables of the model and values are quadratic biases
+           associated with the pair of variables (the interaction).
+        offset (numeric, optional, default=0):
+            Constant offset to be applied to the energy. Default 0.
 
     Returns:
         float: The induced energy.
@@ -35,33 +58,62 @@ def ising_energy(h, J, sample):
     Notes:
         No input checking is performed.
 
-    """
-    energy = 0
+    Examples:
+        This example calculates the energy of a sample representing two down spins for
+        an Ising model of two variables that have positive biases of value 1 and
+        are positively coupled with an interaction of value 1.
 
+        >>> import dimod
+        >>> sample = {1: -1, 2: -1}
+        >>> h = {1: 1, 2: 1}
+        >>> J = {(1, 2): 1}
+        >>> dimod.ising_energy(sample, h, J, 0.5)
+        -0.5
+
+    References
+    ----------
+
+    `Ising model on Wikipedia <https://en.wikipedia.org/wiki/Ising_model>`_
+
+    """
     # add the contribution from the linear biases
     for v in h:
-        energy += h[v] * sample[v]
+        offset += h[v] * sample[v]
 
     # add the contribution from the quadratic biases
     for v0, v1 in J:
-        energy += J[(v0, v1)] * sample[v0] * sample[v1]
+        offset += J[(v0, v1)] * sample[v0] * sample[v1]
 
-    return energy
+    return offset
 
 
-def qubo_energy(Q, sample):
-    """Calculate the quadratic polynomial value of the given sample
-    to a quadratic unconstrained binary optimization (QUBO) problem.
+def qubo_energy(sample, Q, offset=0.0):
+    """Calculate the energy for the specified sample of a QUBO model.
 
-    E(x) = sum_(i, j) Q_(i, j) * x_i * x_j
+    Energy of a sample for a binary quadratic model is defined as a sum, offset
+    by the constant energy offset associated with the model, of
+    the sample multipled by the linear bias of the variable and
+    all its interactions. For a quadratic unconstrained binary optimization (QUBO)
+    model,
 
-    https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization
+    .. math::
+
+        E(\mathbf{x}) = \sum_{u,v} Q_{u,v} x_u x_v + c
+
+    where :math:`x_v` is the sample, :math:`Q_{u,v}`
+    a matrix of biases, and :math:`c` the energy offset.
 
     Args:
-        Q: A dict of the QUBO coefficients of the form
-        {(var0, var1): coeff, ...}
-        sample: A dict of binary variables of the form
-        {var: bin, ...} where each bin is either 0 or 1.
+        sample (dict[variable, spin]):
+            Sample for a binary quadratic model as a dict of form {v: bin, ...},
+            where keys are variables of the model and values are binary (either 0 or 1).
+        Q (dict[(variable, variable), coefficient]):
+            QUBO coefficients in a dict of form {(u, v): coefficient, ...}, where keys
+            are 2-tuples of variables of the model and values are biases
+            associated with the pair of variables. Tuples (u, v) represent interactions
+            and (v, v) linear biases.
+        offset (numeric, optional, default=0):
+            Constant offset to be applied to the energy. Default 0.
 
     Returns:
         float: The induced energy.
@@ -69,94 +121,222 @@ def qubo_energy(Q, sample):
     Notes:
         No input checking is performed.
 
+    Examples:
+        This example calculates the energy of a sample representing two zeros for
+        a QUBO model of two variables that have positive biases of value 1 and
+        are positively coupled with an interaction of value 1.
+
+        >>> import dimod
+        >>> sample = {1: 0, 2: 0}
+        >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
+        >>> dimod.qubo_energy(sample, Q, 0.5)
+        0.5
+
+    References
+    ----------
+
+    `QUBO model on Wikipedia <https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization>`_
+
     """
-    energy = 0
-
     for v0, v1 in Q:
-        energy += sample[v0] * sample[v1] * Q[(v0, v1)]
+        offset += sample[v0] * sample[v1] * Q[(v0, v1)]
 
-    return energy
+    return offset
 
 
-def ising_to_qubo(h, J):
-    """Converts an Ising problem to a QUBO problem.
+def ising_to_qubo(h, J, offset=0.0):
+    """Convert an Ising problem to a QUBO problem.
 
-    Map an Ising model defined over -1/+1 variables to a binary quadratic
-    program x' * Q * x defined over 0/1 variables. We return the Q defining
-    the BQP model as well as the offset in energy between the two problem
-    formulations, i.e. s' * J * s + h' * s = offset + x' * Q * x. The linear term
-    of the BQP is contained along the diagonal of Q.
+    Map an Ising model defined on spins (variables with {-1, +1} values) to quadratic
+    unconstrained binary optimization (QUBO) formulation :math:`x'  Q  x` defined over
+    binary variables (0 or 1 values), where the linear term is contained along the diagonal of Q.
+    Return matrix Q that defines the model as well as the offset in energy between the two
+    problem formulations:
 
-    See qubo_to_ising(Q) for the inverse function.
+    .. math::
+
+         s'  J  s + h'  s = offset + x'  Q  x
+
+    See :meth:`~dimod.utilities.qubo_to_ising` for the inverse function.
 
     Args:
-        h (dict): A dict of the linear coefficients of the Ising problem.
-        J (dict): A dict of the quadratic coefficients of the Ising problem.
+        h (dict[variable, bias]):
+            Linear biases as a dict of the form {v: bias, ...}, where keys are variables of
+            the model and values are biases.
+        J (dict[(variable, variable), bias]):
+           Quadratic biases as a dict of the form {(u, v): bias, ...}, where keys
+           are 2-tuples of variables of the model and values are quadratic biases
+           associated with the pair of variables (the interaction).
+        offset (numeric, optional, default=0):
+            Constant offset to be applied to the energy. Default 0.
 
     Returns:
-        (dict, float): A dict of the QUBO coefficients. The energy offset.
+        (dict, float): A 2-tuple containing:
+
+            dict: QUBO coefficients.
+
+            float: New energy offset.
+
+    Examples:
+        This example converts an Ising problem of two variables that have positive
+        biases of value 1 and are positively coupled with an interaction of value 1
+        to a QUBO problem.
+
+        >>> import dimod
+        >>> h = {1: 1, 2: 1}
+        >>> J = {(1, 2): 1}
+        >>> dimod.ising_to_qubo(h, J, 0.5)  # doctest: +SKIP
+        ({(1, 1): 0.0, (1, 2): 4.0, (2, 2): 0.0}, -0.5)
 
     """
-
-    q = defaultdict(float)
-    offset = 0
-
     # the linear biases are the easiest
-    for v, bias in iteritems(h):
-        q[(v, v)] = 2 * bias
-        offset -= bias
+    q = {(v, v): 2. * bias for v, bias in iteritems(h)}
 
     # next the quadratic biases
     for (u, v), bias in iteritems(J):
-        q[(u, v)] += 4 * bias
-        q[(u, u)] -= 2 * bias
-        q[(v, v)] -= 2 * bias
-        offset += bias
+        if bias == 0.0:
+            continue
+        q[(u, v)] = 4. * bias
+        q[(u, u)] -= 2. * bias
+        q[(v, v)] -= 2. * bias
 
-    # finally convert q to a dict, rather than default dict
-    q = dict((k, v) for k, v in iteritems(q) if v != 0)
+    # finally calculate the offset
+    offset += sum(itervalues(J)) - sum(itervalues(h))
+
     return q, offset
 
 
-def qubo_to_ising(Q):
-    """Converts a QUBO problem to an Ising problem.
+def qubo_to_ising(Q, offset=0.0):
+    """Convert a QUBO problem to an Ising problem.
 
-    Map a binary quadratic program x' * Q * x defined over 0/1 variables to
-    an Ising model defined over -1/+1 variables. We return the h and J
-    defining the Ising model as well as the offset in energy between the
-    two problem formulations, i.e. x' * Q * x = offset + s' * J * s + h' * s. The
-    linear term of the QUBO is contained along the diagonal of Q.
+    Map a quadratic unconstrained binary optimization (QUBO) problem :math:`x'  Q  x`
+    defined over binary variables (0 or 1 values), where the linear term is contained along
+    the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
+    Return h and J that define the Ising model as well as the offset in energy
+    between the two problem formulations:
 
-    See ising_to_qubo(h, J) for the inverse function.
+    .. math::
+
+         x'  Q  x  = offset + s'  J  s + h'  s
+
+    See :meth:`~dimod.utilities.ising_to_qubo` for the inverse function.
 
     Args:
-        Q: A dict of the QUBO coefficients.
+        Q (dict[(variable, variable), coefficient]):
+            QUBO coefficients in a dict of form {(u, v): coefficient, ...}, where keys
+            are 2-tuples of variables of the model and values are biases
+            associated with the pair of variables. Tuples (u, v) represent interactions
+            and (v, v) linear biases.
+        offset (numeric, optional, default=0):
+            Constant offset to be applied to the energy. Default 0.
 
     Returns:
-        (dict, dict, float):
-        A dict of the linear coefficients of the Ising problem.
-        A dict of the quadratic coefficients of the Ising problem.
-        The energy offset.
+        (dict, dict, float): A 3-tuple containing:
+
+            dict: Linear coefficients of the Ising problem.
+
+            dict: Quadratic coefficients of the Ising problem.
+
+            float: New energy offset.
+
+    Examples:
+        This example converts a QUBO problem of two variables that have positive
+        biases of value 1 and are positively coupled with an interaction of value 1
+        to an Ising problem.
+
+        >>> import dimod
+        >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
+        >>> dimod.qubo_to_ising(Q, 0.5)    # doctest: +SKIP
+        ({1: 0.75, 2: 0.75}, {(1, 2): 0.25}, 1.75)
 
     """
-    h = defaultdict(float)
-    j = {}
-    offset = 0
+    h = {}
+    J = {}
+    linear_offset = 0.0
+    quadratic_offset = 0.0
 
-    for (i, k), e in iteritems(Q):
-        if i == k:
-            # linear biases
-            h[i] += 0.5 * e
-            offset += 0.5 * e
+    for (u, v), bias in iteritems(Q):
+        if u == v:
+            if u in h:
+                h[u] += .5 * bias
+            else:
+                h[u] = .5 * bias
+            linear_offset += bias
+
         else:
-            # quadratic biases
-            j[(i, k)] = 0.25 * e
-            h[i] += 0.25 * e
-            h[k] += 0.25 * e
-            offset += 0.25 * e
+            if bias != 0.0:
+                J[(u, v)] = .25 * bias
 
-    # remove the 0 entries of J
-    h = dict(h)
-    j = dict((k, v) for k, v in iteritems(j) if v != 0)
+            if u in h:
+                h[u] += .25 * bias
+            else:
+                h[u] = .25 * bias
 
-    return h, j, offset
+            if v in h:
+                h[v] += .25 * bias
+            else:
+                h[v] = .25 * bias
+
+            quadratic_offset += bias
+
+    offset += .5 * linear_offset + .25 * quadratic_offset
+
+    return h, J, offset
+
+
+def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
+    """Resolve a self-labeling conflict by creating an intermediate labeling.
+
+    Args:
+        mapping (dict):
+            A dict mapping the current variable labels to new ones.
+
+        old_labels (set, optional, default=None):
+            The keys of mapping. Can be passed in for performance reasons. These are not checked.
+
+        new_labels (set, optional, default=None):
+            The values of mapping. Can be passed in for performance reasons. These are not checked.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            dict: A map from the keys of mapping to an intermediate labeling
+
+            dict: A map from the intermediate labeling to the values of mapping.
+
+    """
+
+    if old_labels is None:
+        old_labels = set(mapping)
+    if new_labels is None:
+        new_labels = set(itervalues(mapping))
+
+    # counter will be used to generate the intermediate labels, as an easy optimization
+    # we start the counter with a high number because often variables are labeled by
+    # integers starting from 0
+    counter = itertools.count(2 * len(mapping))
+
+    old_to_intermediate = {}
+    intermediate_to_new = {}
+
+    for old, new in iteritems(mapping):
+        if old == new:
+            # we can remove self-labels
+            continue
+
+        if old in new_labels or new in old_labels:
+
+            # try to get a new unique label
+            lbl = next(counter)
+            while lbl in new_labels or lbl in old_labels:
+                lbl = next(counter)
+
+            # add it to the mapping
+            old_to_intermediate[old] = lbl
+            intermediate_to_new[lbl] = new
+
+        else:
+            old_to_intermediate[old] = new
+            # don't need to add it to intermediate_to_new because it is a self-label
+
+    return old_to_intermediate, intermediate_to_new

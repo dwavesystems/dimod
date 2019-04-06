@@ -1,285 +1,362 @@
+# Copyright 2018 D-Wave Systems Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+# =============================================================================
+"""Decorators can be imported from the :mod:`dimod.decorators` namespace. For
+example:
+
+>>> from dimod.decorators import vartype_argument
+
 """
-Decorators that provide input checking and format for Ising and QUBO
-functions and methods.
-"""
 
-import sys
+import inspect
+import itertools
 
-from decorator import decorator
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
 
-__all__ = ['qubo', 'ising', 'qubo_index_labels', 'ising_index_labels']
+from functools import wraps
+from numbers import Integral
 
-PY2 = sys.version_info[0] == 2
-if PY2:
-    range = xrange
-    iteritems = lambda d: d.iteritems()
-else:
-    iteritems = lambda d: d.items()
+from six import iteritems, integer_types
+
+from dimod.compatibility23 import getargspec
+from dimod.core.structured import Structured
+from dimod.exceptions import BinaryQuadraticModelStructureError
+from dimod.vartypes import Vartype
 
 
-def qubo(Q_arg):
-    """Provides input checking for quadratic unconstrained binary
-    optimization (QUBO) methods.
+def bqm_index_labels(f):
+    """Decorator to convert a bqm to index-labels and relabel the sample set
+    output.
 
-    A dictionary of QUBO coefficients `Q` should be a dict. The keys
-    should be tuples of the form (u, v) where u, v are variables in
-    the problem. The variables can themselves be any hashable object.
-
-    If both (u, v) and (v, u) are in `Q`, then their values are added.
-
-    Args:
-        Q_arg (int): Location of the `Q` argument in args.
-
-    Returns:
-        Function which checks the form of the `Q` argument before
-        running the decorated function.
-
-    Raises:
-        TypeError: If `Q` is not a dict.
-        TypeError: If any of the keys of `Q` are not tuples.
-        ValueError: If any of the keys of `Q` are not length 2.
-
-    Examples:
-    Decorate functions like this::
-
-        @qubo(1)
-        def sample_qubo(self, Q):
-            pass
-
-        @qubo(0)
-        def qubo_energy(Q, sample):
-            pass
+    Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
+    function or method to accept a :obj:`.BinaryQuadraticModel` as the second
+    input and to return a :obj:`.SampleSet`.
 
     """
-    @decorator
-    def _qubo(f, *args, **kw):
-        Q = args[Q_arg]
 
-        if not isinstance(Q, dict):
-            raise TypeError("expected first input 'Q' to be of type 'dict'")
+    @wraps(f)
+    def _index_label(sampler, bqm, **kwargs):
+        if not hasattr(bqm, 'linear'):
+            raise TypeError('expected input to be a BinaryQuadraticModel')
+        linear = bqm.linear
 
-        if not all(isinstance(edge, tuple) for edge in Q):
-            raise TypeError("the keys of 'Q' should all be tuples of length 2")
+        # if already index-labelled, just continue
+        if all(v in linear for v in range(len(bqm))):
+            return f(sampler, bqm, **kwargs)
 
-        if not all(len(edge) == 2 for edge in Q):
-            raise ValueError("the keys of 'Q' should all be tuples of length 2")
-
-        return f(*args, **kw)
-    return _qubo
-
-
-def ising(h_arg, J_arg):
-    """Provides input checking for Ising methods.
-
-    Ising problems are defined by a collection of linear biases `h`,
-    and a collection of quadratic biases `J`. `J` should be a dict
-    where each key is a tuple of the form (u, v) such that u, v are
-    variables in the Ising problem and u != v. `h` should be a dict
-    where the keys are the variables in the Ising problem.
-
-    If `h` is provided as a list, it will be converted to a dict
-    where the keys are the indices. Additionally, if any variable
-    is referenced by `J` but is not a key of `h`, it will be added
-    to `h` with bias 0.
-
-    Args:
-        h_arg (int): Location of the `h` argument in args.
-        J_arg (int): Location of the `J` argument in args.
-
-    Returns:
-        Function which checks the form of the `h` and `J` arguments
-        before running the decorated function.
-
-    Raises:
-        TypeError: If `h` is not a dict.
-        TypeError: If `J` is not a dict.
-        TypeError: If the keys of `J` are not tuples.
-        ValueError: If the keys of `J` are not of length 2.
-
-    Examples:
-    Decorate functions like this::
-
-        @ising(1, 2)
-        def sample_ising(self, h, J):
-            pass
-
-        @ising(0, 1)
-        def ising_energy(h, J, sample):
-            pass
-
-    """
-    @decorator
-    def _ising(f, *args, **kw):
-
-        h = args[h_arg]
-        J = args[J_arg]
-
-        # if h is provided as a list, make it a dict where the keys of h are
-        # the indices.
-        if isinstance(h, (list, tuple)):
-            h = dict(enumerate(h))
-        elif not isinstance(h, dict):
-            raise TypeError("expected input 'h' to be a dict")
-
-        # now all the checking of J
-        if not isinstance(J, dict):
-            raise TypeError("expected input 'J' to be a dict")
-
-        if not all(isinstance(edge, tuple) for edge in J):
-            raise TypeError("expected the keys of 'J' to be tuples of length 2")
-
-        if not all(len(edge) == 2 for edge in J):
-            raise ValueError("expected the keys of 'J' to be tuples of length 2")
-
-        # finally any nodes in J that are not in h are added to h
-        for u, v in J:
-            if u not in h:
-                h[u] = 0.
-            if v not in h:
-                h[v] = 0.
-
-        args = list(args)
-        args[h_arg] = h
-        # args[J_arg] = J
-
-        return f(*args, **kw)
-    return _ising
-
-
-def qubo_index_labels(Q_arg):
-    """Replaces the labels in the dictionary of QUBO coefficients with
-    integers.
-
-    Args:
-        Q_arg (int): Location of the `Q` argument in args.
-
-    Returns:
-        Function that replaces the user-given `Q` with one with integer
-        labels, runs the decorated method, then restores the previous
-        labels.
-
-    Notes:
-        The integer labels start with 0.
-
-        If the given labels are orderable, the relabeling is applied
-        to the nodes sorted lexicographically.
-
-    Examples:
-    Decorate functions like this::
-
-        @qubo_index_labels(1)
-        def sample_qubo(self, Q):
-            pass
-
-        @qubo_index_labels(0)
-        def qubo_energy(Q, sample):
-            pass
-
-    """
-    @decorator
-    def _qubo_index_labels(f, *args, **kw):
-
-        Q = args[Q_arg]
-
-        # get all of the node labels from Q
-        nodes = set().union(*Q)
-
-        # if the nodes are already index labeled from (0, n-1) then we are already
-        # done
-        if all(idx in nodes for idx in range(len(nodes))):
-            return f(*args, **kw)
-
-        # let's relabel them, sorting the node labels lexicographically.
-        # In python 3, unlike types cannot be sorted, so let's just handle
-        # that case with a try/catch.
         try:
-            inv_relabel = dict(enumerate(sorted(nodes)))
+            inverse_mapping = dict(enumerate(sorted(linear)))
         except TypeError:
-            inv_relabel = dict(enumerate(nodes))
-        relabel = {v: idx for idx, v in iteritems(inv_relabel)}
+            # in python3 unlike types cannot be sorted
+            inverse_mapping = dict(enumerate(linear))
+        mapping = {v: i for i, v in iteritems(inverse_mapping)}
 
-        # with relabel in hand, let's make a new Q with the nodes
-        # labeled appropriately
-        newQ = {(relabel[u], relabel[v]): coeff for (u, v), coeff in iteritems(Q)}
+        response = f(sampler, bqm.relabel_variables(mapping, inplace=False), **kwargs)
 
-        # now substitute our newQ into the arguments and run the function
-        newargs = list(args)
-        newargs[Q_arg] = newQ
+        # unapply the relabeling
+        return response.relabel_variables(inverse_mapping, inplace=True)
 
-        response = f(*newargs, **kw)
-
-        # the returned response will need to be relabelled with inv_relabel
-        return response.relabel_samples(inv_relabel, copy=True)
-
-    return _qubo_index_labels
+    return _index_label
 
 
-def ising_index_labels(h_arg, J_arg):
-    """Replaces the variable labels in h and J with integers.
+def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
+    """Returns a decorator which ensures bqm variable labeling and all other
+    specified sample-like inputs are index labeled and consistent.
 
     Args:
-        h_arg (int): Location of the `h` argument in args.
-        J_arg (int): Location of the `J` argument in args.
+        var_labels_arg_name (str):
+            The name of the argument that the user should use to pass in an
+            index labeling for the bqm.
+
+        samples_arg_names (list[str]):
+            The names of the expected sample-like inputs which should be
+            indexed according to the labels passed to the argument
+            `var_labels_arg_name`.
 
     Returns:
-        Function that replaces the user-given Ising problem with one
-        that has integer labels, runs the decorated method, then
-        restores the original labels.
+        Function decorator.
+    """
 
-    Notes:
-        The integer labels start with 0.
+    def index_label_decorator(f):
+        @wraps(f)
+        def _index_label(sampler, bqm, **kwargs):
+            if not hasattr(bqm, 'linear'):
+                raise TypeError('expected input to be a BinaryQuadraticModel')
+            linear = bqm.linear
 
-        If the given labels are orderable, the relabeling is applied
-        to the nodes sorted lexicographically.
+            var_labels = kwargs.get(var_labels_arg_name, None)
+            has_samples_input = any(kwargs.get(arg_name, None) is not None
+                                    for arg_name in samples_arg_names)
+
+            if var_labels is None:
+                # if already index-labelled, just continue
+                if all(v in linear for v in range(len(bqm))):
+                    return f(sampler, bqm, **kwargs)
+
+                if has_samples_input:
+                    err_str = ("Argument `{}` must be provided if any of the"
+                               " samples arguments {} are provided and the "
+                               "bqm is not already index-labelled".format(
+                                   var_labels_arg_name,
+                                   samples_arg_names))
+                    raise ValueError(err_str)
+
+                try:
+                    inverse_mapping = dict(enumerate(sorted(linear)))
+                except TypeError:
+                    # in python3 unlike types cannot be sorted
+                    inverse_mapping = dict(enumerate(linear))
+                var_labels = {v: i for i, v in iteritems(inverse_mapping)}
+
+            else:
+                inverse_mapping = {i: v for v, i in iteritems(var_labels)}
+
+            response = f(sampler,
+                         bqm.relabel_variables(var_labels, inplace=False),
+                         **kwargs)
+
+            # unapply the relabeling
+            return response.relabel_variables(inverse_mapping, inplace=True)
+
+        return _index_label
+
+    return index_label_decorator
+
+
+def bqm_structured(f):
+    """Decorator to raise an error if the given bqm does not match the sampler's
+    structure.
+
+    Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
+    function or method to accept a :obj:`.BinaryQuadraticModel` as the second
+    input and for the :class:`.Sampler` to also be :class:`.Structured`.
+    """
+
+    @wraps(f)
+    def new_f(sampler, bqm, **kwargs):
+        try:
+            structure = sampler.structure
+            adjacency = structure.adjacency
+        except AttributeError:
+            if isinstance(sampler, Structured):
+                raise RuntimeError("something is wrong with the structured sampler")
+            else:
+                raise TypeError("sampler does not have a structure property")
+
+        if not all(v in adjacency for v in bqm.linear):
+            # todo: better error message
+            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
+        if not all(u in adjacency[v] for u, v in bqm.quadratic):
+            # todo: better error message
+            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
+
+        return f(sampler, bqm, **kwargs)
+
+    return new_f
+
+
+def vartype_argument(*arg_names):
+    """Ensures the wrapped function receives valid vartype argument(s). One
+    or more argument names can be specified (as a list of string arguments).
+
+    Args:
+        *arg_names (list[str], argument names, optional, default='vartype'):
+            The names of the constrained arguments in function decorated.
+
+    Returns:
+        Function decorator.
 
     Examples:
-    Decorate functions like this::
 
-        @ising_index_labels(1, 2)
-        def sample_ising(self, h, J):
-            pass
+        >>> from dimod.decorators import vartype_argument
 
-        @ising_index_labels(0, 1)
-        def ising_energy(h, J, sample):
-            pass
+        >>> @vartype_argument()
+        ... def f(x, vartype):
+        ...     print(vartype)
+        ...
+        >>> f(1, 'SPIN')
+        Vartype.SPIN
+        >>> f(1, vartype='SPIN')
+        Vartype.SPIN
+
+        >>> @vartype_argument('y')
+        ... def f(x, y):
+        ...     print(y)
+        ...
+        >>> f(1, 'SPIN')
+        Vartype.SPIN
+        >>> f(1, y='SPIN')
+        Vartype.SPIN
+
+        >>> @vartype_argument('z')
+        ... def f(x, **kwargs):
+        ...     print(kwargs['z'])
+        ...
+        >>> f(1, z='SPIN')
+        Vartype.SPIN
+
+    Note:
+        The function decorated can explicitly list (name) vartype arguments
+        constrained by :func:`vartype_argument`, or it can use a keyword
+        arguments `dict`.
 
     """
-    @decorator
-    def _ising_index_labels(f, *args, **kw):
+    # by default, constrain only one argument, the 'vartype`
+    if not arg_names:
+        arg_names = ['vartype']
 
-        # get h and J out of the given arguments
-        h = args[h_arg]
-        J = args[J_arg]
+    def _vartype_arg(f):
+        argspec = getargspec(f)
 
-        # we want to know all of the nodes used in h and J
-        nodes = set().union(*J) | set(h)
+        def _enforce_single_arg(name, args, kwargs):
+            try:
+                vartype = kwargs[name]
+            except KeyError:
+                raise TypeError('vartype argument missing')
 
-        # if the nodes are already index labeled from (0, n-1) then we are already
-        # done
-        if all(idx in nodes for idx in range(len(nodes))):
-            return f(*args, **kw)
+            if isinstance(vartype, Vartype):
+                return
 
-        # let's relabel them, sorting the node labels lexicographically.
-        # In python 3, unlike types cannot be sorted, so let's just handle
-        # that case with a try/catch.
-        try:
-            inv_relabel = dict(enumerate(sorted(nodes)))
-        except TypeError:
-            inv_relabel = dict(enumerate(nodes))
-        relabel = {v: idx for idx, v in iteritems(inv_relabel)}
+            try:
+                if isinstance(vartype, str):
+                    vartype = Vartype[vartype]
+                else:
+                    vartype = Vartype(vartype)
 
-        # now apply this mapping to h and J
-        h = {relabel[v]: bias for v, bias in iteritems(h)}
-        J = {(relabel[u], relabel[v]): bias for (u, v), bias in iteritems(J)}
+            except (ValueError, KeyError):
+                raise TypeError(("expected input vartype to be one of: "
+                                 "Vartype.SPIN, 'SPIN', {-1, 1}, "
+                                 "Vartype.BINARY, 'BINARY', or {0, 1}."))
 
-        # finally run the function with the new h, J
-        newargs = [arg for arg in args]
-        newargs[h_arg] = h
-        newargs[J_arg] = J
+            kwargs[name] = vartype
 
-        response = f(*newargs, **kw)
+        @wraps(f)
+        def new_f(*args, **kwargs):
+            # bound actual f arguments (including defaults) to f argument names
+            # (note: if call arguments don't match actual function signature,
+            # we'll fail here with the standard `TypeError`)
+            bound_args = inspect.getcallargs(f, *args, **kwargs)
 
-        # finally unapply the relabeling
-        return response.relabel_samples(inv_relabel)
+            # `getcallargs` doesn't merge additional positional/keyword arguments,
+            # so do it manually
+            final_args = list(bound_args.pop(argspec.varargs, ()))
+            final_kwargs = bound_args.pop(argspec.keywords, {})
 
-    return _ising_index_labels
+            final_kwargs.update(bound_args)
+            for name in arg_names:
+                _enforce_single_arg(name, final_args, final_kwargs)
+
+            return f(*final_args, **final_kwargs)
+
+        return new_f
+
+    return _vartype_arg
+
+
+def _is_integer(a):
+    if isinstance(a, integer_types):
+        return True
+    if hasattr(a, "is_integer") and a.is_integer():
+        return True
+    return False
+
+
+# we would like to do graph_argument(*arg_names, allow_None=False), but python2...
+def graph_argument(*arg_names, **options):
+    """Decorator to coerce given graph arguments into a consistent form.
+
+    The wrapped function will accept either an integer n, interpreted as a
+    complete graph of size n, or a nodes/edges pair, or a NetworkX graph. The
+    argument will then be converted into a nodes/edges 2-tuple.
+
+    Args:
+        *arg_names (optional, default='G'):
+            The names of the arguments for input graphs.
+
+        allow_None (bool, optional, default=False):
+            Allow None as an input graph in which case it is passed through as
+            None.
+
+    """
+
+    # by default, constrain only one argument, the 'G`
+    if not arg_names:
+        arg_names = ['G']
+
+    # we only allow one option allow_None
+    allow_None = options.pop("allow_None", False)
+    if options:
+        # to keep it consistent with python3
+        # behaviour like graph_argument(*arg_names, allow_None=False)
+        key, _ = options.popitem()
+        msg = "graph_argument() for an unexpected keyword argument '{}'".format(key)
+        raise TypeError(msg)
+
+    def _graph_arg(f):
+        argspec = getargspec(f)
+
+        def _enforce_single_arg(name, args, kwargs):
+            try:
+                G = kwargs[name]
+            except KeyError:
+                raise TypeError('Graph argument missing')
+
+            if hasattr(G, 'edges') and hasattr(G, 'nodes'):
+                # networkx or perhaps a named tuple
+                kwargs[name] = (list(G.nodes), list(G.edges))
+
+            elif _is_integer(G):
+                # an integer, cast to a complete graph
+                kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
+
+            elif isinstance(G, abc.Sequence) and len(G) == 2:
+                # is a pair nodes/edges
+                if isinstance(G[0], integer_types):
+                    # if nodes is an int
+                    kwargs[name] = (list(range(G[0])), G[1])
+
+            elif allow_None and G is None:
+                # allow None to be passed through
+                return G
+
+            else:
+                raise ValueError('Unexpected graph input form')
+
+            return
+
+        @wraps(f)
+        def new_f(*args, **kwargs):
+            # bound actual f arguments (including defaults) to f argument names
+            # (note: if call arguments don't match actual function signature,
+            # we'll fail here with the standard `TypeError`)
+            bound_args = inspect.getcallargs(f, *args, **kwargs)
+
+            # `getcallargs` doesn't merge additional positional/keyword arguments,
+            # so do it manually
+            final_args = list(bound_args.pop(argspec.varargs, ()))
+            final_kwargs = bound_args.pop(argspec.keywords, {})
+
+            final_kwargs.update(bound_args)
+            for name in arg_names:
+                _enforce_single_arg(name, final_args, final_kwargs)
+
+            return f(*final_args, **final_kwargs)
+
+        return new_f
+
+    return _graph_arg

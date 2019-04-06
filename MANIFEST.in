@@ -1,0 +1,1 @@
+recursive-include dimod/roof_duality *.cpp *.pyx *.hpp

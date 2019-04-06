@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-# DWaveNetworkX documentation build configuration file, created by
-# sphinx-quickstart on Wed Jul 26 10:55:26 2017.
-#
 # This file is execfile()d with the current directory set to its
 # containing dir.
 #
@@ -38,7 +35,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages'
 ]
 
 autosummary_generate = True
@@ -48,8 +44,7 @@ autosummary_generate = True
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = ['.rst', '.md']
-source_parsers = {'.md': 'recommonmark.parser.CommonMarkParser'}
+source_suffix = ['.rst']
 
 # The master toctree document.
 master_doc = 'index'
@@ -89,9 +84,14 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-modindex_common_prefix = ['dwave_networkx.']
+modindex_common_prefix = ['dimod.']
 
-doctest_global_setup = "import dwave_networkx as dnx"
+doctest_global_setup = """
+from __future__ import print_function, division
+
+import dimod
+
+"""
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -112,12 +112,12 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'dimod'
+htmlhelp_basename = 'dimoddoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -193,12 +193,18 @@ epub_exclude_files = ['search.html']
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None,
-                       'http://networkx.readthedocs.io/en/latest/': None}
-
-
-# sort documentation they way the appear in the source file
-autodoc_member_order = 'bysource'
-
-# show inherited members
-# autodoc_default_flags = ['members', 'undoc-members', 'inherited-members', 'show-inheritance']
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                       'bson': ('https://api.mongodb.com/python/current/', None),
+                       'dimod': ('https://docs.ocean.dwavesys.com/projects/dimod/en/latest/', None),
+                       'binarycsp': ('https://docs.ocean.dwavesys.com/projects/binarycsp/en/latest/', None),
+                       'cloud-client': ('https://docs.ocean.dwavesys.com/projects/cloud-client/en/latest/', None),
+                       'neal': ('https://docs.ocean.dwavesys.com/projects/neal/en/latest/', None),
+                       'dwave-networkx': ('https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/', None),
+                       'networkx': ('https://networkx.github.io/documentation/stable/', None),
+                       'system': ('https://docs.ocean.dwavesys.com/projects/system/en/latest/', None),
+                       'penaltymodel': ('https://docs.ocean.dwavesys.com/projects/penaltymodel/en/latest/', None),
+                       'minorminer': ('https://docs.ocean.dwavesys.com/projects/minorminer/en/latest/', None),
+                       'qbsolv': ('https://docs.ocean.dwavesys.com/projects/qbsolv/en/latest/', None),
+                       'oceandocs': ('https://docs.ocean.dwavesys.com/en/latest/', None),
+                       'sysdocs_gettingstarted': ('https://docs.dwavesys.com/docs/latest/', None)}
