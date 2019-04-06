@@ -1308,9 +1308,9 @@ class SampleSet(abc.Iterable, abc.Sized):
             sample = np.asarray(2*sample-1, dtype=dtype)
 
         variables = obj['variable_labels']
+        info = obj.get('info',{})
 
-        return cls.from_samples((sample, variables), vartype, **vectors)
-
+        return cls.from_samples((sample, variables), vartype, info=info,  **vectors)
     ###############################################################################################
     # Export to dataframe
     ###############################################################################################

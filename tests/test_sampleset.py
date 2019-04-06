@@ -400,7 +400,7 @@ class TestSerialization(unittest.TestCase):
         num_samples = 100
         samples = 2*np.triu(np.ones((num_samples, num_variables)), -4) - 1
         bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
-        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm)
+        sampleset = dimod.SampleSet.from_samples_bqm(samples, bqm, info={"test": 1})
 
         dct = sampleset.to_serializable(use_bytes=True)
 
