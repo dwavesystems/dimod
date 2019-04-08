@@ -424,6 +424,15 @@ class TestSerialization(unittest.TestCase):
                 new_samples = dimod.SampleSet.from_serializable(samples.to_serializable())
                 self.assertEqual(samples, new_samples)
 
+    def test_functional_with_info(self):
+        sampleset = dimod.SampleSet.from_samples([[-1, 1], [1, -1]], energy=-1,
+                                                 vartype=dimod.SPIN,
+                                                 info={'hello': 'world'})
+
+        new = dimod.SampleSet.from_serializable(sampleset.to_serializable())
+
+        self.assertEqual(new.info, sampleset.info)
+
     def test_functional_json(self):
         nv = 4
         ns = 7
