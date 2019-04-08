@@ -1309,7 +1309,10 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         variables = obj['variable_labels']
 
-        return cls.from_samples((sample, variables), vartype, **vectors)
+        info = obj['info']
+
+        return cls.from_samples((sample, variables), vartype, info=info,
+                                **vectors)
 
     ###############################################################################################
     # Export to dataframe
