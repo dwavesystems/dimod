@@ -1307,7 +1307,8 @@ class SampleSet(abc.Iterable, abc.Sized):
         if vartype is Vartype.SPIN:
             sample = np.asarray(2*sample-1, dtype=dtype)
 
-        variables = obj['variable_labels']
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
 
         info = obj['info']
 

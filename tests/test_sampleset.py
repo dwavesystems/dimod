@@ -501,6 +501,15 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
 
+    def test_tuple_variable_labels(self):
+        sampleset = dimod.SampleSet.from_samples(([], [(0, 0), (0, 1), ("a", "b", 2)]), dimod.BINARY, energy=[])
+
+        json_str = json.dumps(sampleset.to_serializable())
+
+        new = dimod.SampleSet.from_serializable(json.loads(json_str))
+
+        self.assertEqual(sampleset, new)
+
 
 @unittest.skipUnless(_pandas, "no pandas present")
 class TestPandas(unittest.TestCase):
