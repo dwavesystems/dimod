@@ -1187,6 +1187,88 @@ class SampleSet(abc.Iterable, abc.Sized):
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)
 
+    def slice(self, *slice_args, sorted_by='energy'):
+        """Create a new SampleSet with rows sliced according to standard `slice`
+        syntax.
+
+        Args:
+            start (int, optional, default=None):
+                Start index for `slice`.
+
+            stop (int):
+                Stop index for `slice`.
+
+            step (int, optional, default=None):
+                Step value for `slice`.
+
+            sorted_by (str/None, optional, default='energy'):
+                Selects the record field used to sort the samples before
+                truncating. Note that sample order is maintained in the
+                underlying array.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            >>> import numpy as np
+            ...
+            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)), dimod.BINARY, energy=range(10))
+            >>> print(sampleset)
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  1  0  0  0  0  0  0  0  0  0      0       1
+            1  0  1  0  0  0  0  0  0  0  0      1       1
+            2  0  0  1  0  0  0  0  0  0  0      2       1
+            3  0  0  0  1  0  0  0  0  0  0      3       1
+            4  0  0  0  0  1  0  0  0  0  0      4       1
+            5  0  0  0  0  0  1  0  0  0  0      5       1
+            6  0  0  0  0  0  0  1  0  0  0      6       1
+            7  0  0  0  0  0  0  0  1  0  0      7       1
+            8  0  0  0  0  0  0  0  0  1  0      8       1
+            9  0  0  0  0  0  0  0  0  0  1      9       1
+            ['BINARY', 10 rows, 10 samples, 10 variables]
+
+            >>> # the first 3 samples by energy == truncate(3)
+            >>> print(sampleset.slice(3))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  1  0  0  0  0  0  0  0  0  0      0       1
+            1  0  1  0  0  0  0  0  0  0  0      1       1
+            2  0  0  1  0  0  0  0  0  0  0      2       1
+            ['BINARY', 3 rows, 3 samples, 10 variables]
+
+            >>> # the last 3 samples by energy
+            >>> print(sampleset.slice(-3, None))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  0  0  0  0  0  0  0  1  0  0      7       1
+            1  0  0  0  0  0  0  0  0  1  0      8       1
+            2  0  0  0  0  0  0  0  0  0  1      9       1
+            ['BINARY', 3 rows, 3 samples, 10 variables]
+
+            >>> # every second sample in between (skip the top and the bottom 3)
+            >>> print(sampleset.slice(3, -3, 2))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  0  0  0  1  0  0  0  0  0  0      3       1
+            1  0  0  0  0  0  1  0  0  0  0      5       1
+            ['BINARY', 2 rows, 2 samples, 10 variables]
+
+        """
+        record = self.record
+
+        # follow Python's slice syntax
+        if slice_args:
+            selector = slice(*slice_args)
+        else:
+            selector = slice(None)
+
+        if sorted_by is None:
+            record = record[selector]
+        else:
+            sort_indices = np.argsort(record[sorted_by])
+            record = record[sort_indices[selector]]
+
+        return type(self)(record, self.variables, copy.deepcopy(self.info),
+                          self.vartype)
+
     ###############################################################################################
     # Serialization
     ###############################################################################################
