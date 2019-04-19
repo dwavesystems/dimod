@@ -1187,7 +1187,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)
 
-    def slice(self, *slice_args, sorted_by='energy'):
+    def slice(self, *slice_args, **kwargs):
         """Create a new SampleSet with rows sliced according to standard `slice`
         syntax.
 
@@ -1252,6 +1252,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['BINARY', 2 rows, 2 samples, 10 variables]
 
         """
+        sorted_by = kwargs.pop('sorted_by', 'energy')
         record = self.record
 
         # follow Python's slice syntax
