@@ -52,7 +52,7 @@ class CheckerboardTransformComposite(Sampler, Composite, Structured):
     References
     ----------
     .. [#ah] Adachi, S. H., & Henderson, M. P. Application of Quantum Annealing
-        to Training of Deep Neural Networks. https://doi.org/10.1038/nature10012,
+        to Training of Deep Neural Networks. https://arxiv.org/abs/1510.06356,
         2015.
     .. [#km] Andrew D. King and Catherine C. McGeoch. Algorithm engineering
         for a quantum annealing platform. https://arxiv.org/abs/1410.2628,
