@@ -133,3 +133,62 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
     return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
                                   variable_order=variables)
+
+
+@graph_argument('graph')
+def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
+    """Generate a binary quadratic model for a RAN1 problem.
+
+    In RAN1 problems all linear biases are zero and quadratic values are uniform values
+    between -1 to 1, excluding zero.
+
+    Args:
+        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
+            The graph to build the binary quadratic model (BQM) for. Either an
+            integer n, interpreted as a complete graph of size n, or
+            a nodes/edges pair, or a NetworkX graph.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the BQM. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+        seed (int, optional, default=None):
+            Random seed.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`
+
+    Examples:
+
+    >>> import networkx as nx
+    >>> K_7 = nx.complete_graph(7)
+    >>> bqm = ran1(K_7, 'BINARY')
+
+    """
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    r = numpy.random.RandomState(seed)
+
+    variables, edges = graph
+
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    ldata = np.zeros(len(variables))
+    # tmp_data in range 2 * [0, 1) used to exclude the zero
+    tmp_data = 2*np.random.random(size=len(variables))
+    qdata = 1 - tmp_data
+    qdata[:] = [val - 2.0 if val>=1.0 else qdata[idx] for idx, val in enumerate(tmp_data)]
+    offset = 0
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=variables)
