@@ -21,7 +21,7 @@ import numpy.random
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
-__all__ = ['uniform', 'randint']
+__all__ = ['uniform', 'ran1', 'randint']
 
 
 @graph_argument('graph')
@@ -167,7 +167,7 @@ def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
 
     >>> import networkx as nx
     >>> K_7 = nx.complete_graph(7)
-    >>> bqm = ran1(K_7, 'BINARY')
+    >>> bqm = dimod.generators.random.ran1(K_7, 'BINARY')
 
     """
     if seed is None:
