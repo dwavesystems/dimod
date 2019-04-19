@@ -366,6 +366,22 @@ class TestTruncate(unittest.TestCase):
                     self.assertEqual(val, 1)
 
 
+class TestSlice(unittest.TestCase):
+    def test_typical(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
+        samples = dimod.SampleSet.from_samples_bqm(np.tril(np.ones(100)), bqm.binary)
+
+        # `:10` is equal to `truncate(10)`
+        self.assertEqual(samples.slice(10), samples.truncate(10))
+
+    def test_unordered(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
+        samples = dimod.SampleSet.from_samples_bqm(np.triu(np.ones(100)), bqm.binary)
+
+        # `:10` but for the unordered case
+        self.assertEqual(samples.slice(10, sorted_by=None), samples.truncate(10, sorted_by=None))
+
+
 class TestIteration(unittest.TestCase):
     def test_data_reverse(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
