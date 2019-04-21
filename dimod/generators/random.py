@@ -185,7 +185,7 @@ def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
 
     ldata = np.zeros(len(variables))
     # tmp_data in range 2 * [0, 1) used to exclude the zero
-    tmp_data = 2*np.random.random(size=len(variables))
+    tmp_data = 2*r.uniform(size=len(variables))
     qdata = 1 - tmp_data
     qdata[:] = [val - 2.0 if val>=1.0 else qdata[idx] for idx, val in enumerate(tmp_data)]
     offset = 0

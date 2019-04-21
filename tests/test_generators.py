@@ -75,6 +75,37 @@ class TestRandomRandint(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+class TestRandomRan1(unittest.TestCase):
+    def test_singleton(self):
+        bqm = dimod.generators.random.ran1(1, dimod.BINARY)
+
+        # should have a single node
+        self.assertEqual(len(bqm), 1)
+        self.assertIn(0, bqm.variables)
+
+    def test_empty(self):
+        bqm = dimod.generators.random.ran1(0, dimod.BINARY)
+
+        # should have no nodes
+        self.assertEqual(len(bqm), 0)
+
+    def test_seed(self):
+        bqm0 = dimod.generators.random.ran1(100, dimod.BINARY, seed=506)
+        bqm1 = dimod.generators.random.ran1(100, dimod.BINARY, seed=506)
+
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.random.ran1(100, dimod.BINARY, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
+
+    def test_values(self):
+        bqm = dimod.generators.random.ran1(10, dimod.SPIN)
+
+        self.assertFalse(all(bqm.linear.values()))
+        self.assertTrue(all(val < 1 for val in bqm.quadratic.values()))
+        self.assertTrue(all(val > -1 for val in bqm.quadratic.values()))
+
 
 class TestChimeraAnticluster(unittest.TestCase):
     def test_singletile(self):
