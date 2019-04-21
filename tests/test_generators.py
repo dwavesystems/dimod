@@ -103,8 +103,8 @@ class TestRandomRan1(unittest.TestCase):
         bqm = dimod.generators.random.ran1(10, dimod.SPIN)
 
         self.assertFalse(all(bqm.linear.values()))
-        self.assertTrue(all(val < 1 for val in bqm.quadratic.values()))
-        self.assertTrue(all(val > -1 for val in bqm.quadratic.values()))
+        self.assertTrue(all(val <= 1 for val in bqm.quadratic.values()))
+        self.assertTrue(all(val >= -1 for val in bqm.quadratic.values()))
 
 
 class TestChimeraAnticluster(unittest.TestCase):
