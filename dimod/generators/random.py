@@ -136,26 +136,23 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
 
 @graph_argument('graph')
-def ran_r(r, graph, vartype, cls=BinaryQuadraticModel, seed=None):
-    """Generate a binary quadratic model for a RANr problem.
+def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
+    """Generate an Ising model for a RANr problem.
 
     In RANr problems all linear biases are zero and quadratic values are uniformly
-    selected integers between -r to r, excluding zero.
+    selected integers between -r to r, excluding zero. This class of problems is relevant
+    for binary quadratic models (BQM) with spin variables (Ising models).
+
+    This generator of RANr problems follows the definition in [Kin2015]_\ .
 
     Args:
         r (int):
             Order of the RANr problem.
 
         graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the binary quadratic model (BQM) for. Either an
+            The graph to build the BQM for. Either an
             integer n, interpreted as a complete graph of size n, or
             a nodes/edges pair, or a NetworkX graph.
-
-        vartype (:class:`.Vartype`/str/set):
-            Variable type for the BQM. Accepted input values:
-
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
@@ -164,13 +161,17 @@ def ran_r(r, graph, vartype, cls=BinaryQuadraticModel, seed=None):
             Random seed.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`
+        :obj:`.BinaryQuadraticModel`.
 
     Examples:
 
     >>> import networkx as nx
     >>> K_7 = nx.complete_graph(7)
-    >>> bqm = dimod.generators.random.ran_r(1, K_7, 'BINARY')
+    >>> bqm = dimod.generators.random.ran_r(1, K_7)
+
+    .. [Kin2015] James King, Sheir Yarkoni, Mayssam M. Nevisi, Jeremy P. Hilton,
+        Catherine C. McGeoch. Benchmarking a quantum annealing processor with the
+        time-to-target metric. https://arxiv.org/abs/1508.05087
 
     """
     if not isinstance(r, int):
@@ -200,5 +201,5 @@ def ran_r(r, graph, vartype, cls=BinaryQuadraticModel, seed=None):
 
     offset = 0
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
                                   variable_order=variables)
