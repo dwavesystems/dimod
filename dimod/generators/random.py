@@ -21,7 +21,7 @@ import numpy.random
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
-__all__ = ['uniform', 'ran1', 'randint']
+__all__ = ['uniform', 'ran_r', 'randint']
 
 
 @graph_argument('graph')
@@ -136,13 +136,16 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
 
 @graph_argument('graph')
-def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
-    """Generate a binary quadratic model for a RAN1 problem.
+def ran_r(r, graph, vartype, cls=BinaryQuadraticModel, seed=None):
+    """Generate a binary quadratic model for a RANr problem.
 
-    In RAN1 problems all linear biases are zero and quadratic values are uniform values
-    between -1 to 1, excluding zero.
+    In RANr problems all linear biases are zero and quadratic values are uniformly
+    selected integers between -r to r, excluding zero.
 
     Args:
+        r (int):
+            Order of the RANr problem.
+
         graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
             The graph to build the binary quadratic model (BQM) for. Either an
             integer n, interpreted as a complete graph of size n, or
@@ -167,12 +170,17 @@ def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
 
     >>> import networkx as nx
     >>> K_7 = nx.complete_graph(7)
-    >>> bqm = dimod.generators.random.ran1(K_7, 'BINARY')
+    >>> bqm = dimod.generators.random.ran_r(1, K_7, 'BINARY')
 
     """
+    if not isinstance(r, int):
+        raise TypeError("r should be a positive integer")
+    if r < 1:
+        raise ValueError("r should be a positive integer")
+
     if seed is None:
         seed = numpy.random.randint(2**32, dtype=np.uint32)
-    r = numpy.random.RandomState(seed)
+    rnd = numpy.random.RandomState(seed)
 
     variables, edges = graph
 
@@ -184,10 +192,12 @@ def ran1(graph, vartype, cls=BinaryQuadraticModel, seed=None):
         irow = icol = tuple()
 
     ldata = np.zeros(len(variables))
-    # tmp_data in range 2 * [0, 1) used to exclude the zero
-    tmp_data = 2*r.uniform(size=len(variables))
-    qdata = 1 - tmp_data
-    qdata[:] = [val - 2.0 if val>=1.0 else qdata[idx] for idx, val in enumerate(tmp_data)]
+
+    rvals = np.empty(2*r)
+    rvals[0:r] = range(-r, 0)
+    rvals[r:] = range(1, r+1)
+    qdata = rnd.choice(rvals, size=len(variables))
+
     offset = 0
 
     return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,

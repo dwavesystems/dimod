@@ -43,5 +43,5 @@ Random
    :toctree: generated/
 
    randint
-   ran1
+   ran_r
    uniform
