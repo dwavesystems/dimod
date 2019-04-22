@@ -261,6 +261,52 @@ class TestAggregate(unittest.TestCase):
         self.assertEqual(samples,
                          dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0]))
 
+    def test_order_preservation_2x2_unique(self):
+        bqm = dimod.BinaryQuadraticModel({}, {'ab': 1}, 0, dimod.SPIN)
+
+        # these are unique so order should be preserved
+        ss1 = dimod.SampleSet.from_samples_bqm([{'a': 1, 'b': -1},
+                                                {'a': -1, 'b': 1}],
+                                               bqm)
+        ss2 = ss1.aggregate()
+
+        self.assertEqual(ss1, ss2)
+
+    def test_order_preservation(self):
+        bqm = dimod.BinaryQuadraticModel({}, {'ab': 1}, 0, dimod.SPIN)
+
+        ss1 = dimod.SampleSet.from_samples_bqm([{'a': 1, 'b': -1},
+                                                {'a': -1, 'b': 1},
+                                                {'a': 1, 'b': -1}],
+                                               bqm)
+        ss2 = ss1.aggregate()
+
+        target = dimod.SampleSet.from_samples_bqm([{'a': 1, 'b': -1},
+                                                   {'a': -1, 'b': 1}],
+                                                  bqm,
+                                                  num_occurrences=[2, 1])
+
+        self.assertEqual(target, ss2)
+
+    def test_order_preservation_doubled(self):
+        bqm = dimod.BinaryQuadraticModel({}, {'ab': 1, 'bc': -1}, 0, dimod.SPIN)
+        ss1 = dimod.SampleSet.from_samples_bqm(([[1, 1, 0],
+                                                 [1, 0, 0],
+                                                 [0, 0, 0],
+                                                 [0, 0, 0],
+                                                 [1, 1, 0],
+                                                 [1, 0, 0],
+                                                 [0, 0, 0]], 'abc'),
+                                               bqm)
+
+        target = dimod.SampleSet.from_samples_bqm(([[1, 1, 0],
+                                                    [1, 0, 0],
+                                                    [0, 0, 0]], 'abc'),
+                                                  bqm,
+                                                  num_occurrences=[2, 2, 3])
+
+        self.assertEqual(target, ss1.aggregate())
+
 
 class TestAppend(unittest.TestCase):
     def test_sampleset1_append1(self):

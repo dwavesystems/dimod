@@ -987,15 +987,19 @@ class SampleSet(abc.Iterable, abc.Sized):
             other fields are.
 
         """
-
         _, indices, inverse = np.unique(self.record.sample, axis=0,
                                         return_index=True, return_inverse=True)
+
+        # unique also sorts the array which we don't want, so we undo the sort
+        order = np.argsort(indices)
+        indices = indices[order]
 
         record = self.record[indices]
 
         # fix the number of occurrences
         record.num_occurrences = 0
         for old_idx, new_idx in enumerate(inverse):
+            new_idx = order[new_idx]
             record[new_idx].num_occurrences += self.record[old_idx].num_occurrences
 
         # dev note: we don't check the energies as they should be the same
