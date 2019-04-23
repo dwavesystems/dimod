@@ -58,5 +58,4 @@ import dimod.response
 from dimod.utilities import *
 import dimod.utilities
 
-from dimod.vartypes import *
-import dimod.vartypes
+from dimod.vartypes import as_vartype, Vartype, SPIN, BINARY

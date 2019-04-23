@@ -12,48 +12,55 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 """
 Enumeration of valid variable types for binary quadratic models.
 
 Examples:
-    This example shows easy access to different Vartypes, which are in the main
-    namespace.
+
+    :class:`.Vartype` is an :py:class:`~enum.Enum`. Each vartype has a value and
+    a name.
 
     >>> vartype = dimod.SPIN
-    >>> print(vartype)
-    Vartype.SPIN
-    >>> vartype = dimod.BINARY
-    >>> print(vartype)
-    Vartype.BINARY
-    >>> vartype = dimod.Vartype.SPIN
-    >>> print(vartype)
-    Vartype.SPIN
-    >>> isinstance(vartype, dimod.Vartype)
+    >>> vartype.name
+    'SPIN'
+    >>> vartype.value == {-1, +1}
     True
 
-    This example shows access by value or name.
+    >>> vartype = dimod.BINARY
+    >>> vartype.name
+    'BINARY'
+    >>> vartype.value == {0, 1}
+    True
 
-    >>> print(dimod.Vartype({0, 1}))
-    Vartype.BINARY
-    >>> print(dimod.Vartype['SPIN'])
-    Vartype.SPIN
+    The :func:`.as_vartype` function allows the user to provide several
+    convenient forms.
 
-    This example uses the `.value` parameter to validate.
+    >>> from dimod import as_vartype
 
-    >>> sample = {'u': -1, 'v': 1}
-    >>> vartype = dimod.Vartype.SPIN
-    >>> all(val in vartype.value for val in sample.values())
+    >>> as_vartype(dimod.SPIN) is dimod.SPIN
+    True
+    >>> as_vartype('SPIN') is dimod.SPIN
+    True
+    >>> as_vartype({-1, 1}) is dimod.SPIN
+    True
+
+    >>> as_vartype(dimod.BINARY) is dimod.BINARY
+    True
+    >>> as_vartype('BINARY') is dimod.BINARY
+    True
+    >>> as_vartype({0, 1}) is dimod.BINARY
     True
 
 """
 import enum
 
-__all__ = ['Vartype', 'SPIN', 'BINARY']
+__all__ = ['as_vartype', 'Vartype', 'SPIN', 'BINARY']
 
 
 class Vartype(enum.Enum):
-    """An :py:class:`~enum.Enum` over the types of variables for the binary quadratic model.
+    """An :py:class:`~enum.Enum` over the types of variables for the binary
+    quadratic model.
 
     Attributes:
         SPIN (:class:`.Vartype`): Vartype for spin-valued models; variables of
@@ -68,3 +75,40 @@ class Vartype(enum.Enum):
 
 SPIN = Vartype.SPIN
 BINARY = Vartype.BINARY
+
+
+def as_vartype(vartype):
+    """Cast various inputs to a valid vartype object.
+
+    Args:
+        vartype (:class:`.Vartype`/str/set):
+            Variable type. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    Returns:
+        :class:`.Vartype`: Either :class:`.Vartype.SPIN` or
+        :class:`.Vartype.BINARY`.
+
+    See also:
+        :func:`~dimod.decorators.vartype_argument`
+
+    """
+    if isinstance(vartype, Vartype):
+        return vartype
+
+    try:
+        if isinstance(vartype, str):
+            vartype = Vartype[vartype]
+        elif isinstance(vartype, frozenset):
+            vartype = Vartype(vartype)
+        else:
+            vartype = Vartype(frozenset(vartype))
+
+    except (ValueError, KeyError):
+        raise TypeError(("expected input vartype to be one of: "
+                         "Vartype.SPIN, 'SPIN', {-1, 1}, "
+                         "Vartype.BINARY, 'BINARY', or {0, 1}."))
+
+    return vartype
