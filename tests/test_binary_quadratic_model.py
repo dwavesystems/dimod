@@ -2146,7 +2146,7 @@ class TestSerialization(unittest.TestCase):
         new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
 
         self.assertEqual(bqm, new)
-        self.assertEqual(bqm.info, {"tag": 5})
+        self.assertEqual(new.info, {"tag": 5})
 
 
 class TestZeroField(unittest.TestCase):
