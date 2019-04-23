@@ -1154,8 +1154,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the record field used to sort the samples before
-                truncating. Note that sample order is maintained in the
-                underlying array.
+                truncating. Note that this sort order is maintained in the
+                returned SampleSet.
 
         Returns:
             :obj:`.SampleSet`
@@ -1179,14 +1179,95 @@ class SampleSet(abc.Iterable, abc.Sized):
             1 +1 +1 +1 +1 +1      5       1
             ['SPIN', 2 rows, 2 samples, 5 variables]
 
+        See:
+            :meth:`SampleSet.slice`
+
         """
-        record = self.record
+        return self.slice(n, sorted_by=sorted_by)
+
+    def slice(self, *slice_args, **kwargs):
+        """Create a new SampleSet with rows sliced according to standard Python
+        slicing syntax.
+
+        Args:
+            start (int, optional, default=None):
+                Start index for `slice`.
+
+            stop (int):
+                Stop index for `slice`.
+
+            step (int, optional, default=None):
+                Step value for `slice`.
+
+            sorted_by (str/None, optional, default='energy'):
+                Selects the record field used to sort the samples before
+                slicing. Note that `sorted_by` determines the sample order in
+                the returned SampleSet.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            >>> import numpy as np
+            ...
+            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)), dimod.BINARY, energy=range(10))
+            >>> print(sampleset)
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  1  0  0  0  0  0  0  0  0  0      0       1
+            1  0  1  0  0  0  0  0  0  0  0      1       1
+            2  0  0  1  0  0  0  0  0  0  0      2       1
+            3  0  0  0  1  0  0  0  0  0  0      3       1
+            4  0  0  0  0  1  0  0  0  0  0      4       1
+            5  0  0  0  0  0  1  0  0  0  0      5       1
+            6  0  0  0  0  0  0  1  0  0  0      6       1
+            7  0  0  0  0  0  0  0  1  0  0      7       1
+            8  0  0  0  0  0  0  0  0  1  0      8       1
+            9  0  0  0  0  0  0  0  0  0  1      9       1
+            ['BINARY', 10 rows, 10 samples, 10 variables]
+
+            >>> # the first 3 samples by energy == truncate(3)
+            >>> print(sampleset.slice(3))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  1  0  0  0  0  0  0  0  0  0      0       1
+            1  0  1  0  0  0  0  0  0  0  0      1       1
+            2  0  0  1  0  0  0  0  0  0  0      2       1
+            ['BINARY', 3 rows, 3 samples, 10 variables]
+
+            >>> # the last 3 samples by energy
+            >>> print(sampleset.slice(-3, None))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  0  0  0  0  0  0  0  1  0  0      7       1
+            1  0  0  0  0  0  0  0  0  1  0      8       1
+            2  0  0  0  0  0  0  0  0  0  1      9       1
+            ['BINARY', 3 rows, 3 samples, 10 variables]
+
+            >>> # every second sample in between (skip the top and the bottom 3)
+            >>> print(sampleset.slice(3, -3, 2))
+               0  1  2  3  4  5  6  7  8  9 energy num_oc.
+            0  0  0  0  1  0  0  0  0  0  0      3       1
+            1  0  0  0  0  0  1  0  0  0  0      5       1
+            ['BINARY', 2 rows, 2 samples, 10 variables]
+
+        """
+        # handle `sorted_by` kwarg with a default value in a python2-compatible way
+        sorted_by = kwargs.pop('sorted_by', 'energy')
+        if kwargs:
+            # be strict about allowed kwargs: throw the same error as python3 would
+            raise TypeError('slice got an unexpected '
+                            'keyword argument {!r}'.format(kwargs.popitem()[0]))
+
+        # follow Python's slice syntax
+        if slice_args:
+            selector = slice(*slice_args)
+        else:
+            selector = slice(None)
 
         if sorted_by is None:
-            record = record[:n]
+            record = self.record[selector]
         else:
-            sort_indices = np.argsort(record[sorted_by])
-            record = record[sort_indices[:n]]
+            sort_indices = np.argsort(self.record[sorted_by])
+            record = self.record[sort_indices[selector]]
 
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)

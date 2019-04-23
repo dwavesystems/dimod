@@ -412,6 +412,65 @@ class TestTruncate(unittest.TestCase):
                     self.assertEqual(val, 1)
 
 
+class TestSlice(unittest.TestCase):
+    def test_typical(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(np.tril(np.ones(100)), bqm.binary)
+
+        # `:10` is equal to `truncate(10)`
+        self.assertEqual(sampleset.slice(10), sampleset.truncate(10))
+
+    def test_unordered(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: -1 for v in range(100)}, {})
+        sampleset = dimod.SampleSet.from_samples_bqm(np.triu(np.ones(100)), bqm.binary)
+
+        # `:10` but for the unordered case
+        self.assertEqual(sampleset.slice(10, sorted_by=None), sampleset.truncate(10, sorted_by=None))
+
+    def test_null_slice(self):
+        energies = list(range(10))
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=energies)
+
+        self.assertTrue((sampleset.slice().record.energy == energies).all())
+
+    def test_slice_stop_only(self):
+        energies = list(range(10))
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=energies)
+
+        self.assertTrue((sampleset.slice(3).record.energy == energies[:3]).all())
+        self.assertTrue((sampleset.slice(-3).record.energy == energies[:-3]).all())
+
+    def test_slice_range(self):
+        energies = list(range(10))
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=energies)
+
+        self.assertTrue((sampleset.slice(3, 5).record.energy == energies[3:5]).all())
+        self.assertTrue((sampleset.slice(3, -3).record.energy == energies[3:-3]).all())
+        self.assertTrue((sampleset.slice(-3, None).record.energy == energies[-3:]).all())
+
+    def test_slice_stride(self):
+        energies = list(range(10))
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=energies)
+
+        self.assertTrue((sampleset.slice(3, -3, 2).record.energy == energies[3:-3:2]).all())
+        self.assertTrue((sampleset.slice(None, None, 2).record.energy == energies[::2]).all())
+        self.assertTrue((sampleset.slice(None, None, -1).record.energy == energies[::-1]).all())
+
+    def test_custom_ordering(self):
+        custom = list(range(10))
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=None, custom=custom)
+
+        self.assertTrue((sampleset.slice(3, sorted_by='custom').record.custom == custom[:3]).all())
+        self.assertTrue((sampleset.slice(3, -3, sorted_by='custom').record.custom == custom[3:-3]).all())
+        self.assertTrue((sampleset.slice(None, None, -1, sorted_by='custom').record.custom == custom[::-1]).all())
+
+    def test_kwargs(self):
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=None)
+
+        with self.assertRaises(TypeError):
+            sampleset.slice(1, sortedby='invalid-kwarg')
+
+
 class TestIteration(unittest.TestCase):
     def test_data_reverse(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
