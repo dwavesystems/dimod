@@ -43,6 +43,16 @@ class TestDuplicates(unittest.TestCase):
         self.assertEqual(len(variables), 1)
 
 
+class TestRelabel(unittest.TestCase):
+    def test_permissive(self):
+        variables = Variables([0, 1])
+
+        # relabels a non-existant variable 2
+        variables.relabel({0: 'a', 1: 'b', 2: 'c'})
+
+        self.assertEqual(variables, Variables('ab'))
+
+
 class TestList(unittest.TestCase):
     iterable = list(range(5))
 
