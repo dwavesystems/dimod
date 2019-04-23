@@ -1150,8 +1150,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the record field used to sort the samples before
-                truncating. Note that sample order is maintained in the
-                underlying array.
+                truncating. Note that this sort order is maintained in the
+                returned SampleSet.
 
         Returns:
             :obj:`.SampleSet`
@@ -1176,14 +1176,14 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['SPIN', 2 rows, 2 samples, 5 variables]
 
         See:
-            `.slice`
+            :meth:`SampleSet.slice`
 
         """
         return self.slice(n, sorted_by=sorted_by)
 
     def slice(self, *slice_args, **kwargs):
-        """Create a new SampleSet with rows sliced according to standard `slice`
-        syntax.
+        """Create a new SampleSet with rows sliced according to standard Python
+        slicing syntax.
 
         Args:
             start (int, optional, default=None):
@@ -1197,8 +1197,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the record field used to sort the samples before
-                truncating. Note that sample order is maintained in the
-                underlying array.
+                slicing. Note that `sorted_by` determines the sample order in
+                the returned SampleSet.
 
         Returns:
             :obj:`.SampleSet`
