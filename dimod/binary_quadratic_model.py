@@ -1842,11 +1842,14 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         offset = obj["offset"]
         vartype = obj["variable_type"]
 
-        return cls.from_numpy_vectors(ldata,
-                                      (irow, icol, qdata),
-                                      offset,
-                                      str(vartype),  # handle unicode for py2
-                                      variable_order=variables)
+        bqm = cls.from_numpy_vectors(ldata,
+                                     (irow, icol, qdata),
+                                     offset,
+                                     str(vartype),  # handle unicode for py2
+                                     variable_order=variables)
+
+        bqm.info.update(obj["info"])
+        return bqm
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
         """Convert a binary quadratic model to NetworkX graph format.
