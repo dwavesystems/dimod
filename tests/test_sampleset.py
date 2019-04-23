@@ -418,6 +418,12 @@ class TestSlice(unittest.TestCase):
         self.assertTrue((sampleset.slice(3, -3, sorted_by='custom').record.custom == custom[3:-3]).all())
         self.assertTrue((sampleset.slice(None, None, -1, sorted_by='custom').record.custom == custom[::-1]).all())
 
+    def test_kwargs(self):
+        sampleset = dimod.SampleSet.from_samples(np.ones((10, 1)), dimod.SPIN, energy=None)
+
+        with self.assertRaises(TypeError):
+            sampleset.slice(1, sortedby='invalid-kwarg')
+
 
 class TestIteration(unittest.TestCase):
     def test_data_reverse(self):

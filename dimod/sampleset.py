@@ -1252,8 +1252,12 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['BINARY', 2 rows, 2 samples, 10 variables]
 
         """
+        # handle `sorted_by` kwarg with a default value in a python2-compatible way
         sorted_by = kwargs.pop('sorted_by', 'energy')
-        record = self.record
+        if kwargs:
+            # be strict about allowed kwargs: throw the same error as python3 would
+            raise TypeError('slice got an unexpected '
+                            'keyword argument {!r}'.format(kwargs.popitem()[0]))
 
         # follow Python's slice syntax
         if slice_args:
@@ -1262,10 +1266,10 @@ class SampleSet(abc.Iterable, abc.Sized):
             selector = slice(None)
 
         if sorted_by is None:
-            record = record[selector]
+            record = self.record[selector]
         else:
-            sort_indices = np.argsort(record[sorted_by])
-            record = record[sort_indices[selector]]
+            sort_indices = np.argsort(self.record[sorted_by])
+            record = self.record[sort_indices[selector]]
 
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)
