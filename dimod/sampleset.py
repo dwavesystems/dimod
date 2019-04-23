@@ -1175,17 +1175,11 @@ class SampleSet(abc.Iterable, abc.Sized):
             1 +1 +1 +1 +1 +1      5       1
             ['SPIN', 2 rows, 2 samples, 5 variables]
 
+        See:
+            `.slice`
+
         """
-        record = self.record
-
-        if sorted_by is None:
-            record = record[:n]
-        else:
-            sort_indices = np.argsort(record[sorted_by])
-            record = record[sort_indices[:n]]
-
-        return type(self)(record, self.variables, copy.deepcopy(self.info),
-                          self.vartype)
+        return self.slice(n, sorted_by=sorted_by)
 
     def slice(self, *slice_args, **kwargs):
         """Create a new SampleSet with rows sliced according to standard `slice`
