@@ -57,7 +57,7 @@ from numbers import Number
 
 import numpy as np
 
-from six import itervalues, iteritems, iterkeys, PY2
+from six import itervalues, iteritems
 
 from dimod.decorators import vartype_argument
 from dimod.serialization.utils import array2bytes, bytes2array
@@ -150,6 +150,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         vartype (:class:`.Vartype`):
             The model's type. One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+
+        variables (keysview):
+            The variables in the binary quadratic model as a dictionary keys
+            view object.
 
         adj (dict):
             The model's interactions as nested dicts.
@@ -279,10 +283,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     @property
     def variables(self):
         """Return binary quadratic model's variables as a dictionary view object."""
-        if PY2:
-            return set(self.linear)
-        else:
-            return self.linear.keys()
+        return abc.KeysView(self.linear)
 
 ##################################################################################################
 # vartype properties
