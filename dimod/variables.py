@@ -133,6 +133,9 @@ class Variables(abc.Sequence, abc.Set):
         index = self.index
 
         for old, new in mapping.items():
+            if old not in self:
+                continue
+
             label[index[old]] = new
             index[new] = index[old]
             del index[old]
