@@ -36,7 +36,7 @@ from six import iteritems, integer_types
 from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError
-from dimod.vartypes import Vartype
+from dimod.vartypes import as_vartype
 
 
 def bqm_index_labels(f):
@@ -215,6 +215,9 @@ def vartype_argument(*arg_names):
         constrained by :func:`vartype_argument`, or it can use a keyword
         arguments `dict`.
 
+    See also:
+        :func:`~dimod.as_vartype`
+
     """
     # by default, constrain only one argument, the 'vartype`
     if not arg_names:
@@ -229,21 +232,7 @@ def vartype_argument(*arg_names):
             except KeyError:
                 raise TypeError('vartype argument missing')
 
-            if isinstance(vartype, Vartype):
-                return
-
-            try:
-                if isinstance(vartype, str):
-                    vartype = Vartype[vartype]
-                else:
-                    vartype = Vartype(vartype)
-
-            except (ValueError, KeyError):
-                raise TypeError(("expected input vartype to be one of: "
-                                 "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                                 "Vartype.BINARY, 'BINARY', or {0, 1}."))
-
-            kwargs[name] = vartype
+            kwargs[name] = as_vartype(vartype)
 
         @wraps(f)
         def new_f(*args, **kwargs):

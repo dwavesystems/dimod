@@ -8,3 +8,4 @@ Vartype
 
 .. currentmodule:: dimod
 .. autoclass:: Vartype
+.. autofunction:: as_vartype
