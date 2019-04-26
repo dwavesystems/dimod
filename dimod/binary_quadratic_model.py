@@ -2395,6 +2395,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         except ValueError:
             raise ValueError("quadratic should be a 3-tuple")
 
+        if not len(heads) == len(tails) == len(values):
+            raise ValueError("row, col, and bias should be of equal length")
+
         if variable_order is None:
             variable_order = list(range(len(linear)))
 
