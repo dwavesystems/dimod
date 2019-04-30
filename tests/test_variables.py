@@ -20,6 +20,7 @@ try:
 except ImportError:
     import collections as abc
 
+from dimod.exceptions import WriteableError
 from dimod.variables import Variables
 
 
@@ -120,3 +121,24 @@ class TestRange(TestList):
 
 class TestString(TestList):
     iterable = 'abcde'
+
+
+class TestWriteable(unittest.TestCase):
+    def test_writeable_false(self):
+        variables = Variables('abcd')
+
+        variables.setflags(write=False)
+
+        with self.assertRaises(ValueError):
+            variables.relabel({'a': 0, 'b': 1})
+
+        with self.assertRaises(WriteableError):
+            variables.relabel({'a': 0, 'b': 1})
+
+        self.assertEqual(variables, Variables('abcd'))
+
+    def test_not_hashable_when_writeable(self):
+        variables = Variables(range(5))
+
+        with self.assertRaises(TypeError):
+            hash(variables)

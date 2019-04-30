@@ -20,10 +20,13 @@ except ImportError:
 
 from operator import eq
 
+from dimod.exceptions import WriteableError
 from dimod.utilities import resolve_label_conflict
 
 from six import PY3
 from six.moves import map
+
+__all__ = ['Variables']
 
 
 class CallableDict(abc.Callable, dict):
@@ -43,7 +46,7 @@ class Variables(abc.Sequence, abc.Set):
         iterable: An iterable of variable labels.
 
     """
-    __slots__ = '_label', 'index'
+    __slots__ = ('_label', 'index', '_is_writeable')
 
     def __init__(self, iterable):
         self.index = index = CallableDict()
@@ -58,8 +61,16 @@ class Variables(abc.Sequence, abc.Set):
                 yield v
         self._label = list(_iter())
 
+        self._is_writeable = True
+
     def __getitem__(self, i):
         return self._label[i]
+
+    def __hash__(self):
+        # todo: if self.flags.writeable is False, we should be able to hash
+        # this object. We could do hash(tuple(self._label)) or similar but
+        # we don't want to do the copy
+        raise TypeError("unhashable type: {!r}".format(type(self).__name__))
 
     def __len__(self):
         return len(self._label)
@@ -92,6 +103,31 @@ class Variables(abc.Sequence, abc.Set):
         else:
             return False
 
+    @property
+    def is_writeable(self):
+        """The variables can be relabeled"""
+        return self._is_writeable
+
+    def setflags(self, write=None):
+        """Set the is_writeable property.
+
+        Args:
+            writeable (bool, optional):
+                Describe whether the Variables can be relabeled.
+
+        Examples:
+            >>> from dimod.variables import Variables
+            >>> variables = Variables('abc')
+            >>> variables.is_writeable
+            True
+            >>> variables.set_flags(write=False)
+            >>> variables.is_writeable
+            False
+
+        """
+        if write is not None:
+            self._is_writeable = bool(write)
+
     # index method is overloaded by __init__
 
     def count(self, v):
@@ -99,6 +135,9 @@ class Variables(abc.Sequence, abc.Set):
         return int(v in self)
 
     def relabel(self, mapping):
+
+        if not self.is_writeable:
+            raise WriteableError("Variables.is_writeable is set to False")
 
         # put the new labels into a set for fast lookup
         try:
