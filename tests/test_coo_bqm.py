@@ -15,7 +15,41 @@
 # =============================================================================
 import unittest
 
+import numpy as np
+
+import dimod
+
 from dimod.bqm.coo_bqm import CooBQM
+from dimod.exceptions import WriteableError
+
+
+# class TestAggregate(unittest.TestCase):
+#     def test_duplicate(self):
+#         ldata = [0, 1]
+#         irow = [0, 0]
+#         icol = [1, 1]
+#         qdata = [1, 2]
+
+#         bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+#         np.testing.assert_array_equal(bqm.irow, irow)
+#         np.testing.assert_array_equal(bqm.icol, icol)
+#         np.testing.assert_array_equal(bqm.qdata, qdata)
+
+#         new = bqm.aggregate()
+
+#         new.testing.assert_array_equal(new.irow, [0])
+#         new.testing.assert_array_equal(new.icol, [1])
+#         new.testing.assert_array_equal(new.qdata, [3])
+
+
+class TestDenseLinear(unittest.TestCase):
+    def test_set_linear(self):
+        bqm = CooBQM.from_ising({'b': 1}, {('a', 'b'): -2})
+
+        bqm.linear['a'] = 5
+
+        self.assertEqual(bqm.linear, {'a': 5, 'b': 1})
 
 
 class TestFromIsing(unittest.TestCase):
@@ -33,4 +67,47 @@ class TestFromIsing(unittest.TestCase):
 
         self.assertEqual(bqm.linear, {'a': -1, 'b': 0})
         self.assertEqual(bqm.quadratic, {('a', 'b'): 1})
-        self.assertEqual(bqm.quadratic, {('a', 'b'): 1})
+
+    def test_self_loop(self):
+        bqm = CooBQM.from_ising({}, {('a', 'a'): -1})
+
+        self.assertEqual(bqm.linear, {'a': 0})
+        self.assertEqual(bqm.quadratic, {('a', 'a'): -1})  # no reduction
+
+
+class TestWriteable(unittest.TestCase):
+    def test_setflags(self):
+        bqm = CooBQM.from_ising({'a': -1}, {('a', 'b'): 1})
+        self.assertTrue(bqm.is_writeable)
+
+        bqm.relabel({'a': 0})
+
+        self.assertEqual(bqm.linear, {0: -1, 'b': 0})
+        self.assertEqual(bqm.quadratic, {(0, 'b'): 1})
+
+        bqm.setflags(write=False)
+        self.assertFalse(bqm.is_writeable)
+
+        with self.assertRaises(ValueError):
+            bqm.relabel({'b': 1})
+
+        bqm.setflags(write=True)
+        self.assertTrue(bqm.is_writeable)
+
+        bqm.relabel({'b': 1})
+
+        self.assertEqual(bqm.linear, {0: -1, 1: 0})
+        self.assertEqual(bqm.quadratic, {(0, 1): 1})
+
+    def test_set_linear(self):
+        bqm = CooBQM.from_ising({'b': 1}, {('a', 'b'): -2})
+        bqm.setflags(write=False)
+
+        with self.assertRaises(WriteableError) as e:
+            bqm.linear['a'] = 5
+
+        # make sure the type and attr are correct in the error message
+        msg = e.exception.args[0]
+        self.assertEqual(msg,
+                         ('Cannot set linear bias when {}.{} is '
+                          'False'.format(type(bqm).__name__, 'is_writeable')))

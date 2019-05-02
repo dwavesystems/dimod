@@ -13,39 +13,43 @@
 #    limitations under the License.
 #
 # =============================================================================
-from itertools import chain
-
 try:
     import collections.abc as abc
 except ImportError:
     import collections as abc
 
+from itertools import chain
+
 import numpy as np
 
-from dimod.bqm.cyutils import coo_sort
 from dimod.decorators import vartype_argument
+from dimod.exceptions import WriteableError
 from dimod.variables import Variables
-from dimod.vartypes import SPIN
+from dimod.vartypes import BINARY, SPIN
 
 __all__ = ['CooBinaryQuadraticModel',
            'CooBQM',
            ]
 
 
-class Flags(object):
-    # todo: look into enum.Flag
-    def __init__(self, bqm):
-        self.bqm = bqm
-
-        self.sorted = None  # unknown, falsy
-
-
-class ArrayLinearView(abc.Mapping):
+class DenseLinear(abc.Mapping):
     def __init__(self, bqm):
         self.bqm = bqm
 
     def __getitem__(self, v):
         return self.bqm.ldata[self.bqm.variables.index[v]]
+
+    def __setitem__(self, v, bias):
+
+        # developer note: The user can manually set bqm.ldata.flags.writeable
+        # and that would make ths function work even if bqm.is_writeable is
+        # False. However, I think it makes sense for .linear to be consistent
+        # with the rest of the bqm rather than the underlying data array only.
+        if not self.bqm.is_writeable:
+            msg = 'Cannot set linear bias when {}.is_writeable is False'
+            raise WriteableError(msg.format(type(self.bqm).__name__))
+
+        self.bqm.ldata[self.bqm.variables.index[v]] = bias
 
     def __iter__(self):
         return iter(self.bqm.variables)
@@ -53,8 +57,12 @@ class ArrayLinearView(abc.Mapping):
     def __len__(self):
         return len(self.bqm.variables)
 
+    def __repr__(self):
+        # todo: not cast to dict first
+        return str(dict(self))
 
-class CooQuadraticView(abc.Mapping):
+
+class CooQuadratic(abc.Mapping):
     def __init__(self, bqm):
         self.bqm = bqm
 
@@ -66,35 +74,13 @@ class CooQuadraticView(abc.Mapping):
 
         iu, iv = map(bqm.variables.index, interaction)
 
-        if bqm.flags.sorted:
-            # O(log(|E|))
-            if iu > iv:
-                iu, iv = iv, iu
+        mask = ((irow == iu) & (icol == iv)) ^ ((irow == iv) & (icol == iu))
+        if not np.any(mask):
+            raise KeyError
 
-            left = np.searchsorted(irow, iu, side='left')
-
-            # we could search a smaller window for the right bound by using the
-            # number of variables in the BQM but I am not sure if we want to
-            # assume that length of bqm.linear exists
-            off = np.searchsorted(irow[left:], iu, side='right')
-
-            idx = left + np.searchsorted(icol[left:left+off], iv, side='left')
-
-            if irow[idx] == iu and icol[idx] == iv:
-                return qdata[idx]
-        else:
-            # O(|E|)
-            # if we cythonized it we could avoid making the mask which would
-            # save on memory. Creating the mask is faster than iterating in
-            # python with a list
-            mask = ((irow == iu) & (icol == iv)) ^ ((irow == iv) & (icol == iu))
-            if np.any(mask):
-                return np.sum(qdata[mask])
-
-        raise KeyError
+        return np.sum(qdata[mask])
 
     def __iter__(self):
-        # note: duplicates will appear if not de-duplicated
         bqm = self.bqm
         variables = bqm.variables
         for iu, iv in zip(bqm.irow, bqm.icol):
@@ -103,13 +89,16 @@ class CooQuadraticView(abc.Mapping):
     def __len__(self):
         return len(self.bqm.qdata)
 
+    def __repr__(self):
+        # todo: not cast to dict first
+        return str(dict(self.items()))
+
     def items(self):
-        return CooQuadraticItemsView(self)
+        return CooQuadraticItemsView(self)  # much faster to iterate directly
 
 
 class CooQuadraticItemsView(abc.ItemsView):
     def __iter__(self):
-        # much faster than doing the O(|E|) or O(log|E|) bias lookups each time
         bqm = self._mapping.bqm
         variables = bqm.variables
         for iu, iv, bias in zip(bqm.irow, bqm.icol, bqm.qdata):
@@ -117,14 +106,18 @@ class CooQuadraticItemsView(abc.ItemsView):
 
 
 class CooBinaryQuadraticModel(object):
+    """
 
+    Notes:
+        The linear biases are stored in "dense" form.
+
+
+    """
     @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype,
                  variables=None,
                  dtype=np.float, index_dtype=np.int,
-                 copy=True, sort_and_reduce=False):
-
-        self.flags = Flags(self)
+                 copy=True):
 
         self.dtype = dtype = np.dtype(dtype)
         self.index_dtype = index_dtype = np.dtype(index_dtype)
@@ -134,32 +127,15 @@ class CooBinaryQuadraticModel(object):
 
         # quadratic
         irow, icol, qdata = quadratic
-        irow = np.array(irow, dtype=index_dtype, copy=copy)
-        icol = np.array(icol, dtype=index_dtype, copy=copy)
-        qdata = np.array(qdata, dtype=dtype, copy=copy)
+        self.irow = irow = np.array(irow, dtype=index_dtype, copy=copy)
+        self.icol = icol = np.array(icol, dtype=index_dtype, copy=copy)
+        self.qdata = qdata = np.array(qdata, dtype=dtype, copy=copy)
+
+        # CooBQMs have fixed shape
+        irow.flags.writeable = False
+        icol.flags.writeable = False
 
         # todo: check that they are all 1dim, same length etc
-
-        if sort_and_reduce:
-            coo_sort(irow, icol, qdata)  # in-place
-
-            # reduce unique
-            unique = ((irow[1:] != icol[:-1]) | (icol[1:] != icol[:-1]))
-            if not unique.all():
-                # copy
-                unique = np.append(True, unique)
-
-                irow = irow[unique]
-                icol = icol[unique]
-
-                unique_idxs, = np.nonzero(unique)
-                qdata = np.add.reduceat(qdata, unique_idxs, dtype=dtype)
-
-            self.flags.sorted = True
-
-        self.irow = irow
-        self.icol = icol
-        self.qdata = qdata
 
         # offset
         self.offset = dtype.type(offset)
@@ -170,42 +146,127 @@ class CooBinaryQuadraticModel(object):
         # variables
         if not copy and isinstance(variables, Variables):
             self.variables = variables
+        elif variables is None:
+            self.variables = Variables(range(len(ldata)))
         else:
             self.variables = Variables(variables)
 
         # views
-        self.linear = ArrayLinearView(self)
-        self.quadratic = CooQuadraticView(self)
+        self.linear = DenseLinear(self)
+        self.quadratic = CooQuadratic(self)
+
+    def __repr__(self):
+        return '{}.from_dicts({}, {}, {}, {!r})'.format(type(self).__name__,
+                                                        self.linear,
+                                                        self.quadratic,
+                                                        self.offset,
+                                                        self.vartype.name)
+
+    #
+    # Flags
+    #
+
+    @property
+    def is_sorted(self):
+        # determine if irow/icol are sorted
+        if hasattr(self, '_is_sorted'):
+            return self._is_sorted
+
+        return is_sorted
+
+    @property
+    def is_writeable(self):
+        return (self.variables.is_writeable or
+                self.ldata.flags.writeable or
+                self.qdata.flags.writeable)
+
+    # @is_writeable.setter
+    # def is_writeable(self, b):
+    #     flag = bool(b)
+    #     self.variables.writeable = flag
+    #     self.ldata.flags.writeable = flag
+    #     self.qdata.flags.writeable = flag
+
+    def setflags(self, write=None):
+        if write is not None:
+            self.ldata.flags.writeable = self.qdata.flags.writeable = write
+            self.variables.setflags(write=write)
+
+    #
+    # Construction
+    #
 
     @classmethod
-    def from_ising(cls, h, J, offset=0,
+    def from_dicts(cls, linear, quadratic, offset, vartype,
                    dtype=np.float, index_dtype=np.int):
 
         # get all of the labels
-        variables = Variables(chain(h, chain(*J)))
+        variables = Variables(chain(linear, chain(*quadratic)))
 
         # get the quadratic
-        num_interactions = len(J)
+        num_interactions = len(quadratic)
 
         irow = np.empty(num_interactions, dtype=index_dtype)
         icol = np.empty(num_interactions, dtype=index_dtype)
         qdata = np.empty(num_interactions, dtype=dtype)
 
         # we could probably speed this up with cython
-        for idx, ((u, v), bias) in enumerate(J.items()):
+        for idx, ((u, v), bias) in enumerate(quadratic.items()):
             irow[idx] = variables.index[u]
             icol[idx] = variables.index[v]
             qdata[idx] = bias
 
         # next linear
-        ldata = np.fromiter((h.get(v, 0) for v in variables),
+        ldata = np.fromiter((linear.get(v, 0) for v in variables),
                             count=len(variables), dtype=dtype)
 
-        return cls(ldata, (irow, icol, qdata), offset, SPIN,
-                   variables=variables,
-                   dtype=dtype, index_dtype=index_dtype,
-                   sort_and_reduce=True,
-                   copy=False)  # we just made these objects so no need to copy
+        bqm = cls(ldata, (irow, icol, qdata), offset, vartype,
+                  variables=variables,
+                  dtype=dtype, index_dtype=index_dtype,
+                  copy=False)  # we just made these objects so no need to copy
+
+        return bqm
+
+    @classmethod
+    def from_ising(cls, h, J, offset=0,
+                   dtype=np.float, index_dtype=np.int):
+        return cls.from_dicts(h, J, offset, SPIN,
+                              dtype=dtype, index_dtype=index_dtype)
+
+    @classmethod
+    def from_qubo(cls, Q, offset=0, dtype=np.float, index_dtype=np.int):
+        return cls.from_dicts({}, Q, offset, BINARY,
+                              dtype=dtype, index_dtype=index_dtype)
+
+    #
+    # Methods
+    #
+
+    # def aggregate(self, copy=True):
+    #     """Return a binary quadratic model with any duplicate interactions
+    #     aggregated.
+
+    #     Note that this will also sort the interaction vectors.
+
+    #     Args:
+    #         copy (bool, optional, default=True):
+    #             If True a new binary quadratic model is always returned. If
+    #             False a copy is made only when there are duplicate interactions.
+
+    #     Returns:
+    #         :obj:`.CooBinaryQuadraticModel`
+
+    #     """
+    #     raise NotImplementedError
+
+    def relabel(self, mapping):
+        try:
+            self.variables.relabel(mapping)
+        except WriteableError as e:
+            cls = type(self).__name__
+            msg = '{}.flags.writeable is set to False'.format(cls)
+            e.args = (msg, e.args[1:])
+            raise e
 
 
 CooBQM = CooBinaryQuadraticModel
