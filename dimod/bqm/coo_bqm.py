@@ -330,23 +330,25 @@ class CooBinaryQuadraticModel(object):
 
         Note that sort is not stable.
         """
-        if not self.is_sorted:
-            if not self.is_writeable:
-                msg = "cannot be sorted while {}.is_writeable is set to False"
-                raise WriteableError(msg.format(type(self).__name__))
+        if self.is_sorted:
+            return  # we are already done
 
-            # make the irow/icol writeable
-            self.irow.flags.writeable = True
-            self.icol.flags.writeable = True
+        if not self.is_writeable:
+            msg = "cannot be sorted while {}.is_writeable is set to False"
+            raise WriteableError(msg.format(type(self).__name__))
 
-            coo_sort(self.irow, self.icol, self.qdata)  # acts in-place
+        # make the irow/icol writeable
+        self.irow.flags.writeable = True
+        self.icol.flags.writeable = True
 
-            # mark them not writeable again
-            self.irow.flags.writeable = False
-            self.icol.flags.writeable = False
+        coo_sort(self.irow, self.icol, self.qdata)  # acts in-place
 
-            # we're now sorted
-            self._is_sorted = True
+        # mark them not writeable again
+        self.irow.flags.writeable = False
+        self.icol.flags.writeable = False
+
+        # we're now sorted
+        self._is_sorted = True
 
 
 CooBQM = CooBinaryQuadraticModel
