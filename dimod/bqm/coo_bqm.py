@@ -18,10 +18,12 @@ try:
 except ImportError:
     import collections as abc
 
+from functools import wraps
 from itertools import chain
 
 import numpy as np
 
+from dimod.bqm.cyutils import coo_sort
 from dimod.decorators import vartype_argument
 from dimod.exceptions import WriteableError
 from dimod.variables import Variables
@@ -168,10 +170,30 @@ class CooBinaryQuadraticModel(object):
 
     @property
     def is_sorted(self):
-        # determine if irow/icol are sorted
+        """True if irow, icol are sorted lexicographically"""
+
+        # because the irow/icol are immutable, we can keep the results cached
         if hasattr(self, '_is_sorted'):
             return self._is_sorted
 
+        # ideally we could speed this up with cython, but right now
+        # memoryviews don't handle read-only arrays very well (see
+        # https://github.com/dask/distributed/issues/1978) so we just do this
+        # in python
+        irow = self.irow
+        icol = self.icol
+
+        is_sorted = ((irow <= icol).all() and
+                     (irow[:-1] <= irow[1:]).all())
+
+        # todo: check that col are sorted
+        if is_sorted:
+            for idx in range(len(irow) - 1):
+                if irow[idx] == irow[idx + 1] and icol[idx] > icol[idx + 1]:
+                    is_sorted = False
+                    break
+
+        self._is_sorted = is_sorted
         return is_sorted
 
     @property
@@ -179,13 +201,6 @@ class CooBinaryQuadraticModel(object):
         return (self.variables.is_writeable or
                 self.ldata.flags.writeable or
                 self.qdata.flags.writeable)
-
-    # @is_writeable.setter
-    # def is_writeable(self, b):
-    #     flag = bool(b)
-    #     self.variables.writeable = flag
-    #     self.ldata.flags.writeable = flag
-    #     self.qdata.flags.writeable = flag
 
     def setflags(self, write=None):
         if write is not None:
@@ -263,10 +278,32 @@ class CooBinaryQuadraticModel(object):
         try:
             self.variables.relabel(mapping)
         except WriteableError as e:
-            cls = type(self).__name__
-            msg = '{}.flags.writeable is set to False'.format(cls)
-            e.args = (msg, e.args[1:])
+            msg = "cannot be relabelled while {}.is_writeable is set to False"
+            e.args = (msg.format(type(self).__name__), e.args[1:])
             raise e
+
+    def sort(self):
+        """Sort the interactions in-place.
+
+        Note that sort is not stable.
+        """
+        if not self.is_sorted:
+            if not self.is_writeable:
+                msg = "cannot be sorted while {}.is_writeable is set to False"
+                raise WriteableError(msg.format(type(self).__name__))
+
+            # make the irow/icol writeable
+            self.irow.flags.writeable = True
+            self.icol.flags.writeable = True
+
+            coo_sort(self.irow, self.icol, self.qdata)  # acts in-place
+
+            # mark them not writeable again
+            self.irow.flags.writeable = False
+            self.icol.flags.writeable = False
+
+            # we're now sorted
+            self._is_sorted = True
 
 
 CooBQM = CooBinaryQuadraticModel

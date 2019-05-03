@@ -75,6 +75,72 @@ class TestFromIsing(unittest.TestCase):
         self.assertEqual(bqm.quadratic, {('a', 'a'): -1})  # no reduction
 
 
+class TestSorted(unittest.TestCase):
+    def test_duplicate(self):
+        # nothing should change
+        ldata = [0, 1]
+        irow = [0, 0]
+        icol = [1, 1]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertTrue(bqm.is_sorted)
+
+        bqm.sort()
+
+        np.testing.assert_array_equal(bqm.irow, irow)
+        np.testing.assert_array_equal(bqm.icol, icol)
+        np.testing.assert_array_equal(bqm.qdata, qdata)
+
+    def test_unsorted(self):
+        ldata = [0, 1, 2]
+        irow = [0, 0]
+        icol = [2, 1]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertFalse(bqm.is_sorted)
+
+        bqm.sort()
+
+        np.testing.assert_array_equal(bqm.irow, [0, 0])
+        np.testing.assert_array_equal(bqm.icol, [1, 2])
+        np.testing.assert_array_equal(bqm.qdata, [2, 1])
+
+    def test_immutable_sorted(self):
+        ldata = [0, 1]
+        irow = [0, 0]
+        icol = [1, 1]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        bqm.setflags(write=False)
+
+        bqm.sort()  # already sorted so no error
+
+    def test_immutable_unsorted(self):
+        ldata = [0, 1, 2]
+        irow = [0, 0]
+        icol = [2, 1]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        bqm.setflags(write=False)
+
+        with self.assertRaises(WriteableError) as e:
+            bqm.sort()
+
+        # make sure the type and attr are correct in the error message
+        msg = e.exception.args[0]
+        self.assertEqual(msg,
+                         ("cannot be sorted while {}.{} is set to "
+                          'False'.format(type(bqm).__name__, 'is_writeable')))
+
+
 class TestWriteable(unittest.TestCase):
     def test_setflags(self):
         bqm = CooBQM.from_ising({'a': -1}, {('a', 'b'): 1})
