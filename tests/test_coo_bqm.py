@@ -42,6 +42,133 @@ from dimod.exceptions import WriteableError
 #         new.testing.assert_array_equal(new.icol, [1])
 #         new.testing.assert_array_equal(new.qdata, [3])
 
+class TestCooQuadratic(unittest.TestCase):
+    def test_get_sorted_aggregated(self):
+        ldata = [0, 1, 2]
+        irow = [0, 1]
+        icol = [1, 2]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertTrue(bqm.is_sorted)  # sanity check
+
+        self.assertEqual(bqm.quadratic[(0, 1)], 1)
+        self.assertEqual(bqm.quadratic[(1, 0)], 1)
+        self.assertEqual(bqm.quadratic[(2, 1)], 2)
+        self.assertEqual(bqm.quadratic[(1, 2)], 2)
+
+    def test_get_unsorted_aggregated(self):
+        ldata = [0, 1, 2]
+        irow = [1, 1]
+        icol = [0, 2]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertFalse(bqm.is_sorted)  # sanity check
+
+        self.assertEqual(bqm.quadratic[(0, 1)], 1)
+        self.assertEqual(bqm.quadratic[(1, 0)], 1)
+        self.assertEqual(bqm.quadratic[(2, 1)], 2)
+        self.assertEqual(bqm.quadratic[(1, 2)], 2)
+
+    def test_get_sorted_duplicates(self):
+        ldata = [0, 1, 2]
+        irow = [0, 1, 1]
+        icol = [1, 2, 2]
+        qdata = [1, 2, 1]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertTrue(bqm.is_sorted)  # sanity check
+
+        self.assertEqual(bqm.quadratic[(0, 1)], 1)
+        self.assertEqual(bqm.quadratic[(1, 0)], 1)
+        self.assertEqual(bqm.quadratic[(2, 1)], 3)
+        self.assertEqual(bqm.quadratic[(1, 2)], 3)
+
+    def test_get_unsorted_duplicates(self):
+        ldata = [0, 1, 2]
+        irow = [1, 1, 1]
+        icol = [0, 2, 0]
+        qdata = [1, 2, 3]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertFalse(bqm.is_sorted)  # sanity check
+
+        self.assertEqual(bqm.quadratic[(0, 1)], 4)
+        self.assertEqual(bqm.quadratic[(1, 0)], 4)
+        self.assertEqual(bqm.quadratic[(2, 1)], 2)
+        self.assertEqual(bqm.quadratic[(1, 2)], 2)
+
+    def test_set_sorted_aggregated(self):
+        ldata = [0, 1, 2]
+        irow = [0, 1]
+        icol = [1, 2]
+        qdata = [1, 2]
+
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+        self.assertTrue(bqm.is_sorted)  # sanity check
+
+        bqm.quadratic[(0, 1)] = 17
+
+        np.testing.assert_array_equal(bqm.qdata, [17, 2])
+
+        bqm.quadratic[(1, 0)] += 1
+
+        np.testing.assert_array_equal(bqm.qdata, [18, 2])
+
+        with self.assertRaises(KeyError):
+            bqm.quadratic[('a', 0)] = 5
+
+    # def test_get_unsorted_aggregated(self):
+    #     ldata = [0, 1, 2]
+    #     irow = [1, 1]
+    #     icol = [0, 2]
+    #     qdata = [1, 2]
+
+    #     bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+    #     self.assertFalse(bqm.is_sorted)  # sanity check
+
+    #     self.assertEqual(bqm.quadratic[(0, 1)], 1)
+    #     self.assertEqual(bqm.quadratic[(1, 0)], 1)
+    #     self.assertEqual(bqm.quadratic[(2, 1)], 2)
+    #     self.assertEqual(bqm.quadratic[(1, 2)], 2)
+
+    # def test_get_sorted_duplicates(self):
+    #     ldata = [0, 1, 2]
+    #     irow = [0, 1, 1]
+    #     icol = [1, 2, 2]
+    #     qdata = [1, 2, 1]
+
+    #     bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+    #     self.assertTrue(bqm.is_sorted)  # sanity check
+
+    #     self.assertEqual(bqm.quadratic[(0, 1)], 1)
+    #     self.assertEqual(bqm.quadratic[(1, 0)], 1)
+    #     self.assertEqual(bqm.quadratic[(2, 1)], 3)
+    #     self.assertEqual(bqm.quadratic[(1, 2)], 3)
+
+    # def test_get_unsorted_duplicates(self):
+    #     ldata = [0, 1, 2]
+    #     irow = [1, 1, 1]
+    #     icol = [0, 2, 0]
+    #     qdata = [1, 2, 3]
+
+    #     bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+
+    #     self.assertFalse(bqm.is_sorted)  # sanity check
+
+        # self.assertEqual(bqm.quadratic[(0, 1)], 4)
+        # self.assertEqual(bqm.quadratic[(1, 0)], 4)
+        # self.assertEqual(bqm.quadratic[(2, 1)], 2)
+        # self.assertEqual(bqm.quadratic[(1, 2)], 2)
+
 
 class TestDenseLinear(unittest.TestCase):
     def test_set_linear(self):

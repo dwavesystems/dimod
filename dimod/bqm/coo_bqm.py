@@ -47,6 +47,7 @@ class DenseLinear(abc.Mapping):
         # and that would make ths function work even if bqm.is_writeable is
         # False. However, I think it makes sense for .linear to be consistent
         # with the rest of the bqm rather than the underlying data array only.
+        # See also CooQuadratic.__setitem__
         if not self.bqm.is_writeable:
             msg = 'Cannot set linear bias when {}.is_writeable is False'
             raise WriteableError(msg.format(type(self.bqm).__name__))
@@ -68,19 +69,67 @@ class CooQuadratic(abc.Mapping):
     def __init__(self, bqm):
         self.bqm = bqm
 
-    def __getitem__(self, interaction):
+    def _get_index(self, interaction):
+        # get either a boolean mask or a slice for a particular interaction
         bqm = self.bqm
         irow = bqm.irow
         icol = bqm.icol
-        qdata = bqm.qdata
+        variables = bqm.variables
 
-        iu, iv = map(bqm.variables.index, interaction)
+        u, v = interaction
 
-        mask = ((irow == iu) & (icol == iv)) ^ ((irow == iv) & (icol == iu))
-        if not np.any(mask):
-            raise KeyError
+        iu = variables.index[u]
+        iv = variables.index[v]
 
-        return np.sum(qdata[mask])
+        if bqm.is_sorted:
+            # O(log(|E|))
+            if iu > iv:
+                iu, iv = iv, iu
+
+            # we want the window in irow. There are more clever ways to get
+            # the right side (going back up the binary search tree) but this
+            # is good enough for now
+            row_left = np.searchsorted(irow, iu, side='left')
+            row_right = row_left + np.searchsorted(irow[row_left:], iu,
+                                                   side='right')
+
+            # there may be duplicates so again we need to check for a window
+            col_left = row_left + np.searchsorted(icol[row_left:row_right], iv,
+                                                  side='left')
+
+            # if we know it is aggregated we could skip this step
+            col_right = col_left + np.searchsorted(irow[col_left:row_right], iv,
+                                                   side='right')
+
+            if irow[col_left] == iu and icol[col_left] == iv:
+                return slice(col_left, col_right)
+        else:
+            # O(|E|)
+            # if we cythonized it we could avoid making the mask which would
+            # save on memory. Creating the mask is faster than iterating in
+            # python with a list
+            mask = ((irow == iu) & (icol == iv)) ^ ((irow == iv) & (icol == iu))
+            if np.any(mask):
+                return mask
+
+        raise KeyError
+
+    def __getitem__(self, interaction):
+        return self.bqm.qdata[self._get_index(interaction)].sum()
+
+    def __setitem__(self, interaction, bias):
+        # developer note: See note in DenseLinear.__setitem__
+        if not self.bqm.is_writeable:
+            msg = 'Cannot set linear bias when {}.is_writeable is False'
+
+        index = self._get_index(interaction)
+
+        qdata = self.bqm.qdata
+
+        # because there might be duplicates, we set them all to zero before
+        # setting the first equal to bias
+        qdata[index] = 0
+        qdata[index][0] = bias  # _get_index guarantees this exists
 
     def __iter__(self):
         bqm = self.bqm
@@ -179,19 +228,13 @@ class CooBinaryQuadraticModel(object):
         # ideally we could speed this up with cython, but right now
         # memoryviews don't handle read-only arrays very well (see
         # https://github.com/dask/distributed/issues/1978) so we just do this
-        # in python
+        # in numpy
         irow = self.irow
         icol = self.icol
 
         is_sorted = ((irow <= icol).all() and
-                     (irow[:-1] <= irow[1:]).all())
-
-        # todo: check that col are sorted
-        if is_sorted:
-            for idx in range(len(irow) - 1):
-                if irow[idx] == irow[idx + 1] and icol[idx] > icol[idx + 1]:
-                    is_sorted = False
-                    break
+                     (irow[:-1] <= irow[1:]).all() and
+                     (icol[:-1] <= icol[1:])[irow[:-1] == irow[1:]].all())
 
         self._is_sorted = is_sorted
         return is_sorted
