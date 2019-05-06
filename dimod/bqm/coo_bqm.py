@@ -300,22 +300,60 @@ class CooBinaryQuadraticModel(object):
     # Methods
     #
 
-    # def aggregate(self, copy=True):
-    #     """Return a binary quadratic model with any duplicate interactions
-    #     aggregated.
+    # developer note: this method returns a new object in order to keep it
+    # consistent with SampleSet.aggregate and because unlike .relabel
+    # and .sort it changes the size of the bqm.
+    def aggregate(self, copy=True):
+        """Return a binary quadratic model with any duplicate interactions
+        aggregated.
 
-    #     Note that this will also sort the interaction vectors.
+        Note that this will also sort the interaction vectors.
 
-    #     Args:
-    #         copy (bool, optional, default=True):
-    #             If True a new binary quadratic model is always returned. If
-    #             False a copy is made only when there are duplicate interactions.
+        Args:
+            copy (bool, optional, default=True):
+                If True a new binary quadratic model is always returned. If
+                False a copy is made only when there are duplicate interactions.
 
-    #     Returns:
-    #         :obj:`.CooBinaryQuadraticModel`
+        Returns:
+            :obj:`.CooBinaryQuadraticModel`
 
-    #     """
-    #     raise NotImplementedError
+        """
+        if self.is_sorted:
+            base = self
+        else:
+            base = self.copy()
+            base.sort()
+            copy = False  # we've done a copy so no need for another
+
+        irow = base.irow
+        icol = base.icol
+
+        # this is a case that can be sped-up with cython to avoid the
+        # intermediate objects. Though it is still faster than doing python
+        # loops
+        unique = np.empty(len(irow), dtype=bool)
+        if len(irow):
+            unique[0] = True
+        unique[1:] = ((irow[1:] != irow[:-1]) | (icol[1:] != icol[:-1]))
+
+        if unique.all():
+            qdata = base.qdata
+        else:
+            irow = irow[unique]
+            icol = icol[unique]
+
+            unique_idxs, = np.nonzero(unique)
+            qdata = np.add.reduceat(base.qdata, unique_idxs, dtype=base.dtype)
+
+            copy = False  # we've done a copy so no need for another
+
+        return CooBQM(base.ldata,
+                      (irow, icol, qdata),
+                      base.offset,
+                      base.vartype,
+                      variables=base.variables,
+                      dtype=base.dtype, index_dtype=base.index_dtype,
+                      copy=copy)
 
     def relabel(self, mapping):
         try:

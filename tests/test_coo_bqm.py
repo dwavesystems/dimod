@@ -23,24 +23,22 @@ from dimod.bqm.coo_bqm import CooBQM
 from dimod.exceptions import WriteableError
 
 
-# class TestAggregate(unittest.TestCase):
-#     def test_duplicate(self):
-#         ldata = [0, 1]
-#         irow = [0, 0]
-#         icol = [1, 1]
-#         qdata = [1, 2]
+class TestAggregate(unittest.TestCase):
+    def test_duplicate(self):
+        ldata = [0, 1]
+        irow = [0, 0]
+        icol = [1, 1]
+        qdata = [1, 2]
 
-#         bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
+        bqm = CooBQM(ldata, (irow, icol, qdata), 0, 'SPIN')
 
-#         np.testing.assert_array_equal(bqm.irow, irow)
-#         np.testing.assert_array_equal(bqm.icol, icol)
-#         np.testing.assert_array_equal(bqm.qdata, qdata)
+        new = bqm.aggregate()
 
-#         new = bqm.aggregate()
+        np.testing.assert_array_equal(new.ldata, [0, 1])
+        np.testing.assert_array_equal(new.irow, [0])
+        np.testing.assert_array_equal(new.icol, [1])
+        np.testing.assert_array_equal(new.qdata, [3])
 
-#         new.testing.assert_array_equal(new.irow, [0])
-#         new.testing.assert_array_equal(new.icol, [1])
-#         new.testing.assert_array_equal(new.qdata, [3])
 
 class TestCooQuadratic(unittest.TestCase):
     def test_get_sorted_aggregated(self):
