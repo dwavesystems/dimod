@@ -531,12 +531,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         obj._result_hook = result_hook
         return obj
 
-    def _resolve_future(self):
-        samples = self._result_hook(self._future)
-        self.__init__(samples.record, samples.variables, samples.info, samples.vartype)
-        del self._future
-        del self._result_hook
-
     ###############################################################################################
     # Special Methods
     ###############################################################################################
@@ -987,7 +981,10 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         # if it doesn't have the attribute then it is already resolved
         if hasattr(self, '_future'):
-            self._resolve_future()
+            samples = self._result_hook(self._future)
+            self.__init__(samples.record, samples.variables, samples.info, samples.vartype)
+            del self._future
+            del self._result_hook
 
     def aggregate(self):
         """Create a new SampleSet with repeated samples aggregated.
