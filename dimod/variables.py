@@ -61,11 +61,20 @@ class Variables(abc.Sequence, abc.Set):
     def __getitem__(self, i):
         return self._label[i]
 
+    # support python2 pickle
+    def __getstate__(self):
+        return {'_label': self._label, 'index': self.index}
+
     def __len__(self):
         return len(self._label)
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self._label)
+
+    # support python2 pickle
+    def __setstate__(self, state):
+        for attr, obj in state.items():
+            setattr(self, attr, obj)
 
     def __str__(self):
         return str(self._label)
