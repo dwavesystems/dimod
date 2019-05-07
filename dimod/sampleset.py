@@ -642,8 +642,7 @@ class SampleSet(abc.Iterable, abc.Sized):
     @property
     def info(self):
         """Dict of information about the :class:`SampleSet` as a whole."""
-        if hasattr(self, '_future'):
-            self._resolve_future()
+        self.resolve()
         return self._info
 
     @property
@@ -668,8 +667,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             array([-1.5, -0.5, -0.5,  2.5])
 
         """
-        if hasattr(self, '_future'):
-            self._resolve_future()
+        self.resolve()
         return self._record
 
     @property
@@ -679,8 +677,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         Corresponds to columns of the sample field of :attr:`.SampleSet.record`.
 
         """
-        if hasattr(self, '_future'):
-            self._resolve_future()
+        self.resolve()
         return self._variables
 
     @property
@@ -975,6 +972,13 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         self.variables.relabel(mapping)
         return self
+
+    def resolve(self):
+        """Ensure that the sampleset is resolved if constructed from a future.
+        """
+        # if it doesn't have the attribute then it is already resolved
+        if hasattr(self, '_future'):
+            self._resolve_future()
 
     def aggregate(self):
         """Create a new SampleSet with repeated samples aggregated.
