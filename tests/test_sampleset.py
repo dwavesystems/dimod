@@ -15,6 +15,7 @@
 # ================================================================================================
 import unittest
 import json
+import pickle
 
 try:
     import collections.abc as abc
@@ -380,6 +381,19 @@ class TestLowest(unittest.TestCase):
 
         self.assertEqual(sampleset.lowest(atol=.1), sampleset.truncate(2))
         self.assertEqual(sampleset.lowest(atol=0), sampleset.truncate(1))
+
+
+class TestPickle(unittest.TestCase):
+    def test_without_future(self):
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1},
+                                                  {'a': -1, 'b': -1}],
+                                                 dimod.SPIN, energy=0)
+        sampleset.info.update({'a': 5})
+
+        new = pickle.loads(pickle.dumps(sampleset))
+
+        self.assertEqual(new, sampleset)
+        self.assertEqual(new.info, {'a': 5})
 
 
 class TestTruncate(unittest.TestCase):

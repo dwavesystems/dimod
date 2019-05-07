@@ -580,6 +580,16 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return (self.record.sample == other.record.sample[:, other_idx]).all()
 
+    def __getstate__(self):
+        """Ensure that any futures are resolved before pickling."""
+        self.resolve()
+        return {attr: getattr(self, attr)
+                for attr in self.__slots__ if hasattr(self, attr)}
+
+    def __setstate__(self, state):
+        for attr, obj in state.items():
+            setattr(self, attr, obj)
+
     def __repr__(self):
         return "{}({!r}, {}, {}, {!r})".format(self.__class__.__name__,
                                                self.record,
@@ -683,8 +693,7 @@ class SampleSet(abc.Iterable, abc.Sized):
     @property
     def vartype(self):
         """:class:`.Vartype` of the samples."""
-        if hasattr(self, '_future'):
-            self._resolve_future()
+        self.resolve()
         return self._vartype
 
     ###############################################################################################
