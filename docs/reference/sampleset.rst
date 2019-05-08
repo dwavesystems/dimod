@@ -60,6 +60,7 @@ Methods
    SampleSet.from_samples_bqm
    SampleSet.from_serializable
    SampleSet.lowest
+   SampleSet.resolve
    SampleSet.relabel_variables
    SampleSet.samples
    SampleSet.to_pandas_dataframe
