@@ -18,6 +18,7 @@ try:
 except ImportError:
     import collections as abc
 
+from copy import deepcopy
 from functools import wraps
 from itertools import chain
 
@@ -206,6 +207,16 @@ class CooBinaryQuadraticModel(object):
         self.linear = DenseLinear(self)
         self.quadratic = CooQuadratic(self)
 
+    def __eq__(self, other):
+        # todo: performance here can be much improved
+        return (self.linear == other.linear and
+                self.quadratic == other.quadratic and
+                self.offset == other.offset and
+                self.vartype == other.vartype)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def __repr__(self):
         return '{}.from_dicts({}, {}, {}, {!r})'.format(type(self).__name__,
                                                         self.linear,
@@ -354,6 +365,9 @@ class CooBinaryQuadraticModel(object):
                       variables=base.variables,
                       dtype=base.dtype, index_dtype=base.index_dtype,
                       copy=copy)
+
+    def copy(self):
+        return deepcopy(self)
 
     def relabel(self, mapping):
         try:
