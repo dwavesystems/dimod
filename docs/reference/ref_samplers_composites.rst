@@ -35,6 +35,34 @@ Methods
    ExactSolver.sample_ising
    ExactSolver.sample_qubo
 
+Null Sampler
+------------
+
+.. automodule:: dimod.reference.samplers.null_sampler
+
+Class
+~~~~~
+
+.. autoclass:: NullSampler
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   NullSampler.parameters
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   NullSampler.sample
+   NullSampler.sample_ising
+   NullSampler.sample_qubo
+
 Random Sampler
 --------------
 
