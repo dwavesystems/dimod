@@ -29,7 +29,7 @@ except ImportError:
 
 from dimod.core.composite import ComposedSampler
 
-__all__ = ['TruncateComposite']
+__all__ = ['TrackingComposite']
 
 
 def tracking(f):
@@ -139,8 +139,9 @@ class TrackingComposite(ComposedSampler):
 
     def clear(self):
         """Clear all the inputs/outputs"""
-        self.inputs.clear()
-        self.outputs.clear()
+        # we want to use self.inputs.clear() but it's not in python2
+        del self.inputs[:]
+        del self.outputs[:]
 
     @tracking
     def sample(self, bqm, **parameters):
