@@ -46,6 +46,15 @@ class TestSample(unittest.TestCase):
         self.assertEqual(sampler.inputs, [])
         self.assertEqual(sampler.outputs, [])
 
+    def test_missing_inputs(self):
+        sampler = dimod.TrackingComposite(dimod.ExactSolver())
+
+        with self.assertRaises(ValueError):
+            sampler.input
+
+        with self.assertRaises(ValueError):
+            sampler.output
+
     def test_sample(self):
         sampler = dimod.TrackingComposite(dimod.ExactSolver())
 
