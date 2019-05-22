@@ -13,6 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
+import itertools
 import unittest
 
 import numpy as np
@@ -38,6 +39,86 @@ class TestAggregate(unittest.TestCase):
         np.testing.assert_array_equal(new.irow, [0])
         np.testing.assert_array_equal(new.icol, [1])
         np.testing.assert_array_equal(new.qdata, [3])
+
+
+class TestChangeVartype(unittest.TestCase):
+
+    def check_energies(self, spin, binary):
+        # another thing to check is that the energies all match
+        assert spin.vartype is dimod.SPIN
+        assert binary.vartype is dimod.BINARY
+
+        variables = list(spin.variables)
+
+        self.assertEqual(set(spin.variables), set(binary.variables))
+
+        for spins in itertools.product([-1, +1], repeat=len(variables)):
+            spin_sample = dict(zip(variables, spins))
+            binary_sample = {v: (s + 1)//2 for v, s in spin_sample.items()}
+
+            spin_energy = spin.offset
+            spin_energy += sum(spin_sample[v] * bias
+                               for v, bias in spin.linear.items())
+            spin_energy += sum(spin_sample[v] * spin_sample[u] * bias
+                               for (u, v), bias in spin.quadratic.items())
+
+            binary_energy = binary.offset
+            binary_energy += sum(binary_sample[v] * bias
+                                 for v, bias in binary.linear.items())
+            binary_energy += sum(binary_sample[v] * binary_sample[u] * bias
+                                 for (u, v), bias in binary.quadratic.items())
+
+            self.assertAlmostEqual(spin_energy, binary_energy)
+
+    def test_binary_to_spin_linear_and_quadratic(self):
+        bqm = CooBQM([0, .5, 0], ([0, 1, 0], [1, 2, 1], [.5, 1.7, 3]), 3, 'BINARY')
+        cp = bqm.copy()
+
+        bqm.change_vartype(dimod.SPIN)
+
+        self.check_energies(binary=cp, spin=bqm)
+
+    def test_spin_to_binary_empty(self):
+        bqm = CooBQM([], ([], [], []), 0, 'SPIN')
+
+        bqm.change_vartype(dimod.BINARY)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.assertEqual(bqm.linear, {})
+        self.assertEqual(bqm.quadratic, {})
+        self.assertEqual(bqm.offset, 0)
+
+    def test_spin_to_binary_linear_only(self):
+        bqm = CooBQM([-1, 1.5], ([], [], []), 3, 'SPIN')
+        cp = bqm.copy()
+
+        bqm.change_vartype(dimod.BINARY)
+
+        self.check_energies(cp, bqm)
+
+    def test_spin_to_binary_quadratic_only(self):
+        bqm = CooBQM([0, 0, 0], ([0, 1, 0], [1, 2, 1], [.5, 1.7, 3]), 3, 'SPIN')
+        cp = bqm.copy()
+
+        bqm.change_vartype(dimod.BINARY)
+
+        self.check_energies(cp, bqm)
+
+    def test_spin_to_spin_empty(self):
+        bqm = CooBQM([], ([], [], []), 0, 'SPIN')
+        cp = bqm.copy()
+
+        bqm.change_vartype(dimod.SPIN)
+
+        self.assertEqual(bqm, cp)
+
+    def test_spin_to_spin_linear_only(self):
+        bqm = CooBQM([-1, 1.5], ([], [], []), 3, 'SPIN')
+        cp = bqm.copy()
+
+        bqm.change_vartype(dimod.SPIN)
+
+        self.assertEqual(bqm, cp)
 
 
 class TestCooQuadratic(unittest.TestCase):

@@ -13,6 +13,8 @@
 #    limitations under the License.
 #
 # =============================================================================
+from __future__ import division
+
 try:
     import collections.abc as abc
 except ImportError:
@@ -365,6 +367,49 @@ class CooBinaryQuadraticModel(object):
                       variables=base.variables,
                       dtype=base.dtype, index_dtype=base.index_dtype,
                       copy=copy)
+
+    @vartype_argument('vartype')
+    def change_vartype(self, vartype):
+        """Change the binary quadratic model's vartype in-place."""
+        if not self.is_writeable:
+            msg = "cannot be sorted while {}.is_writeable is set to False"
+            raise WriteableError(msg.format(type(self).__name__))
+
+        if self.vartype is BINARY and vartype is SPIN:
+
+            # qx = q(s+1)/2
+            self.ldata /= 2
+            self.offset += self.ldata.sum()
+
+            # x'Qx = (s'Qs + 1'Qs + s'Q1 + 1'Q1) / 4
+            self.qdata /= 4
+
+            np.add.at(self.ldata, self.irow, self.qdata)
+            np.add.at(self.ldata, self.icol, self.qdata)
+
+            self.offset += self.qdata.sum()
+
+            self.vartype = SPIN
+
+        elif self.vartype is SPIN and vartype is BINARY:
+
+            # hs = 2hx - h1
+            self.offset -= self.ldata.sum()
+            self.ldata *= 2
+
+            # s'Js = 4x'Jx - 2*1'Jx - 2*x'J1 + 1'J1
+            self.offset += self.qdata.sum()
+
+            # we want qdata *= 4, but to save on making an intermediate object
+            # in the next step, we do half of it here
+            self.qdata *= 2
+
+            np.subtract.at(self.ldata, self.irow, self.qdata)
+            np.subtract.at(self.ldata, self.icol, self.qdata)
+
+            self.qdata *= 2
+
+            self.vartype = BINARY
 
     def copy(self):
         return deepcopy(self)
