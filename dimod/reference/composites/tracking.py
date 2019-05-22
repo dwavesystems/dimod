@@ -88,6 +88,19 @@ class TrackingComposite(ComposedSampler):
         [OrderedDict([('h', {'a': -1}), ('J', {('a', 'b'): 1}), ('num_reads', 5)]),
          OrderedDict([('Q', {('a', 'b'): 1})])]
 
+        In the case that you want to nest the tracking composite, there are two
+        patterns for retrieving the data
+
+        >>> from dimod import ScaleComposite, TrackingComposite, ExactSolver
+        ...
+        >>> sampler = ScaleComposite(TrackingComposite(ExactSolver()))
+        >>> sampler.child.inputs  # empty because we haven't called sample
+        []
+
+        >>> intermediate_sampler = TrackingComposite(ExactSolver())
+        >>> sampler = ScaleComposite(intermediate_sampler)
+        >>> intermediate_sampler.inputs
+        []
 
     """
 
