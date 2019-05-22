@@ -20,4 +20,5 @@ from dimod.reference.composites.roofduality import RoofDualityComposite
 from dimod.reference.composites.scalecomposite import *
 from dimod.reference.composites.spin_transform import *
 from dimod.reference.composites.structure import *
+from dimod.reference.composites.tracking import TrackingComposite
 from dimod.reference.composites.truncatecomposite import TruncateComposite
