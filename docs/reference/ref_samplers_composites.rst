@@ -261,6 +261,42 @@ Methods
    StructureComposite.sample_qubo
 
 
+Tracking Composite
+------------------
+
+.. automodule:: dimod.reference.composites.tracking
+
+Class
+~~~~~
+
+.. autoclass:: TrackingComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   TrackingComposite.input
+   TrackingComposite.inputs
+   TrackingComposite.output
+   TrackingComposite.outputs
+   TrackingComposite.parameters
+   TrackingComposite.properties
+
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   TrackingComposite.clear
+   TrackingComposite.sample
+   TrackingComposite.sample_ising
+   TrackingComposite.sample_qubo
+
+
 Truncate Composite
 ------------------
 
