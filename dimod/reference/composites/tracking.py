@@ -13,9 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-"""A composite that tracks inputs and outputs.
-
-"""
+"""A composite that tracks inputs and outputs."""
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
@@ -62,7 +60,7 @@ class TrackingComposite(ComposedSampler):
 
     Args:
         child (:obj:`dimod.Sampler`):
-            A dimod sampler
+            A dimod sampler.
 
         copy (bool, optional, default=False):
             If True, the inputs/outputs are copied (with :func:`copy.deepcopy`)
@@ -103,7 +101,7 @@ class TrackingComposite(ComposedSampler):
 
     @property
     def input(self):
-        """The most recent input to any sampling method"""
+        """The most recent input to any sampling method."""
         try:
             return self.inputs[-1]
         except IndexError:
@@ -112,12 +110,12 @@ class TrackingComposite(ComposedSampler):
 
     @property
     def inputs(self):
-        """All of the inputs to any sampling methods"""
+        """All of the inputs to any sampling methods."""
         return self._inputs
 
     @property
     def output(self):
-        """The most recent outut of any sampling method"""
+        """The most recent output of any sampling method."""
         try:
             return self.outputs[-1]
         except IndexError:
@@ -126,7 +124,7 @@ class TrackingComposite(ComposedSampler):
 
     @property
     def outputs(self):
-        """All of the outputs from any sampling methods"""
+        """All of the outputs from any sampling methods."""
         return self._outputs
 
     @property
@@ -138,7 +136,7 @@ class TrackingComposite(ComposedSampler):
         return {'child_properties': self.child.properties.copy()}
 
     def clear(self):
-        """Clear all the inputs/outputs"""
+        """Clear all the inputs/outputs."""
         # we want to use self.inputs.clear() but it's not in python2
         del self.inputs[:]
         del self.outputs[:]
