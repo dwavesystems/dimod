@@ -145,13 +145,72 @@ class TrackingComposite(ComposedSampler):
 
     @tracking
     def sample(self, bqm, **parameters):
-        """Sample from the given child sampler."""
+        """Sample from the child sampler and store the given inputs/outputs.
+
+        The binary quadratic model and any parameters are stored in
+        :attr:`.inputs`. The returned sample set is stored in :attr:`.outputs`.
+
+        Args:
+            bqm (:obj:`dimod.BinaryQuadraticModel`):
+                Binary quadratic model to be sampled from.
+
+            **kwargs:
+                Parameters for the sampling method, specified by the child
+                sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+
+        """
         return self.child.sample(bqm, **parameters)
 
     @tracking
     def sample_ising(self, h, J, **parameters):
+        """Sample from the child sampler and store the given inputs/outputs.
+
+        The binary quadratic model and any parameters are stored in
+        :attr:`.inputs`. The returned sample set is stored in :attr:`.outputs`.
+
+        Args:
+            h (dict/list):
+                Linear biases of the Ising problem. If a dict, should be of the
+                form `{v: bias, ...}` where is a spin-valued variable and `bias`
+                is its associated bias. If a list, it is treated as a list of
+                biases where the indices are the variable labels.
+
+            J (dict[(variable, variable), bias]):
+                Quadratic biases of the Ising problem.
+
+            **kwargs:
+                Parameters for the sampling method, specified by the child
+                sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+
+        """
         return self.child.sample_ising(h, J, **parameters)
 
     @tracking
     def sample_qubo(self, Q, **parameters):
+        """Sample from the child sampler and store the given inputs/outputs.
+
+        The binary quadratic model and any parameters are stored in
+        :attr:`.inputs`. The returned sample set is stored in :attr:`.outputs`.
+
+        Args:
+            Q (dict):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
+                where `u`, `v`, are binary-valued variables and `bias` is their
+                associated coefficient.
+
+            **kwargs:
+                Parameters for the sampling method, specified by the child
+                sampler.
+
+        Returns:
+            :obj:`dimod.SampleSet`
+
+        """
         return self.child.sample_qubo(Q, **parameters)
