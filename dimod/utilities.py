@@ -20,7 +20,12 @@ import itertools
 
 from six import iteritems, itervalues
 
-__all__ = ['ising_energy', 'qubo_energy', 'ising_to_qubo', 'qubo_to_ising']
+__all__ = ['ising_energy',
+           'qubo_energy',
+           'ising_to_qubo',
+           'qubo_to_ising',
+           'child_structure_dfs',
+           ]
 
 
 def ising_energy(sample, h, J, offset=0.0):
@@ -340,3 +345,48 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
             # don't need to add it to intermediate_to_new because it is a self-label
 
     return old_to_intermediate, intermediate_to_new
+
+
+def child_structure_dfs(sampler, seen=None):
+    """Find the structure of a composed sampler by a depth first search on the
+    children.
+
+    Args:
+        sampler (:obj:`.Sampler`):
+            A :class:`.Structured` sampler or a composed sampler with at least
+            one structured child.
+
+        seen (set, optional, default=False):
+            A set of the ids of the child samplers that have already been
+            checked.
+
+    Returns:
+        :class:`~collections.namedtuple`: A named tuple of the form
+        `Structure(nodelist, edgelist, adjacency)`, where the 3-tuple values
+        are the :attr:`.Structured.nodelist`, :attr:`.Structured.edgelist`
+        and :attr:`.Structured.adjacency` attributes of the first structured
+        sampler encountered.
+
+    """
+    seen = set() if seen is None else seen
+
+    if id(sampler) not in seen:
+        try:
+            return sampler.structure
+        except AttributeError:
+            # hasattr just tries to access anyway...
+            pass
+
+    seen.add(id(sampler))
+
+    for child in sampler.children:
+        if id(child) in seen:
+            continue
+
+        try:
+            return child_structure_dfs(child, seen=seen)
+        except ValueError:
+            # tree has no child samplers
+            pass
+
+    raise ValueError("no structured sampler found")
