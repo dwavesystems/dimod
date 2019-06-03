@@ -2259,3 +2259,33 @@ class TestFromNetworkxGraph(unittest.TestCase):
                                                     offset=6)
         new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
         self.assertEqual(bqm, new)
+
+
+class TestIsWriteable(unittest.TestCase):
+    def test_offset(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        bqm.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            bqm.offset = 5
+
+    def test_info(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        bqm.is_writeable = False
+        with self.assertRaises(WriteableError):
+            bqm.info['a'] = 1
+
+    def test_biases(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        bqm.is_writeable = False
+        with self.assertRaises(WriteableError):
+            bqm.linear['a'] = 5
+
+        with self.assertRaises(WriteableError):
+            bqm.add_variable('a', 5)
+
+        with self.assertRaises(WriteableError):
+            bqm.add_interaction('a', 'b', 5)

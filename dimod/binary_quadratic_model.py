@@ -254,7 +254,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     @vartype_argument('vartype')
     def __init__(self, linear, quadratic, offset, vartype, **kwargs):
 
-        self._adj = {}
+        self._adj = LockableDict()
 
         self.linear = LinearView(self)
         self.quadratic = QuadraticView(self)
@@ -262,7 +262,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         self.offset = offset  # we are agnostic to type, though generally should behave like a number
         self.vartype = vartype
-        self.info = kwargs  # any additional kwargs are kept as info (metadata)
+        self.info = LockableDict(kwargs)  # any additional kwargs are kept as info (metadata)
 
         # add linear, quadratic
         self.add_variables_from(linear)
@@ -323,6 +323,28 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
     def __iter__(self):
         return iter(self.adj)
+
+    @property
+    def is_writeable(self):
+        return getattr(self, '_writeable', True)
+
+    @is_writeable.setter
+    def is_writeable(self, b):
+        b = bool(b)  # cast
+
+        self._writeable = b
+
+        # also set the flags on the relevant data object objects
+        self._adj.is_writeable = self.info.is_writeable = b
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @offset.setter
+    @lockable_method
+    def offset(self, offset):
+        self._offset = offset
 
     @property
     def variables(self):
