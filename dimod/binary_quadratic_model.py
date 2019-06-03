@@ -72,7 +72,6 @@ __all__ = ['BinaryQuadraticModel', 'BQM']
 
 class LockableDict(dict):
     """A dict that can turn writeablity on and off"""
-    __slots__ = ('_writeable',)
 
     # methods like update, clear etc are not wrappers for __setitem__,
     # __delitem__ so they need to be overwritten
