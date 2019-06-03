@@ -17,6 +17,7 @@
 import numpy as np
 import unittest
 
+import dimod
 import dimod.testing as dtest
 
 from dimod import HigherOrderComposite, ExactSolver
@@ -87,3 +88,58 @@ class TestFixedVariableComposite(unittest.TestCase):
         self.assertEqual(response.first.sample, {0: 1, 1: 1})
         self.assertAlmostEqual(response.first.energy, -2.5)
         self.assertTrue(response.first.penalty_satisfaction)
+
+
+class TestInitialState(unittest.TestCase):
+    def setUp(self):
+        # get a sampler that accepts an initial_state
+        base = dimod.NullSampler(parameters=['initial_state'])
+        self.tracker = dimod.TrackingComposite(base)
+
+    def test_quadratic(self):
+
+        sampler = HigherOrderComposite(self.tracker)
+
+        Q = {(0, 0): 1, (0, 1): 2}
+
+        sampleset = sampler.sample_hubo(Q, initial_state={0: 1, 1: 1})
+
+        # nothing should change
+        self.assertEqual(self.tracker.input['initial_state'], {0: 1, 1: 1})
+
+    def test_higherorder_binary(self):
+        sampler = HigherOrderComposite(self.tracker)
+
+        Q = {'abc': -1, 'ab': 1}
+
+        sampleset = sampler.sample_hubo(Q, initial_state={'a': 1, 'b': 1, 'c': 0})
+
+        initial_state = self.tracker.input['initial_state']
+
+        self.assertIn(initial_state, [{'a': 1, 'b': 1, 'c': 0, 'a*b': 1},
+                                      {'a': 1, 'b': 1, 'c': 0, 'a*c': 0},
+                                      {'a': 1, 'b': 1, 'c': 0, 'b*c': 0},
+                                      {'a': 1, 'b': 1, 'c': 0, 'b*a': 1},
+                                      {'a': 1, 'b': 1, 'c': 0, 'c*a': 0},
+                                      {'a': 1, 'b': 1, 'c': 0, 'c*b': 0},
+                                      ])
+
+    def test_higherorder_spin(self):
+        sampler = HigherOrderComposite(self.tracker)
+
+        J = {'abc': -1, 'ab': 1}
+
+        sampleset = sampler.sample_hising({}, J,
+                                          initial_state={'a': 1, 'b': 1, 'c': -1})
+
+        bqm = self.tracker.input['bqm']
+        initial_state = self.tracker.input['initial_state']
+
+        samples = dimod.ExactSolver().sample(bqm).samples()
+
+        # make sure that the initial-state is minimzed over the product/aux
+        mask = (samples[:, ['a', 'b', 'c']] == [1, 1, -1]).all(axis=1)
+        for v, val in initial_state.items():
+            if v in ['a', 'b', 'c']:
+                continue
+            self.assertTrue(samples[mask, [v]][0, 0], val)

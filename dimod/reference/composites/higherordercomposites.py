@@ -34,7 +34,10 @@ from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
 from dimod.response import SampleSet
 
-__all__ = 'HigherOrderComposite', 'PolyScaleComposite', 'PolyTruncateComposite'
+__all__ = ['HigherOrderComposite',
+           'PolyScaleComposite',
+           'PolyTruncateComposite',
+           ]
 
 
 class HigherOrderComposite(ComposedPolySampler):
@@ -112,6 +115,12 @@ class HigherOrderComposite(ComposedPolySampler):
             discard_unsatisfied (bool, optional): default is False. If True
                 will discard samples that do not satisfy the penalty conditions.
 
+            initial_state (dict, optional):
+                Only accepted when the child sampler accepts an initial state.
+                The initial state is given in terms of the variables in
+                the binary polynomial. The corresponding initial values are
+                populated for use by the child sampler.
+
             **parameters: Parameters for the sampling method, specified by
             the child sampler.
 
@@ -121,12 +130,60 @@ class HigherOrderComposite(ComposedPolySampler):
         """
 
         bqm = make_quadratic(poly, penalty_strength, vartype=poly.vartype)
+
+        if 'initial_state' in parameters:
+            initial_state = expand_initial_state(bqm,
+                                                 parameters['initial_state'])
+            parameters['initial_state'] = initial_state
+
         response = self.child.sample(bqm, **parameters)
 
         return polymorph_response(response, poly, bqm,
                                   penalty_strength=penalty_strength,
                                   keep_penalty_variables=keep_penalty_variables,
                                   discard_unsatisfied=discard_unsatisfied)
+
+
+def expand_initial_state(bqm, initial_state):
+    """Determine the values for the initial state for a binary quadratic model
+    generated from a higher order polynomial.
+
+    Args:
+        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
+            its reduction info.
+
+        initial_state (dict):
+            An initial state for the higher order polynomial that generated the
+            binary quadratic model.
+
+    Returns:
+        dict: A fully specified initial state.
+
+    """
+    # Developer note: this function relies heavily on assumptions about the
+    # existance and structure of bqm.info['reduction']. We should consider
+    # changing the way that the reduction information is passed.
+    if not bqm.info['reduction']:
+        return initial_state  # saves making a copy
+
+    initial_state = dict(initial_state)  # so we can edit it in-place
+
+    for (u, v), changes in bqm.info['reduction'].items():
+
+        uv = changes['product']
+        initial_state[uv] = initial_state[u] * initial_state[v]
+
+        if 'auxiliary' in changes:
+            # need to figure out the minimization from the initial_state
+            aux = changes['auxiliary']
+
+            en = (initial_state[u] * bqm.adj[aux].get(u, 0) +
+                  initial_state[v] * bqm.adj[aux].get(v, 0) +
+                  initial_state[uv] * bqm.adj[aux].get(uv, 0))
+
+            initial_state[aux] = min(bqm.vartype.value, key=lambda val: en*val)
+
+    return initial_state
 
 
 def penalty_satisfaction(response, bqm):
