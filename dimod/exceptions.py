@@ -37,3 +37,7 @@ class BinaryQuadraticModelSizeError(BinaryQuadraticModelValueError):
 
 class BinaryQuadraticModelStructureError(BinaryQuadraticModelValueError):
     """Raised when the binary quadratic model does not fit the sampler"""
+
+
+class WriteableError(ValueError):
+    """Raised when trying to modify an immutable object."""
