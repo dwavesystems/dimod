@@ -59,7 +59,7 @@ import numpy as np
 
 from six import itervalues, iteritems
 
-from dimod.decorators import vartype_argument
+from dimod.decorators import vartype_argument, lockable_method
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict
@@ -67,7 +67,51 @@ from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
 from dimod.vartypes import Vartype
 
-__all__ = 'BinaryQuadraticModel', 'BQM'
+__all__ = ['BinaryQuadraticModel', 'BQM']
+
+
+class LockableDict(dict):
+    """A dict that can turn writeablity on and off"""
+    __slots__ = ('_writeable',)
+
+    # methods like update, clear etc are not wrappers for __setitem__,
+    # __delitem__ so they need to be overwritten
+
+    @property
+    def is_writeable(self):
+        return getattr(self, '_writeable', True)
+
+    @is_writeable.setter
+    def is_writeable(self, b):
+        self._writeable = bool(b)
+
+    @lockable_method
+    def __setitem__(self, key, value):
+        super(LockableDict, self).__setitem__(key, value)
+
+    @lockable_method
+    def __delitem__(self, key):
+        super(LockableDict, self).__delitem__(key)
+
+    @lockable_method
+    def clear(self):
+        super(LockableDict, self).clear()
+
+    @lockable_method
+    def pop(self, *args, **kwargs):
+        super(LockableDict, self).pop(*args, **kwargs)
+
+    @lockable_method
+    def popitem(self):
+        super(LockableDict, self).popitem()
+
+    @lockable_method
+    def setdefault(self, *args, **kwargs):
+        super(LockableDict, self).setdefault(*args, **kwargs)
+
+    @lockable_method
+    def update(self, *args, **kwargs):
+        super(LockableDict, self).update(*args, **kwargs)
 
 
 class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
