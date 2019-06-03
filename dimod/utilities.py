@@ -370,17 +370,17 @@ def child_structure_dfs(sampler, seen=None):
     """
     seen = set() if seen is None else seen
 
-    if id(sampler) not in seen:
+    if sampler not in seen:
         try:
             return sampler.structure
         except AttributeError:
             # hasattr just tries to access anyway...
             pass
 
-    seen.add(id(sampler))
+    seen.add(sampler)
 
     for child in sampler.children:
-        if id(child) in seen:
+        if child in seen:
             continue
 
         try:
