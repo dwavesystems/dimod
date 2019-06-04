@@ -20,6 +20,8 @@ import itertools
 
 from six import iteritems, itervalues
 
+from dimod.decorators import lockable_method
+
 __all__ = ['ising_energy',
            'qubo_energy',
            'ising_to_qubo',
@@ -390,3 +392,46 @@ def child_structure_dfs(sampler, seen=None):
             pass
 
     raise ValueError("no structured sampler found")
+
+
+class LockableDict(dict):
+    """A dict that can turn writeablity on and off"""
+
+    # methods like update, clear etc are not wrappers for __setitem__,
+    # __delitem__ so they need to be overwritten
+
+    @property
+    def is_writeable(self):
+        return getattr(self, '_writeable', True)
+
+    @is_writeable.setter
+    def is_writeable(self, b):
+        self._writeable = bool(b)
+
+    @lockable_method
+    def __setitem__(self, key, value):
+        super(LockableDict, self).__setitem__(key, value)
+
+    @lockable_method
+    def __delitem__(self, key):
+        super(LockableDict, self).__delitem__(key)
+
+    @lockable_method
+    def clear(self):
+        super(LockableDict, self).clear()
+
+    @lockable_method
+    def pop(self, *args, **kwargs):
+        super(LockableDict, self).pop(*args, **kwargs)
+
+    @lockable_method
+    def popitem(self):
+        super(LockableDict, self).popitem()
+
+    @lockable_method
+    def setdefault(self, *args, **kwargs):
+        super(LockableDict, self).setdefault(*args, **kwargs)
+
+    @lockable_method
+    def update(self, *args, **kwargs):
+        super(LockableDict, self).update(*args, **kwargs)

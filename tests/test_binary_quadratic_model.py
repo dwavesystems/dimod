@@ -2289,3 +2289,20 @@ class TestIsWriteable(unittest.TestCase):
 
         with self.assertRaises(WriteableError):
             bqm.add_interaction('a', 'b', 5)
+
+    def test_already_existing_biases(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+
+        bqm.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            bqm.add_variable('a', 1)
+
+        with self.assertRaises(WriteableError):
+            bqm.add_interaction('a', 'b', 1)
+
+        with self.assertRaises(WriteableError):
+            bqm.linear['a'] += 6
+
+        with self.assertRaises(WriteableError):
+            bqm.adj['a']['b'] += 5

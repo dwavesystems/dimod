@@ -62,55 +62,12 @@ from six import itervalues, iteritems
 from dimod.decorators import vartype_argument, lockable_method
 from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.sampleset import as_samples
-from dimod.utilities import resolve_label_conflict
+from dimod.utilities import resolve_label_conflict, LockableDict
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
 from dimod.vartypes import Vartype
 
 __all__ = ['BinaryQuadraticModel', 'BQM']
-
-
-class LockableDict(dict):
-    """A dict that can turn writeablity on and off"""
-
-    # methods like update, clear etc are not wrappers for __setitem__,
-    # __delitem__ so they need to be overwritten
-
-    @property
-    def is_writeable(self):
-        return getattr(self, '_writeable', True)
-
-    @is_writeable.setter
-    def is_writeable(self, b):
-        self._writeable = bool(b)
-
-    @lockable_method
-    def __setitem__(self, key, value):
-        super(LockableDict, self).__setitem__(key, value)
-
-    @lockable_method
-    def __delitem__(self, key):
-        super(LockableDict, self).__delitem__(key)
-
-    @lockable_method
-    def clear(self):
-        super(LockableDict, self).clear()
-
-    @lockable_method
-    def pop(self, *args, **kwargs):
-        super(LockableDict, self).pop(*args, **kwargs)
-
-    @lockable_method
-    def popitem(self):
-        super(LockableDict, self).popitem()
-
-    @lockable_method
-    def setdefault(self, *args, **kwargs):
-        super(LockableDict, self).setdefault(*args, **kwargs)
-
-    @lockable_method
-    def update(self, *args, **kwargs):
-        super(LockableDict, self).update(*args, **kwargs)
 
 
 class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
@@ -335,6 +292,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         # also set the flags on the relevant data object objects
         self._adj.is_writeable = self.info.is_writeable = b
+        for neighbors in self._adj.values():
+            neighbors.is_writeable = b
 
     @property
     def offset(self):
@@ -514,7 +473,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             else:
                 _adj[v][v] = bias
         else:
-            _adj[v] = {v: bias}
+            _adj[v] = LockableDict({v: bias})
 
         try:
             self._counterpart.add_variable(v, bias, vartype=self.vartype)
@@ -636,9 +595,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         else:
             # so that they exist.
             if u not in self:
-                _adj[u] = {}
+                _adj[u] = LockableDict()
             if v not in self:
-                _adj[v] = {}
+                _adj[v] = LockableDict()
 
         if u in _adj[v]:
             _adj[u][v] = _adj[v][u] = _adj[u][v] + bias
