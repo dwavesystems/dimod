@@ -20,6 +20,8 @@ import unittest
 from itertools import groupby
 import itertools
 
+import dimod
+
 from dimod import ising_to_qubo, qubo_to_ising, ising_energy, qubo_energy
 
 
@@ -217,3 +219,39 @@ def normalized_matrix(mat):
     smat = sorted(((sorted(k), v) for k, v in mat.items()), key=key_fn)
     return dict((tuple(k), s) for k, g in groupby(smat, key=key_fn) for s in
                 [sum(v for _, v in g)] if s != 0)
+
+
+class TestChildStructureDFS(unittest.TestCase):
+    def test_sampler(self):
+        # not a composed sampler
+
+        nodelist = list(range(5))
+        edgelist = list(itertools.combinations(nodelist, 2))
+
+        class Dummy(dimod.Structured):
+            @property
+            def nodelist(self):
+                return nodelist
+
+            @property
+            def edgelist(self):
+                return edgelist
+
+        sampler = Dummy()
+
+        structure = dimod.child_structure_dfs(sampler)
+        self.assertEqual(structure.nodelist, nodelist)
+        self.assertEqual(structure.edgelist, edgelist)
+
+    def test_composed_sampler(self):
+        nodelist = list(range(5))
+        edgelist = list(itertools.combinations(nodelist, 2))
+
+        structured_sampler = dimod.StructureComposite(dimod.NullSampler(),
+                                                      nodelist, edgelist)
+
+        sampler = dimod.TrackingComposite(structured_sampler)
+
+        structure = dimod.child_structure_dfs(sampler)
+        self.assertEqual(structure.nodelist, nodelist)
+        self.assertEqual(structure.edgelist, edgelist)

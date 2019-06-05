@@ -33,6 +33,17 @@ Decorators
    vartype_argument
 
 
+Graph-like
+==========
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   child_structure_dfs
+
+
 Serialization
 =============
 

@@ -117,7 +117,7 @@ class Structured:
     def structure(self):
         """Structure of the structured sampler formatted as a
         :class:`~collections.namedtuple`, `Structure(nodelist, edgelist, adjacency)`,
-        where the 3-tuple values are the :attr:`.nodelist` and :attr:`.edgelist`
-        properties and :meth:`.adjacency` method.
+        where the 3-tuple values are the :attr:`.nodelist`, :attr:`.edgelist`
+        and :attr:`.adjacency` attributes.
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
