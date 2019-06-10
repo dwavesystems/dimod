@@ -20,6 +20,7 @@ except ImportError:
 
 from operator import eq
 
+from dimod.decorators import lockable_method
 from dimod.utilities import resolve_label_conflict
 
 from six import PY3
@@ -43,7 +44,7 @@ class Variables(abc.Sequence, abc.Set):
         iterable: An iterable of variable labels.
 
     """
-    __slots__ = '_label', 'index'
+    __slots__ = ('_label', 'index', '_writeable')
 
     def __init__(self, iterable):
         self.index = index = CallableDict()
@@ -101,12 +102,21 @@ class Variables(abc.Sequence, abc.Set):
         else:
             return False
 
+    @property
+    def is_writeable(self):
+        return getattr(self, '_writeable', True)
+
+    @is_writeable.setter
+    def is_writeable(self, b):
+        self._writeable = bool(b)
+
     # index method is overloaded by __init__
 
     def count(self, v):
         # everything is unique
         return int(v in self)
 
+    @lockable_method
     def relabel(self, mapping):
 
         # put the new labels into a set for fast lookup

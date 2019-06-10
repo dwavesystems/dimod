@@ -31,9 +31,11 @@ import numpy as np
 from numpy.lib import recfunctions
 
 from dimod.decorators import vartype_argument
+from dimod.exceptions import WriteableError
 from dimod.package_info import __version__
 from dimod.serialization.format import Formatter
 from dimod.serialization.utils import array2bytes, bytes2array
+from dimod.utilities import LockableDict
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
 from dimod.views.samples import SampleView, SamplesArray
@@ -291,7 +293,9 @@ class SampleSet(abc.Iterable, abc.Sized):
                  '_record',
                  '_result_hook',
                  '_variables',
-                 '_vartype')
+                 '_vartype',
+                 '_writeable',
+                 )
 
     _REQUIRED_FIELDS = ['sample', 'energy', 'num_occurrences']
 
@@ -317,10 +321,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                    "and labels ({})").format(num_variables, len(variables))
             raise ValueError(msg)
 
-        # cast info to a dict if it's a mapping or similar
-        if not isinstance(info, dict):
-            info = dict(info)
-        self._info = info
+        self._info = LockableDict(info)
 
         # vartype is checked by vartype_argument decorator
         self._vartype = vartype
@@ -690,6 +691,20 @@ class SampleSet(abc.Iterable, abc.Sized):
         self.resolve()
         return self._vartype
 
+    @property
+    def is_writeable(self):
+        return getattr(self, '_writeable', True)
+
+    @is_writeable.setter
+    def is_writeable(self, b):
+        b = bool(b)  # cast
+
+        self._writeable = b
+
+        self.record.flags.writeable = b
+        self.variables.is_writeable = b
+        self.info.is_writeable = b
+
     ###############################################################################################
     # Views
     ###############################################################################################
@@ -925,6 +940,9 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         if not inplace:
             return self.copy().change_vartype(vartype, energy_offset, inplace=True)
+
+        if not self.is_writeable:
+            raise WriteableError("SampleSet is not writeable")
 
         if energy_offset:
             self.record.energy = self.record.energy + energy_offset

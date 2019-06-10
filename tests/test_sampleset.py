@@ -734,3 +734,17 @@ class Test_concatenate(unittest.TestCase):
     def test_empty(self):
         with self.assertRaises(ValueError):
             dimod.concatenate([])
+
+
+class TestWriteable(unittest.TestCase):
+    def test_locked(self):
+        ss = dimod.SampleSet.from_samples(([[1, 1], [0, 0]], 'ab'),
+                                          dimod.BINARY, energy=[1, 1])
+
+        ss.is_writeable = False
+
+        with self.assertRaises(dimod.exceptions.WriteableError):
+            ss.relabel_variables({'a': 'c'})
+
+        with self.assertRaises(dimod.exceptions.WriteableError):
+            ss.change_vartype('SPIN', inplace=True)
