@@ -18,6 +18,8 @@ try:
 except ImportError:
     import collections as abc
 
+from dimod.utilities import LockableDict
+
 
 class BQMView(object):
     __slots__ = '_adj',
@@ -69,7 +71,7 @@ class LinearView(BQMView, abc.MutableMapping):
         if v in adj:
             adj[v][v] = bias
         else:
-            adj[v] = {v: bias}
+            adj[v] = LockableDict({v: bias})
 
     def __str__(self):
         return str(dict(self))
