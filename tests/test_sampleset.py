@@ -308,6 +308,25 @@ class TestAggregate(unittest.TestCase):
 
         self.assertEqual(target, ss1.aggregate())
 
+    def test_num_occurences(self):
+        samples = [[-1, -1, +1],
+                   [-1, +1, +1],
+                   [-1, +1, +1],
+                   [-1, -1, -1],
+                   [-1, +1, +1]]
+        agg_samples = [[-1, -1, +1],
+                       [-1, +1, +1],
+                       [-1, -1, -1]]
+        labels = 'abc'
+
+        sampleset = dimod.SampleSet.from_samples((samples, labels), energy=0,
+                                                 vartype=dimod.SPIN)
+        aggregated = dimod.SampleSet.from_samples((agg_samples, labels), energy=0,
+                                                  vartype=dimod.SPIN,
+                                                  num_occurrences=[1, 3, 1])
+
+        self.assertEqual(sampleset.aggregate(), aggregated)
+
 
 class TestAppend(unittest.TestCase):
     def test_sampleset1_append1(self):
