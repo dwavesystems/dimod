@@ -1004,12 +1004,16 @@ class SampleSet(abc.Iterable, abc.Sized):
         order = np.argsort(indices)
         indices = indices[order]
 
+        # and on the inverse
+        revorder = np.empty(len(order), dtype=order.dtype)
+        revorder[order] = np.arange(len(order))
+        inverse = revorder[inverse]
+
         record = self.record[indices]
 
         # fix the number of occurrences
         record.num_occurrences = 0
         for old_idx, new_idx in enumerate(inverse):
-            new_idx = order[new_idx]
             record[new_idx].num_occurrences += self.record[old_idx].num_occurrences
 
         # dev note: we don't check the energies as they should be the same
