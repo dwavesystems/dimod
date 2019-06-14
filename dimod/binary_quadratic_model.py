@@ -1512,8 +1512,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             # However, sample.items() is ~10x faster than {sample[v] for v in sample}, therefore
             # it is much more efficient to dump sample into a dictionary for repeated reads
             sample = dict(sample)
-
-        en = self.offset
+        en = 0
+        en += self.offset
         en += sum(linear[v] * sample[v] for v in linear)
         en += sum(sample[u] * sample[v] * quadratic[(u, v)] for u, v in quadratic)
         return en
