@@ -53,7 +53,7 @@ try:
 except ImportError:
     import collections as abc
 
-from numbers import Number
+from numbers import Integral, Number
 
 import numpy as np
 
@@ -1739,11 +1739,28 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         from dimod.package_info import __version__
         schema_version = "2.0.0"
 
+        def iter_variables(variables):
+            # want to handle things like numpy numbers and fractions that do not
+            # serialize so easy
+            for v in variables:
+                if isinstance(v, Integral):
+                    yield int(v)
+                elif isinstance(v, Number):
+                    yield float(v)
+                elif isinstance(v, str):
+                    yield v
+                elif isinstance(v, (abc.Sequence, abc.Set)):
+                    yield tuple(iter_variables(v))
+                else:
+                    yield v
+
+        variables = list(iter_variables(self.variables))
+
         try:
-            variables = sorted(self.variables)
+            variables.sort()
         except TypeError:
-            # sorting unlike types in py3
-            variables = list(self.variables)
+            # cannot unlike types in py3
+            pass
 
         num_variables = len(variables)
 
