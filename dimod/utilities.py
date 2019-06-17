@@ -369,6 +369,9 @@ def child_structure_dfs(sampler, seen=None):
         and :attr:`.Structured.adjacency` attributes of the first structured
         sampler encountered.
 
+    Raises:
+        ValueError: If no structured sampler is found.
+
     """
     seen = set() if seen is None else seen
 
@@ -381,7 +384,7 @@ def child_structure_dfs(sampler, seen=None):
 
     seen.add(sampler)
 
-    for child in sampler.children:
+    for child in getattr(sampler, 'children', ()):  # getattr handles samplers
         if child in seen:
             continue
 

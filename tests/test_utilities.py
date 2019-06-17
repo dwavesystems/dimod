@@ -255,3 +255,12 @@ class TestChildStructureDFS(unittest.TestCase):
         structure = dimod.child_structure_dfs(sampler)
         self.assertEqual(structure.nodelist, nodelist)
         self.assertEqual(structure.edgelist, edgelist)
+
+    def test_unstructured_sampler(self):
+        with self.assertRaises(ValueError):
+            dimod.child_structure_dfs(dimod.NullSampler())
+
+        nested = dimod.TrackingComposite(dimod.NullSampler())
+
+        with self.assertRaises(ValueError):
+            dimod.child_structure_dfs(nested)
