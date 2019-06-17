@@ -1359,7 +1359,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                 "info": self.info,
                 "version": {"dimod": __version__,
                             "sampleset_schema": schema_version},
-                "variable_labels": list(self.variables),
+                "variable_labels": self.variables.to_serializable(),
                 "use_bytes": bool(use_bytes)}
 
     def _asdict(self):

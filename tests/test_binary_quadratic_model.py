@@ -14,14 +14,15 @@
 #
 # ================================================================================================
 
-import unittest
-import random
-import itertools
-import tempfile
-import shutil
-import json
 import collections
+import fractions
+import itertools
+import json
 import pickle
+import random
+import shutil
+import tempfile
+import unittest
 
 from os import path
 
@@ -2220,6 +2221,16 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(bqm, new)
         self.assertEqual(new.info, {"tag": 5})
+
+    def test_variable_labels(self):
+        h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
+             fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,
+             '6': 6}
+        J = {}
+
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, J)
+
+        json.dumps(bqm.to_serializable())
 
 
 class TestZeroField(unittest.TestCase):

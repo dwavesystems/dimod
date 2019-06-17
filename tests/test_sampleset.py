@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 import unittest
+import fractions
 import json
 import pickle
 
@@ -647,6 +648,15 @@ class TestSerialization(unittest.TestCase):
         new = dimod.SampleSet.from_serializable(json.loads(json_str))
 
         self.assertEqual(sampleset, new)
+
+    def test_numpy_variable_labels(self):
+        h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
+             fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,
+             '6': 6}
+
+        sampleset = dimod.NullSampler().sample_ising(h, {})
+
+        json.dumps(sampleset.to_serializable())
 
 
 @unittest.skipUnless(_pandas, "no pandas present")

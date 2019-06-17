@@ -13,6 +13,8 @@
 #    limitations under the License.
 #
 # =============================================================================
+from numbers import Integral, Number
+
 try:
     import collections.abc as abc
 except ImportError:
@@ -26,6 +28,8 @@ from dimod.utilities import resolve_label_conflict
 from six import PY3
 from six.moves import map
 
+__all__ = ['Variables']
+
 
 class CallableDict(abc.Callable, dict):
     """Dict that can be accessed like a function."""
@@ -35,6 +39,23 @@ class CallableDict(abc.Callable, dict):
         if v not in self:
             raise ValueError('missing element {!r}'.format(v))
         return self[v]
+
+
+def iter_serialize_variables(variables):
+    # want to handle things like numpy numbers and fractions that do not
+    # serialize so easy
+    for v in variables:
+        if isinstance(v, Integral):
+            yield int(v)
+        elif isinstance(v, Number):
+            yield float(v)
+        elif isinstance(v, str):
+            yield v
+        # we want Collection, but that's not available in py2.7
+        elif isinstance(v, (abc.Sequence, abc.Set)):
+            yield tuple(iter_serialize_variables(v))
+        else:
+            yield v
 
 
 class Variables(abc.Sequence, abc.Set):
@@ -115,6 +136,9 @@ class Variables(abc.Sequence, abc.Set):
     def count(self, v):
         # everything is unique
         return int(v in self)
+
+    def to_serializable(self):
+        return list(iter_serialize_variables(self))
 
     @lockable_method
     def relabel(self, mapping):
