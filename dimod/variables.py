@@ -41,6 +41,23 @@ class CallableDict(abc.Callable, dict):
         return self[v]
 
 
+def iter_serialize_variables(variables):
+    # want to handle things like numpy numbers and fractions that do not
+    # serialize so easy
+    for v in variables:
+        if isinstance(v, Integral):
+            yield int(v)
+        elif isinstance(v, Number):
+            yield float(v)
+        elif isinstance(v, str):
+            yield v
+        # we want Collection, but that's not available in py2.7
+        elif isinstance(v, (abc.Sequence, abc.Set)):
+            yield tuple(iter_serialize_variables(v))
+        else:
+            yield v
+
+
 class Variables(abc.Sequence, abc.Set):
     """set-like and list-like variable tracking.
 
@@ -121,23 +138,7 @@ class Variables(abc.Sequence, abc.Set):
         return int(v in self)
 
     def to_serializable(self):
-        def iter_variables(variables):
-            # want to handle things like numpy numbers and fractions that do not
-            # serialize so easy
-            for v in variables:
-                if isinstance(v, Integral):
-                    yield int(v)
-                elif isinstance(v, Number):
-                    yield float(v)
-                elif isinstance(v, str):
-                    yield v
-                # we want Collection, but that's not available in py2.7
-                elif isinstance(v, (abc.Sequence, abc.Set)):
-                    yield tuple(iter_variables(v))
-                else:
-                    yield v
-
-        return list(iter_variables(self))
+        return list(iter_serialize_variables(self))
 
     @lockable_method
     def relabel(self, mapping):

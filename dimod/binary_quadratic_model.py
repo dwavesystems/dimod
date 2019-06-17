@@ -65,6 +65,7 @@ from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict, LockableDict
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
+from dimod.variables import iter_serialize_variables
 from dimod.vartypes import Vartype
 
 __all__ = ['BinaryQuadraticModel', 'BQM']
@@ -1739,22 +1740,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         from dimod.package_info import __version__
         schema_version = "2.0.0"
 
-        def iter_variables(variables):
-            # want to handle things like numpy numbers and fractions that do not
-            # serialize so easy
-            for v in variables:
-                if isinstance(v, Integral):
-                    yield int(v)
-                elif isinstance(v, Number):
-                    yield float(v)
-                elif isinstance(v, str):
-                    yield v
-                elif isinstance(v, (abc.Sequence, abc.Set)):
-                    yield tuple(iter_variables(v))
-                else:
-                    yield v
-
-        variables = list(iter_variables(self.variables))
+        variables = list(iter_serialize_variables(self.variables))
 
         try:
             variables.sort()
