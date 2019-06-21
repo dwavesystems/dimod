@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 import collections
 import fractions
@@ -1808,6 +1808,14 @@ class TestConvert(unittest.TestCase):
         J = {(0, 1): 1}
         bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))
+
+    def test_from_ising_h_list_0_biases(self):
+        h = [0, 0, 0]  # var 2 should be ignored
+        J = {(0, 1): 1}
+        bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: 0, 1: 0},
+                                                         {(0, 1): 1}, 1,
+                                                         dimod.SPIN))
 
     @unittest.skipUnless(_pandas, "No pandas installed")
     def test_to_pandas_dataframe(self):

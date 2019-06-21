@@ -2021,7 +2021,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 Linear biases of the Ising problem. If a dict, should be of the
                 form `{v: bias, ...}` where v is a spin-valued variable and `bias`
                 is its associated bias. If a list, it is treated as a list of
-                biases where the indices are the variable labels.
+                biases where the indices are the variable labels, ignoring 0s.
 
             J (dict[(variable, variable), bias]):
                 Quadratic biases of the Ising problem.
@@ -2047,7 +2047,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         if isinstance(h, abc.Sequence):
-            h = dict(enumerate(h))
+            h = dict((v, b) for v, b in enumerate(h) if b)
 
         return cls(h, J, offset, Vartype.SPIN)
 
