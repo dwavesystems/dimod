@@ -25,6 +25,8 @@ cdef extern from "<algorithm>" namespace "std" nogil:
 ctypedef np.float64_t Bias
 ctypedef np.uint32_t VarIndex
 
+bias_dtype = np.float64
+
 ctypedef pair[VarIndex, Bias] OutVar
 ctypedef pair[vector[OutVar], Bias] InVar
 
@@ -35,15 +37,72 @@ cdef bint lt_first(const OutVar a, const OutVar b):
 
 
 cdef class AdjVectorBQM:
+    """
+
+    This can be instantiated in several ways:
+
+        AdjVectorBQM()
+            Creates an empty binary quadratic model
+
+        AdjVectorBQM(n)
+            Where n is the number of nodes.
+
+        AdjVectorBQM((linear, [quadratic, [offset]]))
+            Where linear, quadratic are:
+                dict[int, bias]
+                sequence[bias]
+            *NOT IMPLEMENTED YET*
+
+        AdjVectorBQM(bqm)
+            Where bqm is another binary quadratic model (equivalent to
+            bqm.to_adjvector())
+            *NOT IMPLEMENTED YET*
+
+        AdjVectorBQM(D)
+            Where D is a dense matrix D
+
+    """
     cdef vector[InVar] adj_
     cdef vector[bint] sorted_  # whether currently sorted
 
-    def __init__(self, object num_variables=0):
-        if isinstance(num_variables, Integral):
-            for _ in range(num_variables):
+    def __init__(self, object arg1=0):
+
+
+        cdef Bias [:, :] D  # in case it's dense
+        cdef size_t rows, cols
+        cdef VarIndex u, v
+        cdef Bias b
+
+        if isinstance(arg1, Integral):
+            for _ in range(arg1):
                 self.append_variable()
+        elif isinstance(arg1, tuple):
+            raise NotImplementedError  # update docstring
+        elif hasattr(arg1, "to_adjvector"):
+            # we might want a more generic is_bqm function or similar
+            raise NotImplementedError  # update docstring
         else:
-            raise NotImplementedError
+            # assume it's dense
+
+            D = np.atleast_2d(np.asarray(arg1, dtype=bias_dtype))
+
+            rows = D.shape[0]
+            cols = D.shape[1]
+
+            if D.ndim != 2 or rows != cols:
+                raise ValueError("expected dense to be a 2 dim square array")
+
+            self.__init__(rows)  # instantiate the variables
+
+            for u in range(rows):
+                for v in range(cols):
+                    b = D[u, v]
+
+                    if b:
+                        if u == v:
+                            self.set_linear(u, b)
+                        else:
+                            self.add_interaction(u, v, b)
 
     def __len__(self):
         # number of variables
