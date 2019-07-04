@@ -82,7 +82,12 @@ ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
-                        include_dirs=['dimod/roof_duality/src/'])]
+                        include_dirs=['dimod/roof_duality/src/']),
+              Extension("dimod.bqm.cybqm",
+                        ['dimod/bqm/cybqm'+ext]),
+              Extension("dimod.bqm.cymutablebqm",
+                        ['dimod/bqm/cymutablebqm'+ext]),
+              ]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
