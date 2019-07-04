@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from dimod.bqm.cymutablebqm import AdjVectorBQM
 
 
@@ -10,14 +12,25 @@ class TestConstruction(unittest.TestCase):
         bqm = AdjVectorBQM()
         self.assertEqual(bqm.shape, (0, 0))
 
-    def test_append_variable(self):
-        bqm = AdjVectorBQM()
-        bqm.append_variable()
-        self.assertEqual(bqm.get_linear(0), 0)
-        bqm.append_variable(.5)
-        self.assertEqual(bqm.get_linear(1), .5)
-        with self.assertRaises(ValueError):
-            bqm.get_linear(2)
+    def test_integral_zero(self):
+        bqm = AdjVectorBQM(0)
+        self.assertEqual(bqm.shape, (0, 0))
+
+    def test_integral_nonzero(self):
+        bqm = AdjVectorBQM(5)
+        self.assertEqual(bqm.shape, (5, 0))
+
+        adj = bqm.to_lists()
+        self.assertEqual(adj, list(([], 0) for _ in range(5)))
+
+    def test_dense(self):
+        bqm = AdjVectorBQM(np.triu(np.ones((5, 5))))
+        adj = bqm.to_lists()
+        self.assertEqual(adj, [([(1, 1.0), (2, 1.0), (3, 1.0), (4, 1.0)], 1.0),
+                               ([(0, 1.0), (2, 1.0), (3, 1.0), (4, 1.0)], 1.0),
+                               ([(0, 1.0), (1, 1.0), (3, 1.0), (4, 1.0)], 1.0),
+                               ([(0, 1.0), (1, 1.0), (2, 1.0), (4, 1.0)], 1.0),
+                               ([(0, 1.0), (1, 1.0), (2, 1.0), (3, 1.0)], 1.0)])
 
 
 class TestAddGetInteraction(unittest.TestCase):
