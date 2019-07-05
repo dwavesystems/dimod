@@ -1,8 +1,10 @@
+# distutils: language = c++
+# cython: language_level=3
+
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
 cimport numpy as np
-
 
 ctypedef np.float64_t Bias
 ctypedef np.uint32_t VarIndex
