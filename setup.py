@@ -91,7 +91,9 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
 
 if USE_CYTHON:
     from Cython.Build import cythonize
-    extensions = cythonize(extensions)
+    extensions = cythonize(extensions,
+                           # annotate=True,
+                           )
 
 ###############################################################################
 # The following code to fail gracefully when when c++ extensions cannot be

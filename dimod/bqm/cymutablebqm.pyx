@@ -69,7 +69,7 @@ cdef class AdjVectorBQM:
 
 
         cdef Bias [:, :] D  # in case it's dense
-        cdef size_t rows, cols
+        cdef size_t num_variables
         cdef VarIndex u, v
         cdef Bias b
 
@@ -86,16 +86,15 @@ cdef class AdjVectorBQM:
 
             D = np.atleast_2d(np.asarray(arg1, dtype=bias_dtype))
 
-            rows = D.shape[0]
-            cols = D.shape[1]
+            num_variables = D.shape[0]
 
-            if D.ndim != 2 or rows != cols:
+            if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            self.__init__(rows)  # instantiate the variables
+            self.__init__(num_variables)  # instantiate the variables
 
-            for u in range(rows):
-                for v in range(cols):
+            for u in range(num_variables):
+                for v in range(num_variables):
                     b = D[u, v]
 
                     if b:
@@ -220,33 +219,25 @@ cdef class AdjVectorBQM:
         # this is always a copy
         self.sort_and_reduce()
 
-        cdef AdjArrayBQM bqm = AdjArrayBQM(len(self), self.num_interactions)
+        # make a 0-length BQM but then manually resize it, note that this
+        # treats them as vectors
+        cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
+        bqm.invars_.resize(len(self))
+        bqm.outvars_.resize(2*self.num_interactions)
 
-        # these are hard-coded for now, but we obviously want to import them
-        cdef vector[pair[size_t, Bias]].iterator invar_iter = bqm.invars_.begin()
-        cdef vector[pair[VarIndex, Bias]].iterator outvar_iter = bqm.outvars_.begin()
-
-        cdef vector[InVar].iterator adj_iter = self.adj_.begin()
-        cdef vector[OutVar].iterator neighbourhood_iter
-
-        cdef size_t out_loc = 0
-
-        while adj_iter != self.adj_.end():
-
+        cdef OutVar outvar
+        cdef VarIndex u
+        cdef size_t outvar_idx = 0
+        for u in range(self.adj_.size()):
+            
             # set the linear bias
-            deref(invar_iter).second = deref(adj_iter).second
+            bqm.invars_[u].second = self.adj_[u].second
+            bqm.invars_[u].first = outvar_idx
 
             # set the quadratic biases
-            deref(invar_iter).first = out_loc
-            neighbourhood_iter = deref(adj_iter).first.begin()
-
-            while neighbourhood_iter != deref(adj_iter).first.end():
-                postincrement(outvar_iter)[0] = postincrement(neighbourhood_iter)[0]
-                out_loc += 1
-
-            # onto the next!
-            preincrement(invar_iter)
-            preincrement(adj_iter)
+            for outvar in self.adj_[u].first:
+                bqm.outvars_[outvar_idx] = outvar
+                outvar_idx += 1
 
         return bqm
 
