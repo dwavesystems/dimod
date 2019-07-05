@@ -105,6 +105,7 @@ ENV/
 # cython intermediate files
 dimod/roof_duality/_fix_variables.cpp
 dimod/bqm/*.cpp
+dimod/bqm/*.html
 
 # benchmarking stuff
 benchmarks/html/
