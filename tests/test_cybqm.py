@@ -49,3 +49,16 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(quad, [(1, 1), (2, 3),
                                 (0, 1), (2, 1),
                                 (0, 3), (1, 1)])
+
+
+class TestEnergies(unittest.TestCase):
+    def test_2path(self):
+        bqm = AdjArrayBQM([[.1, -1], [0, -.2]])
+        samples = [[-1, -1],
+                   [-1, +1],
+                   [+1, -1],
+                   [+1, +1]]
+
+        energies = bqm.energies(np.asarray(samples))
+
+        np.testing.assert_array_almost_equal(energies, [-.9, .7, 1.3, -1.1])
