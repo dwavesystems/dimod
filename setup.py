@@ -20,6 +20,7 @@ import sys
 import os
 
 from setuptools import setup
+from distutils import sysconfig
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
@@ -138,6 +139,25 @@ class ve_build_ext(build_ext):
             raise BuildFailed()
 
     def build_extension(self, ext):
+
+        # compiler = self.compiler.compiler_type
+
+        # if compiler == 'msvc':
+        #     extra_compile_args = ['/openmp']
+        #     extra_link_args = []
+        # else:
+        #     compiler_name = os.path.basename(sysconfig.get_config_var("CC"))
+        #     if 'clang' in compiler_name:
+        #         extra_compile_args = ['-Xpreprocessor -fopenmp']
+        #         extra_link_args = ['-lomp']
+        #     else:
+        #         extra_compile_args = ['-fopenmp']
+        #         extra_link_args = ['-fopenmp']
+
+        # for ext in self.extensions:
+        #     ext.extra_compile_args.extend(extra_compile_args)
+        #     ext.extra_link_args.extend(extra_link_args)
+
         try:
             build_ext.build_extension(self, ext)
         except (CCompilerError, DistutilsExecError, DistutilsPlatformError):

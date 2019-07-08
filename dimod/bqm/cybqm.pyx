@@ -6,9 +6,53 @@
 
 from numbers import Integral
 
+cimport cython
+
 import numpy as np
 
 bias_dtype = np.float64  # hardcoded, we might want to change this later
+
+
+# developer note: we use a function rather than a method because we want to
+# use nogil
+# developer note: we probably want to make this a template function in c++
+# so we can determine the return type. For now we'll match Bias
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef Bias energy(vector[InVar] invars, vector[OutVar] outvars,
+                 Sample[:] sample) nogil:
+    """Calculate the energy of a single sample"""
+    cdef Bias energy = 0
+
+    if invars.size() == 0:
+        return energy
+
+    cdef Bias b
+    cdef size_t u, v, qi
+    cdef size_t qimax = outvars.size()
+
+    # iterate backwards because it makes finding the neighbourhoods slightly
+    # nicer and the order does not matter.
+    # we could possibly parallelize this step (cython knows how to use +=)
+    for u in reversed(range(0, invars.size())):  # throws a comp warning
+        # linear bias
+        energy = energy + invars[u].second * sample[u]
+
+        # quadratic bias
+        for qi in range(invars[u].first, qimax):
+            v = outvars[qi].first
+
+            if v > u:
+                # we're only interested in upper-triangular
+                break
+
+            b = outvars[qi].second
+            energy = energy + b * sample[u] * sample[v]
+
+        qimax = qi
+
+    return energy
+
 
 cdef class AdjArrayBQM:
     """
@@ -110,6 +154,30 @@ cdef class AdjArrayBQM:
     @property
     def shape(self):
         return self.num_variables, self.num_interactions
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def energies(self, Sample[:, :] samples):
+        cdef size_t num_samples = samples.shape[0]
+
+        if samples.shape[1] != len(self):
+            raise ValueError("Mismatched variables")
+
+        # type is hardcoded for now
+        energies = np.empty(num_samples, dtype=bias_dtype)
+        cdef Bias[::1] energies_view = energies
+
+        # todo: prange and nogil, we can use static schedule because the
+        # calculation should be the same for each sample.
+        # See https://github.com/dwavesystems/dimod/pull/379 for a discussion
+        # of some of the issues around OMP_NUM_THREADS
+        cdef size_t row
+        for row in range(num_samples):
+            energies_view[row] = energy(self.invars_,
+                                        self.outvars_,
+                                        samples[row, :])
+
+        return energies
 
     def to_lists(self):
         """Dump to two lists, mostly for testing"""
