@@ -13,6 +13,16 @@ ctypedef size_t InteractionIndex
 ctypedef pair[InteractionIndex, Bias]  InVar
 ctypedef pair[VarIndex, Bias] OutVar
 
+ctypedef fused Sample:
+    np.npy_int8
+    np.npy_int16
+    np.npy_int32
+    np.npy_int64
+    np.npy_float32
+    np.npy_float64
+
+# cdef Bias energy(vector[InVar], vector[OutVar], Sample[:]) nogil
+
 
 cdef class AdjArrayBQM:
     # developer note: we really just want an array but in cython you can't
