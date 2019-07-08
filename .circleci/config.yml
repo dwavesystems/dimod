@@ -8,6 +8,11 @@ jobs:
     docker:
       - image: circleci/python:3.8-buster
 
+    # environment:
+    #   # openmp detects the cores of the cpu, not the number the thread has
+    #   # access to
+    #   OMP_NUM_THREADS: 2
+
     working_directory: ~/repo
 
     steps:
@@ -114,6 +119,11 @@ jobs:
           name: install boost
           command: |
             brew install boost
+
+      # - run: &install-openmp-osx-template
+      #     name: install openmp
+      #     command: |
+      #       brew install libomp
 
       - restore_cache:
           keys:
@@ -419,6 +429,8 @@ jobs:
             brew install pyenv
 
       - run: *install-boost-osx-template
+
+      # - run: *install-openmp-osx-template
 
       - restore_cache:
           keys:
