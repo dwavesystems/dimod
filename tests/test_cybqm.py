@@ -1,3 +1,4 @@
+import itertools
 import unittest
 
 import numpy as np
@@ -62,3 +63,26 @@ class TestEnergies(unittest.TestCase):
         energies = bqm.energies(np.asarray(samples))
 
         np.testing.assert_array_almost_equal(energies, [-.9, .7, 1.3, -1.1])
+
+    def test_5chain(self):
+        arr = np.tril(np.triu(np.ones((5, 5)), 1), 1)
+        bqm = AdjArrayBQM(arr)
+        samples = [[-1, +1, -1, +1, -1]]
+
+        energies = bqm.energies(np.asarray(samples))
+        np.testing.assert_array_almost_equal(energies, [-4])
+
+    def test_random(self):
+        bqm = AdjArrayBQM([[0, -1, 0, 0],
+                           [0, 0, .5, .2],
+                           [0, 0, 0, 1.3],
+                           [0, 0, 0, 0]])
+
+        J = {(0, 1): -1, (1, 2): .5, (1, 3): .2, (2, 3): 1.3}
+
+        for sample in itertools.product((-1, 1), repeat=len(bqm)):
+            energy, = bqm.energies(np.atleast_2d(sample))
+
+            target = sum(b*sample[u]*sample[v] for (u, v), b in J.items())
+
+            self.assertAlmostEqual(energy, target)
