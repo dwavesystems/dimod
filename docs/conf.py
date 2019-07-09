@@ -209,6 +209,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'system': ('https://docs.ocean.dwavesys.com/projects/system/en/latest/', None),
                        'penaltymodel': ('https://docs.ocean.dwavesys.com/projects/penaltymodel/en/latest/', None),
                        'minorminer': ('https://docs.ocean.dwavesys.com/projects/minorminer/en/latest/', None),
+                       'hybrid': ('https://docs.ocean.dwavesys.com/projects/hybrid/en/latest/', None),
                        'qbsolv': ('https://docs.ocean.dwavesys.com/projects/qbsolv/en/latest/', None),
                        'oceandocs': ('https://docs.ocean.dwavesys.com/en/latest/', None),
                        'sysdocs_gettingstarted': ('https://docs.dwavesys.com/docs/latest/', None)}
