@@ -1,8 +1,8 @@
 .. _bqm:
 
-=======================================
-Ising, QUBO and Binary Quadratic Models
-=======================================
+=====================
+Ising, QUBO, and BQMs
+=====================
 
 .. automodule:: dimod.binary_quadratic_model
 

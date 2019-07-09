@@ -7,16 +7,18 @@ Ising and quadratic unconstrained binary optimization (QUBO) models used,
 as described in :std:doc:`Solving Problems on a D-Wave System <oceandocs:overview/solving_problems>`,
 by samplers such as the D-Wave system.
 
-
 It provides useful functionality for working with these models and samplers;
 for example :ref:`generators` to build BQMs and :ref:`utilities` for calculating the energy of a
 sample or serializing dimod objects.
 
-It includes reference :ref:`ref_samplers` for processing binary quadratic programs
+It includes reference :ref:`samplers` and :ref:`composites` for processing binary quadratic programs
 and refining sampling, and useful for testing your code during development.
 
-It also provides utilities for constructing new samplers and composed samplers
+It also provides an :ref:`api` for constructing new samplers and composed samplers
 tailored for your problem.
+
+Additionally, it provides some :ref:`higher_order_composites` and functionality
+such as reducing higher-order polynomials to BQMs.
 
 Example
 -------
