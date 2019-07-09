@@ -20,7 +20,7 @@ bias_dtype = np.float64  # hardcoded, we might want to change this later
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef Bias energy(vector[InVar] invars, vector[OutVar] outvars,
-                 Sample[:] sample) nogil:
+                 Sample[:] sample):
     """Calculate the energy of a single sample"""
     cdef Bias energy = 0
 
@@ -49,7 +49,7 @@ cdef Bias energy(vector[InVar] invars, vector[OutVar] outvars,
             b = outvars[qi].second
             energy = energy + b * sample[u] * sample[v]
 
-        qimax = qi
+        qimax = invars[u].first
 
     return energy
 
