@@ -120,12 +120,12 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         >>> bqm = dimod.BinaryQuadraticModel({0: 1, 1: -1, 2: .5},
         ...                                  {(0, 1): .5, (1, 2): 1.5},
         ...                                  1.4,
-        ...                                  dimod.SPIN)
+        ...                                  dimod.Vartype.SPIN)
 
         This example creates a binary quadratic model with non-numeric variables
         (variables can be any hashable object).
 
-        >>> bqm = dimod.BinaryQuadraticModel({'a': 0.0, 'b': -1.0, 'c': 0.5},
+        >>> bqm = dimod.BQM({'a': 0.0, 'b': -1.0, 'c': 0.5},
         ...                                  {('a', 'b'): -1.0, ('b', 'c'): 1.5},
         ...                                  1.4,
         ...                                  dimod.SPIN)
@@ -317,8 +317,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     @property
     def spin(self):
         """:class:`.BinaryQuadraticModel`: An instance of the Ising model subclass
-        of the :class:`.BinaryQuadraticModel` superclass, corresponding to
-        a binary quadratic model with spins as its variables.
+        of the :class:`.BinaryQuadraticModel` superclass (a BQM with spin variables).
 
         Enables access to biases for the spin-valued binary quadratic model
         regardless of the :class:`vartype` set when the model was created.
@@ -366,8 +365,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
     @property
     def binary(self):
         """:class:`.BinaryQuadraticModel`: An instance of the QUBO model subclass of
-        the :class:`.BinaryQuadraticModel` superclass, corresponding to a binary quadratic
-        model with binary variables.
+        the :class:`.BinaryQuadraticModel` superclass (a BQM with binary variables).
 
         Enables access to biases for the binary-valued binary quadratic model
         regardless of the :class:`vartype` set when the model was created. If the model
@@ -1446,7 +1444,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 ###################################################################################################
 
     def copy(self):
-        """Create a copy of a BinaryQuadraticModel.
+        """Create a copy of a binary quadratic model.
 
         Returns:
             :class:`.BinaryQuadraticModel`

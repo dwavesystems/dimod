@@ -14,9 +14,8 @@
 #
 # ============================================================================
 """
-It is possible to construct samplers that handle binary polynomials - problems
-that have binary variables but they are not constrained to quadratic
-interactions.
+Samplers that handle binary polynomials: problems with binary variables that are
+not constrained to quadratic interactions.
 
 """
 import abc
@@ -32,7 +31,7 @@ __all__ = 'PolySampler', 'ComposedPolySampler'
 
 @add_metaclass(abc.ABCMeta)
 class PolySampler:
-    """Sampler supports binary polynomials.
+    """Sampler that supports binary polynomials.
 
     Binary polynomials are an extension of binary quadratic models that allow
     higher-order interactions.
@@ -64,14 +63,14 @@ class PolySampler:
 
         Args:
             h (dict):
-                The variable biases of the Ising problem. Should be a dict of
-                the form `{v: bias, ...}` where `v` is a variable in the
-                polynomial and `bias` is its associated coefficient.
+                Variable biases of the Ising problem as a dict of
+                the form `{v: bias, ...}`, where `v` is a variable in the
+                polynomial and `bias` its associated coefficient.
 
             J (dict):
-                The interaction biases of the Ising problem. Should be a dict of
-                the form `{(u, v, ...): bias}` where `u`, `v`, are spin-valued
-                variables in the polynomial and `bias` is their associated
+                Interaction biases of the Ising problem as a dict of
+                the form `{(u, v, ...): bias}`, where `u`, `v`, are spin-valued
+                variables in the polynomial and `bias` their associated
                 coefficient.
 
             **kwargs:
@@ -95,9 +94,9 @@ class PolySampler:
 
         Args:
             H (dict):
-                The coefficients of the HUBO. Should be a dict of the form
-                {(u, v, ...): bias, ...} where `u`, `v`, are binary-valued
-                variables in the polynomial and `bias` is their associated
+                Coefficients of the HUBO as a dict of the form
+                {(u, v, ...): bias, ...}, where `u`, `v`, are binary-valued
+                variables in the polynomial and `bias` their associated
                 coefficient.
 
             **kwargs:

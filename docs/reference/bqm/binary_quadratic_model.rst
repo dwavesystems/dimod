@@ -6,6 +6,17 @@ Ising, QUBO, and BQMs
 
 .. automodule:: dimod.binary_quadratic_model
 
+These models and their use in solving problems on the D-Wave system is described
+in the following documentation:
+
+* :std:doc:`Getting Started with the D-Wave System <sysdocs_gettingstarted:doc_getting_started>`
+   Introduces key concepts such as objective functions, Ising model, QUBOs, and graphs, explains
+   how these models are used to represent problems, and provides some simple examples.
+* :std:doc:`D-Wave Problem-Solving Handbook <sysdocs_gettingstarted:doc_handbook>`
+   Provides a variety of techniques for, and examples of, reformulating problems as BQMs.
+* :std:doc:`Solving Problems on a D-Wave System <oceandocs:overview/solving_problems>`
+   Describes and demonstrates the use of BQM in the context of Ocean software.
+
 Class
 =====
 
@@ -15,6 +26,8 @@ Class
 
 Vartype Properties
 ==================
+
+QUBO (binary-valued variables) and Ising (spin-valued variables) instances of a BQM.
 
 .. autosummary::
    :toctree: generated/
@@ -90,7 +103,7 @@ Energy
    BinaryQuadraticModel.energy
    BinaryQuadraticModel.energies
 
-Converting to and from other formats
+Converting To and From Other Formats
 ------------------------------------
 
 .. autosummary::
