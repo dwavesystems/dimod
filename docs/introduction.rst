@@ -149,7 +149,7 @@ Terminology
     sampler
         A process that samples from low energy states of a problem’s :term:`objective function`.
         A binary quadratic model (BQM) sampler samples from low energy states in models such
-        as those defined by an :term`Ising` equation or a Quadratic Unconstrained Binary
+        as those defined by an :term:`Ising` equation or a Quadratic Unconstrained Binary
         Optimization (\ :term:`QUBO`\ ) problem and returns an iterable of samples, in order
         of increasing energy. A dimod sampler provides ‘sample_qubo’ and ‘sample_ising’ methods
         as well as the generic BQM sampler method.
