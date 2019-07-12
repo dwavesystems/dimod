@@ -807,10 +807,10 @@ class SampleSet(abc.Iterable, abc.Sized):
             reverse (bool, optional, default=False):
                 If True, yield in reverse order.
 
-            sample_dict_cast (bool, optional, default=False):
-                If True, samples are returned as dicts rather than
-                :class:`.SampleView`. Note that this can lead to very heavy memory
-                usage.
+            sample_dict_cast (bool, optional, default=True):
+                Samples are returned as dicts rather than
+                :class:`.SampleView`, which requires heavy memory
+                usage. Set to False to reduce load on memory.
 
             index (bool, optional, default=False):
                 If True, `datum.idx` gives the corresponding index of the
