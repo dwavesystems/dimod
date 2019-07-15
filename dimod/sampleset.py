@@ -657,9 +657,9 @@ class SampleSet(abc.Iterable, abc.Sized):
            a dimod sampler by submitting a BQM that sets a value on a D-Wave
            system's first listed coupler.
 
-           >>> from dwave.system.samplers import DWaveSampler
-           >>> sampler = DWaveSampler()
-           >>> bqm = dimod.BQM({}, {sampler.edgelist[0]: -1}, 0, dimod.SPIN)
+           >>> from dwave.system.samplers import DWaveSampler    # doctest: +SKIP
+           >>> sampler = DWaveSampler()    # doctest: +SKIP
+           >>> bqm = dimod.BQM({}, {sampler.edgelist[0]: -1}, 0, dimod.SPIN)   # doctest: +SKIP
            >>> sampler.sample(bqm).info   # doctest: +SKIP
            {'timing': {'qpu_sampling_time': 315,
             'qpu_anneal_time_per_sample': 20,
@@ -1298,7 +1298,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             8  0  0  0  0  0  0  0  0  1  0      8       1
             9  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 10 rows, 10 samples, 10 variables]
-            ...
+            >>>
             >>> # the first 3 samples by energy == truncate(3)
             >>> print(sampleset.slice(3))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
@@ -1306,7 +1306,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             1  0  1  0  0  0  0  0  0  0  0      1       1
             2  0  0  1  0  0  0  0  0  0  0      2       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
-            ...
+            >>>
             >>> # the last 3 samples by energy
             >>> print(sampleset.slice(-3, None))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
@@ -1314,7 +1314,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             1  0  0  0  0  0  0  0  0  1  0      8       1
             2  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
-            ...
+            >>>
             >>> # every second sample in between (skip the top and the bottom 3)
             >>> print(sampleset.slice(3, -3, 2))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
