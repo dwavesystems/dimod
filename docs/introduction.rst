@@ -2,50 +2,34 @@
 Introduction
 ============
 
-The dimod API provides a binary quadratic :term:`model` (BQM) class that contains
-:term:`Ising` and quadratic unconstrained binary optimization (\ :term:`QUBO`\ ) models
-used by :term:`sampler`\ s such as the D-Wave system.
-It provides utilities for constructing new samplers and :term:`composed sampler`\ s.
-It also provides useful functionality for working with these models and samplers.
-Its reference examples include several samplers and composed samplers.
+dimod provides a binary quadratic model (BQM) class that contains
+Ising and quadratic unconstrained binary optimization (QUBO) models used,
+as described in :std:doc:`Solving Problems on a D-Wave System <oceandocs:overview/solving_problems>`,
+by samplers such as the D-Wave system.
 
-Ising and QUBO Formulations
----------------------------
+It provides useful functionality for working with these models and samplers;
+for example :ref:`generators` to build BQMs and :ref:`utilities` for calculating the energy of a
+sample or serializing dimod objects.
 
-The Ising model is an objective function of :math:`N` variables :math:`\bf s=[s_1,...,s_N]`
-corresponding to physical Ising spins, where :math:`h_i` are the biases and
-:math:`J_{i,j}` the couplings (interactions) between spins.
+It includes reference :ref:`samplers` and :ref:`composites` for processing binary quadratic programs
+and refining sampling, and useful for testing your code during development.
 
-.. math::
+It also provides an :ref:`api` for constructing new samplers and composed samplers
+tailored for your problem.
 
-  \text{Ising:} \qquad
-  E(\bf{s}|\bf{h},\bf{J})
-  = \left\{ \sum_{i=1}^N h_i s_i +
-  \sum_{i<j}^N J_{i,j} s_i s_j  \right\}
-  \qquad\qquad s_i\in\{-1,+1\}
-
-
-The QUBO model is an objective function of :math:`N` binary variables represented as an
-upper-diagonal matrix :math:`Q`, where diagonal terms are the linear coefficients and
-the nonzero off-diagonal terms the quadratic coefficients.
-
-.. math::
-
-		\text{QUBO:} \qquad E(\bf{x}| \bf{Q})
-    =  \sum_{i\le j}^N x_i Q_{i,j} x_j
-    \qquad\qquad x_i\in \{0,1\}
-
-The :class:`.BinaryQuadraticModel` class can contain both these models and its methods provide
-convenient utilities for working with, and interworking between, the two representations
-of a problem.
+Additionally, it provides some :ref:`higher_order_composites` and functionality
+such as reducing higher-order polynomials to BQMs.
 
 Example
-~~~~~~~
+-------
 
-Solving problems with large numbers of variables might necessitate the use of decomposition
+Solving problems with large numbers of variables might necessitate the use of decomposition\ [#]_
 methods such as branch-and-bound to reduce the number of variables. The following
-example reduces an Ising model for a small problem (the K4 complete graph) for
-illustrative purposes, and converts the reduced-variables model to QUBO formulation.
+illustrative example reduces an Ising model for a small problem (the K4 complete graph),
+and converts the reduced-variables model to QUBO formulation.
+
+.. [#] Ocean software's :std:doc:`D-Wave Hybrid <hybrid:index>` provides tools for
+   decomposing large problems.
 
 .. code-block:: python
 
@@ -66,34 +50,52 @@ illustrative purposes, and converts the reduced-variables model to QUBO formulat
     >>> bqm_no3_qubo.vartype
     <Vartype.BINARY: frozenset([0, 1])>
 
-
 Samplers and Composites
 -----------------------
 
-*Samplers* are processes that sample from low energy states of a problem’s objective function.
-A binary quadratic :term:`model` (BQM) :term:`sampler` samples from low energy states in
-models such as those defined by an Ising equation or a QUBO problem and returns an
-iterable of samples, in order of increasing energy. A dimod
+:term:`Sampler`\ s are  processes that sample from low-energy states of a problem’s objective function.
+A binary quadratic model (BQM) sampler samples from low-energy states in
+:term:`model`\ s such as those defined by an :term:`Ising` equation or a :term:`QUBO` problem
+and returns an iterable of samples, in order of increasing energy. A dimod
 sampler provides ‘sample_qubo’ and ‘sample_ising’ methods as well as the generic
 BQM sampler method.
 
-*Composed samplers* apply pre- and/or post-processing to binary quadratic programs without
+:term:`Composed sampler`\ s apply pre- and/or post-processing to binary quadratic programs without
 changing the underlying sampler implementation by layering
 `composite patterns <https://en.wikipedia.org/wiki/Composite_pattern>`_ on the
 sampler. For example, a composed sampler might add spin transformations when sampling
 from the D-Wave system.
 
-*Structured samplers* are restricted to sampling only binary quadratic models defined
+:term:`Structured sampler`\ s are restricted to sampling only binary quadratic models defined
 on a specific graph.
 
 You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
 providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),
 consistent responses, etc.
 
-Example
-~~~~~~~
+Examples
+~~~~~~~~
 
-This example creates a dimod sampler by implementing a single method (in this example
+This first example uses a composed sampler on the :std:doc:`Boolean NOT Gate <oceandocs:examples/not>`
+example detailed in the :std:doc:`Getting Started <oceandocs:getting_started>` documentation.
+The :class:`~dimod.reference.samplers.exact_solver.ExactSolver` test sampler calculates the
+energy of all possible samples; the :class:`~dimod.reference.composites.fixedvariable.FixedVariableComposite`
+composite sets the value and removes specified variables from the BQM before sending it to
+the sampler. Fixing variable `x`, the input to the NOT gate, to 1 results in valid solution
+:math:`z=0` having lower energy (-1) than solution :math:`x=z=1`, which is an invalid
+state for a NOT gate.
+
+>>> from dimod import FixedVariableComposite, ExactSolver
+>>> Q = {('x', 'x'): -1, ('x', 'z'): 2, ('z', 'x'): 0, ('z', 'z'): -1}
+>>> composed_sampler = FixedVariableComposite(ExactSolver())
+>>> sampleset = composed_sampler.sample_qubo(Q, fixed_variables={'x': 1})
+>>> print(sampleset)
+   x  z energy num_oc.
+0  1  0   -1.0       1
+1  1  1    0.0       1
+['BINARY', 2 rows, 2 samples, 2 variables]
+
+The next example creates a dimod sampler by implementing a single method (in this example
 the :meth:`sample_ising` method).
 
 .. code-block:: python
@@ -115,16 +117,6 @@ the :meth:`sample_ising` method).
 
 The :class:`.Sampler` ABC provides the other sample methods "for free"
 as mixins.
-
-Minor-Embedding
----------------
-
-:term:`Embedding` attempts to create a target :term:`model` from a target :term:`graph`. The process of
-embedding takes a source model, derives the source graph, maps the source graph to the target
-graph, then derives the target model. Sometimes referred to in other tools as the **embedded** graph/model.
-
-Solving an arbitrarily posed binary quadratic problem on a D-Wave system requires minor-embedding
-to a target graph that represents the system’s quantum processing unit.
 
 Terminology
 -----------

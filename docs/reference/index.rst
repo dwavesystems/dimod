@@ -9,14 +9,10 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   binary_quadratic_model
-   generators
-   samplers
-   ref_samplers_composites
+   bqm/index
+   sampler_composites/index
    sampleset
-   response
-   vartypes
-   bqm_functions
    higherorder
-   exceptions
    utilities
+   vartypes
+   exceptions

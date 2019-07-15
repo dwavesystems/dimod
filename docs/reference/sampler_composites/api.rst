@@ -1,4 +1,4 @@
-.. _sampler:
+.. _api:
 
 ===============================
 API for Samplers and Composites
@@ -91,7 +91,7 @@ Mixin Methods
 Creating a Composed Sampler
 ===========================
 
-.. figure:: ../_static/composing_samplers.png
+.. figure:: ../../_static/composing_samplers.png
     :align: center
     :name: Composing Samplers
     :scale: 70 %
