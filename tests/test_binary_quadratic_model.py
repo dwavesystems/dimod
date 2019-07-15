@@ -2169,6 +2169,95 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
 
+    def test_from_serializable_empty_v3(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'bias_type': '<f4',
+             'index_type': '<u2',
+             'info': {},
+             'linear_biases': [],
+             'offset': 0.0,
+             'quadratic_biases': [],
+             'quadratic_head': [],
+             'quadratic_tail': [],
+             'shape': [0, 0],
+             'type': 'BinaryQuadraticModel',
+             'use_bytes': False,
+             'variable_labels': [],
+             'variable_type': 'SPIN',
+             'version': {'bqm_schema': '3.0.0', 'dimod': '0.8.14'}}
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
+
+    def test_from_serializable_v3(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'bias_type': '<f4',
+             'index_type': '<u2',
+             'info': {},
+             'linear_biases': [-1.0, 1.0, 3.0, 0.0, 0.0, 0.0],
+             'offset': 3.0,
+             'quadratic_biases': [1.0, 3.0, -1.0],
+             'quadratic_head': [0, 3, 0],
+             'quadratic_tail': [3, 4, 5],
+             'shape': [6, 3],
+             'type': 'BinaryQuadraticModel',
+             'use_bytes': False,
+             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
+             'variable_type': 'SPIN',
+             'version': {'bqm_schema': '3.0.0', 'dimod': '0.8.14'}}
+
+        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
+
+    def test_from_serializable_bytes_empty_v3(self):
+        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'bias_type': '<f4',
+             'index_type': '<u2',
+             'info': {},
+             'linear_biases': b'',
+             'offset': 0.0,
+             'quadratic_biases': b'',
+             'quadratic_head': b'',
+             'quadratic_tail': b'',
+             'shape': [0, 0],
+             'type': 'BinaryQuadraticModel',
+             'use_bytes': True,
+             'variable_labels': [],
+             'variable_type': 'SPIN',
+             'version': {'bqm_schema': '3.0.0', 'dimod': '0.8.14'}}
+
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
+
+    def test_from_serializable_bytes_v3(self):
+        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
+        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
+
+        s = {'basetype': 'BinaryQuadraticModel',
+             'bias_type': '<f4',
+             'index_type': '<u2',
+             'info': {},
+             'linear_biases': b'\x00\x00\x80\xbf\x00\x00\x80?\x00\x00@@\x00\x00\x00\x00'
+                              b'\x00\x00\x00\x00\x00\x00\x00\x00',
+             'offset': 3.0,
+             'quadratic_biases': b'\x00\x00\x80?\x00\x00@@\x00\x00\x80\xbf',
+             'quadratic_head': b'\x00\x00\x03\x00\x00\x00',
+             'quadratic_tail': b'\x03\x00\x04\x00\x05\x00',
+             'shape': [6, 3],
+             'type': 'BinaryQuadraticModel',
+             'use_bytes': True,
+             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
+             'variable_type': 'SPIN',
+             'version': {'bqm_schema': '3.0.0', 'dimod': '0.8.14'}}
+
+        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
+
     def test_functional_empty(self):
         # round trip
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)

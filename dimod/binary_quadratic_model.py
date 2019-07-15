@@ -60,7 +60,6 @@ import numpy as np
 from six import itervalues, iteritems
 
 from dimod.decorators import vartype_argument, lockable_method
-from dimod.serialization.utils import array2bytes, bytes2array
 from dimod.sampleset import as_samples
 from dimod.utilities import resolve_label_conflict, LockableDict
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
@@ -1736,7 +1735,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         from dimod.package_info import __version__
-        schema_version = "2.0.0"
+
+        schema_version = "3.0.0"
 
         variables = list(iter_serialize_variables(self.variables))
 
@@ -1755,8 +1755,10 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         ldata, (irow, icol, qdata), offset = self.to_numpy_vectors(
             dtype=bias_dtype,
             index_dtype=index_dtype,
-            sort_indices=True,
+            sort_indices=True,  # to make it deterministic for the order
             variable_order=variables)
+
+        num_interactions = len(irow)
 
         doc = {"basetype": "BinaryQuadraticModel",
                "type": type(self).__name__,
@@ -1766,14 +1768,18 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                "variable_type": self.vartype.name,
                "info": self.info,
                "offset": float(offset),
+               "index_type": np.dtype(index_dtype).str,
+               "bias_type": np.dtype(bias_dtype).str,
+               "shape": [num_variables, num_interactions],
                "use_bytes": bool(use_bytes)
                }
 
         if use_bytes:
-            doc.update({'linear_biases': array2bytes(ldata, bytes_type=bytes_type),
-                        'quadratic_biases': array2bytes(qdata, bytes_type=bytes_type),
-                        'quadratic_head': array2bytes(irow, bytes_type=bytes_type),
-                        'quadratic_tail': array2bytes(icol, bytes_type=bytes_type)})
+            # these are vectors so don't need to specify byte-order
+            doc.update({'linear_biases': bytes_type(ldata.tobytes()),
+                        'quadratic_biases': bytes_type(qdata.tobytes()),
+                        'quadratic_head': bytes_type(irow.tobytes()),
+                        'quadratic_tail': bytes_type(icol.tobytes())})
         else:
             doc.update({'linear_biases': ldata.tolist(),
                         'quadratic_biases': qdata.tolist(),
@@ -1824,6 +1830,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         # deprecated
         # this version used the numpy serialization format for the bytes objects
         # see https://github.com/numpy/numpy/blob/master/doc/neps/nep-0001-npy-format.rst
+        import io
         import warnings
 
         msg = ("bqm is serialized with a deprecated format and will no longer "
@@ -1832,6 +1839,9 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         variables = [tuple(v) if isinstance(v, list) else v
                      for v in obj["variable_labels"]]
+
+        def bytes2array(bytes_):
+            return np.load(io.BytesIO(bytes_))
 
         ldata = bytes2array(obj["linear_biases"])
         qdata = bytes2array(obj["quadratic_biases"])
@@ -1889,7 +1899,13 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                      for v in obj["variable_labels"]]
 
         if obj["use_bytes"]:
-            raise NotImplementedError
+            bias_dtype = np.dtype(obj['bias_type'])
+            index_dtype = np.dtype(obj['index_type'])
+
+            ldata = np.frombuffer(obj['linear_biases'], dtype=bias_dtype)
+            qdata = np.frombuffer(obj['quadratic_biases'], dtype=bias_dtype)
+            irow = np.frombuffer(obj['quadratic_head'], dtype=index_dtype)
+            icol = np.frombuffer(obj['quadratic_tail'], dtype=index_dtype)
         else:
             ldata = obj["linear_biases"]
             qdata = obj["quadratic_biases"]
