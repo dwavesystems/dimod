@@ -1820,6 +1820,37 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                                       variable_order=obj["variable_order"])
 
     @classmethod
+    def _from_serializable_v2(cls, obj):
+        # deprecated
+        # this version used the numpy serialization format for the bytes objects
+        # see https://github.com/numpy/numpy/blob/master/doc/neps/nep-0001-npy-format.rst
+        import warnings
+
+        msg = ("bqm is serialized with a deprecated format and will no longer "
+               "work in dimod 0.9.0.")
+        warnings.warn(msg)
+
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
+
+        ldata = bytes2array(obj["linear_biases"])
+        qdata = bytes2array(obj["quadratic_biases"])
+        irow = bytes2array(obj["quadratic_head"])
+        icol = bytes2array(obj["quadratic_tail"])
+
+        offset = obj["offset"]
+        vartype = obj["variable_type"]
+
+        bqm = cls.from_numpy_vectors(ldata,
+                                     (irow, icol, qdata),
+                                     offset,
+                                     str(vartype),  # handle unicode for py2
+                                     variable_order=variables)
+
+        bqm.info.update(obj["info"])
+        return bqm
+
+    @classmethod
     def from_serializable(cls, obj):
         """Deserialize a binary quadratic model.
 
@@ -1847,17 +1878,18 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             :func:`json.loads`, :func:`json.load` JSON deserialization functions
 
         """
-        if obj.get("version", {"bqm_schema": "1.0.0"})["bqm_schema"] != "2.0.0":
+        version = obj.get("version", {"bqm_schema": "1.0.0"})["bqm_schema"]
+        if version < "2.0.0":
             return cls._from_serializable_v1(obj)
+        elif version < "3.0.0" and obj.get("use_bytes", False):
+            # from 2.0.0 to 3.0.0 the formatting of the bytes changed
+            return cls._from_serializable_v2(obj)
 
         variables = [tuple(v) if isinstance(v, list) else v
                      for v in obj["variable_labels"]]
 
         if obj["use_bytes"]:
-            ldata = bytes2array(obj["linear_biases"])
-            qdata = bytes2array(obj["quadratic_biases"])
-            irow = bytes2array(obj["quadratic_head"])
-            icol = bytes2array(obj["quadratic_tail"])
+            raise NotImplementedError
         else:
             ldata = obj["linear_biases"]
             qdata = obj["quadratic_biases"]
