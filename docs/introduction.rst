@@ -2,7 +2,7 @@
 Introduction
 ============
 
-The dimod API provides a binary quadratic model (BQM) class that contains
+dimod provides a binary quadratic model (BQM) class that contains
 Ising and quadratic unconstrained binary optimization (QUBO) models used,
 as described in :std:doc:`Solving Problems on a D-Wave System <oceandocs:overview/solving_problems>`,
 by samplers such as the D-Wave system.
