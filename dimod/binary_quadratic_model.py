@@ -1760,19 +1760,22 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         num_interactions = len(irow)
 
-        doc = {"basetype": "BinaryQuadraticModel",
-               "type": type(self).__name__,
-               "version": {"dimod": __version__,
-                           "bqm_schema": schema_version},
-               "variable_labels": variables,
-               "variable_type": self.vartype.name,
-               "info": self.info,
-               "offset": float(offset),
-               "index_type": np.dtype(index_dtype).str,
-               "bias_type": np.dtype(bias_dtype).str,
-               "shape": [num_variables, num_interactions],
-               "use_bytes": bool(use_bytes)
-               }
+        doc = {
+            # metadata
+            "type": type(self).__name__,
+            "version": {"bqm_schema": schema_version},
+            "use_bytes": bool(use_bytes),
+            "index_type": np.dtype(index_dtype).str,
+            "bias_type": np.dtype(bias_dtype).str,
+
+            # bqm
+            "num_variables": num_variables,
+            "num_interactions": num_interactions,
+            "variable_labels": variables,
+            "variable_type": self.vartype.name,
+            "offset": float(offset),
+            "info": self.info,
+            }
 
         if use_bytes:
             # these are vectors so don't need to specify byte-order

@@ -85,11 +85,9 @@ def _is_sampleset_v2(obj):
     return True
 
 
-def _is_bqm_v2(obj):
-    if obj.get("basetype", "") != "BinaryQuadraticModel":
-        return False
+def _is_bqm(obj):
     # we could do more checking but probably this is sufficient
-    return True
+    return obj.get("type", "") == "BinaryQuadraticModel"
 
 
 def dimod_object_hook(obj):
@@ -103,7 +101,7 @@ def dimod_object_hook(obj):
         # in the future we could handle subtypes but right now we just have the
         # one
         return SampleSet.from_serializable(obj)
-    elif _is_bqm_v2(obj):
+    elif _is_bqm(obj):
         # in the future we could handle subtypes but right now we just have the
         # one
         return BinaryQuadraticModel.from_serializable(obj)
