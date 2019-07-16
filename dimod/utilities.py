@@ -374,7 +374,9 @@ def child_structure_dfs(sampler, seen=None):
     Examples:
 
     >>> import dimod
-    >>> sampler = dimod.StructureComposite(dimod.ExactSolver(),[0, 1], [(0, 1)])
+    >>> sampler = dimod.TrackingComposite(
+    ...                 dimod.StructureComposite(
+    ...                 dimod.ExactSolver(), [0, 1], [(0, 1)]))
     >>> print(dimod.child_structure_dfs(sampler).nodelist)
     [0, 1]
 

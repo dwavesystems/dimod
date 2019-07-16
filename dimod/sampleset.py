@@ -1284,7 +1284,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> import numpy as np
             ...
-            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)), dimod.BINARY, energy=range(10))
+            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)),
+            ...                   dimod.BINARY, energy=range(10))
             >>> print(sampleset)
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  1  0  0  0  0  0  0  0  0  0      0       1
@@ -1298,24 +1299,27 @@ class SampleSet(abc.Iterable, abc.Sized):
             8  0  0  0  0  0  0  0  0  1  0      8       1
             9  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 10 rows, 10 samples, 10 variables]
-            >>>
-            >>> # the first 3 samples by energy == truncate(3)
+
+            The above example's first 3 samples by energy == truncate(3):
+
             >>> print(sampleset.slice(3))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  1  0  0  0  0  0  0  0  0  0      0       1
             1  0  1  0  0  0  0  0  0  0  0      1       1
             2  0  0  1  0  0  0  0  0  0  0      2       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
-            >>>
-            >>> # the last 3 samples by energy
+
+            The last 3 samples by energy:
+
             >>> print(sampleset.slice(-3, None))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  0  0  0  0  0  0  0  1  0  0      7       1
             1  0  0  0  0  0  0  0  0  1  0      8       1
             2  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
-            >>>
-            >>> # every second sample in between (skip the top and the bottom 3)
+
+            Every second sample in between, skipping top and bottom 3:
+
             >>> print(sampleset.slice(3, -3, 2))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  0  0  0  1  0  0  0  0  0  0      3       1
