@@ -22,17 +22,17 @@ import dimod
 
 
 def assert_sampler_api(sampler):
-    """Assert that an instantiated sampler has the correct properties and methods exposed.
+    """Assert that an instantiated sampler exposes correct properties and methods.
 
     Args:
         sampler (:obj:`.Sampler`):
-            A user-made dimod sampler.
+            User-made dimod sampler.
 
     Raises:
         AssertionError: If the given sampler does not match the sampler API.
 
     See also:
-        :class:`.Sampler` The abstract base class that defines the sampler API.
+        :class:`.Sampler` for the abstract base class that defines the sampler API.
 
     """
 
@@ -65,20 +65,20 @@ def assert_sampler_api(sampler):
 
 
 def assert_composite_api(composed_sampler):
-    """Assert that an instantiated composed sampler has the correct composite properties and methods
-    exposed.
+    """Assert that an instantiated composed sampler exposes correct composite
+    properties and methods.
 
     Args:
         sampler (:obj:`.Composite`):
-            A user-made dimod composed sampler.
+            User-made dimod composed sampler.
 
     Raises:
         AssertionError: If the given sampler does not match the composite API.
 
     See also:
-        :class:`.Composite` The abstract base class that defines the composite API.
+        :class:`.Composite` for the abstract base class that defines the composite API.
 
-        :obj:`~.assert_sampler_api` Asserts that the composed sampler matches the sampler API.
+        :obj:`~.assert_sampler_api` to assert that the composed sampler matches the sampler API.
 
     """
 
@@ -96,20 +96,20 @@ def assert_composite_api(composed_sampler):
 
 
 def assert_structured_api(sampler):
-    """Assert that an instantiated structured sampler has the correct composite properties and methods
-    exposed.
+    """Assert that an instantiated structured sampler exposes correct composite
+    properties and methods.
 
     Args:
         sampler (:obj:`.Structured`):
-            A user-made dimod structured sampler.
+            User-made dimod structured sampler.
 
     Raises:
         AssertionError: If the given sampler does not match the structured API.
 
     See also:
-        :class:`.Structured` The abstract base class that defines the structured API.
+        :class:`.Structured` for the abstract base class that defines the structured API.
 
-        :obj:`~.assert_sampler_api` Asserts that the structured sampler matches the sampler API.
+        :obj:`~.assert_sampler_api` to assert that the structured sampler matches the sampler API.
 
     """
 
@@ -151,16 +151,16 @@ def assert_response_energies(response, bqm, precision=7):
 
     Args:
         response (:obj:`.SampleSet`):
-            The response as returned by a dimod sampler.
+            Response as returned by a dimod sampler.
 
         bqm (:obj:`.BinaryQuadraticModel`):
-            The binary quadratic model used to generate the samples.
+            Binary quadratic model (BQM) used to generate the samples.
 
         precision (int, optional, default=7):
             Equality of energy is tested by calculating the difference between
-            the `response`'s sample energy and that returned by `bqm`'s
+            the `response`'s sample energy and that returned by BQM's
             :meth:`~.BinaryQuadraticModel.energy`, rounding to the closest
-            multiple of 10 to the power minus `precision`.
+            multiple of 10 to the power of minus `precision`.
 
     Raises:
         AssertionError: If any of the samples in the response do not match their
@@ -174,20 +174,20 @@ def assert_response_energies(response, bqm, precision=7):
 
 
 def assert_sampleset_energies(sampleset, bqm, precision=7):
-    """Assert that each sample in the given sampleset has the correct energy.
+    """Assert that each sample in the given sample set has the correct energy.
 
     Args:
         sampleset (:obj:`.SampleSet`):
-            The sample set as returned by a dimod sampler.
+            Sample set as returned by a dimod sampler.
 
         bqm (:obj:`.BinaryQuadraticModel`):
-            The binary quadratic model used to generate the samples.
+            The binary quadratic model (BQM) used to generate the samples.
 
         precision (int, optional, default=7):
             Equality of energy is tested by calculating the difference between
-            the `response`'s sample energy and that returned by `bqm`'s
+            the `response`'s sample energy and that returned by BQM's
             :meth:`~.BinaryQuadraticModel.energy`, rounding to the closest
-            multiple of 10 to the power minus `precision`.
+            multiple of 10 to the power of minus `precision`.
 
     Raises:
         AssertionError: If any of the samples in the sample set do not match
@@ -220,15 +220,17 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
 
 def assert_bqm_almost_equal(actual, desired, places=7,
                             ignore_zero_interactions=False):
-    """Test if two bqm have almost equal biases.
+    """Test if two binary quadratic models have almost equal biases.
 
     Args:
-        actual (:obj:`.BinaryQuadraticModel`)
+        actual (:obj:`.BinaryQuadraticModel`):
+            First binary quadratic model.
 
-        desired (:obj:`.BinaryQuadraticModel`)
+        desired (:obj:`.BinaryQuadraticModel`):
+            Second binary quadratic model.
 
         places (int, optional, default=7):
-            Bias equality is computed as :code:`round(b0 - b1, places) == 0`
+            Bias equality is computed as :code:`round(b0 - b1, places) == 0`.
 
         ignore_zero_interactions (bool, optional, default=False):
             If true, interactions with 0 bias are ignored.

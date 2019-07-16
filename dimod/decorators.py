@@ -40,7 +40,7 @@ from dimod.vartypes import as_vartype
 
 
 def bqm_index_labels(f):
-    """Decorator to convert a bqm to index-labels and relabel the sample set
+    """Decorator to convert a BQM to index-labels and relabel the sample set
     output.
 
     Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
@@ -75,21 +75,24 @@ def bqm_index_labels(f):
 
 
 def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
-    """Returns a decorator which ensures bqm variable labeling and all other
-    specified sample-like inputs are index labeled and consistent.
+    """Returns a decorator that ensures BQM variable labeling and
+    specified sample_like inputs are index labeled and consistent.
 
     Args:
         var_labels_arg_name (str):
-            The name of the argument that the user should use to pass in an
-            index labeling for the bqm.
+            Expected name of the argument used to pass in an
+            index labeling for the binary quadratic model (BQM).
 
         samples_arg_names (list[str]):
-            The names of the expected sample-like inputs which should be
-            indexed according to the labels passed to the argument
-            `var_labels_arg_name`.
+            Expected names of sample_like inputs that should be
+            indexed by the labels passed to the `var_labels_arg_name`
+            argument. 'samples_like' is an extension of NumPy's
+            array_like_. See :func:`.as_samples`.
 
     Returns:
         Function decorator.
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
     """
 
     def index_label_decorator(f):
@@ -139,7 +142,7 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
 
 
 def bqm_structured(f):
-    """Decorator to raise an error if the given bqm does not match the sampler's
+    """Decorator to raise an error if the given BQM does not match the sampler's
     structure.
 
     Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
@@ -171,12 +174,13 @@ def bqm_structured(f):
 
 
 def vartype_argument(*arg_names):
-    """Ensures the wrapped function receives valid vartype argument(s). One
-    or more argument names can be specified (as a list of string arguments).
+    """Ensures the wrapped function receives valid vartype argument(s).
+
+    One or more argument names can be specified as a list of string arguments.
 
     Args:
         *arg_names (list[str], argument names, optional, default='vartype'):
-            The names of the constrained arguments in function decorated.
+            Names of the constrained arguments in decorated function.
 
     Returns:
         Function decorator.
@@ -211,8 +215,8 @@ def vartype_argument(*arg_names):
         Vartype.SPIN
 
     Note:
-        The function decorated can explicitly list (name) vartype arguments
-        constrained by :func:`vartype_argument`, or it can use a keyword
+        The decorated function can explicitly list (name) vartype arguments
+        constrained by :func:`vartype_argument` or it can use a keyword
         arguments `dict`.
 
     See also:
@@ -269,17 +273,16 @@ def _is_integer(a):
 def graph_argument(*arg_names, **options):
     """Decorator to coerce given graph arguments into a consistent form.
 
-    The wrapped function will accept either an integer n, interpreted as a
+    The wrapped function accepts either an integer n, interpreted as a
     complete graph of size n, or a nodes/edges pair, or a NetworkX graph. The
-    argument will then be converted into a nodes/edges 2-tuple.
+    argument is converted into a nodes/edges 2-tuple.
 
     Args:
         *arg_names (optional, default='G'):
-            The names of the arguments for input graphs.
+            Names of the arguments for input graphs.
 
         allow_None (bool, optional, default=False):
-            Allow None as an input graph in which case it is passed through as
-            None.
+            If True, None can be passed through as an input graph.
 
     """
 

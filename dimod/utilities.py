@@ -350,27 +350,36 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
 
 
 def child_structure_dfs(sampler, seen=None):
-    """Find the structure of a composed sampler by a depth first search on the
+    """Return the structure of a composed sampler using a depth-first search on its
     children.
 
     Args:
         sampler (:obj:`.Sampler`):
-            A :class:`.Structured` sampler or a composed sampler with at least
+            :class:`.Structured` or composed sampler with at least
             one structured child.
 
         seen (set, optional, default=False):
-            A set of the ids of the child samplers that have already been
-            checked.
+            IDs of already checked child samplers.
 
     Returns:
         :class:`~collections.namedtuple`: A named tuple of the form
         `Structure(nodelist, edgelist, adjacency)`, where the 3-tuple values
         are the :attr:`.Structured.nodelist`, :attr:`.Structured.edgelist`
         and :attr:`.Structured.adjacency` attributes of the first structured
-        sampler encountered.
+        sampler found.
 
     Raises:
         ValueError: If no structured sampler is found.
+
+    Examples:
+
+    >>> import dimod
+    >>> sampler = dimod.TrackingComposite(
+    ...                 dimod.StructureComposite(
+    ...                 dimod.ExactSolver(), [0, 1], [(0, 1)]))
+    >>> print(dimod.child_structure_dfs(sampler).nodelist)
+    [0, 1]
+
 
     """
     seen = set() if seen is None else seen

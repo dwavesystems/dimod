@@ -189,11 +189,11 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
 
 
 def concatenate(samplesets, defaults=None):
-    """Combine SampleSets.
+    """Combine sample sets.
 
     Args:
         samplesets (iterable[:obj:`.SampleSet`):
-            An iterable of sample sets.
+            Iterable of sample sets.
 
         defaults (dict, optional):
             Dictionary mapping data vector names to the corresponding default values.
@@ -353,12 +353,13 @@ class SampleSet(abc.Iterable, abc.Sized):
                 Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
 
             aggregate_samples (bool, optional, default=False):
-                If true, returned :obj:`.SampleSet` will have all unique samples.
+                If True, all samples in returned :obj:`.SampleSet` are unique,
+                with `num_occurrences` accounting for any duplicate samples in
+                `samples_like`.
 
             sort_labels (bool, optional, default=True):
-                If true, :attr:`.SampleSet.variables` will be in sorted-order.
-                Note that mixed types are not sortable in which case the given
-                order will be maintained.
+                Return :attr:`.SampleSet.variables` in sorted order. For mixed
+                (unsortable) types, the given order is maintained.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -434,7 +435,10 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @classmethod
     def from_samples_bqm(cls, samples_like, bqm, **kwargs):
-        """Build a SampleSet from raw samples using a BinaryQuadraticModel to get energies and vartype.
+        """Build a sample set from raw samples and a binary quadratic model.
+
+        The binary quadratic model is used to calculate energies and set the
+        :class:`vartype`.
 
         Args:
             samples_like:
@@ -442,8 +446,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                 See :func:`.as_samples`.
 
             bqm (:obj:`.BinaryQuadraticModel`):
-                A binary quadratic model. It is used to calculate the energies
-                and set the vartype.
+                A binary quadratic model.
 
             info (dict, optional):
                 Information about the :class:`SampleSet` as a whole formatted as a dict.
@@ -452,12 +455,13 @@ class SampleSet(abc.Iterable, abc.Sized):
                 Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
 
             aggregate_samples (bool, optional, default=False):
-                If true, returned :obj:`.SampleSet` will have all unique samples.
+                If True, all samples in returned :obj:`.SampleSet` are unique,
+                with `num_occurrences` accounting for any duplicate samples in
+                `samples_like`.
 
             sort_labels (bool, optional, default=True):
-                If true, :attr:`.SampleSet.variables` will be in sorted-order.
-                Note that mixed types are not sortable in which case the given
-                order will be maintained.
+                Return :attr:`.SampleSet.variables` in sorted order. For mixed
+                (unsortable) types, the given order is maintained.
 
             **vectors (array_like):
                 Other per-sample data.
@@ -646,7 +650,22 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @property
     def info(self):
-        """Dict of information about the :class:`SampleSet` as a whole."""
+        """Dict of information about the :class:`SampleSet` as a whole.
+
+        Examples:
+           This example shows the type of information that might be returned by
+           a dimod sampler by submitting a BQM that sets a value on a D-Wave
+           system's first listed coupler.
+
+           >>> from dwave.system.samplers import DWaveSampler    # doctest: +SKIP
+           >>> sampler = DWaveSampler()    # doctest: +SKIP
+           >>> bqm = dimod.BQM({}, {sampler.edgelist[0]: -1}, 0, dimod.SPIN)   # doctest: +SKIP
+           >>> sampler.sample(bqm).info   # doctest: +SKIP
+           {'timing': {'qpu_sampling_time': 315,
+            'qpu_anneal_time_per_sample': 20,
+            'qpu_readout_time_per_sample': 274,
+            # Snipped above response for brevity
+        """
         self.resolve()
         return self._info
 
@@ -677,7 +696,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @property
     def variables(self):
-        """:obj:`.VariableIndexView` of variable labels.
+        """:class:`.VariableIndexView` of variable labels.
 
         Corresponds to columns of the sample field of :attr:`.SampleSet.record`.
 
@@ -1014,6 +1033,25 @@ class SampleSet(abc.Iterable, abc.Sized):
             :attr:`.SampleSet.record.num_occurrences` are accumulated but no
             other fields are.
 
+        Examples:
+            This examples aggregates a sample set with two identical samples
+            out of three.
+
+            >>> sampleset = dimod.SampleSet.from_samples([[0, 0, 1], [0, 0, 1],
+            ...                                           [1, 1, 1]],
+            ...                                           dimod.BINARY,
+            ...                                           [0, 0, 1])
+            >>> print(sampleset)
+               0  1  2 energy num_oc.
+            0  0  0  1      0       1
+            1  0  0  1      0       1
+            2  1  1  1      1       1
+            ['BINARY', 3 rows, 3 samples, 3 variables]
+            >>> print(sampleset.aggregate())
+               0  1  2 energy num_oc.
+            0  0  0  1      0       2
+            1  1  1  1      1       1
+            ['BINARY', 2 rows, 3 samples, 3 variables]
         """
         _, indices, inverse = np.unique(self.record.sample, axis=0,
                                         return_index=True, return_inverse=True)
@@ -1041,24 +1079,24 @@ class SampleSet(abc.Iterable, abc.Sized):
                           self.vartype)
 
     def append_variables(self, samples_like, sort_labels=True):
-        """Create a new sampleset with the given variables with values added.
+        """Create a new sampleset with the given variables and values.
 
-        Not defined for empty sample sets. Note that when `sample_like` is
-        a :obj:`.SampleSet`, the data vectors and info are ignored.
+        Not defined for empty sample sets. If `sample_like` is
+        a :obj:`.SampleSet`, its data vectors and info are ignored.
 
         Args:
             samples_like:
-                Samples to add to the sample set. Should either be a single
-                sample or should match the length of the sample set. See
-                :func:`.as_samples` for what is allowed to be `samples_like`.
+                Samples to add to the sample set. Either a single
+                sample or identical in length to the sample set.
+                'samples_like' is an extension of NumPy's array_like_.
+                See :func:`.as_samples`.
 
             sort_labels (bool, optional, default=True):
-                If true, returned :attr:`.SampleSet.variables` will be in
-                sorted-order. Note that mixed types are not sortable in which
-                case the given order will be maintained.
+                Return :attr:`.SampleSet.variables` in sorted order. For mixed
+                (unsortable) types, the given order is maintained.
 
         Returns:
-            :obj:`.SampleSet`: A new sample set with the variables/values added.
+            :obj:`.SampleSet`: New sample set with the variables/values added.
 
         Examples:
 
@@ -1073,8 +1111,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             1 +1 +1 -1    1.0       1
             ['SPIN', 2 rows, 2 samples, 3 variables]
 
-            Add variables from another sampleset to the original above. Note
-            that the energies do not change.
+            Add variables from another sample set to the previous example. Note
+            that the energies remain unchanged.
 
             >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
             ...                                         {'c': +1, 'd': +1}],
@@ -1086,6 +1124,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             0 -1 +1 -1 +1   -1.0       1
             1 +1 +1 +1 +1    1.0       1
             ['SPIN', 2 rows, 2 samples, 4 variables]
+
+        .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
         """
         samples, labels = as_samples(samples_like)
@@ -1178,16 +1218,17 @@ class SampleSet(abc.Iterable, abc.Sized):
                           self.vartype)
 
     def truncate(self, n, sorted_by='energy'):
-        """Create a new SampleSet with rows truncated after n.
+        """Create a new sample set with up to n rows.
 
         Args:
             n (int):
-                Maximum number of rows in the returned sample set.
+                Maximum number of rows in the returned sample set. Does not return
+                any rows above this limit in the original sample set.
 
             sorted_by (str/None, optional, default='energy'):
                 Selects the record field used to sort the samples before
                 truncating. Note that this sort order is maintained in the
-                returned SampleSet.
+                returned sample set.
 
         Returns:
             :obj:`.SampleSet`
@@ -1218,7 +1259,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         return self.slice(n, sorted_by=sorted_by)
 
     def slice(self, *slice_args, **kwargs):
-        """Create a new SampleSet with rows sliced according to standard Python
+        """Create a new sample set with rows sliced according to standard Python
         slicing syntax.
 
         Args:
@@ -1234,7 +1275,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             sorted_by (str/None, optional, default='energy'):
                 Selects the record field used to sort the samples before
                 slicing. Note that `sorted_by` determines the sample order in
-                the returned SampleSet.
+                the returned sample set.
 
         Returns:
             :obj:`.SampleSet`
@@ -1243,7 +1284,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> import numpy as np
             ...
-            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)), dimod.BINARY, energy=range(10))
+            >>> sampleset = dimod.SampleSet.from_samples(np.diag(range(1, 11)),
+            ...                   dimod.BINARY, energy=range(10))
             >>> print(sampleset)
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  1  0  0  0  0  0  0  0  0  0      0       1
@@ -1258,7 +1300,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             9  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 10 rows, 10 samples, 10 variables]
 
-            >>> # the first 3 samples by energy == truncate(3)
+            The above example's first 3 samples by energy == truncate(3):
+
             >>> print(sampleset.slice(3))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  1  0  0  0  0  0  0  0  0  0      0       1
@@ -1266,7 +1309,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             2  0  0  1  0  0  0  0  0  0  0      2       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
 
-            >>> # the last 3 samples by energy
+            The last 3 samples by energy:
+
             >>> print(sampleset.slice(-3, None))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  0  0  0  0  0  0  0  1  0  0      7       1
@@ -1274,7 +1318,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             2  0  0  0  0  0  0  0  0  0  1      9       1
             ['BINARY', 3 rows, 3 samples, 10 variables]
 
-            >>> # every second sample in between (skip the top and the bottom 3)
+            Every second sample in between, skipping top and bottom 3:
+
             >>> print(sampleset.slice(3, -3, 2))
                0  1  2  3  4  5  6  7  8  9 energy num_oc.
             0  0  0  0  1  0  0  0  0  0  0      3       1
@@ -1316,13 +1361,13 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Args:
             use_bytes (bool, optional, default=False):
-                If True, a compact representation representing the biases as bytes is used.
+                If True, a compact representation of the biases as bytes is used.
 
             bytes_type (class, optional, default=bytes):
-                This class will be used to wrap the bytes objects in the
-                serialization if `use_bytes` is true. Useful for when using
-                Python 2 and using BSON encoding, which will not accept the raw
-                `bytes` type, so `bson.Binary` can be used instead.
+                If `use_bytes` is True, this class is used to wrap the bytes
+                objects in the serialization. Useful for Python 2 using BSON
+                encoding, which does not accept the raw `bytes` type;
+                `bson.Binary` can be used instead.
 
         Returns:
             dict: Object that can be serialized.
@@ -1437,7 +1482,11 @@ class SampleSet(abc.Iterable, abc.Sized):
     ###############################################################################################
 
     def to_pandas_dataframe(self, sample_column=False):
-        """Convert a SampleSet to a Pandas DataFrame
+        """Convert a sample set to a Pandas DataFrame
+
+        Args:
+            sample_column(bool, optional, default=False): If True, samples are
+            represented as a column of type dict.
 
         Returns:
             :obj:`pandas.DataFrame`
