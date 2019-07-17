@@ -1679,11 +1679,12 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         Args:
             use_bytes (bool, optional, default=False):
-                If True, a compact representation representing the biases as bytes is used.
+                If True, a compact representation representing the biases as
+                bytes is used. Uses :func:`~numpy.ndarray.tobytes`.
 
-            bias_dtype (numpy.dtype, optional, default=numpy.float32):
-                If `use_bytes` is True, this numpy dtype will be used to
-                represent the bias values in the serialized format.
+            bias_dtype (data-type, optional, default=numpy.float32):
+                If `use_bytes` is True, this :class:`~numpy.dtype` will be used
+                to represent the bias values in the serialized format.
 
             bytes_type (class, optional, default=bytes):
                 This class will be used to wrap the bytes objects in the
@@ -1765,8 +1766,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             "type": type(self).__name__,
             "version": {"bqm_schema": schema_version},
             "use_bytes": bool(use_bytes),
-            "index_type": np.dtype(index_dtype).str,
-            "bias_type": np.dtype(bias_dtype).str,
+            "index_type": np.dtype(index_dtype).name,
+            "bias_type": np.dtype(bias_dtype).name,
 
             # bqm
             "num_variables": num_variables,

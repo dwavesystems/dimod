@@ -2172,8 +2172,8 @@ class TestSerialization(unittest.TestCase):
     def test_from_serializable_empty_v3(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
-        s = {'bias_type': '<f4',
-             'index_type': '<u2',
+        s = {'bias_type': 'float32',
+             'index_type': 'uint16',
              'info': {},
              'linear_biases': [],
              'num_interactions': 0,
@@ -2195,8 +2195,8 @@ class TestSerialization(unittest.TestCase):
         quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        s = {'bias_type': '<f4',
-             'index_type': '<u2',
+        s = {'bias_type': 'float32',
+             'index_type': 'uint16',
              'info': {},
              'linear_biases': [-1.0, 1.0, 3.0, 0.0, 0.0, 0.0],
              'num_interactions': 3,
@@ -2216,8 +2216,8 @@ class TestSerialization(unittest.TestCase):
     def test_from_serializable_bytes_empty_v3(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
-        s = {'bias_type': '<f4',
-             'index_type': '<u2',
+        s = {'bias_type': 'float32',
+             'index_type': 'uint16',
              'info': {},
              'linear_biases': b'',
              'num_interactions': 0,
@@ -2239,8 +2239,8 @@ class TestSerialization(unittest.TestCase):
         quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
-        s = {'bias_type': '<f4',
-             'index_type': '<u2',
+        s = {'bias_type': 'float32',
+             'index_type': 'uint16',
              'info': {},
              'linear_biases': b'\x00\x00\x80\xbf\x00\x00\x80?\x00\x00@@\x00\x00\x00\x00'
                               b'\x00\x00\x00\x00\x00\x00\x00\x00',
