@@ -1509,7 +1509,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         # assume we're working with v3
 
-        vartype = obj['variable_type']
+        vartype = str(obj['variable_type'])  # cast to str for python2
 
         # see note in to_serializable about storage
         if obj["use_bytes"]:
