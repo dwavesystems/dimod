@@ -24,7 +24,7 @@ def pack_samples(states):
     pad_sizes = ((0, 0),)*(states.ndim - 1) + ((0, pad_len),)
     shape = states.shape[:-1] + (-1, 4, 8)
     padded = np.pad(states, pad_sizes, "constant").reshape(shape)[..., ::-1]
-    return np.packbits(padded).view(np.uint32).reshape(*states.shape[:-1], -1)
+    return np.packbits(padded).view(np.uint32).reshape(*(states.shape[:-1]+(-1,)))
 
 
 def unpack_samples(packed, n, dtype=np.uint32):
