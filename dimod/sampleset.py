@@ -1445,6 +1445,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @classmethod
     def _from_serializable_v2(cls, obj):
+        import io
 
         vartype = Vartype[obj['variable_type']]
 
@@ -1454,7 +1455,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             record = {name: base64.b64decode(vector)
                       for name, vector in obj['record'].items()}
 
-        vectors = {name: bytes2array(vector) for name, vector in record.items()}
+        vectors = {name: np.load(io.BytesIO(vector)) for name, vector in record.items()}
 
         # get the samples and unpack then
         shape = obj['sample_shape']
