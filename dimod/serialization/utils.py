@@ -78,7 +78,16 @@ def deserialize_ndarray(obj):
 def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
     """Looks through the object, serializing numpy arrays.
 
-    Note: Does not check for recursive references.
+    Developer note: this function was written for serializing info fields
+    in the sample set and binary quadratic model objects. This is not a general
+    serialization function.
+
+    Notes:
+        Lists and dicts are copies in the returned object. Does not attempt to
+        only copy-on-write, even though that would be more performant.
+
+        Does not check for recursive references.
+
     """
     if isinstance(obj, np.ndarray):
         return serialize_ndarray(obj, use_bytes=use_bytes, bytes_type=bytes_type)
@@ -90,10 +99,7 @@ def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
 
 
 def deserialize_ndarrays(obj):
-    """Inverse of dfs_serialize_ndarray.
-
-    Note: Does not check for recursive references.
-    """
+    """Inverse of dfs_serialize_ndarray."""
     if isinstance(obj, abc.Mapping):
         if obj.get('type', '') == 'array':
             return deserialize_ndarray(obj)
