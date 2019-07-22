@@ -14,6 +14,11 @@
 #
 # =============================================================================
 
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 import numpy as np
 
 
@@ -66,6 +71,28 @@ def deserialize_ndarray(obj):
         arr = np.asarray(obj['data'], dtype=obj['data_type'])
     arr = arr.reshape(obj['shape'])  # makes a view generally, but that's fine
     return arr
+
+
+def dfs_serialize_ndarray(obj, use_bytes=False, bytes_type=bytes):
+    """Looks through the object, serializing numpy arrays."""
+    if isinstance(obj, np.ndarray):
+        return serialize_ndarray(obj, use_bytes=use_bytes, bytes_type=bytes_type)
+    elif isinstance(obj, abc.Mapping):
+        return {key: dfs_serialize_ndarray(val) for key, val in obj.items()}
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
+        return list(map(dfs_serialize_ndarray, obj))
+    return obj
+
+
+def dfs_deserialize_ndarray(obj):
+    """Inverse of dfs_serialize_ndarray"""
+    if isinstance(obj, abc.Mapping):
+        if obj.get('type', '') == 'array':
+            return deserialize_ndarray(obj)
+        return {key: dfs_deserialize_ndarray(val) for key, val in obj.items()}
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
+        return list(map(dfs_deserialize_ndarray, obj))
+    return obj
 
 
 def pack_samples(states):
