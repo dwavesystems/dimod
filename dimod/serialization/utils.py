@@ -42,8 +42,9 @@ def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
         data = bytes_type(arr.tobytes(order='C'))
     else:
         data = arr.tolist()
-    return dict(data=data,
-                type=arr.dtype.name,
+    return dict(type='array',
+                data=data,
+                data_type=arr.dtype.name,
                 shape=arr.shape,
                 use_bytes=bool(use_bytes))
 
@@ -60,9 +61,9 @@ def deserialize_ndarray(obj):
 
     """
     if obj['use_bytes']:
-        arr = np.frombuffer(obj['data'], dtype=obj['type'])
+        arr = np.frombuffer(obj['data'], dtype=obj['data_type'])
     else:
-        arr = np.asarray(obj['data'], dtype=obj['type'])
+        arr = np.asarray(obj['data'], dtype=obj['data_type'])
     arr = arr.reshape(obj['shape'])  # makes a view generally, but that's fine
     return arr
 

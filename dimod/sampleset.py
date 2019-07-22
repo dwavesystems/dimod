@@ -1392,35 +1392,37 @@ class SampleSet(abc.Iterable, abc.Sized):
         # bytes we could avoid a copy when undoing the serialization. However,
         # we want to pack the samples, so that means that we're storing the
         # arrays individually.
-        sample_data = {}
-        for name in self.record.dtype.names:
+        vectors = {name: serialize_ndarray(data, use_bytes=use_bytes,
+                                           bytes_type=bytes_type)
+                   for name, data in self.data_vectors.items()}
 
-            data = self.record[name]
+        if self.vartype is Vartype.SPIN:
+            packed = pack_samples(self.record.sample > 0)
+        else:
+            packed = pack_samples(self.record.sample)
 
-            if name == 'sample':
-                if self.vartype is Vartype.SPIN:
-                    data = data > 0
-
-                data = pack_samples(data)
-
-            sample_data[name] = serialize_ndarray(data,
-                                                  use_bytes=use_bytes,
-                                                  bytes_type=bytes_type)
+        sample_data = serialize_ndarray(packed,
+                                        use_bytes=use_bytes,
+                                        bytes_type=bytes_type)
 
         return {
             # metadata
             "type": type(self).__name__,
             "version": {"sampleset_schema": schema_version},
-            "use_bytes": bool(use_bytes),
-            "sample_type": self.record.sample.dtype.name,
 
-            # sampleset
+            # samples
             "num_variables": len(self.variables),
             "num_rows": len(self),
+            "sample_data": sample_data,
+            "sample_type": self.record.sample.dtype.name,
+
+            # vectors
+            "vectors": vectors,
+
+            # other
             "variable_labels": self.variables.to_serializable(),
             "variable_type": self.vartype.name,
             "info": self.info,
-            "sample_data": sample_data,
             }
 
     def _asdict(self):
@@ -1506,27 +1508,25 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         # assume we're working with v3
 
+        # other data
         vartype = str(obj['variable_type'])  # cast to str for python2
-
         num_variables = obj['num_variables']
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
+        info = obj['info']
 
+        # vectors
         vectors = {name: deserialize_ndarray(data)
-                   for name, data in obj['sample_data'].items()
-                   if name != 'sample'}
+                   for name, data in obj['vectors'].items()}
 
-        # now the samples
-        sample_doc = obj['sample_data']['sample']
-        sample = unpack_samples(deserialize_ndarray(sample_doc),
+        packed = deserialize_ndarray(obj['sample_data'])
+        sample = unpack_samples(packed,
                                 n=num_variables,
                                 dtype=obj['sample_type'])
+
         if vartype == 'SPIN':
             sample *= 2
             sample -= 1
-
-        variables = [tuple(v) if isinstance(v, list) else v
-                     for v in obj["variable_labels"]]
-
-        info = obj['info']
 
         return cls.from_samples((sample, variables), vartype, info=info,
                                 **vectors)
