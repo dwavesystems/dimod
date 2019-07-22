@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 import base64
 import copy
 import itertools
@@ -32,9 +32,8 @@ from numpy.lib import recfunctions
 
 from dimod.decorators import vartype_argument
 from dimod.exceptions import WriteableError
-from dimod.package_info import __version__
 from dimod.serialization.format import Formatter
-from dimod.serialization.utils import array2bytes, bytes2array
+from dimod.serialization.utils import pack_samples, unpack_samples
 from dimod.utilities import LockableDict
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -1385,31 +1384,95 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        schema_version = "2.0.0"
+        schema_version = "3.0.0"
 
-        record = {name: array2bytes(vector)
-                  for name, vector in self.data_vectors.items()}
-        record['sample'] = array2bytes(np.packbits(self.record.sample > 0))
+        # developer note: numpy's record array stores the samples, energies,
+        # num_occ. etc as a struct array. If we dumped that array directly to
+        # bytes we could avoid a copy when undoing the serialization. However,
+        # we want to pack the samples, so that means that we're storing the
+        # arrays individually.
+        sample_data = {}
+        for name in self.record.dtype.names:
 
-        if not use_bytes:
-            for name in record:
-                record[name] = base64.b64encode(record[name]).decode("UTF-8")
+            data = self.record[name]
 
-        return {"basetype": "SampleSet",
-                "type": type(self).__name__,
-                "record": record,
-                "sample_dtype": str(self.record.sample.dtype),  # need this to unpack
-                "sample_shape": self.record.sample.shape,  # need this to unpack
-                "variable_type": self.vartype.name,
-                "info": self.info,
-                "version": {"dimod": __version__,
-                            "sampleset_schema": schema_version},
-                "variable_labels": self.variables.to_serializable(),
-                "use_bytes": bool(use_bytes)}
+            if name == 'sample':
+                samples = self.record[name]
+                data = pack_samples(samples > 0)
+            else:
+                data = self.record[name]
+
+            if use_bytes:
+                data = bytes_type(data.tobytes(order='C'))
+            else:
+                data = self.record[name].tolist()
+
+            sample_data[name] = dict(data=data,
+                                     type=self.record[name].dtype.name,
+                                     shape=self.record[name].shape)
+
+        return {
+            # metadata
+            "type": type(self).__name__,
+            "version": {"sampleset_schema": schema_version},
+            "use_bytes": bool(use_bytes),
+
+            # sampleset
+            "num_variables": len(self.variables),
+            "num_rows": len(self),
+            "variable_labels": self.variables.to_serializable(),
+            "variable_type": self.vartype.name,
+            "info": self.info,
+            "sample_data": sample_data,
+            }
 
     def _asdict(self):
         # support simplejson encoding
         return self.to_serializable()
+
+    @classmethod
+    def _from_serializable_v1(cls, obj):
+        # deprecated
+        import warnings
+
+        msg = ("sampleset is serialized with a deprecated format and will no "
+               "longer work in dimod 0.9.0.")
+        warnings.warn(msg)
+
+        from dimod.serialization.json import sampleset_decode_hook
+
+        return sampleset_decode_hook(obj, cls=cls)
+
+    @classmethod
+    def _from_serializable_v2(cls, obj):
+        import io
+
+        vartype = Vartype[obj['variable_type']]
+
+        if obj['use_bytes']:
+            record = obj['record']
+        else:
+            record = {name: base64.b64decode(vector)
+                      for name, vector in obj['record'].items()}
+
+        vectors = {name: np.load(io.BytesIO(vector)) for name, vector in record.items()}
+
+        # get the samples and unpack then
+        shape = obj['sample_shape']
+        dtype = obj['sample_dtype']
+        sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
+
+        # convert to the correct dtype
+        if vartype is Vartype.SPIN:
+            sample = np.asarray(2*sample-1, dtype=dtype)
+
+        variables = [tuple(v) if isinstance(v, list) else v
+                     for v in obj["variable_labels"]]
+
+        info = obj['info']
+
+        return cls.from_samples((sample, variables), vartype, info=info,
+                                **vectors)
 
     @classmethod
     def from_serializable(cls, obj):
@@ -1436,38 +1499,51 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.to_serializable`
 
         """
-        schema_version = "2.0.0"
 
         if obj["version"]['sampleset_schema'] == "1.0.0":
-            import warnings
+            return cls._from_serializable_v1(obj)
 
-            msg = ("sampleset is serialized with a deprecated format and will no longer "
-                   "work in dimod 0.9.0.")
-            warnings.warn(msg)
+        version = obj["version"]["sampleset_schema"]
+        if version < "3.0.0":
+            return cls._from_serializable_v2(obj)
 
-            from dimod.serialization.json import sampleset_decode_hook
+        # assume we're working with v3
 
-            return sampleset_decode_hook(obj, cls=cls)
-        elif obj["version"]['sampleset_schema'] != schema_version:
-            raise ValueError("cannot load legacy serialization formats")
+        vartype = str(obj['variable_type'])  # cast to str for python2
 
-        vartype = Vartype[obj['variable_type']]
+        # see note in to_serializable about storage
+        if obj["use_bytes"]:
+            # get everything except the samples
+            vectors = {name: np.frombuffer(dat['data'], dtype=dat['type'])
+                       for name, dat in obj['sample_data'].items()
+                       if name != 'sample'}
 
-        if obj['use_bytes']:
-            record = obj['record']
+            # now the samples
+            num_rows = obj['num_rows']
+            num_variables = obj['num_variables']
+
+            samples_obj = obj['sample_data']['sample']
+            data = samples_obj['data']
+
+            packed = np.frombuffer(samples_obj['data'], dtype=np.uint32)
+
+            # packed comes out as a vector, so reshape. The 4 comes from
+            # uint32
+            if num_rows:
+                packed = packed.reshape((num_rows, len(data) // (num_rows * 4)))
+
+            sample = unpack_samples(packed, n=num_variables,
+                                    dtype=samples_obj['type'])
+
+            if vartype == 'SPIN':
+                sample *= 2
+                sample -= 1
+
         else:
-            record = {name: base64.b64decode(vector) for name, vector in obj['record'].items()}
+            vectors = {name: np.asarray(dat['data'], dtype=dat['type'])
+                       for name, dat in obj['sample_data'].items()}
 
-        vectors = {name: bytes2array(vector) for name, vector in record.items()}
-
-        # get the samples and unpack then
-        shape = obj['sample_shape']
-        dtype = obj['sample_dtype']
-        sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
-
-        # convert to the correct dtype
-        if vartype is Vartype.SPIN:
-            sample = np.asarray(2*sample-1, dtype=dtype)
+            sample = vectors.pop('sample')
 
         variables = [tuple(v) if isinstance(v, list) else v
                      for v in obj["variable_labels"]]

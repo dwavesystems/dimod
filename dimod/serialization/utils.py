@@ -13,40 +13,24 @@
 #    limitations under the License.
 #
 # =============================================================================
-import io
-
 import numpy as np
 
 
-__all__ = 'array2bytes', 'bytes2array'
+def pack_samples(states):
+    # ensure that they are stored big-endian order
+    if not states.size:
+        return np.empty(states.shape, dtype=np.uint32)
+    pad_len = 31 - (states.shape[-1]+31) % 32
+    pad_sizes = ((0, 0),)*(states.ndim - 1) + ((0, pad_len),)
+    shape = states.shape[:-1] + (-1, 4, 8)
+    padded = np.pad(states, pad_sizes, "constant").reshape(shape)[..., ::-1]
+    return np.packbits(padded).view(np.uint32).reshape(*(states.shape[:-1]+(-1,)))
 
 
-def array2bytes(arr, bytes_type=bytes):
-    """Wraps NumPy's save function to return bytes.
-
-    We use :func:`numpy.save` rather than :meth:`numpy.ndarray.tobytes` because
-    it encodes endianness and order.
-
-    Args:
-        arr (:obj:`numpy.ndarray`):
-            Array to be saved.
-
-        bytes_type (class, optional, default=bytes):
-            This class will be used to wrap the bytes objects in the
-            serialization if `use_bytes` is true. Useful for when using
-            Python 2 and using BSON encoding, which will not accept the raw
-            `bytes` type, so `bson.Binary` can be used instead.
-
-
-    Returns:
-        bytes_type
-
-    """
-    bio = io.BytesIO()
-    np.save(bio, arr, allow_pickle=False)
-    return bytes_type(bio.getvalue())
-
-
-def bytes2array(bytes):
-    """Inverse of :func:`array2bytes`"""
-    return np.load(io.BytesIO(bytes))
+def unpack_samples(packed, n, dtype=np.uint32):
+    if not packed.size:
+        return np.empty((packed.shape[0], n), dtype=dtype)
+    bytewise_shape = packed.shape[:-1] + (-1, 4, 8)
+    unpacked = np.unpackbits(packed.view(np.uint8)).reshape(bytewise_shape)
+    unpacked = unpacked[..., ::-1].reshape(packed.shape[:-1] + (-1,))
+    return unpacked[..., :n].astype(dtype)
