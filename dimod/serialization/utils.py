@@ -13,7 +13,58 @@
 #    limitations under the License.
 #
 # =============================================================================
+
 import numpy as np
+
+
+def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
+    """Serializes a NumPy array.
+
+    Args:
+        arr (array-like):
+            An array.
+
+        use_bytes (bool, optional, default=False):
+            If True, a compact representation of the biases as bytes is used.
+
+        bytes_type (class, optional, default=bytes):
+            If `use_bytes` is True, this class is used to wrap the bytes
+            objects in the serialization. Useful for Python 2 using BSON
+            encoding, which does not accept the raw `bytes` type;
+            `bson.Binary` can be used instead.
+
+    Returns:
+        dict: A serializable object.
+
+    """
+    arr = np.asarray(arr)  # support array-like
+    if use_bytes:
+        data = bytes_type(arr.tobytes(order='C'))
+    else:
+        data = arr.tolist()
+    return dict(data=data,
+                type=arr.dtype.name,
+                shape=arr.shape,
+                use_bytes=bool(use_bytes))
+
+
+def deserialize_ndarray(obj):
+    """Inverse of serialize_ndarray.
+
+    Args:
+        obj (dict):
+            As constructed by :func:`.serialize_ndarray`.
+
+    Returns:
+        :obj:`numpy.ndarray`
+
+    """
+    if obj['use_bytes']:
+        arr = np.frombuffer(obj['data'], dtype=obj['type'])
+    else:
+        arr = np.asarray(obj['data'], dtype=obj['type'])
+    arr = arr.reshape(obj['shape'])  # makes a view generally, but that's fine
+    return arr
 
 
 def pack_samples(states):

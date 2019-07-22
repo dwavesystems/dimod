@@ -34,6 +34,7 @@ from dimod.decorators import vartype_argument
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
 from dimod.serialization.utils import pack_samples, unpack_samples
+from dimod.serialization.utils import serialize_ndarray, deserialize_ndarray
 from dimod.utilities import LockableDict
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -1397,25 +1398,21 @@ class SampleSet(abc.Iterable, abc.Sized):
             data = self.record[name]
 
             if name == 'sample':
-                samples = self.record[name]
-                data = pack_samples(samples > 0)
-            else:
-                data = self.record[name]
+                if self.vartype is Vartype.SPIN:
+                    data = data > 0
 
-            if use_bytes:
-                data = bytes_type(data.tobytes(order='C'))
-            else:
-                data = self.record[name].tolist()
+                data = pack_samples(data)
 
-            sample_data[name] = dict(data=data,
-                                     type=self.record[name].dtype.name,
-                                     shape=self.record[name].shape)
+            sample_data[name] = serialize_ndarray(data,
+                                                  use_bytes=use_bytes,
+                                                  bytes_type=bytes_type)
 
         return {
             # metadata
             "type": type(self).__name__,
             "version": {"sampleset_schema": schema_version},
             "use_bytes": bool(use_bytes),
+            "sample_type": self.record.sample.dtype.name,
 
             # sampleset
             "num_variables": len(self.variables),
@@ -1511,39 +1508,20 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         vartype = str(obj['variable_type'])  # cast to str for python2
 
-        # see note in to_serializable about storage
-        if obj["use_bytes"]:
-            # get everything except the samples
-            vectors = {name: np.frombuffer(dat['data'], dtype=dat['type'])
-                       for name, dat in obj['sample_data'].items()
-                       if name != 'sample'}
+        num_variables = obj['num_variables']
 
-            # now the samples
-            num_rows = obj['num_rows']
-            num_variables = obj['num_variables']
+        vectors = {name: deserialize_ndarray(data)
+                   for name, data in obj['sample_data'].items()
+                   if name != 'sample'}
 
-            samples_obj = obj['sample_data']['sample']
-            data = samples_obj['data']
-
-            packed = np.frombuffer(samples_obj['data'], dtype=np.uint32)
-
-            # packed comes out as a vector, so reshape. The 4 comes from
-            # uint32
-            if num_rows:
-                packed = packed.reshape((num_rows, len(data) // (num_rows * 4)))
-
-            sample = unpack_samples(packed, n=num_variables,
-                                    dtype=samples_obj['type'])
-
-            if vartype == 'SPIN':
-                sample *= 2
-                sample -= 1
-
-        else:
-            vectors = {name: np.asarray(dat['data'], dtype=dat['type'])
-                       for name, dat in obj['sample_data'].items()}
-
-            sample = vectors.pop('sample')
+        # now the samples
+        sample_doc = obj['sample_data']['sample']
+        sample = unpack_samples(deserialize_ndarray(sample_doc),
+                                n=num_variables,
+                                dtype=obj['sample_type'])
+        if vartype == 'SPIN':
+            sample *= 2
+            sample -= 1
 
         variables = [tuple(v) if isinstance(v, list) else v
                      for v in obj["variable_labels"]]
