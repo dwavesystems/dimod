@@ -21,6 +21,8 @@ except ImportError:
 
 import numpy as np
 
+from six import string_types
+
 
 def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
     """Serializes a NumPy array.
@@ -73,25 +75,31 @@ def deserialize_ndarray(obj):
     return arr
 
 
-def dfs_serialize_ndarray(obj, use_bytes=False, bytes_type=bytes):
-    """Looks through the object, serializing numpy arrays."""
+def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
+    """Looks through the object, serializing numpy arrays.
+
+    Note: Does not check for recursive references.
+    """
     if isinstance(obj, np.ndarray):
         return serialize_ndarray(obj, use_bytes=use_bytes, bytes_type=bytes_type)
     elif isinstance(obj, abc.Mapping):
-        return {key: dfs_serialize_ndarray(val) for key, val in obj.items()}
-    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
-        return list(map(dfs_serialize_ndarray, obj))
+        return {key: serialize_ndarrays(val) for key, val in obj.items()}
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, string_types):
+        return list(map(serialize_ndarrays, obj))
     return obj
 
 
-def dfs_deserialize_ndarray(obj):
-    """Inverse of dfs_serialize_ndarray"""
+def deserialize_ndarrays(obj):
+    """Inverse of dfs_serialize_ndarray.
+
+    Note: Does not check for recursive references.
+    """
     if isinstance(obj, abc.Mapping):
         if obj.get('type', '') == 'array':
             return deserialize_ndarray(obj)
-        return {key: dfs_deserialize_ndarray(val) for key, val in obj.items()}
-    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
-        return list(map(dfs_deserialize_ndarray, obj))
+        return {key: deserialize_ndarrays(val) for key, val in obj.items()}
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, string_types):
+        return list(map(deserialize_ndarrays, obj))
     return obj
 
 

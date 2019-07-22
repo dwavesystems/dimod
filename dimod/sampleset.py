@@ -37,8 +37,8 @@ from dimod.serialization.utils import (pack_samples,
                                        unpack_samples,
                                        serialize_ndarray,
                                        deserialize_ndarray,
-                                       dfs_serialize_ndarray,
-                                       dfs_deserialize_ndarray)
+                                       serialize_ndarrays,
+                                       deserialize_ndarrays)
 from dimod.utilities import LockableDict
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -1426,7 +1426,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             # other
             "variable_labels": self.variables.to_serializable(),
             "variable_type": self.vartype.name,
-            "info": dfs_serialize_ndarray(self.info, use_bytes=use_bytes,
+            "info": serialize_ndarrays(self.info, use_bytes=use_bytes,
                                           bytes_type=bytes_type),
             }
 
@@ -1518,7 +1518,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         num_variables = obj['num_variables']
         variables = [tuple(v) if isinstance(v, list) else v
                      for v in obj["variable_labels"]]
-        info = dfs_deserialize_ndarray(obj['info'])
+        info = deserialize_ndarrays(obj['info'])
 
         # vectors
         vectors = {name: deserialize_ndarray(data)
