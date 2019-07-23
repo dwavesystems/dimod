@@ -101,6 +101,7 @@ class TestFunctional(unittest.TestCase):
     def test_info_field(self):
         bqm = dimod.BQM.empty('SPIN')
         bqm.info['a'] = np.ones((3, 3))
+        bqm.info[np.int64(5)] = np.float32(.9)
         obj = [bqm]
 
         new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)

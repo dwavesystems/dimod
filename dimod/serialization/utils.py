@@ -13,6 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
+from numbers import Integral, Number
 
 try:
     import collections.abc as abc
@@ -92,9 +93,14 @@ def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
     if isinstance(obj, np.ndarray):
         return serialize_ndarray(obj, use_bytes=use_bytes, bytes_type=bytes_type)
     elif isinstance(obj, abc.Mapping):
-        return {key: serialize_ndarrays(val) for key, val in obj.items()}
+        return {serialize_ndarrays(key): serialize_ndarrays(val)
+                for key, val in obj.items()}
     elif isinstance(obj, abc.Sequence) and not isinstance(obj, string_types):
         return list(map(serialize_ndarrays, obj))
+    if isinstance(obj, Integral):
+        return int(obj)
+    elif isinstance(obj, Number):
+        return float(obj)
     return obj
 
 
