@@ -6,10 +6,10 @@
 
 from numbers import Integral
 
-from cython.operator cimport dereference as deref, preincrement, predecrement, postincrement
+from cython.operator cimport dereference as deref
+from cython.operator cimport postincrement
 
-from libc.math cimport isnan
-from libcpp.algorithm cimport lower_bound
+from libcpp.map cimport map as cppmap
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
@@ -18,55 +18,45 @@ cimport numpy as np
 
 from dimod.bqm.cybqm cimport AdjArrayBQM
 
-
-cdef extern from "<algorithm>" namespace "std" nogil:
-    void stable_sort[Iter, Compare](Iter first, Iter last, Compare comp)
-
 ctypedef np.float64_t Bias
 ctypedef np.uint32_t VarIndex
 
 bias_dtype = np.float64
 
 ctypedef pair[VarIndex, Bias] OutVar
-ctypedef pair[vector[OutVar], Bias] InVar
-
-cdef bint lt_first(const OutVar a, const OutVar b):
-    # we need a custom sorter for pairs that only looks at the variable index
-    # for use in our stable sort
-    return a.first < b.first
+ctypedef cppmap[VarIndex, Bias] Neighbourhood
+ctypedef pair[Neighbourhood, Bias] InVar
 
 
-cdef class AdjVectorBQM:
+cdef class AdjMapBQM:
     """
 
     This can be instantiated in several ways:
 
-        AdjVectorBQM()
+        AdjMapBQM()
             Creates an empty binary quadratic model
 
-        AdjVectorBQM(n)
+        AdjMapBQM(n)
             Where n is the number of nodes.
 
-        AdjVectorBQM((linear, [quadratic, [offset]]))
+        AdjMapBQM((linear, [quadratic, [offset]]))
             Where linear, quadratic are:
                 dict[int, bias]
                 sequence[bias]
             *NOT IMPLEMENTED YET*
 
-        AdjVectorBQM(bqm)
+        AdjMapBQM(bqm)
             Where bqm is another binary quadratic model (equivalent to
             bqm.to_adjvector())
             *NOT IMPLEMENTED YET*
 
-        AdjVectorBQM(D)
+        AdjMapBQM(D)
             Where D is a dense matrix D
 
     """
     cdef vector[InVar] adj_
-    cdef vector[bint] sorted_  # whether currently sorted
 
     def __init__(self, object arg1=0):
-
 
         cdef Bias [:, :] D  # in case it's dense
         cdef size_t num_variables
@@ -74,8 +64,7 @@ cdef class AdjVectorBQM:
         cdef Bias b
 
         if isinstance(arg1, Integral):
-            for _ in range(arg1):
-                self.append_variable()
+            self.adj_.resize(arg1)  # default constructor
         elif isinstance(arg1, tuple):
             raise NotImplementedError  # update docstring
         elif hasattr(arg1, "to_adjvector"):
@@ -83,7 +72,6 @@ cdef class AdjVectorBQM:
             raise NotImplementedError  # update docstring
         else:
             # assume it's dense
-
             D = np.atleast_2d(np.asarray(arg1, dtype=bias_dtype))
 
             num_variables = D.shape[0]
@@ -91,138 +79,136 @@ cdef class AdjVectorBQM:
             if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            self.__init__(num_variables)  # instantiate the variables
+            self.adj_.resize(num_variables)  # defaults values to 0
 
             for u in range(num_variables):
                 for v in range(num_variables):
                     b = D[u, v]
 
-                    if b:
-                        if u == v:
-                            self.set_linear(u, b)
-                        else:
-                            self.add_interaction(u, v, b)
+                    if u == v and b != 0:
+                        self.adj_[u].second = b
+                    elif b != 0:  # ignore the 0 off-diagonal
+                        self.adj_[u].first.insert((v, b))
+                        self.adj_[v].first.insert((u, b))
 
     def __len__(self):
-        # number of variables
+        return self.num_variables
+
+    @property
+    def num_variables(self):
         return self.adj_.size()
 
     @property
     def num_interactions(self):
-        self.sort_and_reduce()
-
-        # O(|V|) if we didn't have to resolve, we might just want to track this
-        cdef InVar in_var
         cdef size_t count = 0
-        for in_var in self.adj_:
-            count += in_var.first.size()
+        cdef vector[InVar].iterator it = self.adj_.begin()
+        while it != self.adj_.end():
+            count += deref(postincrement(it)).first.size()
         return count // 2
 
     @property
     def shape(self):
-        return len(self), self.num_interactions
+        return self.num_variables, self.num_interactions
 
-    def add_interaction(self, VarIndex u, VarIndex v, Bias b):
-        if u >= len(self) or v >= len(self) or u < 0 or v < 0:
-            # if VarIndex is an unsigned int, then < 0 will raise an OverflowError
-            raise ValueError
+    ###########################################################################
+    # Variable/Interaction base methods
+    ###########################################################################
 
-        # don't worry if there are duplicates at this point, just append them
-        # onto the end
-        self.adj_[v].first.push_back((u, b))
-        self.adj_[u].first.push_back((v, b))
+    def iter_variables(self):
+        # while index-labelled this is just iterating over the size
+        cdef VarIndex v
+        for v in range(self.adj_.size()):
+            yield v
 
-    def append_variable(self, Bias bias=0):
-        self.adj_.push_back(([], bias))  # empty neighbourhood
+    def iter_interactions(self):
+        raise NotImplementedError
+
+    def iter_neighbours(self):
+        raise NotImplementedError
+
+    ###########################################################################
+    # Linear base methods
+    ###########################################################################
+
+    def append_linear(self, Bias b):
+        cdef InVar invar  # creates it as empty
+        invar.second = b
+        self.adj_.push_back(invar)
 
     def get_linear(self, VarIndex v):
-        if v >= len(self) or v < 0:
-            # if VarIndex is an unsigned int, then < 0 will raise an OverflowError
-            raise ValueError
+        if v > self.adj_.size() or v < 0:
+            raise ValueError("out of range variable {}".format(v))
         return self.adj_[v].second
 
+    def pop_linear(self):
+        if self.adj_.empty():  # need this check for following loop
+            raise ValueError("cannot pop from an empty BQM")
+
+        # remove any associated interactions
+        cdef OutVar outvar
+        cdef VarIndex v = self.adj_.size() - 1
+        for outvar in deref(self.adj_.rbegin()).first:
+            self.adj_[outvar.first].first.erase(v)
+
+        # remove the variable
+        self.adj_.pop_back()
+
+    def set_linear(self, VarIndex v, Bias b):
+        if v > self.adj_.size() or v < 0:
+            raise ValueError("out of range variable {}".format(v))
+        self.adj_[v].second = b
+
+    ###########################################################################
+    # Quadratic base methods
+    ###########################################################################
+
     def get_quadratic(self, VarIndex u, VarIndex v):
-        if u >= len(self) or v >= len(self) or u < 0 or v < 0:
-            # if VarIndex is an unsigned int, then < 0 will raise an OverflowError
-            raise ValueError
+        if u > self.adj_.size() or u < 0:
+            raise ValueError("out of range variable {}".format(u))
+        if v > self.adj_.size() or v < 0:
+            raise ValueError("out of range variable {}".format(v))
+        if u == v:
+            raise ValueError("no self-loops allowed")
 
-        self.sort_and_reduce()  # we're reading, so resolve
-
-        cdef OutVar target = (v, 0)
-
-        # everything is now unique and sorted, so we can do a binary search
-        cdef vector[OutVar].iterator it = lower_bound(self.adj_[u].first.begin(),
-                                                      self.adj_[u].first.end(),
-                                                      target,
-                                                      lt_first)
-
+        cdef cppmap[VarIndex, Bias].iterator it = self.adj_[u].first.find(v)
         if it == self.adj_[u].first.end():
-            raise ValueError
+            raise ValueError("no interaction between {},{}".format(u, v))
+        return deref(it).second
 
-        cdef OutVar ans = deref(it)
+    def remove_quadratic(self, VarIndex u, VarIndex v):
+        if u > self.adj_.size() or u < 0:
+            raise ValueError("out of range variable {}".format(u))
+        if v > self.adj_.size() or v < 0:
+            raise ValueError("out of range variable {}".format(v))
+        if u == v:
+            raise ValueError("no self-loops allowed")
 
-        if ans.first != v:
-            raise ValueError("There is no interaction between {} and {}".format(u, v))
+        self.adj_[u].first.erase(v)
+        self.adj_[v].first.erase(u)
 
-        return ans.second
+    def set_quadratic(self, VarIndex u, VarIndex v, Bias b):
+        if u > self.adj_.size() or u < 0:
+            raise ValueError("out of range variable {}".format(u))
+        if v > self.adj_.size() or v < 0:
+            raise ValueError("out of range variable {}".format(v))
+        if u == v:
+            raise ValueError("no self-loops allowed")
 
-    def remove_interaction(self, VarIndex u, VarIndex v):
-        self.add_interaction(u, v, float('nan'))  # is there a better way to get nan?
+        self.adj_[u].first[v] = b
+        self.adj_[v].first[u] = b
 
-    def set_linear(self, VarIndex v, Bias bias):
-        if v >= len(self) or v < 0:
-            # if VarIndex is an unsigned int, then < 0 will raise an OverflowError
-            raise ValueError
-        self.adj_[v].second = bias
 
-    def sort_and_reduce(self):
-        cdef vector[OutVar].iterator first, last, result
-
-        cdef vector[InVar].iterator it = self.adj_.begin()
-
-        while it != self.adj_.end():
-
-            first = deref(it).first.begin()
-            last = deref(it).first.end()
-
-            # sort each neighbourhood with a stable sort so that we can account
-            # for the deletions (we need to know where the NaNs are)
-            stable_sort(first, last, lt_first)
-
-            if first != last:
-                result = first
-
-                while preincrement(first) != last:
-                    if deref(result).first == deref(first).first:
-                        if isnan(deref(first).second):
-                            # there was a deletion in the queue, so step back
-                            predecrement(result)
-                        else:
-                            # accumulate the biases
-                            deref(result).second = deref(result).second + deref(first).second
-                    elif isnan(deref(first).second):
-                        # if the first of a new index is a NaN then we can
-                        # ignore it
-                        pass  
-                    else:
-                        # new index
-                        preincrement(result)[0] = first[0]
-
-                # finally resize down
-                preincrement(result)
-                if result != last:
-                    deref(it).first.resize((result - deref(it).first.begin()))
-
-            preincrement(it)
+    ##
+    # Methods
+    #
 
     def to_adjarray(self):
         # this is always a copy
-        self.sort_and_reduce()
 
         # make a 0-length BQM but then manually resize it, note that this
         # treats them as vectors
         cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
-        bqm.invars_.resize(len(self))
+        bqm.invars_.resize(self.adj_.size())
         bqm.outvars_.resize(2*self.num_interactions)
 
         cdef OutVar outvar
@@ -243,7 +229,5 @@ cdef class AdjVectorBQM:
 
     def to_lists(self, object sort_and_reduce=True):
         """Dump to a list of lists, mostly for testing"""
-        if sort_and_reduce:
-            self.sort_and_reduce()
-        return list((list(neighbourhood), bias)
+        return list((list(neighbourhood.items()), bias)
                     for neighbourhood, bias in self.adj_)
