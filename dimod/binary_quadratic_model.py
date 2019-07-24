@@ -61,6 +61,7 @@ from six import itervalues, iteritems
 
 from dimod.decorators import vartype_argument, lockable_method
 from dimod.sampleset import as_samples
+from dimod.serialization.utils import serialize_ndarrays, deserialize_ndarrays
 from dimod.utilities import resolve_label_conflict, LockableDict
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
@@ -1775,7 +1776,8 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             "variable_labels": variables,
             "variable_type": self.vartype.name,
             "offset": float(offset),
-            "info": self.info,
+            "info": serialize_ndarrays(self.info, use_bytes=use_bytes,
+                                          bytes_type=bytes_type),
             }
 
         if use_bytes:
@@ -1925,7 +1927,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                                      str(vartype),  # handle unicode for py2
                                      variable_order=variables)
 
-        bqm.info.update(obj["info"])
+        bqm.info.update(deserialize_ndarrays(obj['info']))
         return bqm
 
     def to_networkx_graph(self, node_attribute_name='bias', edge_attribute_name='bias'):
