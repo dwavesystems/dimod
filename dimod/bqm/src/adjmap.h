@@ -16,8 +16,8 @@
 #include <utility>
 #include <vector>
 
-#ifndef ADJMAP_H
-#define ADJMAP_H
+#ifndef DIMOD_BQM_SRC_ADJMAP_H_
+#define DIMOD_BQM_SRC_ADJMAP_H_
 
 namespace dimod {
 
@@ -25,21 +25,26 @@ namespace dimod {
     using Neighbourhood = typename std::map<VarIndex, Bias>;
 
     template<typename VarIndex, typename Bias>
-    using AdjMapBQM = typename std::vector<std::pair<Neighbourhood<VarIndex, Bias>, Bias>>;
+    using AdjMapBQM = typename std::vector<
+        std::pair<Neighbourhood<VarIndex, Bias>, Bias>>;
 
     // Read the BQM
 
     template<typename V, typename B>
-    size_t num_variables(AdjMapBQM<V, B>&);
+    std::size_t num_variables(const AdjMapBQM<V, B>&);
 
     template<typename V, typename B>
-    size_t num_interactions(AdjMapBQM<V, B>&);
+    std::size_t num_interactions(const AdjMapBQM<V, B>&);
 
     template<typename V, typename B>
-    B get_linear(AdjMapBQM<V, B>&, V);
+    B get_linear(const AdjMapBQM<V, B>&, V);
 
     template<typename V, typename B>
-    B get_quadratic(AdjMapBQM<V, B>&, V, V);
+    B get_quadratic(const AdjMapBQM<V, B>&, V, V);
+
+    // todo: variable_iterator
+    // todo: interaction_iterator
+    // todo: neighbour_iterator
 
     // Change the values in the BQM
 
@@ -59,8 +64,6 @@ namespace dimod {
 
     template<typename V, typename B>
     V pop_variable(AdjMapBQM<V, B>&);
+}  // namespace dimod
 
-
-}
-
-#endif  // ADJMAP_H
+#endif  // DIMOD_BQM_SRC_ADJMAP_H_
