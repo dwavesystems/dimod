@@ -12,25 +12,84 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#include "adjmap.h"
+#include "src/adjmap.h"
 
 #include <utility>
 
 
-namespace dimod{
+namespace dimod {
 
-    // Functions that change the structure of the BQM
+    // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    VarIndex add_variable(AdjMapBQM<VarIndex, Bias> &bqm){
+    std::size_t num_variables(const AdjMapBQM<VarIndex, Bias> &bqm) {
+        return bqm.size();
+    }
+
+    template<typename VarIndex, typename Bias>
+    std::size_t num_interactions(const AdjMapBQM<VarIndex, Bias> &bqm) {
+        std::size_t count = 0;
+        for (typename AdjMapBQM<VarIndex, Bias>::const_iterator it=bqm.begin();
+             it != bqm.end(); ++it) {
+            count += (*it).first.size();
+        }
+        return count / 2;
+    }
+
+    template<typename VarIndex, typename Bias>
+    Bias get_linear(const AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v) {
+        assert(v >= 0 && v < bqm.size());
+        return bqm[v].second;
+    }
+
+    template<typename VarIndex, typename Bias>
+    Bias get_quadratic(const AdjMapBQM<VarIndex, Bias> &bqm,
+                       VarIndex u, VarIndex v) {
+        assert(u >= 0 && u < bqm.size());
+        assert(v >= 0 && v < bqm.size());
+        assert(u != v);
+
+        typename Neighbourhood<VarIndex, Bias>::const_iterator it;
+        it = bqm[u].first.find(v);
+        if (it == bqm[u].first.end())
+            return 0;  // do we want to raise?
+        return (*it).second;
+    }
+
+    // todo: variable_iterator
+    // todo: interaction_iterator
+    // todo: neighbour_iterator
+
+    // Change the values in the BQM
+
+    template<typename VarIndex, typename Bias>
+    void set_linear(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v, Bias b) {
+        assert(v >= 0 && v < bqm.size());
+        bqm[v].second = b;
+    }
+
+    template<typename VarIndex, typename Bias>
+    void set_quadratic(AdjMapBQM<VarIndex, Bias> &bqm,
+                       VarIndex u, VarIndex v, Bias b) {
+        assert(u >= 0 && u < bqm.size());
+        assert(v >= 0 && v < bqm.size());
+        assert(u != v);
+
+        bqm[u].first[v] = b;
+        bqm[v].first[u] = b;
+    }
+
+    // Change the structure of the BQM
+
+    template<typename VarIndex, typename Bias>
+    VarIndex add_variable(AdjMapBQM<VarIndex, Bias> &bqm) {
         bqm.push_back(std::make_pair(Neighbourhood<VarIndex, Bias>(), 0));
         return bqm.size() - 1;
-    };
+    }
 
-    // overwrites the bias if any
     template<typename VarIndex, typename Bias>
     bool add_interaction(AdjMapBQM<VarIndex, Bias> &bqm,
-                         VarIndex u, VarIndex v){
+                         VarIndex u, VarIndex v) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
         assert(u != v);
@@ -44,83 +103,21 @@ namespace dimod{
         assert(ret_u.second == ret_v.second);
 
         return ret_u.second;
-    };
+    }
 
     template<typename VarIndex, typename Bias>
-    VarIndex pop_variable(AdjMapBQM<VarIndex, Bias> &bqm){
-        assert(bqm.size() > 0); // undefined for empty
+    VarIndex pop_variable(AdjMapBQM<VarIndex, Bias> &bqm) {
+        assert(bqm.size() > 0);  // undefined for empty
 
         VarIndex v = bqm.size() - 1;
 
-        for (typename Neighbourhood<VarIndex, Bias>::iterator it=bqm[v].first.begin();
-             it!=(*bqm.rbegin()).first.end();
-             it++){
+        for (typename Neighbourhood<VarIndex, Bias>::iterator
+             it=bqm[v].first.begin(); it != (*bqm.rbegin()).first.end(); it++) {
             bqm[(*it).first].first.erase(v);
         }
-        
+
         bqm.pop_back();
 
         return v;
-    };
-
-
-    // Read the BQM
-
-
-    template<typename VarIndex, typename Bias>
-    size_t num_variables(AdjMapBQM<VarIndex, Bias> &bqm){
-        return bqm.size();
-    };
-
-    template<typename VarIndex, typename Bias>
-    size_t num_interactions(AdjMapBQM<VarIndex, Bias> &bqm){
-        size_t count = 0;
-        for (typename AdjMapBQM<VarIndex, Bias>::iterator it=bqm.begin();
-             it!=bqm.end(); ++it){
-            count += (*it).first.size();
-        };
-        return count / 2;
-    };
-
-    template<typename VarIndex, typename Bias>
-    Bias get_linear(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v){
-        assert(v >= 0 && v < bqm.size());
-        return bqm[v].second;
-    };
-
-    template<typename VarIndex, typename Bias>
-    Bias get_quadratic(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex u, VarIndex v){
-        assert(u >= 0 && u < bqm.size());
-        assert(v >= 0 && v < bqm.size());
-        assert(u != v);
-        
-        typename Neighbourhood<VarIndex, Bias>::iterator it=bqm[u].first.find(v);
-        if (it == bqm[u].first.end())
-            return 0;  // do we want to raise?
-        return (*it).second;
-    };
-
-    // todo: variable_iterator
-    // todo: interaction_iterator
-    // todo: neighbour_iterator
-
-    // Change the values in the BQM
-
-    template<typename VarIndex, typename Bias>
-    void set_linear(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v, Bias b){
-        assert(v >= 0 && v < bqm.size());
-        bqm[v].second = b;
-    };
-
-    template<typename VarIndex, typename Bias>
-    void set_quadratic(AdjMapBQM<VarIndex, Bias> &bqm,
-                       VarIndex u, VarIndex v, Bias b){
-        assert(u >= 0 && u < bqm.size());
-        assert(v >= 0 && v < bqm.size());
-        assert(u != v);
-
-        bqm[u].first[v] = b;
-        bqm[v].first[u] = b;
-    };
-
-}
+    }
+}  // namespace dimod
