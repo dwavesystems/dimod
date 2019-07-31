@@ -85,13 +85,13 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
               Extension("dimod.bqm.adjmapbqm",
-                        ['dimod/bqm/adjmapbqm'+ext,
-                         'dimod/bqm/src/adjmap.cc'],
-                        include_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjmapbqm'+ext],
+                        include_dirs=['dimod/bqm/src/'],
+                        library_dirs=['dimod/bqm/src/']),
               Extension("dimod.bqm.adjarraybqm",
-                        ['dimod/bqm/adjarraybqm'+ext,
-                         'dimod/bqm/src/adjarray.cc'],
-                        include_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjarraybqm'+ext],
+                        include_dirs=['dimod/bqm/src/'],
+                        library_dirs=['dimod/bqm/src/']),
               ]
 
 if USE_CYTHON:
@@ -166,10 +166,10 @@ class ve_build_ext(build_ext):
             ext.extra_compile_args.extend(extra_compile_args)
             ext.extra_link_args.extend(extra_link_args)
 
-        try:
-            build_ext.build_extension(self, ext)
-        except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
-            raise BuildFailed()
+            try:
+                build_ext.build_extension(self, ext)
+            except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
+                raise BuildFailed()
 
 
 def run_setup(cpp):
