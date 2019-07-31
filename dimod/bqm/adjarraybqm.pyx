@@ -1,8 +1,21 @@
 # distutils: language = c++
 # cython: language_level=3
-
-# google c++ convention for names
-# https://google.github.io/styleguide/cppguide.html#Naming
+#
+# Copyright 2019 D-Wave Systems Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+# =============================================================================
 
 from numbers import Integral
 
@@ -10,7 +23,9 @@ cimport cython
 
 import numpy as np
 
-bias_dtype = np.float64  # hardcoded, we might want to change this later
+from dimod.bqm.cppbqm cimport (num_variables,
+                               num_interactions,
+                               )
 
 
 # developer note: we use a function rather than a method because we want to
@@ -19,8 +34,9 @@ bias_dtype = np.float64  # hardcoded, we might want to change this later
 # so we can determine the return type. For now we'll match Bias
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef Bias energy(vector[InVar] invars, vector[OutVar] outvars,
-                 Sample[:] sample):
+cdef Bias energy(vector[pair[size_t, Bias]] invars,
+                 vector[pair[VarIndex, Bias]] outvars,
+                 SampleVar[:] sample):
     """Calculate the energy of a single sample"""
     cdef Bias energy = 0
 
@@ -81,9 +97,14 @@ cdef class AdjArrayBQM:
 
     """
 
+    def __cinit__(self, *args, **kwargs):
+        # Developer note: if VarIndex or Bias were fused types, we would want
+        # to do a type check here but since they are fixed...
+        self.dtype = np.double
+        self.index_dtype = np.uintc
+
+
     def __init__(self, object arg1=0):
-        # this is the only method that we treat invars_ and outvars_ as vectors
-        # rather than arrays
         
         cdef Bias [:, :] D  # in case it's dense
         cdef size_t num_variables, num_interactions, degree
@@ -100,7 +121,7 @@ cdef class AdjArrayBQM:
         else:
             # assume it's dense
 
-            D = np.atleast_2d(np.asarray(arg1, dtype=bias_dtype))
+            D = np.atleast_2d(np.asarray(arg1, dtype=self.dtype))
 
             num_variables = D.shape[0]
 
@@ -141,15 +162,15 @@ cdef class AdjArrayBQM:
 
                     
     def __len__(self):
-        return self.invars_.size()
-
-    @property
-    def num_interactions(self):
-        return self.outvars_.size() // 2
+        return self.num_variables
 
     @property
     def num_variables(self):
-        return len(self)
+        return num_variables(self.invars_, self.outvars_)
+
+    @property
+    def num_interactions(self):
+        return num_interactions(self.invars_, self.outvars_)
 
     @property
     def shape(self):
@@ -157,14 +178,14 @@ cdef class AdjArrayBQM:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def energies(self, Sample[:, :] samples):
+    def energies(self, SampleVar[:, :] samples):
         cdef size_t num_samples = samples.shape[0]
 
         if samples.shape[1] != len(self):
             raise ValueError("Mismatched variables")
 
         # type is hardcoded for now
-        energies = np.empty(num_samples, dtype=bias_dtype)
+        energies = np.empty(num_samples, dtype=self.dtype)  # gil
         cdef Bias[::1] energies_view = energies
 
         # todo: prange and nogil, we can use static schedule because the

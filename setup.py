@@ -84,16 +84,20 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
-              Extension("dimod.bqm.cybqm",
-                        ['dimod/bqm/cybqm'+ext]),
-              Extension("dimod.bqm.cymutablebqm",
-                        ['dimod/bqm/cymutablebqm'+ext]),
+              Extension("dimod.bqm.adjmapbqm",
+                        ['dimod/bqm/adjmapbqm'+ext,
+                         'dimod/bqm/src/adjmap.cc'],
+                        include_dirs=['dimod/bqm/src/']),
+              Extension("dimod.bqm.adjarraybqm",
+                        ['dimod/bqm/adjarraybqm'+ext,
+                         'dimod/bqm/src/adjarray.cc'],
+                        include_dirs=['dimod/bqm/src/']),
               ]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions,
-                           # annotate=True,
+                           annotate=True,
                            )
 
 ###############################################################################
@@ -154,9 +158,13 @@ class ve_build_ext(build_ext):
         #         extra_compile_args = ['-fopenmp']
         #         extra_link_args = ['-fopenmp']
 
-        # for ext in self.extensions:
-        #     ext.extra_compile_args.extend(extra_compile_args)
-        #     ext.extra_link_args.extend(extra_link_args)
+        extra_compile_args = ['-std=c++11']
+
+        extra_link_args = ['-std=c++11']
+
+        for ext in self.extensions:
+            ext.extra_compile_args.extend(extra_compile_args)
+            ext.extra_link_args.extend(extra_link_args)
 
         try:
             build_ext.build_extension(self, ext)
