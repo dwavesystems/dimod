@@ -12,8 +12,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef ADJARRAY_H
-#define ADJARRAY_H
+#include <utility>
+#include <vector>
+
+#ifndef DIMOD_BQM_SRC_ADJARRAY_H_
+#define DIMOD_BQM_SRC_ADJARRAY_H_
 
 namespace dimod {
 
@@ -26,14 +29,13 @@ namespace dimod {
     // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_variables(AdjArrayInVars<Bias>&,
-                              AdjArrayOutVars<VarIndex, Bias>&);
+    std::size_t num_variables(const AdjArrayInVars<Bias>&,
+                              const AdjArrayOutVars<VarIndex, Bias>&);
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(AdjArrayInVars<Bias>&,
-                                 AdjArrayOutVars<VarIndex, Bias>&);
+    std::size_t num_interactions(const AdjArrayInVars<Bias>&,
+                                 const AdjArrayOutVars<VarIndex, Bias>&);
 
-}
+}  // namespace dimod
 
-
-#endif  // ADJARRAY_H
+#endif  // DIMOD_BQM_SRC_ADJARRAY_H_

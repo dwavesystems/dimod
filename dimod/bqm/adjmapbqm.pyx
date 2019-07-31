@@ -108,6 +108,9 @@ cdef class AdjMapBQM:
     def pop_variable(self):
         return pop_variable(self.adj_)
 
+    def get_linear(self, VarIndex v):
+        return get_linear(self.adj_, v)
+
     def get_quadratic(self, VarIndex u, VarIndex v):
         return get_quadratic(self.adj_, u, v)
 

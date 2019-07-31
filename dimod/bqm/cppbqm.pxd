@@ -23,33 +23,36 @@ from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
 
-cdef extern from "adjarray.cc":
+cdef extern from "src/adjarray.cc":
     pass
 
-cdef extern from "adjarray.h" namespace "dimod" nogil:
+cdef extern from "src/adjarray.h" namespace "dimod" nogil:
 
-    size_t num_variables[V, B](vector[pair[size_t, B]]&, vector[pair[V, B]]&)
-    size_t num_interactions[V, B](vector[pair[size_t, B]]&, vector[pair[V, B]]&)
+    size_t num_variables[V, B](const vector[pair[size_t, B]]&,
+                               const vector[pair[V, B]]&)
+    size_t num_interactions[V, B](const vector[pair[size_t, B]]&,
+                                  const vector[pair[V, B]]&)
 
 
-cdef extern from "adjmap.cc":
+cdef extern from "src/adjmap.cc":
     pass
 
-cdef extern from "adjmap.h" namespace "dimod" nogil:
+cdef extern from "src/adjmap.h" namespace "dimod" nogil:
+
+    # some of these should be `const vector[pair[cppmap[V, B], B]]&` but
+    # cython seems to have trouble with const vector of mutable objects,
+    # so for now just leave them as-is
 
     size_t num_variables[V, B](vector[pair[cppmap[V, B], B]]&)
-    size_t num_interactions[V, B](vector[pair[cppmap[V, B], B]]&)  
-
-    V add_variable[V, B](vector[pair[cppmap[V, B], B]]&)
-
-    bool add_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
-
-    V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
-
+    size_t num_interactions[V, B](vector[pair[cppmap[V, B], B]]&)
 
     B get_linear[V, B](vector[pair[cppmap[V, B], B]]&, V)
     B get_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
     void set_linear[V, B](vector[pair[cppmap[V, B], B]]&, V, B)
-
     void set_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V, B)
+
+    V add_variable[V, B](vector[pair[cppmap[V, B], B]]&)
+    bool add_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
+
+    V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
