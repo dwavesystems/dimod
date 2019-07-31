@@ -12,29 +12,23 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-// #include <iostream>
-#include <vector>
+#include "src/adjarray.h"
 
-#include "adjarray.h"
 
-namespace dimod{
-
+namespace dimod {
 
     // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_variables(AdjArrayInVars<Bias> &invars,
-                              AdjArrayOutVars<VarIndex, Bias> &outvars){
+    std::size_t num_variables(const AdjArrayInVars<Bias> &invars,
+                              const AdjArrayOutVars<VarIndex, Bias> &outvars) {
         return invars.size();
-
-    };
+    }
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(AdjArrayInVars<Bias> &invars,
-                              AdjArrayOutVars<VarIndex, Bias> &outvars){
+    std::size_t num_interactions(const AdjArrayInVars<Bias> &invars,
+                                 const AdjArrayOutVars<VarIndex, Bias>
+                                 &outvars) {
         return outvars.size() / 2;
-
-    };
-
-
-}
+    }
+}  // namespace dimod
