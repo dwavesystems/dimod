@@ -101,8 +101,8 @@ cdef class AdjArrayBQM:
     def __cinit__(self, *args, **kwargs):
         # Developer note: if VarIndex or Bias were fused types, we would want
         # to do a type check here but since they are fixed...
-        self.dtype = np.double
-        self.index_dtype = np.uintc
+        self.dtype = np.dtype(np.double)
+        self.index_dtype = np.dtype(np.uintc)
 
 
     def __init__(self, object arg1=0):
@@ -177,10 +177,11 @@ cdef class AdjArrayBQM:
     def shape(self):
         return self.num_variables, self.num_interactions
 
-    def get_linear(self, VarIndex v):
-        if v < 0 or v >= num_variables(self.invars_, self.outvars_):
+    def get_linear(self, object v):
+        if v < 0 or v >= self.num_variables:
             raise ValueError
-        return get_linear(self.invars_, self.outvars_, v)
+        cdef VarIndex var = v
+        return get_linear(self.invars_, self.outvars_, var)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
