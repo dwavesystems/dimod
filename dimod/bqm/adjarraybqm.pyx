@@ -25,6 +25,7 @@ import numpy as np
 
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
+                               get_linear,
                                )
 
 
@@ -175,6 +176,11 @@ cdef class AdjArrayBQM:
     @property
     def shape(self):
         return self.num_variables, self.num_interactions
+
+    def get_linear(self, VarIndex v):
+        if v < 0 or v >= num_variables(self.invars_, self.outvars_):
+            raise ValueError
+        return get_linear(self.invars_, self.outvars_, v)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

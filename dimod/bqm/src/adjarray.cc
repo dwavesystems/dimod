@@ -31,4 +31,12 @@ namespace dimod {
                                  &outvars) {
         return outvars.size() / 2;
     }
+
+    template<typename VarIndex, typename Bias>
+    Bias get_linear(const AdjArrayInVars<Bias> &invars,
+                    const AdjArrayOutVars<VarIndex, Bias> &outvars,
+                    VarIndex v) {
+        assert(v >= 0 && v < invars.size());
+        return invars[v].second;
+    }
 }  // namespace dimod
