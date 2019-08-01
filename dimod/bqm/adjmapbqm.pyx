@@ -38,8 +38,8 @@ cdef class AdjMapBQM:
     def __cinit__(self, *args, **kwargs):
         # Developer note: if VarIndex or Bias were fused types, we would want
         # to do a type check here but since they are fixed...
-        self.dtype = np.double
-        self.index_dtype = np.uintc
+        self.dtype = np.dtype(np.double)
+        self.index_dtype = np.dtype(np.uintc)
 
 
     @cython.boundscheck(False)
@@ -108,8 +108,11 @@ cdef class AdjMapBQM:
     def pop_variable(self):
         return pop_variable(self.adj_)
 
-    def get_linear(self, VarIndex v):
-        return get_linear(self.adj_, v)
+    def get_linear(self, object v):
+        if v < 0 or v >= self.num_variables:
+            raise ValueError
+        cdef VarIndex var = v
+        return get_linear(self.adj_, var)
 
     def get_quadratic(self, VarIndex u, VarIndex v):
         return get_quadratic(self.adj_, u, v)

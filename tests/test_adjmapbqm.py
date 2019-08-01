@@ -18,6 +18,12 @@ import unittest
 import numpy as np
 
 from dimod.bqm.adjmapbqm import AdjMapBQM
+from tests.test_adjarraybqm import TestAPI
+
+
+class TestAdjMapBQMAPI(TestAPI, unittest.TestCase):
+    """Runs the generic tests"""
+    BQM = AdjMapBQM
 
 
 class TestConstruction(unittest.TestCase):
