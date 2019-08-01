@@ -21,6 +21,49 @@ import numpy as np
 from dimod.bqm.adjarraybqm import AdjArrayBQM
 
 
+class TestAPI:
+    """
+    Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
+    """
+    def test_empty_shape(self):
+        self.assertEqual(self.BQM().shape, (0, 0))
+        self.assertEqual(self.BQM(0).shape, (0, 0))
+
+        self.assertEqual(self.BQM().num_variables, 0)
+        self.assertEqual(self.BQM(0).num_variables, 0)
+
+        self.assertEqual(self.BQM().num_interactions, 0)
+        self.assertEqual(self.BQM(0).num_interactions, 0)
+
+        self.assertEqual(len(self.BQM()), 0)
+        self.assertEqual(len(self.BQM(0)), 0)
+
+    def test_disconnected_shape(self):
+        bqm = self.BQM(5)
+
+        self.assertEqual(bqm.shape, (5, 0))
+        self.assertEqual(bqm.num_variables, 5)
+        self.assertEqual(bqm.num_interactions, 0)
+        self.assertEqual(len(bqm), 5)
+
+    def test_disconnected_get_linear(self):
+        bqm = self.BQM(5)
+
+        for v in range(5):
+            self.assertEqual(bqm.get_linear(v), 0)
+
+        with self.assertRaises(ValueError):
+            bqm.get_linear(-1)
+
+        with self.assertRaises(ValueError):
+            bqm.get_linear(5)
+
+
+class TestAdjArrayBQMAPI(TestAPI, unittest.TestCase):
+    """Runs the generic tests"""
+    BQM = AdjArrayBQM
+
+
 class TestConstruction(unittest.TestCase):
     """Tests for properties and special methods"""
 
