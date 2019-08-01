@@ -33,6 +33,10 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     size_t num_interactions[V, B](const vector[pair[size_t, B]]&,
                                   const vector[pair[V, B]]&)
 
+    B get_linear[V, B](const vector[pair[size_t, B]]&,
+                       const vector[pair[V, B]]&,
+                       V)
+
 
 cdef extern from "src/adjmap.cc":
     pass
