@@ -36,6 +36,11 @@ namespace dimod {
     std::size_t num_interactions(const AdjArrayInVars<Bias>&,
                                  const AdjArrayOutVars<VarIndex, Bias>&);
 
+    template<typename VarIndex, typename Bias>
+    Bias get_linear(const AdjArrayInVars<Bias>&,
+                    const AdjArrayOutVars<VarIndex, Bias>&,
+                    VarIndex v);
+
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJARRAY_H_
