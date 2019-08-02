@@ -22,21 +22,24 @@ namespace dimod {
     // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_variables(const AdjArrayInVars<Bias> &invars,
-                              const AdjArrayOutVars<VarIndex, Bias> &outvars) {
+    std::size_t num_variables(const std::vector<std::pair<std::size_t, Bias>>
+                                  &invars,
+                              const std::vector<std::pair<VarIndex, Bias>>
+                                  &outvars) {
         return invars.size();
     }
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(const AdjArrayInVars<Bias> &invars,
-                                 const AdjArrayOutVars<VarIndex, Bias>
+    std::size_t num_interactions(const std::vector<std::pair<std::size_t, Bias>>
+                                    &invars,
+                                 const std::vector<std::pair<VarIndex, Bias>>
                                  &outvars) {
         return outvars.size() / 2;
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_linear(const AdjArrayInVars<Bias> &invars,
-                    const AdjArrayOutVars<VarIndex, Bias> &outvars,
+    Bias get_linear(const std::vector<std::pair<std::size_t, Bias>> &invars,
+                    const std::vector<std::pair<VarIndex, Bias>> &outvars,
                     VarIndex v) {
         assert(v >= 0 && v < invars.size());
         return invars[v].second;
@@ -50,8 +53,8 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_quadratic(const AdjArrayInVars<Bias> &invars,
-                       const AdjArrayOutVars<VarIndex, Bias> &outvars,
+    Bias get_quadratic(const std::vector<std::pair<std::size_t, Bias>> &invars,
+                       const std::vector<std::pair<VarIndex, Bias>> &outvars,
                        VarIndex u, VarIndex v) {
         assert(u >= 0 && u < invars.size());
         assert(v >= 0 && v < invars.size());

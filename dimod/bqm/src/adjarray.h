@@ -20,31 +20,36 @@
 
 namespace dimod {
 
-    template<typename Bias>
-    using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
-
-    template<typename VarIndex, typename Bias>
-    using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
+    // developer note: while we continue to support python2.7 we are stuck
+    // using visual studio 9.0 and consequently don't have access to template
+    // aliases. For now we'll just be more verbose but here they are for
+    // reference:
+    //
+    // template<typename Bias>
+    // using AdjArrayInVars = typename std::vector<std::pair<std::size_t,Bias>>;
+    //
+    // template<typename VarIndex, typename Bias>
+    // using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
 
     // Read the BQM
 
-    template<typename VarIndex, typename Bias>
-    std::size_t num_variables(const AdjArrayInVars<Bias>&,
-                              const AdjArrayOutVars<VarIndex, Bias>&);
+    template<typename V, typename B>
+    std::size_t num_variables(const std::vector<std::pair<std::size_t, B>>&,
+                              const std::vector<std::pair<V, B>>&);
 
-    template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(const AdjArrayInVars<Bias>&,
-                                 const AdjArrayOutVars<VarIndex, Bias>&);
+    template<typename V, typename B>
+    std::size_t num_interactions(const std::vector<std::pair<std::size_t, B>>&,
+                                 const std::vector<std::pair<V, B>>&);
 
-    template<typename VarIndex, typename Bias>
-    Bias get_linear(const AdjArrayInVars<Bias>&,
-                    const AdjArrayOutVars<VarIndex, Bias>&,
-                    VarIndex v);
+    template<typename V, typename B>
+    B get_linear(const std::vector<std::pair<std::size_t, B>>&,
+                 const std::vector<std::pair<V, B>>&,
+                 V);
 
-    template<typename VarIndex, typename Bias>
-    Bias get_quadratic(const AdjArrayInVars<Bias>&,
-                       const AdjArrayOutVars<VarIndex, Bias>&,
-                       VarIndex u, VarIndex v);
+    template<typename V, typename B>
+    B get_quadratic(const std::vector<std::pair<std::size_t, B>>&,
+                    const std::vector<std::pair<V, B>>&,
+                    V, V);
 
     // todo: variable_iterator
     // todo: interaction_iterator
