@@ -8,11 +8,6 @@ jobs:
     docker:
       - image: circleci/python:3.8-buster
 
-    # environment:
-    #   # openmp detects the cores of the cpu, not the number the thread has
-    #   # access to
-    #   OMP_NUM_THREADS: 2
-
     working_directory: ~/repo
 
     steps:
@@ -45,22 +40,18 @@ jobs:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      # tests should work without the extension built
-      - run: &run-tests-template
-          name: run unittests
-          command: |
-            . env/bin/activate
-            python --version
-            coverage run -m unittest discover
-
-      # test the extension as well
       - run: &build-ext-template
           name: build extension
           command: |
             . env/bin/activate
             python setup.py build_ext --inplace
 
-      - run: *run-tests-template
+      - run: &run-tests-template
+          name: run unittests
+          command: |
+            . env/bin/activate
+            python --version
+            coverage run -m unittest discover
 
       - run:
           name: codecov
@@ -115,11 +106,6 @@ jobs:
           command: |
             brew install boost
 
-      # - run: &install-openmp-osx-template
-      #     name: install openmp
-      #     command: |
-      #       brew install libomp
-
       - restore_cache:
           keys:
             - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.0
@@ -147,8 +133,6 @@ jobs:
       - run: *install-dependencies-template
 
       - save_cache: *save-cache-template
-
-      - run: *run-tests-template
 
       - run: *build-ext-template
         
