@@ -24,6 +24,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <stdexcept>
 #include <string>
 
 #include <boost/graph/graph_traits.hpp>
@@ -1135,10 +1136,10 @@ FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<do
 {
 	//Q needs to be a square matrix
 	if (Q.numRows() != Q.numCols())
-		throw FixVariablesException("Q's size is not correct.");
+        throw std::invalid_argument("Q's size is not correct.");
 
 	if (!(method == 1 || method == 2))
-		throw FixVariablesException("method must be an integer of 1 or 2.");
+        throw std::invalid_argument("method must be an integer of 1 or 2.");
 
 	FixVariablesResult ret;
 
@@ -1261,7 +1262,7 @@ FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<do
 	}
 
 	if (ret.fixedVars.size() > numVariables)
-		throw FixVariablesException("ret.fixedVars has wrong size.");
+        throw std::logic_error("ret.fixedVars has wrong size.");
 
 	// remove unused variables from ret.fixedVars
 	std::vector<std::pair<int, int> > updatedFixedVars;

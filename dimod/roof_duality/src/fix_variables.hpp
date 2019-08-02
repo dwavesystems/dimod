@@ -33,15 +33,6 @@ struct FixVariablesResult
 	double offset;
 };
 
-class FixVariablesException
-{
-public:
-	FixVariablesException(const std::string& m = "fix variables exception") : message(m) {}
-	const std::string& what() const {return message;}
-private:
-	std::string message;
-};
-	
 FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<double>& Q, int method);
 
 std::vector<std::pair<int,  int> > fixQuboVariablesMap(std::map<std::pair<int, int>, double> QMap, int QSize, int method);

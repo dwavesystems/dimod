@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: language_level=3
 #
 # Copyright 2018 D-Wave Systems Inc.
 #
@@ -14,7 +15,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 
 from libcpp.map cimport map
@@ -24,7 +25,8 @@ from libcpp.vector cimport vector
 from dimod.vartypes import Vartype
 
 cdef extern from "fix_variables.hpp" namespace "fix_variables_":
-    vector[pair[int, int]] fixQuboVariablesMap(map[pair[int, int], double] QMap, int QSize, int method)
+    vector[pair[int, int]] fixQuboVariablesMap(map[pair[int, int], double] QMap,
+                                               int QSize, int method) except +
 
 
 def fix_variables_wrapper(bqm, method):
