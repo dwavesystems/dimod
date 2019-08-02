@@ -24,7 +24,8 @@ from libcpp.vector cimport vector
 from dimod.vartypes import Vartype
 
 cdef extern from "fix_variables.hpp" namespace "fix_variables_":
-    vector[pair[int, int]] fixQuboVariablesMap(map[pair[int, int], double] QMap, int QSize, int method)
+    vector[pair[int, int]] fixQuboVariablesMap(map[pair[int, int], double] QMap,
+                                               int QSize, int method) except +
 
 
 def fix_variables_wrapper(bqm, method):
