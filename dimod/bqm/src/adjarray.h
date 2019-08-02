@@ -41,6 +41,20 @@ namespace dimod {
                     const AdjArrayOutVars<VarIndex, Bias>&,
                     VarIndex v);
 
+    template<typename VarIndex, typename Bias>
+    Bias get_quadratic(const AdjArrayInVars<Bias>&,
+                       const AdjArrayOutVars<VarIndex, Bias>&,
+                       VarIndex u, VarIndex v);
+
+    // todo: variable_iterator
+    // todo: interaction_iterator
+    // todo: neighbour_iterator
+
+    // Change the values in the BQM
+
+    // todo: set_linear
+    // todo: set_quadratic
+
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJARRAY_H_
