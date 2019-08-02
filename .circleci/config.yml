@@ -36,22 +36,18 @@ jobs:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      # tests should work without the extension built
-      - run: &run-tests-template
-          name: run unittests
-          command: |
-            . env/bin/activate
-            python --version
-            coverage run -m unittest discover
-
-      # test the extension as well
       - run: &build-ext-template
           name: build extension
           command: |
             . env/bin/activate
             python setup.py build_ext --inplace
 
-      - run: *run-tests-template
+      - run: &run-tests-template
+          name: run unittests
+          command: |
+            . env/bin/activate
+            python --version
+            coverage run -m unittest discover
 
       - run:
           name: codecov
@@ -128,8 +124,6 @@ jobs:
       - run: *install-dependencies-template
 
       - save_cache: *save-cache-template
-
-      - run: *run-tests-template
 
       - run: *build-ext-template
         
@@ -278,6 +272,8 @@ jobs:
             brew install pyenv
 
       - run: *install-boost-osx-template
+
+      # - run: *install-openmp-osx-template
 
       - restore_cache:
           keys:
