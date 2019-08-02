@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: language_level=3
 #
 # Copyright 2018 D-Wave Systems Inc.
 #
@@ -14,7 +15,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
 
 
 from libcpp.map cimport map
