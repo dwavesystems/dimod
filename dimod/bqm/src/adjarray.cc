@@ -14,6 +14,8 @@
 
 #include "src/adjarray.h"
 
+#include <algorithm>
+#include <utility>
 
 namespace dimod {
 
@@ -38,5 +40,36 @@ namespace dimod {
                     VarIndex v) {
         assert(v >= 0 && v < invars.size());
         return invars[v].second;
+    }
+
+    // compare only the first value in the pair
+    template<typename VarIndex, typename Bias>
+    bool pair_lt(const std::pair<VarIndex, Bias> a,
+                 const std::pair<VarIndex, Bias> b) {
+        return a.first < b.first;
+    }
+
+    template<typename VarIndex, typename Bias>
+    Bias get_quadratic(const AdjArrayInVars<Bias> &invars,
+                       const AdjArrayOutVars<VarIndex, Bias> &outvars,
+                       VarIndex u, VarIndex v) {
+        assert(u >= 0 && u < invars.size());
+        assert(v >= 0 && v < invars.size());
+        assert(u != v);
+
+        if (v < u) std::swap(u, v);
+
+        std::size_t start = invars[u].first;
+        std::size_t end = invars[u+1].first;  // safe if u < v and asserts above
+
+        const std::pair<VarIndex, Bias> target(v, 0);
+
+        typename std::vector<std::pair<VarIndex, Bias>>::const_iterator low;
+        low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+                               target, pair_lt<VarIndex, Bias>);
+
+        if (low == outvars.end())
+            return 0;  // do we want to raise?
+        return (*low).second;
     }
 }  // namespace dimod

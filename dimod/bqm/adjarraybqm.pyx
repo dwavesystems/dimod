@@ -26,6 +26,7 @@ import numpy as np
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
+                               get_quadratic,
                                )
 
 
@@ -182,6 +183,10 @@ cdef class AdjArrayBQM:
             raise ValueError
         cdef VarIndex var = v
         return get_linear(self.invars_, self.outvars_, var)
+
+    def get_quadratic(self, VarIndex u, VarIndex v):
+        # todo: input checking, segfault or overflow for now
+        return get_quadratic(self.invars_, self.outvars_, u, v)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

@@ -46,6 +46,14 @@ class TestAPI:
         self.assertEqual(bqm.num_interactions, 0)
         self.assertEqual(len(bqm), 5)
 
+    def test_3x3array_shape(self):
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
+
+        self.assertEqual(bqm.shape, (3, 2))
+        self.assertEqual(bqm.num_variables, 3)
+        self.assertEqual(bqm.num_interactions, 2)
+        self.assertEqual(len(bqm), 3)
+
     def test_disconnected_get_linear(self):
         bqm = self.BQM(5)
 
@@ -57,6 +65,17 @@ class TestAPI:
 
         with self.assertRaises(ValueError):
             bqm.get_linear(5)
+
+    def test_3x3array_get_quadratic(self):
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
+
+        self.assertEqual(bqm.get_quadratic(0, 1), 1)
+        self.assertEqual(bqm.get_quadratic(1, 0), 1)
+
+        self.assertEqual(bqm.get_quadratic(0, 2), 2)
+        self.assertEqual(bqm.get_quadratic(2, 0), 2)
+
+        # todo test non-existant edge
 
 
 class TestAdjArrayBQMAPI(TestAPI, unittest.TestCase):
