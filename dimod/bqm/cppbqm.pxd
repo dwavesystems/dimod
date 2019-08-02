@@ -37,6 +37,10 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
                        const vector[pair[V, B]]&,
                        V)
 
+    B get_quadratic[V, B](const vector[pair[size_t, B]]&,
+                          const vector[pair[V, B]]&,
+                          V, V)
+
 
 cdef extern from "src/adjmap.cc":
     pass
