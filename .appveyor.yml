@@ -1,58 +1,118 @@
+# flexible build system for appveyor as described in:
+# - https://mail.python.org/pipermail/distutils-sig/2014-September/024972.html
+# - https://github.com/ogrisel/python-appveyor-demo
+
 environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .appveyor\\run_with_env.cmd"
 
   # PyPI login
   username: dwtools-ci
   password:
     secure: ImmjKZE9iYNMYj7qKREpbQ==
+
   CL: /IC:\\Libraries\\boost_1_67_0\
+
 
   matrix:
 
-    # https://www.appveyor.com/docs/build-environment/#python
-
     - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python34-x64"
-    - PYTHON: "C:\\Python35"
-    - PYTHON: "C:\\Python35-x64"
-    - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python36-x64"
-    - PYTHON: "C:\\Python37"
-    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "32"
 
-matrix:
-  fast_finish: true
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python34"
+      PYTHON_VERSION: "3.4.x"
+      PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python34-x64"
+    #   PYTHON_VERSION: "3.4.x"
+    #   PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.x"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.x"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.x"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.x"
+      PYTHON_ARCH: "64"
 
 cache:
   - '%PYTHON%\Lib\site-packages -> requirements.txt'
-  - '%AppData%\pip-cache'
-
-  # cache the .pyd file
-  - dimod\roof_duality\ -> dimod\roof_duality\_fix_variables.pyx, dimod\roof_duality\src\compressed_matrix.hpp, dimod\roof_duality\src\fix_variables.cpp, dimod\roof_duality\src\fix_variables.hpp, dimod\roof_duality\fix_variables.py, dimod\roof_duality\__init__.py
 
 install:
-  - "%PYTHON%\\python.exe -m pip install -r requirements.txt --cache-dir %AppData%\\pip-cache"
+  - ECHO "Installed SDKs:"
+  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
 
-  # for python34-x64
-  - echo "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 > "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64/vcvars64.bat"
+  # Install Python (from the official .msi of https://python.org) and pip when
+  # not already installed.
+  - ps: if (-not(Test-Path($env:PYTHON))) { & .appveyor\install.ps1 }
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "python -c \"import platform; print(platform.machine())\""
+
+  # Upgrade to the latest version of pip to avoid it displaying warnings
+  # about it being out of date.
+  - "python -m pip install --upgrade pip"
+
+  # Install package build requirements
+  - "%CMD_IN_ENV% python -m pip install wheel"
+
+  # Install the build dependencies of the project. If some dependencies contain
+  # compiled extensions and are not provided as pre-built wheel packages,
+  # pip will build them from source using the MSVC compiler matching the
+  # target Python version and architecture
+  - "%CMD_IN_ENV% pip install -r requirements.txt"
 
 build_script:
-  # appveyor has boost under C:\Libraries\boost_1_67_0 https://www.appveyor.com/docs/build-environment/#boost
-  - "%PYTHON%\\python.exe setup.py build_ext --inplace --include-dirs \"C:\\Libraries\\boost_1_67_0\""
+  # Build the compiled extension
+  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
 
 test_script:
-  - "%PYTHON%\\python.exe -m unittest discover"
+  - "%CMD_IN_ENV% python -m unittest discover"
 
-before_deploy:
-  # build the wheel (only if deploying)
-  - "%PYTHON%\\python.exe -m pip install wheel twine"
-  - "if [%APPVEYOR_REPO_TAG%]==[true] %PYTHON%\\python.exe setup.py bdist_wheel"
+after_test:
+  # If tests are successful, create binary packages for the project.
+  - "%CMD_IN_ENV% python.exe -m pip install wheel"
+  - "%CMD_IN_ENV% python setup.py bdist_wheel"
+  - ps: "ls dist"
 
-  # set up the pypi credentials
+artifacts:
+  # Archive the generated packages in the ci.appveyor.com build report.
+  - path: dist\*
+
+deploy_script:
   - "echo [pypi] > %USERPROFILE%\\.pypirc"
   - "echo username: %username% >> %USERPROFILE%\\.pypirc"
   - "echo password: %password% >> %USERPROFILE%\\.pypirc"
-
-deploy_script:
-  - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] %PYTHON%\\python.exe -m twine upload --skip-existing dist\\*.whl"
+  - "%CMD_IN_ENV% python -m pip install twine"
+  - cmd: "if [%APPVEYOR_REPO_TAG%]==[true] %CMD_IN_ENV% python.exe -m twine upload --skip-existing dist\\*.whl"
