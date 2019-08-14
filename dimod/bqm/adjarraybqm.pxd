@@ -17,6 +17,7 @@
 #
 # =============================================================================
 
+from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 

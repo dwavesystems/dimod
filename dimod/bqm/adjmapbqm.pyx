@@ -17,6 +17,11 @@
 #
 # =============================================================================
 
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from numbers import Integral
 
 cimport cython
@@ -41,6 +46,10 @@ cdef class AdjMapBQM:
         self.dtype = np.dtype(np.double)
         self.index_dtype = np.dtype(np.uintc)
 
+        # otherwise these would be None
+        self.label_to_idx = dict()
+        self.idx_to_label = dict()
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -60,7 +69,23 @@ cdef class AdjMapBQM:
             for i in range(num_variables):
                 add_variable(self.adj_)
         elif isinstance(arg1, tuple):
-            raise NotImplementedError  # update docstring
+            if len(arg1) == 2:
+                linear, quadratic = arg1
+            else:
+                raise ValueError()
+
+            if isinstance(linear, abc.Mapping):
+                for var, b in linear.items():
+                    self.set_linear(var, b)
+            else:
+                raise NotImplementedError
+            
+            if isinstance(quadratic, abc.Mapping):
+                for uvar, var, b in quadratic.items():
+                    self.set_quadratic(uvar, var, b)
+            else:
+                raise NotImplementedError
+
         elif hasattr(arg1, "to_adjvector"):
             # we might want a more generic is_bqm function or similar
             raise NotImplementedError  # update docstring
@@ -87,9 +112,6 @@ cdef class AdjMapBQM:
                     elif b != 0:  # ignore the 0 off-diagonal
                         set_quadratic(self.adj_, u, v, b)
 
-    def __len__(self):
-        return self.num_variables
-
     @property
     def num_variables(self):
         return num_variables(self.adj_)
@@ -102,40 +124,98 @@ cdef class AdjMapBQM:
     def shape(self):
         return self.num_variables, self.num_interactions
 
-    def add_variable(self):
-        return add_variable(self.adj_)
+    def add_variable(self, object label=None):
+
+        if label is None:
+            # if nothing has been overwritten we can go ahead and exit here
+            # this is not necessary but good for performance
+            if not self.label_to_idx:
+                return add_variable(self.adj_)
+
+            label = num_variables(self.adj_)
+
+
+        # don't create variables that already exist
+        if self.has_variable(label):
+            return label
+
+        cdef object v = add_variable(self.adj_)
+
+        if v != label:
+            self.label_to_idx[label] = v
+            self.idx_to_label[v] = label
+
+        return label
+
+    def has_variable(self, object v):
+        if v in self.label_to_idx:
+            return True
+        return (v in range(num_variables(self.adj_)) and  # handles non-ints
+                v not in self.idx_to_label)  # not overwritten
+
+    def iter_variables(self):
+        cdef object v
+        for v in range(num_variables(self.adj_)):
+            yield self.idx_to_label.get(v, v)
 
     def pop_variable(self):
-        return pop_variable(self.adj_)
+        if num_variables(self.adj_) == 0:
+            raise ValueError("pop from empty binary quadratic model")
+
+        cdef object v = pop_variable(self.adj_)  # cast to python object
+
+        # delete any relevant labels if present
+        if self.label_to_idx:
+            v = self.idx_to_label.pop(v, v)
+            self.label_to_idx.pop(v, None)
+
+        return v
 
     def get_linear(self, object v):
-        if v < 0 or v >= self.num_variables:
-            raise ValueError
-        cdef VarIndex var = v
-        return get_linear(self.adj_, var)
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        return get_linear(self.adj_, vi)
 
-    def get_quadratic(self, VarIndex u, VarIndex v):
-        return get_quadratic(self.adj_, u, v)
+    def get_quadratic(self, object u, object v):
+        # todo: return default?
 
-    def set_linear(self, VarIndex v, Bias b):
-        set_linear(self.adj_, v, b)
+        if not self.has_variable(u):
+            raise ValueError('{} is not a variable'.format(u))
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
 
-    def set_quadratic(self, VarIndex u, VarIndex v, Bias b):
-        set_quadratic(self.adj_, u, v, b)
+        cdef VarIndex ui = self.label_to_idx.get(u, u)
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
 
-    # derived methods
+        if not out.second:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
 
-    def append_linear(self, Bias b):
-        set_linear(self.adj_, add_variable(self.adj_), b)
+        return out.first
 
-    def pop_linear(self):
-        self.pop_variable()
+    def set_linear(self, object v, Bias b):
 
-    def to_lists(self, object sort_and_reduce=True):
-        """Dump to a list of lists, mostly for testing"""
-        # todo: use functions
-        return list((list(neighbourhood.items()), bias)
-                    for neighbourhood, bias in self.adj_)
+        self.add_variable(v)  # add if it doesn't exist
+
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        set_linear(self.adj_, vi, b)
+
+    def set_quadratic(self, object u, object v, Bias b):
+        # add if they don't already exist
+        self.add_variable(u)
+        self.add_variable(v)
+
+        cdef VarIndex ui = self.label_to_idx.get(u, u)
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        set_quadratic(self.adj_, ui, vi, b)
+
+    # def to_lists(self, object sort_and_reduce=True):
+    #     """Dump to a list of lists, mostly for testing"""
+    #     # todo: use functions
+    #     return list((list(neighbourhood.items()), bias)
+    #                 for neighbourhood, bias in self.adj_)
 
     # def to_adjarray(self):
     #     # this is always a copy

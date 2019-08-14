@@ -17,6 +17,7 @@
 #
 # =============================================================================
 
+from libcpp cimport bool
 from libcpp.map cimport map
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
@@ -32,5 +33,10 @@ ctypedef double Bias
 cdef class AdjMapBQM:
     cdef vector[pair[map[VarIndex, Bias], Bias]] adj_
 
-    cdef public object dtype
-    cdef public object index_dtype
+    cdef readonly object dtype
+    cdef readonly object index_dtype
+
+    # these are not public because the user has no way to access the underlying
+    # variable indices
+    cdef object label_to_idx
+    cdef object idx_to_label
