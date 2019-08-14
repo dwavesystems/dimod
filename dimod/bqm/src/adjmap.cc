@@ -47,18 +47,21 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_quadratic(const std::vector<std::pair<std::map<VarIndex, Bias>,
-                       Bias>> &bqm,
-                       VarIndex u, VarIndex v) {
+    std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<
+                                        std::map<VarIndex, Bias>, Bias>> &bqm,
+                                        VarIndex u, VarIndex v) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
         assert(u != v);
 
+        // we could potentially search the shorter of the two neighbourhoods
         typename std::map<VarIndex, Bias>::const_iterator it;
         it = bqm[u].first.find(v);
+
         if (it == bqm[u].first.end())
-            return 0;  // do we want to raise?
-        return (*it).second;
+            return std::make_pair(0, false);
+
+        return std::make_pair((*it).second, true);
     }
 
     // todo: variable_iterator
