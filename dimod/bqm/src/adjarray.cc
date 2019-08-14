@@ -53,9 +53,11 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_quadratic(const std::vector<std::pair<std::size_t, Bias>> &invars,
-                       const std::vector<std::pair<VarIndex, Bias>> &outvars,
-                       VarIndex u, VarIndex v) {
+    std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::size_t,
+                                        Bias>> &invars,
+                                        const std::vector<std::pair<VarIndex,
+                                        Bias>> &outvars,
+                                        VarIndex u, VarIndex v) {
         assert(u >= 0 && u < invars.size());
         assert(v >= 0 && v < invars.size());
         assert(u != v);
@@ -72,7 +74,7 @@ namespace dimod {
                                target, pair_lt<VarIndex, Bias>);
 
         if (low == outvars.end())
-            return 0;  // do we want to raise?
-        return (*low).second;
+            return std::make_pair(0, false);
+        return std::make_pair((*low).second, true);
     }
 }  // namespace dimod

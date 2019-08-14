@@ -39,13 +39,15 @@ namespace dimod {
     std::size_t num_variables(const std::vector<std::pair<std::map<V, B>, B>>&);
 
     template<typename V, typename B>
-    std::size_t num_interactions(const std::vector<std::pair<std::map<V, B>, B>>&);
+    std::size_t num_interactions(const std::vector<std::pair<std::map<V, B>,
+                                 B>>&);
 
     template<typename V, typename B>
     B get_linear(const std::vector<std::pair<std::map<V, B>, B>>&, V);
 
     template<typename V, typename B>
-    B get_quadratic(const std::vector<std::pair<std::map<V, B>, B>>&, V, V);
+    std::pair<B, bool> get_quadratic(const std::vector<std::pair<std::map<V, B>,
+                                      B>>&, V, V);
 
     // todo: variable_iterator
     // todo: interaction_iterator
