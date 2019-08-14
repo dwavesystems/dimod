@@ -47,9 +47,10 @@ namespace dimod {
                  V);
 
     template<typename V, typename B>
-    B get_quadratic(const std::vector<std::pair<std::size_t, B>>&,
-                    const std::vector<std::pair<V, B>>&,
-                    V, V);
+    std::pair<B, bool> get_quadratic(const std::vector<std::pair<std::size_t,
+                                     B>>&,
+                                     const std::vector<std::pair<V, B>>&,
+                                     V, V);
 
     // todo: variable_iterator
     // todo: interaction_iterator
