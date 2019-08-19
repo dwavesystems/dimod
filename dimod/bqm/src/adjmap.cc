@@ -131,4 +131,19 @@ namespace dimod {
 
         return v;
     }
+
+    template<typename VarIndex, typename Bias>
+    bool remove_interaction(std::vector<std::pair<std::map<VarIndex, Bias>,
+                            Bias>> &bqm, VarIndex u, VarIndex v) {
+        assert(u >= 0 && u < bqm.size());
+        assert(v >= 0 && v < bqm.size());
+        assert(u != v);
+
+        bool uv_removed = bqm[u].first.erase(v);
+        bool vu_removed = bqm[v].first.erase(u);
+
+        assert(uv_removed == vu_removed);  // should always match
+
+        return uv_removed || vu_removed;
+    }
 }  // namespace dimod

@@ -64,3 +64,4 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
     bool add_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
     V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
+    bool remove_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
