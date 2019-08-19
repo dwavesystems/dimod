@@ -28,10 +28,11 @@ cimport cython
 
 import numpy as np
 
-from dimod.bqm.cppbqm cimport num_variables, num_interactions
-from dimod.bqm.cppbqm cimport add_variable, add_interaction, pop_variable
-from dimod.bqm.cppbqm cimport  get_linear, set_linear
-from dimod.bqm.cppbqm cimport get_quadratic, set_quadratic
+from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
+                               add_variable, add_interaction,
+                               pop_variable, remove_interaction,
+                               get_linear, set_linear,
+                               get_quadratic, set_quadratic)
 # from dimod.bqm.adjarraybqm cimport AdjArrayBQM
 
 
@@ -194,6 +195,17 @@ cdef class AdjMapBQM:
 
         return out.first
 
+    def remove_interaction(self, object u, object v):
+        if not self.has_variable(u):
+            raise ValueError('{} is not a variable'.format(u))
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+
+        cdef VarIndex ui = self.label_to_idx.get(u, u)
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        return remove_interaction(self.adj_, ui, vi)
+
     def set_linear(self, object v, Bias b):
 
         self.add_variable(v)  # add if it doesn't exist
@@ -209,6 +221,7 @@ cdef class AdjMapBQM:
 
         cdef VarIndex ui = self.label_to_idx.get(u, u)
         cdef VarIndex vi = self.label_to_idx.get(v, v)
+
         set_quadratic(self.adj_, ui, vi, b)
 
     # def to_lists(self, object sort_and_reduce=True):
