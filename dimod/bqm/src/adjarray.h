@@ -58,7 +58,10 @@ namespace dimod {
 
     // Change the values in the BQM
 
-    // todo: set_linear
+    template<typename V, typename B>
+    void set_linear(std::vector<std::pair<std::size_t, B>>&,
+                    std::vector<std::pair<V, B>>&,
+                    V, B);
     // todo: set_quadratic
 
 }  // namespace dimod

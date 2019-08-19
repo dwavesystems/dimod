@@ -46,3 +46,9 @@ cdef class AdjArrayBQM:
 
     cdef public object dtype
     cdef public object index_dtype
+
+    # these are not public because the user has no way to access the underlying
+    # variable indices
+    cdef object label_to_idx
+    cdef object idx_to_label
+
