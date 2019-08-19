@@ -28,6 +28,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                get_linear,
                                get_quadratic,
                                set_linear,
+                               set_quadratic,
                                )
 
 
@@ -226,7 +227,21 @@ cdef class AdjArrayBQM:
         set_linear(self.invars_, self.outvars_, vi, b)
 
     def set_quadratic(self, object u, object v, Bias b):
-        raise NotImplementedError
+        if u == v:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
+
+        if not self.has_variable(u):
+            raise ValueError('{} is not a variable'.format(u))
+        cdef VarIndex ui = self.label_to_idx.get(u, u)
+
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        cdef bool isset = set_quadratic(self.invars_, self.outvars_, ui, vi, b)
+
+        if not isset:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
