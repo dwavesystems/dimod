@@ -21,53 +21,57 @@ from dimod.bqm.adjmapbqm import AdjMapBQM
 from tests.test_adjarraybqm import TestAPI
 
 
-class TestAdjMapBQMAPI(TestAPI, unittest.TestCase):
-    """Runs the generic tests"""
+class TestFixedShapeBQMAPI(TestAPI, unittest.TestCase):
+    """Runs the tests that run on AdjArrayBQM"""
     BQM = AdjMapBQM
 
 
-class TestConstruction(unittest.TestCase):
-    """Tests for properties and special methods and mutability"""
+class TestAdjMapBQM(unittest.TestCase):
+    """Test the mutation methods"""
 
-    def test_empty(self):
+    def test_add_variable_labelled(self):
         bqm = AdjMapBQM()
-        self.assertEqual(bqm.shape, (0, 0))
+        bqm.add_variable('a')
+        bqm.add_variable(1)
+        self.assertEqual(bqm.shape, (2, 0))
+        self.assertEqual(list(bqm.iter_variables()), ['a', 1])
+        bqm.add_variable()
+        self.assertEqual(bqm.shape, (3, 0))
+        self.assertEqual(list(bqm.iter_variables()), ['a', 1, 2])
 
-    def test_integral_zero(self):
-        bqm = AdjMapBQM(0)
-        self.assertEqual(bqm.shape, (0, 0))
+    def test_add_variable_unlabelled(self):
+        bqm = AdjMapBQM()
+        bqm.add_variable()
+        bqm.add_variable()
+        self.assertEqual(bqm.shape, (2, 0))
+        self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
-    def test_integral_nonzero(self):
-        bqm = AdjMapBQM(5)
-        self.assertEqual(bqm.shape, (5, 0))
+    def test_pop_variable_labelled(self):
+        bqm = AdjMapBQM()
+        bqm.add_variable('a')
+        bqm.add_variable(1)
+        bqm.add_variable(0)
+        self.assertEqual(bqm.pop_variable(), 0)
+        self.assertEqual(bqm.pop_variable(), 1)
+        self.assertEqual(bqm.pop_variable(), 'a')
+        with self.assertRaises(ValueError):
+            bqm.pop_variable()
 
-        adj = bqm.to_lists()
-        self.assertEqual(adj, list(([], 0) for _ in range(5)))
+    def test_pop_variable_unlabelled(self):
+        bqm = AdjMapBQM(2)
+        self.assertEqual(bqm.pop_variable(), 1)
+        self.assertEqual(bqm.pop_variable(), 0)
+        with self.assertRaises(ValueError):
+            bqm.pop_variable()
 
-    def test_dense(self):
-        bqm = AdjMapBQM(np.triu(np.ones((5, 5))))
-        adj = bqm.to_lists()
-        self.assertEqual(adj, [([(1, 1.0), (2, 1.0), (3, 1.0), (4, 1.0)], 1.0),
-                               ([(0, 1.0), (2, 1.0), (3, 1.0), (4, 1.0)], 1.0),
-                               ([(0, 1.0), (1, 1.0), (3, 1.0), (4, 1.0)], 1.0),
-                               ([(0, 1.0), (1, 1.0), (2, 1.0), (4, 1.0)], 1.0),
-                               ([(0, 1.0), (1, 1.0), (2, 1.0), (3, 1.0)], 1.0)])
+    def test_remove_interaction(self):
+        bqm = AdjMapBQM(np.triu(np.ones((3, 3))))
+        self.assertTrue(bqm.remove_interaction(0, 1))
+        self.assertFalse(bqm.remove_interaction(0, 1))
+        self.assertEqual(bqm.shape, (3, 2))
+        with self.assertRaises(ValueError):
+            bqm.get_quadratic(0, 1)
 
-
-# class TestLinearBase(unittest.TestCase):
-#     def test_append(self):
-#         bqm = AdjMapBQM()
-#         self.assertEqual(bqm.shape, (0, 0))
-#         bqm.append_linear(.5)
-#         self.assertEqual(bqm.shape, (1, 0))
-#         self.assertEqual(bqm.to_lists(), [([], .5)])
-
-#     def test_pop(self):
-#         bqm = AdjMapBQM([[.5, 1], [0, 0]])
-#         self.assertEqual(bqm.shape, (2, 1))
-#         bqm.pop_linear()
-#         self.assertEqual(bqm.shape, (1, 0))
-#         self.assertEqual(bqm.to_lists(), [([], .5)])
 
 
 # class TestQuadraticBase(unittest.TestCase):

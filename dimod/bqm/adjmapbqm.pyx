@@ -82,7 +82,7 @@ cdef class AdjMapBQM:
                 raise NotImplementedError
             
             if isinstance(quadratic, abc.Mapping):
-                for uvar, var, b in quadratic.items():
+                for (uvar, var), b in quadratic.items():
                     self.set_quadratic(uvar, var, b)
             else:
                 raise NotImplementedError

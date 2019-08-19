@@ -73,8 +73,18 @@ namespace dimod {
         low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
                                target, pair_lt<VarIndex, Bias>);
 
-        if (low == outvars.end())
+        if (low == outvars.begin()+end)
             return std::make_pair(0, false);
         return std::make_pair((*low).second, true);
+    }
+
+    // Change the values in the BQM
+
+    template<typename VarIndex, typename Bias>
+    void set_linear(std::vector<std::pair<std::size_t, Bias>> &invars,
+                    std::vector<std::pair<VarIndex, Bias>> &outvars,
+                    VarIndex v, Bias b) {
+        assert(v >= 0 && v < invars.size());
+        invars[v].second = b;
     }
 }  // namespace dimod

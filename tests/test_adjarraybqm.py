@@ -25,36 +25,15 @@ class TestAPI:
     """
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
-    def test_empty_shape(self):
-        self.assertEqual(self.BQM().shape, (0, 0))
-        self.assertEqual(self.BQM(0).shape, (0, 0))
 
-        self.assertEqual(self.BQM().num_variables, 0)
-        self.assertEqual(self.BQM(0).num_variables, 0)
+    def test_get_linear_disconnected_string_labels(self):
+        bqm = self.BQM(({'a': -1, 'b': 1}, {}))
+        self.assertEqual(bqm.get_linear('a'), -1)
+        self.assertEqual(bqm.get_linear('b'), 1)
+        with self.assertRaises(ValueError):
+            bqm.get_linear('c')
 
-        self.assertEqual(self.BQM().num_interactions, 0)
-        self.assertEqual(self.BQM(0).num_interactions, 0)
-
-        self.assertEqual(len(self.BQM()), 0)
-        self.assertEqual(len(self.BQM(0)), 0)
-
-    def test_disconnected_shape(self):
-        bqm = self.BQM(5)
-
-        self.assertEqual(bqm.shape, (5, 0))
-        self.assertEqual(bqm.num_variables, 5)
-        self.assertEqual(bqm.num_interactions, 0)
-        self.assertEqual(len(bqm), 5)
-
-    def test_3x3array_shape(self):
-        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
-
-        self.assertEqual(bqm.shape, (3, 2))
-        self.assertEqual(bqm.num_variables, 3)
-        self.assertEqual(bqm.num_interactions, 2)
-        self.assertEqual(len(bqm), 3)
-
-    def test_disconnected_get_linear(self):
+    def test_get_linear_disconnected(self):
         bqm = self.BQM(5)
 
         for v in range(5):
@@ -66,7 +45,7 @@ class TestAPI:
         with self.assertRaises(ValueError):
             bqm.get_linear(5)
 
-    def test_3x3array_get_quadratic(self):
+    def test_get_quadratic_3x3array(self):
         bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
 
         self.assertEqual(bqm.get_quadratic(0, 1), 1)
@@ -75,58 +54,62 @@ class TestAPI:
         self.assertEqual(bqm.get_quadratic(0, 2), 2)
         self.assertEqual(bqm.get_quadratic(2, 0), 2)
 
-        # todo test non-existant edge
+        with self.assertRaises(ValueError):
+            bqm.get_quadratic(2, 1)
+        with self.assertRaises(ValueError):
+            bqm.get_quadratic(1, 2)
+
+        with self.assertRaises(ValueError):
+            bqm.get_quadratic(0, 0)
+
+    def test_set_linear(self):
+        # does not change shape
+        bqm = self.BQM(np.triu(np.ones((3, 3))))
+
+        self.assertEqual(bqm.get_linear(0), 1)
+        bqm.set_linear(0, .5)
+        self.assertEqual(bqm.get_linear(0), .5)
+
+    def test_set_quadratic(self):
+        # does not change shape
+        bqm = self.BQM(np.triu(np.ones((3, 3))))
+
+        self.assertEqual(bqm.get_quadratic(0, 1), 1)
+        bqm.set_quadratic(0, 1, .5)
+        self.assertEqual(bqm.get_quadratic(0, 1), .5)
+        self.assertEqual(bqm.get_quadratic(1, 0), .5)
+        bqm.set_quadratic(0, 1, -.5)
+        self.assertEqual(bqm.get_quadratic(0, 1), -.5)
+        self.assertEqual(bqm.get_quadratic(1, 0), -.5)
+
+    def test_shape_3x3array(self):
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
+
+        self.assertEqual(bqm.shape, (3, 2))
+        self.assertEqual(bqm.num_variables, 3)
+        self.assertEqual(bqm.num_interactions, 2)
+
+    def test_shape_disconnected(self):
+        bqm = self.BQM(5)
+
+        self.assertEqual(bqm.shape, (5, 0))
+        self.assertEqual(bqm.num_variables, 5)
+        self.assertEqual(bqm.num_interactions, 0)
+
+    def test_shape_empty(self):
+        self.assertEqual(self.BQM().shape, (0, 0))
+        self.assertEqual(self.BQM(0).shape, (0, 0))
+
+        self.assertEqual(self.BQM().num_variables, 0)
+        self.assertEqual(self.BQM(0).num_variables, 0)
+
+        self.assertEqual(self.BQM().num_interactions, 0)
+        self.assertEqual(self.BQM(0).num_interactions, 0)
 
 
 class TestAdjArrayBQMAPI(TestAPI, unittest.TestCase):
     """Runs the generic tests"""
     BQM = AdjArrayBQM
-
-
-class TestConstruction(unittest.TestCase):
-    """Tests for properties and special methods"""
-
-    def test_empty(self):
-        bqm = AdjArrayBQM()
-
-        self.assertEqual(len(bqm), 0)
-        self.assertEqual(bqm.shape, (0, 0))
-
-        lin, quad = bqm.to_lists()
-        self.assertEqual(lin, [])
-        self.assertEqual(quad, [])
-
-    def test_integral_nonzero(self):
-        bqm = AdjArrayBQM(1000)
-
-        self.assertEqual(len(bqm), 1000)
-        self.assertEqual(bqm.shape, (1000, 0))
-
-        lin, quad = bqm.to_lists()
-        self.assertEqual(lin, [(0, 0) for _ in range(1000)])
-        self.assertEqual(quad, [])
-
-    def test_dense_triu(self):
-        bqm = AdjArrayBQM(np.triu(np.ones((5, 5))))
-
-        self.assertEqual(bqm.shape, (5, 10))
-        lin, quad = bqm.to_lists()
-        self.assertEqual(lin, [(d, 1) for d in range(0, 5*4, 4)])
-        self.assertEqual(quad, [(v, 1)
-                                for u in range(5)
-                                for v in range(5)
-                                if u != v])
-
-    def test_dense(self):
-        bqm = AdjArrayBQM([[.1, 1, 2], [0, 0, 0], [1, 1, 0]])
-
-        self.assertEqual(bqm.shape, (3, 3))
-
-        lin, quad = bqm.to_lists()
-        self.assertEqual(lin, [(0, .1), (2, 0), (4, 0)])
-        self.assertEqual(quad, [(1, 1), (2, 3),
-                                (0, 1), (2, 1),
-                                (0, 3), (1, 1)])
 
 
 # class TestEnergies(unittest.TestCase):
