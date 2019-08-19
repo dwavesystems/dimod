@@ -36,7 +36,6 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     B get_linear[V, B](const vector[pair[size_t, B]]&,
                        const vector[pair[V, B]]&,
                        V)
-
     pair[B, bool] get_quadratic[V, B](const vector[pair[size_t, B]]&,
                                       const vector[pair[V, B]]&,
                                       V, V)
@@ -44,7 +43,9 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     void set_linear[V, B](vector[pair[size_t, B]]&,
                           vector[pair[V, B]]&,
                           V, B)
-
+    bool set_quadratic[V, B](vector[pair[size_t, B]]&,
+                             vector[pair[V, B]]&,
+                             V, V, B)
 
 
 cdef extern from "src/adjmap.cc":

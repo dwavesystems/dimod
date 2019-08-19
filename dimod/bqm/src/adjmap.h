@@ -58,6 +58,8 @@ namespace dimod {
     template<typename V, typename B>
     void set_linear(std::vector<std::pair<std::map<V, B>, B>>&, V, B);
 
+    // developer note: should this return a bool to be consistent with the
+    // array version?
     template<typename V, typename B>
     void set_quadratic(std::vector<std::pair<std::map<V, B>, B>>&, V, V, B);
 
