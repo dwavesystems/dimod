@@ -62,7 +62,11 @@ namespace dimod {
     void set_linear(std::vector<std::pair<std::size_t, B>>&,
                     std::vector<std::pair<V, B>>&,
                     V, B);
-    // todo: set_quadratic
+
+    template<typename V, typename B>
+    bool set_quadratic(std::vector<std::pair<std::size_t, B>>&,
+                       std::vector<std::pair<V, B>>&,
+                       V, V, B);
 
 }  // namespace dimod
 
