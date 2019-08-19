@@ -41,6 +41,11 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
                                       const vector[pair[V, B]]&,
                                       V, V)
 
+    void set_linear[V, B](vector[pair[size_t, B]]&,
+                          vector[pair[V, B]]&,
+                          V, B)
+
+
 
 cdef extern from "src/adjmap.cc":
     pass

@@ -27,6 +27,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
                                get_quadratic,
+                               set_linear,
                                )
 
 
@@ -105,6 +106,10 @@ cdef class AdjArrayBQM:
         self.dtype = np.dtype(np.double)
         self.index_dtype = np.dtype(np.uintc)
 
+        # otherwise these would be None
+        self.label_to_idx = dict()
+        self.idx_to_label = dict()
+
 
     def __init__(self, object arg1=0):
         
@@ -178,15 +183,50 @@ cdef class AdjArrayBQM:
     def shape(self):
         return self.num_variables, self.num_interactions
 
+    def has_variable(self, object v):
+        if v in self.label_to_idx:
+            return True
+        return (v in range(num_variables(self.invars_, self.outvars_)) and
+                v not in self.idx_to_label)  # not overwritten
+
     def get_linear(self, object v):
         if v < 0 or v >= self.num_variables:
             raise ValueError
         cdef VarIndex var = v
         return get_linear(self.invars_, self.outvars_, var)
 
-    def get_quadratic(self, VarIndex u, VarIndex v):
-        # todo: input checking, segfault or overflow for now
-        return get_quadratic(self.invars_, self.outvars_, u, v)
+    def get_quadratic(self, object u, object v):
+        # todo: return default?
+
+        if u == v:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
+
+        if not self.has_variable(u):
+            raise ValueError('{} is not a variable'.format(u))
+        cdef VarIndex ui = self.label_to_idx.get(u, u)
+
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        cdef pair[Bias, bool] out = get_quadratic(self.invars_, self.outvars_,
+                                                  ui, vi)
+
+        if not out.second:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
+
+        return out.first
+
+    def set_linear(self, object v, Bias b):
+
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        set_linear(self.invars_, self.outvars_, vi, b)
+
+    def set_quadratic(self, object u, object v, Bias b):
+        raise NotImplementedError
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
