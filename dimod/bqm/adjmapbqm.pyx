@@ -28,12 +28,12 @@ cimport cython
 
 import numpy as np
 
+from dimod.bqm.adjarraybqm cimport AdjArrayBQM
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
-# from dimod.bqm.adjarraybqm cimport AdjArrayBQM
 
 
 
@@ -230,27 +230,31 @@ cdef class AdjMapBQM:
     #     return list((list(neighbourhood.items()), bias)
     #                 for neighbourhood, bias in self.adj_)
 
-    # def to_adjarray(self):
-    #     # this is always a copy
+    def to_adjarray(self):
+        # this is always a copy
 
-    #     # make a 0-length BQM but then manually resize it, note that this
-    #     # treats them as vectors
-    #     cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
-    #     bqm.invars_.resize(self.adj_.size())
-    #     bqm.outvars_.resize(2*self.num_interactions)
+        # make a 0-length BQM but then manually resize it, note that this
+        # treats them as vectors
+        cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
+        bqm.invars_.resize(self.adj_.size())
+        bqm.outvars_.resize(2*self.num_interactions)
 
-    #     cdef pair[VarIndex, Bias] outvar
-    #     cdef VarIndex u
-    #     cdef size_t outvar_idx = 0
-    #     for u in range(self.adj_.size()):
+        cdef pair[VarIndex, Bias] outvar
+        cdef VarIndex u
+        cdef size_t outvar_idx = 0
+        for u in range(self.adj_.size()):
             
-    #         # set the linear bias
-    #         bqm.invars_[u].second = self.adj_[u].second
-    #         bqm.invars_[u].first = outvar_idx
+            # set the linear bias
+            bqm.invars_[u].second = self.adj_[u].second
+            bqm.invars_[u].first = outvar_idx
 
-    #         # set the quadratic biases
-    #         for outvar in self.adj_[u].first:
-    #             bqm.outvars_[outvar_idx] = outvar
-    #             outvar_idx += 1
+            # set the quadratic biases
+            for outvar in self.adj_[u].first:
+                bqm.outvars_[outvar_idx] = outvar
+                outvar_idx += 1
 
-    #     return bqm
+        # set up the variable labels
+        bqm.label_to_idx.update(self.label_to_idx)
+        bqm.idx_to_label.update(self.idx_to_label)
+
+        return bqm
