@@ -17,6 +17,11 @@
 #
 # =============================================================================
 
+try:
+    import collections.abc as abc
+except ImportError:
+    import collections as abc
+
 from numbers import Integral
 
 cimport cython
@@ -116,13 +121,34 @@ cdef class AdjArrayBQM:
         
         cdef Bias [:, :] D  # in case it's dense
         cdef size_t num_variables, num_interactions, degree
-        cdef VarIndex u, v
+        cdef VarIndex ui, vi
         cdef Bias b
 
         if isinstance(arg1, Integral):
             self.invars_.resize(arg1)
         elif isinstance(arg1, tuple):
-            raise NotImplementedError  # update docstring
+            if len(arg1) == 2:
+                linear, quadratic = arg1
+            else:
+                raise ValueError()
+
+            if isinstance(linear, abc.Mapping):
+                self.invars_.resize(len(linear))
+
+                for idx, (u, b) in enumerate(linear.items()):
+                    if u != idx:
+                        self.label_to_idx[u] = idx
+                        self.idx_to_label[idx] = u
+
+                    self.invars_[idx].second = b
+            else:
+                raise NotImplementedError
+
+            if isinstance(quadratic, abc.Mapping):
+                # pass through once, trying to determine the degree
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
         elif hasattr(arg1, "to_adjvector"):
             # we might want a more generic is_bqm function or similar
             raise NotImplementedError  # update docstring
@@ -145,27 +171,27 @@ cdef class AdjArrayBQM:
             # figure out the degree of each variable and consequently the
             # number of interactions
             num_interactions = 0  # 2x num_interactions because count degree
-            for u in range(num_variables):
+            for ui in range(num_variables):
                 degree = 0
-                for v in range(num_variables):
-                    if u != v and (D[v, u] or D[u, v]):
+                for vi in range(num_variables):
+                    if ui != vi and (D[vi, ui] or D[ui, vi]):
                         degree += 1
 
-                if u < num_variables - 1:
-                    self.invars_[u + 1].first = degree + self.invars_[u].first
+                if ui < num_variables - 1:
+                    self.invars_[ui + 1].first = degree + self.invars_[ui].first
 
                 num_interactions += degree
 
             self.outvars_.resize(num_interactions)
 
-            for u in range(num_variables):
+            for ui in range(num_variables):
                 degree = 0
-                for v in range(num_variables):
-                    if u == v:
-                        self.invars_[u].second = D[u, v]
-                    elif D[v, u] or D[u, v]:
-                        self.outvars_[self.invars_[u].first + degree].first = v
-                        self.outvars_[self.invars_[u].first + degree].second = D[v, u] + D[u, v]
+                for vi in range(num_variables):
+                    if ui == vi:
+                        self.invars_[ui].second = D[ui, vi]
+                    elif D[vi, ui] or D[ui, vi]:
+                        self.outvars_[self.invars_[ui].first + degree].first = vi
+                        self.outvars_[self.invars_[ui].first + degree].second = D[vi, ui] + D[ui, vi]
                         degree += 1
 
                     
@@ -191,10 +217,11 @@ cdef class AdjArrayBQM:
                 v not in self.idx_to_label)  # not overwritten
 
     def get_linear(self, object v):
-        if v < 0 or v >= self.num_variables:
-            raise ValueError
-        cdef VarIndex var = v
-        return get_linear(self.invars_, self.outvars_, var)
+        if not self.has_variable(v):
+            raise ValueError('{} is not a variable'.format(v))
+        cdef VarIndex vi = self.label_to_idx.get(v, v)
+
+        return get_linear(self.invars_, self.outvars_, vi)
 
     def get_quadratic(self, object u, object v):
         # todo: return default?
