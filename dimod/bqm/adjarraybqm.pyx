@@ -28,6 +28,7 @@ cimport cython
 
 import numpy as np
 
+from dimod.bqm.adjmapbqm cimport AdjMapBQM
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
@@ -123,35 +124,20 @@ cdef class AdjArrayBQM:
         cdef size_t num_variables, num_interactions, degree
         cdef VarIndex ui, vi
         cdef Bias b
+        cdef AdjArrayBQM other
 
         if isinstance(arg1, Integral):
             self.invars_.resize(arg1)
         elif isinstance(arg1, tuple):
-            if len(arg1) == 2:
-                linear, quadratic = arg1
-            else:
-                raise ValueError()
+            self.__init__(AdjMapBQM(arg1))  # via the map version
+        elif hasattr(arg1, "to_adjarray"):
 
-            if isinstance(linear, abc.Mapping):
-                self.invars_.resize(len(linear))
-
-                for idx, (u, b) in enumerate(linear.items()):
-                    if u != idx:
-                        self.label_to_idx[u] = idx
-                        self.idx_to_label[idx] = u
-
-                    self.invars_[idx].second = b
-            else:
-                raise NotImplementedError
-
-            if isinstance(quadratic, abc.Mapping):
-                # pass through once, trying to determine the degree
-                raise NotImplementedError
-            else:
-                raise NotImplementedError
-        elif hasattr(arg1, "to_adjvector"):
-            # we might want a more generic is_bqm function or similar
-            raise NotImplementedError  # update docstring
+            # this is not very elegent...
+            other = arg1.to_adjarray()
+            self.invars_ = other.invars_
+            self.outvars_ = other.outvars_
+            self.label_to_idx = other.label_to_idx
+            self.idx_to_label = other.idx_to_label
         else:
             # assume it's dense
 
