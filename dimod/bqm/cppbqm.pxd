@@ -36,10 +36,16 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     B get_linear[V, B](const vector[pair[size_t, B]]&,
                        const vector[pair[V, B]]&,
                        V)
+    pair[B, bool] get_quadratic[V, B](const vector[pair[size_t, B]]&,
+                                      const vector[pair[V, B]]&,
+                                      V, V)
 
-    B get_quadratic[V, B](const vector[pair[size_t, B]]&,
-                          const vector[pair[V, B]]&,
-                          V, V)
+    void set_linear[V, B](vector[pair[size_t, B]]&,
+                          vector[pair[V, B]]&,
+                          V, B)
+    bool set_quadratic[V, B](vector[pair[size_t, B]]&,
+                             vector[pair[V, B]]&,
+                             V, V, B)
 
 
 cdef extern from "src/adjmap.cc":
@@ -55,7 +61,7 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
     size_t num_interactions[V, B](vector[pair[cppmap[V, B], B]]&)
 
     B get_linear[V, B](vector[pair[cppmap[V, B], B]]&, V)
-    B get_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
+    pair[B, bool] get_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
     void set_linear[V, B](vector[pair[cppmap[V, B], B]]&, V, B)
     void set_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V, B)
@@ -64,3 +70,4 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
     bool add_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
     V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
+    bool remove_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)

@@ -53,9 +53,11 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_quadratic(const std::vector<std::pair<std::size_t, Bias>> &invars,
-                       const std::vector<std::pair<VarIndex, Bias>> &outvars,
-                       VarIndex u, VarIndex v) {
+    std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::size_t,
+                                        Bias>> &invars,
+                                        const std::vector<std::pair<VarIndex,
+                                        Bias>> &outvars,
+                                        VarIndex u, VarIndex v) {
         assert(u >= 0 && u < invars.size());
         assert(v >= 0 && v < invars.size());
         assert(u != v);
@@ -71,8 +73,70 @@ namespace dimod {
         low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
                                target, pair_lt<VarIndex, Bias>);
 
-        if (low == outvars.end())
-            return 0;  // do we want to raise?
-        return (*low).second;
+        if (low == outvars.begin()+end)
+            return std::make_pair(0, false);
+        return std::make_pair((*low).second, true);
     }
+
+    // Change the values in the BQM
+
+    template<typename VarIndex, typename Bias>
+    void set_linear(std::vector<std::pair<std::size_t, Bias>> &invars,
+                    std::vector<std::pair<VarIndex, Bias>> &outvars,
+                    VarIndex v, Bias b) {
+        assert(v >= 0 && v < invars.size());
+        invars[v].second = b;
+    }
+
+    // Q: Should we do something else if the user tries to set a non-existant
+    //    quadratic bias? Error/segfault?
+    template<typename VarIndex, typename Bias>
+    bool set_quadratic(std::vector<std::pair<std::size_t, Bias>> &invars,
+                       std::vector<std::pair<VarIndex, Bias>> &outvars,
+                       VarIndex u, VarIndex v, Bias b) {
+        assert(u >= 0 && u < invars.size());
+        assert(v >= 0 && v < invars.size());
+        assert(u != v);
+
+        typename std::vector<std::pair<VarIndex, Bias>>::iterator low;
+        std::size_t start, end;
+
+        // interaction (u, v)
+        start = invars[u].first;
+        if (u < invars.size() - 1) {
+            end = invars[u+1].first;
+        } else {
+            end = outvars.size();
+        }
+
+        const std::pair<VarIndex, Bias> v_target(v, 0);
+
+        low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+                               v_target, pair_lt<VarIndex, Bias>);
+
+        // if the edge does not exist, just return false here
+        if (low == outvars.begin()+end)
+            return false;
+
+        (*low).second = b;
+
+        // interaction (v, u)
+        start = invars[v].first;
+        if (v < invars.size() - 1) {
+            end = invars[v+1].first;
+        } else {
+            end = outvars.size();
+        }
+
+        const std::pair<VarIndex, Bias> u_target(u, 0);
+
+        low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+                               u_target, pair_lt<VarIndex, Bias>);
+
+        // we already know that this exists
+        (*low).second = b;
+
+        return true;
+    }
+
 }  // namespace dimod
