@@ -16,6 +16,8 @@
 import itertools
 import unittest
 
+from collections import OrderedDict
+
 import numpy as np
 
 from dimod.bqm.adjarraybqm import AdjArrayBQM
@@ -61,6 +63,19 @@ class TestAPI:
 
         with self.assertRaises(ValueError):
             bqm.get_quadratic(0, 0)
+
+    def test_has_variable(self):
+        h = OrderedDict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J))
+
+        self.assertTrue(bqm.has_variable('a'))
+        self.assertTrue(bqm.has_variable(1))
+        self.assertTrue(bqm.has_variable(3))
+
+        # no false positives
+        self.assertFalse(bqm.has_variable(0))
+        self.assertFalse(bqm.has_variable(2))
 
     def test_set_linear(self):
         # does not change shape

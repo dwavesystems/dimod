@@ -29,6 +29,11 @@ class TestFixedShapeBQMAPI(TestAPI, unittest.TestCase):
 class TestAdjMapBQM(unittest.TestCase):
     """Test the mutation methods"""
 
+    def test_add_variable_exception(self):
+        bqm = AdjMapBQM()
+        with self.assertRaises(TypeError):
+            bqm.add_variable([])
+
     def test_add_variable_labelled(self):
         bqm = AdjMapBQM()
         bqm.add_variable('a')
@@ -38,6 +43,14 @@ class TestAdjMapBQM(unittest.TestCase):
         bqm.add_variable()
         self.assertEqual(bqm.shape, (3, 0))
         self.assertEqual(list(bqm.iter_variables()), ['a', 1, 2])
+
+    def test_add_variable_int_labelled(self):
+        bqm = AdjMapBQM()
+        self.assertEqual(bqm.add_variable(1), 1)
+        self.assertEqual(bqm.add_variable(), 0)  # 1 is already taken
+        self.assertEqual(bqm.shape, (2, 0))
+        self.assertEqual(bqm.add_variable(), 2)
+        self.assertEqual(bqm.shape, (3, 0))
 
     def test_add_variable_unlabelled(self):
         bqm = AdjMapBQM()
@@ -72,6 +85,12 @@ class TestAdjMapBQM(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.get_quadratic(0, 1)
 
+    def test_set_quadratic_exception(self):
+        bqm = AdjMapBQM()
+        with self.assertRaises(TypeError):
+            bqm.set_quadratic([], 1, .5)
+        with self.assertRaises(TypeError):
+            bqm.set_quadratic(1, [], .5)
 
 
 # class TestQuadraticBase(unittest.TestCase):
