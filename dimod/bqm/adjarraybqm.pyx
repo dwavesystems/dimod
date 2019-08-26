@@ -170,6 +170,7 @@ cdef class AdjArrayBQM:
 
             self.outvars_.resize(num_interactions)
 
+            # todo: fix this, we're assigning twice
             for ui in range(num_variables):
                 degree = 0
                 for vi in range(num_variables):
