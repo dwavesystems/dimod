@@ -28,6 +28,13 @@ class TestAPI:
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
 
+    def test_construction_symmetric(self):
+        bqm = self.BQM(np.ones((5, 5)))
+        for u, v in itertools.combinations(range(5), 2):
+            self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
+        for u in range(5):
+            self.assertEqual(bqm.get_linear(u), 1)
+
     def test_get_linear_disconnected_string_labels(self):
         bqm = self.BQM(({'a': -1, 'b': 1}, {}))
         self.assertEqual(bqm.get_linear('a'), -1)

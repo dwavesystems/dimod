@@ -26,6 +26,8 @@ from numbers import Integral
 
 cimport cython
 
+from cython.operator cimport dereference as deref
+
 import numpy as np
 
 from dimod.bqm.adjarraybqm cimport AdjArrayBQM
@@ -60,6 +62,9 @@ cdef class AdjMapBQM:
         cdef size_t num_variables, i
         cdef VarIndex u, v
         cdef Bias b
+        cdef VarIndex ui, vi
+
+        cdef map[VarIndex, Bias].iterator Nv_it, Nu_it  # neighbourhood iterators
 
         if isinstance(arg1, Integral):
             if arg1 < 0:
@@ -99,19 +104,30 @@ cdef class AdjMapBQM:
             if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            # we could do this in bulk with a resize but let's try using the
-            # functions instead
-            for i in range(num_variables):
-                add_variable(self.adj_)
+            # so we only need to copy once if realloc
+            self.adj_.resize(num_variables) 
 
-            for u in range(num_variables):
-                for v in range(num_variables):
-                    b = D[u, v]
+            for vi in range(num_variables):
+                set_linear(self.adj_, vi, D[vi, vi])
 
-                    if u == v and b != 0:
-                        set_linear(self.adj_, u, b)
-                    elif b != 0:  # ignore the 0 off-diagonal
-                        set_quadratic(self.adj_, u, v, b)
+            for ui in range(num_variables):
+
+                for vi in range(ui + 1, num_variables):
+                    b = D[ui, vi] + D[vi, ui]  # add upper and lower
+
+                    if b == 0:  # ignore 0 off-diagonal
+                        continue
+
+                    # we'd like to use set_quadratic(self.adj_, ui, vi, b) but
+                    # because we know that we're always adding to the end
+                    # of the map, we can provide a location hint to insert. We
+                    # should really do this with an iterator  from c++ space,
+                    # but those are not implemented yet
+                    self.adj_[ui].first.insert(self.adj_[ui].first.end(),
+                                               pair[VarIndex, Bias](vi, b))
+                    self.adj_[vi].first.insert(self.adj_[vi].first.end(),
+                                               pair[VarIndex, Bias](ui, b))
+
 
     @property
     def num_variables(self):
