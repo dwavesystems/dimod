@@ -73,6 +73,9 @@ namespace dimod {
 
     template<typename V, typename B>
     V pop_variable(std::vector<std::pair<std::map<V, B>, B>>&);
+
+    template<typename V, typename B>
+    bool remove_interaction(std::vector<std::pair<std::map<V, B>, B>>&, V, V);
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJMAP_H_
