@@ -1064,7 +1064,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertEqual(binary_bqm.energy({'a': 0, 'b': 0, 'c': 0}), spin_bqm.energy({'c': -1, 'b': -1}))
 
     def test_contract_variables(self):
-        bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.BINARY)
+        bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.BINARY)
         original_bqm = bqm.copy()
 
         bqm.contract_variables('a', 'b')
@@ -1078,7 +1078,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         #
 
-        bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.SPIN)
+        bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.SPIN)
         original_bqm = bqm.copy()
 
         bqm.contract_variables('a', 'b')
