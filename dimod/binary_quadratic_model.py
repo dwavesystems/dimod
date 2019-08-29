@@ -1232,6 +1232,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             self.remove_interaction(v, w)
 
         # finally remove v
+        self.add_variable(u, self.linear[v])
         self.remove_variable(v)
 
 ###################################################################################################
