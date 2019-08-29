@@ -21,12 +21,10 @@ from tests.test_bqm import TestFixedShapeAPI, TestMutableShapeAPI
 
 
 class TestAdjMapFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
-    """Runs the tests that run on AdjArrayBQM"""
     BQM = AdjMapBQM
 
 
 class TestAdjMapMutableShapeAPI(TestMutableShapeAPI, unittest.TestCase):
-    """Test the mutation methods"""
     BQM = AdjMapBQM
 
 
