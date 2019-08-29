@@ -71,3 +71,24 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
 
     V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
     bool remove_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
+
+
+cdef extern from "src/adjvector.cc":
+    pass
+
+cdef extern from "src/adjvector.h" namespace "dimod" nogil:
+
+    size_t num_variables[V, B](vector[pair[vector[pair[V, B]], B]]&)
+    size_t num_interactions[V, B](vector[pair[vector[pair[V, B]], B]]&)
+
+    B get_linear[V, B](vector[pair[vector[pair[V, B]], B]]&, V)
+    pair[B, bool] get_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
+
+    void set_linear[V, B](vector[pair[vector[pair[V, B]], B]]&, V, B)
+    bool set_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V, B)
+
+    V add_variable[V, B](vector[pair[vector[pair[V, B]], B]]&)
+    bool add_interaction[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
+
+    V pop_variable[V, B](vector[pair[vector[pair[V, B]], B]]&)
+    bool remove_interaction[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
