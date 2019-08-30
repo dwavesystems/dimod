@@ -13,124 +13,17 @@
 #    limitations under the License.
 #
 # =============================================================================
-import itertools
-import unittest
 
-from collections import OrderedDict
+import unittest
 
 import numpy as np
 
 from dimod.bqm.adjarraybqm import AdjArrayBQM
 
-
-class TestAPI:
-    """
-    Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
-    """
-
-    def test_construction_symmetric(self):
-        bqm = self.BQM(np.ones((5, 5)))
-        for u, v in itertools.combinations(range(5), 2):
-            self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
-        for u in range(5):
-            self.assertEqual(bqm.get_linear(u), 1)
-
-    def test_get_linear_disconnected_string_labels(self):
-        bqm = self.BQM(({'a': -1, 'b': 1}, {}))
-        self.assertEqual(bqm.get_linear('a'), -1)
-        self.assertEqual(bqm.get_linear('b'), 1)
-        with self.assertRaises(ValueError):
-            bqm.get_linear('c')
-
-    def test_get_linear_disconnected(self):
-        bqm = self.BQM(5)
-
-        for v in range(5):
-            self.assertEqual(bqm.get_linear(v), 0)
-
-        with self.assertRaises(ValueError):
-            bqm.get_linear(-1)
-
-        with self.assertRaises(ValueError):
-            bqm.get_linear(5)
-
-    def test_get_quadratic_3x3array(self):
-        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
-
-        self.assertEqual(bqm.get_quadratic(0, 1), 1)
-        self.assertEqual(bqm.get_quadratic(1, 0), 1)
-
-        self.assertEqual(bqm.get_quadratic(0, 2), 2)
-        self.assertEqual(bqm.get_quadratic(2, 0), 2)
-
-        with self.assertRaises(ValueError):
-            bqm.get_quadratic(2, 1)
-        with self.assertRaises(ValueError):
-            bqm.get_quadratic(1, 2)
-
-        with self.assertRaises(ValueError):
-            bqm.get_quadratic(0, 0)
-
-    def test_has_variable(self):
-        h = OrderedDict([('a', -1), (1, -1), (3, -1)])
-        J = {}
-        bqm = self.BQM((h, J))
-
-        self.assertTrue(bqm.has_variable('a'))
-        self.assertTrue(bqm.has_variable(1))
-        self.assertTrue(bqm.has_variable(3))
-
-        # no false positives
-        self.assertFalse(bqm.has_variable(0))
-        self.assertFalse(bqm.has_variable(2))
-
-    def test_set_linear(self):
-        # does not change shape
-        bqm = self.BQM(np.triu(np.ones((3, 3))))
-
-        self.assertEqual(bqm.get_linear(0), 1)
-        bqm.set_linear(0, .5)
-        self.assertEqual(bqm.get_linear(0), .5)
-
-    def test_set_quadratic(self):
-        # does not change shape
-        bqm = self.BQM(np.triu(np.ones((3, 3))))
-
-        self.assertEqual(bqm.get_quadratic(0, 1), 1)
-        bqm.set_quadratic(0, 1, .5)
-        self.assertEqual(bqm.get_quadratic(0, 1), .5)
-        self.assertEqual(bqm.get_quadratic(1, 0), .5)
-        bqm.set_quadratic(0, 1, -.5)
-        self.assertEqual(bqm.get_quadratic(0, 1), -.5)
-        self.assertEqual(bqm.get_quadratic(1, 0), -.5)
-
-    def test_shape_3x3array(self):
-        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
-
-        self.assertEqual(bqm.shape, (3, 2))
-        self.assertEqual(bqm.num_variables, 3)
-        self.assertEqual(bqm.num_interactions, 2)
-
-    def test_shape_disconnected(self):
-        bqm = self.BQM(5)
-
-        self.assertEqual(bqm.shape, (5, 0))
-        self.assertEqual(bqm.num_variables, 5)
-        self.assertEqual(bqm.num_interactions, 0)
-
-    def test_shape_empty(self):
-        self.assertEqual(self.BQM().shape, (0, 0))
-        self.assertEqual(self.BQM(0).shape, (0, 0))
-
-        self.assertEqual(self.BQM().num_variables, 0)
-        self.assertEqual(self.BQM(0).num_variables, 0)
-
-        self.assertEqual(self.BQM().num_interactions, 0)
-        self.assertEqual(self.BQM(0).num_interactions, 0)
+from tests.test_bqm import TestFixedShapeAPI
 
 
-class TestAdjArrayBQMAPI(TestAPI, unittest.TestCase):
-    """Runs the generic tests"""
+class TestAdjArrayFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
     BQM = AdjArrayBQM
 
 

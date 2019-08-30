@@ -116,6 +116,10 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/bqm/adjarraybqm'+ext],
                         include_dirs=['dimod/bqm/src/'],
                         library_dirs=['dimod/bqm/src/']),
+              Extension("dimod.bqm.adjvectorbqm",
+                        ['dimod/bqm/adjvectorbqm'+ext],
+                        include_dirs=['dimod/bqm/src/'],
+                        library_dirs=['dimod/bqm/src/']),
               ]
 
 if USE_CYTHON:

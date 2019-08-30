@@ -15,82 +15,17 @@
 # =============================================================================
 import unittest
 
-import numpy as np
-
 from dimod.bqm.adjmapbqm import AdjMapBQM
-from tests.test_adjarraybqm import TestAPI
+
+from tests.test_bqm import TestFixedShapeAPI, TestMutableShapeAPI
 
 
-class TestFixedShapeBQMAPI(TestAPI, unittest.TestCase):
-    """Runs the tests that run on AdjArrayBQM"""
+class TestAdjMapFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
     BQM = AdjMapBQM
 
 
-class TestAdjMapBQM(unittest.TestCase):
-    """Test the mutation methods"""
-
-    def test_add_variable_exception(self):
-        bqm = AdjMapBQM()
-        with self.assertRaises(TypeError):
-            bqm.add_variable([])
-
-    def test_add_variable_labelled(self):
-        bqm = AdjMapBQM()
-        bqm.add_variable('a')
-        bqm.add_variable(1)
-        self.assertEqual(bqm.shape, (2, 0))
-        self.assertEqual(list(bqm.iter_variables()), ['a', 1])
-        bqm.add_variable()
-        self.assertEqual(bqm.shape, (3, 0))
-        self.assertEqual(list(bqm.iter_variables()), ['a', 1, 2])
-
-    def test_add_variable_int_labelled(self):
-        bqm = AdjMapBQM()
-        self.assertEqual(bqm.add_variable(1), 1)
-        self.assertEqual(bqm.add_variable(), 0)  # 1 is already taken
-        self.assertEqual(bqm.shape, (2, 0))
-        self.assertEqual(bqm.add_variable(), 2)
-        self.assertEqual(bqm.shape, (3, 0))
-
-    def test_add_variable_unlabelled(self):
-        bqm = AdjMapBQM()
-        bqm.add_variable()
-        bqm.add_variable()
-        self.assertEqual(bqm.shape, (2, 0))
-        self.assertEqual(list(bqm.iter_variables()), [0, 1])
-
-    def test_pop_variable_labelled(self):
-        bqm = AdjMapBQM()
-        bqm.add_variable('a')
-        bqm.add_variable(1)
-        bqm.add_variable(0)
-        self.assertEqual(bqm.pop_variable(), 0)
-        self.assertEqual(bqm.pop_variable(), 1)
-        self.assertEqual(bqm.pop_variable(), 'a')
-        with self.assertRaises(ValueError):
-            bqm.pop_variable()
-
-    def test_pop_variable_unlabelled(self):
-        bqm = AdjMapBQM(2)
-        self.assertEqual(bqm.pop_variable(), 1)
-        self.assertEqual(bqm.pop_variable(), 0)
-        with self.assertRaises(ValueError):
-            bqm.pop_variable()
-
-    def test_remove_interaction(self):
-        bqm = AdjMapBQM(np.triu(np.ones((3, 3))))
-        self.assertTrue(bqm.remove_interaction(0, 1))
-        self.assertFalse(bqm.remove_interaction(0, 1))
-        self.assertEqual(bqm.shape, (3, 2))
-        with self.assertRaises(ValueError):
-            bqm.get_quadratic(0, 1)
-
-    def test_set_quadratic_exception(self):
-        bqm = AdjMapBQM()
-        with self.assertRaises(TypeError):
-            bqm.set_quadratic([], 1, .5)
-        with self.assertRaises(TypeError):
-            bqm.set_quadratic(1, [], .5)
+class TestAdjMapMutableShapeAPI(TestMutableShapeAPI, unittest.TestCase):
+    BQM = AdjMapBQM
 
 
 # class TestQuadraticBase(unittest.TestCase):
