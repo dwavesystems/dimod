@@ -16,6 +16,7 @@
 """
 Utility functions useful for samplers.
 """
+import copy
 import itertools
 
 from six import iteritems, itervalues
@@ -427,6 +428,14 @@ class LockableDict(dict):
     @lockable_method
     def __delitem__(self, key):
         super(LockableDict, self).__delitem__(key)
+
+    def __deepcopy__(self, memo):
+        new = type(self)()
+        memo[id(self)] = new
+        new.update((copy.deepcopy(key, memo), copy.deepcopy(value, memo))
+                   for key, value in self.items())
+        new.is_writeable = self.is_writeable
+        return new
 
     @lockable_method
     def clear(self):

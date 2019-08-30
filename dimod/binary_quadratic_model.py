@@ -1458,7 +1458,13 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         """
         # new objects are constructed for each, so we just need to pass them in
-        return BinaryQuadraticModel(self.linear, self.quadratic, self.offset, self.vartype, **self.info)
+        new = BinaryQuadraticModel(self.linear,
+                                   self.quadratic,
+                                   self.offset,
+                                   self.vartype,
+                                   **self.info)
+        new.is_writeable = self.is_writeable
+        return new
 
     def energy(self, sample):
         """Determine the energy of the specified sample of a binary quadratic model.
