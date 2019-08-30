@@ -26,6 +26,8 @@ from numbers import Integral
 
 cimport cython
 
+from cython.operator cimport dereference as deref
+
 import numpy as np
 
 from dimod.bqm.adjarraybqm cimport AdjArrayBQM
@@ -48,8 +50,8 @@ cdef class AdjMapBQM:
         self.index_dtype = np.dtype(np.uintc)
 
         # otherwise these would be None
-        self.label_to_idx = dict()
-        self.idx_to_label = dict()
+        self._label_to_idx = dict()
+        self._idx_to_label = dict()
 
 
     @cython.boundscheck(False)
@@ -60,6 +62,9 @@ cdef class AdjMapBQM:
         cdef size_t num_variables, i
         cdef VarIndex u, v
         cdef Bias b
+        cdef VarIndex ui, vi
+
+        cdef map[VarIndex, Bias].iterator Nv_it, Nu_it  # neighbourhood iterators
 
         if isinstance(arg1, Integral):
             if arg1 < 0:
@@ -99,19 +104,30 @@ cdef class AdjMapBQM:
             if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            # we could do this in bulk with a resize but let's try using the
-            # functions instead
-            for i in range(num_variables):
-                add_variable(self.adj_)
+            # so we only need to copy once if realloc
+            self.adj_.resize(num_variables) 
 
-            for u in range(num_variables):
-                for v in range(num_variables):
-                    b = D[u, v]
+            for vi in range(num_variables):
+                set_linear(self.adj_, vi, D[vi, vi])
 
-                    if u == v and b != 0:
-                        set_linear(self.adj_, u, b)
-                    elif b != 0:  # ignore the 0 off-diagonal
-                        set_quadratic(self.adj_, u, v, b)
+            for ui in range(num_variables):
+
+                for vi in range(ui + 1, num_variables):
+                    b = D[ui, vi] + D[vi, ui]  # add upper and lower
+
+                    if b == 0:  # ignore 0 off-diagonal
+                        continue
+
+                    # we'd like to use set_quadratic(self.adj_, ui, vi, b) but
+                    # because we know that we're always adding to the end
+                    # of the map, we can provide a location hint to insert. We
+                    # should really do this with an iterator  from c++ space,
+                    # but those are not implemented yet
+                    self.adj_[ui].first.insert(self.adj_[ui].first.end(),
+                                               pair[VarIndex, Bias](vi, b))
+                    self.adj_[vi].first.insert(self.adj_[vi].first.end(),
+                                               pair[VarIndex, Bias](ui, b))
+
 
     @property
     def num_variables(self):
@@ -125,69 +141,175 @@ cdef class AdjMapBQM:
     def shape(self):
         return self.num_variables, self.num_interactions
 
+
+    cdef VarIndex label_to_idx(self, object v) except *:
+        """Get the index in the underlying array from the python label."""
+        cdef VarIndex vi
+
+        try:
+            if not self._label_to_idx:
+                # there are no arbitrary labels so v must be integer labelled
+                vi = v
+            elif v in self._idx_to_label:
+                # v is an integer label that has been overwritten
+                vi = self._label_to_idx[v]
+            else:
+                vi = self._label_to_idx.get(v, v)
+        except (OverflowError, TypeError, KeyError) as ex:
+            raise ValueError("{} is not a variable".format(v)) from ex
+
+        if vi < 0 or vi >= num_variables(self.adj_):
+            raise ValueError("{} is not a variable".format(v))
+
+        return vi
+
     def add_variable(self, object label=None):
+        """Add a variable to the binary quadratic model.
+
+        Args:
+            label (hashable, optional):
+                A label for the variable. Defaults to the length of the binary
+                quadratic model. See examples for relevant edge cases.
+
+        Returns:
+            hashable: The label of the added variable.
+
+        Raises:
+            TypeError: If the label is not hashable.
+
+        Examples:
+
+            >>> bqm = dimod.AdjMapBQM()
+            >>> bqm.add_variable()
+            0
+            >>> bqm.add_variable('a')
+            'a'
+            >>> bqm.add_variable()
+            2
+
+            >>> bqm = dimod.AdjMapBQM()
+            >>> bqm.add_variable(1)
+            1
+            >>> bqm.add_variable()  # 1 is taken
+            0
+            >>> bqm.add_variable()
+            2
+
+        """
 
         if label is None:
             # if nothing has been overwritten we can go ahead and exit here
             # this is not necessary but good for performance
-            if not self.label_to_idx:
+            if not self._label_to_idx:
                 return add_variable(self.adj_)
 
             label = num_variables(self.adj_)
 
+            if self.has_variable(label):
+                # if the integer label already is taken, there must be a missing
+                # smaller integer we can use
+                for v in range(label):
+                    if not self.has_variable(v):
+                        break
+                label = v
 
-        # don't create variables that already exist
-        if self.has_variable(label):
-            return label
+        else:
+            try:
+                self.label_to_idx(label)
+            except ValueError:
+                pass
+            else:
+                # it exists already
+                return label
 
-        cdef object v = add_variable(self.adj_)
-
-        if v != label:
-            self.label_to_idx[label] = v
-            self.idx_to_label[v] = label
+        cdef object vi = add_variable(self.adj_)
+        if vi != label:
+            self._label_to_idx[label] = vi
+            self._idx_to_label[vi] = label
 
         return label
 
     def has_variable(self, object v):
-        if v in self.label_to_idx:
-            return True
-        return (v in range(num_variables(self.adj_)) and  # handles non-ints
-                v not in self.idx_to_label)  # not overwritten
+        """Return True if the binary quadratic model contains variable v.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        """
+        try:
+            self.label_to_idx(v)
+        except ValueError:
+            return False
+        return True
 
     def iter_variables(self):
         cdef object v
         for v in range(num_variables(self.adj_)):
-            yield self.idx_to_label.get(v, v)
+            yield self._idx_to_label.get(v, v)
 
     def pop_variable(self):
+        """Remove a variable from the binary quadratic model.
+
+        Returns:
+            hashable: The last variable added to the binary quadratic model.
+
+        Raises:
+            ValueError: If the binary quadratic model is empty.
+
+        """
         if num_variables(self.adj_) == 0:
             raise ValueError("pop from empty binary quadratic model")
 
         cdef object v = pop_variable(self.adj_)  # cast to python object
 
         # delete any relevant labels if present
-        if self.label_to_idx:
-            v = self.idx_to_label.pop(v, v)
-            self.label_to_idx.pop(v, None)
+        if self._label_to_idx:
+            v = self._idx_to_label.pop(v, v)
+            self._label_to_idx.pop(v, None)
 
         return v
 
     def get_linear(self, object v):
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
-        return get_linear(self.adj_, vi)
+        """Get the linear bias of v.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            float: The linear bias of v.
+
+        Raises:
+            ValueError: If v is not a variable in the binary quadratic model.
+
+        """
+        return get_linear(self.adj_, self.label_to_idx(v))
 
     def get_quadratic(self, object u, object v):
-        # todo: return default?
+        """Get the quadratic bias of (u, v).
 
-        if not self.has_variable(u):
-            raise ValueError('{} is not a variable'.format(u))
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
 
-        cdef VarIndex ui = self.label_to_idx.get(u, u)
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            float: The quadratic bias of (u, v).
+
+        Raises:
+            ValueError: If either u or v is not a variable in the binary
+            quadratic model, if u == v or if (u, v) is not an interaction in
+            the binary quadratic model.
+
+        """
+        if u == v:
+            raise ValueError("No interaction between {} and itself".format(u))
+
+        cdef VarIndex ui = self.label_to_idx(u)
+        cdef VarIndex vi = self.label_to_idx(v)
         cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
 
         if not out.second:
@@ -196,31 +318,87 @@ cdef class AdjMapBQM:
         return out.first
 
     def remove_interaction(self, object u, object v):
-        if not self.has_variable(u):
-            raise ValueError('{} is not a variable'.format(u))
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
+        """Remove the interaction between variables u and v.
 
-        cdef VarIndex ui = self.label_to_idx.get(u, u)
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
 
-        return remove_interaction(self.adj_, ui, vi)
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            bool: If there was an interaction to remove.
+
+        Raises:
+            ValueError: If either u or v is not a variable in the binary
+            quadratic model.
+
+        """
+        if u == v:
+            # developer note: maybe we should raise a ValueError instead?
+            return False
+
+        cdef VarIndex ui = self.label_to_idx(u)
+        cdef VarIndex vi = self.label_to_idx(v)
+        cdef bool removed = remove_interaction(self.adj_, ui, vi)
+
+        return removed
 
     def set_linear(self, object v, Bias b):
+        """Set the linear biase of a variable v.
 
-        self.add_variable(v)  # add if it doesn't exist
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model. It is added if not
+                already in the model.
 
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+            b (numeric):
+                The linear bias of v.
+
+        Raises:
+            TypeError: If v is not hashable
+        """
+        cdef VarIndex vi
+
+        # this try-catch it not necessary but it speeds things up in the case
+        # that the variable already exists which is the typical case
+        try:
+            vi = self.label_to_idx(v)
+        except ValueError:
+            vi = self.label_to_idx(self.add_variable(v))
 
         set_linear(self.adj_, vi, b)
 
     def set_quadratic(self, object u, object v, Bias b):
-        # add if they don't already exist
-        self.add_variable(u)
-        self.add_variable(v)
+        """Set the quadratic bias of (u, v).
 
-        cdef VarIndex ui = self.label_to_idx.get(u, u)
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The linear bias of v.
+
+        Raises:
+            TypeError: If u or v is not hashable.
+
+        """
+        cdef VarIndex ui, vi
+
+        # these try-catchs are not necessary but it speeds things up in the case
+        # that the variables already exists which is the typical case
+        try:
+            ui = self.label_to_idx(u)
+        except ValueError:
+            ui = self.label_to_idx(self.add_variable(u))
+        try:
+            vi = self.label_to_idx(v)
+        except ValueError:
+            vi = self.label_to_idx(self.add_variable(v))
 
         set_quadratic(self.adj_, ui, vi, b)
 
@@ -254,7 +432,7 @@ cdef class AdjMapBQM:
                 outvar_idx += 1
 
         # set up the variable labels
-        bqm.label_to_idx.update(self.label_to_idx)
-        bqm.idx_to_label.update(self.idx_to_label)
+        bqm.label_to_idx.update(self._label_to_idx)
+        bqm.idx_to_label.update(self._idx_to_label)
 
         return bqm

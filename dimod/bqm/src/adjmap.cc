@@ -77,6 +77,7 @@ namespace dimod {
         bqm[v].second = b;
     }
 
+    // todo: decide and document what happens when u == v
     template<typename VarIndex, typename Bias>
     void set_quadratic(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
                        &bqm, VarIndex u, VarIndex v, Bias b) {
@@ -132,6 +133,7 @@ namespace dimod {
         return v;
     }
 
+    // todo: decide and document what happens when u == v
     template<typename VarIndex, typename Bias>
     bool remove_interaction(std::vector<std::pair<std::map<VarIndex, Bias>,
                             Bias>> &bqm, VarIndex u, VarIndex v) {
