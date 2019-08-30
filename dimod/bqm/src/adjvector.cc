@@ -93,13 +93,16 @@ std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::vector<
     assert(v >= 0 && v < bqm.size());
     assert(u != v);
 
-    typename std::vector<std::pair<VarIndex, Bias>>::const_iterator it;
-    bool exists;
+    std::pair<typename std::vector<std::pair<VarIndex, Bias>>::const_iterator,
+              bool> ret;
 
-    std::tie(it, exists) = directed_edge_iterator(bqm, u, v);
+    ret = directed_edge_iterator(bqm, u, v);
+    bool exists = ret.second;
+    typename std::vector<std::pair<VarIndex, Bias>>::const_iterator it
+        = ret.first;
+
     if (!exists)
         return std::make_pair(0, false);
-
     return std::make_pair((*it).second, true);
 }
 
@@ -120,11 +123,14 @@ bool set_quadratic(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
     assert(v >= 0 && v < bqm.size());
     assert(u != v);
 
+    std::pair<typename std::vector<std::pair<VarIndex, Bias>>::iterator,
+              bool> ret;
     typename std::vector<std::pair<VarIndex, Bias>>::iterator it;
-    bool uv_exists, vu_exists;
 
     // u, v
-    std::tie(it, uv_exists) = directed_edge_iterator(bqm, u, v);
+    ret = directed_edge_iterator(bqm, u, v);
+    bool uv_exists = ret.second;
+    it = ret.first;
     if (uv_exists) {
         (*it).second = b;
     } else {
@@ -132,7 +138,9 @@ bool set_quadratic(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
     }
 
     // v, u
-    std::tie(it, vu_exists) = directed_edge_iterator(bqm, v, u);
+    ret = directed_edge_iterator(bqm, v, u);
+    bool vu_exists = ret.second;
+    it = ret.first;
     if (vu_exists) {
         (*it).second = b;
     } else {
@@ -192,16 +200,21 @@ bool remove_interaction(std::vector<std::pair<std::vector<std::pair<VarIndex,
     assert(v >= 0 && v < bqm.size());
     assert(u != v);
 
+    std::pair<typename std::vector<std::pair<VarIndex, Bias>>::iterator,
+              bool> ret;
     typename std::vector<std::pair<VarIndex, Bias>>::iterator it;
-    bool uv_exists, vu_exists;
 
     // u, v
-    std::tie(it, uv_exists) = directed_edge_iterator(bqm, u, v);
+    ret = directed_edge_iterator(bqm, u, v);
+    bool uv_exists = ret.second;
+    it = ret.first;
     if (uv_exists)
         bqm[u].first.erase(it);
 
     // v, u
-    std::tie(it, vu_exists) = directed_edge_iterator(bqm, v, u);
+    ret = directed_edge_iterator(bqm, v, u);
+    bool vu_exists = ret.second;
+    it = ret.first;
     if (vu_exists)
         bqm[v].first.erase(it);
 
