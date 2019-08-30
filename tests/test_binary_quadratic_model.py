@@ -14,6 +14,7 @@
 #
 # ================================================================================================
 
+import copy
 import collections
 import fractions
 import itertools
@@ -2406,3 +2407,29 @@ class TestIsWriteable(unittest.TestCase):
 
         with self.assertRaises(WriteableError):
             bqm.adj['a']['b'] += 5
+
+    def test_copy(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        bqm.is_writeable = False
+
+        new = bqm.copy()
+        self.assertEqual(new, bqm)
+        self.assertIsNot(new, bqm)
+        self.assertFalse(new.is_writeable)
+
+    def test_deepcopy(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        bqm.is_writeable = False
+
+        new = copy.deepcopy(bqm)
+        self.assertEqual(new, bqm)
+        self.assertIsNot(new, bqm)
+        self.assertFalse(new.is_writeable)
+
+    def test_pickle(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        bqm.is_writeable = False
+
+        new = pickle.loads(pickle.dumps(bqm))
+        self.assertEqual(new, bqm)
+        self.assertFalse(new.is_writeable)
