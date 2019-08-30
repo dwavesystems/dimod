@@ -20,6 +20,19 @@
 
 namespace dimod {
 
+
+    // developer note: while we continue to support python2.7 we are stuck
+    // using visual studio 9.0 and consequently don't have access to template
+    // aliases. For now we'll just be more verbose but here they are for
+    // reference:
+    //
+    // template<typename VarIndex, typename Bias>
+    // using Neighbourhood = typename std::vector<std::pair<VarIndex, Bias>>;
+    //
+    // template<typename VarIndex, typename Bias>
+    // using AdjVectorBQM = typename std::vector<
+    //     std::pair<Neighbourhood<VarIndex, Bias>, Bias>>;
+
     // Read the BQM
 
     template<typename V, typename B>
