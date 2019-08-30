@@ -15,9 +15,48 @@
 #include "src/adjvector.h"
 
 #include <algorithm>
+#include <tuple>
 
 
 namespace dimod {
+
+// Utilities for other functions
+
+template<typename VarIndex, typename Bias>
+std::pair<typename std::vector<std::pair<VarIndex, Bias>>::const_iterator, bool>
+    directed_edge_iterator(const std::vector<std::pair<std::vector<std::pair<
+                           VarIndex, Bias>>, Bias>> &bqm,
+                           VarIndex u, VarIndex v) {
+    assert(u >= 0 && u < bqm.size());
+    assert(v >= 0 && v < bqm.size());
+    assert(u != v);
+
+    const std::pair<VarIndex, Bias> target(v, 0);
+
+    typename std::vector<std::pair<VarIndex, Bias>>::const_iterator it;
+    it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
+                          target, pair_lt<VarIndex, Bias>);
+
+    return std::make_pair(it, !(it == bqm[u].first.end() || (*it).first != v));
+}
+
+template<typename VarIndex, typename Bias>
+std::pair<typename std::vector<std::pair<VarIndex, Bias>>::iterator, bool>
+    directed_edge_iterator(std::vector<std::pair<std::vector<std::pair<
+                           VarIndex, Bias>>, Bias>> &bqm,
+                           VarIndex u, VarIndex v) {
+    assert(u >= 0 && u < bqm.size());
+    assert(v >= 0 && v < bqm.size());
+    assert(u != v);
+
+    std::pair<VarIndex, Bias> target(v, 0);
+
+    typename std::vector<std::pair<VarIndex, Bias>>::iterator it;
+    it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
+                          target, pair_lt<VarIndex, Bias>);
+
+    return std::make_pair(it, !(it == bqm[u].first.end() || (*it).first != v));
+}
 
 // Read the BQM
 
@@ -54,15 +93,11 @@ std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::vector<
     assert(v >= 0 && v < bqm.size());
     assert(u != v);
 
-    const std::pair<VarIndex, Bias> target(v, 0);
-
-    // binary search on the vector, matching only the first variable, we could
-    // search the smaller of the two neighbourhoods
     typename std::vector<std::pair<VarIndex, Bias>>::const_iterator it;
-    it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
-                          target, pair_lt<VarIndex, Bias>);
+    bool exists;
 
-    if (it == bqm[u].first.end() || (*it).first != v)
+    std::tie(it, exists) = directed_edge_iterator(bqm, u, v);
+    if (!exists)
         return std::make_pair(0, false);
 
     return std::make_pair((*it).second, true);
@@ -89,27 +124,19 @@ bool set_quadratic(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
     bool uv_exists, vu_exists;
 
     // u, v
-    const std::pair<VarIndex, Bias> target_uv(v, b);
-    it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
-                          target_uv, pair_lt<VarIndex, Bias>);
-    if (it == bqm[u].first.end() || (*it).first != v) {
-        bqm[u].first.insert(it, target_uv);
-        uv_exists = false;
-    } else {
+    std::tie(it, uv_exists) = directed_edge_iterator(bqm, u, v);
+    if (uv_exists) {
         (*it).second = b;
-        uv_exists = true;
+    } else {
+        bqm[u].first.insert(it, std::make_pair(v, b));
     }
 
     // v, u
-    const std::pair<VarIndex, Bias> target_vu(u, b);
-    it = std::lower_bound(bqm[v].first.begin(), bqm[v].first.end(),
-                          target_vu, pair_lt<VarIndex, Bias>);
-    if (it == bqm[v].first.end() || (*it).first != u) {
-        bqm[v].first.insert(it, target_vu);
-        vu_exists = false;
-    } else {
+    std::tie(it, vu_exists) = directed_edge_iterator(bqm, v, u);
+    if (vu_exists) {
         (*it).second = b;
-        vu_exists = true;
+    } else {
+        bqm[v].first.insert(it, std::make_pair(u, b));
     }
 
     assert(uv_exists == vu_exists);  // sanity check
@@ -140,7 +167,6 @@ VarIndex pop_variable(std::vector<std::pair<std::vector<std::pair<VarIndex,
                       Bias>>, Bias>> &bqm) {
     assert(bqm.size() > 0);  // undefined for empty
 
-
     VarIndex v = bqm.size() - 1;
 
     // remove v from any of it's neighbour's associated vectors
@@ -170,26 +196,14 @@ bool remove_interaction(std::vector<std::pair<std::vector<std::pair<VarIndex,
     bool uv_exists, vu_exists;
 
     // u, v
-    const std::pair<VarIndex, Bias> target_uv(v, 0);
-    it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
-                          target_uv, pair_lt<VarIndex, Bias>);
-    if (it == bqm[u].first.end() || (*it).first != v) {
-        uv_exists = false;
-    } else {
+    std::tie(it, uv_exists) = directed_edge_iterator(bqm, u, v);
+    if (uv_exists)
         bqm[u].first.erase(it);
-        uv_exists = true;
-    }
 
     // v, u
-    const std::pair<VarIndex, Bias> target_vu(u, 0);
-    it = std::lower_bound(bqm[v].first.begin(), bqm[v].first.end(),
-                          target_vu, pair_lt<VarIndex, Bias>);
-    if (it == bqm[v].first.end() || (*it).first != u) {
-        vu_exists = false;
-    } else {
+    std::tie(it, vu_exists) = directed_edge_iterator(bqm, v, u);
+    if (vu_exists)
         bqm[v].first.erase(it);
-        vu_exists = true;
-    }
 
     assert(uv_exists == vu_exists);  // sanity check
 
