@@ -55,7 +55,6 @@ import operator
 
 from functools import reduce
 
-import jsonschema
 import numpy as np
 
 from six import iteritems
@@ -308,13 +307,20 @@ def _unpack_record(obj, vartype):
     return record
 
 
+def _is_bqm_json_schema_v1(dct):
+    # replaces jsonschema.Draft4Validator(bqm_json_schema_v1).is_valid(dct)
+    # this function is obviously a lot less complete but since this is a
+    # deprecated format it's good enough for now
+    return all(field in dct for field in bqm_json_schema_v1["required"])
+
+
 def bqm_decode_hook(dct, cls=None):
     # deprecated
 
     if cls is None:
         cls = BinaryQuadraticModel
 
-    if jsonschema.Draft4Validator(bqm_json_schema_v1).is_valid(dct):
+    if _is_bqm_json_schema_v1(dct):
         # BinaryQuadraticModel
 
         linear = {_decode_label(obj['label']): obj['bias'] for obj in dct['linear_terms']}
@@ -328,13 +334,20 @@ def bqm_decode_hook(dct, cls=None):
     return dct
 
 
+def _is_sampleset_json_schema_v1(dct):
+    # replaces jsonschema.Draft4Validator(sampleset_json_schema_v1).is_valid(dct)
+    # this function is obviously a lot less complete but since this is a
+    # deprecated format it's good enough for now
+    return all(field in dct for field in sampleset_json_schema_v1["required"])
+
+
 def sampleset_decode_hook(dct, cls=None):
     # deprecated
 
     if cls is None:
         cls = SampleSet
 
-    if jsonschema.Draft4Validator(sampleset_json_schema_v1).is_valid(dct):
+    if _is_sampleset_json_schema_v1(dct):
         # SampleSet
 
         vartype = Vartype[dct['variable_type']]
