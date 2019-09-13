@@ -23,7 +23,7 @@ from collections import OrderedDict
 import numpy as np
 
 
-class TestFixedShapeAPI:
+class TestBQMAPI:
     """
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
@@ -34,6 +34,12 @@ class TestFixedShapeAPI:
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
             self.assertEqual(bqm.get_linear(u), 1)
+
+    # def test_construction_nans(self):
+    #     bqm = self.BQM(np.nan((5, 5)))
+    #     self.assertEqual(bqm.shape, (5, 0))
+    #     for u in range(5):
+    #         self.assertEqual(bqm.get_linear(u), 0)
 
     def test_get_linear_disconnected_string_labels(self):
         bqm = self.BQM(({'a': -1, 'b': 1}, {}))
@@ -129,7 +135,7 @@ class TestFixedShapeAPI:
         self.assertEqual(self.BQM(0).num_interactions, 0)
 
 
-class TestMutableShapeAPI:
+class TestShapeableBQMAPI(TestBQMAPI):
     def test_add_variable_exception(self):
         bqm = self.BQM()
         with self.assertRaises(TypeError):

@@ -17,14 +17,10 @@ import unittest
 
 from dimod.bqm.adjmapbqm import AdjMapBQM
 
-from tests.test_bqm import TestFixedShapeAPI, TestMutableShapeAPI
+from tests.test_bqm import TestShapeableBQMAPI
 
 
-class TestAdjMapFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
-    BQM = AdjMapBQM
-
-
-class TestAdjMapMutableShapeAPI(TestMutableShapeAPI, unittest.TestCase):
+class TestAdjMap(TestShapeableBQMAPI, unittest.TestCase):
     BQM = AdjMapBQM
 
 
