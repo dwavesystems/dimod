@@ -20,10 +20,10 @@ import numpy as np
 
 from dimod.bqm.adjarraybqm import AdjArrayBQM
 
-from tests.test_bqm import TestFixedShapeAPI
+from tests.test_bqm import TestBQMAPI
 
 
-class TestAdjArrayFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
+class TestAdjArray(TestBQMAPI, unittest.TestCase):
     BQM = AdjArrayBQM
 
 
