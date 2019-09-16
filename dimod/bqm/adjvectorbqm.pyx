@@ -24,9 +24,6 @@ except ImportError:
 
 from numbers import Integral
 
-from cython.operator cimport postincrement, dereference as deref
-from libcpp.algorithm cimport lower_bound
-
 import numpy as np
 
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
@@ -34,8 +31,10 @@ from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                set_linear, set_quadratic,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction)
+from dimod.core.bqm import ShapeableBQM
 
-cdef class AdjVectorBQM:
+
+cdef class cyAdjVectorBQM:
     """
     """
 
@@ -249,3 +248,7 @@ cdef class AdjVectorBQM:
             vi = self.label_to_idx(self.add_variable(v))
 
         set_quadratic(self.adj_, ui, vi, b)
+
+
+class AdjVectorBQM(cyAdjVectorBQM, ShapeableBQM):
+    pass
