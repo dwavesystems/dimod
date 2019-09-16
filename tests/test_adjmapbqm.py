@@ -15,7 +15,7 @@
 # =============================================================================
 import unittest
 
-from dimod.bqm.adjmapbqm import AdjMapBQM
+from dimod.bqm import AdjMapBQM
 
 from tests.test_bqm import TestShapeableBQMAPI
 

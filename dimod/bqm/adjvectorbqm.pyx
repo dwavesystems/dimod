@@ -123,10 +123,6 @@ cdef class AdjVectorBQM:
     def num_interactions(self):
         return num_interactions(self.adj_)
 
-    @property
-    def shape(self):
-        return self.num_variables, self.num_interactions
-
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
         cdef VarIndex vi
@@ -180,13 +176,6 @@ cdef class AdjVectorBQM:
             self._idx_to_label[vi] = label
 
         return label
-
-    def has_variable(self, object v):
-        try:
-            self.label_to_idx(v)
-        except ValueError:
-            return False
-        return True
 
     def iter_variables(self):
         cdef object v

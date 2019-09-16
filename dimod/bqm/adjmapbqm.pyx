@@ -137,11 +137,6 @@ cdef class AdjMapBQM:
     def num_interactions(self):
         return num_interactions(self.adj_)
 
-    @property
-    def shape(self):
-        return self.num_variables, self.num_interactions
-
-
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
         cdef VarIndex vi
@@ -229,19 +224,6 @@ cdef class AdjMapBQM:
 
         return label
 
-    def has_variable(self, object v):
-        """Return True if the binary quadratic model contains variable v.
-
-        Args:
-            v (hashable):
-                A variable in the binary quadratic model.
-
-        """
-        try:
-            self.label_to_idx(v)
-        except ValueError:
-            return False
-        return True
 
     def iter_variables(self):
         cdef object v
