@@ -90,6 +90,13 @@ class TestBQMAPI:
         self.assertFalse(bqm.has_variable(0))
         self.assertFalse(bqm.has_variable(2))
 
+    def test_iter_variables(self):
+        h = OrderedDict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J))
+
+        self.assertEqual(list(bqm.iter_variables()), ['a', 1, 3])
+
     def test_set_linear(self):
         # does not change shape
         bqm = self.BQM(np.triu(np.ones((3, 3))))
