@@ -382,12 +382,6 @@ cdef class cyAdjMapBQM:
 
         set_quadratic(self.adj_, ui, vi, b)
 
-    # def to_lists(self, object sort_and_reduce=True):
-    #     """Dump to a list of lists, mostly for testing"""
-    #     # todo: use functions
-    #     return list((list(neighbourhood.items()), bias)
-    #                 for neighbourhood, bias in self.adj_)
-
     def to_adjarray(self):
         # this is always a copy
 
