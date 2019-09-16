@@ -28,7 +28,7 @@ cimport cython
 
 import numpy as np
 
-from dimod.bqm.adjmapbqm cimport AdjMapBQM
+from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
@@ -36,6 +36,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                set_linear,
                                set_quadratic,
                                )
+from dimod.core.bqm import BQM
 
 
 # developer note: we use a function rather than a method because we want to
@@ -80,7 +81,7 @@ cdef Bias energy(vector[pair[size_t, Bias]] invars,
     return energy
 
 
-cdef class AdjArrayBQM:
+cdef class cyAdjArrayBQM:
     """
 
     This can be instantiated in several ways:
@@ -124,12 +125,12 @@ cdef class AdjArrayBQM:
         cdef size_t num_variables, num_interactions, degree
         cdef VarIndex ui, vi
         cdef Bias b
-        cdef AdjArrayBQM other
+        cdef cyAdjArrayBQM other
 
         if isinstance(arg1, Integral):
             self.invars_.resize(arg1)
         elif isinstance(arg1, tuple):
-            self.__init__(AdjMapBQM(arg1))  # via the map version
+            self.__init__(cyAdjMapBQM(arg1))  # via the map version
         elif hasattr(arg1, "to_adjarray"):
 
             # this is not very elegent...
@@ -275,3 +276,7 @@ cdef class AdjArrayBQM:
     def to_lists(self):
         """Dump to two lists, mostly for testing"""
         return list(self.invars_), list(self.outvars_)
+
+
+class AdjArrayBQM(cyAdjArrayBQM, BQM):
+    pass
