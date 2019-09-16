@@ -26,20 +26,18 @@ from numbers import Integral
 
 cimport cython
 
-from cython.operator cimport dereference as deref
-
 import numpy as np
 
-from dimod.bqm.adjarraybqm cimport AdjArrayBQM
+from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
+from dimod.core.bqm import ShapeableBQM
 
 
-
-cdef class AdjMapBQM:
+cdef class cyAdjMapBQM:
     """
     """
 
@@ -395,7 +393,7 @@ cdef class AdjMapBQM:
 
         # make a 0-length BQM but then manually resize it, note that this
         # treats them as vectors
-        cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
+        cdef cyAdjArrayBQM bqm = cyAdjArrayBQM()  # empty
         bqm.invars_.resize(self.adj_.size())
         bqm.outvars_.resize(2*self.num_interactions)
 
@@ -418,3 +416,6 @@ cdef class AdjMapBQM:
         bqm._idx_to_label.update(self._idx_to_label)
 
         return bqm
+
+class AdjMapBQM(cyAdjMapBQM, ShapeableBQM):
+    pass
