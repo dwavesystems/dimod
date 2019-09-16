@@ -40,7 +40,7 @@ ctypedef fused SampleVar:
     double  # np.float64
 
 
-cdef class AdjArrayBQM:
+cdef class cyAdjArrayBQM:
     cdef vector[pair[size_t, Bias]] invars_
     cdef vector[pair[VarIndex, Bias]] outvars_
 
