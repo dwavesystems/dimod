@@ -28,6 +28,10 @@ class TestBQMAPI:
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
 
+    def test__len__(self):
+        bqm = self.BQM(np.ones((107, 107)))
+        self.assertEqual(len(bqm), 107)
+
     def test_construction_symmetric(self):
         bqm = self.BQM(np.ones((5, 5)))
         for u, v in itertools.combinations(range(5), 2):

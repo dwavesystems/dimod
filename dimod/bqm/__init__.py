@@ -14,10 +14,18 @@
 #
 # =============================================================================
 
-__all__ = ['AdjArrayBQM']
+__all__ = ['AdjArrayBQM', 'AdjVectorBQM']
 
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.bqm.adjarraybqm import AdjArrayBQM as _AdjArrayBQM
+from dimod.bqm.adjmapbqm import AdjMapBQM as _AdjMapBQM
+from dimod.bqm.adjvectorbqm import AdjVectorBQM as _AdjVectorBQM
 
 class AdjArrayBQM(_AdjArrayBQM, BQM):
+    pass
+
+class AdjMapBQM(_AdjMapBQM, ShapeableBQM):
+    pass
+
+class AdjVectorBQM(_AdjVectorBQM, ShapeableBQM):
     pass
