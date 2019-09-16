@@ -432,7 +432,7 @@ cdef class AdjMapBQM:
                 outvar_idx += 1
 
         # set up the variable labels
-        bqm.label_to_idx.update(self._label_to_idx)
-        bqm.idx_to_label.update(self._idx_to_label)
+        bqm._label_to_idx.update(self._label_to_idx)
+        bqm._idx_to_label.update(self._idx_to_label)
 
         return bqm

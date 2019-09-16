@@ -114,8 +114,8 @@ cdef class AdjArrayBQM:
         self.index_dtype = np.dtype(np.uintc)
 
         # otherwise these would be None
-        self.label_to_idx = dict()
-        self.idx_to_label = dict()
+        self._label_to_idx = dict()
+        self._idx_to_label = dict()
 
 
     def __init__(self, object arg1=0):
@@ -136,8 +136,8 @@ cdef class AdjArrayBQM:
             other = arg1.to_adjarray()
             self.invars_ = other.invars_
             self.outvars_ = other.outvars_
-            self.label_to_idx = other.label_to_idx
-            self.idx_to_label = other.idx_to_label
+            self._label_to_idx = other._label_to_idx
+            self._idx_to_label = other._idx_to_label
         else:
             # assume it's dense
 
@@ -181,10 +181,6 @@ cdef class AdjArrayBQM:
                         self.outvars_[self.invars_[ui].first + degree].second = D[vi, ui] + D[ui, vi]
                         degree += 1
 
-                    
-    def __len__(self):
-        return self.num_variables
-
     @property
     def num_variables(self):
         return num_variables(self.invars_, self.outvars_)
@@ -193,36 +189,41 @@ cdef class AdjArrayBQM:
     def num_interactions(self):
         return num_interactions(self.invars_, self.outvars_)
 
-    @property
-    def shape(self):
-        return self.num_variables, self.num_interactions
+    cdef VarIndex label_to_idx(self, object v) except *:
+        """Get the index in the underlying array from the python label."""
+        cdef VarIndex vi
 
-    def has_variable(self, object v):
-        if v in self.label_to_idx:
-            return True
-        return (v in range(num_variables(self.invars_, self.outvars_)) and
-                v not in self.idx_to_label)  # not overwritten
+        try:
+            if not self._label_to_idx:
+                # there are no arbitrary labels so v must be integer labelled
+                vi = v
+            elif v in self._idx_to_label:
+                # v is an integer label that has been overwritten
+                vi = self._label_to_idx[v]
+            else:
+                vi = self._label_to_idx.get(v, v)
+        except (OverflowError, TypeError, KeyError) as ex:
+            raise ValueError("{} is not a variable".format(v)) from ex
+
+        if vi < 0 or vi >= num_variables(self.invars_, self.outvars_):
+            raise ValueError("{} is not a variable".format(v))
+
+        return vi
+
+    def iter_variables(self):
+        cdef object v
+        for v in range(self.num_variables):
+            yield self._idx_to_label.get(v, v)
 
     def get_linear(self, object v):
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
-
-        return get_linear(self.invars_, self.outvars_, vi)
+        return get_linear(self.invars_, self.outvars_, self.label_to_idx(v))
 
     def get_quadratic(self, object u, object v):
-        # todo: return default?
 
         if u == v:
             raise ValueError('No interaction between {} and {}'.format(u, v))
-
-        if not self.has_variable(u):
-            raise ValueError('{} is not a variable'.format(u))
-        cdef VarIndex ui = self.label_to_idx.get(u, u)
-
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        cdef VarIndex ui = self.label_to_idx(u)
+        cdef VarIndex vi = self.label_to_idx(v)
 
         cdef pair[Bias, bool] out = get_quadratic(self.invars_, self.outvars_,
                                                   ui, vi)
@@ -233,24 +234,14 @@ cdef class AdjArrayBQM:
         return out.first
 
     def set_linear(self, object v, Bias b):
-
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
-
-        set_linear(self.invars_, self.outvars_, vi, b)
+        set_linear(self.invars_, self.outvars_, self.label_to_idx(v), b)
 
     def set_quadratic(self, object u, object v, Bias b):
+
         if u == v:
             raise ValueError('No interaction between {} and {}'.format(u, v))
-
-        if not self.has_variable(u):
-            raise ValueError('{} is not a variable'.format(u))
-        cdef VarIndex ui = self.label_to_idx.get(u, u)
-
-        if not self.has_variable(v):
-            raise ValueError('{} is not a variable'.format(v))
-        cdef VarIndex vi = self.label_to_idx.get(v, v)
+        cdef VarIndex ui = self.label_to_idx(u)
+        cdef VarIndex vi = self.label_to_idx(v)
 
         cdef bool isset = set_quadratic(self.invars_, self.outvars_, ui, vi, b)
 

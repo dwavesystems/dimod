@@ -18,7 +18,7 @@ import unittest
 
 import numpy as np
 
-from dimod.bqm.adjarraybqm import AdjArrayBQM
+from dimod.bqm import AdjArrayBQM
 
 from tests.test_bqm import TestBQMAPI
 
