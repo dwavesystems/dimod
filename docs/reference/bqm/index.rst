@@ -10,3 +10,4 @@ Binary Quadratic Models
    binary_quadratic_model
    generators
    bqm_functions
+   sparse

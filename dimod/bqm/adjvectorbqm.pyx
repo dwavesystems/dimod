@@ -251,4 +251,4 @@ cdef class cyAdjVectorBQM:
 
 
 class AdjVectorBQM(cyAdjVectorBQM, ShapeableBQM):
-    pass
+    __doc__ = cyAdjVectorBQM.__doc__
