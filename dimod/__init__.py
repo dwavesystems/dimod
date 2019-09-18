@@ -16,6 +16,8 @@
 
 from __future__ import absolute_import
 
+from dimod.bqm import *
+
 from dimod.core import *
 import dimod.core
 
