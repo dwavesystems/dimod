@@ -81,6 +81,7 @@ cdef Bias energy(vector[pair[size_t, Bias]] invars,
     return energy
 
 
+@cython.embedsignature(True)
 cdef class cyAdjArrayBQM:
     """
 
@@ -188,6 +189,7 @@ cdef class cyAdjArrayBQM:
 
     @property
     def num_interactions(self):
+        """int: The number of interactions in the model."""
         return num_interactions(self.invars_, self.outvars_)
 
     cdef VarIndex label_to_idx(self, object v) except *:
@@ -279,4 +281,4 @@ cdef class cyAdjArrayBQM:
 
 
 class AdjArrayBQM(cyAdjArrayBQM, BQM):
-    pass
+    __doc__ = cyAdjArrayBQM.__doc__

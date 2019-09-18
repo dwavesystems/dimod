@@ -162,7 +162,8 @@ cdef class cyAdjMapBQM:
         Args:
             label (hashable, optional):
                 A label for the variable. Defaults to the length of the binary
-                quadratic model. See examples for relevant edge cases.
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
 
         Returns:
             hashable: The label of the added variable.
@@ -412,4 +413,4 @@ cdef class cyAdjMapBQM:
         return bqm
 
 class AdjMapBQM(cyAdjMapBQM, ShapeableBQM):
-    pass
+    __doc__ = cyAdjMapBQM.__doc__

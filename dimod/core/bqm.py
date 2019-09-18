@@ -26,10 +26,12 @@ class BQM:
 
     @abc.abstractproperty
     def num_interactions(self):
+        """int: The number of interactions in the model."""
         pass
 
     @abc.abstractproperty
     def num_variables(self):
+        """int: The number of variables in the model."""
         pass
 
     @abc.abstractmethod
@@ -55,13 +57,16 @@ class BQM:
     # mixins
 
     def __len__(self):
+        """The number of variables in the binary quadratic model."""
         return self.num_variables
 
     @property
     def shape(self):
+        """2-tuple: (num_variables, num_interactions)."""
         return self.num_variables, self.num_interactions
 
     def has_variable(self, v):
+        """Return True if v is a variable in the binary quadratic model."""
         try:
             self.get_linear(v)
         except ValueError:
@@ -72,7 +77,21 @@ class BQM:
 class ShapeableBQM(BQM):
     @abc.abstractmethod
     def add_variable(self, v=None):
-        """Should return the label of the added variable."""
+        """Add a variable to the binary quadratic model.
+
+        Args:
+            label (hashable, optional):
+                A label for the variable. Defaults to the length of the binary
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
+
+        Returns:
+            hashable: The label of the added variable.
+
+        Raises:
+            TypeError: If the label is not hashable.
+
+        """
         pass
 
     @abc.abstractmethod
