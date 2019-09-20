@@ -23,10 +23,14 @@ from collections import OrderedDict
 import numpy as np
 
 
-class TestFixedShapeAPI:
+class TestBQMAPI:
     """
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
+
+    def test__len__(self):
+        bqm = self.BQM(np.ones((107, 107)))
+        self.assertEqual(len(bqm), 107)
 
     def test_construction_symmetric(self):
         bqm = self.BQM(np.ones((5, 5)))
@@ -34,6 +38,12 @@ class TestFixedShapeAPI:
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
             self.assertEqual(bqm.get_linear(u), 1)
+
+    # def test_construction_nans(self):
+    #     bqm = self.BQM(np.nan((5, 5)))
+    #     self.assertEqual(bqm.shape, (5, 0))
+    #     for u in range(5):
+    #         self.assertEqual(bqm.get_linear(u), 0)
 
     def test_get_linear_disconnected_string_labels(self):
         bqm = self.BQM(({'a': -1, 'b': 1}, {}))
@@ -84,6 +94,13 @@ class TestFixedShapeAPI:
         self.assertFalse(bqm.has_variable(0))
         self.assertFalse(bqm.has_variable(2))
 
+    def test_iter_variables(self):
+        h = OrderedDict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J))
+
+        self.assertEqual(list(bqm.iter_variables()), ['a', 1, 3])
+
     def test_set_linear(self):
         # does not change shape
         bqm = self.BQM(np.triu(np.ones((3, 3))))
@@ -129,7 +146,7 @@ class TestFixedShapeAPI:
         self.assertEqual(self.BQM(0).num_interactions, 0)
 
 
-class TestMutableShapeAPI:
+class TestShapeableBQMAPI(TestBQMAPI):
     def test_add_variable_exception(self):
         bqm = self.BQM()
         with self.assertRaises(TypeError):

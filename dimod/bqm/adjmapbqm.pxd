@@ -30,7 +30,7 @@ ctypedef unsigned int VarIndex
 ctypedef double Bias
 
 
-cdef class AdjMapBQM:
+cdef class cyAdjMapBQM:
     cdef vector[pair[map[VarIndex, Bias], Bias]] adj_
 
     cdef readonly object dtype

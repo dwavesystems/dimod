@@ -40,7 +40,7 @@ ctypedef fused SampleVar:
     double  # np.float64
 
 
-cdef class AdjArrayBQM:
+cdef class cyAdjArrayBQM:
     cdef vector[pair[size_t, Bias]] invars_
     cdef vector[pair[VarIndex, Bias]] outvars_
 
@@ -49,6 +49,7 @@ cdef class AdjArrayBQM:
 
     # these are not public because the user has no way to access the underlying
     # variable indices
-    cdef object label_to_idx
-    cdef object idx_to_label
+    cdef object _label_to_idx
+    cdef object _idx_to_label
 
+    cdef VarIndex label_to_idx(self, object) except *

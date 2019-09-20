@@ -26,20 +26,18 @@ from numbers import Integral
 
 cimport cython
 
-from cython.operator cimport dereference as deref
-
 import numpy as np
 
-from dimod.bqm.adjarraybqm cimport AdjArrayBQM
+from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
+from dimod.core.bqm import ShapeableBQM
 
 
-
-cdef class AdjMapBQM:
+cdef class cyAdjMapBQM:
     """
     """
 
@@ -137,11 +135,6 @@ cdef class AdjMapBQM:
     def num_interactions(self):
         return num_interactions(self.adj_)
 
-    @property
-    def shape(self):
-        return self.num_variables, self.num_interactions
-
-
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
         cdef VarIndex vi
@@ -169,7 +162,8 @@ cdef class AdjMapBQM:
         Args:
             label (hashable, optional):
                 A label for the variable. Defaults to the length of the binary
-                quadratic model. See examples for relevant edge cases.
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
 
         Returns:
             hashable: The label of the added variable.
@@ -229,19 +223,6 @@ cdef class AdjMapBQM:
 
         return label
 
-    def has_variable(self, object v):
-        """Return True if the binary quadratic model contains variable v.
-
-        Args:
-            v (hashable):
-                A variable in the binary quadratic model.
-
-        """
-        try:
-            self.label_to_idx(v)
-        except ValueError:
-            return False
-        return True
 
     def iter_variables(self):
         cdef object v
@@ -402,18 +383,12 @@ cdef class AdjMapBQM:
 
         set_quadratic(self.adj_, ui, vi, b)
 
-    # def to_lists(self, object sort_and_reduce=True):
-    #     """Dump to a list of lists, mostly for testing"""
-    #     # todo: use functions
-    #     return list((list(neighbourhood.items()), bias)
-    #                 for neighbourhood, bias in self.adj_)
-
     def to_adjarray(self):
         # this is always a copy
 
         # make a 0-length BQM but then manually resize it, note that this
         # treats them as vectors
-        cdef AdjArrayBQM bqm = AdjArrayBQM()  # empty
+        cdef cyAdjArrayBQM bqm = cyAdjArrayBQM()  # empty
         bqm.invars_.resize(self.adj_.size())
         bqm.outvars_.resize(2*self.num_interactions)
 
@@ -432,7 +407,10 @@ cdef class AdjMapBQM:
                 outvar_idx += 1
 
         # set up the variable labels
-        bqm.label_to_idx.update(self._label_to_idx)
-        bqm.idx_to_label.update(self._idx_to_label)
+        bqm._label_to_idx.update(self._label_to_idx)
+        bqm._idx_to_label.update(self._idx_to_label)
 
         return bqm
+
+class AdjMapBQM(cyAdjMapBQM, ShapeableBQM):
+    __doc__ = cyAdjMapBQM.__doc__

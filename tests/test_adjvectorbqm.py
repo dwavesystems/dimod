@@ -15,14 +15,10 @@
 # =============================================================================
 import unittest
 
-from dimod.bqm.adjvectorbqm import AdjVectorBQM
+from dimod.bqm import AdjVectorBQM
 
-from tests.test_bqm import TestFixedShapeAPI, TestMutableShapeAPI
-
-
-class TestAdjMapFixedShapeAPI(TestFixedShapeAPI, unittest.TestCase):
-    BQM = AdjVectorBQM
+from tests.test_bqm import TestShapeableBQMAPI
 
 
-class TestAdjMapMutableShapeAPI(TestMutableShapeAPI, unittest.TestCase):
+class TestAdjVector(TestShapeableBQMAPI, unittest.TestCase):
     BQM = AdjVectorBQM

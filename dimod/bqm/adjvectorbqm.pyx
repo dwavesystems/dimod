@@ -24,9 +24,6 @@ except ImportError:
 
 from numbers import Integral
 
-from cython.operator cimport postincrement, dereference as deref
-from libcpp.algorithm cimport lower_bound
-
 import numpy as np
 
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
@@ -34,8 +31,10 @@ from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                set_linear, set_quadratic,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction)
+from dimod.core.bqm import ShapeableBQM
 
-cdef class AdjVectorBQM:
+
+cdef class cyAdjVectorBQM:
     """
     """
 
@@ -123,10 +122,6 @@ cdef class AdjVectorBQM:
     def num_interactions(self):
         return num_interactions(self.adj_)
 
-    @property
-    def shape(self):
-        return self.num_variables, self.num_interactions
-
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
         cdef VarIndex vi
@@ -180,13 +175,6 @@ cdef class AdjVectorBQM:
             self._idx_to_label[vi] = label
 
         return label
-
-    def has_variable(self, object v):
-        try:
-            self.label_to_idx(v)
-        except ValueError:
-            return False
-        return True
 
     def iter_variables(self):
         cdef object v
@@ -260,3 +248,7 @@ cdef class AdjVectorBQM:
             vi = self.label_to_idx(self.add_variable(v))
 
         set_quadratic(self.adj_, ui, vi, b)
+
+
+class AdjVectorBQM(cyAdjVectorBQM, ShapeableBQM):
+    __doc__ = cyAdjVectorBQM.__doc__
