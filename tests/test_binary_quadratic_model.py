@@ -1065,8 +1065,9 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertEqual(binary_bqm.energy({'a': 0, 'b': 0, 'c': 0}), spin_bqm.energy({'c': -1, 'b': -1}))
 
     def test_contract_variables(self):
-        bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.BINARY)
-        original_bqm = bqm.copy()
+        original_bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2,
+                                                  dimod.BINARY)
+        bqm = original_bqm.copy()
 
         bqm.contract_variables('a', 'b')
         self.assertNotIn('b', bqm.linear)
@@ -1077,10 +1078,21 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertAlmostEqual(bqm.energy({'a': 0, 'c': 0}), original_bqm.energy({'a': 0, 'b': 0, 'c': 0}))
         self.assertAlmostEqual(bqm.energy({'a': 1, 'c': 0}), original_bqm.energy({'a': 1, 'b': 1, 'c': 0}))
 
+        bqm = original_bqm.copy()
+
+        bqm.contract_variables('a', 'b', uv_equal=False)
+        self.assertNotIn('b', bqm.linear)
+        self.assertConsistentBQM(bqm)
+
+        self.assertAlmostEqual(bqm.energy({'a': 0, 'c': 1}), original_bqm.energy({'a': 0, 'b': 1, 'c': 1}))
+        self.assertAlmostEqual(bqm.energy({'a': 1, 'c': 1}), original_bqm.energy({'a': 1, 'b': 0, 'c': 1}))
+        self.assertAlmostEqual(bqm.energy({'a': 0, 'c': 0}), original_bqm.energy({'a': 0, 'b': 1, 'c': 0}))
+        self.assertAlmostEqual(bqm.energy({'a': 1, 'c': 0}), original_bqm.energy({'a': 1, 'b': 0, 'c': 0}))
+
         #
 
-        bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.SPIN)
-        original_bqm = bqm.copy()
+        original_bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.SPIN)
+        bqm = original_bqm.copy()
 
         bqm.contract_variables('a', 'b')
         self.assertNotIn('b', bqm.linear)
@@ -1091,6 +1103,17 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertAlmostEqual(bqm.energy({'a': -1, 'c': -1}), original_bqm.energy({'a': -1, 'b': -1, 'c': -1}))
         self.assertAlmostEqual(bqm.energy({'a': +1, 'c': -1}), original_bqm.energy({'a': +1, 'b': +1, 'c': -1}))
 
+        bqm = original_bqm.copy()
+
+        bqm.contract_variables('a', 'b', uv_equal=False)
+        self.assertNotIn('b', bqm.linear)
+        self.assertConsistentBQM(bqm)
+
+        self.assertAlmostEqual(bqm.energy({'a': -1, 'c': +1}), original_bqm.energy({'a': -1, 'b': +1, 'c': +1}))
+        self.assertAlmostEqual(bqm.energy({'a': +1, 'c': +1}), original_bqm.energy({'a': +1, 'b': -1, 'c': +1}))
+        self.assertAlmostEqual(bqm.energy({'a': -1, 'c': -1}), original_bqm.energy({'a': -1, 'b': +1, 'c': -1}))
+        self.assertAlmostEqual(bqm.energy({'a': +1, 'c': -1}), original_bqm.energy({'a': +1, 'b': -1, 'c': -1}))
+
         #
 
         with self.assertRaises(ValueError):
@@ -1098,6 +1121,21 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             bqm.contract_variables('a', 1)
+
+    def test_contract_all_variables(self):
+        original_bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7},
+                                                  {('a', 'b'): -1, ('b', 'c'): 1, ('c', 'd'): 0.5}, 1.2,
+                                                  dimod.BINARY)
+        bqm = original_bqm.copy()
+        contractible_variables = {('a', 'b'): True, ('b','c'): False, ('c','d'): False}
+
+        variable_map = bqm.contract_all_variables(contractible_variables)
+        self.assertNotIn('b', bqm.linear)
+        self.assertConsistentBQM(bqm)
+
+        self.assertAlmostEqual(bqm.energy({'a': 0}), original_bqm.energy({'a': 0, 'b': 0, 'c': 1, 'd': 0}))
+        self.assertAlmostEqual(bqm.energy({'a': 1}), original_bqm.energy({'a': 1, 'b': 1, 'c': 0, 'd': 1}))
+        self.assertEqual(variable_map, {'a': ('a', True), 'b': ('a', True), 'c': ('a', False), 'd': ('a', True)})
 
     def test_relabel_typical(self):
         linear = {0: .5, 1: 1.3}
