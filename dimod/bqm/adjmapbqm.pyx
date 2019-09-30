@@ -182,7 +182,7 @@ cdef class cyAdjMapBQM:
 
         Examples:
 
-            >>> bqm = dimod.AdjMapBQM()
+            >>> bqm = dimod.AdjMapBQM('SPIN')
             >>> bqm.add_variable()
             0
             >>> bqm.add_variable('a')
@@ -190,7 +190,7 @@ cdef class cyAdjMapBQM:
             >>> bqm.add_variable()
             2
 
-            >>> bqm = dimod.AdjMapBQM()
+            >>> bqm = dimod.AdjMapBQM('SPIN')
             >>> bqm.add_variable(1)
             1
             >>> bqm.add_variable()  # 1 is taken
