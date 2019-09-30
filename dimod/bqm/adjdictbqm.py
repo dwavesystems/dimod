@@ -47,9 +47,12 @@ class AdjDictBQM(ShapeableBQM):
 
         # handle the case where only vartype is given
         if vartype is None:
-            vartype = obj
-            obj = 0
-        self._vartype = as_vartype(vartype)  # map to correct type
+            try:
+                vartype = obj.vartype
+            except AttributeError:
+                vartype = obj
+                obj = 0
+        self._vartype = as_vartype(vartype)
 
         if isinstance(obj, Integral):
             adj.update((v, {v: dtype.type(0)}) for v in range(obj))
