@@ -153,7 +153,7 @@ class AdjDictBQM(ShapeableBQM):
 
         Examples:
 
-            >>> bqm = dimod.AdjDictBQM()
+            >>> bqm = dimod.AdjDictBQM('SPIN')
             >>> bqm.add_variable()
             0
             >>> bqm.add_variable('a')
@@ -161,7 +161,7 @@ class AdjDictBQM(ShapeableBQM):
             >>> bqm.add_variable()
             2
 
-            >>> bqm = dimod.AdjDictBQM()
+            >>> bqm = dimod.AdjDictBQM('SPIN')
             >>> bqm.add_variable(1)
             1
             >>> bqm.add_variable()  # 1 is taken
