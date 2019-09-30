@@ -44,6 +44,8 @@ cdef class cyAdjArrayBQM:
     cdef vector[pair[size_t, Bias]] invars_
     cdef vector[pair[VarIndex, Bias]] outvars_
 
+    cdef public Bias offset
+
     cdef readonly object vartype
 
     cdef readonly object dtype

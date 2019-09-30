@@ -74,6 +74,8 @@ cdef class cyAdjVectorBQM:
         elif isinstance(obj, tuple):
             if len(obj) == 2:
                 linear, quadratic = obj
+            elif len(obj) == 3:
+                linear, quadratic, self.offset = obj
             else:
                 raise ValueError()
 

@@ -82,6 +82,8 @@ cdef class cyAdjMapBQM:
         elif isinstance(obj, tuple):
             if len(obj) == 2:
                 linear, quadratic = obj
+            elif len(obj) == 3:
+                linear, quadratic, self.offset = obj
             else:
                 raise ValueError()
 
@@ -412,6 +414,8 @@ cdef class cyAdjMapBQM:
             for outvar in self.adj_[u].first:
                 bqm.outvars_[outvar_idx] = outvar
                 outvar_idx += 1
+
+        bqm.offset = self.offset
 
         # set up the variable labels
         bqm._label_to_idx.update(self._label_to_idx)
