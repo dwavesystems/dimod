@@ -56,6 +56,8 @@ class AdjDictBQM(ShapeableBQM):
         elif isinstance(obj, tuple):
             if len(obj) == 2:
                 linear, quadratic = obj
+            elif len(obj) == 3:
+                linear, quadratic, self.offset = obj
             else:
                 raise ValueError()
 
@@ -104,6 +106,24 @@ class AdjDictBQM(ShapeableBQM):
     def num_interactions(self):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
+
+    @property
+    def offset(self):
+        try:
+            return self._offset
+        except AttributeError:
+            pass
+        self.offset = 0  # type coersion etc
+        return self.offset
+
+    @offset.setter
+    def offset(self, offset):
+        # we would actually like to use dtype:
+        # self._offset = self.dtype.type(offset)
+        # however, cython by default returns floats for our current bias type
+        # so to keep this consistent with the other bqms we return a python
+        # float
+        self._offset = float(offset)
 
     @property
     def vartype(self):
