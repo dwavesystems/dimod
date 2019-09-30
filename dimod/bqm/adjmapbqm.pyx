@@ -59,8 +59,11 @@ cdef class cyAdjMapBQM:
 
         # handle the case where only vartype is given
         if vartype is None:
-            vartype = obj
-            obj = 0
+            try:
+                vartype = obj.vartype
+            except AttributeError:
+                vartype = obj
+                obj = 0
         self.vartype = as_vartype(vartype)
 
         cdef Bias [:, :] D  # in case it's dense

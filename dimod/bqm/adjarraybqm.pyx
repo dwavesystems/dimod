@@ -96,7 +96,7 @@ cdef class cyAdjArrayBQM:
                 dict[int, bias]
                 sequence[bias]  *NOT IMPLEMENTED YET*
 
-        AdjArrayBQM(bqm, vartype)
+        AdjArrayBQM(bqm)
             Where bqm is another binary quadratic model (equivalent to
             bqm.to_adjarray())
             *NOT IMPLEMENTED YET*
