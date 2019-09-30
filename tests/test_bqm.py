@@ -129,6 +129,24 @@ class TestBQMAPI:
 
         self.assertEqual(list(bqm.iter_variables()), ['a', 1, 3])
 
+    def test_offset(self):
+        h = dict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J), 'SPIN')
+        self.assertEqual(bqm.offset, 0)
+        # cython does not easily allow us to return numpy types
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
+        h = dict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J, 1.5), 'SPIN')
+        self.assertEqual(bqm.offset, 1.5)
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
+        bqm.offset = 6
+        self.assertEqual(bqm.offset, 6)
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
     def test_set_linear(self):
         # does not change shape
         bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)

@@ -148,6 +148,7 @@ cdef class cyAdjArrayBQM:
             other = obj.to_adjarray()
             self.invars_ = other.invars_
             self.outvars_ = other.outvars_
+            self.offset = other.offset
             self._label_to_idx = other._label_to_idx
             self._idx_to_label = other._idx_to_label
         else:
