@@ -37,6 +37,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                set_quadratic,
                                )
 from dimod.core.bqm import BQM
+from dimod.vartypes import as_vartype
 
 
 # developer note: we use a function rather than a method because we want to
@@ -120,7 +121,16 @@ cdef class cyAdjArrayBQM:
         self._idx_to_label = dict()
 
 
-    def __init__(self, object arg1=0):
+    def __init__(self, object obj=0, object vartype=None):
+
+        # handle the case where only vartype is given
+        if vartype is None:
+            try:
+                vartype = obj.vartype
+            except AttributeError:
+                vartype = obj
+                obj = 0
+        self.vartype = as_vartype(vartype)
         
         cdef Bias [:, :] D  # in case it's dense
         cdef size_t num_variables, num_interactions, degree
@@ -128,14 +138,14 @@ cdef class cyAdjArrayBQM:
         cdef Bias b
         cdef cyAdjArrayBQM other
 
-        if isinstance(arg1, Integral):
-            self.invars_.resize(arg1)
-        elif isinstance(arg1, tuple):
-            self.__init__(cyAdjMapBQM(arg1))  # via the map version
-        elif hasattr(arg1, "to_adjarray"):
+        if isinstance(obj, Integral):
+            self.invars_.resize(obj)
+        elif isinstance(obj, tuple):
+            self.__init__(cyAdjMapBQM(obj, vartype))  # via the map version
+        elif hasattr(obj, "to_adjarray"):
 
             # this is not very elegent...
-            other = arg1.to_adjarray()
+            other = obj.to_adjarray()
             self.invars_ = other.invars_
             self.outvars_ = other.outvars_
             self._label_to_idx = other._label_to_idx
@@ -143,7 +153,7 @@ cdef class cyAdjArrayBQM:
         else:
             # assume it's dense
 
-            D = np.atleast_2d(np.asarray(arg1, dtype=self.dtype))
+            D = np.atleast_2d(np.asarray(obj, dtype=self.dtype))
 
             num_variables = D.shape[0]
 

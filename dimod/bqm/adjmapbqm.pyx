@@ -35,6 +35,7 @@ from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
 from dimod.core.bqm import ShapeableBQM
+from dimod.vartypes import as_vartype
 
 
 cdef class cyAdjMapBQM:
@@ -54,7 +55,13 @@ cdef class cyAdjMapBQM:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __init__(self, object arg1=0):
+    def __init__(self, object obj=0, object vartype=None):
+
+        # handle the case where only vartype is given
+        if vartype is None:
+            vartype = obj
+            obj = 0
+        self.vartype = as_vartype(vartype)
 
         cdef Bias [:, :] D  # in case it's dense
         cdef size_t num_variables, i
@@ -64,17 +71,17 @@ cdef class cyAdjMapBQM:
 
         cdef map[VarIndex, Bias].iterator Nv_it, Nu_it  # neighbourhood iterators
 
-        if isinstance(arg1, Integral):
-            if arg1 < 0:
+        if isinstance(obj, Integral):
+            if obj < 0:
                 raise ValueError
-            num_variables = arg1
+            num_variables = obj
             # we could do this in bulk with a resize but let's try using the
             # functions instead
             for i in range(num_variables):
                 add_variable(self.adj_)
-        elif isinstance(arg1, tuple):
-            if len(arg1) == 2:
-                linear, quadratic = arg1
+        elif isinstance(obj, tuple):
+            if len(obj) == 2:
+                linear, quadratic = obj
             else:
                 raise ValueError()
 
@@ -90,12 +97,12 @@ cdef class cyAdjMapBQM:
             else:
                 raise NotImplementedError
 
-        elif hasattr(arg1, "to_adjvector"):
+        elif hasattr(obj, "to_adjvector"):
             # we might want a more generic is_bqm function or similar
             raise NotImplementedError  # update docstring
         else:
             # assume it's dense
-            D = np.atleast_2d(np.asarray(arg1, dtype=self.dtype))
+            D = np.atleast_2d(np.asarray(obj, dtype=self.dtype))
 
             num_variables = D.shape[0]
 
@@ -388,7 +395,7 @@ cdef class cyAdjMapBQM:
 
         # make a 0-length BQM but then manually resize it, note that this
         # treats them as vectors
-        cdef cyAdjArrayBQM bqm = cyAdjArrayBQM()  # empty
+        cdef cyAdjArrayBQM bqm = cyAdjArrayBQM(vartype=self.vartype)  # empty
         bqm.invars_.resize(self.adj_.size())
         bqm.outvars_.resize(2*self.num_interactions)
 

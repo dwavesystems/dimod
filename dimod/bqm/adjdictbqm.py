@@ -24,6 +24,7 @@ from numbers import Integral
 import numpy as np
 
 from dimod.core.bqm import ShapeableBQM
+from dimod.vartypes import as_vartype
 
 __all__ = ['AdjDictBQM']
 
@@ -31,7 +32,7 @@ __all__ = ['AdjDictBQM']
 class AdjDictBQM(ShapeableBQM):
     """
     """
-    def __init__(self, obj=0):
+    def __init__(self, obj=0, vartype=None):
         # we could actually have these variable but to keep this consistent
         # with the other BQMs we fix them for now
         self.dtype = dtype = np.dtype(np.double)
@@ -43,6 +44,12 @@ class AdjDictBQM(ShapeableBQM):
         # with the dict which would be more performant but complicate the
         # implementation
         self._adj = adj = OrderedDict()
+
+        # handle the case where only vartype is given
+        if vartype is None:
+            vartype = obj
+            obj = 0
+        self._vartype = as_vartype(vartype)  # map to correct type
 
         if isinstance(obj, Integral):
             adj.update((v, {v: dtype.type(0)}) for v in range(obj))
@@ -97,6 +104,14 @@ class AdjDictBQM(ShapeableBQM):
     def num_interactions(self):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
+
+    @property
+    def vartype(self):
+        """:class:`.Vartype`: The vartype of the binary quadratic model. One of
+        :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+        """
+        # so it's readonly
+        return self._vartype
 
     def add_variable(self, v=None):
         """Add a variable to the binary quadratic model.
