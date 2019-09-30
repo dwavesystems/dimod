@@ -88,25 +88,24 @@ cdef class cyAdjArrayBQM:
 
     This can be instantiated in several ways:
 
-        AdjVectorBQM()
+        AdjArrayBQM(vartype)
             Creates an empty binary quadratic model
 
-        AdjVectorBQM(n)
-            Where n is the number of nodes.
-
-        AdjVectorBQM((linear, [quadratic, [offset]]))
+        AdjArrayBQM((linear, [quadratic, [offset]]))
             Where linear, quadratic are:
                 dict[int, bias]
-                sequence[bias]
-            *NOT IMPLEMENTED YET*
+                sequence[bias]  *NOT IMPLEMENTED YET*
 
-        AdjVectorBQM(bqm)
+        AdjArrayBQM(bqm, vartype)
             Where bqm is another binary quadratic model (equivalent to
-            bqm.to_adjvector())
+            bqm.to_adjarray())
             *NOT IMPLEMENTED YET*
 
-        AdjVectorBQM(D)
+        AdjArrayBQM(D, vartype)
             Where D is a dense matrix D
+
+        AdjArrayBQM(n, vartype)
+            Where n is the number of nodes.
 
     """
 
