@@ -44,8 +44,10 @@ cdef class cyAdjArrayBQM:
     cdef vector[pair[size_t, Bias]] invars_
     cdef vector[pair[VarIndex, Bias]] outvars_
 
-    cdef public object dtype
-    cdef public object index_dtype
+    cdef readonly object vartype
+
+    cdef readonly object dtype
+    cdef readonly object index_dtype
 
     # these are not public because the user has no way to access the underlying
     # variable indices
