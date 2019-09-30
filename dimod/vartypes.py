@@ -100,15 +100,20 @@ def as_vartype(vartype):
 
     try:
         if isinstance(vartype, str):
-            vartype = Vartype[vartype]
+            vartype = Vartype[vartype]  # raises KeyError
         elif isinstance(vartype, frozenset):
-            vartype = Vartype(vartype)
+            vartype = Vartype(vartype)  # raise ValueError
         else:
+            # raises ValueError if not a bqm
+            # raises TypeError if not iterable
             vartype = Vartype(frozenset(vartype))
+    except (ValueError, KeyError, TypeError):
+        # avoid the "During handling of the above exception..." message that
+        # removes the full traceback
+        pass
+    else:
+        return vartype
 
-    except (ValueError, KeyError):
-        raise TypeError(("expected input vartype to be one of: "
-                         "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                         "Vartype.BINARY, 'BINARY', or {0, 1}."))
-
-    return vartype
+    raise TypeError(("expected input vartype to be one of: "
+                     "Vartype.SPIN, 'SPIN', {-1, 1}, "
+                     "Vartype.BINARY, 'BINARY', or {0, 1}."))
