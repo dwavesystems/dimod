@@ -129,6 +129,25 @@ class TestMakeQuadratic(unittest.TestCase):
 
             self.assertAlmostEqual(energy, min(reduced_energies))
 
+    def test_bug(self):
+        # from a bug report 
+        # https://support.dwavesys.com/hc/en-us/community/posts/360035719954-dimod-make-quadratic-returns-error
+        H = {(0, 1, 0, 1): -4.61898,
+             (0, 1, 1, 0): 4.61898,
+             (0, 2, 0, 2): -5.18353,
+             (0, 2, 2, 0): 5.18353,
+             (1, 0, 0, 1): 4.61898,
+             (1, 0, 1, 0): -4.61898,
+             (1, 2, 2, 1): 4.97017,
+             (2, 0, 0, 2): 5.18353,
+             (2, 0, 2, 0): -5.18353,
+             (2, 1, 1, 2): 4.97017,
+             }
+
+        bqm = make_quadratic(H, 1, 'BINARY')
+
+        self.assertEqual(set(bqm), {0, 1, 2})  # should be no aux variables
+
     def test_another(self):
         J = {(0, 1, 2): -1, (0, 1, 3): -1, (2, 3, 0): 1, (3, 2, 0): -1}
         h = {0: 0, 1: 0, 2: 0, 3: 0}

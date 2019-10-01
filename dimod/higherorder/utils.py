@@ -123,15 +123,10 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             raise ValueError("one of vartype and create_using must be provided")
     bqm.info['reduction'] = {}
 
-    new_poly = {}
-    for term, bias in iteritems(poly):
-        if len(term) == 0:
-            bqm.add_offset(bias)
-        elif len(term) == 1:
-            v, = term
-            bqm.add_variable(v, bias)
-        else:
-            new_poly[term] = bias
+    # we want to be able to mutate the polynomial so copy. We treat this as a
+    # dict but by using BinaryPolynomail we also get automatic handling of
+    # square terms
+    new_poly = BinaryPolynomial(poly, vartype=bqm.vartype)
 
     return _reduce_degree(bqm, new_poly, vartype, strength)
 
@@ -141,16 +136,23 @@ def _reduce_degree(bqm, poly, vartype, scale):
 
     if all(len(term) <= 2 for term in poly):
         # termination criteria, we are already quadratic
-        bqm.add_interactions_from(poly)
+        for term, bias in poly.items():
+            if len(term) == 0:
+                bqm.add_offset(bias)
+            elif len(term) == 1:
+                v, = term  # support py2
+                bqm.add_variable(v, bias)
+            else:
+                u, v = term  # support py2
+                bqm.add_interaction(u, v, bias)
         return bqm
 
     # determine which pair of variables appear most often
     paircounter = Counter()
     for term in poly:
-        if len(term) > 2:
-            for u, v in itertools.combinations(term, 2):
-                pair = frozenset((u, v))
-                paircounter[pair] += 1
+        for u, v in itertools.combinations(term, 2):
+            pair = frozenset((u, v))  # so order invarient
+            paircounter[pair] += 1
 
     pair, __ = paircounter.most_common(1)[0]
     u, v = pair
@@ -176,7 +178,7 @@ def _reduce_degree(bqm, poly, vartype, scale):
     constraint.scale(scale)
     bqm.update(constraint)
 
-    new_poly = {}
+    new_poly = BinaryPolynomial({}, bqm.vartype)
     for interaction, bias in poly.items():
         if u in interaction and v in interaction:
 
@@ -190,10 +192,7 @@ def _reduce_degree(bqm, poly, vartype, scale):
             interaction = tuple(s for s in interaction if s not in pair)
             interaction += (p,)
 
-        if interaction in new_poly:
-            new_poly[interaction] += bias
-        else:
-            new_poly[interaction] = bias
+        new_poly[interaction] = bias
 
     return _reduce_degree(bqm, new_poly, vartype, scale)
 
