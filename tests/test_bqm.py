@@ -22,6 +22,8 @@ from collections import OrderedDict
 
 import numpy as np
 
+import dimod
+
 
 class TestBQMAPI:
     """
@@ -29,11 +31,37 @@ class TestBQMAPI:
     """
 
     def test__len__(self):
-        bqm = self.BQM(np.ones((107, 107)))
+        bqm = self.BQM(np.ones((107, 107)), dimod.BINARY)
         self.assertEqual(len(bqm), 107)
 
+    def test_construction_args(self):
+        # make sure all the orderes are ok
+
+        with self.assertRaises(TypeError):
+            self.BQM()
+
+        bqm = self.BQM('SPIN')
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+        self.assertEqual(bqm.shape, (0, 0))
+
+        bqm = self.BQM(vartype='SPIN')
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+        self.assertEqual(bqm.shape, (0, 0))
+
+        bqm = self.BQM(5, 'SPIN')
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+        self.assertEqual(bqm.shape, (5, 0))
+
+        bqm = self.BQM(5, vartype='SPIN')
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+        self.assertEqual(bqm.shape, (5, 0))
+
+        bqm = self.BQM(vartype='SPIN', obj=5)
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+        self.assertEqual(bqm.shape, (5, 0))
+
     def test_construction_symmetric(self):
-        bqm = self.BQM(np.ones((5, 5)))
+        bqm = self.BQM(np.ones((5, 5)), 'BINARY')
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -46,14 +74,14 @@ class TestBQMAPI:
     #         self.assertEqual(bqm.get_linear(u), 0)
 
     def test_get_linear_disconnected_string_labels(self):
-        bqm = self.BQM(({'a': -1, 'b': 1}, {}))
+        bqm = self.BQM(({'a': -1, 'b': 1}, {}), dimod.BINARY)
         self.assertEqual(bqm.get_linear('a'), -1)
         self.assertEqual(bqm.get_linear('b'), 1)
         with self.assertRaises(ValueError):
             bqm.get_linear('c')
 
     def test_get_linear_disconnected(self):
-        bqm = self.BQM(5)
+        bqm = self.BQM(5, dimod.SPIN)
 
         for v in range(5):
             self.assertEqual(bqm.get_linear(v), 0)
@@ -65,7 +93,7 @@ class TestBQMAPI:
             bqm.get_linear(5)
 
     def test_get_quadratic_3x3array(self):
-        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]], dimod.SPIN)
 
         self.assertEqual(bqm.get_quadratic(0, 1), 1)
         self.assertEqual(bqm.get_quadratic(1, 0), 1)
@@ -84,7 +112,7 @@ class TestBQMAPI:
     def test_has_variable(self):
         h = OrderedDict([('a', -1), (1, -1), (3, -1)])
         J = {}
-        bqm = self.BQM((h, J))
+        bqm = self.BQM((h, J), dimod.SPIN)
 
         self.assertTrue(bqm.has_variable('a'))
         self.assertTrue(bqm.has_variable(1))
@@ -97,13 +125,31 @@ class TestBQMAPI:
     def test_iter_variables(self):
         h = OrderedDict([('a', -1), (1, -1), (3, -1)])
         J = {}
-        bqm = self.BQM((h, J))
+        bqm = self.BQM((h, J), dimod.SPIN)
 
         self.assertEqual(list(bqm.iter_variables()), ['a', 1, 3])
 
+    def test_offset(self):
+        h = dict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J), 'SPIN')
+        self.assertEqual(bqm.offset, 0)
+        # cython does not easily allow us to return numpy types
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
+        h = dict([('a', -1), (1, -1), (3, -1)])
+        J = {}
+        bqm = self.BQM((h, J, 1.5), 'SPIN')
+        self.assertEqual(bqm.offset, 1.5)
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
+        bqm.offset = 6
+        self.assertEqual(bqm.offset, 6)
+        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+
     def test_set_linear(self):
         # does not change shape
-        bqm = self.BQM(np.triu(np.ones((3, 3))))
+        bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
 
         self.assertEqual(bqm.get_linear(0), 1)
         bqm.set_linear(0, .5)
@@ -111,7 +157,7 @@ class TestBQMAPI:
 
     def test_set_quadratic(self):
         # does not change shape
-        bqm = self.BQM(np.triu(np.ones((3, 3))))
+        bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
 
         self.assertEqual(bqm.get_quadratic(0, 1), 1)
         bqm.set_quadratic(0, 1, .5)
@@ -122,38 +168,62 @@ class TestBQMAPI:
         self.assertEqual(bqm.get_quadratic(1, 0), -.5)
 
     def test_shape_3x3array(self):
-        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]])
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]], dimod.BINARY)
 
         self.assertEqual(bqm.shape, (3, 2))
         self.assertEqual(bqm.num_variables, 3)
         self.assertEqual(bqm.num_interactions, 2)
 
     def test_shape_disconnected(self):
-        bqm = self.BQM(5)
+        bqm = self.BQM(5, dimod.BINARY)
 
         self.assertEqual(bqm.shape, (5, 0))
         self.assertEqual(bqm.num_variables, 5)
         self.assertEqual(bqm.num_interactions, 0)
 
     def test_shape_empty(self):
-        self.assertEqual(self.BQM().shape, (0, 0))
-        self.assertEqual(self.BQM(0).shape, (0, 0))
+        self.assertEqual(self.BQM(dimod.SPIN).shape, (0, 0))
+        self.assertEqual(self.BQM(0, dimod.SPIN).shape, (0, 0))
 
-        self.assertEqual(self.BQM().num_variables, 0)
-        self.assertEqual(self.BQM(0).num_variables, 0)
+        self.assertEqual(self.BQM(dimod.SPIN).num_variables, 0)
+        self.assertEqual(self.BQM(0, dimod.SPIN).num_variables, 0)
 
-        self.assertEqual(self.BQM().num_interactions, 0)
-        self.assertEqual(self.BQM(0).num_interactions, 0)
+        self.assertEqual(self.BQM(dimod.SPIN).num_interactions, 0)
+        self.assertEqual(self.BQM(0, dimod.SPIN).num_interactions, 0)
+
+    def test_vartype(self):
+        bqm = self.BQM(vartype='SPIN')
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+
+        bqm = self.BQM(vartype=dimod.SPIN)
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+
+        bqm = self.BQM(vartype=(-1, 1))
+        self.assertEqual(bqm.vartype, dimod.SPIN)
+
+        bqm = self.BQM(vartype='BINARY')
+        self.assertEqual(bqm.vartype, dimod.BINARY)
+
+        bqm = self.BQM(vartype=dimod.BINARY)
+        self.assertEqual(bqm.vartype, dimod.BINARY)
+
+        bqm = self.BQM(vartype=(0, 1))
+        self.assertEqual(bqm.vartype, dimod.BINARY)
+
+    def test_vartype_readonly(self):
+        bqm = self.BQM(vartype='SPIN')
+        with self.assertRaises(AttributeError):
+            bqm.vartype = dimod.BINARY
 
 
 class TestShapeableBQMAPI(TestBQMAPI):
     def test_add_variable_exception(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         with self.assertRaises(TypeError):
             bqm.add_variable([])
 
     def test_add_variable_labelled(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         bqm.add_variable('a')
         bqm.add_variable(1)
         self.assertEqual(bqm.shape, (2, 0))
@@ -163,7 +233,7 @@ class TestShapeableBQMAPI(TestBQMAPI):
         self.assertEqual(list(bqm.iter_variables()), ['a', 1, 2])
 
     def test_add_variable_int_labelled(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         self.assertEqual(bqm.add_variable(1), 1)
         self.assertEqual(bqm.add_variable(), 0)  # 1 is already taken
         self.assertEqual(bqm.shape, (2, 0))
@@ -171,14 +241,14 @@ class TestShapeableBQMAPI(TestBQMAPI):
         self.assertEqual(bqm.shape, (3, 0))
 
     def test_add_variable_unlabelled(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         bqm.add_variable()
         bqm.add_variable()
         self.assertEqual(bqm.shape, (2, 0))
         self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
     def test_pop_variable_labelled(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         bqm.add_variable('a')
         bqm.add_variable(1)
         bqm.add_variable(0)
@@ -189,14 +259,14 @@ class TestShapeableBQMAPI(TestBQMAPI):
             bqm.pop_variable()
 
     def test_pop_variable_unlabelled(self):
-        bqm = self.BQM(2)
+        bqm = self.BQM(2, dimod.BINARY)
         self.assertEqual(bqm.pop_variable(), 1)
         self.assertEqual(bqm.pop_variable(), 0)
         with self.assertRaises(ValueError):
             bqm.pop_variable()
 
     def test_remove_interaction(self):
-        bqm = self.BQM(np.triu(np.ones((3, 3))))
+        bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
         self.assertTrue(bqm.remove_interaction(0, 1))
         self.assertFalse(bqm.remove_interaction(0, 1))
         self.assertEqual(bqm.shape, (3, 2))
@@ -204,7 +274,7 @@ class TestShapeableBQMAPI(TestBQMAPI):
             bqm.get_quadratic(0, 1)
 
     def test_set_quadratic_exception(self):
-        bqm = self.BQM()
+        bqm = self.BQM(dimod.SPIN)
         with self.assertRaises(TypeError):
             bqm.set_quadratic([], 1, .5)
         with self.assertRaises(TypeError):

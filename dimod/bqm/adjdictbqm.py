@@ -24,6 +24,7 @@ from numbers import Integral
 import numpy as np
 
 from dimod.core.bqm import ShapeableBQM
+from dimod.vartypes import as_vartype
 
 __all__ = ['AdjDictBQM']
 
@@ -31,7 +32,7 @@ __all__ = ['AdjDictBQM']
 class AdjDictBQM(ShapeableBQM):
     """
     """
-    def __init__(self, obj=0):
+    def __init__(self, obj=0, vartype=None):
         # we could actually have these variable but to keep this consistent
         # with the other BQMs we fix them for now
         self.dtype = dtype = np.dtype(np.double)
@@ -44,11 +45,22 @@ class AdjDictBQM(ShapeableBQM):
         # implementation
         self._adj = adj = OrderedDict()
 
+        # handle the case where only vartype is given
+        if vartype is None:
+            try:
+                vartype = obj.vartype
+            except AttributeError:
+                vartype = obj
+                obj = 0
+        self._vartype = as_vartype(vartype)
+
         if isinstance(obj, Integral):
             adj.update((v, {v: dtype.type(0)}) for v in range(obj))
         elif isinstance(obj, tuple):
             if len(obj) == 2:
                 linear, quadratic = obj
+            elif len(obj) == 3:
+                linear, quadratic, self.offset = obj
             else:
                 raise ValueError()
 
@@ -98,6 +110,32 @@ class AdjDictBQM(ShapeableBQM):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
 
+    @property
+    def offset(self):
+        try:
+            return self._offset
+        except AttributeError:
+            pass
+        self.offset = 0  # type coersion etc
+        return self.offset
+
+    @offset.setter
+    def offset(self, offset):
+        # we would actually like to use dtype:
+        # self._offset = self.dtype.type(offset)
+        # however, cython by default returns floats for our current bias type
+        # so to keep this consistent with the other bqms we return a python
+        # float
+        self._offset = float(offset)
+
+    @property
+    def vartype(self):
+        """:class:`.Vartype`: The vartype of the binary quadratic model. One of
+        :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+        """
+        # so it's readonly
+        return self._vartype
+
     def add_variable(self, v=None):
         """Add a variable to the binary quadratic model.
 
@@ -115,7 +153,7 @@ class AdjDictBQM(ShapeableBQM):
 
         Examples:
 
-            >>> bqm = dimod.AdjDictBQM()
+            >>> bqm = dimod.AdjDictBQM('SPIN')
             >>> bqm.add_variable()
             0
             >>> bqm.add_variable('a')
@@ -123,7 +161,7 @@ class AdjDictBQM(ShapeableBQM):
             >>> bqm.add_variable()
             2
 
-            >>> bqm = dimod.AdjDictBQM()
+            >>> bqm = dimod.AdjDictBQM('SPIN')
             >>> bqm.add_variable(1)
             1
             >>> bqm.add_variable()  # 1 is taken
