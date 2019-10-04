@@ -316,15 +316,31 @@ def graph_argument(*arg_names, **options):
                 # an integer, cast to a complete graph
                 kwargs[name] = (list(range(G)), list(itertools.combinations(range(G), 2)))
 
-            elif isinstance(G, abc.Sequence) and len(G) == 2:
-                # is a pair nodes/edges
-                if isinstance(G[0], integer_types):
-                    # if nodes is an int
-                    kwargs[name] = (list(range(G[0])), G[1])
-
-            elif isinstance(G, abc.Sequence) and all(len(edge) == 2 for edge in G):
-                # is an edgelist
-                kwargs[name] = (list(set().union(*G)), G)
+            elif isinstance(G, abc.Sequence):
+                if len(G) != 2:
+                    # edgelist
+                    kwargs[name] = (list(set().union(*G)), G)
+                else:  # len(G) == 2
+                    # need to determine if this is a nodes/edges pair or an
+                    # edgelist
+                    if isinstance(G[0], integer_types):
+                        # nodes are an int so definitely nodelist
+                        kwargs[name] = (list(range(G[0])), G[1])
+                    elif all(isinstance(e, abc.Sequence) and len(e) == 2
+                             for e in G):
+                        # ok, everything is a sequence and everything has length
+                        # 2, so probably an edgelist. But we're dealing with
+                        # only four objects so might as well check to be sure
+                        nodes, edges = G
+                        if all(isinstance(e, abc.Sequence) and len(e) == 2 and
+                               (v in nodes for v in e) for e in edges):
+                            pass  # nodes, edges
+                        else:
+                            # edgelist
+                            kwargs[name] = (list(set().union(*G)), G)
+                    else:
+                        # nodes, edges
+                        pass
 
             elif allow_None and G is None:
                 # allow None to be passed through

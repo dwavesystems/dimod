@@ -147,6 +147,50 @@ class TestGraphArgument(unittest.TestCase):
         for edge in edges:
             self.assertIn(edge, edgelist)
 
+    def test_edgelist(self):
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        edgelist = [(0, 1), (2, 3), (0, 2)]
+
+        nodes, edges = f(edgelist)
+
+        for edge in edges:
+            self.assertIn(edge, edgelist)
+
+    def test_edgelist_len2(self):
+        # need to distinguish between edgelist and (nodes, edges)
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        edgelist = [(0, 1), (2, 3)]
+
+        nodes, edges = f(edgelist)
+
+        for edge in edges:
+            self.assertIn(edge, edgelist)
+
+    def test_nodelist_edgelist_len2(self):
+        # need to distinguish between edgelist and (nodes, edges)
+        @graph_argument('G')
+        def f(G):
+            return G
+
+        nodelist, edgelist = ([0, 1],
+                              [(0, 1), (1, 0)])
+
+        nodes, edges = f((nodelist, edgelist))
+
+        self.assertIs(nodes, nodelist)
+        self.assertIs(edges, edgelist)
+
+        for n in nodes:
+            self.assertIn(n, nodelist)
+        for edge in edges:
+            self.assertIn(edge, edgelist)
+
     def test_complete_number(self):
         @graph_argument('G')
         def f(G):
