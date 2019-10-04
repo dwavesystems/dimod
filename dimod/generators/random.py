@@ -32,9 +32,10 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
     Biases and offset are drawn from a uniform distribution range (low, high).
 
     Args:
-        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the bqm loops on. Either an integer n, interpreted as a
-            complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the bqm on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
             Variable type for the binary quadratic model. Accepted input values:
@@ -87,9 +88,10 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
     Biases and offset are integer-valued in range [low, high] inclusive.
 
     Args:
-        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the bqm loops on. Either an integer n, interpreted as a
-            complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the bqm on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
             Variable type for the binary quadratic model. Accepted input values:
@@ -149,10 +151,10 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
         r (int):
             Order of the RANr problem.
 
-        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the BQM for. Either an
-            integer n, interpreted as a complete graph of size n, or
-            a nodes/edges pair, or a NetworkX graph.
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the bqm on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
 
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.

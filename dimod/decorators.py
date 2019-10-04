@@ -274,8 +274,8 @@ def graph_argument(*arg_names, **options):
     """Decorator to coerce given graph arguments into a consistent form.
 
     The wrapped function accepts either an integer n, interpreted as a
-    complete graph of size n, or a nodes/edges pair, or a NetworkX graph. The
-    argument is converted into a nodes/edges 2-tuple.
+    complete graph of size n, a nodes/edges pair, a sequence of edges, or a
+    NetworkX graph. The argument is converted into a nodes/edges 2-tuple.
 
     Args:
         *arg_names (optional, default='G'):
@@ -322,9 +322,13 @@ def graph_argument(*arg_names, **options):
                     # if nodes is an int
                     kwargs[name] = (list(range(G[0])), G[1])
 
+            elif isinstance(G, abc.Sequence) and all(len(edge) == 2 for edge in G):
+                # is an edgelist
+                kwargs[name] = (list(set().union(*G)), G)
+
             elif allow_None and G is None:
                 # allow None to be passed through
-                return G
+                kwargs[name] = G
 
             else:
                 raise ValueError('Unexpected graph input form')
