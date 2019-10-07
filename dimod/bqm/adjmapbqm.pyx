@@ -34,6 +34,7 @@ from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                pop_variable, remove_interaction,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
+from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import ShapeableBQM
 from dimod.vartypes import as_vartype
 
@@ -86,7 +87,7 @@ cdef class cyAdjMapBQM:
             if len(obj) == 2:
                 linear, quadratic = obj
             elif len(obj) == 3:
-                linear, quadratic, self.offset = obj
+                linear, quadratic, self.offset_ = obj
             else:
                 raise ValueError()
 
@@ -146,6 +147,14 @@ cdef class cyAdjMapBQM:
     @property
     def num_interactions(self):
         return num_interactions(self.adj_)
+
+    @property
+    def offset(self):
+        return as_numpy_scalar(self.offset_, self.dtype)
+
+    @offset.setter
+    def offset(self, Bias offset):
+        self.offset_ = offset
 
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
@@ -277,7 +286,8 @@ cdef class cyAdjMapBQM:
             ValueError: If v is not a variable in the binary quadratic model.
 
         """
-        return get_linear(self.adj_, self.label_to_idx(v))
+        return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
+                               self.dtype)
 
     def get_quadratic(self, object u, object v):
         """Get the quadratic bias of (u, v).
@@ -308,7 +318,7 @@ cdef class cyAdjMapBQM:
         if not out.second:
             raise ValueError('No interaction between {} and {}'.format(u, v))
 
-        return out.first
+        return as_numpy_scalar(out.first, self.dtype)
 
     def remove_interaction(self, object u, object v):
         """Remove the interaction between variables u and v.
@@ -418,7 +428,7 @@ cdef class cyAdjMapBQM:
                 bqm.outvars_[outvar_idx] = outvar
                 outvar_idx += 1
 
-        bqm.offset = self.offset
+        bqm.offset_ = self.offset_
 
         # set up the variable labels
         bqm._label_to_idx.update(self._label_to_idx)

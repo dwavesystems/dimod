@@ -92,6 +92,12 @@ class TestBQMAPI:
         with self.assertRaises(ValueError):
             bqm.get_linear(5)
 
+    def test_get_linear_dtype(self):
+        bqm = self.BQM(5, dimod.SPIN)
+
+        for v in range(5):
+            self.assertIsInstance(bqm.get_linear(v), bqm.dtype.type)
+
     def test_get_quadratic_3x3array(self):
         bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]], dimod.SPIN)
 
@@ -108,6 +114,15 @@ class TestBQMAPI:
 
         with self.assertRaises(ValueError):
             bqm.get_quadratic(0, 0)
+
+    def test_get_linear_dtype(self):
+        bqm = self.BQM([[0, 1, 2], [0, 0.5, 0], [0, 0, 1]], dimod.SPIN)
+
+        self.assertIsInstance(bqm.get_quadratic(0, 1), bqm.dtype.type)
+        self.assertIsInstance(bqm.get_quadratic(1, 0), bqm.dtype.type)
+
+        self.assertIsInstance(bqm.get_quadratic(0, 2), bqm.dtype.type)
+        self.assertIsInstance(bqm.get_quadratic(2, 0), bqm.dtype.type)
 
     def test_has_variable(self):
         h = OrderedDict([('a', -1), (1, -1), (3, -1)])
@@ -134,18 +149,17 @@ class TestBQMAPI:
         J = {}
         bqm = self.BQM((h, J), 'SPIN')
         self.assertEqual(bqm.offset, 0)
-        # cython does not easily allow us to return numpy types
-        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+        self.assertIsInstance(bqm.offset, bqm.dtype.type)
 
         h = dict([('a', -1), (1, -1), (3, -1)])
         J = {}
         bqm = self.BQM((h, J, 1.5), 'SPIN')
         self.assertEqual(bqm.offset, 1.5)
-        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+        self.assertIsInstance(bqm.offset, bqm.dtype.type)
 
         bqm.offset = 6
         self.assertEqual(bqm.offset, 6)
-        # self.assertIsInstance(bqm.offset, bqm.dtype.type)
+        self.assertIsInstance(bqm.offset, bqm.dtype.type)
 
     def test_set_linear(self):
         # does not change shape
