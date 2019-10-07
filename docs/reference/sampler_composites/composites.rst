@@ -11,6 +11,38 @@ The `dimod` package includes several example composed samplers.
 .. automodule:: dimod.reference.composites
 
 
+Clip Composite
+------------------------
+
+.. automodule:: dimod.reference.composites.clipcomposite
+
+Class
+~~~~~
+
+.. autoclass:: ClipComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ClipComposite.child
+   ClipComposite.children
+   ClipComposite.parameters
+   ClipComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ClipComposite.sample
+   ClipComposite.sample_ising
+   ClipComposite.sample_qubo
+
+
 Fixed Variable Composite
 ------------------------
 
