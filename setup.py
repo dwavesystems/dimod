@@ -90,6 +90,13 @@ extra_link_args = {
 
 
 class build_ext_compiler_check(build_ext):
+    def run(self):
+        import numpy
+
+        self.include_dirs.append(numpy.get_include())
+
+        build_ext.run(self)
+
     def build_extensions(self):
         compiler = self.compiler.compiler_type
 
