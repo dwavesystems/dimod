@@ -135,3 +135,8 @@ class TestExactSolver(unittest.TestCase):
         # check their energies
         for sample, energy in response.data(['sample', 'energy']):
             self.assertAlmostEqual(energy, dimod.ising_energy(sample, h, J))
+
+    def test_arbitrary_labels(self):
+        bqm = dimod.BQM.from_ising({}, {'ab': -1})
+        sampleset = dimod.ExactSolver().sample(bqm)
+        self.assertEqual(set(sampleset.variables), set(bqm))

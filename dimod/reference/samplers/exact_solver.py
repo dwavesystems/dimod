@@ -87,8 +87,7 @@ class ExactSolver(Sampler):
         n = len(bqm)
         if n == 0:
             return SampleSet.from_samples([], bqm.vartype, energy=[])
-        bqm_copy = bqm.copy()
-        bqm_copy = bqm_copy.change_vartype(Vartype.BINARY)
+        bqm_copy = bqm.change_vartype(Vartype.BINARY, inplace=False)
         samples = list(itertools.product([0, 1], repeat=n))
         response = SampleSet.from_samples_bqm(samples, bqm_copy)
         response.change_vartype(bqm.vartype, inplace=True)
