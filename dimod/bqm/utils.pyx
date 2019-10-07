@@ -21,7 +21,7 @@ cdef extern from "numpy/arrayobject.h":
     # https://github.com/numpy/numpy/blob/5ce770ae3de63861c768229573397cadd052f712/numpy/core/src/multiarray/scalarapi.c#L617
     # seems to contradict that. A cursory read of the code seems to support the
     # latter conclusion, so for now we'll assume this is safe to use.
-    object PyArray_Scalar(void* data, np.dtype dtype, object itemsize)
+    object PyArray_Scalar(void* data, np.dtype descr, object base)
 
 np.import_array()
 
