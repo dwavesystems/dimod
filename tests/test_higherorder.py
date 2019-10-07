@@ -30,12 +30,18 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertIn(v, bqm)
         self.assertEqual(len(bqm), 4)  # has an auxiliary variable
 
-        for sample, energy in dimod.ExactSolver().sample(bqm).data(
-                ['sample', 'energy']):
+        seen = set()
+        samples = dimod.ExactSolver().sample(bqm)
+        for sample, energy in samples.data(['sample', 'energy']):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
+                seen.add((sample['a'], sample['b'], sample['p']))
             if sample['a'] * sample['b'] != sample['p']:
-                self.assertGreaterEqual(energy, 1)
+                self.assertGreaterEqual(energy, 1)  # gap 1
+        self.assertEqual(seen, {(-1, -1, +1),
+                                (-1, +1, -1),
+                                (+1, -1, -1),
+                                (+1, +1, +1)})
 
     def test__binary_prod(self):
 
@@ -47,16 +53,15 @@ class TestMakeQuadratic(unittest.TestCase):
             self.assertIn(v, bqm)
         self.assertEqual(len(bqm), 3)
 
-        seen_configs = set()
-        for sample, energy in dimod.ExactSolver().sample(bqm).data(
-                ['sample', 'energy']):
+        seen = set()
+        samples = dimod.ExactSolver().sample(bqm)
+        for sample, energy in samples.data(['sample', 'energy']):
             if energy == 0:
                 self.assertEqual(sample['a'] * sample['b'], sample['p'])
-                seen_configs.add(tuple(sample[v] for v in variables))
+                seen.add((sample['a'], sample['b'], sample['p']))
             if sample['a'] * sample['b'] != sample['p']:
-                self.assertGreaterEqual(energy, 1)
-
-        self.assertEqual(len(seen_configs), 4)
+                self.assertGreaterEqual(energy, 1)  # gap 1
+        self.assertEqual(seen, {(0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 1)})
 
     def test_no_higher_order(self):
         poly = {(0, 1): -1, (1, 2): 1}
