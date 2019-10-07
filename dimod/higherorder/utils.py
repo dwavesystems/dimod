@@ -133,14 +133,14 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
 
 def _new_product(bqm, u, v):
-    p = '{!r}*{!r}'.format(u, v)
+    p = '{}*{}'.format(u, v)
     while p in bqm:
         p = '_' + p
     return p
 
 
 def _new_aux(bqm, u, v):
-    aux = 'aux{!r},{!r}'.format(u, v)
+    aux = 'aux{},{}'.format(u, v)
     while aux in bqm:
         aux = '_' + aux
     return aux
