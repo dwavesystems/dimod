@@ -156,6 +156,7 @@ class TestGraphArgument(unittest.TestCase):
 
         nodes, edges = f(edgelist)
 
+        self.assertEqual(set(nodes), set().union(*edgelist))
         for edge in edges:
             self.assertIn(edge, edgelist)
 
@@ -169,6 +170,7 @@ class TestGraphArgument(unittest.TestCase):
 
         nodes, edges = f(edgelist)
 
+        self.assertEqual(set(nodes), set().union(*edgelist))
         for edge in edges:
             self.assertIn(edge, edgelist)
 
