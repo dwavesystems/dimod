@@ -35,8 +35,11 @@ class TestExtendedFixVariables(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): -1, (1, 2): 3, (2, 3): 2})
 
         bqm2, variable_map, _ = find_and_contract_all_variables_roof_duality(bqm)
-        variable_map_check = {0: (1, True), 1: (1, True), 2: (1, False), 3: (1, True)}
-        self.assertEqual(variable_map, variable_map_check)
+
+        # 0, 1, and 3 should be contracted to the same value, 2 to the opposite value
+        self.assertEqual(variable_map[1], variable_map[0])
+        self.assertEqual(variable_map[3], variable_map[0])
+        self.assertEqual(variable_map[2], (variable_map[0][0], False))
         bqm_check = dimod.BinaryQuadraticModel.from_ising({1: 0}, {}, -6)
         self.assertEqual(bqm2, bqm_check)
 
@@ -47,9 +50,11 @@ class TestExtendedFixVariables(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, J)
 
         bqm2, variable_map = find_and_contract_all_variables_naive(bqm)
-        variable_map_check = {i: (i, True) for i in [0, 1, 2, 4, 5]}
-        variable_map_check[3] = (0, True)
-        self.assertEqual(variable_map, variable_map_check)
+
+        # only 0 and 3 should be contracted
+        self.assertEqual(variable_map[0], variable_map[3])
+        for i in [1, 2, 4, 5]:
+            self.assertEqual(variable_map[i], (i, True))
         bqm_check = dimod.BinaryQuadraticModel.from_ising({},
                     {(u, v): 1 for (u, v) in [(0, 1), (0, 2), (1, 2), (0, 4), (0, 5), (4, 5)]},
                     -10)

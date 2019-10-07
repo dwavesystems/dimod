@@ -51,6 +51,22 @@ def find_and_contract_all_variables_naive(bqm):
             variable_map[u] = (v, uv_equal) indicates that variable u was contracted to variable v, with u=v if
             uv_equal=1 and u=~v otherwise.
 
+    Example:
+        This example creates a binary quadratic model with a strong interaction between variables 0 and 3,
+        and contracts that pair of variables to a single variable. After sampling from the contracted bqm,
+        solutions are expanded to produce solutions to the original bqm.
+
+        >>> J = {(u, v): 1 for (u, v) in [(0, 1), (0, 2), (1, 2)]}
+        >>> J[(0, 3)] = -10
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, J)
+
+        >>> contracted_bqm, variable_map, _ = find_and_contract_all_variables_roof_naive(bqm, sampling_mode=True)
+        >>> print(contracted_bqm)
+
+        >>> contracted_sampleset = dimod.ExactSolver().sample(contracted_bqm)
+        >>> sampleset = uncontract_solution(contracted_sampleset, variable_map)
+        >>> print(sampleset)
+
     """
 
     bqm2 = bqm.copy()
@@ -149,6 +165,23 @@ def find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True):
 
         fixable_variables: a dictionary of variable assignments that were fixed in the ground states.
 
+    Example:
+        This example creates a binary quadratic model with a strong interaction between variables 0 and 3,
+        and contracts that pair of variables to a single variable. After sampling from the contracted bqm,
+        solutions are expanded to produce solutions to the original bqm.
+
+        >>> J = {(u, v): 1 for (u, v) in [(0, 1), (0, 2), (1, 2)]}
+        >>> J[(0, 3)] = -10
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, J)
+
+        >>> contracted_bqm, variable_map, _ = find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True)
+        >>> print(contracted_bqm)
+
+        >>> contracted_sampleset = dimod.ExactSolver().sample(contracted_bqm)
+        >>> sampleset = uncontract_solution(contracted_sampleset, variable_map)
+        >>> print(sampleset)
+
+
     Method: pick a variable to probe by extended roof duality, and if it contractible, contract it right away.
     Repeat until no contractions are possible.
     (When there are many contractible variables, this method is much faster than first identifying all contractible
@@ -203,7 +236,6 @@ def uncontract_solution(sampleset, variable_map):
         new_sampleset: a dimod.SampleSet for the uncontracted bqm.
 
 
-    Note: This should probably be turned into a composite layer.
     """
 
     if sampleset.vartype != Vartype.SPIN:
