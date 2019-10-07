@@ -14,7 +14,7 @@
 #
 # =============================================================================
 """
-A composite that break the problem into sub-problems corresponding to the
+A composite that breaks the problem into sub-problems corresponding to the
 connected components of the binary
 quadratic model graph before sending to its child sampler.
 """
@@ -27,7 +27,8 @@ __all__ = ['ConnectedComponentsComposite']
 
 
 class ConnectedComponentsComposite(ComposedSampler):
-    """Composite to decompose a problem to connected component and solve each.
+    """Composite to decompose a problem to the connected components
+    and solve each.
 
     Connected components of a bqm graph are computed (if not provided),
     and each subproblem is passed to the child sampler.
