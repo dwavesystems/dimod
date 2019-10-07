@@ -46,9 +46,10 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
     definition from [#HJARTL]_ and the limited FL problem definition from [#KLH]_
 
     Args:
-        graph (int/tuple[nodes, edges]/:obj:`~networkx.Graph`):
-            The graph to build the frustrated loops on. Either an integer n, interpreted as a
-            complete graph of size n, or a nodes/edges pair, or a NetworkX graph.
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the frustrated loops on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
 
         num_cyles (int):
             Desired number of frustrated cycles.

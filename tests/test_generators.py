@@ -75,6 +75,7 @@ class TestRandomRandint(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+
 class TestRandomRanR(unittest.TestCase):
     def test_singleton(self):
         bqm = dimod.generators.random.ran_r(1, 1)
@@ -170,6 +171,24 @@ class TestChimeraAnticluster(unittest.TestCase):
 
         # should have a single node
         self.assertEqual(len(bqm), 0)
+
+    def test_subgraph_edgelist(self):
+        # c2 edgelist with some random ones removed
+        edgelist = [(0, 4), (0, 5), (0, 6), (0, 7), (0, 16), (4, 1), (4, 2),
+                    (4, 3), (4, 12), (5, 1), (5, 2), (5, 3), (5, 13), (6, 1),
+                    (6, 2), (6, 3), (6, 14), (7, 1), (7, 2), (7, 3), (7, 15),
+                    (1, 17), (2, 18), (3, 19), (16, 20), (16, 21), (16, 22),
+                    (16, 23), (20, 17), (20, 18), (20, 19), (20, 28), (21, 17),
+                    (21, 18), (21, 19), (21, 29), (22, 17), (22, 18), (22, 19),
+                    (22, 30), (23, 17), (23, 18), (23, 19), (23, 31), (8, 12),
+                    (8, 13), (8, 14), (8, 15), (12, 9), (12, 10),
+                    (12, 11), (13, 9), (13, 10), (13, 11), (14, 9), (14, 10),
+                    (14, 11), (15, 9), (15, 10), (15, 11), (9, 25), (10, 26),
+                    (11, 27), (24, 28), (24, 29), (24, 30), (24, 31), (28, 25),
+                    (28, 26), (28, 27), (29, 25), (29, 26), (29, 27), (30, 25),
+                    (30, 26), (30, 27), (31, 25), (31, 27)]
+
+        bqm = dimod.generators.chimera_anticluster(2, subgraph=edgelist)
 
 
 @unittest.skipUnless(_networkx, "no networkx installed")
