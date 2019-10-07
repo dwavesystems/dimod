@@ -25,9 +25,7 @@ import itertools
 
 
 from dimod.core.sampler import Sampler
-from dimod.decorators import bqm_index_labels
 from dimod.sampleset import SampleSet
-from dimod.vartypes import Vartype
 
 __all__ = ['ExactSolver']
 
@@ -47,10 +45,10 @@ class ExactSolver(Sampler):
         >>> sampleset = dimod.ExactSolver().sample_ising(h, J)
         >>> print(sampleset)
            a  b energy num_oc.
-        0 -1 -1   -2.0       1
-        2 +1 +1   -1.0       1
+        3 -1 -1   -2.0       1
+        0 +1 +1   -1.0       1
         1 +1 -1    0.0       1
-        3 -1 +1    3.0       1
+        2 -1 +1    3.0       1
         ['SPIN', 4 rows, 4 samples, 2 variables]
 
         This example solves a two-variable QUBO.
@@ -72,7 +70,6 @@ class ExactSolver(Sampler):
         self.properties = {}
         self.parameters = {}
 
-    @bqm_index_labels
     def sample(self, bqm):
         """Sample from a binary quadratic model.
 
@@ -87,14 +84,6 @@ class ExactSolver(Sampler):
         n = len(bqm)
         if n == 0:
             return SampleSet.from_samples([], bqm.vartype, energy=[])
-        bqm_copy = bqm.change_vartype(Vartype.BINARY, inplace=False)
-        samples = list(itertools.product([0, 1], repeat=n))
-        response = SampleSet.from_samples_bqm(samples, bqm_copy)
-        response.change_vartype(bqm.vartype, inplace=True)
+        samples = list(itertools.product(bqm.vartype.value, repeat=n))
+        response = SampleSet.from_samples_bqm((samples, list(bqm)), bqm)
         return response
-
-
-def _ffs(x):
-    """Gets the index of the least significant set bit of x."""
-    return (x & -x).bit_length() - 1
-
