@@ -14,7 +14,8 @@
 #
 # =============================================================================
 """
-A composite that break the problem into sub-problems corresponding to the connected components of the binary
+A composite that break the problem into sub-problems corresponding to the
+connected components of the binary
 quadratic model graph before sending to its child sampler.
 """
 
@@ -26,20 +27,20 @@ __all__ = ['ConnectedComponentsComposite']
 
 
 class ConnectedComponentsComposite(ComposedSampler):
-    """Composite to fix variables of a problem to provided.
+    """Composite to decompose a problem to connected component and solve each.
 
-    Fixes variables of a bqm and modifies linear and quadratic terms
-    accordingly. Returned samples include the fixed variable
+    Connected components of a bqm graph are computed (if not provided),
+    and each subproblem is passed to the child sampler.
+    Returned samples from each child sampler are merged.
 
     Args:
        sampler (:obj:`dimod.Sampler`):
             A dimod sampler
 
     Examples:
-       This example uses :class:`.FixedVariableComposite` to instantiate a
+       This example uses :class:`.ConnectedComponentsComposite` to instantiate a
        composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler fixes a variable and modifies linear and quadratic
-       biases according.
+       The composed sampler finds the connected components and solves each.
 
        >>> h = {1: -1.3, 2: 2.3, 3:-1.2 4: -0.5}
        >>> J = {(1, 4): -0.6, (1, 3): 0.6, (3, 4): 1.0, (2, 3): -1.0}
