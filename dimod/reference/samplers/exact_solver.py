@@ -21,8 +21,8 @@ Note:
     energy for every possible sample, it is very slow.
 
 """
-import itertools
 
+import numpy as np
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
@@ -45,10 +45,10 @@ class ExactSolver(Sampler):
         >>> sampleset = dimod.ExactSolver().sample_ising(h, J)
         >>> print(sampleset)
            a  b energy num_oc.
-        3 -1 -1   -2.0       1
-        0 +1 +1   -1.0       1
+        0 -1 -1   -2.0       1
+        2 +1 +1   -1.0       1
         1 +1 -1    0.0       1
-        2 -1 +1    3.0       1
+        3 -1 +1    3.0       1
         ['SPIN', 4 rows, 4 samples, 2 variables]
 
         This example solves a two-variable QUBO.
@@ -84,6 +84,30 @@ class ExactSolver(Sampler):
         n = len(bqm)
         if n == 0:
             return SampleSet.from_samples([], bqm.vartype, energy=[])
-        samples = list(itertools.product(bqm.vartype.value, repeat=n))
+
+        samples = _graycode(bqm)
+
+        if bqm.vartype is bqm.SPIN:
+            samples = 2*samples - 1
+
         response = SampleSet.from_samples_bqm((samples, list(bqm)), bqm)
         return response
+
+
+def _graycode(bqm):
+    """Get a numpy array containing all possible samples in a gray-code order"""
+    # developer note: there are better/faster ways to do this, but because
+    # we're limited in performance by the energy calculation, this is probably
+    # more readable and easier.
+    n = len(bqm)
+    ns = 1 << len(bqm)
+    samples = np.empty((ns, n), dtype=np.int8)
+
+    samples[0, :] = 0
+
+    for i in range(1, ns):
+        v = (i & -i).bit_length() - 1  # the least significant set bit of i
+        samples[i, :] = samples[i - 1, :]
+        samples[i, v] = not samples[i - 1, v]
+
+    return samples
