@@ -8,7 +8,7 @@ from dimod.roof_duality.extended_fix_variables import find_contractible_variable
     find_and_contract_all_variables_naive
 
 
-class TestLockableDict(unittest.TestCase):
+class TestExtendedFixVariables(unittest.TestCase):
 
     def test_find_contractible_variables_naive(self):
 
