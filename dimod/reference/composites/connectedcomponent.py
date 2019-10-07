@@ -42,7 +42,7 @@ class ConnectedComponentsComposite(ComposedSampler):
        composed sampler that submits a simple Ising problem to a sampler.
        The composed sampler finds the connected components and solves each.
 
-       >>> h = {1: -1.3, 2: 2.3, 3:-1.2 4: -0.5}
+       >>> h = {1: -1.3, 2: 2.3, 3:-1.2, 4: -0.5}
        >>> J = {(1, 4): -0.6, (1, 3): 0.6, (3, 4): 1.0, (2, 3): -1.0}
        >>> sampler = dimod.ConnectedComponentsComposite(dimod.ExactSolver())
        >>> sampleset = sampler.sample_ising(h, J)
