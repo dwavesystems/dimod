@@ -1,6 +1,4 @@
-import numpy as np
 import dimod
-import orang
 import unittest
 
 from dimod.roof_duality.extended_fix_variables import find_contractible_variables_naive, \
