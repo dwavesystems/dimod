@@ -1400,10 +1400,16 @@ class SampleSet(abc.Iterable, abc.Sized):
                                            bytes_type=bytes_type)
                    for name, data in self.data_vectors.items()}
 
-        if self.vartype is Vartype.SPIN:
-            packed = pack_samples(self.record.sample > 0)
+        # we could just do self.record.sample > 0 for all of these, but to save
+        # on the copy if we are already binary and bool/integer we check and
+        # just pass through in that case
+        samples = self.record.sample
+        if (self.vartype is Vartype.BINARY and
+                (np.issubdtype(samples.dtype, np.integer) or
+                 np.issubdtype(samples.dtype, np.bool_))):
+            packed = pack_samples(samples)
         else:
-            packed = pack_samples(self.record.sample)
+            packed = pack_samples(samples > 0)
 
         sample_data = serialize_ndarray(packed,
                                         use_bytes=use_bytes,
@@ -1427,7 +1433,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             "variable_labels": self.variables.to_serializable(),
             "variable_type": self.vartype.name,
             "info": serialize_ndarrays(self.info, use_bytes=use_bytes,
-                                          bytes_type=bytes_type),
+                                       bytes_type=bytes_type),
             }
 
     def _asdict(self):

@@ -725,6 +725,22 @@ class TestSerialization(unittest.TestCase):
 
         json.dumps(sampleset.to_serializable())
 
+    def test_non_integer_samples_bool(self):
+        samples = np.ones((5, 5), dtype=np.bool)
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        new = dimod.SampleSet.from_serializable(sampleset.to_serializable())
+
+        self.assertEqual(sampleset, new)
+
+    def test_non_integer_samples_float(self):
+        samples = np.ones((5, 5), dtype=np.float)
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        new = dimod.SampleSet.from_serializable(sampleset.to_serializable())
+
+        self.assertEqual(sampleset, new)
+
 
 @unittest.skipUnless(_pandas, "no pandas present")
 class TestPandas(unittest.TestCase):
