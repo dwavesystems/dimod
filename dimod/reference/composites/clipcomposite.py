@@ -18,17 +18,12 @@ A composite that clips problem variables below and above threshold. if lower and
 it does nothing.
 
 """
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
 
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.composite import ComposedSampler
 from dimod.sampleset import SampleSet
 
-__all__ = 'ClipComposite',
+__all__ = ['ClipComposite']
 
 
 class ClipComposite(ComposedSampler):
@@ -44,7 +39,7 @@ class ClipComposite(ComposedSampler):
     Examples:
        This example uses :class:`.ClipComposite` to instantiate a
        composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler scales linear, quadratic biases and offset as
+       The composed sampler clips linear and quadratic biases as
        indicated by options.
 
        >>> h = {'a': -4.0, 'b': -4.0}
@@ -72,9 +67,9 @@ class ClipComposite(ComposedSampler):
         return {'child_properties': self.child.properties.copy()}
 
     def sample(self, bqm, lower_bound=None, upper_bound=None, **parameters):
-        """ Clip and sample from the provided binary quadratic model.
+        """Clip and sample from the provided binary quadratic model.
 
-        if lower_bound and upper_bound are given variables with value above upper_bound or below lower_bound are clipped.
+        if lower_bound and upper_bound are given variables with value above or below are clipped.
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):
@@ -97,34 +92,6 @@ class ClipComposite(ComposedSampler):
         response = child.sample(bqm_copy, **parameters)
 
         return SampleSet.from_samples_bqm(response.record.sample, bqm)
-
-    def sample_ising(self, h, J, offset=0.0, lower_bound=None, upper_bound=None, **parameters):
-        """ Scale and sample from the problem provided by h, J, offset
-
-        if scalar is not given, problem is scaled based on bias and quadratic
-        ranges.
-
-        Args:
-            h (dict): linear biases
-
-            J (dict): quadratic or higher order biases
-
-            lower_bound (number):
-                Value by which to clip the variables from below.
-
-            upper_bound (number):
-                Value by which to clip the variables from above.
-
-            **parameters:
-                Parameters for the sampling method, specified by the child sampler.
-
-        Returns:
-            :obj:`dimod.SampleSet`
-
-        """
-
-        bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
-        return self.sample(bqm, lower_bound=lower_bound, upper_bound=upper_bound, **parameters)
 
 
 def _clip_bqm(bqm, lower_bound, upper_bound):
