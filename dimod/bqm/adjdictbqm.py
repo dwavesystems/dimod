@@ -90,7 +90,7 @@ class AdjDictBQM(ShapeableBQM):
             it = np.nditer(D, flags=['multi_index'])
             while not it.finished:
                 u, v = it.multi_index
-                bias = it.value
+                bias = dtype.type(it.value)
 
                 if bias and not np.isnan(bias):
                     if u in adj[v]:
@@ -121,12 +121,7 @@ class AdjDictBQM(ShapeableBQM):
 
     @offset.setter
     def offset(self, offset):
-        # we would actually like to use dtype:
-        # self._offset = self.dtype.type(offset)
-        # however, cython by default returns floats for our current bias type
-        # so to keep this consistent with the other bqms we return a python
-        # float
-        self._offset = float(offset)
+        self._offset = self.dtype.type(offset)
 
     @property
     def vartype(self):

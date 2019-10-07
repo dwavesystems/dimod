@@ -36,6 +36,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                set_linear,
                                set_quadratic,
                                )
+from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype
 
@@ -147,7 +148,7 @@ cdef class cyAdjArrayBQM:
             other = obj.to_adjarray()
             self.invars_ = other.invars_
             self.outvars_ = other.outvars_
-            self.offset = other.offset
+            self.offset_ = other.offset_
             self._label_to_idx = other._label_to_idx
             self._idx_to_label = other._idx_to_label
         else:
@@ -202,6 +203,14 @@ cdef class cyAdjArrayBQM:
         """int: The number of interactions in the model."""
         return num_interactions(self.invars_, self.outvars_)
 
+    @property
+    def offset(self):
+        return as_numpy_scalar(self.offset_, self.dtype)
+
+    @offset.setter
+    def offset(self, Bias offset):
+        self.offset_ = offset
+
     cdef VarIndex label_to_idx(self, object v) except *:
         """Get the index in the underlying array from the python label."""
         cdef VarIndex vi
@@ -229,7 +238,10 @@ cdef class cyAdjArrayBQM:
             yield self._idx_to_label.get(v, v)
 
     def get_linear(self, object v):
-        return get_linear(self.invars_, self.outvars_, self.label_to_idx(v))
+        return as_numpy_scalar(get_linear(self.invars_,
+                                          self.outvars_,
+                                          self.label_to_idx(v)),
+                               self.dtype)
 
     def get_quadratic(self, object u, object v):
 
@@ -244,7 +256,7 @@ cdef class cyAdjArrayBQM:
         if not out.second:
             raise ValueError('No interaction between {} and {}'.format(u, v))
 
-        return out.first
+        return as_numpy_scalar(out.first, self.dtype)
 
     def set_linear(self, object v, Bias b):
         set_linear(self.invars_, self.outvars_, self.label_to_idx(v), b)
