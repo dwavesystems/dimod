@@ -31,7 +31,7 @@ ctypedef double Bias
 cdef class cyAdjVectorBQM:
     cdef vector[pair[vector[pair[VarIndex, Bias]], Bias]] adj_
 
-    cdef public Bias offset
+    cdef Bias offset_
 
     cdef readonly object vartype
 
