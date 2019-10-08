@@ -15,6 +15,7 @@
 # ================================================================================================
 
 from dimod.reference.composites.fixedvariable import FixedVariableComposite
+from dimod.reference.composites.connectedcomponent import ConnectedComponentsComposite
 from dimod.reference.composites.higherordercomposites import *
 from dimod.reference.composites.roofduality import RoofDualityComposite
 from dimod.reference.composites.clipcomposite import ClipComposite
