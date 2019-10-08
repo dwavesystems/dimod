@@ -14,8 +14,8 @@
 #
 # =============================================================================
 """
-A composite that clips problem variables below and above threshold. if lower and upper bounds is not given
-it does nothing.
+A composite that clips problem variables below and above threshold. if lower
+and upper bounds is not given it does nothing.
 
 """
 
@@ -69,7 +69,7 @@ class ClipComposite(ComposedSampler):
     def sample(self, bqm, lower_bound=None, upper_bound=None, **parameters):
         """Clip and sample from the provided binary quadratic model.
 
-        if lower_bound and upper_bound are given variables with value above or below are clipped.
+        If lower_bound and upper_bound are given variables with value above or below are clipped.
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):
@@ -80,6 +80,7 @@ class ClipComposite(ComposedSampler):
 
             upper_bound (number):
                 Value by which to clip the variables from above.
+
             **parameters:
                 Parameters for the sampling method, specified by the child sampler.
 
@@ -91,7 +92,7 @@ class ClipComposite(ComposedSampler):
         bqm_copy = _clip_bqm(bqm, lower_bound, upper_bound)
         response = child.sample(bqm_copy, **parameters)
 
-        return SampleSet.from_samples_bqm(response.record.sample, bqm)
+        return SampleSet.from_samples_bqm(response, bqm)
 
 
 def _clip_bqm(bqm, lower_bound, upper_bound):

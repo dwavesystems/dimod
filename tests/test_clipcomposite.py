@@ -76,6 +76,18 @@ class TestClipCompositeClass(unittest.TestCase):
         self.assertEqual(response.first.sample, response_exact.first.sample)
         self.assertAlmostEqual(response.first.energy, response_exact.first.energy)
 
+    def test_with_labels(self):
+        bqm = BinaryQuadraticModel({'a': 0.0, 'b': 0.0, 'c': 0.0, 'd': 0.0, 'e': 0.0},
+                                   {('a', 'b'): -2.0, ('a', 'c'): -5.0, ('a', 'd'): -2.0,
+                                    ('a', 'e'): -2.0, ('b', 'c'): -2.0, ('b', 'd'): -2.0, ('b', 'e'): 4.0,
+                                    ('c', 'd'): -3.0, ('c', 'e'): -5.0, ('d', 'e'): -4.0}, 0, dimod.SPIN)
+        sampler = ClipComposite(ExactSolver())
+        solver = ExactSolver()
+        response = sampler.sample(bqm, lower_bound=-1, upper_bound=1)
+        response_exact = solver.sample(bqm)
+        self.assertEqual(response.first.sample, response_exact.first.sample)
+        self.assertAlmostEqual(response.first.energy, response_exact.first.energy)
+
     def test_empty_bqm(self):
         bqm = BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
         sampler = ClipComposite(ExactSolver())
