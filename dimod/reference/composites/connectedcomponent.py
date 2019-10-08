@@ -32,7 +32,9 @@ class ConnectedComponentsComposite(ComposedSampler):
 
     Connected components of a bqm graph are computed (if not provided),
     and each subproblem is passed to the child sampler.
-    Returned samples from each child sampler are merged.
+    Returned samples from each child sampler are merged. Only the best solution
+    of each response is pick and merge with others
+    (i.e. this composite returns a single solution).
 
     Args:
        sampler (:obj:`dimod.Sampler`):
@@ -96,6 +98,9 @@ class ConnectedComponentsComposite(ComposedSampler):
             bqm_copy = bqm.copy()
             bqm_copy.fix_variables({i: 0 for i in (variables - component)})
             if sampleset is None:
+                # here .truncate(1) is used to pick the best solution only. The other options
+                # for future development is to combine all sample with all.
+                # This way you'd get the same behaviour as the ExactSolver
                 sampleset = child.sample(bqm_copy, **parameters).truncate(1)
             else:
                 sampleset = sampleset.truncate(1).append_variables(child.sample(bqm_copy, **parameters).truncate(1))
