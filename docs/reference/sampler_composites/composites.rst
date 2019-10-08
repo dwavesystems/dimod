@@ -31,7 +31,7 @@ Properties
    ConnectedComponentsComposite.children
    ConnectedComponentsComposite.parameters
    ConnectedComponentsComposite.properties
-
+   
 Methods
 ~~~~~~~
 
@@ -41,6 +41,37 @@ Methods
    ConnectedComponentsComposite.sample
    ConnectedComponentsComposite.sample_ising
    ConnectedComponentsComposite.sample_qubo
+
+Clip Composite
+------------------------
+
+.. automodule:: dimod.reference.composites.clipcomposite
+
+Class
+~~~~~
+
+.. autoclass:: ClipComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ClipComposite.child
+   ClipComposite.children
+   ClipComposite.parameters
+   ClipComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ClipComposite.sample
+   ClipComposite.sample_ising
+   ClipComposite.sample_qubo
 
 
 Fixed Variable Composite

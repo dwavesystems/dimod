@@ -32,7 +32,7 @@ __all__ = ['make_quadratic']
 
 
 def _spin_product(variables):
-    """Create a bqm with a gap of 2 that represents the product of two variables.
+    """A bqm with a gap of 1 that represents the product of two spin variables.
 
     Note that spin-product requires an auxiliary variable.
 
@@ -61,7 +61,7 @@ def _spin_product(variables):
 
 
 def _binary_product(variables):
-    """Create a bqm with a gap of 2 that represents the product of two variables.
+    """A bqm with a gap of 1 that represents the product of two binary variables.
 
     Args:
         variables (list):
@@ -92,8 +92,9 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             variables and `bias` the associated bias.
 
         strength (float):
-            Strength of the reduction constraint. Insufficient strength can result in the
-            binary quadratic model not having the same minimizations as the polynomial.
+            The energy penalty for violating the prodcut constraint.
+            Insufficient strength can result in the binary quadratic model not
+            having the same minimizations as the polynomial.
 
         vartype (:class:`.Vartype`, optional):
             Vartype of the polynomial. If `bqm` is provided, vartype is not required.
@@ -131,6 +132,20 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     return _reduce_degree(bqm, new_poly, vartype, strength)
 
 
+def _new_product(bqm, u, v):
+    p = '{}*{}'.format(u, v)
+    while p in bqm:
+        p = '_' + p
+    return p
+
+
+def _new_aux(bqm, u, v):
+    aux = 'aux{},{}'.format(u, v)
+    while aux in bqm:
+        aux = '_' + aux
+    return aux
+
+
 def _reduce_degree(bqm, poly, vartype, scale):
     """helper function for make_quadratic"""
 
@@ -158,19 +173,15 @@ def _reduce_degree(bqm, poly, vartype, scale):
     u, v = pair
 
     # make a new product variable and aux variable and add constraint that u*v == p
-    p = '{}*{}'.format(u, v)
-
-    while p in bqm.linear:
-        p = '_' + p
+    p = _new_product(bqm, u, v)
 
     if vartype is Vartype.BINARY:
         constraint = _binary_product([u, v, p])
 
         bqm.info['reduction'][(u, v)] = {'product': p}
     else:
-        aux = 'aux{},{}'.format(u, v)
-        while aux in bqm.linear:
-            aux = '_' + aux
+        aux = _new_aux(bqm, u, v)
+
         constraint = _spin_product([u, v, p, aux])
 
         bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
