@@ -91,7 +91,7 @@ class ConnectedComponentsComposite(ComposedSampler):
         variables = bqm.variables
         if components is None:
             components = list(connected_components(bqm))
-        if type(components) is set:
+        if isinstance(components, set):
             components = [components]
         sampleset = None
         for component in components:
