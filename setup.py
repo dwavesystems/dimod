@@ -90,6 +90,13 @@ extra_link_args = {
 
 
 class build_ext_compiler_check(build_ext):
+    def run(self):
+        import numpy
+
+        self.include_dirs.append(numpy.get_include())
+
+        build_ext.run(self)
+
     def build_extensions(self):
         compiler = self.compiler.compiler_type
 
@@ -120,6 +127,8 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/bqm/adjvectorbqm'+ext],
                         include_dirs=['dimod/bqm/src/'],
                         library_dirs=['dimod/bqm/src/']),
+              Extension("dimod.bqm.utils",
+                        ['dimod/bqm/utils'+ext]),
               ]
 
 if USE_CYTHON:
