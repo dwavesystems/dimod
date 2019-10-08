@@ -21,7 +21,7 @@ quadratic model graph before sending to its child sampler.
 
 from dimod.core.composite import ComposedSampler
 from dimod.sampleset import SampleSet
-import networkx as nx
+from dimod.traversal import connected_components
 
 __all__ = ['ConnectedComponentsComposite']
 
@@ -88,7 +88,7 @@ class ConnectedComponentsComposite(ComposedSampler):
         child = self.child
         variables = bqm.variables
         if components is None:
-            components = list(nx.connected_components(bqm.to_networkx_graph()))
+            components = list(connected_components(bqm))
         if type(components) is set:
             components = [components]
         sampleset = None

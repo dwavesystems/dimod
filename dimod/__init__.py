@@ -48,6 +48,8 @@ import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
+from dimod.traversal import *
+
 from dimod.sampleset import as_samples, concatenate, SampleSet
 
 from dimod.serialization.format import set_printoptions

@@ -17,3 +17,14 @@ Roof-duality
    :toctree: generated/
 
    fix_variables
+
+Traversal
+=========
+
+.. currentmodule:: dimod.traversal
+
+.. autosummary::
+   :toctree: generated/
+
+   connected_components
+   bfs_variables
