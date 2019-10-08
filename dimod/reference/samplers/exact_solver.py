@@ -21,15 +21,11 @@ Note:
     energy for every possible sample, it is very slow.
 
 """
-import itertools
 
 import numpy as np
-from six.moves import zip
 
 from dimod.core.sampler import Sampler
-from dimod.decorators import bqm_index_labels
 from dimod.sampleset import SampleSet
-from dimod.vartypes import Vartype
 
 __all__ = ['ExactSolver']
 
@@ -74,7 +70,6 @@ class ExactSolver(Sampler):
         self.properties = {}
         self.parameters = {}
 
-    @bqm_index_labels
     def sample(self, bqm):
         """Sample from a binary quadratic model.
 
@@ -86,46 +81,33 @@ class ExactSolver(Sampler):
             :obj:`~dimod.SampleSet`
 
         """
-        M = bqm.binary.to_numpy_matrix()
-        off = bqm.binary.offset
-
-        if M.shape == (0, 0):
+        n = len(bqm)
+        if n == 0:
             return SampleSet.from_samples([], bqm.vartype, energy=[])
 
-        sample = np.zeros((len(bqm),), dtype=bool)
+        samples = _graycode(bqm)
 
-        # now we iterate, flipping one bit at a time until we have
-        # traversed all samples. This is a Gray code.
-        # https://en.wikipedia.org/wiki/Gray_code
-        def iter_samples():
-            sample = np.zeros((len(bqm)), dtype=bool)
-            energy = 0.0
+        if bqm.vartype is bqm.SPIN:
+            samples = 2*samples - 1
 
-            yield sample.copy(), energy + off
-
-            for i in range(1, 1 << len(bqm)):
-                v = _ffs(i)
-
-                # flip the bit in the sample
-                sample[v] = not sample[v]
-
-                # for now just calculate the energy, but there is a more clever way by calculating
-                # the energy delta for the single bit flip, don't have time, pull requests
-                # appreciated!
-                energy = sample.dot(M).dot(sample.transpose())
-
-                yield sample.copy(), float(energy) + off
-
-        samples, energies = zip(*iter_samples())
-
-        response = SampleSet.from_samples(np.array(samples, dtype='int8'), Vartype.BINARY, energies)
-
-        # make sure the response matches the given vartype, in-place.
-        response.change_vartype(bqm.vartype, inplace=True)
-
+        response = SampleSet.from_samples_bqm((samples, list(bqm)), bqm)
         return response
 
 
-def _ffs(x):
-    """Gets the index of the least significant set bit of x."""
-    return (x & -x).bit_length() - 1
+def _graycode(bqm):
+    """Get a numpy array containing all possible samples in a gray-code order"""
+    # developer note: there are better/faster ways to do this, but because
+    # we're limited in performance by the energy calculation, this is probably
+    # more readable and easier.
+    n = len(bqm)
+    ns = 1 << len(bqm)
+    samples = np.empty((ns, n), dtype=np.int8)
+
+    samples[0, :] = 0
+
+    for i in range(1, ns):
+        v = (i & -i).bit_length() - 1  # the least significant set bit of i
+        samples[i, :] = samples[i - 1, :]
+        samples[i, v] = not samples[i - 1, v]
+
+    return samples
