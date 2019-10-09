@@ -6,7 +6,7 @@ import dimod
 from dimod import ExactSolver
 import networkx as nx
 import itertools
-
+from collections import deque
 
 def sample(self, bqm, components=None, **parameters):
     """Sample from the provided binary quadratic model.
@@ -51,11 +51,11 @@ def sample(self, bqm, components=None, **parameters):
         return SampleSet.from_samples_bqm(sampleset, bqm)
 
 
-def build_biconnected_graph(bcc):
+def build_biconnected_graph(bcc, cut_vertices):
     bcc = [tuple(c) for c  in bcc]
     T = nx.Graph()
     for c in bcc:
-        T.add_node(c)
+        T.add_node(c, cuts = [v for v in c if v in cut_vertices])
     for (c1, c2) in itertools.combinations(bcc, 2):
         cv = list(set(c1).intersection(set(c2)))
         if len(cv) > 0:
@@ -78,12 +78,15 @@ if __name__ == '__main__':
     print(list(bcc))
 
     # build the graph structure (make this faster at some point)
-    T = build_biconnected_graph(bcc)
+    T = build_biconnected_graph(bcc, cut_vertices)
+    print(T.nodes(data=True))
     print(T.edges(data=True))
 
     # work up the edges of the tree from leafs to root, sampling at each step. Record energy and best state in each
     # bcc for each cut vertex configuration. From root, propagate solutions back down the tree.
-
+    #source = T.nodes()[0]
+    print(list(nx.dfs_postorder_nodes(T)))
+    #for bcc in nx.dfs_postorder_nodes(T):
 
 
 
