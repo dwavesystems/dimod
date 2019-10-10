@@ -24,8 +24,7 @@ namespace dimod {
 
 template<typename VarIndex, typename Bias>
 std::pair<typename std::vector<std::pair<VarIndex, Bias>>::const_iterator, bool>
-    directed_edge_iterator(const std::vector<std::pair<std::vector<std::pair<
-                           VarIndex, Bias>>, Bias>> &bqm,
+    directed_edge_iterator(const AdjVectorBQM<VarIndex, Bias> &bqm,
                            VarIndex u, VarIndex v) {
     assert(u >= 0 && u < bqm.size());
     assert(v >= 0 && v < bqm.size());
@@ -42,8 +41,7 @@ std::pair<typename std::vector<std::pair<VarIndex, Bias>>::const_iterator, bool>
 
 template<typename VarIndex, typename Bias>
 std::pair<typename std::vector<std::pair<VarIndex, Bias>>::iterator, bool>
-    directed_edge_iterator(std::vector<std::pair<std::vector<std::pair<
-                           VarIndex, Bias>>, Bias>> &bqm,
+    directed_edge_iterator(AdjVectorBQM<VarIndex, Bias> &bqm,
                            VarIndex u, VarIndex v) {
     assert(u >= 0 && u < bqm.size());
     assert(v >= 0 && v < bqm.size());
@@ -61,14 +59,12 @@ std::pair<typename std::vector<std::pair<VarIndex, Bias>>::iterator, bool>
 // Read the BQM
 
 template<typename VarIndex, typename Bias>
-std::size_t num_variables(const std::vector<std::pair<std::vector<
-                          std::pair<VarIndex, Bias>>, Bias>> &bqm) {
+std::size_t num_variables(const AdjVectorBQM<VarIndex, Bias> &bqm) {
     return bqm.size();
 }
 
 template<typename VarIndex, typename Bias>
-std::size_t num_interactions(const std::vector<std::pair<std::vector<
-                             std::pair<VarIndex, Bias>>, Bias>> &bqm) {
+std::size_t num_interactions(const AdjVectorBQM<VarIndex, Bias> &bqm) {
     std::size_t count = 0;
     for (typename std::vector<std::pair<std::vector<std::pair<VarIndex,
          Bias>>, Bias>>::const_iterator it = bqm.begin();
@@ -79,15 +75,13 @@ std::size_t num_interactions(const std::vector<std::pair<std::vector<
 }
 
 template<typename VarIndex, typename Bias>
-Bias get_linear(const std::vector<std::pair<std::vector<std::pair<VarIndex,
-                Bias>>, Bias>> &bqm, VarIndex v) {
+Bias get_linear(const AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex v) {
     assert(v >= 0 && v < bqm.size());
     return bqm[v].second;
 }
 
 template<typename VarIndex, typename Bias>
-std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::vector<
-                                    std::pair<VarIndex, Bias>>, Bias>> &bqm,
+std::pair<Bias, bool> get_quadratic(const AdjVectorBQM<VarIndex, Bias> &bqm,
                                     VarIndex u, VarIndex v) {
     assert(u >= 0 && u < bqm.size());
     assert(v >= 0 && v < bqm.size());
@@ -105,16 +99,14 @@ std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::vector<
 
 // Change the values in the BQM
 template<typename VarIndex, typename Bias>
-void set_linear(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
-                Bias>> &bqm,
+void set_linear(AdjVectorBQM<VarIndex, Bias> &bqm,
                 VarIndex v, Bias b) {
     assert(v >= 0 && v < bqm.size());
     bqm[v].second = b;
 }
 
 template<typename VarIndex, typename Bias>
-bool set_quadratic(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
-                   Bias>> &bqm,
+bool set_quadratic(AdjVectorBQM<VarIndex, Bias> &bqm,
                    VarIndex u, VarIndex v, Bias b) {
     assert(u >= 0 && u < bqm.size());
     assert(v >= 0 && v < bqm.size());
@@ -147,8 +139,7 @@ bool set_quadratic(std::vector<std::pair<std::vector<std::pair<VarIndex, Bias>>,
 // Change the structure of the BQM
 
 template<typename VarIndex, typename Bias>
-VarIndex add_variable(std::vector<std::pair<std::vector<std::pair<VarIndex,
-                      Bias>>, Bias>> &bqm) {
+VarIndex add_variable(AdjVectorBQM<VarIndex, Bias> &bqm) {
     bqm.resize(num_variables(bqm)+1);
     return num_variables(bqm)-1;
 }
@@ -156,15 +147,13 @@ VarIndex add_variable(std::vector<std::pair<std::vector<std::pair<VarIndex,
 // todo: this should do nothing if the interaction is already present rather
 // than overriding with 0
 template<typename VarIndex, typename Bias>
-bool add_interaction(std::vector<std::pair<std::vector<std::pair<VarIndex,
-                     Bias>>, Bias>> &bqm,
+bool add_interaction(AdjVectorBQM<VarIndex, Bias> &bqm,
                      VarIndex u, VarIndex v, Bias b) {
     return set_quadratic(bqm, u, v, 0);
 }
 
 template<typename VarIndex, typename Bias>
-VarIndex pop_variable(std::vector<std::pair<std::vector<std::pair<VarIndex,
-                      Bias>>, Bias>> &bqm) {
+VarIndex pop_variable(AdjVectorBQM<VarIndex, Bias> &bqm) {
     assert(bqm.size() > 0);  // undefined for empty
 
     VarIndex v = bqm.size() - 1;
@@ -186,8 +175,7 @@ VarIndex pop_variable(std::vector<std::pair<std::vector<std::pair<VarIndex,
 }
 
 template<typename VarIndex, typename Bias>
-bool remove_interaction(std::vector<std::pair<std::vector<std::pair<VarIndex,
-                      Bias>>, Bias>> &bqm, VarIndex u, VarIndex v) {
+bool remove_interaction(AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex u, VarIndex v) {
     assert(u >= 0 && u < bqm.size());
     assert(v >= 0 && v < bqm.size());
     assert(u != v);
