@@ -13,7 +13,13 @@
 #    limitations under the License.
 #
 # =============================================================================
-from dimod.bqm.adjarraybqm import AdjArrayBQM
+import sys
+
 from dimod.bqm.adjdictbqm import AdjDictBQM
-from dimod.bqm.adjmapbqm import AdjMapBQM
-from dimod.bqm.adjvectorbqm import AdjVectorBQM
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 5:
+    from dimod.bqm.adjarraybqm import AdjArrayBQM
+    from dimod.bqm.adjmapbqm import AdjMapBQM
+    from dimod.bqm.adjvectorbqm import AdjVectorBQM
+
+del sys  # so not in namespace
