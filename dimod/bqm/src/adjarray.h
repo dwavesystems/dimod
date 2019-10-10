@@ -20,36 +20,28 @@
 
 namespace dimod {
 
-    // developer note: while we continue to support python2.7 we are stuck
-    // using visual studio 9.0 and consequently don't have access to template
-    // aliases. For now we'll just be more verbose but here they are for
-    // reference:
-    //
-    // template<typename Bias>
-    // using AdjArrayInVars = typename std::vector<std::pair<std::size_t,Bias>>;
-    //
-    // template<typename VarIndex, typename Bias>
-    // using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
+    template<typename Bias>
+    using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
+
+    template<typename VarIndex, typename Bias>
+    using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
 
     // Read the BQM
 
     template<typename V, typename B>
-    std::size_t num_variables(const std::vector<std::pair<std::size_t, B>>&,
-                              const std::vector<std::pair<V, B>>&);
+    std::size_t num_variables(const AdjArrayInVars<B>&,
+                              const AdjArrayOutVars<V, B>&);
 
     template<typename V, typename B>
-    std::size_t num_interactions(const std::vector<std::pair<std::size_t, B>>&,
-                                 const std::vector<std::pair<V, B>>&);
+    std::size_t num_interactions(const AdjArrayInVars<B>&,
+                                 const AdjArrayOutVars<V, B>&);
 
     template<typename V, typename B>
-    B get_linear(const std::vector<std::pair<std::size_t, B>>&,
-                 const std::vector<std::pair<V, B>>&,
-                 V);
+    B get_linear(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
 
     template<typename V, typename B>
-    std::pair<B, bool> get_quadratic(const std::vector<std::pair<std::size_t,
-                                     B>>&,
-                                     const std::vector<std::pair<V, B>>&,
+    std::pair<B, bool> get_quadratic(const AdjArrayInVars<B>&,
+                                     const AdjArrayOutVars<V, B>&,
                                      V, V);
 
     // todo: variable_iterator
@@ -59,14 +51,10 @@ namespace dimod {
     // Change the values in the BQM
 
     template<typename V, typename B>
-    void set_linear(std::vector<std::pair<std::size_t, B>>&,
-                    std::vector<std::pair<V, B>>&,
-                    V, B);
+    void set_linear(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, B);
 
     template<typename V, typename B>
-    bool set_quadratic(std::vector<std::pair<std::size_t, B>>&,
-                       std::vector<std::pair<V, B>>&,
-                       V, V, B);
+    bool set_quadratic(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, V, B);
 
 }  // namespace dimod
 
