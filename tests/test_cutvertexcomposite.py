@@ -22,7 +22,7 @@ from dimod.vartypes import Vartype
 from dimod import BinaryQuadraticModel
 from dimod import CutVertexComposite, ExactSolver, FixedVariableComposite, ConnectedComponentsComposite
 from dimod import SampleSet
-from dimod.reference.composites.cutvertices import BiconnectedTreeDecomposition
+from dimod.reference.composites.cutvertex import BiconnectedTreeDecomposition
 import itertools
 
 

@@ -15,8 +15,7 @@
 # =============================================================================
 """
 A composite that breaks the problem into sub-problems corresponding to the
-biconnected components of the binary
-quadratic model graph before sending to its child sampler.
+biconnected components of the binary quadratic model graph before sending to its child sampler.
 """
 
 from dimod.sampleset import as_samples
@@ -37,7 +36,7 @@ class CutVertexComposite(ComposedSampler):
     Biconnected components of a bqm graph are computed (if not provided),
     and each subproblem is passed to the child sampler.
     Returned samples from each child sampler are merged. Only the best solution
-    of each response is pick and merge with others
+    of each response is pick and merged with others
     (i.e. this composite returns a single solution).
 
     Args:
@@ -48,7 +47,7 @@ class CutVertexComposite(ComposedSampler):
        This example uses :class:`.CutVertexComposite` to instantiate a
        composed sampler that submits a simple Ising problem to a sampler.
        The composed sampler finds the cut vertex ("2"), breaks the problem into biconnected components ({0, 1,
-       2} and {2, 3, 4}), solves each biconnected components and combines the results into a single solution.
+       2} and {2, 3, 4}), solves each biconnected component and combines the results into a single solution.
 
        >>> h = {}
        >>> J = {e: -1 for e in [(0, 1), (0, 2), (1, 2), (2, 3), (2, 4), (3, 4)]}
@@ -78,9 +77,9 @@ class CutVertexComposite(ComposedSampler):
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):
-                Binary quadratic model to be sampled from.
+                Connected binary quadratic model to be sampled from.
 
-            tree_decomp: BiconnectedTreeDecomposition
+            tree_decomp: (:obj:`BiconnectedTreeDecomposition', default=None)
                 Tree decomposition of the bqm. Computed if not provided.
 
             **parameters:
@@ -101,32 +100,36 @@ class CutVertexComposite(ComposedSampler):
 
 
 def sub_bqm(bqm, variables):
-    # build bqm out of a small subset of variables. Equivalent to fixing all other variables to 0.
+    # build bqm out of a subset of variables. Equivalent to fixing all other variables to 0, but faster when then
+    # subset is small.
     linear = {v: bqm.linear[v] for v in variables}
     quadratic = {(u, v): bqm.quadratic[(u, v)] for (u, v) in itertools.combinations(variables, 2)
                  if (u, v) in bqm.quadratic}
     return dimod.BinaryQuadraticModel(linear, quadratic, offset=0, vartype=bqm.vartype)
 
 
-def get_marginals(bqm, x, sampler, **parameters):
+def get_conditionals(bqm, x, sampler, **parameters):
     # Get a sample from bqm with x fixed to each of its two possible values.
     # Return the samples and the difference in energy.
 
     not_one = -1 if bqm.vartype == dimod.Vartype.SPIN else 0
-    marginals = dict()
+    conditionals = dict()
     for value in [1, not_one]:
 
         bqm2 = bqm.copy()
         bqm2.fix_variable(x, value)
         # here .truncate(1) is used to pick the best solution only.
-        marginals[value] = sampler.sample(bqm2, **parameters).truncate(1)
+        conditionals[value] = sampler.sample(bqm2, **parameters).truncate(1)
 
-    delta = marginals[1].record.energy[0] - marginals[not_one].record.energy[0]
-    return marginals, delta
+    delta = conditionals[1].record.energy[0] - conditionals[not_one].record.energy[0]
+    return conditionals, delta
 
 
 class BiconnectedTreeDecomposition(object):
+    """Class for building and sampling from tree decompositions based on biconnected components.
 
+
+    """
     def __init__(self, bqm):
         self.bqm = bqm
         G = bqm.to_networkx_graph()
@@ -146,12 +149,12 @@ class BiconnectedTreeDecomposition(object):
             G: a networkx Graph.
 
         Returns:
-            T: a networkx Digraph that is a tree.
+            T: a networkx Digraph that is a tree representing the tree decomposition.
 
             root: the root vertex of T.
 
-            Each vertex x of T is a tuple of vertices V_x in G that induces a biconnected component. Associated with
-            x is the data:
+            Each vertex x of T is a tuple of vertices V_x in G that induces a biconnected component (i.e. a bag in
+            the tree decomposition). Associated with each x is the data:
                 "cuts": a list of vertices of G in V_x that are cut vertices.
                 "parent_cut": the cut vertex in V_x connecting V_x to its parent in the tree.
                 "child_nodes": the children of V_x in the tree.
@@ -206,8 +209,8 @@ class BiconnectedTreeDecomposition(object):
         Returns:
             sampleset: a dimod sampleset.
 
-
         Method: dynamic programming on the tree decomposition from the biconnected components.
+
         Each node in the tree decomposition is a biconnected component in the bqm.
         Working up from the leaves of the tree to the root, sample each biconnected component. Record the energy and
         best state in the component, for each configuration of the cut vertex associated with the parent of that
@@ -225,7 +228,7 @@ class BiconnectedTreeDecomposition(object):
         cut_vertex_conditionals = dict()
         delta_energies = dict()
 
-        # build marginals from leaves of tree up.
+        # build conditionals from leaves of tree up.
         for c in nx.dfs_postorder_nodes(T, source=root):
 
             # get component
@@ -240,13 +243,14 @@ class BiconnectedTreeDecomposition(object):
             if c != root:
                 # not at root yet. Unique parent cut vertex.
                 parent_cut_vertex = T.nodes[c]['parent_cut']
-                marginal, delta = get_marginals(bqm_copy, parent_cut_vertex, sampler, **parameters)
-                cut_vertex_conditionals[c] = marginal
+                # sample component at each value of the parent cut vertex.
+                conditional, delta = get_conditionals(bqm_copy, parent_cut_vertex, sampler, **parameters)
+                cut_vertex_conditionals[c] = conditional
                 delta_energies[c] = delta
             else:
-                # solve at the root node.
+                # sample at the root node.
                 # here .truncate(1) is used to pick the best solution only.
-                sampleset = sampler.sample(bqm_copy).truncate(1)
+                sampleset = sampler.sample(bqm_copy, **parameters).truncate(1)
 
         # sample bqm from root of tree down.
         for c in nx.dfs_preorder_nodes(T, source=root):
