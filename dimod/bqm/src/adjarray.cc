@@ -22,24 +22,21 @@ namespace dimod {
     // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_variables(const std::vector<std::pair<std::size_t, Bias>>
-                                  &invars,
-                              const std::vector<std::pair<VarIndex, Bias>>
-                                  &outvars) {
+    std::size_t num_variables(const AdjArrayInVars<Bias> &invars,
+                              const AdjArrayOutVars<VarIndex, Bias> &outvars) {
         return invars.size();
     }
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(const std::vector<std::pair<std::size_t, Bias>>
-                                    &invars,
-                                 const std::vector<std::pair<VarIndex, Bias>>
-                                 &outvars) {
+    std::size_t num_interactions(const AdjArrayInVars<Bias> &invars,
+                                 const AdjArrayOutVars<VarIndex, Bias>
+                                &outvars) {
         return outvars.size() / 2;
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_linear(const std::vector<std::pair<std::size_t, Bias>> &invars,
-                    const std::vector<std::pair<VarIndex, Bias>> &outvars,
+    Bias get_linear(const AdjArrayInVars<Bias> &invars,
+                    const AdjArrayOutVars<VarIndex, Bias> &outvars,
                     VarIndex v) {
         assert(v >= 0 && v < invars.size());
         return invars[v].second;
@@ -53,10 +50,9 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<std::size_t,
-                                        Bias>> &invars,
-                                        const std::vector<std::pair<VarIndex,
-                                        Bias>> &outvars,
+    std::pair<Bias, bool> get_quadratic(const AdjArrayInVars<Bias> &invars,
+                                        const AdjArrayOutVars<VarIndex, Bias>
+                                        &outvars,
                                         VarIndex u, VarIndex v) {
         assert(u >= 0 && u < invars.size());
         assert(v >= 0 && v < invars.size());
@@ -69,7 +65,7 @@ namespace dimod {
 
         const std::pair<VarIndex, Bias> target(v, 0);
 
-        typename std::vector<std::pair<VarIndex, Bias>>::const_iterator low;
+        typename AdjArrayOutVars<VarIndex, Bias>::const_iterator low;
         low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
                                target, pair_lt<VarIndex, Bias>);
 
@@ -81,8 +77,8 @@ namespace dimod {
     // Change the values in the BQM
 
     template<typename VarIndex, typename Bias>
-    void set_linear(std::vector<std::pair<std::size_t, Bias>> &invars,
-                    std::vector<std::pair<VarIndex, Bias>> &outvars,
+    void set_linear(AdjArrayInVars<Bias> &invars,
+                    AdjArrayOutVars<VarIndex, Bias> &outvars,
                     VarIndex v, Bias b) {
         assert(v >= 0 && v < invars.size());
         invars[v].second = b;
@@ -91,14 +87,14 @@ namespace dimod {
     // Q: Should we do something else if the user tries to set a non-existant
     //    quadratic bias? Error/segfault?
     template<typename VarIndex, typename Bias>
-    bool set_quadratic(std::vector<std::pair<std::size_t, Bias>> &invars,
-                       std::vector<std::pair<VarIndex, Bias>> &outvars,
+    bool set_quadratic(AdjArrayInVars<Bias> &invars,
+                       AdjArrayOutVars<VarIndex, Bias> &outvars,
                        VarIndex u, VarIndex v, Bias b) {
         assert(u >= 0 && u < invars.size());
         assert(v >= 0 && v < invars.size());
         assert(u != v);
 
-        typename std::vector<std::pair<VarIndex, Bias>>::iterator low;
+        typename AdjArrayOutVars<VarIndex, Bias>::iterator low;
         std::size_t start, end;
 
         // interaction (u, v)

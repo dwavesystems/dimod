@@ -115,6 +115,11 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
+              ]
+
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 5:
+    extensions.extend([
               Extension("dimod.bqm.adjmapbqm",
                         ['dimod/bqm/adjmapbqm'+ext],
                         include_dirs=['dimod/bqm/src/'],
@@ -129,7 +134,7 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         library_dirs=['dimod/bqm/src/']),
               Extension("dimod.bqm.utils",
                         ['dimod/bqm/utils'+ext]),
-              ]
+              ])
 
 if USE_CYTHON:
     from Cython.Build import cythonize

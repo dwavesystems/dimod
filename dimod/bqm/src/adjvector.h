@@ -20,36 +20,26 @@
 
 namespace dimod {
 
+    template<typename VarIndex, typename Bias>
+    using VectorNeighbourhood = typename std::vector<std::pair<VarIndex, Bias>>;
 
-    // developer note: while we continue to support python2.7 we are stuck
-    // using visual studio 9.0 and consequently don't have access to template
-    // aliases. For now we'll just be more verbose but here they are for
-    // reference:
-    //
-    // template<typename VarIndex, typename Bias>
-    // using Neighbourhood = typename std::vector<std::pair<VarIndex, Bias>>;
-    //
-    // template<typename VarIndex, typename Bias>
-    // using AdjVectorBQM = typename std::vector<
-    //     std::pair<Neighbourhood<VarIndex, Bias>, Bias>>;
+    template<typename VarIndex, typename Bias>
+    using AdjVectorBQM = typename std::vector<
+        std::pair<VectorNeighbourhood<VarIndex, Bias>, Bias>>;
 
     // Read the BQM
 
     template<typename V, typename B>
-    std::size_t num_variables(
-        const std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&);
+    std::size_t num_variables(const AdjVectorBQM<V, B>&);
 
     template<typename V, typename B>
-    std::size_t num_interactions(
-        const std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&);
+    std::size_t num_interactions(const AdjVectorBQM<V, B>&);
 
     template<typename V, typename B>
-    B get_linear(
-        const std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V);
+    B get_linear(const AdjVectorBQM<V, B>&, V);
 
     template<typename V, typename B>
-    std::pair<B, bool> get_quadratic(
-        const std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V, V);
+    std::pair<B, bool> get_quadratic(const AdjVectorBQM<V, B>&, V, V);
 
     // todo: variable_iterator
     // todo: interaction_iterator
@@ -58,28 +48,24 @@ namespace dimod {
     // Change the values in the BQM
 
     template<typename V, typename B>
-    void set_linear(
-        std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V, B);
+    void set_linear(AdjVectorBQM<V, B>&, V, B);
 
     template<typename V, typename B>
-    bool set_quadratic(
-        std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V, V, B);
+    bool set_quadratic(AdjVectorBQM<V, B>&, V, V, B);
 
     // Change the structure of the BQM
 
     template<typename V, typename B>
-    V add_variable(std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&);
+    V add_variable(AdjVectorBQM<V, B>&);
 
     template<typename V, typename B>
-    bool add_interaction(
-        std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V, V);
+    bool add_interaction(AdjVectorBQM<V, B>&, V, V);
 
     template<typename V, typename B>
-    V pop_variable(std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&);
+    V pop_variable(AdjVectorBQM<V, B>&);
 
     template<typename V, typename B>
-    bool remove_interaction(
-        std::vector<std::pair<std::vector<std::pair<V, B>>, B>>&, V, V);
+    bool remove_interaction(AdjVectorBQM<V, B>&, V, V);
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJVECTOR_H_

@@ -22,17 +22,14 @@ namespace dimod {
     // Read the BQM
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_variables(const std::vector<std::pair<std::map<VarIndex,
-                              Bias>, Bias>> &bqm) {
+    std::size_t num_variables(const AdjMapBQM<VarIndex, Bias> &bqm) {
         return bqm.size();
     }
 
     template<typename VarIndex, typename Bias>
-    std::size_t num_interactions(const std::vector<std::pair<std::map<VarIndex,
-                                 Bias>, Bias>> &bqm) {
+    std::size_t num_interactions(const AdjMapBQM<VarIndex, Bias> &bqm) {
         std::size_t count = 0;
-        for (typename std::vector<std::pair<std::map<VarIndex, Bias>,
-             Bias>>::const_iterator it = bqm.begin();
+        for (typename AdjMapBQM<VarIndex, Bias>::const_iterator it = bqm.begin();
              it != bqm.end(); ++it) {
             count += (*it).first.size();
         }
@@ -40,15 +37,13 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    Bias get_linear(const std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
-                    &bqm, VarIndex v) {
+    Bias get_linear(const AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v) {
         assert(v >= 0 && v < bqm.size());
         return bqm[v].second;
     }
 
     template<typename VarIndex, typename Bias>
-    std::pair<Bias, bool> get_quadratic(const std::vector<std::pair<
-                                        std::map<VarIndex, Bias>, Bias>> &bqm,
+    std::pair<Bias, bool> get_quadratic(const AdjMapBQM<VarIndex, Bias> &bqm,
                                         VarIndex u, VarIndex v) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
@@ -71,16 +66,15 @@ namespace dimod {
     // Change the values in the BQM
 
     template<typename VarIndex, typename Bias>
-    void set_linear(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>> &bqm,
-                    VarIndex v, Bias b) {
+    void set_linear(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v, Bias b) {
         assert(v >= 0 && v < bqm.size());
         bqm[v].second = b;
     }
 
     // todo: decide and document what happens when u == v
     template<typename VarIndex, typename Bias>
-    void set_quadratic(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
-                       &bqm, VarIndex u, VarIndex v, Bias b) {
+    void set_quadratic(AdjMapBQM<VarIndex, Bias> &bqm,
+                       VarIndex u, VarIndex v, Bias b) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
         assert(u != v);
@@ -92,15 +86,14 @@ namespace dimod {
     // Change the structure of the BQM
 
     template<typename VarIndex, typename Bias>
-    VarIndex add_variable(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
-                          &bqm) {
+    VarIndex add_variable(AdjMapBQM<VarIndex, Bias> &bqm) {
         bqm.push_back(std::make_pair(std::map<VarIndex, Bias>(), 0));
         return bqm.size() - 1;
     }
 
     template<typename VarIndex, typename Bias>
-    bool add_interaction(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
-                         &bqm, VarIndex u, VarIndex v) {
+    bool add_interaction(AdjMapBQM<VarIndex, Bias> &bqm,
+                         VarIndex u, VarIndex v) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
         assert(u != v);
@@ -117,8 +110,7 @@ namespace dimod {
     }
 
     template<typename VarIndex, typename Bias>
-    VarIndex pop_variable(std::vector<std::pair<std::map<VarIndex, Bias>, Bias>>
-                          &bqm) {
+    VarIndex pop_variable(AdjMapBQM<VarIndex, Bias> &bqm) {
         assert(bqm.size() > 0);  // undefined for empty
 
         VarIndex v = bqm.size() - 1;
@@ -135,8 +127,8 @@ namespace dimod {
 
     // todo: decide and document what happens when u == v
     template<typename VarIndex, typename Bias>
-    bool remove_interaction(std::vector<std::pair<std::map<VarIndex, Bias>,
-                            Bias>> &bqm, VarIndex u, VarIndex v) {
+    bool remove_interaction(AdjMapBQM<VarIndex, Bias> &bqm,
+                            VarIndex u, VarIndex v) {
         assert(u >= 0 && u < bqm.size());
         assert(v >= 0 && v < bqm.size());
         assert(u != v);
