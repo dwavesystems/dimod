@@ -26,6 +26,7 @@ import dimod
 import networkx as nx
 import itertools
 
+
 __all__ = ['CutVertexComposite']
 
 
@@ -103,7 +104,7 @@ def sub_bqm(bqm, variables):
     # build bqm out of a small subset of variables. Equivalent to fixing all other variables to 0.
     linear = {v: bqm.linear[v] for v in variables}
     quadratic = {(u, v): bqm.quadratic[(u, v)] for (u, v) in itertools.combinations(variables, 2)
-                    if (u, v) in bqm.quadratic}
+                 if (u, v) in bqm.quadratic}
     return dimod.BinaryQuadraticModel(linear, quadratic, offset=0, vartype=bqm.vartype)
 
 
@@ -136,7 +137,6 @@ class BiconnectedTreeDecomposition(object):
         # build the tree decomposition:
         self.T, self.root = self.build_biconnected_tree_decomp(G)
 
-
     @staticmethod
     def build_biconnected_tree_decomp(G):
         """
@@ -150,13 +150,13 @@ class BiconnectedTreeDecomposition(object):
 
             root: the root vertex of T.
 
-            Each vertex x of T is a tuple of vertices V_x in G that induces a biconnected component. Associated with x is
-            the data:
+            Each vertex x of T is a tuple of vertices V_x in G that induces a biconnected component. Associated with
+            x is the data:
                 "cuts": a list of vertices of G in V_x that are cut vertices.
                 "parent_cut": the cut vertex in V_x connecting V_x to its parent in the tree.
-                "child_cut": the cut vertices in V_x connecting V_x to its children in the tree.
-            An arc (x, y) in T indicates that V_x and V_y share a cut vertex c, and V_x is the parent of V_y. The vertex c
-            is in the data "cut" of arc (x, y).
+                "child_nodes": the children of V_x in the tree.
+            An arc (x, y) in T indicates that V_x and V_y share a cut vertex c, and V_x is the parent of V_y. The
+            vertex c is in the data "cut" of arc (x, y).
 
         """
 
@@ -172,14 +172,15 @@ class BiconnectedTreeDecomposition(object):
                 components[v].append(c)
 
         # bfs on components to find tree structure
-        visited = {c: False for c in biconnected_components}
         root = biconnected_components[0]
         queue = [root]
         for v in T.nodes():
             T.nodes[v]['child_cuts'] = []
+            T.nodes[v]['child_nodes'] = []
+        visited = {c: False for c in biconnected_components}
+        visited[root] = True
         while queue:
             c1 = queue.pop(0)
-            visited[c1] = True
             for v in T.nodes[c1]['cuts']:
                 for c2 in components[v]:
                     if not (visited[c2]):
@@ -187,10 +188,11 @@ class BiconnectedTreeDecomposition(object):
                         T.nodes[c2]['parent_cut'] = v
                         T.nodes[c2]['parent_node'] = c1
                         T.nodes[c1]['child_cuts'].append(v)
+                        T.nodes[c1]['child_nodes'].append(c2)
                         queue.append(c2)
+                        visited[c2] = True
 
         return T, root
-
 
     def sample(self, sampler, **parameters):
         """
@@ -220,7 +222,6 @@ class BiconnectedTreeDecomposition(object):
         root = self.root
         bqm = self.bqm
 
-
         cut_vertex_conditionals = dict()
         delta_energies = dict()
 
@@ -230,18 +231,18 @@ class BiconnectedTreeDecomposition(object):
             # get component
             bqm_copy = sub_bqm(bqm, c)
             # adjust linear biases on child cut vertices
-            child_cut_vertices = T.nodes[c]['child_cuts']
-            for cv in child_cut_vertices:
-                linear_offset = delta_energies[cv] if bqm.vartype == dimod.BINARY else delta_energies[cv]/2.
-                bqm_copy.add_variable(cv, linear_offset - bqm_copy.linear[cv])
+            child_cut_nodes = T.nodes[c]['child_nodes']
+            for cc in child_cut_nodes:
+                linear_offset = delta_energies[cc] if bqm.vartype == dimod.BINARY else delta_energies[cc]/2.
+                cv = T.nodes[cc]['parent_cut']
+                bqm_copy.add_variable(cv, linear_offset - bqm.linear[cv])
 
             if c != root:
                 # not at root yet. Unique parent cut vertex.
                 parent_cut_vertex = T.nodes[c]['parent_cut']
-
                 marginal, delta = get_marginals(bqm_copy, parent_cut_vertex, sampler, **parameters)
-                cut_vertex_conditionals[parent_cut_vertex] = marginal
-                delta_energies[parent_cut_vertex] = delta
+                cut_vertex_conditionals[c] = marginal
+                delta_energies[c] = delta
             else:
                 # solve at the root node.
                 # here .truncate(1) is used to pick the best solution only.
@@ -258,10 +259,7 @@ class BiconnectedTreeDecomposition(object):
                 if samples.shape[0] == 1:
                     # Extract a single sample from the cut vertex conditionals.
                     parent_cut_value = samples[0, labels.index(parent_cut_vertex)]
-                    samples2, labels2 = as_samples(cut_vertex_conditionals[parent_cut_vertex][parent_cut_value])
-                    if set(labels).intersection(set(labels2)):
-                        print("here")
-                    sampleset = sampleset.append_variables(cut_vertex_conditionals[parent_cut_vertex][parent_cut_value])
+                    sampleset = sampleset.append_variables(cut_vertex_conditionals[c][parent_cut_value])
                 else:
                     # For now we're only producing a single sample. To produce multiple samples, resample from each
                     # biconnected component with the parent cut vertices fixed to each of its two values.

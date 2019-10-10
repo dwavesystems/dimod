@@ -58,7 +58,6 @@ class TestCutVerticesComposite(unittest.TestCase):
         response = sampler.sample(bqm, fixed_variables=fixed_variables)
         self.assertIsInstance(response, SampleSet)
 
-
     def test_sample_two_components(self):
         bqm = BinaryQuadraticModel({0: 0.0, 1: 4.0, 2: -4.0, 3: 0.0}, {(0, 1): -4.0, (2, 3): 4.0}, 0.0, Vartype.BINARY)
 
@@ -67,7 +66,6 @@ class TestCutVerticesComposite(unittest.TestCase):
         self.assertIsInstance(response, SampleSet)
         self.assertEqual(response.first.sample, {0: 0, 1: 0, 2: 1, 3: 0})
         self.assertAlmostEqual(response.first.energy, bqm.energy({0: 0, 1: 0, 2: 1, 3: 0}))
-
 
     def test_sample_pass_treedecomp(self):
         bqm = BinaryQuadraticModel(linear={0: 0.0, 1: 1.0, 2: -1.0, 3: 0.0, 4: -0.5},
@@ -84,7 +82,6 @@ class TestCutVerticesComposite(unittest.TestCase):
         self.assertEqual(response.first.sample, ground_response.first.sample)
         self.assertAlmostEqual(response.first.energy, ground_response.first.energy)
 
-
     def test_forked_tree_decomp(self):
         comps = [[0, 1, 2], [2, 3, 4], [3, 5, 6], [4, 7, 8]]
         J = {(u, v): -1 for c in comps for (u, v) in itertools.combinations(c, 2)}
@@ -97,3 +94,13 @@ class TestCutVerticesComposite(unittest.TestCase):
         self.assertEqual(response.first.sample, ground_state)
         self.assertAlmostEqual(response.first.energy, bqm.energy(ground_state))
 
+    def test_simple_tree(self):
+        J = {(u, v): -1 for (u, v) in [(0, 3), (1, 3), (2, 3)]}
+        h = {3: 5}
+        bqm = BinaryQuadraticModel.from_ising(h, J)
+        sampler = CutVertexComposite(ExactSolver())
+        response = sampler.sample(bqm)
+
+        ground_state = {i: -1 for i in range(4)}
+        self.assertEqual(response.first.sample, ground_state)
+        self.assertAlmostEqual(response.first.energy, bqm.energy(ground_state))
