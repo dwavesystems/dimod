@@ -13,15 +13,23 @@
 #    limitations under the License.
 #
 # =============================================================================
+import sys
 import unittest
 
-from dimod.bqm import AdjMapBQM
 
 from tests.test_bqm import TestShapeableBQMAPI
 
 
 class TestAdjMap(TestShapeableBQMAPI, unittest.TestCase):
-    BQM = AdjMapBQM
+
+    @classmethod
+    def setUpClass(cls):
+        if sys.version_info.major == 2 or sys.version_info.minor < 5:
+            raise unittest.SkipTest("Not supported in Python <= 3.5")
+
+        from dimod.bqm import AdjMapBQM
+
+        cls.BQM = AdjMapBQM
 
 
 # class TestQuadraticBase(unittest.TestCase):

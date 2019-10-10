@@ -13,18 +13,24 @@
 #    limitations under the License.
 #
 # =============================================================================
-
+import sys
 import unittest
 
 import numpy as np
-
-from dimod.bqm import AdjArrayBQM
 
 from tests.test_bqm import TestBQMAPI
 
 
 class TestAdjArray(TestBQMAPI, unittest.TestCase):
-    BQM = AdjArrayBQM
+
+    @classmethod
+    def setUpClass(cls):
+        if sys.version_info.major == 2 or sys.version_info.minor < 5:
+            raise unittest.SkipTest("Not supported in Python <= 3.5")
+
+        from dimod.bqm import AdjArrayBQM
+
+        cls.BQM = AdjArrayBQM
 
 
 # class TestEnergies(unittest.TestCase):
