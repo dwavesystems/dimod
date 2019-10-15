@@ -26,7 +26,7 @@ from six import iteritems
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
-from dimod.vartypes import Vartype
+from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['make_quadratic']
 
@@ -96,8 +96,13 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             Insufficient strength can result in the binary quadratic model not
             having the same minimizations as the polynomial.
 
-        vartype (:class:`.Vartype`, optional):
-            Vartype of the polynomial. If `bqm` is provided, vartype is not required.
+        vartype (:class:`.Vartype`/str/set, optional):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            If `bqm` is provided, `vartype` is not required.
 
         bqm (:class:`.BinaryQuadraticModel`, optional):
             The terms of the reduced polynomial are added to this binary quadratic model.
@@ -112,16 +117,18 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
     """
-
-    if bqm is None:
-        if vartype is None:
-            raise ValueError("one of vartype and bqm must be provided")
-        bqm = BinaryQuadraticModel.empty(vartype)
+    if vartype is None:
+        if bqm is None:
+            raise ValueError("one of vartype or bqm must be provided")
+        else:
+            vartype = bqm.vartype
     else:
-        if not isinstance(bqm, BinaryQuadraticModel):
-            raise TypeError('create_using must be a BinaryQuadraticModel')
-        if vartype is not None and vartype is not bqm.vartype:
-            raise ValueError("one of vartype and create_using must be provided")
+        vartype = as_vartype(vartype)  # handle other vartype inputs
+        if bqm is None:
+            bqm = BinaryQuadraticModel.empty(vartype)
+        else:
+            bqm = bqm.change_vartype(vartype, inplace=False)
+
     bqm.info['reduction'] = {}
 
     # we want to be able to mutate the polynomial so copy. We treat this as a
@@ -179,12 +186,14 @@ def _reduce_degree(bqm, poly, vartype, scale):
         constraint = _binary_product([u, v, p])
 
         bqm.info['reduction'][(u, v)] = {'product': p}
-    else:
+    elif vartype is Vartype.SPIN:
         aux = _new_aux(bqm, u, v)
 
         constraint = _spin_product([u, v, p, aux])
 
         bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
+    else:
+        raise RuntimeError("unknown vartype: {!r}".format(vartype))
 
     constraint.scale(scale)
     bqm.update(constraint)

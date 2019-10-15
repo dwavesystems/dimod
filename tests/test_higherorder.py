@@ -184,6 +184,14 @@ class TestMakeQuadratic(unittest.TestCase):
 
             self.assertAlmostEqual(energy, min(reduced_energies))
 
+    def test_vartype(self):
+        poly = {(0, 1, 2): 10, (0, 1): 5}  # make sure (0, 1) is most common
+
+        self.assertEqual(dimod.make_quadratic(poly, 1.0, 'SPIN'),
+                         dimod.make_quadratic(poly, 1.0, dimod.SPIN))
+        self.assertEqual(dimod.make_quadratic(poly, 1.0, 'BINARY'),
+                         dimod.make_quadratic(poly, 1.0, dimod.BINARY))
+
     def test_quad_to_linear(self):
         J = {(0, 1): -1, (0, 1, 2): 1, (0, 1, 3): 1}
         h = {}
