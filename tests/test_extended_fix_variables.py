@@ -1,11 +1,16 @@
 import dimod
 import unittest
 
-from dimod.roof_duality.extended_fix_variables import find_contractible_variables_naive, \
-    find_contractible_variables_roof_duality, uncontract_solution, find_and_contract_all_variables_roof_duality, \
-    find_and_contract_all_variables_naive
+try:
+    from dimod.roof_duality.extended_fix_variables import find_contractible_variables_naive, \
+        find_contractible_variables_roof_duality, uncontract_solution, find_and_contract_all_variables_roof_duality, \
+        find_and_contract_all_variables_naive
+except ImportError:
+    cpp = False
+else:
+    cpp = True
 
-
+@unittest.skipUnless(cpp, "no cpp extensions built")
 class TestExtendedFixVariables(unittest.TestCase):
 
     def test_find_contractible_variables_naive(self):
