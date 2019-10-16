@@ -44,6 +44,11 @@ namespace dimod {
                                      const AdjArrayOutVars<V, B>&,
                                      V, V);
 
+    template<typename V, typename B>
+    std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
+              typename AdjArrayOutVars<V, B>::const_iterator>
+    neighborhood(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
+
     // todo: variable_iterator
     // todo: interaction_iterator
     // todo: neighbour_iterator
