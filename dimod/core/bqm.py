@@ -23,6 +23,119 @@ except ImportError:
 from six import add_metaclass
 
 
+# todo: there is a lot of duplication between dimid/views/bqm.py and
+# dimod/core/bqm.py. For now we'll maintain both but this needs to resolved
+# at some point
+
+
+@add_metaclass(abc.ABCMeta)
+class BQMView:
+    __slots__ = ['_bqm']
+
+    def __init__(self, bqm):
+        self._bqm = bqm
+
+    # support python2 pickle
+    def __getstate__(self):
+        return {'_bqm': self._bqm}
+
+    # support python2 pickle
+    def __setstate__(self, state):
+        self._bqm = state['_bqm']
+
+
+class Adjacency(BQMView, Mapping):
+    def __getitem__(self, v):
+        if not self._bqm.has_variable(v):
+            raise KeyError('{} is not a variable'.format(v))
+        return Neighbour(self._bqm, v)
+
+    def __iter__(self):
+        return self._bqm.iter_variables()
+
+    def __len__(self):
+        return self._bqm.num_variables
+
+
+class ShapeableAdjacency(Adjacency):
+    def __getitem__(self, v):
+        if not self._bqm.has_variable(v):
+            raise KeyError('{} is not a variable'.format(v))
+        return ShapeableNeighbour(self._bqm, v)
+
+
+class Neighbour(Mapping):
+    __slots__ = ['_bqm', '_var']
+
+    def __init__(self, bqm, v):
+        self._bqm = bqm
+        self._var = v
+
+    def __getitem__(self, v):
+        return self._bqm.get_quadratic(self._var, v)
+
+    def __iter__(self):
+        return self._bqm.iter_neighbors(self._var)
+
+    def __len__(self):
+        raise NotImplementedError
+        self._bqm.degree(self._var)   # degree is not yet implemented
+
+    def __setitem__(self, v, bias):
+        self._bqm.set_quadratic(self._var, v, bias)
+
+
+class ShapeableNeighbour(Neighbour, MutableMapping):
+    def __delitem__(self, v):
+        raise NotImplementedError
+
+
+class Linear(BQMView, Mapping):
+    __slots__ = ['_bqm']
+
+    def __init__(self, bqm):
+        self._bqm = bqm
+
+    def __getitem__(self, v):
+        return self._bqm.get_linear(v)
+
+    def __iter__(self):
+        return self._bqm.iter_variables()
+
+    def __len__(self):
+        return len(self._bqm)
+
+    def __setitem__(self, v, bias):
+        # inherits its ability to reshape the bqm from the `.set_linear` method
+        self._bqm.set_linear(v, bias)
+
+
+class ShapeableLinear(Linear, MutableMapping):
+    def __delitem__(self, v):
+        raise NotImplementedError
+
+
+class Quadratic(BQMView, Mapping):
+    def __getitem__(self, uv):
+        return self._bqm.get_quadratic(*uv)
+
+    def __iter__(self):
+        return self._bqm.iter_interactions()
+
+    def __len__(self):
+        return self._bqm.num_interactions
+
+    def __setitem__(self, uv, bias):
+        # inherits its ability to reshape the bqm from the `.set_linear` method
+        u, v = uv
+        self._bqm.set_quadratic(u, v, bias)
+
+
+class ShapeableQuadratic(Quadratic, MutableMapping):
+    def __delitem__(self, v):
+        raise NotImplementedError
+
+
 @add_metaclass(abc.ABCMeta)
 class BQM:
     @abc.abstractmethod
@@ -70,9 +183,25 @@ class BQM:
         return self.num_variables
 
     @property
+    def adj(self):
+        return Adjacency(self)
+
+    @property
+    def linear(self):
+        return Linear(self)
+
+    @property
+    def quadratic(self):
+        return Quadratic(self)
+
+    @property
     def shape(self):
         """2-tuple: (num_variables, num_interactions)."""
         return self.num_variables, self.num_interactions
+
+    @property
+    def variables(self):
+        return KeysView(self.linear)
 
     def has_variable(self, v):
         """Return True if v is a variable in the binary quadratic model."""
@@ -140,3 +269,17 @@ class ShapeableBQM(BQM):
     @abc.abstractmethod
     def remove_interaction(self, u, v):
         pass
+
+    # mixins
+
+    @property
+    def adj(self):
+        return ShapeableAdjacency(self)
+
+    @property
+    def linear(self):
+        return ShapeableLinear(self)
+
+    @property
+    def quadratic(self):
+        return ShapeableQuadratic(self)
