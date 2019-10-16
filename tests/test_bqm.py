@@ -30,9 +30,53 @@ class TestBQMAPI:
     Tests for BQMs like AdjArrayBQM (doesn't try to change the shape)
     """
 
+    def assertConsistentBQM(self, bqm):
+        # adjacency and linear are self-consistent
+        for v in bqm.linear:
+            self.assertIn(v, bqm.adj)
+        for v in bqm.adj:
+            self.assertIn(v, bqm.linear)
+
+        # adjacency and quadratic are self-consistent
+        for u, v in bqm.quadratic:
+            self.assertIn(v, bqm.linear)
+            self.assertIn(v, bqm.adj)
+            self.assertIn(u, bqm.adj[v])
+
+            self.assertIn(u, bqm.linear)
+            self.assertIn(u, bqm.adj)
+            self.assertIn(v, bqm.adj[u])
+
+            self.assertEqual(bqm.adj[u][v], bqm.quadratic[(u, v)])
+            self.assertEqual(bqm.adj[u][v], bqm.quadratic[(v, u)])
+            self.assertEqual(bqm.adj[v][u], bqm.adj[u][v])
+
+        for u, v in bqm.quadratic:
+            self.assertEqual(bqm.get_quadratic(u, v), bqm.quadratic[(u, v)])
+            self.assertEqual(bqm.get_quadratic(u, v), bqm.quadratic[(v, u)])
+            self.assertEqual(bqm.get_quadratic(v, u), bqm.quadratic[(u, v)])
+            self.assertEqual(bqm.get_quadratic(v, u), bqm.quadratic[(v, u)])
+
+        for u in bqm.adj:
+            for v in bqm.adj[u]:
+                self.assertIn((u, v), bqm.quadratic)
+                self.assertIn((v, u), bqm.quadratic)
+
+        self.assertEqual(len(bqm.quadratic), bqm.num_interactions)
+        self.assertEqual(len(bqm.linear), bqm.num_variables)
+        self.assertEqual(len(bqm.quadratic), len(set(bqm.quadratic)))
+        self.assertEqual(len(bqm.variables), len(bqm.linear))
+        self.assertEqual((bqm.num_variables, bqm.num_interactions), bqm.shape)
+
     def test__len__(self):
         bqm = self.BQM(np.ones((107, 107)), dimod.BINARY)
         self.assertEqual(len(bqm), 107)
+
+    def test_adj_setitem(self):
+        bqm = self.BQM(({}, {'ab': -1}), 'SPIN')
+        bqm.adj['a']['b'] = 5
+        self.assertEqual(bqm.adj['a']['b'], 5)
+        self.assertConsistentBQM(bqm)  # all the other cases
 
     def test_construction_args(self):
         # make sure all the orderes are ok
@@ -62,6 +106,7 @@ class TestBQMAPI:
 
     def test_construction_symmetric(self):
         bqm = self.BQM(np.ones((5, 5)), 'BINARY')
+        self.assertConsistentBQM(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -154,6 +199,18 @@ class TestBQMAPI:
         bqm = self.BQM((h, J), dimod.SPIN)
 
         self.assertEqual(list(bqm.iter_variables()), ['a', 1, 3])
+
+    def test_linear_setitem(self):
+        bqm = self.BQM(({}, {'ab': -1}, 0), dimod.SPIN)
+        bqm.linear['a'] = 5
+        self.assertEqual(bqm.get_linear('a'), 5)
+        self.assertConsistentBQM(bqm)
+
+    def test_quadratic_setitem(self):
+        bqm = self.BQM(({}, {'ab': -1}, 0), dimod.SPIN)
+        bqm.quadratic[('a', 'b')] = 5
+        self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
+        self.assertConsistentBQM(bqm)
 
     def test_offset(self):
         h = dict([('a', -1), (1, -1), (3, -1)])
