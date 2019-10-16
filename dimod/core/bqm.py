@@ -15,6 +15,11 @@
 # =============================================================================
 import abc
 
+try:
+    from collections.abc import KeysView, Mapping, MutableMapping
+except ImportError:
+    from collections import KeysView, Mapping, MutableMapping
+
 from six import add_metaclass
 
 
@@ -43,7 +48,11 @@ class BQM:
         pass
 
     @abc.abstractmethod
-    def iter_variables(self):
+    def iter_linear(self):
+        pass
+
+    @abc.abstractmethod
+    def iter_quadratic(self, variables=None):
         pass
 
     @abc.abstractmethod
@@ -69,9 +78,39 @@ class BQM:
         """Return True if v is a variable in the binary quadratic model."""
         try:
             self.get_linear(v)
-        except ValueError:
+        except (ValueError, TypeError):
             return False
         return True
+
+    def iter_variables(self):
+        """Iterate over the variables of the binary quadratic model.
+
+        Yields:
+            hashable: A variable in the binary quadratic model.
+
+        """
+        for v, _ in self.iter_linear():
+            yield v
+
+    def iter_interactions(self):
+        """Iterate over the interactions of the binary quadratic model.
+
+        Yields:
+            interaction: An interaction in the binary quadratic model.
+
+        """
+        for u, v, _ in self.iter_quadratic():
+            yield u, v
+
+    def iter_neighbors(self, u):
+        """Iterate over the neighbors of a variable in the bqm.
+
+        Yields:
+            variable: The neighbors of `v`.
+
+        """
+        for _, v, _ in self.iter_quadratic(u):
+            yield v
 
 
 class ShapeableBQM(BQM):
