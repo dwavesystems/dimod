@@ -225,14 +225,23 @@ class AdjDictBQM(ShapeableBQM):
             pass
         raise ValueError('No interaction between {} and {}'.format(u, v))
 
-    def iter_variables(self):
-        """Iterate over the variables of the binary quadratic model.
+    def iter_linear(self):
+        for u, neighborhood in self._adj.items():
+            yield u, neighborhood[u]  # u and it's bias
 
-        Yields:
-            hashable: A variable in the binary quadratic model.
+    def iter_quadratic(self, variables=None):
+        if variables is None:
+            variables = self._adj
+        elif self.has_variable(variables):
+            variables = [variables]
 
-        """
-        return iter(self._adj)
+        seen = set()
+        for u in variables:
+            neighborhood = self._adj[u]
+            seen.add(u)  # also avoids self-loops
+            for v, bias in neighborhood.items():
+                if v not in seen:
+                    yield (u, v, bias)
 
     def pop_variable(self):
         """Remove a variable from the binary quadratic model.
@@ -247,9 +256,9 @@ class AdjDictBQM(ShapeableBQM):
         if len(self._adj) == 0:
             raise ValueError("pop from empty binary quadratic model")
 
-        v, neighbourhood = self._adj.popitem(last=True)
+        v, neighborhood = self._adj.popitem(last=True)
 
-        for u in neighbourhood:
+        for u in neighborhood:
             if u != v:
                 self._adj[u].pop(v)
 

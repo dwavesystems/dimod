@@ -26,6 +26,8 @@ from numbers import Integral
 
 cimport cython
 
+from cython.operator cimport postincrement as inc, dereference as deref
+
 import numpy as np
 
 from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
@@ -33,6 +35,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
                                get_quadratic,
+                               neighborhood,
                                set_linear,
                                set_quadratic,
                                )
@@ -232,10 +235,67 @@ cdef class cyAdjArrayBQM:
 
         return vi
 
-    def iter_variables(self):
+    def iter_linear(self):
+        cdef VarIndex vi
         cdef object v
-        for v in range(self.num_variables):
-            yield self._idx_to_label.get(v, v)
+        cdef Bias b
+
+        for vi in range(num_variables(self.invars_, self.outvars_)):
+            v = self._idx_to_label.get(vi, vi)
+            b = self.invars_[vi].second
+
+            yield v, as_numpy_scalar(b, self.dtype)
+
+    def iter_quadratic(self, object variables=None):
+
+        cdef VarIndex ui, vi  # c indices
+        cdef object u, v  # python labels
+        cdef Bias b
+
+        cdef pair[vector[pair[VarIndex, Bias]].const_iterator,
+                  vector[pair[VarIndex, Bias]].const_iterator] it_eit
+        cdef vector[pair[VarIndex, Bias]].const_iterator it, eit
+
+        if variables is None:
+            # in the case that variables is unlabelled we can speed things up
+            # by just walking through the range
+            for ui in range(num_variables(self.invars_, self.outvars_)):
+                it_eit = neighborhood(self.invars_, self.outvars_, ui)
+                it = it_eit.first
+                eit = it_eit.second
+
+                u = self._idx_to_label.get(ui, ui)
+
+                while it != eit:
+                    vi = deref(it).first
+                    b = deref(it).second
+                    if vi > ui:  # have not already visited
+                        v = self._idx_to_label.get(vi, vi)
+                        yield u, v, as_numpy_scalar(b, self.dtype)
+
+                    inc(it)
+        elif self.has_variable(variables):
+            yield from self.iter_quadratic([variables])
+        else:
+            seen = set()
+            for u in variables:
+                ui = self.label_to_idx(u)
+                seen.add(u)
+
+                it_eit = neighborhood(self.invars_, self.outvars_, ui)
+                it = it_eit.first
+                eit = it_eit.second
+
+                while it != eit:
+                    vi = deref(it).first
+                    b = deref(it).second
+
+                    v = self._idx_to_label.get(vi, vi)
+
+                    if v not in seen:
+                        yield u, v, as_numpy_scalar(b, self.dtype)
+
+                    inc(it)
 
     def get_linear(self, object v):
         return as_numpy_scalar(get_linear(self.invars_,

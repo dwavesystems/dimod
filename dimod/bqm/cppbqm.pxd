@@ -40,6 +40,10 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
                                       const vector[pair[V, B]]&,
                                       V, V)
 
+    pair[vector[pair[V, B]].const_iterator,
+         vector[pair[V, B]].const_iterator] neighborhood[V, B](
+        const vector[pair[size_t, B]]&, const vector[pair[V, B]]&, V)
+
     void set_linear[V, B](vector[pair[size_t, B]]&,
                           vector[pair[V, B]]&,
                           V, B)
