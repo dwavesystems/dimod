@@ -74,6 +74,30 @@ namespace dimod {
         return std::make_pair((*low).second, true);
     }
 
+    // Iterate over the neighbourhood of variable u.
+    //
+    // Returns iterators to beginning and end of neighborhood.
+    template<typename VarIndex, typename Bias>
+    std::pair<typename AdjArrayOutVars<VarIndex, Bias>::const_iterator,
+              typename AdjArrayOutVars<VarIndex, Bias>::const_iterator>
+    neighborhood(const AdjArrayInVars<Bias> &invars,
+                 const AdjArrayOutVars<VarIndex, Bias> &outvars,
+                 VarIndex u) {
+        std::size_t start, stop;
+
+        start = invars[u].first;
+
+        if (u == invars.size() - 1) {
+            // last element so ends at the end out outvars
+            stop = outvars.size();
+        } else {
+            stop = invars[u+1].first;
+        }
+
+        // random access iterators
+        return std::make_pair(outvars.begin() + start, outvars.begin() + stop);
+    }
+
     // Change the values in the BQM
 
     template<typename VarIndex, typename Bias>

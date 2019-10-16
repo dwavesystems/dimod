@@ -245,10 +245,65 @@ cdef class cyAdjMapBQM:
         return label
 
 
-    def iter_variables(self):
+    def iter_linear(self):
+        # this should really be done with an iterator, but we don't have them
+        # yet so we'll do it manually
+        cdef VarIndex vi
         cdef object v
-        for v in range(num_variables(self.adj_)):
-            yield self._idx_to_label.get(v, v)
+        cdef Bias b
+
+        for vi in range(num_variables(self.adj_)):
+            b = self.adj_[vi].second
+            v = self._idx_to_label.get(vi, vi)
+            yield v, as_numpy_scalar(b, self.dtype)
+
+    def iter_quadratic(self, object variables=None):
+        # this would be much easier if interaction_iterator was implemented, but
+        # we'll do this by-hand for now
+        cdef VarIndex ui, vi  # c indices
+        cdef object u, v  # python labels
+        cdef Bias b
+
+        cdef pair[VarIndex, Bias] vi_b
+
+        if variables is None:
+            # in the case that variables is unlabelled we can speed things up
+            # by just walking through the range
+            for ui in range(num_variables(self.adj_)):
+                u = self._idx_to_label.get(ui, ui)
+
+                # we could find the index of the first vi > ui, but this is
+                # simpler for now and make for more generic code between
+                # vector/map implementations
+                for vi_b in self.adj_[ui].first:
+                    vi = vi_b.first
+                    b = vi_b.second
+
+                    if vi < ui:
+                        continue
+
+                    v = self._idx_to_label.get(vi, vi)
+
+                    yield u, v, as_numpy_scalar(b, self.dtype)
+        elif self.has_variable(variables):
+            yield from self.iter_quadratic([variables])
+        else:
+            seen = set()
+            for u in variables:
+                ui = self.label_to_idx(u)
+                seen.add(u)
+
+                for vi_b in self.adj_[ui].first:
+                    vi = vi_b.first
+                    b = vi_b.second
+
+                    v = self._idx_to_label.get(vi, vi)
+
+                    if v in seen:
+                        continue
+
+                    yield u, v, as_numpy_scalar(b, self.dtype)
+
 
     def pop_variable(self):
         """Remove a variable from the binary quadratic model.

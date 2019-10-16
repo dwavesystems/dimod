@@ -137,6 +137,17 @@ class TestBQMAPI:
         self.assertFalse(bqm.has_variable(0))
         self.assertFalse(bqm.has_variable(2))
 
+    def test_iter_quadratic_neighbours(self):
+        bqm = self.BQM(({}, {'ab': -1, 'bc': 21, 'cd': 1}), dimod.SPIN)
+        neighbours = set(bqm.iter_quadratic('b'))
+        self.assertEqual(neighbours,
+                         {('b', 'a', -1), ('b', 'c', 21)})
+
+    def test_iter_quadratic_neighbours_bunch(self):
+        bqm = self.BQM(({}, {'bc': 21, 'cd': 1}), dimod.SPIN)
+        self.assertEqual(list(bqm.iter_quadratic(['b', 'c'])),
+                         [('b', 'c', 21.0), ('c', 'd', 1.0)])
+
     def test_iter_variables(self):
         h = OrderedDict([('a', -1), (1, -1), (3, -1)])
         J = {}
