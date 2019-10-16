@@ -194,7 +194,11 @@ def find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True):
 
     bqm2 = bqm.copy()
     variable_map = {u: (u, True) for u in bqm2.linear}
-    fixed_variables = dict()
+
+    # First find globally fixable variables.
+    fixed_variables = dimod.roof_duality.fix_variables(bqm2, sampling_mode=sampling_mode)
+    bqm2.fix_variables(fixed_variables)
+
     finished = False
     while not finished:
         finished = True
@@ -218,6 +222,22 @@ def find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True):
                     new_map = bqm2.contract_all_variables(contractible_variables)
                     variable_map = {u: (new_map[v][0], new_map[v][1] == uv_equal) for u, (v, uv_equal) in
                                     variable_map.items()}
+
+    # final check for a single fixable variable
+    if len(bqm2.variables)==1:
+        fixable_variables = dimod.fix_variables(bqm2, sampling_mode=sampling_mode)
+        fixed_variables.update(fixable_variables)
+        bqm2.fix_variables(fixable_variables)
+
+    # update variable_map to account for fixed_variables
+    # That is, variables that were mapped to fixed variables should now be fixed.
+    for u, (v, uv_equal) in variable_map.items():
+        if v in fixed_variables:
+            if uv_equal:
+                fixed_variables[u] = fixed_variables[v]
+            else:
+                fixed_variables[u] = -fixed_variables[v] if bqm.vartype == Vartype.SPIN else 1 - fixed_variables[v]
+            variable_map[u] = (u, True)
 
     return bqm2, variable_map, fixed_variables
 

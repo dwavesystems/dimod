@@ -14,3 +14,5 @@
 #
 # ================================================================================================
 from dimod.roof_duality.fix_variables import *
+from dimod.roof_duality.extended_fix_variables import find_and_contract_all_variables_roof_duality, \
+    uncontract_solution, find_contractible_variables_roof_duality

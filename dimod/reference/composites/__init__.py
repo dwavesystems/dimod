@@ -16,7 +16,7 @@
 
 from dimod.reference.composites.fixedvariable import FixedVariableComposite
 from dimod.reference.composites.higherordercomposites import *
-from dimod.reference.composites.roofduality import RoofDualityComposite
+from dimod.reference.composites.roofduality import RoofDualityComposite, ExtendedRoofDualityComposite
 from dimod.reference.composites.scalecomposite import *
 from dimod.reference.composites.spin_transform import *
 from dimod.reference.composites.structure import *

@@ -30,15 +30,16 @@ class TestExtendedFixVariables(unittest.TestCase):
 
     def test_find_and_contract_all_variables_roof_duality(self):
 
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): -1, (1, 2): 3, (2, 3): 2})
 
-        bqm2, variable_map, _ = find_and_contract_all_variables_roof_duality(bqm)
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): -1, (1, 2): 1, (2, 3): 1})
+
+        bqm2, variable_map, fixed_variables = find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True)
 
         # 0, 1, and 3 should be contracted to the same value, 2 to the opposite value
         self.assertEqual(variable_map[1], variable_map[0])
         self.assertEqual(variable_map[3], variable_map[0])
         self.assertEqual(variable_map[2], (variable_map[0][0], False))
-        bqm_check = dimod.BinaryQuadraticModel.from_ising({1: 0}, {}, -6)
+        bqm_check = dimod.BinaryQuadraticModel.from_ising({variable_map[0][0]: 0}, {}, -3)
         self.assertEqual(bqm2, bqm_check)
 
     def test_find_and_contract_all_variables_naive(self):
