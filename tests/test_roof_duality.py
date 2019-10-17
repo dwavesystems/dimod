@@ -17,9 +17,10 @@ import unittest
 
 import dimod.testing as dtest
 import dimod
+from dimod import ExtendedRoofDualityComposite
 
 try:
-    from dimod import fix_variables, ExtendedRoofDualityComposite
+    from dimod import fix_variables
 except ImportError:
     cpp = False
 else:
