@@ -2,6 +2,7 @@ import dimod
 import unittest
 
 try:
+    from dimod import fix_variables
     from dimod.roof_duality.extended_fix_variables import find_contractible_variables_naive, \
         find_contractible_variables_roof_duality, uncontract_solution, find_and_contract_all_variables_roof_duality, \
         find_and_contract_all_variables_naive
