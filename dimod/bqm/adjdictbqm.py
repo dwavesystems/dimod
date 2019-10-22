@@ -243,20 +243,32 @@ class AdjDictBQM(ShapeableBQM):
                 if v not in seen:
                     yield (u, v, bias)
 
-    def pop_variable(self):
-        """Remove a variable from the binary quadratic model.
+    def remove_variable(self, v=None):
+        """Remove a variable and its associated interactions.
+
+        Args:
+            v (variable, optional):
+                The variable to be removed from the bqm. If not provided, the
+                last variable added is removed.
 
         Returns:
-            hashable: The last variable added to the binary quadratic model.
+            variable: The removed variable.
 
         Raises:
-            ValueError: If the binary quadratic model is empty.
+            ValueError: If the binary quadratic model is empty or if `v` is not
+            a variable.
 
         """
         if len(self._adj) == 0:
             raise ValueError("pop from empty binary quadratic model")
 
-        v, neighborhood = self._adj.popitem(last=True)
+        if v is None:
+            v, neighborhood = self._adj.popitem(last=True)
+        else:
+            try:
+                neighborhood = self._adj.pop(v)
+            except KeyError:
+                raise ValueError('{!r} is not a variable'.format(v))
 
         for u in neighborhood:
             if u != v:
