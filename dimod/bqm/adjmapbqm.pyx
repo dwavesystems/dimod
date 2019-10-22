@@ -305,28 +305,6 @@ cdef class cyAdjMapBQM:
                     yield u, v, as_numpy_scalar(b, self.dtype)
 
 
-    def pop_variable(self):
-        """Remove a variable from the binary quadratic model.
-
-        Returns:
-            hashable: The last variable added to the binary quadratic model.
-
-        Raises:
-            ValueError: If the binary quadratic model is empty.
-
-        """
-        if num_variables(self.adj_) == 0:
-            raise ValueError("pop from empty binary quadratic model")
-
-        cdef object v = pop_variable(self.adj_)  # cast to python object
-
-        # delete any relevant labels if present
-        if self._label_to_idx:
-            v = self._idx_to_label.pop(v, v)
-            self._label_to_idx.pop(v, None)
-
-        return v
-
     def get_linear(self, object v):
         """Get the linear bias of v.
 
@@ -402,6 +380,73 @@ cdef class cyAdjMapBQM:
         cdef bool removed = remove_interaction(self.adj_, ui, vi)
 
         return removed
+
+    def remove_variable(self, object v=None):
+        """Remove a variable and its associated interactions.
+
+        Args:
+            v (variable, optional):
+                The variable to be removed from the bqm. If not provided, the
+                last variable added is removed.
+
+        Returns:
+            variable: The removed variable.
+
+        Raises:
+            ValueError: If the binary quadratic model is empty or if `v` is not
+            a variable.
+
+        """
+        if num_variables(self.adj_) == 0:
+            raise ValueError("pop from empty binary quadratic model")
+
+        cdef VarIndex vi  # index of v in the underlying adjacency
+
+        if v is None:
+            # just remove the last variable
+            vi = pop_variable(self.adj_)
+
+            # remove the relabels, if any
+            v = self._idx_to_label.pop(vi, vi)
+            self._label_to_idx.pop(v, None)
+
+            return v
+
+        # in this case we're removing a variable in the middle of the
+        # underlying adjacency. We do this by "swapping" the last variable
+        # and v, then popping v.
+
+        cdef object last
+        cdef VarIndex lasti
+
+        vi = self.label_to_idx(v)
+
+        lasti = num_variables(self.adj_) - 1
+        last = self._idx_to_label.get(lasti, lasti)
+
+        if lasti == vi:
+            # equivalent to the None case
+            return self.remove_variable()
+
+        # remove all of v's interactions
+        for u, _ in list(self.iter_quadratic(v)):
+            self.remove_interaction(u, v)
+
+        # copy last's to v
+        set_linear(self.adj_, vi, get_linear(self.adj_, lasti))
+        for u, b in self.iter_quadratic(last):
+            self.set_quadratic(u, v, b)
+
+        # swap last's and v's labels
+        self._idx_to_label[vi] = last
+        self._label_to_idx[last] = vi
+        self._idx_to_label[lasti] = v
+        self._label_to_idx[v] = lasti
+
+        # pop last
+        self.remove_variable()
+
+        return v
 
     def set_linear(self, object v, Bias b):
         """Set the linear biase of a variable v.
