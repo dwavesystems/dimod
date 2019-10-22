@@ -329,23 +329,44 @@ class TestShapeableBQMAPI(TestBQMAPI):
         self.assertEqual(bqm.shape, (2, 0))
         self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
-    def test_pop_variable_labelled(self):
+    def test_remove_variable_labelled(self):
         bqm = self.BQM(dimod.SPIN)
         bqm.add_variable('a')
         bqm.add_variable(1)
         bqm.add_variable(0)
-        self.assertEqual(bqm.pop_variable(), 0)
-        self.assertEqual(bqm.pop_variable(), 1)
-        self.assertEqual(bqm.pop_variable(), 'a')
+        self.assertEqual(bqm.remove_variable(), 0)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.remove_variable(), 1)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.remove_variable(), 'a')
+        self.assertConsistentBQM(bqm)
         with self.assertRaises(ValueError):
-            bqm.pop_variable()
+            bqm.remove_variable()
 
-    def test_pop_variable_unlabelled(self):
-        bqm = self.BQM(2, dimod.BINARY)
-        self.assertEqual(bqm.pop_variable(), 1)
-        self.assertEqual(bqm.pop_variable(), 0)
+    def test_remove_variable_provided(self):
+        bqm = self.BQM('SPIN')
+        bqm.add_variable('a')
+        bqm.add_variable('b')
+        bqm.add_variable('c')
+
+        bqm.remove_variable('b')
+        self.assertConsistentBQM(bqm)
+
+        # maintained order
+        self.assertEqual(list(bqm.iter_variables()), ['a', 'c'])
+
         with self.assertRaises(ValueError):
-            bqm.pop_variable()
+            bqm.remove_variable('b')
+
+    def test_remove_variable_unlabelled(self):
+        bqm = self.BQM(2, dimod.BINARY)
+        self.assertEqual(bqm.remove_variable(), 1)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.remove_variable(), 0)
+        self.assertConsistentBQM(bqm)
+        with self.assertRaises(ValueError):
+            bqm.remove_variable()
+        self.assertConsistentBQM(bqm)
 
     def test_remove_interaction(self):
         bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
