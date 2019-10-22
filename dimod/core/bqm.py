@@ -263,11 +263,11 @@ class ShapeableBQM(BQM):
         pass
 
     @abc.abstractmethod
-    def pop_variable(self):
+    def remove_interaction(self, u, v):
         pass
 
     @abc.abstractmethod
-    def remove_interaction(self, u, v):
+    def remove_variable(self):
         pass
 
     # mixins
