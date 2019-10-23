@@ -78,6 +78,14 @@ class TestBQMAPI:
         self.assertEqual(bqm.adj['a']['b'], 5)
         self.assertConsistentBQM(bqm)  # all the other cases
 
+    def test_adj_neighborhoods(self):
+        bqm = self.BQM(({}, {'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}), 'SPIN')
+
+        self.assertEqual(len(bqm.adj['a']), 2)
+        self.assertEqual(len(bqm.adj['b']), 2)
+        self.assertEqual(len(bqm.adj['c']), 3)
+        self.assertEqual(len(bqm.adj['d']), 1)
+
     def test_construction_args(self):
         # make sure all the orderes are ok
 
@@ -329,6 +337,45 @@ class TestShapeableBQMAPI(TestBQMAPI):
         self.assertEqual(bqm.shape, (2, 0))
         self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
+    def tests_linear_delitem(self):
+        bqm = self.BQM([[0, 1, 2, 3, 4],
+                        [0, 6, 7, 8, 9],
+                        [0, 0, 10, 11, 12],
+                        [0, 0, 0, 13, 14],
+                        [0, 0, 0, 0, 15]], 'SPIN')
+        del bqm.linear[2]
+        self.assertEqual(set(bqm.iter_variables()), set([0, 1, 3, 4]))
+
+        # all the values are correct
+        self.assertEqual(bqm.linear[0], 0)
+        self.assertEqual(bqm.linear[1], 6)
+        self.assertEqual(bqm.linear[3], 13)
+        self.assertEqual(bqm.linear[4], 15)
+        self.assertEqual(bqm.quadratic[0, 1], 1)
+        self.assertEqual(bqm.quadratic[0, 3], 3)
+        self.assertEqual(bqm.quadratic[0, 4], 4)
+        self.assertEqual(bqm.quadratic[1, 3], 8)
+        self.assertEqual(bqm.quadratic[1, 4], 9)
+        self.assertEqual(bqm.quadratic[3, 4], 14)
+
+        self.assertConsistentBQM(bqm)
+
+        with self.assertRaises(KeyError):
+            del bqm.linear[2]
+
+    def test_quadratic_delitem(self):
+        bqm = self.BQM([[0, 1, 2, 3, 4],
+                        [0, 6, 7, 8, 9],
+                        [0, 0, 10, 11, 12],
+                        [0, 0, 0, 13, 14],
+                        [0, 0, 0, 0, 15]], 'SPIN')
+        del bqm.quadratic[0, 1]
+        self.assertEqual(set(bqm.iter_neighbors(0)), set([2, 3, 4]))
+        self.assertConsistentBQM(bqm)
+
+        with self.assertRaises(KeyError):
+            del bqm.quadratic[0, 1]
+
     def test_remove_variable_labelled(self):
         bqm = self.BQM(dimod.SPIN)
         bqm.add_variable('a')
@@ -370,11 +417,16 @@ class TestShapeableBQMAPI(TestBQMAPI):
 
     def test_remove_interaction(self):
         bqm = self.BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
-        self.assertTrue(bqm.remove_interaction(0, 1))
-        self.assertFalse(bqm.remove_interaction(0, 1))
-        self.assertEqual(bqm.shape, (3, 2))
+        bqm.remove_interaction(0, 1)
         with self.assertRaises(ValueError):
-            bqm.get_quadratic(0, 1)
+            bqm.remove_interaction(0, 1)
+        self.assertEqual(bqm.shape, (3, 2))
+
+        with self.assertRaises(ValueError):
+            bqm.remove_interaction('a', 1)  # 'a' is not a variable
+
+        with self.assertRaises(ValueError):
+            bqm.remove_interaction(1, 1)
 
     def test_set_quadratic_exception(self):
         bqm = self.BQM(dimod.SPIN)
