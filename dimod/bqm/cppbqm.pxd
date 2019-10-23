@@ -88,7 +88,7 @@ cdef extern from "src/adjvector.cc":
 
 cdef extern from "src/adjvector.h" namespace "dimod" nogil:
 
-    # some of these should be `const vector[pair[cppmap[V, B], B]]&` but
+    # some of these should be `const vector[pair[vector[pair[V, B]]&` but
     # cython seems to have trouble with const vector of mutable objects,
     # so for now just leave them as-is
 

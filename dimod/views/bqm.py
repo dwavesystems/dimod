@@ -20,7 +20,7 @@ except ImportError:
 
 from dimod.utilities import LockableDict
 
-# todo: there is a lot of duplication between dimid/views/bqm.py and
+# todo: there is a lot of duplication between dimod/views/bqm.py and
 # dimod/core/bqm.py. For now we'll maintain both but this needs to resolved
 # at some point
 
