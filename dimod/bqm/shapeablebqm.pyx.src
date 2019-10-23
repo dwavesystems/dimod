@@ -16,6 +16,7 @@
 #    limitations under the License.
 #
 # =============================================================================
+@header@
 
 try:
     import collections.abc as abc
@@ -26,18 +27,24 @@ from numbers import Integral
 
 import numpy as np
 
-from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
-                               get_linear, get_quadratic,
+from dimod.bqm.cppbqm cimport (add_variable,
+                               add_interaction,
                                degree,
-                               set_linear, set_quadratic,
-                               add_variable, add_interaction,
-                               pop_variable, remove_interaction)
+                               get_linear,
+                               get_quadratic,
+                               num_variables,
+                               num_interactions,
+                               pop_variable,
+                               remove_interaction,
+                               set_linear,
+                               set_quadratic,
+                               )
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import ShapeableBQM
 from dimod.vartypes import as_vartype
 
 
-cdef class cyAdjVectorBQM:
+cdef class cyAdj@name@BQM:
     """
     """
 
@@ -116,16 +123,17 @@ cdef class cyAdjVectorBQM:
                     if b == 0:  # ignore 0 off-diagonal
                         continue
 
-                    # we know that they are ordered, so we can go ahead and
-                    # append directly onto the vector rather than doing an
-                    # insert from the binary search
-                    self.adj_[ui].first.push_back(pair[VarIndex, Bias](vi, b))
-                    self.adj_[vi].first.push_back(pair[VarIndex, Bias](ui, b))
+                    # we'd like to use set_quadratic(self.adj_, ui, vi, b) but
+                    # because we know that we're always adding to the end
+                    # of the neighborhood, we can provide a location hint to
+                    # insert. We should really do this with an iterator from c++
+                    # space, but those are not implemented yet
+                    # we use insert because it is the same for map and vector
+                    self.adj_[ui].first.insert(self.adj_[ui].first.end(),
+                                               pair[VarIndex, Bias](vi, b))
+                    self.adj_[vi].first.insert(self.adj_[vi].first.end(),
+                                               pair[VarIndex, Bias](ui, b))
 
-
-    # dev note: almost all of these are identical to AdjMapBQM. Unfortunately
-    # we can't really make an abstract base class in cython that will handle the
-    # template functions the way that we want.
 
     @property
     def num_variables(self):
@@ -165,6 +173,21 @@ cdef class cyAdjVectorBQM:
         return vi
 
     def add_variable(self, object label=None):
+        """Add a variable to the binary quadratic model.
+
+        Args:
+            label (hashable, optional):
+                A label for the variable. Defaults to the length of the binary
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
+
+        Returns:
+            hashable: The label of the added variable.
+
+        Raises:
+            TypeError: If the label is not hashable.
+
+        """
         if label is None:
             # if nothing has been overwritten we can go ahead and exit here
             # this is not necessary but good for performance
@@ -257,10 +280,41 @@ cdef class cyAdjVectorBQM:
                     yield u, v, as_numpy_scalar(b, self.dtype)
 
     def get_linear(self, object v):
+        """Get the linear bias of v.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            float: The linear bias of v.
+
+        Raises:
+            ValueError: If v is not a variable in the binary quadratic model.
+
+        """
         return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
                                self.dtype)
 
     def get_quadratic(self, object u, object v):
+        """Get the quadratic bias of (u, v).
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            float: The quadratic bias of (u, v).
+
+        Raises:
+            ValueError: If either u or v is not a variable in the binary
+            quadratic model, if u == v or if (u, v) is not an interaction in
+            the binary quadratic model.
+
+        """
         if u == v:
             raise ValueError("No interaction between {} and itself".format(u))
 
@@ -278,6 +332,23 @@ cdef class cyAdjVectorBQM:
         return degree(self.adj_, vi)
 
     def remove_interaction(self, object u, object v):
+        """Remove the interaction between variables u and v.
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+        Returns:
+            bool: If there was an interaction to remove.
+
+        Raises:
+            ValueError: If either u or v is not a variable in the binary
+            quadratic model.
+
+        """
         if u == v:
             raise ValueError("No interaction between {} and itself".format(u))
 
@@ -356,6 +427,19 @@ cdef class cyAdjVectorBQM:
         return v
 
     def set_linear(self, object v, Bias b):
+        """Set the linear biase of a variable v.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model. It is added if not
+                already in the model.
+
+            b (numeric):
+                The linear bias of v.
+
+        Raises:
+            TypeError: If v is not hashable
+        """
         cdef VarIndex vi
 
         # this try-catch it not necessary but it speeds things up in the case
@@ -368,6 +452,22 @@ cdef class cyAdjVectorBQM:
         set_linear(self.adj_, vi, b)
 
     def set_quadratic(self, object u, object v, Bias b):
+        """Set the quadratic bias of (u, v).
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The linear bias of v.
+
+        Raises:
+            TypeError: If u or v is not hashable.
+
+        """
         cdef VarIndex ui, vi
 
         # these try-catchs are not necessary but it speeds things up in the case
@@ -384,5 +484,5 @@ cdef class cyAdjVectorBQM:
         set_quadratic(self.adj_, ui, vi, b)
 
 
-class AdjVectorBQM(cyAdjVectorBQM, ShapeableBQM):
-    __doc__ = cyAdjVectorBQM.__doc__
+class Adj@name@BQM(cyAdj@name@BQM, ShapeableBQM):
+    __doc__ = cyAdj@name@BQM.__doc__
