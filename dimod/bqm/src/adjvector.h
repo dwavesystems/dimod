@@ -41,9 +41,16 @@ namespace dimod {
     template<typename V, typename B>
     std::pair<B, bool> get_quadratic(const AdjVectorBQM<V, B>&, V, V);
 
+    template<typename V, typename B>
+    std::size_t degree(const AdjVectorBQM<V, B>&, V);
+
+    template<typename V, typename B>
+    std::pair<typename VectorNeighbourhood<V, B>::const_iterator,
+              typename VectorNeighbourhood<V, B>::const_iterator>
+    neighborhood(const AdjVectorBQM<V, B>&, V);
+
     // todo: variable_iterator
     // todo: interaction_iterator
-    // todo: neighbour_iterator
 
     // Change the values in the BQM
 
