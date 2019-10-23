@@ -19,12 +19,11 @@ import os
 
 
 @contextlib.contextmanager
-def change_cwd():
-    """Temporarily change working directory to the location of this file."""
+def change_cwd(loc):
+    """Temporarily change working directory to the given location."""
     cwd = os.getcwd()
 
-    # change to location of this file
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(loc)
     try:
         yield
     finally:
@@ -35,10 +34,11 @@ def change_cwd():
 header = "\"This file is generated. See sheapeablebqm.pyx.src and make.py\""
 
 
-def make_bqms():
+def make_bqms(loc):
+    """`loc` is the directory containing shapeablebqm.pyx.src"""
     tname = 'shapeablebqm.pyx.src'
 
-    with change_cwd():
+    with change_cwd(loc):
         template_mtime = os.path.getmtime(tname)
 
         with open('shapeablebqm.pyx.src', 'r') as fp:
@@ -67,4 +67,4 @@ def make_bqms():
 
 
 if __name__ == '__main__':
-    make_bqms()
+    make_bqms(os.path.dirname(os.path.abspath(__file__)))
