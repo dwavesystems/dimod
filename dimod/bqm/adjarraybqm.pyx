@@ -235,6 +235,19 @@ cdef class cyAdjArrayBQM:
 
         return vi
 
+    def degree(self, object v):
+        cdef pair[vector[pair[VarIndex, Bias]].const_iterator,
+                  vector[pair[VarIndex, Bias]].const_iterator] span
+
+        cdef VarIndex vi = self.label_to_idx(v)
+
+        span = neighborhood(self.invars_, self.outvars_, vi)
+
+        # this assumes that span is two random-access iterators. We could use
+        # the more generic distance function, but as of cython 0.29.13 it
+        # has been merged but not yet released
+        return span.second - span.first
+
     def iter_linear(self):
         cdef VarIndex vi
         cdef object v

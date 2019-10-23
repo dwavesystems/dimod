@@ -78,8 +78,7 @@ class Neighbour(Mapping):
         return self._bqm.iter_neighbors(self._var)
 
     def __len__(self):
-        raise NotImplementedError
-        self._bqm.degree(self._var)   # degree is not yet implemented
+        return self._bqm.degree(self._var)
 
     def __setitem__(self, v, bias):
         self._bqm.set_quadratic(self._var, v, bias)
@@ -87,7 +86,7 @@ class Neighbour(Mapping):
 
 class ShapeableNeighbour(Neighbour, MutableMapping):
     def __delitem__(self, v):
-        raise NotImplementedError
+        self._bqm.remove_interaction(self._var, v)
 
 
 class Linear(BQMView, Mapping):
@@ -112,7 +111,10 @@ class Linear(BQMView, Mapping):
 
 class ShapeableLinear(Linear, MutableMapping):
     def __delitem__(self, v):
-        raise NotImplementedError
+        try:
+            self._bqm.remove_variable(v)
+        except ValueError:
+            raise KeyError(repr(v))
 
 
 class Quadratic(BQMView, Mapping):
@@ -132,8 +134,11 @@ class Quadratic(BQMView, Mapping):
 
 
 class ShapeableQuadratic(Quadratic, MutableMapping):
-    def __delitem__(self, v):
-        raise NotImplementedError
+    def __delitem__(self, uv):
+        try:
+            self._bqm.remove_interaction(*uv)
+        except ValueError:
+            raise KeyError(repr(uv))
 
 
 @add_metaclass(abc.ABCMeta)

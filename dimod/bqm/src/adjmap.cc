@@ -59,9 +59,20 @@ namespace dimod {
         return std::make_pair((*it).second, true);
     }
 
+    template<typename VarIndex, typename Bias>
+    std::pair<typename MapNeighbourhood<VarIndex, Bias>::const_iterator,
+              typename MapNeighbourhood<VarIndex, Bias>::const_iterator>
+    neighborhood(const AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v) {
+        return std::make_pair(bqm[v].first.begin(), bqm[v].first.end());
+    }
+
+    template<typename VarIndex, typename Bias>
+    std::size_t degree(const AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v) {
+        return bqm[v].first.size();
+    }
+
     // todo: variable_iterator
     // todo: interaction_iterator
-    // todo: neighbour_iterator
 
     // Change the values in the BQM
 
