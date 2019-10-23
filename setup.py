@@ -23,6 +23,8 @@ from setuptools import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 
+from dimod.bqm.make import make_bqms
+
 # add __version__, __author__, __authoremail__, __description__ to this namespace
 _PY2 = sys.version_info.major == 2
 my_loc = os.path.dirname(os.path.abspath(__file__))
@@ -119,6 +121,8 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
 
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 5:
+    make_bqms()  # construct the bqms from templates (if needed)
+
     extensions.extend([
               Extension("dimod.bqm.adjmapbqm",
                         ['dimod/bqm/adjmapbqm'+ext],
