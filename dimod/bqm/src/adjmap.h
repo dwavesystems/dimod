@@ -22,11 +22,11 @@
 namespace dimod {
 
     template<typename VarIndex, typename Bias>
-    using Neighbourhood = typename std::map<VarIndex, Bias>;
+    using MapNeighbourhood = typename std::map<VarIndex, Bias>;
 
     template<typename VarIndex, typename Bias>
     using AdjMapBQM = typename std::vector<
-        std::pair<Neighbourhood<VarIndex, Bias>, Bias>>;
+        std::pair<MapNeighbourhood<VarIndex, Bias>, Bias>>;
 
     // Read the BQM
 
@@ -42,9 +42,16 @@ namespace dimod {
     template<typename V, typename B>
     std::pair<B, bool> get_quadratic(const AdjMapBQM<V, B>&, V, V);
 
+    template<typename V, typename B>
+    std::size_t degree(const AdjMapBQM<V, B>&, V);
+
+    template<typename V, typename B>
+    std::pair<typename MapNeighbourhood<V, B>::const_iterator,
+              typename MapNeighbourhood<V, B>::const_iterator>
+    neighborhood(const AdjMapBQM<V, B>&, V);
+
     // todo: variable_iterator
     // todo: interaction_iterator
-    // todo: neighbour_iterator
 
     // Change the values in the BQM
 

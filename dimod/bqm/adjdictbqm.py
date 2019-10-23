@@ -178,6 +178,13 @@ class AdjDictBQM(ShapeableBQM):
         self._adj.setdefault(v, {v: self.dtype.type(0)})
         return v
 
+    def degree(self, v):
+        """The number of variables sharing an interaction with v."""
+        try:
+            return len(self._adj[v]) - 1
+        except KeyError:
+            raise ValueError("{} is not a variable".format(v))
+
     def get_linear(self, v):
         """Get the linear bias of v.
 
@@ -294,11 +301,14 @@ class AdjDictBQM(ShapeableBQM):
             quadratic model.
 
         """
+        if u == v:
+            raise ValueError("No interaction between {} and itself".format(u))
+
         try:
             self._adj[u].pop(v)
         except KeyError:
             # nothing pop
-            return False
+            raise ValueError('No interaction between {} and {}'.format(u, v))
 
         # want to raise an exception in the case that they got out of sync
         # as a sanity check
