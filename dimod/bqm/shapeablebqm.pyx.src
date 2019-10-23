@@ -27,6 +27,7 @@ from numbers import Integral
 
 import numpy as np
 
+from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
 from dimod.bqm.cppbqm cimport (add_variable,
                                add_interaction,
                                degree,
@@ -482,6 +483,37 @@ cdef class cyAdj@name@BQM:
             vi = self.label_to_idx(self.add_variable(v))
 
         set_quadratic(self.adj_, ui, vi, b)
+
+    def to_adjarray(self):
+        """Construct a new AdjArrayBQM."""
+        # this function makes heavy use of the internal structure of AdjArrayBQM
+
+        # create an empty adjarraybqm of the correct size
+        cdef cyAdjArrayBQM bqm = cyAdjArrayBQM(vartype=self.vartype)
+        bqm.invars_.resize(num_variables(self.adj_))
+        bqm.outvars_.resize(2*num_interactions(self.adj_))
+
+        cdef pair[VarIndex, Bias] outvar
+        cdef VarIndex ui
+        cdef size_t outvar_idx = 0
+        for ui in range(self.adj_.size()):
+
+            # set the linear bias
+            bqm.invars_[ui].second = self.adj_[ui].second
+            bqm.invars_[ui].first = outvar_idx
+
+            # set the quadratic biases
+            for outvar in self.adj_[ui].first:
+                bqm.outvars_[outvar_idx] = outvar
+                outvar_idx += 1
+
+        bqm.offset_ = self.offset_
+
+        # set up the variable labels
+        bqm._label_to_idx.update(self._label_to_idx)
+        bqm._idx_to_label.update(self._idx_to_label)
+
+        return bqm
 
 
 class Adj@name@BQM(cyAdj@name@BQM, ShapeableBQM):
