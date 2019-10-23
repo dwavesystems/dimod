@@ -97,6 +97,18 @@ std::pair<Bias, bool> get_quadratic(const AdjVectorBQM<VarIndex, Bias> &bqm,
     return std::make_pair((*it).second, true);
 }
 
+template<typename VarIndex, typename Bias>
+std::pair<typename VectorNeighbourhood<VarIndex, Bias>::const_iterator,
+          typename VectorNeighbourhood<VarIndex, Bias>::const_iterator>
+neighborhood(const AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex v) {
+    return std::make_pair(bqm[v].first.begin(), bqm[v].first.end());
+}
+
+template<typename VarIndex, typename Bias>
+std::size_t degree(const AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex v) {
+    return bqm[v].first.size();
+}
+
 // Change the values in the BQM
 template<typename VarIndex, typename Bias>
 void set_linear(AdjVectorBQM<VarIndex, Bias> &bqm,

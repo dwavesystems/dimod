@@ -67,6 +67,12 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
     B get_linear[V, B](vector[pair[cppmap[V, B], B]]&, V)
     pair[B, bool] get_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
+    pair[cppmap[V, B].const_iterator,
+         cppmap[V, B].const_iterator] neighborhood[V, B](
+        vector[pair[cppmap[V, B], B]]&, V)
+
+    size_t degree[V, B](vector[pair[cppmap[V, B], B]]&, V)
+
     void set_linear[V, B](vector[pair[cppmap[V, B], B]]&, V, B)
     void set_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V, B)
 
@@ -82,11 +88,21 @@ cdef extern from "src/adjvector.cc":
 
 cdef extern from "src/adjvector.h" namespace "dimod" nogil:
 
+    # some of these should be `const vector[pair[cppmap[V, B], B]]&` but
+    # cython seems to have trouble with const vector of mutable objects,
+    # so for now just leave them as-is
+
     size_t num_variables[V, B](vector[pair[vector[pair[V, B]], B]]&)
     size_t num_interactions[V, B](vector[pair[vector[pair[V, B]], B]]&)
 
     B get_linear[V, B](vector[pair[vector[pair[V, B]], B]]&, V)
     pair[B, bool] get_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
+
+    pair[vector[pair[V, B]].const_iterator,
+         vector[pair[V, B]].const_iterator] neighborhood[V, B](
+        vector[pair[vector[pair[V, B]], B]]&, V)
+
+    size_t degree[V, B](vector[pair[vector[pair[V, B]], B]]&, V)
 
     void set_linear[V, B](vector[pair[vector[pair[V, B]], B]]&, V, B)
     bool set_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V, B)
