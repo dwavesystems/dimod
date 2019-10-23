@@ -28,7 +28,6 @@ from six import add_metaclass
 # at some point
 
 
-@add_metaclass(abc.ABCMeta)
 class BQMView:
     __slots__ = ['_bqm']
 
