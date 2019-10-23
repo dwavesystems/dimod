@@ -30,7 +30,7 @@ from cython.operator cimport postincrement as inc, dereference as deref
 
 import numpy as np
 
-# from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
+from dimod.bqm cimport cyAdjVectorBQM
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
@@ -144,8 +144,7 @@ cdef class cyAdjArrayBQM:
         if isinstance(obj, Integral):
             self.invars_.resize(obj)
         elif isinstance(obj, tuple):
-            raise NotImplementedError
-            # self.__init__(cyAdjMapBQM(obj, vartype))  # via the map version
+            self.__init__(cyAdjVectorBQM(obj, vartype))  # via the map version
         elif hasattr(obj, "to_adjarray"):
 
             # this is not very elegent...
