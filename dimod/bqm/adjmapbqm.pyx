@@ -32,6 +32,7 @@ from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
 from dimod.bqm.cppbqm cimport (num_variables, num_interactions,
                                add_variable, add_interaction,
                                pop_variable, remove_interaction,
+                               degree,
                                get_linear, set_linear,
                                get_quadratic, set_quadratic)
 from dimod.bqm.utils cimport as_numpy_scalar
@@ -353,6 +354,11 @@ cdef class cyAdjMapBQM:
 
         return as_numpy_scalar(out.first, self.dtype)
 
+    def degree(self, object v):
+        cdef VarIndex vi = self.label_to_idx(v)
+        return degree(self.adj_, vi)
+
+
     def remove_interaction(self, object u, object v):
         """Remove the interaction between variables u and v.
 
@@ -372,14 +378,14 @@ cdef class cyAdjMapBQM:
 
         """
         if u == v:
-            # developer note: maybe we should raise a ValueError instead?
-            return False
+            raise ValueError("No interaction between {} and itself".format(u))
 
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
         cdef bool removed = remove_interaction(self.adj_, ui, vi)
 
-        return removed
+        if not removed:
+            raise ValueError('No interaction between {} and {}'.format(u, v))
 
     def remove_variable(self, object v=None):
         """Remove a variable and its associated interactions.
@@ -429,12 +435,12 @@ cdef class cyAdjMapBQM:
             return self.remove_variable()
 
         # remove all of v's interactions
-        for u, _ in list(self.iter_quadratic(v)):
+        for _, u, _ in list(self.iter_quadratic(v)):
             self.remove_interaction(u, v)
 
         # copy last's to v
         set_linear(self.adj_, vi, get_linear(self.adj_, lasti))
-        for u, b in self.iter_quadratic(last):
+        for _, u, b in self.iter_quadratic(last):
             self.set_quadratic(u, v, b)
 
         # swap last's and v's labels
