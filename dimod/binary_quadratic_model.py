@@ -1174,12 +1174,12 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         if not ignore_info:
             self.info.update(bqm.info)
 
-    def contract_variables(self, u, v, uv_equal=True):
+    def contract_variables(self, u, v, equal=True):
         """Enforce u, v being the same variable in a binary quadratic model.
 
-        The resulting variable is labeled 'u'. Values of interactions between `v` and
-        variables that `u` interacts with are added to the corresponding interactions
-        of `u`.
+        The resulting variable is labeled 'u'. Values of interactions between
+        `v` and variables that `u` interacts with are added to the corresponding
+        interactions of `u`.
 
         Args:
             u (variable):
@@ -1188,18 +1188,13 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             v (variable):
                 Variable in the binary quadratic model.
 
-            uv_equal (bool, optional, default=True):
+            equal (bool, optional, default=True):
                 Indicates if u and v take the same or opposite values.
-                If uv_equal=True, then u=v. If uv_equal=False, then u=-v for spins and u=1-v for binary.
+                If equal, then `u==v`, otherwise `u=-v` for spins and `u=1-v`
+                for binary.
 
         Examples:
-           This example creates a binary quadratic model representing the K4 complete graph
-           and contracts node (variable) 3 into node 2. The interactions between
-           3 and its neighbors 1 and 4 are added to the corresponding interactions
-           between 2 and those same neighbors.
 
-           >>> import dimod
-           ...
            >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
            >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
            ...              (2, 3): 23, (2, 4): 24,
@@ -1215,16 +1210,19 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         adj = self.adj
 
         if u not in adj:
-            raise ValueError("{} is not a variable in the binary quadratic model".format(u))
+            msg = "{} is not a variable in the binary quadratic model"
+            raise ValueError(msg.format(u))
         if v not in adj:
-            raise ValueError("{} is not a variable in the binary quadratic model".format(v))
+            msg = "{} is not a variable in the binary quadratic model"
+            raise ValueError(msg.format(v))
 
-        sign = 1 if uv_equal else -1
+        sign = 1 if equal else -1
 
-        # if there is an interaction between u, v it becomes linear for u plus an offset
+        # if there is an interaction between u, v it becomes linear for u plus
+        # an offset
         if v in adj[u]:
             if self.vartype is Vartype.BINARY:
-                if uv_equal:
+                if equal:
                     self.add_variable(u, adj[u][v])
             elif self.vartype is Vartype.SPIN:
                 self.add_offset(sign * adj[u][v])
@@ -1236,34 +1234,31 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
         neighbors = list(adj[v])
         for w in neighbors:
             self.add_interaction(u, w, sign * adj[v][w])
-            if self.vartype is Vartype.BINARY and not uv_equal:
+            if self.vartype is Vartype.BINARY and not equal:
                 self.add_variable(w, adj[v][w])
             self.remove_interaction(v, w)
 
         # finally remove v
         self.add_variable(u, sign * self.linear[v])
-        if self.vartype is Vartype.BINARY and not uv_equal:
+        if self.vartype is Vartype.BINARY and not equal:
             self.add_offset(self.linear[v])
         self.remove_variable(v)
 
-    def contract_all_variables(self, contractible_variables):
+    def contract_variables_from(self, contractible):
         """Contract all pairs of variables in a list.
 
-        Input:
-            bqm: a BinaryQuadraticModel.
-
-            contractible_variables: a dictionary with keys (x,y) and values indicating the sign of the contraction: +1
-                indicates x=y and -1 indicates x=~y.
+        Args:
+            contractible (iterable/mapping):
+                An iterable of pairs of variables to be contracted. If a
+                mapping, the keys should be pairs of variables and the values
+                should indicate whether they are equal or not.
 
         Returns:
-            variable_map: a dictionary indicating variable contractions that took place.
-                variable_map[u] = (v, sign) indicates that variable u was contracted to variable v, with u=v if sign=1
-                and u=~v if sign=-1.
+            dict: The contractions that took place.
+            For `variable_map[u] = (v, equal)`, variable `u` was contracted to
+            variable `v`, with `u==v` if `equal` and `u!=v` otherwise.
 
         """
-
-        # variable_map[u] = (v, uv_equal), where v is the variable u is mapped to, and uv_equal = (u==v).
-        # inverse_map[u] is the set of variables mapped to u.
         variable_map = {u: (u, True) for u in self.variables}
         inverse_map = {u: [u] for u in self.variables}
 
@@ -1276,7 +1271,13 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 inverse_map[u].append(x)
             inverse_map[v] = []
 
-        for (u, v), uv_equal in contractible_variables.items():
+        if isinstance(contractible, abc.Mapping):
+            contractions = contractible.items()
+        else:
+            # assume it's a sequence
+            contractions = ((uv, True) for uv in contractible)
+
+        for (u, v), uv_equal in contractions:
             new_u, u_equal = variable_map[u]
             new_v, v_equal = variable_map[v]
             if new_u != new_v:
@@ -1285,7 +1286,6 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 update_maps(new_u, new_v, new_uv_equal)
 
         return variable_map
-
 
 ###################################################################################################
 # transformations

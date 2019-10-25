@@ -71,6 +71,7 @@ Transformations
    :toctree: generated/
 
    BinaryQuadraticModel.contract_variables
+   BinaryQuadraticModel.contract_variables_from
    BinaryQuadraticModel.fix_variable
    BinaryQuadraticModel.fix_variables
    BinaryQuadraticModel.flip_variable

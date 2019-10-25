@@ -1080,7 +1080,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         bqm = original_bqm.copy()
 
-        bqm.contract_variables('a', 'b', uv_equal=False)
+        bqm.contract_variables('a', 'b', equal=False)
         self.assertNotIn('b', bqm.linear)
         self.assertConsistentBQM(bqm)
 
@@ -1105,7 +1105,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         bqm = original_bqm.copy()
 
-        bqm.contract_variables('a', 'b', uv_equal=False)
+        bqm.contract_variables('a', 'b', equal=False)
         self.assertNotIn('b', bqm.linear)
         self.assertConsistentBQM(bqm)
 
@@ -1122,20 +1122,48 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.contract_variables('a', 1)
 
-    def test_contract_all_variables(self):
-        original_bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7},
-                                                  {('a', 'b'): -1, ('b', 'c'): 1, ('c', 'd'): 0.5}, 1.2,
-                                                  dimod.BINARY)
-        bqm = original_bqm.copy()
-        contractible_variables = {('a', 'b'): True, ('b','c'): False, ('c','d'): False}
+    def test_contract_variables_from(self):
+        original = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7},
+                                              {('a', 'b'): -1,
+                                               ('b', 'c'): 1,
+                                               ('c', 'd'): 0.5},
+                                              1.2,
+                                              dimod.BINARY)
+        bqm = original.copy()
+        contractible_variables = {('a', 'b'): True,
+                                  ('b', 'c'): False,
+                                  ('c', 'd'): False}
 
-        variable_map = bqm.contract_all_variables(contractible_variables)
+        variable_map = bqm.contract_variables_from(contractible_variables)
         self.assertNotIn('b', bqm.linear)
         self.assertConsistentBQM(bqm)
 
-        self.assertAlmostEqual(bqm.energy({'a': 0}), original_bqm.energy({'a': 0, 'b': 0, 'c': 1, 'd': 0}))
-        self.assertAlmostEqual(bqm.energy({'a': 1}), original_bqm.energy({'a': 1, 'b': 1, 'c': 0, 'd': 1}))
-        self.assertEqual(variable_map, {'a': ('a', True), 'b': ('a', True), 'c': ('a', False), 'd': ('a', True)})
+        self.assertAlmostEqual(bqm.energy({'a': 0}),
+                               original.energy({'a': 0, 'b': 0, 'c': 1, 'd': 0}))
+        self.assertAlmostEqual(bqm.energy({'a': 1}),
+                               original.energy({'a': 1, 'b': 1, 'c': 0, 'd': 1}))
+        self.assertEqual(variable_map,
+                         {'a': ('a', True),
+                          'b': ('a', True),
+                          'c': ('a', False),
+                          'd': ('a', True)})
+
+    def test_constract_variables_from_sequence(self):
+        original = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7},
+                                              {('a', 'b'): -1,
+                                               ('b', 'c'): 1,
+                                               ('c', 'd'): 0.5},
+                                              1.2,
+                                              dimod.BINARY)
+        bqm = original.copy()
+        contractible_variables = {('a', 'b'), ('b', 'c'), ('c', 'd')}
+        vm = bqm.contract_variables_from(contractible_variables)
+        self.assertNotIn('b', bqm.linear)
+        self.assertConsistentBQM(bqm)
+        self.assertAlmostEqual(bqm.energy({'a': 0}),
+                               original.energy({'a': 0, 'b': 0, 'c': 0, 'd': 0}))
+        self.assertAlmostEqual(bqm.energy({'a': 1}),
+                               original.energy({'a': 1, 'b': 1, 'c': 1, 'd': 1}))
 
     def test_relabel_typical(self):
         linear = {0: .5, 1: 1.3}

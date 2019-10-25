@@ -80,7 +80,7 @@ def find_and_contract_all_variables_naive(bqm):
         if len(contractible_variables):
             # found something to contract.
             finished = False
-            new_map = bqm2.contract_all_variables(contractible_variables)
+            new_map = bqm2.contract_variables_from(contractible_variables)
             variable_map = {u: (new_map[v][0], new_map[v][1] == uv_equal) for u, (v, uv_equal) in variable_map.items()}
 
     return bqm2, variable_map
@@ -219,7 +219,7 @@ def find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True):
                 if len(contractible_variables):
                     # found something to contract.
                     finished = False
-                    new_map = bqm2.contract_all_variables(contractible_variables)
+                    new_map = bqm2.contract_variables_from(contractible_variables)
                     variable_map = {u: (new_map[v][0], new_map[v][1] == uv_equal) for u, (v, uv_equal) in
                                     variable_map.items()}
 
