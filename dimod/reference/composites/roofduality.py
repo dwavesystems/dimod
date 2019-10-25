@@ -27,7 +27,7 @@ sampler.
 
 from dimod.reference.composites.fixedvariable import FixedVariableComposite
 from dimod.roof_duality import fix_variables
-from dimod.roof_duality.extended_fix_variables import find_and_contract_all_variables_roof_duality, uncontract_solution
+from dimod.roof_duality.extended_fix_variables import find_and_contract_all_variables_roof_duality, uncontract_sampleset
 from dimod.core.composite import ComposedSampler
 
 __all__ = ['RoofDualityComposite', 'ExtendedRoofDualityComposite']
@@ -157,7 +157,7 @@ class ExtendedRoofDualityComposite(ComposedSampler):
             sampleset = sampleset_small
 
         # uncontract variables.
-        return uncontract_solution(sampleset, variable_map)
+        return uncontract_sampleset(sampleset, variable_map)
 
 
 

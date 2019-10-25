@@ -2,6 +2,13 @@ import numpy as np
 import dimod
 from dimod.vartypes import Vartype
 
+__all__ = ['find_contractible_variables_naive',
+           'find_contractible_variables_roof_duality',
+           'find_and_contract_all_variables_naive',
+           'find_and_contract_all_variables_roof_duality',
+           'uncontract_sampleset',
+           ]
+
 
 def find_contractible_variables_naive(bqm):
     """
@@ -242,35 +249,40 @@ def find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True):
     return bqm2, variable_map, fixed_variables
 
 
-def uncontract_solution(sampleset, variable_map):
-    """Translation solutions to a contracted bqm into solutions for an uncontracted bqm.
+def uncontract_sampleset(sampleset, variable_map):
+    """Uncontract variables according to the given variable map.
 
-    Input:
-        sampleset: a dimod.SampleSet for the contracted bqm.
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            A sample set for the contracted bqm.
 
-        variable_map: a dictionary indicating variable contractions that took place.
-            variable_map[u] = (v, uv_equal) indicates that variable u was contracted to variable v, with u=v if
-            uv_equal=1 and u=~v otherwise.
+        variable_map (dict):
+            Indicates the variable contractions that took place. As returned
+            by :meth:`.BinaryQuadraticModel.contract_variables_from`.
 
     Returns:
-        new_sampleset: a dimod.SampleSet for the uncontracted bqm.
-
+        :obj:`.SampleSet`: A sample set with the variables uncontracted.
 
     """
+    # target is a variable that was contracted away
+    # source is a variable in the given sampleset
+    # equal is whether the sign was flipped
+    triple = zip(*((u, v, not equal) for u, (v, equal) in variable_map.items()
+                   if u != v))
+    try:
+        target, source, neq = triple
+    except ValueError:
+        # nothing to uncontract
+        return sampleset
 
-    if sampleset.vartype != Vartype.SPIN:
-        raise NotImplementedError
+    # make a new array so we can edit it, we also want to keep the original
+    # underlying order because we'll be appending it
+    target_values = np.array(sampleset.samples(sorted_by=None)[:, source],
+                             copy=True)
 
-    samples, labels = dimod.sampleset.as_samples(sampleset)
-    new_labels = list(variable_map.keys())
-    new_samples = np.zeros((samples.shape[0], len(variable_map)))
-    label_index = {v: labels.index(v) for v in labels}
-    for i, sample in enumerate(samples):
-        if sampleset.vartype == Vartype.SPIN:
-            new_samples[i] = [sample[label_index[v]]*(2*uv_equal - 1) for u, (v, uv_equal) in variable_map.items()]
-        else:
-            new_samples[i] = [int(sample[label_index[v]] == uv_equal) for u, (v, uv_equal) in variable_map.items()]
+    if sampleset.vartype is Vartype.SPIN:
+        target_values[:, neq] *= -1
+    else:
+        target_values[:, neq] = 1 - target_values[:, neq]
 
-    new_sampleset = dimod.sampleset.SampleSet.from_samples((new_samples, new_labels), vartype=Vartype.SPIN,
-                                                           **sampleset.data_vectors)
-    return new_sampleset
+    return sampleset.append_variables((target_values, target))

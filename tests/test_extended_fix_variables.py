@@ -1,7 +1,7 @@
 import dimod
 import unittest
 from dimod.roof_duality.extended_fix_variables import find_contractible_variables_naive, \
-    find_contractible_variables_roof_duality, uncontract_solution, find_and_contract_all_variables_roof_duality, \
+    find_contractible_variables_roof_duality, uncontract_sampleset, find_and_contract_all_variables_roof_duality, \
     find_and_contract_all_variables_naive
 
 try:
@@ -65,7 +65,7 @@ class TestExtendedFixVariables(unittest.TestCase):
                     -10)
         self.assertEqual(bqm2, bqm_check)
 
-    def test_uncontract_solution(self):
+    def test_uncontract_sampleset(self):
 
         J = {(u, v): 1 for (u, v) in [(0, 1), (0, 2), (1, 2)]}
         J[(0, 3)] = -10
@@ -74,7 +74,28 @@ class TestExtendedFixVariables(unittest.TestCase):
         bqm2, variable_map, _ = find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True)
 
         sampleset2 = dimod.ExactSolver().sample(bqm2)
-        sampleset = uncontract_solution(sampleset2, variable_map)
+        sampleset = uncontract_sampleset(sampleset2, variable_map)
+
+        # check that energies in uncontracted and contracted bqms match up:
+        dimod.testing.assert_response_energies(sampleset, bqm)
+
+        # check that lowest energies satisfy variable map conditions:
+        sampleset = dimod.ExactSolver().sample(bqm)
+        min_energy = min(sampleset.data(['energy']))
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if energy == min_energy:
+                for u, val in variable_map.items():
+                    (v, uv_equal) = val
+                    assert uv_equal == (sample[u] == sample[v])
+
+    def test_uncontract_sampleset_binary(self):
+        J = {'ab': -1, 'bc': 1, 'ac': 1}
+        bqm = dimod.BQM.from_ising({}, J).change_vartype('BINARY', inplace=False)
+
+        bqm2, variable_map, _ = find_and_contract_all_variables_roof_duality(bqm, sampling_mode=True)
+
+        sampleset2 = dimod.ExactSolver().sample(bqm2)
+        sampleset = uncontract_sampleset(sampleset2, variable_map)
 
         # check that energies in uncontracted and contracted bqms match up:
         dimod.testing.assert_response_energies(sampleset, bqm)
