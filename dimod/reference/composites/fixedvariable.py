@@ -93,10 +93,13 @@ class FixedVariableComposite(ComposedSampler):
         bqm_copy.fix_variables(fixed_variables)
         sampleset = child.sample(bqm_copy, **parameters)
 
-        if len(sampleset):
-            return sampleset.append_variables(fixed_variables)
-        elif fixed_variables:
-            return type(sampleset).from_samples_bqm(fixed_variables, bqm=bqm)
-        else:
-            # no fixed variables and sampleset is empty
-            return sampleset
+        def _hook(sampleset):  # in case the child sampler is not blocking
+            if len(sampleset):
+                return sampleset.append_variables(fixed_variables)
+            elif fixed_variables:
+                return type(sampleset).from_samples_bqm(fixed_variables, bqm=bqm)
+            else:
+                # no fixed variables and sampleset is empty
+                return sampleset
+
+        return SampleSet.from_future(sampleset, _hook)
