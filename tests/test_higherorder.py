@@ -63,6 +63,10 @@ class TestMakeQuadratic(unittest.TestCase):
                 self.assertGreaterEqual(energy, 1)  # gap 1
         self.assertEqual(seen, {(0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 1)})
 
+    def test_empty(self):
+        bqm = make_quadratic({}, 1.0, dimod.SPIN)
+        self.assertEqual(bqm, dimod.BinaryQuadraticModel.empty(dimod.SPIN))
+
     def test_no_higher_order(self):
         poly = {(0, 1): -1, (1, 2): 1}
 
