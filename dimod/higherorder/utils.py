@@ -83,17 +83,21 @@ def _binary_product(variables):
                                 Vartype.BINARY)
 
 
-def _new_product(bqm, u, v):
+def _new_product(variables, u, v):
+    # make a new product variable not in variables, then add it
     p = '{}*{}'.format(u, v)
-    while p in bqm:
+    while p in variables:
         p = '_' + p
+    variables.add(p)
     return p
 
 
-def _new_aux(bqm, u, v):
+def _new_aux(variables, u, v):
+    # make a new auxiliary variable not in variables, then add it
     aux = 'aux{},{}'.format(u, v)
-    while aux in bqm:
+    while aux in variables:
         aux = '_' + aux
+    variables.add(aux)
     return aux
 
 
@@ -149,6 +153,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     # dict but by using BinaryPolynomail we also get automatic handling of
     # square terms
     poly = BinaryPolynomial(poly, vartype=bqm.vartype)
+    variables = set().union(*poly)
 
     while any(len(term) > 2 for term in poly):
         # determine which pair of variables appear most often
@@ -166,7 +171,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         u, v = pair
 
         # make a new product variable p == u*v and replace all (u, v) with p
-        p = _new_product(bqm, u, v)
+        p = _new_product(variables, u, v)
         terms = [term for term in poly if u in term and v in term]
         for term in terms:
             new = tuple(w for w in term if w != u and w != v) + (p,)
@@ -178,7 +183,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
             bqm.info['reduction'][(u, v)] = {'product': p}
         elif vartype is Vartype.SPIN:
-            aux = _new_aux(bqm, u, v)  # need an aux in SPIN-space
+            aux = _new_aux(variables, u, v)  # need an aux in SPIN-space
 
             constraint = _spin_product([u, v, p, aux])
 
