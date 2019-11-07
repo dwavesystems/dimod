@@ -21,61 +21,61 @@
 
 namespace dimod {
 
-    template<typename VarIndex, typename Bias>
-    using MapNeighbourhood = typename std::map<VarIndex, Bias>;
+template<typename VarIndex, typename Bias>
+using MapNeighbourhood = typename std::map<VarIndex, Bias>;
 
-    template<typename VarIndex, typename Bias>
-    using AdjMapBQM = typename std::vector<
-        std::pair<MapNeighbourhood<VarIndex, Bias>, Bias>>;
+template<typename VarIndex, typename Bias>
+using AdjMapBQM = typename std::vector<
+    std::pair<MapNeighbourhood<VarIndex, Bias>, Bias>>;
 
-    // Read the BQM
+// Read the BQM
 
-    template<typename V, typename B>
-    std::size_t num_variables(const AdjMapBQM<V, B>&);
+template<typename V, typename B>
+std::size_t num_variables(const AdjMapBQM<V, B>&);
 
-    template<typename V, typename B>
-    std::size_t num_interactions(const AdjMapBQM<V, B>&);
+template<typename V, typename B>
+std::size_t num_interactions(const AdjMapBQM<V, B>&);
 
-    template<typename V, typename B>
-    B get_linear(const AdjMapBQM<V, B>&, V);
+template<typename V, typename B>
+B get_linear(const AdjMapBQM<V, B>&, V);
 
-    template<typename V, typename B>
-    std::pair<B, bool> get_quadratic(const AdjMapBQM<V, B>&, V, V);
+template<typename V, typename B>
+std::pair<B, bool> get_quadratic(const AdjMapBQM<V, B>&, V, V);
 
-    template<typename V, typename B>
-    std::size_t degree(const AdjMapBQM<V, B>&, V);
+template<typename V, typename B>
+std::size_t degree(const AdjMapBQM<V, B>&, V);
 
-    template<typename V, typename B>
-    std::pair<typename MapNeighbourhood<V, B>::const_iterator,
-              typename MapNeighbourhood<V, B>::const_iterator>
-    neighborhood(const AdjMapBQM<V, B>&, V);
+template<typename V, typename B>
+std::pair<typename MapNeighbourhood<V, B>::const_iterator,
+            typename MapNeighbourhood<V, B>::const_iterator>
+neighborhood(const AdjMapBQM<V, B>&, V);
 
-    // todo: variable_iterator
-    // todo: interaction_iterator
+// todo: variable_iterator
+// todo: interaction_iterator
 
-    // Change the values in the BQM
+// Change the values in the BQM
 
-    template<typename V, typename B>
-    void set_linear(AdjMapBQM<V, B>&, V, B);
+template<typename V, typename B>
+void set_linear(AdjMapBQM<V, B>&, V, B);
 
-    // developer note: should this return a bool to be consistent with the
-    // array version?
-    template<typename V, typename B>
-    void set_quadratic(AdjMapBQM<V, B>&, V, V, B);
+// developer note: should this return a bool to be consistent with the
+// array version?
+template<typename V, typename B>
+void set_quadratic(AdjMapBQM<V, B>&, V, V, B);
 
-    // Change the structure of the BQM
+// Change the structure of the BQM
 
-    template<typename V, typename B>
-    V add_variable(AdjMapBQM<V, B>&);
+template<typename V, typename B>
+V add_variable(AdjMapBQM<V, B>&);
 
-    template<typename V, typename B>
-    bool add_interaction(AdjMapBQM<V, B>&, V, V);
+template<typename V, typename B>
+bool add_interaction(AdjMapBQM<V, B>&, V, V);
 
-    template<typename V, typename B>
-    V pop_variable(AdjMapBQM<V, B>&);
+template<typename V, typename B>
+V pop_variable(AdjMapBQM<V, B>&);
 
-    template<typename V, typename B>
-    bool remove_interaction(AdjMapBQM<V, B>&, V, V);
+template<typename V, typename B>
+bool remove_interaction(AdjMapBQM<V, B>&, V, V);
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJMAP_H_
