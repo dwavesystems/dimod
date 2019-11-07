@@ -154,6 +154,11 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         # determine which pair of variables appear most often
         paircounter = Counter()
         for term in poly:
+            if len(term) <= 2:
+                # we could leave these in but it can lead to cases like
+                # {'ab': -1, 'cdef': 1} where ab keeps being chosen for
+                # elimination. So we just ignore all the pairs
+                continue
             for u, v in itertools.combinations(term, 2):
                 pair = frozenset((u, v))  # so order invarient
                 paircounter[pair] += 1
