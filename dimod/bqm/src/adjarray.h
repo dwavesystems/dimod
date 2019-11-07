@@ -20,46 +20,46 @@
 
 namespace dimod {
 
-    template<typename Bias>
-    using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
+template<typename Bias>
+using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
 
-    template<typename VarIndex, typename Bias>
-    using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
+template<typename VarIndex, typename Bias>
+using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
 
-    // Read the BQM
+// Read the BQM
 
-    template<typename V, typename B>
-    std::size_t num_variables(const AdjArrayInVars<B>&,
-                              const AdjArrayOutVars<V, B>&);
+template<typename V, typename B>
+std::size_t num_variables(const AdjArrayInVars<B>&,
+                            const AdjArrayOutVars<V, B>&);
 
-    template<typename V, typename B>
-    std::size_t num_interactions(const AdjArrayInVars<B>&,
-                                 const AdjArrayOutVars<V, B>&);
+template<typename V, typename B>
+std::size_t num_interactions(const AdjArrayInVars<B>&,
+                                const AdjArrayOutVars<V, B>&);
 
-    template<typename V, typename B>
-    B get_linear(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
+template<typename V, typename B>
+B get_linear(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
 
-    template<typename V, typename B>
-    std::pair<B, bool> get_quadratic(const AdjArrayInVars<B>&,
-                                     const AdjArrayOutVars<V, B>&,
-                                     V, V);
+template<typename V, typename B>
+std::pair<B, bool> get_quadratic(const AdjArrayInVars<B>&,
+                                    const AdjArrayOutVars<V, B>&,
+                                    V, V);
 
-    template<typename V, typename B>
-    std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
-              typename AdjArrayOutVars<V, B>::const_iterator>
-    neighborhood(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
+template<typename V, typename B>
+std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
+            typename AdjArrayOutVars<V, B>::const_iterator>
+neighborhood(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
 
-    // todo: variable_iterator
-    // todo: interaction_iterator
-    // todo: neighbour_iterator
+// todo: variable_iterator
+// todo: interaction_iterator
+// todo: neighbour_iterator
 
-    // Change the values in the BQM
+// Change the values in the BQM
 
-    template<typename V, typename B>
-    void set_linear(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, B);
+template<typename V, typename B>
+void set_linear(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, B);
 
-    template<typename V, typename B>
-    bool set_quadratic(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, V, B);
+template<typename V, typename B>
+bool set_quadratic(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, V, B);
 
 }  // namespace dimod
 
