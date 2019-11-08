@@ -83,6 +83,24 @@ def _binary_product(variables):
                                 Vartype.BINARY)
 
 
+def _new_product(variables, u, v):
+    # make a new product variable not in variables, then add it
+    p = '{}*{}'.format(u, v)
+    while p in variables:
+        p = '_' + p
+    variables.add(p)
+    return p
+
+
+def _new_aux(variables, u, v):
+    # make a new auxiliary variable not in variables, then add it
+    aux = 'aux{},{}'.format(u, v)
+    while aux in variables:
+        aux = '_' + aux
+    variables.add(aux)
+    return aux
+
+
 def make_quadratic(poly, strength, vartype=None, bqm=None):
     """Create a binary quadratic model from a higher order polynomial.
 
@@ -132,89 +150,81 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     bqm.info['reduction'] = {}
 
     # we want to be able to mutate the polynomial so copy. We treat this as a
-    # dict but by using BinaryPolynomail we also get automatic handling of
+    # dict but by using BinaryPolynomial we also get automatic handling of
     # square terms
-    new_poly = BinaryPolynomial(poly, vartype=bqm.vartype)
+    poly = BinaryPolynomial(poly, vartype=bqm.vartype)
+    variables = set().union(*poly)
 
-    return _reduce_degree(bqm, new_poly, vartype, strength)
-
-
-def _new_product(bqm, u, v):
-    p = '{}*{}'.format(u, v)
-    while p in bqm:
-        p = '_' + p
-    return p
-
-
-def _new_aux(bqm, u, v):
-    aux = 'aux{},{}'.format(u, v)
-    while aux in bqm:
-        aux = '_' + aux
-    return aux
-
-
-def _reduce_degree(bqm, poly, vartype, scale):
-    """helper function for make_quadratic"""
-
-    if all(len(term) <= 2 for term in poly):
-        # termination criteria, we are already quadratic
-        for term, bias in poly.items():
-            if len(term) == 0:
-                bqm.add_offset(bias)
-            elif len(term) == 1:
-                v, = term  # support py2
-                bqm.add_variable(v, bias)
-            else:
-                u, v = term  # support py2
-                bqm.add_interaction(u, v, bias)
-        return bqm
-
-    # determine which pair of variables appear most often
-    paircounter = Counter()
-    for term in poly:
-        for u, v in itertools.combinations(term, 2):
-            pair = frozenset((u, v))  # so order invarient
-            paircounter[pair] += 1
-
-    pair, __ = paircounter.most_common(1)[0]
-    u, v = pair
-
-    # make a new product variable and aux variable and add constraint that u*v == p
-    p = _new_product(bqm, u, v)
-
-    if vartype is Vartype.BINARY:
-        constraint = _binary_product([u, v, p])
-
-        bqm.info['reduction'][(u, v)] = {'product': p}
-    elif vartype is Vartype.SPIN:
-        aux = _new_aux(bqm, u, v)
-
-        constraint = _spin_product([u, v, p, aux])
-
-        bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
-    else:
-        raise RuntimeError("unknown vartype: {!r}".format(vartype))
-
-    constraint.scale(scale)
-    bqm.update(constraint)
-
-    new_poly = BinaryPolynomial({}, bqm.vartype)
-    for interaction, bias in poly.items():
-        if u in interaction and v in interaction:
-
-            if len(interaction) == 2:
-                # in this case we are reducing a quadratic bias, so it becomes linear and can
-                # be removed
-                assert len(interaction) >= 2
-                bqm.add_variable(p, bias)
+    while any(len(term) > 2 for term in poly):
+        # determine which pair of variables appear most often
+        paircounter = Counter()
+        for term in poly:
+            if len(term) <= 2:
+                # we could leave these in but it can lead to cases like
+                # {'ab': -1, 'cdef': 1} where ab keeps being chosen for
+                # elimination. So we just ignore all the pairs
                 continue
+            for u, v in itertools.combinations(term, 2):
+                pair = frozenset((u, v))  # so order invarient
+                paircounter[pair] += 1
+        pair, __ = paircounter.most_common(1)[0]
+        u, v = pair
 
-            interaction = tuple(s for s in interaction if s not in pair)
-            interaction += (p,)
+        # make a new product variable p == u*v and replace all (u, v) with p
+        p = _new_product(variables, u, v)
+        terms = [term for term in poly if u in term and v in term]
+        for term in terms:
+            new = tuple(w for w in term if w != u and w != v) + (p,)
+            poly[new] = poly.pop(term)
 
-        new_poly[interaction] = bias
+        # add a constraint enforcing the relationship between p == u*v
+        if vartype is Vartype.BINARY:
+            constraint = _binary_product([u, v, p])
 
-    return _reduce_degree(bqm, new_poly, vartype, scale)
+            bqm.info['reduction'][(u, v)] = {'product': p}
+        elif vartype is Vartype.SPIN:
+            aux = _new_aux(variables, u, v)  # need an aux in SPIN-space
+
+            constraint = _spin_product([u, v, p, aux])
+
+            bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
+        else:
+            raise RuntimeError("unknown vartype: {!r}".format(vartype))
+
+        # scale constraint and update the polynomial with it
+        constraint.scale(strength)
+        for v, bias in constraint.linear.items():
+            try:
+                poly[v, ] += bias
+            except KeyError:
+                poly[v, ] = bias
+        for uv, bias in constraint.quadratic.items():
+            try:
+                poly[uv] += bias
+            except KeyError:
+                poly[uv] = bias
+        try:
+            poly[()] += constraint.offset
+        except KeyError:
+            poly[()] = constraint.offset
+
+    # convert poly to a bqm (it already is one)
+    for term, bias in poly.items():
+        if len(term) == 2:
+            u, v = term
+            bqm.add_interaction(u, v, bias)
+        elif len(term) == 1:
+            v, = term
+            bqm.add_variable(v, bias)
+        elif len(term) == 0:
+            bqm.add_offset(bias)
+        else:
+            # still has higher order terms, this shouldn't happen
+            msg = ('Internal error: not all higher-order terms were reduced. '
+                   'Please file a bug report.')
+            raise RuntimeError(msg)
+
+    return bqm
 
 
 def poly_energy(sample_like, poly):
