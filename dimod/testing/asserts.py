@@ -180,8 +180,8 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
         sampleset (:obj:`.SampleSet`):
             Sample set as returned by a dimod sampler.
 
-        bqm (:obj:`.BinaryQuadraticModel`):
-            The binary quadratic model (BQM) used to generate the samples.
+        bqm (:obj:`.BinaryQuadraticModel`/:obj:`.BinaryPolynomial`):
+            The binary quadratic model (BQM) or binary polynomial used to generate the samples.
 
         precision (int, optional, default=7):
             Equality of energy is tested by calculating the difference between
@@ -209,10 +209,10 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
         assert isinstance(sample, abc.Mapping), "'for sample in sampleset', each sample should be a Mapping"
 
         for v, value in sample.items():
-            assert v in bqm.linear, 'sample contains a variable not in the given bqm'
+            assert v in bqm.variables, 'sample contains a variable not in the given bqm'
             assert value in bqm.vartype.value, 'sample contains a value not of the correct type'
 
-            for v in bqm.linear:
+            for v in bqm.variables:
                 assert v in sample, "bqm contains a variable not in sample"
 
         assert round(bqm.energy(sample) - energy, precision) == 0
