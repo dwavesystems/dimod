@@ -150,7 +150,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     bqm.info['reduction'] = {}
 
     # we want to be able to mutate the polynomial so copy. We treat this as a
-    # dict but by using BinaryPolynomail we also get automatic handling of
+    # dict but by using BinaryPolynomial we also get automatic handling of
     # square terms
     poly = BinaryPolynomial(poly, vartype=bqm.vartype)
     variables = set().union(*poly)
@@ -195,9 +195,9 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         constraint.scale(strength)
         for v, bias in constraint.linear.items():
             try:
-                poly[v,] += bias
+                poly[v, ] += bias
             except KeyError:
-                poly[v,] = bias
+                poly[v, ] = bias
         for uv, bias in constraint.quadratic.items():
             try:
                 poly[uv] += bias
@@ -221,7 +221,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         else:
             # still has higher order terms, this shouldn't happen
             raise RuntimeError
-    
+
     return bqm
 
 
