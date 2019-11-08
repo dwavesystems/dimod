@@ -220,7 +220,9 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             bqm.add_offset(bias)
         else:
             # still has higher order terms, this shouldn't happen
-            raise RuntimeError
+            msg = ('Internal error: not all higher-order terms were reduced. '
+                   'Please file a bug report.')
+            raise RuntimeError(msg)
 
     return bqm
 
