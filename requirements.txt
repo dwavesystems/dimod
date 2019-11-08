@@ -1,5 +1,6 @@
 enum34==1.1.6; python_version<="3.3"
-numpy==1.15.0
+numpy==1.15.0; python_version<="3.4"
+numpy==1.17.3; python_version>="3.5"
 six==1.11.0
 futures; python_version=="2.7"
 
