@@ -96,7 +96,7 @@ class ExactSolver(Sampler):
         return response
 
 
-class ExactPolySolver(ExactSolver, PolySampler):
+class ExactPolySolver(PolySampler):
     """A simple exact polynomial solver for testing and debugging code using your local CPU.
 
     Notes:
@@ -132,6 +132,9 @@ class ExactPolySolver(ExactSolver, PolySampler):
     properties = None
     parameters = None
 
+    def __init__(self):
+        self.properties = {}
+        self.parameters = {}
 
     def sample_poly(self, polynomial, **kwargs):
         """Sample from a binary polynomial.
@@ -144,7 +147,7 @@ class ExactPolySolver(ExactSolver, PolySampler):
             :obj:`~dimod.SampleSet`
 
         """
-        return self.sample(polynomial)
+        return ExactSolver().sample(polynomial)
 
 
 def _graycode(bqm):
