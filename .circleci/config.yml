@@ -1,6 +1,10 @@
-version: 2
+version: 2.1
+
+orbs:
+  win: circleci/windows@2.2.0
+
 jobs:
-  test-3.8: &full-test-template
+  test-py38: &full-test-template
     docker:
       - image: circleci/python:3.8-buster
 
@@ -59,32 +63,32 @@ jobs:
             . env/bin/activate
             codecov
 
-  test-3.7:
+  test-py37:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.7-stretch
 
-  test-3.6:
+  test-py36:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.6-jessie
 
-  test-3.5:
+  test-py35:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.5-jessie
 
-  test-3.4:
+  test-py34:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.4-jessie
 
-  test-2.7:
+  test-py27:
     <<: *full-test-template
     docker:
       - image: circleci/python:2.7-jessie
 
-  test-osx-3.8: &osx-tests-template
+  test-osx-py38: &osx-tests-template
     macos:
       xcode: "11.2.0"
     environment:
@@ -140,35 +144,116 @@ jobs:
         
       - run: *run-tests-template
 
-  test-osx-3.7:
+  test-osx-py37:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.7.4
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  test-osx-3.6:
+  test-osx-py36:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.6.5
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  test-osx-3.5:
+  test-osx-py35:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.5.5
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  test-osx-3.4:
+  test-osx-py34:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.4.8
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  test-osx-2.7:
+  test-osx-py27:
     <<: *osx-tests-template
     environment:
       PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
+
+  test-win-py38: &win-tests-template
+    executor:
+      name: win/default
+
+    environment:
+      PYTHON: 3.8.0
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run: 
+          name: install python
+          command: |
+            choco install python --version=$PYTHON
+            choco install boost-msvc-14.1
+
+      - restore_cache: *restore-cache-template
+
+      - run:
+          name: create virtualenv
+          command: |
+            python -m pip install virtualenv
+            python -m virtualenv env
+
+      - run:
+          name: install dependencies
+          command: |
+            env\Scripts\activate.ps1
+            python --version
+            pip install -r requirements.txt
+
+      - save_cache:
+          paths:
+            - .\env
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.0
+
+      - run:
+          name: build extension
+          command: |
+            env\Scripts\activate.ps1
+            python setup.py build_ext --inplace --include-dirs C:\local\boost_1_67_0\
+        
+      - run:
+          name: run unittests
+          command: |
+            env\Scripts\activate.ps1
+            coverage run -m unittest discover
+
+      - run:
+          name: codecov
+          command: |
+            env\Scripts\activate.ps1
+            codecov
+
+  test-win-py37:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 3.7.4
+
+  test-win-py36:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 3.6.5
+
+  test-win-py35:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 3.5.5
+
+  test-win-py34:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 3.4.8
+
+  test-win-py27:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 2.7.15
 
   test-doctest:
     docker:
@@ -271,7 +356,7 @@ jobs:
     docker:
       - image: quay.io/pypa/manylinux1_i686
 
-  deploy-osx-3.8: &osx-deploy-template
+  deploy-osx-py38: &osx-deploy-template
     macos:
       xcode: "11.2.0"
     environment:
@@ -329,31 +414,31 @@ jobs:
 
       - run: *upload-template
 
-  deploy-osx-3.7:
+  deploy-osx-py37:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.7.4
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  deploy-osx-3.6:
+  deploy-osx-py36:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.6.5
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  deploy-osx-3.5:
+  deploy-osx-py35:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.5.5
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  deploy-osx-3.4:
+  deploy-osx-py34:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.4.8
       HOMEBREW_NO_AUTO_UPDATE: 1
 
-  deploy-osx-2.7:
+  deploy-osx-py27:
     <<: *osx-deploy-template
     environment:
       PYTHON: 2.7.15
@@ -363,18 +448,24 @@ workflows:
   version: 2
   tests:
     jobs:
-      - test-3.8
-      - test-3.7
-      - test-3.6
-      - test-3.5
-      - test-3.4
-      - test-2.7
-      - test-osx-3.8
-      - test-osx-3.7
-      - test-osx-3.6
-      - test-osx-3.5
-      - test-osx-3.4
-      - test-osx-2.7
+      - test-py38
+      - test-py37
+      - test-py36
+      - test-py35
+      - test-py34
+      - test-py27
+      - test-osx-py38
+      - test-osx-py37
+      - test-osx-py36
+      - test-osx-py35
+      - test-osx-py34
+      - test-osx-py27
+      - test-win-py38
+      - test-win-py37
+      - test-win-py36
+      - test-win-py35
+      - test-win-py34
+      - test-win-py27
       - test-doctest
   deploy:
     jobs:
@@ -390,37 +481,37 @@ workflows:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-3.8:
+      - deploy-osx-py38:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-3.7:
+      - deploy-osx-py37:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-3.6:
+      - deploy-osx-py36:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-3.5:
+      - deploy-osx-py35:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-3.4:
+      - deploy-osx-py34:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-osx-2.7:
+      - deploy-osx-py27:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
