@@ -26,28 +26,28 @@ using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
 template<typename VarIndex, typename Bias>
 using AdjArrayOutVars = typename std::vector<std::pair<VarIndex, Bias>>;
 
+template<typename VarIndex, typename Bias>
+using AdjArrayBQM = typename std::pair<AdjArrayInVars<Bias>,
+                                       AdjArrayOutVars<VarIndex, Bias>>;
+
 // Read the BQM
 
 template<typename V, typename B>
-std::size_t num_variables(const AdjArrayInVars<B>&,
-                            const AdjArrayOutVars<V, B>&);
+std::size_t num_variables(const AdjArrayBQM<V, B>&);
 
 template<typename V, typename B>
-std::size_t num_interactions(const AdjArrayInVars<B>&,
-                                const AdjArrayOutVars<V, B>&);
+std::size_t num_interactions(const AdjArrayBQM<V, B>&);
 
 template<typename V, typename B>
-B get_linear(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
+B get_linear(const AdjArrayBQM<V, B>&, V);
 
 template<typename V, typename B>
-std::pair<B, bool> get_quadratic(const AdjArrayInVars<B>&,
-                                    const AdjArrayOutVars<V, B>&,
-                                    V, V);
+std::pair<B, bool> get_quadratic(const AdjArrayBQM<V, B>&, V, V);
 
 template<typename V, typename B>
 std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
             typename AdjArrayOutVars<V, B>::const_iterator>
-neighborhood(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
+neighborhood(const AdjArrayBQM<V, B>&, V);
 
 // todo: variable_iterator
 // todo: interaction_iterator
@@ -56,10 +56,10 @@ neighborhood(const AdjArrayInVars<B>&, const AdjArrayOutVars<V, B>&, V);
 // Change the values in the BQM
 
 template<typename V, typename B>
-void set_linear(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, B);
+void set_linear(AdjArrayBQM<V, B>&, V, B);
 
 template<typename V, typename B>
-bool set_quadratic(AdjArrayInVars<B>&, AdjArrayOutVars<V, B>&, V, V, B);
+bool set_quadratic(AdjArrayBQM<V, B>&, V, V, B);
 
 }  // namespace dimod
 

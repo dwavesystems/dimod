@@ -28,27 +28,23 @@ cdef extern from "src/adjarray.cc":
 
 cdef extern from "src/adjarray.h" namespace "dimod" nogil:
 
-    size_t num_variables[V, B](const vector[pair[size_t, B]]&,
-                               const vector[pair[V, B]]&)
-    size_t num_interactions[V, B](const vector[pair[size_t, B]]&,
-                                  const vector[pair[V, B]]&)
+    size_t num_variables[V, B](const pair[vector[pair[size_t, B]],
+                                          vector[pair[V, B]]]&)
+    size_t num_interactions[V, B](const pair[vector[pair[size_t, B]],
+                                             vector[pair[V, B]]]&)
 
-    B get_linear[V, B](const vector[pair[size_t, B]]&,
-                       const vector[pair[V, B]]&,
+    B get_linear[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                        V)
-    pair[B, bool] get_quadratic[V, B](const vector[pair[size_t, B]]&,
-                                      const vector[pair[V, B]]&,
+    pair[B, bool] get_quadratic[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                                       V, V)
 
     pair[vector[pair[V, B]].const_iterator,
          vector[pair[V, B]].const_iterator] neighborhood[V, B](
-        const vector[pair[size_t, B]]&, const vector[pair[V, B]]&, V)
+        const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
 
-    void set_linear[V, B](vector[pair[size_t, B]]&,
-                          vector[pair[V, B]]&,
+    void set_linear[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                           V, B)
-    bool set_quadratic[V, B](vector[pair[size_t, B]]&,
-                             vector[pair[V, B]]&,
+    bool set_quadratic[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                              V, V, B)
 
 
