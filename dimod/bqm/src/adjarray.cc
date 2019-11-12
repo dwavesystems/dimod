@@ -22,24 +22,20 @@ namespace dimod {
 // Read the BQM
 
 template<typename VarIndex, typename Bias>
-std::size_t num_variables(const AdjArrayInVars<Bias> &invars,
-                            const AdjArrayOutVars<VarIndex, Bias> &outvars) {
-    return invars.size();
+std::size_t num_variables(const AdjArrayBQM<VarIndex, Bias> &bqm) {
+    return bqm.first.size();
 }
 
 template<typename VarIndex, typename Bias>
-std::size_t num_interactions(const AdjArrayInVars<Bias> &invars,
-                                const AdjArrayOutVars<VarIndex, Bias>
-                            &outvars) {
-    return outvars.size() / 2;
+std::size_t num_interactions(const AdjArrayBQM<VarIndex, Bias> &bqm) {
+    return bqm.second.size() / 2;
 }
 
 template<typename VarIndex, typename Bias>
-Bias get_linear(const AdjArrayInVars<Bias> &invars,
-                const AdjArrayOutVars<VarIndex, Bias> &outvars,
+Bias get_linear(const AdjArrayBQM<VarIndex, Bias> &bqm,
                 VarIndex v) {
-    assert(v >= 0 && v < invars.size());
-    return invars[v].second;
+    assert(v >= 0 && v < bqm.first.size());
+    return bqm.first[v].second;
 }
 
 // compare only the first value in the pair
@@ -50,26 +46,24 @@ bool pair_lt(const std::pair<VarIndex, Bias> a,
 }
 
 template<typename VarIndex, typename Bias>
-std::pair<Bias, bool> get_quadratic(const AdjArrayInVars<Bias> &invars,
-                                    const AdjArrayOutVars<VarIndex, Bias>
-                                    &outvars,
+std::pair<Bias, bool> get_quadratic(const AdjArrayBQM<VarIndex, Bias> &bqm,
                                     VarIndex u, VarIndex v) {
-    assert(u >= 0 && u < invars.size());
-    assert(v >= 0 && v < invars.size());
+    assert(u >= 0 && u < bqm.first.size());
+    assert(v >= 0 && v < bqm.first.size());
     assert(u != v);
 
     if (v < u) std::swap(u, v);
 
-    std::size_t start = invars[u].first;
-    std::size_t end = invars[u+1].first;  // safe if u < v and asserts above
+    std::size_t start = bqm.first[u].first;
+    std::size_t end = bqm.first[u+1].first;  // safe if u < v and asserts above
 
     const std::pair<VarIndex, Bias> target(v, 0);
 
     typename AdjArrayOutVars<VarIndex, Bias>::const_iterator low;
-    low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+    low = std::lower_bound(bqm.second.begin()+start, bqm.second.begin()+end,
                             target, pair_lt<VarIndex, Bias>);
 
-    if (low == outvars.begin()+end)
+    if (low == bqm.second.begin()+end)
         return std::make_pair(0, false);
     return std::make_pair((*low).second, true);
 }
@@ -80,77 +74,74 @@ std::pair<Bias, bool> get_quadratic(const AdjArrayInVars<Bias> &invars,
 template<typename VarIndex, typename Bias>
 std::pair<typename AdjArrayOutVars<VarIndex, Bias>::const_iterator,
             typename AdjArrayOutVars<VarIndex, Bias>::const_iterator>
-neighborhood(const AdjArrayInVars<Bias> &invars,
-                const AdjArrayOutVars<VarIndex, Bias> &outvars,
+neighborhood(const AdjArrayBQM<VarIndex, Bias> &bqm,
                 VarIndex u) {
     std::size_t start, stop;
 
-    start = invars[u].first;
+    start = bqm.first[u].first;
 
-    if (u == invars.size() - 1) {
-        // last element so ends at the end out outvars
-        stop = outvars.size();
+    if (u == bqm.first.size() - 1) {
+        // last element so ends at the end out bqm.second
+        stop = bqm.second.size();
     } else {
-        stop = invars[u+1].first;
+        stop = bqm.first[u+1].first;
     }
 
     // random access iterators
-    return std::make_pair(outvars.begin() + start, outvars.begin() + stop);
+    return std::make_pair(bqm.second.begin() + start, bqm.second.begin() + stop);
 }
 
 // Change the values in the BQM
 
 template<typename VarIndex, typename Bias>
-void set_linear(AdjArrayInVars<Bias> &invars,
-                AdjArrayOutVars<VarIndex, Bias> &outvars,
+void set_linear(AdjArrayBQM<VarIndex, Bias> &bqm,
                 VarIndex v, Bias b) {
-    assert(v >= 0 && v < invars.size());
-    invars[v].second = b;
+    assert(v >= 0 && v < bqm.first.size());
+    bqm.first[v].second = b;
 }
 
 // Q: Should we do something else if the user tries to set a non-existant
 //    quadratic bias? Error/segfault?
 template<typename VarIndex, typename Bias>
-bool set_quadratic(AdjArrayInVars<Bias> &invars,
-                    AdjArrayOutVars<VarIndex, Bias> &outvars,
-                    VarIndex u, VarIndex v, Bias b) {
-    assert(u >= 0 && u < invars.size());
-    assert(v >= 0 && v < invars.size());
+bool set_quadratic(AdjArrayBQM<VarIndex, Bias> &bqm,
+                   VarIndex u, VarIndex v, Bias b) {
+    assert(u >= 0 && u < bqm.first.size());
+    assert(v >= 0 && v < bqm.first.size());
     assert(u != v);
 
     typename AdjArrayOutVars<VarIndex, Bias>::iterator low;
     std::size_t start, end;
 
     // interaction (u, v)
-    start = invars[u].first;
-    if (u < invars.size() - 1) {
-        end = invars[u+1].first;
+    start = bqm.first[u].first;
+    if (u < bqm.first.size() - 1) {
+        end = bqm.first[u+1].first;
     } else {
-        end = outvars.size();
+        end = bqm.second.size();
     }
 
     const std::pair<VarIndex, Bias> v_target(v, 0);
 
-    low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+    low = std::lower_bound(bqm.second.begin()+start, bqm.second.begin()+end,
                             v_target, pair_lt<VarIndex, Bias>);
 
     // if the edge does not exist, just return false here
-    if (low == outvars.begin()+end)
+    if (low == bqm.second.begin()+end)
         return false;
 
     (*low).second = b;
 
     // interaction (v, u)
-    start = invars[v].first;
-    if (v < invars.size() - 1) {
-        end = invars[v+1].first;
+    start = bqm.first[v].first;
+    if (v < bqm.first.size() - 1) {
+        end = bqm.first[v+1].first;
     } else {
-        end = outvars.size();
+        end = bqm.second.size();
     }
 
     const std::pair<VarIndex, Bias> u_target(u, 0);
 
-    low = std::lower_bound(outvars.begin()+start, outvars.begin()+end,
+    low = std::lower_bound(bqm.second.begin()+start, bqm.second.begin()+end,
                             u_target, pair_lt<VarIndex, Bias>);
 
     // we already know that this exists
