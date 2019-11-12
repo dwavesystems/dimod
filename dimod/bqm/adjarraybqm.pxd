@@ -41,8 +41,7 @@ ctypedef fused SampleVar:
 
 
 cdef class cyAdjArrayBQM:
-    cdef vector[pair[size_t, Bias]] invars_
-    cdef vector[pair[VarIndex, Bias]] outvars_
+    cdef pair[vector[pair[size_t, Bias]], vector[pair[VarIndex, Bias]]] adj_
 
     cdef Bias offset_
 
