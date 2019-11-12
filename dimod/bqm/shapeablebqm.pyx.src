@@ -490,8 +490,8 @@ cdef class cyAdj@name@BQM:
 
         # create an empty adjarraybqm of the correct size
         cdef cyAdjArrayBQM bqm = cyAdjArrayBQM(vartype=self.vartype)
-        bqm.invars_.resize(num_variables(self.adj_))
-        bqm.outvars_.resize(2*num_interactions(self.adj_))
+        bqm.adj_.first.resize(num_variables(self.adj_))
+        bqm.adj_.second.resize(2*num_interactions(self.adj_))
 
         cdef pair[VarIndex, Bias] outvar
         cdef VarIndex ui
@@ -499,12 +499,12 @@ cdef class cyAdj@name@BQM:
         for ui in range(self.adj_.size()):
 
             # set the linear bias
-            bqm.invars_[ui].second = self.adj_[ui].second
-            bqm.invars_[ui].first = outvar_idx
+            bqm.adj_.first[ui].second = self.adj_[ui].second
+            bqm.adj_.first[ui].first = outvar_idx
 
             # set the quadratic biases
             for outvar in self.adj_[ui].first:
-                bqm.outvars_[outvar_idx] = outvar
+                bqm.adj_.second[outvar_idx] = outvar
                 outvar_idx += 1
 
         bqm.offset_ = self.offset_
