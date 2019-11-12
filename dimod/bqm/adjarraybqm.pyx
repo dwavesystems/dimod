@@ -142,15 +142,13 @@ cdef class cyAdjArrayBQM:
         cdef cyAdjArrayBQM other
 
         if isinstance(obj, Integral):
-            self.invars_.resize(obj)
+            self.adj_.first.resize(obj)
         elif isinstance(obj, tuple):
             self.__init__(cyAdjVectorBQM(obj, vartype))  # via the map version
         elif hasattr(obj, "to_adjarray"):
-
             # this is not very elegent...
             other = obj.to_adjarray()
-            self.invars_ = other.invars_
-            self.outvars_ = other.outvars_
+            self.adj_ = other.adj_  # is this a copy? We probably want to move
             self.offset_ = other.offset_
             self._label_to_idx = other._label_to_idx
             self._idx_to_label = other._idx_to_label
@@ -164,11 +162,11 @@ cdef class cyAdjArrayBQM:
             if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            self.invars_.resize(num_variables)
+            self.adj_.first.resize(num_variables)
 
             # we could grow the vectors going through it one at a time, but
             # in the interest of future-proofing we will go through once,
-            # resize the outvars_ then go through it again to fill
+            # resize the adj_.second then go through it again to fill
 
             # figure out the degree of each variable and consequently the
             # number of interactions
@@ -180,31 +178,31 @@ cdef class cyAdjArrayBQM:
                         degree += 1
 
                 if ui < num_variables - 1:
-                    self.invars_[ui + 1].first = degree + self.invars_[ui].first
+                    self.adj_.first[ui + 1].first = degree + self.adj_.first[ui].first
 
                 num_interactions += degree
 
-            self.outvars_.resize(num_interactions)
+            self.adj_.second.resize(num_interactions)
 
             # todo: fix this, we're assigning twice
             for ui in range(num_variables):
                 degree = 0
                 for vi in range(num_variables):
                     if ui == vi:
-                        self.invars_[ui].second = D[ui, vi]
+                        self.adj_.first[ui].second = D[ui, vi]
                     elif D[vi, ui] or D[ui, vi]:
-                        self.outvars_[self.invars_[ui].first + degree].first = vi
-                        self.outvars_[self.invars_[ui].first + degree].second = D[vi, ui] + D[ui, vi]
+                        self.adj_.second[self.adj_.first[ui].first + degree].first = vi
+                        self.adj_.second[self.adj_.first[ui].first + degree].second = D[vi, ui] + D[ui, vi]
                         degree += 1
 
     @property
     def num_variables(self):
-        return num_variables(self.invars_, self.outvars_)
+        return num_variables(self.adj_)
 
     @property
     def num_interactions(self):
         """int: The number of interactions in the model."""
-        return num_interactions(self.invars_, self.outvars_)
+        return num_interactions(self.adj_)
 
     @property
     def offset(self):
@@ -230,7 +228,7 @@ cdef class cyAdjArrayBQM:
         except (OverflowError, TypeError, KeyError) as ex:
             raise ValueError("{} is not a variable".format(v)) from ex
 
-        if vi < 0 or vi >= num_variables(self.invars_, self.outvars_):
+        if vi < 0 or vi >= num_variables(self.adj_):
             raise ValueError("{} is not a variable".format(v))
 
         return vi
@@ -241,7 +239,7 @@ cdef class cyAdjArrayBQM:
 
         cdef VarIndex vi = self.label_to_idx(v)
 
-        span = neighborhood(self.invars_, self.outvars_, vi)
+        span = neighborhood(self.adj_, vi)
 
         # this assumes that span is two random-access iterators. We could use
         # the more generic distance function, but as of cython 0.29.13 it
@@ -253,9 +251,9 @@ cdef class cyAdjArrayBQM:
         cdef object v
         cdef Bias b
 
-        for vi in range(num_variables(self.invars_, self.outvars_)):
+        for vi in range(num_variables(self.adj_)):
             v = self._idx_to_label.get(vi, vi)
-            b = self.invars_[vi].second
+            b = self.adj_.first[vi].second
 
             yield v, as_numpy_scalar(b, self.dtype)
 
@@ -272,8 +270,8 @@ cdef class cyAdjArrayBQM:
         if variables is None:
             # in the case that variables is unlabelled we can speed things up
             # by just walking through the range
-            for ui in range(num_variables(self.invars_, self.outvars_)):
-                it_eit = neighborhood(self.invars_, self.outvars_, ui)
+            for ui in range(num_variables(self.adj_)):
+                it_eit = neighborhood(self.adj_, ui)
                 it = it_eit.first
                 eit = it_eit.second
 
@@ -295,7 +293,7 @@ cdef class cyAdjArrayBQM:
                 ui = self.label_to_idx(u)
                 seen.add(u)
 
-                it_eit = neighborhood(self.invars_, self.outvars_, ui)
+                it_eit = neighborhood(self.adj_, ui)
                 it = it_eit.first
                 eit = it_eit.second
 
@@ -311,9 +309,7 @@ cdef class cyAdjArrayBQM:
                     inc(it)
 
     def get_linear(self, object v):
-        return as_numpy_scalar(get_linear(self.invars_,
-                                          self.outvars_,
-                                          self.label_to_idx(v)),
+        return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
                                self.dtype)
 
     def get_quadratic(self, object u, object v):
@@ -323,8 +319,7 @@ cdef class cyAdjArrayBQM:
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
 
-        cdef pair[Bias, bool] out = get_quadratic(self.invars_, self.outvars_,
-                                                  ui, vi)
+        cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
 
         if not out.second:
             raise ValueError('No interaction between {} and {}'.format(u, v))
@@ -332,7 +327,7 @@ cdef class cyAdjArrayBQM:
         return as_numpy_scalar(out.first, self.dtype)
 
     def set_linear(self, object v, Bias b):
-        set_linear(self.invars_, self.outvars_, self.label_to_idx(v), b)
+        set_linear(self.adj_, self.label_to_idx(v), b)
 
     def set_quadratic(self, object u, object v, Bias b):
 
@@ -341,7 +336,7 @@ cdef class cyAdjArrayBQM:
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
 
-        cdef bool isset = set_quadratic(self.invars_, self.outvars_, ui, vi, b)
+        cdef bool isset = set_quadratic(self.adj_, ui, vi, b)
 
         if not isset:
             raise ValueError('No interaction between {} and {}'.format(u, v))
@@ -364,15 +359,15 @@ cdef class cyAdjArrayBQM:
         # of some of the issues around OMP_NUM_THREADS
         cdef size_t row
         for row in range(num_samples):
-            energies_view[row] = energy(self.invars_,
-                                        self.outvars_,
+            energies_view[row] = energy(self.adj_.first,
+                                        self.adj_.second,
                                         samples[row, :])
 
         return energies
 
     def to_lists(self):
         """Dump to two lists, mostly for testing"""
-        return list(self.invars_), list(self.outvars_)
+        return list(self.adj_.first), list(self.adj_.second)
 
 
 class AdjArrayBQM(cyAdjArrayBQM, BQM):
