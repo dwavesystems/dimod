@@ -20,6 +20,8 @@ try:
 except ImportError:
     from collections import KeysView, Mapping, MutableMapping
 
+import numpy as np
+
 from six import add_metaclass
 
 
@@ -244,6 +246,44 @@ class BQM:
         """
         for _, v, _ in self.iter_quadratic(u):
             yield v
+
+    def to_coo(self):
+        """The BQM as 4 numpy vectors, the offset and a list of variables."""
+        nv = self.num_variables
+        ni = self.num_interactions
+
+        ldata = np.empty(nv, dtype=self.dtype)
+        irow = np.empty(ni, dtype=self.index_dtype)
+        icol = np.empty(ni, dtype=self.index_dtype)
+        qdata = np.empty(ni, dtype=self.dtype)
+
+        labels = list(self.iter_variables())
+        label_to_idx = {v: i for i, v in enumerate(labels)}
+
+        for v, bias in self.linear.items():
+            ldata[label_to_idx[v]] = bias
+        qi = 0
+        for (u, v), bias in self.quadratic.items():
+            irow[qi] = label_to_idx[u]
+            icol[qi] = label_to_idx[v]
+            qdata[qi] = bias
+            qi += 1
+
+        # we want to make sure the COO format is sorted
+        swaps = irow > icol
+        if swaps.any():
+            # in-place
+            irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+
+        # sort lexigraphically
+        order = np.lexsort((irow, icol))
+        if not (order == range(len(order))).all():
+            # copy
+            irow = irow[order]
+            icol = icol[order]
+            qdata = qdata[order]
+
+        return ldata, (irow, icol, qdata), self.offset, labels
 
 
 class ShapeableBQM(BQM):

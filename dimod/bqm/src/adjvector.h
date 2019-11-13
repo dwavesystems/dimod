@@ -47,7 +47,7 @@ std::size_t degree(const AdjVectorBQM<V, B>&, V);
 template<typename V, typename B>
 std::pair<typename VectorNeighbourhood<V, B>::const_iterator,
             typename VectorNeighbourhood<V, B>::const_iterator>
-neighborhood(const AdjVectorBQM<V, B>&, V);
+neighborhood(const AdjVectorBQM<V, B>&, V, bool upper_triangular = false);
 
 // todo: variable_iterator
 // todo: interaction_iterator

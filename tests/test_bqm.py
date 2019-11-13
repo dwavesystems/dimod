@@ -281,6 +281,20 @@ class TestBQMAPI:
         self.assertEqual(self.BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(self.BQM(0, dimod.SPIN).num_interactions, 0)
 
+    def test_to_coo_empty(self):
+        bqm = self.BQM('SPIN')
+        ldata, (irow, icol, qdata), off, labels = bqm.to_coo()
+
+    def test_to_coo(self):
+        bqm = self.BQM(({'a': -1}, {'ab': 2}), 'SPIN')
+        ldata, (irow, icol, qdata), off, labels = bqm.to_coo()
+
+        np.testing.assert_array_equal(ldata, [-1, 0])
+        np.testing.assert_array_equal(irow, [0])
+        np.testing.assert_array_equal(icol, [1])
+        np.testing.assert_array_equal(qdata, [2])
+        self.assertEqual(labels, ['a', 'b'])
+
     def test_vartype(self):
         bqm = self.BQM(vartype='SPIN')
         self.assertEqual(bqm.vartype, dimod.SPIN)
