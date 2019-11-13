@@ -71,24 +71,30 @@ std::pair<Bias, bool> get_quadratic(const AdjArrayBQM<VarIndex, Bias> &bqm,
 // Iterate over the neighbourhood of variable u.
 //
 // Returns iterators to beginning and end of neighborhood.
+// upper_triangular will gives the start iterator at the first index > u
 template<typename VarIndex, typename Bias>
 std::pair<typename AdjArrayOutVars<VarIndex, Bias>::const_iterator,
-            typename AdjArrayOutVars<VarIndex, Bias>::const_iterator>
-neighborhood(const AdjArrayBQM<VarIndex, Bias> &bqm,
-                VarIndex u) {
-    std::size_t start, stop;
-
-    start = bqm.first[u].first;
+          typename AdjArrayOutVars<VarIndex, Bias>::const_iterator>
+neighborhood(const AdjArrayBQM<VarIndex, Bias> &bqm, VarIndex u,
+             bool upper_triangular) {
+    typename AdjArrayOutVars<VarIndex, Bias>::const_iterator start, stop;
 
     if (u == bqm.first.size() - 1) {
         // last element so ends at the end out bqm.second
-        stop = bqm.second.size();
+        stop = bqm.second.end();
     } else {
-        stop = bqm.first[u+1].first;
+        stop = bqm.second.begin() + bqm.first[u+1].first;
+    }
+
+    start = bqm.second.begin() + bqm.first[u].first;
+    if (upper_triangular) {
+        // binary search to find the index of the starting position
+        const std::pair<VarIndex, Bias> target(u, 0);
+        start = std::lower_bound(start, stop, target, pair_lt<VarIndex, Bias>);
     }
 
     // random access iterators
-    return std::make_pair(bqm.second.begin() + start, bqm.second.begin() + stop);
+    return std::make_pair(start, stop);
 }
 
 // Change the values in the BQM
