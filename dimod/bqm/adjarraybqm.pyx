@@ -341,6 +341,50 @@ cdef class cyAdjArrayBQM:
         if not isset:
             raise ValueError('No interaction between {} and {}'.format(u, v))
 
+    # note that this is identical to the implemenation in shapeablebqm.pyx.src
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def to_coo(self):
+        cdef Py_ssize_t nv = num_variables(self.adj_)
+        cdef Py_ssize_t ni = num_interactions(self.adj_)
+
+        # numpy arrays, we will return these
+        ldata = np.empty(nv, dtype=self.dtype)
+        irow = np.empty(ni, dtype=self.index_dtype)
+        icol = np.empty(ni, dtype=self.index_dtype)
+        qdata = np.empty(ni, dtype=self.dtype)
+
+        # views into the numpy arrays for faster cython access
+        cdef Bias[:] ldata_view = ldata
+        cdef VarIndex[:] irow_view = irow
+        cdef VarIndex[:] icol_view = icol
+        cdef Bias[:] qdata_view = qdata
+
+        # types needed for the loop
+        cdef pair[NeighborIterator, NeighborIterator] span
+        cdef VarIndex vi
+        cdef Py_ssize_t qi = 0  # index in the quadratic arrays
+
+        for vi in range(nv):
+            ldata_view[vi] = get_linear(self.adj_, vi)
+
+            # The last argument indicates we should only iterate over the
+            # neighbours that have higher index than vi
+            span = neighborhood(self.adj_, vi, True)
+
+            while span.first != span.second:
+                irow_view[qi] = vi
+                icol_view[qi] = deref(span.first).first
+                qdata_view[qi] = deref(span.first).second
+
+                qi += 1
+                inc(span.first)
+
+        # all python objects
+        labels = [self._idx_to_label.get(v, v) for v in range(nv)]
+
+        return ldata, (irow, icol, qdata), self.offset, labels
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def energies(self, SampleVar[:, :] samples):

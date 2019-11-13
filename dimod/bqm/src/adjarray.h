@@ -47,7 +47,7 @@ std::pair<B, bool> get_quadratic(const AdjArrayBQM<V, B>&, V, V);
 template<typename V, typename B>
 std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
             typename AdjArrayOutVars<V, B>::const_iterator>
-neighborhood(const AdjArrayBQM<V, B>&, V);
+neighborhood(const AdjArrayBQM<V, B>&, V, bool upper_triangular = false);
 
 // todo: variable_iterator
 // todo: interaction_iterator
