@@ -17,6 +17,9 @@
 #
 # =============================================================================
 
+import io
+import struct
+
 try:
     import collections.abc as abc
 except ImportError:
@@ -26,7 +29,9 @@ from numbers import Integral
 
 cimport cython
 
+from libc.string cimport memcpy
 from cython.operator cimport postincrement as inc, dereference as deref
+from cython.view cimport array as cvarray
 
 import numpy as np
 
@@ -42,6 +47,161 @@ from dimod.bqm.cppbqm cimport (num_variables,
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype
+
+
+class FileView(io.RawIOBase):
+    """
+
+    Format specification:
+
+    The first 5 bytes are a magic string: exactly "DIMOD".
+
+    The next 1 byte is an unsigned byte: the major version of the file format.
+
+    The next 1 byte is an unsigned byte: the minor version of the file format.
+
+    The next 4 bytes form a little-endian unsigned int, the length of the header
+    data HEADER_LEN.
+
+    The next HEADER_LEN bytes form the header data. TODO, though let's do the
+    "divisible by 16" thing.
+
+    See also
+    https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+
+    """
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+        # todo: increment viewcount
+
+        self.pos = 0
+
+        # # we'll need to know the degree of each of the variables
+        # self.degrees = np.empty(len(bqm), dtype=np.intc)
+        # self.degree_pos = 0  # location that has been filled in degrees
+
+        # set up the header
+        prefix = b'DIMOD'
+        version = bytes([1, 0])  # version 1.0
+
+        header_data = b'dummy data'  # todo
+
+        header_len = struct.pack('<I', len(header_data))
+
+        header = prefix + version + header_len + header_data
+
+        # pad the header so that it's length is divisible by 16
+        self.header = header + b' '*(16 - len(header) % 16)
+
+    def readinto(self, char[:] buff):
+        """Accepts a writeable buffer, fills it and returns the num filled.
+        Return 0 once it's done.
+        """
+        print('trying to readinto {} bytes'.format(len(buff)))
+
+        cdef int pos = self.pos  # convert to C space
+        cdef int start = pos
+        cdef int end = pos + len(buff)  # the maximum
+        cdef int num_written = 0
+
+        # determine if there is any header to read
+
+        cdef const unsigned char[:] header = self.header  # view
+        while pos < len(header) and pos < end:
+            buff[pos] = header[pos]
+            pos += 1
+        print('{} header bytes written'.format(pos - start))
+
+
+        pos += self._linear_readinto(buff[pos:], pos - len(header))
+        pos += self._quadratic_readinto(buff[pos:], pos - len(header) - self.bqm.num_variables*(sizeof(size_t) + sizeof(Bias)))
+
+        self.pos = pos
+        return pos - start
+
+    def _linear_readinto(self, char[:] buff, int pos):
+        # read the linear biases into the given buffer, note that this does not
+        # increment the position on the object itself
+        # pos is relative to the beginning of the linear biases
+        if pos < 0:
+            raise ValueError("negative position")
+
+        if len(buff) == 0:
+            return 0
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+
+        cdef Py_ssize_t bi = 0  # location in buffer
+        cdef Py_ssize_t end = len(buff)
+
+        cdef Py_ssize_t step_size = sizeof(size_t) + sizeof(Bias)
+
+        if pos >= step_size*num_variables(bqm.adj_):
+            # we're already past the linear stuff
+            return 0
+
+        if pos % step_size or len(buff) < step_size:
+            # need to handle partial, either we're part-way through or we don't
+            # have room for at least one (neighbor, bias) pair
+            raise NotImplementedError
+
+        cdef VarIndex vi
+        for vi in range(pos // step_size, num_variables(bqm.adj_)):
+            if bi + step_size >= end:
+                break
+
+            # this is specific to adjarray, will want to generalize later
+            memcpy(&buff[bi], &bqm.adj_.first[vi].first, sizeof(size_t))
+            bi += sizeof(size_t)
+            memcpy(&buff[bi], &bqm.adj_.first[vi].second, sizeof(Bias))            
+            bi += sizeof(Bias)
+
+        print('{} linear bytes written'.format(bi))
+
+        return bi  # number of bytes written
+
+    def _quadratic_readinto(self, char[:] buff, int pos):
+        # pos is relative to start of quadratic
+        if pos < 0:
+            raise ValueError
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+        cdef Py_ssize_t step_size = sizeof(VarIndex) + sizeof(Bias)
+
+        if len(buff) == 0 or pos >= 2*step_size*num_interactions(bqm.adj_):
+            # either there is no room in the buffer or the position is past all
+            # the data we want to write, in either case we don't need to do
+            # anything
+            return 0
+
+        cdef Py_ssize_t bi = 0  # location in buffer
+        cdef Py_ssize_t end = len(buff)
+
+        if pos % step_size or len(buff) < step_size:
+            # need to handle partial, either we're part-way through or we don't
+            # have room for at least one (neighbor, bias) pair
+            raise NotImplementedError
+
+        # determine which in-variable we're on based on position, this is very
+        # specific to adjarray, we'll want to generalize later
+        cdef Py_ssize_t qi
+        for qi in range(pos // step_size, 2*num_interactions(bqm.adj_)):
+            if bi + step_size >= end:
+                break
+
+            memcpy(&buff[bi], &bqm.adj_.second[qi].first, sizeof(VarIndex))
+            bi += sizeof(VarIndex)
+            memcpy(&buff[bi], &bqm.adj_.second[qi].second, sizeof(Bias))            
+            bi += sizeof(Bias)
+
+        print('{} quadratic bytes written'.format(bi))
+
+        return bi  # number of bytes written
+
+    def close(self):
+        # todo: decrement viewcount
+        super(FileView, self).close()
 
 
 # developer note: we use a function rather than a method because we want to
