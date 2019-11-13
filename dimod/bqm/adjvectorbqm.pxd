@@ -26,6 +26,7 @@ from libcpp.vector cimport vector
 # does not allow fused types on cdef classes (yet) so for now we just fix them.
 ctypedef unsigned int VarIndex
 ctypedef double Bias
+ctypedef vector[pair[VarIndex, Bias]].const_iterator NeighborIterator
 
 
 cdef class cyAdjVectorBQM:
