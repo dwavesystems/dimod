@@ -23,7 +23,7 @@ jobs:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      - run:
+      - run: &create-virtualenv-template
           name: create virtualenv
           command: |
             python -m virtualenv env
@@ -186,21 +186,24 @@ jobs:
     steps:
       - checkout
 
-      - run: 
+      - run:  &win-install-python-template
           name: install python
           command: |
             choco install python --version=$PYTHON
             choco install boost-msvc-14.1
+            python -m pip install virtualenv
 
-      - restore_cache: *restore-cache-template
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      - run:
+      - run: &win-create-virtualenv-template
           name: create virtualenv
           command: |
             python -m pip install virtualenv
             python -m virtualenv env
 
-      - run:
+      - run: &win-install-dependencies-template
           name: install dependencies
           command: |
             env\Scripts\activate.ps1
@@ -210,9 +213,9 @@ jobs:
       - save_cache:
           paths:
             - .\env
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.0
+          key: dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      - run:
+      - run: &win-build-ext-template
           name: build extension
           command: |
             env\Scripts\activate.ps1
@@ -268,10 +271,7 @@ jobs:
 
       - restore_cache: *restore-cache-template
 
-      - run:
-          name: create virtualenv
-          command: |
-            python -m virtualenv env
+      - run: *create-virtualenv-template
 
       - run: *install-dependencies-template
 
@@ -329,13 +329,6 @@ jobs:
       - store_artifacts:
           path: ./dist
 
-      - run: &init-pypirc-template
-          name: init .pypirc
-          command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
-
       - run:
           name: create a virtualenv
           command: |
@@ -349,7 +342,7 @@ jobs:
           command: |
             . env/bin/activate
             python -m pip install twine
-            twine upload --skip-existing ./dist/*
+            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
 
   deploy-manylinux-32:
     <<: *manylinux-deploy-template
@@ -410,8 +403,6 @@ jobs:
       - store_artifacts:
           path: ./dist
 
-      - run: *init-pypirc-template
-
       - run: *upload-template
 
   deploy-osx-py37:
@@ -443,6 +434,73 @@ jobs:
     environment:
       PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
+
+  deploy-win-py38: &win-deploy-template
+    executor:
+      name: win/default
+
+    environment:
+      PYTHON: 3.8.0
+      CL: -IC:\local\boost_1_67_0\
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run: *win-install-python-template
+
+      - run: *win-create-virtualenv-template
+
+      - run: *win-install-dependencies-template
+
+      - run: *win-build-ext-template
+
+      - run:
+          name: create bdist_wheel
+          command: |
+            env\Scripts\activate.ps1
+            python setup.py bdist_wheel
+
+      - store_artifacts:
+          path: .\dist
+
+      - run:
+          name: install twine and deploy
+          command: |
+            env\Scripts\activate.ps1
+            python -m pip install twine
+            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
+
+  deploy-win-py37:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 3.7.4
+      CL: -IC:\local\boost_1_67_0\
+
+  deploy-win-py36:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 3.6.5
+      CL: -IC:\local\boost_1_67_0\
+
+  deploy-win-py35:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 3.5.5
+      CL: -IC:\local\boost_1_67_0\
+
+  deploy-win-py34:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 3.4.8
+      CL: -IC:\local\boost_1_67_0\
+
+  deploy-win-py27:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 2.7.15
+      CL: -IC:\local\boost_1_67_0\
 
 workflows:
   version: 2
@@ -512,6 +570,42 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-osx-py27:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py38:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py37:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py36:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py35:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py34:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py27:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
