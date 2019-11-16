@@ -58,6 +58,24 @@ class TestFixedVariableComposite(unittest.TestCase):
         self.assertEqual(response.first.sample, gs)
         self.assertAlmostEqual(response.first.energy, gse)
 
+    def test_sample_with_labels(self):
+        poly = BinaryPolynomial.from_hising(h={'a': -1.3, 'b': 1.2, 'c': -1.2, 'd': -0.5},
+                                            J={'abcd': -0.6, 'abd': -0.3, 'acd': -0.8},
+                                            offset=0)
+
+        exact_sampler = ExactPolySolver()
+        response_exact = exact_sampler.sample_poly(poly)
+        gs = response_exact.first.sample
+        gse = response_exact.first.energy
+
+        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        fixed_variables = {k: v for k, v in gs.items() if k in {'a', 'c'}}
+        response = sampler.sample_poly(poly, fixed_variables=fixed_variables)
+
+        self.assertIsInstance(response, SampleSet)
+        self.assertEqual(response.first.sample, gs)
+        self.assertAlmostEqual(response.first.energy, gse)
+
     def test_fix_all(self):
         poly = BinaryPolynomial.from_hising(h={1: -1.3, 2: 1.2, 3: -1.2, 4: -0.5},
                                             J={(1, 2, 3, 4): -0.6, (1, 2, 4): -0.3, (1, 3, 4): -0.8},
