@@ -7,7 +7,7 @@ Higher-Order Composites
 The `dimod` package includes several example higher-order composed samplers.
 
 FixedPolyVariableComposite
-====================
+==========================
 
 .. automodule:: dimod.reference.composites.fixedpolyvariable
 

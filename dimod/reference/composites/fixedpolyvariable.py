@@ -21,6 +21,7 @@ polynomial model before sending to its child sampler.
 from dimod.core.polysampler import ComposedPolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
 from collections import defaultdict
+import dimod
 
 
 __all__ = ['FixedPolyVariableComposite']
@@ -44,7 +45,7 @@ class FixedPolyVariableComposite(ComposedPolySampler):
 
        >>> h = {1: -1.3, 2: 1.2, 3: -3.4, 4: -0.5}
        >>> J = {(1, 4): -0.6, (1, 2, 3): 0.2, (1, 2, 3, 4): -0.1}
-       >>> poly = BinaryPolynomial.from_hising(h, J, offset=0)
+       >>> poly = dimod.BinaryPolynomial.from_hising(h, J, offset=0)
        >>> sampler = dimod.FixedPolyVariableComposite(dimod.ExactPolySolver())
        >>> sampleset = sampler.sample_poly(poly, fixed_variables={3: -1, 4: 1})
 
