@@ -22,21 +22,14 @@ from dimod.vartypes import Vartype
 import dimod
 
 from dimod import BinaryPolynomial
-from dimod import FixedPolyVariableComposite, ExactPolySolver
+from dimod import PolyFixedVariableComposite, ExactPolySolver
 from dimod import SampleSet
-
-try:
-    from dimod import fix_variables
-except ImportError:
-    cpp = False
-else:
-    cpp = True
 
 
 class TestFixedVariableComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
 
         dtest.assert_composite_api(sampler)
 
@@ -50,7 +43,7 @@ class TestFixedVariableComposite(unittest.TestCase):
         gs = response_exact.first.sample
         gse = response_exact.first.energy
 
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
         fixed_variables = {k: v for k, v in gs.items() if k % 2 == 0}
         response = sampler.sample_poly(poly, fixed_variables=fixed_variables)
 
@@ -68,7 +61,7 @@ class TestFixedVariableComposite(unittest.TestCase):
         gs = response_exact.first.sample
         gse = response_exact.first.energy
 
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
         fixed_variables = {k: v for k, v in gs.items() if k in {'a', 'c'}}
         response = sampler.sample_poly(poly, fixed_variables=fixed_variables)
 
@@ -86,7 +79,7 @@ class TestFixedVariableComposite(unittest.TestCase):
         gs = response_exact.first.sample
         gse = response_exact.first.energy
 
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
         fixed_variables = {k: v for k, v in gs.items()}
         response = sampler.sample_poly(poly, fixed_variables=fixed_variables)
 
@@ -96,7 +89,7 @@ class TestFixedVariableComposite(unittest.TestCase):
 
     def test_empty_poly(self):
         poly = BinaryPolynomial({}, 'SPIN')
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
         response = sampler.sample_poly(poly)
         self.assertIsInstance(response, SampleSet)
 
@@ -108,7 +101,7 @@ class TestFixedVariableComposite(unittest.TestCase):
 
         gs = response_exact.first.sample
         gse = response_exact.first.energy
-        sampler = FixedPolyVariableComposite(ExactPolySolver())
+        sampler = PolyFixedVariableComposite(ExactPolySolver())
         response = sampler.sample_hising(linear, high_order)
 
         self.assertIsInstance(response, SampleSet)
