@@ -20,6 +20,9 @@
 
 namespace dimod {
 
+// developer note: In the future, we probably want to allow the user to
+// also configure the type of the out var index rather than hardcoding it to
+// size_t as we do here.
 template<typename Bias>
 using AdjArrayInVars = typename std::vector<std::pair<std::size_t, Bias>>;
 
@@ -43,6 +46,9 @@ B get_linear(const AdjArrayBQM<V, B>&, V);
 
 template<typename V, typename B>
 std::pair<B, bool> get_quadratic(const AdjArrayBQM<V, B>&, V, V);
+
+template<typename V, typename B>
+std::size_t degree(const AdjArrayBQM<V, B>&, V);
 
 template<typename V, typename B>
 std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
