@@ -40,6 +40,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
                                get_quadratic,
+                               degree,
                                neighborhood,
                                set_linear,
                                set_quadratic,
@@ -394,17 +395,10 @@ cdef class cyAdjArrayBQM:
         return vi
 
     def degree(self, object v):
-        cdef pair[vector[pair[VarIndex, Bias]].const_iterator,
-                  vector[pair[VarIndex, Bias]].const_iterator] span
-
         cdef VarIndex vi = self.label_to_idx(v)
+        return degree(self.adj_, vi)
 
-        span = neighborhood(self.adj_, vi)
-
-        # this assumes that span is two random-access iterators. We could use
-        # the more generic distance function, but as of cython 0.29.13 it
-        # has been merged but not yet released
-        return span.second - span.first
+    # todo: overwrite degrees
 
     def iter_linear(self):
         cdef VarIndex vi
