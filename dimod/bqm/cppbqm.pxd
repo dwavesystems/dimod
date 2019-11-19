@@ -38,6 +38,8 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     pair[B, bool] get_quadratic[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                                       V, V)
 
+    size_t degree[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
+
     pair[vector[pair[V, B]].const_iterator,
          vector[pair[V, B]].const_iterator] neighborhood[V, B](
         const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
