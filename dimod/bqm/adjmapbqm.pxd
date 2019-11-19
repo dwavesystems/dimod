@@ -22,12 +22,8 @@ from libcpp.map cimport map
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
+from dimod.bqm.common cimport VarIndex, Bias
 
-# Developer note: we'd like to use fused types here, which would allow us to
-# construct AdjMapBQMs of various type combinations. Unfortunately, cython
-# does not allow fused types on cdef classes (yet) so for now we just fix them.
-ctypedef unsigned int VarIndex
-ctypedef double Bias
 ctypedef map[VarIndex, Bias].const_iterator NeighborIterator
 
 
