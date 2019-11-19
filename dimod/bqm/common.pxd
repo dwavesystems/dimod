@@ -16,29 +16,10 @@
 #    limitations under the License.
 #
 # =============================================================================
+cimport numpy as np
 
-from libcpp cimport bool
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
-from dimod.bqm.common cimport VarIndex, Bias
-
-ctypedef vector[pair[VarIndex, Bias]].const_iterator NeighborIterator
-
-
-cdef class cyAdjVectorBQM:
-    cdef vector[pair[vector[pair[VarIndex, Bias]], Bias]] adj_
-
-    cdef Bias offset_
-
-    cdef readonly object vartype
-
-    cdef readonly object dtype
-    cdef readonly object index_dtype
-
-    # these are not public because the user has no way to access the underlying
-    # variable indices
-    cdef object _label_to_idx
-    cdef object _idx_to_label
-
-    cdef VarIndex label_to_idx(self, object) except *
+# Developer note: we'd like to use fused types here, which would allow us to
+# construct AdjMapBQMs of various type combinations. Unfortunately, cython
+# does not allow fused types on cdef classes (yet) so for now we just fix them.
+ctypedef np.uint32_t VarIndex
+ctypedef np.float64_t Bias

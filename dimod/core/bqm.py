@@ -24,6 +24,8 @@ import numpy as np
 
 from six import add_metaclass
 
+__all__ = ['BQM', 'ShapeableBQM']
+
 
 # todo: there is a lot of duplication between dimod/views/bqm.py and
 # dimod/core/bqm.py. For now we'll maintain both but this needs to resolved
@@ -148,6 +150,15 @@ class BQM:
     def __init__(self, obj):
         pass
 
+    def __eq__(self, other):
+        return (self.vartype == other.vartype
+                and self.shape == other.shape  # not necessary but fast to check
+                and self.offset == other.offset
+                and self.adj == other.adj)
+
+    def __ne__(self, other):
+        return not self == other
+
     @abc.abstractproperty
     def num_interactions(self):
         """int: The number of interactions in the model."""
@@ -156,6 +167,10 @@ class BQM:
     @abc.abstractproperty
     def num_variables(self):
         """int: The number of variables in the model."""
+        pass
+
+    @abc.abstractmethod
+    def degree(self, v):
         pass
 
     @abc.abstractmethod
@@ -208,6 +223,12 @@ class BQM:
     @property
     def variables(self):
         return KeysView(self.linear)
+
+    def degrees(self, array=False, dtype=np.int):
+        if array:
+            return np.fromiter((self.degree(v) for v in self.iter_variables()),
+                               count=len(self), dtype=dtype)
+        return {v: self.degree(v) for v in self.iter_variables()}
 
     def has_variable(self, v):
         """Return True if v is a variable in the binary quadratic model."""
