@@ -68,6 +68,16 @@ std::pair<Bias, bool> get_quadratic(const AdjArrayBQM<VarIndex, Bias> &bqm,
     return std::make_pair((*low).second, true);
 }
 
+template<typename VarIndex, typename Bias>
+std::size_t degree(const AdjArrayBQM<VarIndex, Bias> &bqm, VarIndex v) {
+    assert(v >= 0 && v < bqm.first.size());
+    if (v == bqm.first.size() - 1)  {
+        return bqm.second.size() - bqm.first[v].first;
+    } else {
+        return bqm.first[v+1].first - bqm.first[v].first;
+    }
+}
+
 // Iterate over the neighbourhood of variable u.
 //
 // Returns iterators to beginning and end of neighborhood.
