@@ -46,7 +46,7 @@ from dimod.bqm.cppbqm cimport (add_variable,
                                set_quadratic,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
-from dimod.core.bqm import ShapeableBQM
+from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype
 
 
@@ -108,6 +108,13 @@ cdef class cyAdj@name@BQM:
                     self.set_quadratic(uvar, var, b)
             else:
                 raise NotImplementedError
+        elif isinstance(obj, BQM):
+            # todo: we'll want to check if it's c++ bqm
+            if obj.vartype != vartype:
+                raise NotImplementedError
+            cyAdj@name@BQM.__init__(self,
+                                    (obj.linear, obj.quadratic, obj.offset),
+                                    vartype)
         else:
             # assume it's dense
             D = np.atleast_2d(np.asarray(obj, dtype=self.dtype))
@@ -336,6 +343,8 @@ cdef class cyAdj@name@BQM:
     def degree(self, object v):
         cdef VarIndex vi = self.label_to_idx(v)
         return degree(self.adj_, vi)
+
+    # todo: overwrite degrees
 
     def remove_interaction(self, object u, object v):
         """Remove the interaction between variables u and v.
