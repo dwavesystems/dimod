@@ -1,6 +1,3 @@
-# distutils: language = c++
-# cython: language_level=3
-#
 # Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +13,10 @@
 #    limitations under the License.
 #
 # =============================================================================
-cimport numpy as np
+import numpy as np
 
-# Developer note: we'd like to use fused types here, which would allow us to
-# construct AdjMapBQMs of various type combinations. Unfortunately, cython
-# does not allow fused types on cdef classes (yet) so for now we just fix them.
-ctypedef np.uint32_t VarIndex
-ctypedef np.float64_t Bias
+itype = np.dtype(np.uint32)  # corresponds to VarIndex
+dtype = np.dtype(np.float64)  # corresponds to Bias
 
-# adjarraybqm uses size_t to define the indices of its neighborhoods
-ctypedef size_t NeighborhoodIndex  
+# numpy does not have a dtype corresponding to size_t
+ntype = np.dtype(('u' if ((<size_t>-1) > 0) else 'i') + str(sizeof(size_t)))

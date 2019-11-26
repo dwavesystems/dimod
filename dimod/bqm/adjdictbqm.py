@@ -23,6 +23,7 @@ from numbers import Integral
 
 import numpy as np
 
+from dimod.bqm.common import dtype, itype, ntype
 from dimod.core.bqm import ShapeableBQM
 from dimod.vartypes import as_vartype
 
@@ -33,10 +34,11 @@ class AdjDictBQM(ShapeableBQM):
     """
     """
     def __init__(self, obj=0, vartype=None):
-        # we could actually have these variable but to keep this consistent
+        # we could actually have these as variable but to keep this consistent
         # with the other BQMs we fix them for now
-        self.dtype = dtype = np.dtype(np.double)
-        self.index_dtype = np.dtype(np.uintc)  # this is unused
+        self.dtype = dtype
+        self.itype = itype
+        self.ntype = ntype
 
         # we use ordered dict because the other BQM types are ordered. However
         # collection's OrderedDict is optimized for both FILO and FIFO so has

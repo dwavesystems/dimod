@@ -274,8 +274,8 @@ class BQM:
         ni = self.num_interactions
 
         ldata = np.empty(nv, dtype=self.dtype)
-        irow = np.empty(ni, dtype=self.index_dtype)
-        icol = np.empty(ni, dtype=self.index_dtype)
+        irow = np.empty(ni, dtype=self.itype)
+        icol = np.empty(ni, dtype=self.itype)
         qdata = np.empty(ni, dtype=self.dtype)
 
         labels = list(self.iter_variables())
