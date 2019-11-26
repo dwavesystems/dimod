@@ -35,7 +35,8 @@ cdef class cyAdjMapBQM:
     cdef readonly object vartype
 
     cdef readonly object dtype
-    cdef readonly object index_dtype
+    cdef readonly object itype
+    cdef readonly object ntype
 
     # these are not public because the user has no way to access the underlying
     # variable indices
