@@ -32,6 +32,8 @@ from cython.operator cimport postincrement as inc, dereference as deref
 import numpy as np
 
 from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
+from dimod.bqm.common cimport NeighborhoodIndex
+from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.cppbqm cimport (add_variable,
                                add_interaction,
                                degree,
@@ -55,10 +57,9 @@ cdef class cyAdj@name@BQM:
     """
 
     def __cinit__(self, *args, **kwargs):
-        # Developer note: if VarIndex or Bias were fused types, we would want
-        # to do a type check here but since they are fixed...
-        self.dtype = np.dtype(np.double)
-        self.index_dtype = np.dtype(np.uintc)
+        self.dtype = dtype
+        self.itype = itype
+        self.ntype = ntype
 
         # otherwise these would be None
         self._label_to_idx = dict()
@@ -538,8 +539,8 @@ cdef class cyAdj@name@BQM:
 
         # numpy arrays, we will return these
         ldata = np.empty(nv, dtype=self.dtype)
-        irow = np.empty(ni, dtype=self.index_dtype)
-        icol = np.empty(ni, dtype=self.index_dtype)
+        irow = np.empty(ni, dtype=self.itype)
+        icol = np.empty(ni, dtype=self.itype)
         qdata = np.empty(ni, dtype=self.dtype)
 
         # views into the numpy arrays for faster cython access
