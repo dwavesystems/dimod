@@ -146,6 +146,8 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 5:
                         library_dirs=['dimod/bqm/src/']),
               Extension("dimod.bqm.utils",
                         ['dimod/bqm/utils'+ext]),
+              Extension("dimod.bqm.common",
+                        ['dimod/bqm/common'+ext]),
               ])
 
 if USE_CYTHON:
