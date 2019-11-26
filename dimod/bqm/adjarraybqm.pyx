@@ -17,25 +17,17 @@
 #
 # =============================================================================
 
-import io
-import struct
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
-
 from numbers import Integral
 
 cimport cython
 
-from libc.string cimport memcpy
 from cython.operator cimport postincrement as inc, dereference as deref
-from cython.view cimport array as cvarray
 
 import numpy as np
 
 from dimod.bqm cimport cyAdjVectorBQM
+from dimod.bqm.common import dtype, itype, ntype
+from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.cppbqm cimport (num_variables,
                                num_interactions,
                                get_linear,
@@ -48,161 +40,6 @@ from dimod.bqm.cppbqm cimport (num_variables,
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype
-
-
-class FileView(io.RawIOBase):
-    """
-
-    Format specification:
-
-    The first 5 bytes are a magic string: exactly "DIMOD".
-
-    The next 1 byte is an unsigned byte: the major version of the file format.
-
-    The next 1 byte is an unsigned byte: the minor version of the file format.
-
-    The next 4 bytes form a little-endian unsigned int, the length of the header
-    data HEADER_LEN.
-
-    The next HEADER_LEN bytes form the header data. TODO, though let's do the
-    "divisible by 16" thing.
-
-    See also
-    https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
-
-    """
-
-    def __init__(self, bqm):
-        self.bqm = bqm
-        # todo: increment viewcount
-
-        self.pos = 0
-
-        # # we'll need to know the degree of each of the variables
-        # self.degrees = np.empty(len(bqm), dtype=np.intc)
-        # self.degree_pos = 0  # location that has been filled in degrees
-
-        # set up the header
-        prefix = b'DIMOD'
-        version = bytes([1, 0])  # version 1.0
-
-        header_data = b'dummy data'  # todo
-
-        header_len = struct.pack('<I', len(header_data))
-
-        header = prefix + version + header_len + header_data
-
-        # pad the header so that it's length is divisible by 16
-        self.header = header + b' '*(16 - len(header) % 16)
-
-    def readinto(self, char[:] buff):
-        """Accepts a writeable buffer, fills it and returns the num filled.
-        Return 0 once it's done.
-        """
-        print('trying to readinto {} bytes'.format(len(buff)))
-
-        cdef int pos = self.pos  # convert to C space
-        cdef int start = pos
-        cdef int end = pos + len(buff)  # the maximum
-        cdef int num_written = 0
-
-        # determine if there is any header to read
-
-        cdef const unsigned char[:] header = self.header  # view
-        while pos < len(header) and pos < end:
-            buff[pos] = header[pos]
-            pos += 1
-        print('{} header bytes written'.format(pos - start))
-
-
-        pos += self._linear_readinto(buff[pos:], pos - len(header))
-        pos += self._quadratic_readinto(buff[pos:], pos - len(header) - self.bqm.num_variables*(sizeof(size_t) + sizeof(Bias)))
-
-        self.pos = pos
-        return pos - start
-
-    def _linear_readinto(self, char[:] buff, int pos):
-        # read the linear biases into the given buffer, note that this does not
-        # increment the position on the object itself
-        # pos is relative to the beginning of the linear biases
-        if pos < 0:
-            raise ValueError("negative position")
-
-        if len(buff) == 0:
-            return 0
-
-        cdef cyAdjArrayBQM bqm = self.bqm
-
-        cdef Py_ssize_t bi = 0  # location in buffer
-        cdef Py_ssize_t end = len(buff)
-
-        cdef Py_ssize_t step_size = sizeof(size_t) + sizeof(Bias)
-
-        if pos >= step_size*num_variables(bqm.adj_):
-            # we're already past the linear stuff
-            return 0
-
-        if pos % step_size or len(buff) < step_size:
-            # need to handle partial, either we're part-way through or we don't
-            # have room for at least one (neighbor, bias) pair
-            raise NotImplementedError
-
-        cdef VarIndex vi
-        for vi in range(pos // step_size, num_variables(bqm.adj_)):
-            if bi + step_size >= end:
-                break
-
-            # this is specific to adjarray, will want to generalize later
-            memcpy(&buff[bi], &bqm.adj_.first[vi].first, sizeof(size_t))
-            bi += sizeof(size_t)
-            memcpy(&buff[bi], &bqm.adj_.first[vi].second, sizeof(Bias))            
-            bi += sizeof(Bias)
-
-        print('{} linear bytes written'.format(bi))
-
-        return bi  # number of bytes written
-
-    def _quadratic_readinto(self, char[:] buff, int pos):
-        # pos is relative to start of quadratic
-        if pos < 0:
-            raise ValueError
-
-        cdef cyAdjArrayBQM bqm = self.bqm
-        cdef Py_ssize_t step_size = sizeof(VarIndex) + sizeof(Bias)
-
-        if len(buff) == 0 or pos >= 2*step_size*num_interactions(bqm.adj_):
-            # either there is no room in the buffer or the position is past all
-            # the data we want to write, in either case we don't need to do
-            # anything
-            return 0
-
-        cdef Py_ssize_t bi = 0  # location in buffer
-        cdef Py_ssize_t end = len(buff)
-
-        if pos % step_size or len(buff) < step_size:
-            # need to handle partial, either we're part-way through or we don't
-            # have room for at least one (neighbor, bias) pair
-            raise NotImplementedError
-
-        # determine which in-variable we're on based on position, this is very
-        # specific to adjarray, we'll want to generalize later
-        cdef Py_ssize_t qi
-        for qi in range(pos // step_size, 2*num_interactions(bqm.adj_)):
-            if bi + step_size >= end:
-                break
-
-            memcpy(&buff[bi], &bqm.adj_.second[qi].first, sizeof(VarIndex))
-            bi += sizeof(VarIndex)
-            memcpy(&buff[bi], &bqm.adj_.second[qi].second, sizeof(Bias))            
-            bi += sizeof(Bias)
-
-        print('{} quadratic bytes written'.format(bi))
-
-        return bi  # number of bytes written
-
-    def close(self):
-        # todo: decrement viewcount
-        super(FileView, self).close()
 
 
 # developer note: we use a function rather than a method because we want to
@@ -275,10 +112,9 @@ cdef class cyAdjArrayBQM:
     """
 
     def __cinit__(self, *args, **kwargs):
-        # Developer note: if VarIndex or Bias were fused types, we would want
-        # to do a type check here but since they are fixed...
-        self.dtype = np.dtype(np.double)
-        self.index_dtype = np.dtype(np.uintc)
+        self.dtype = dtype
+        self.itype = itype
+        self.ntype = ntype
 
         # otherwise these would be None
         self._label_to_idx = dict()
@@ -480,6 +316,283 @@ cdef class cyAdjArrayBQM:
 
         return as_numpy_scalar(out.first, self.dtype)
 
+    @classmethod
+    def _load(cls, fp, data, offset=0):
+        """This method is used by :func:`.load` and should not be invoked
+        directly.
+
+        `offset` should point to the start of the offset data.
+        """
+        fp.seek(offset, 0)
+
+        # these are the vartypes used to encode
+        dtype = np.dtype(data['dtype'])
+        itype = np.dtype(data['itype'])  # variable index type
+        ntype = np.dtype(data['ntype'])  # index of neighborhood type
+
+        cdef Py_ssize_t num_var = data['shape'][0]
+        cdef Py_ssize_t num_int = data['shape'][1]
+
+        # make the bqm with the right number of variables and outvars
+        cdef cyAdjArrayBQM bqm = cls(data['vartype'])
+
+        # resize the vectors
+        bqm.adj_.first.resize(num_var)
+        bqm.adj_.second.resize(2*num_int)
+
+        # offset, using the vartype it was encoded with
+        bqm.offset = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
+
+        # linear
+        # annoyingly this does two copies, one into the bytes object returned
+        # by read, the other into the array. We could potentially get around
+        # this by using readinto and providing the bytesarray, then passing that
+        # into np.asarray()
+        ldata = np.frombuffer(fp.read(num_var*(ntype.itemsize + dtype.itemsize)),
+                              dtype=np.dtype([('nidx', ntype), ('bias', dtype)]))
+
+        # and using the dtypes of the bqm. If they match, this is luckily not a
+        # copy! Numpy is cool
+        cdef const Bias[:] lbiases = np.asarray(ldata['bias'], dtype=bqm.dtype)
+        cdef const NeighborhoodIndex[:] nidxs = np.asarray(ldata['nidx'],
+                                                           dtype=bqm.ntype)
+
+        cdef VarIndex ui
+        cdef NeighborhoodIndex nstart, nend
+        cdef Py_ssize_t num_bytes, i
+        cdef const Bias[:] qbiases
+        cdef const VarIndex[:] outvars
+        for ui in range(num_var):
+            bqm.adj_.first[ui].first = nidxs[ui]
+            bqm.adj_.first[ui].second = lbiases[ui]
+
+            # pull the neighborhoods one variable at a time to save on memory
+
+            nstart = nidxs[ui]
+            nend = nidxs[ui+1] if ui < num_var-1 else 2*num_int
+
+            num_bytes = (nend-nstart)*(itype.itemsize+dtype.itemsize)
+
+            qdata = np.frombuffer(fp.read(num_bytes),
+                                  dtype=np.dtype([('outvar', itype),
+                                                  ('bias', dtype)]))
+
+            # convert to the correct vartypes, not a copy if they match
+            outvars = np.asarray(qdata['outvar'], dtype=bqm.itype)
+            qbiases = np.asarray(qdata['bias'], dtype=bqm.dtype)
+
+            for i in range(outvars.shape[0]):
+                bqm.adj_.second[nstart+i].first = outvars[i]
+                bqm.adj_.second[nstart+i].second = qbiases[i]
+
+        return bqm
+
+    def readinto_linear(self, buff, Py_ssize_t pos=0, accumulated_degrees=None):
+        """Read bytes representing the linear biases and their neighborhoods
+        into a pre-allocated, writeable bytes-like object.
+
+        Args:
+            buff (bytes-likes):
+                A pre-allocated, writeable bytes-like object.
+
+            pos (int):
+                The stream position, relative to the start of the linear biases.
+
+            accumulated_degrees (sequence, optional):
+                This is not used, but accepted in order to maintain
+                compatibility with other `readinto_linear` methods.
+
+        Returns:
+            int: The number of bytes read.
+
+        """
+        cdef unsigned char[:] buff_view = buff
+        cdef Py_ssize_t bi = 0  # current position in the buffer
+
+        cdef Py_ssize_t num_var = num_variables(self.adj_)
+
+        cdef Py_ssize_t ntype_size = self.ntype.itemsize
+        cdef Py_ssize_t dtype_size = self.dtype.itemsize
+        cdef Py_ssize_t step_size = ntype_size + dtype_size
+
+        if pos >= num_var*step_size:
+            return 0
+
+        # some type definitions
+        stype = np.dtype([('neigborhood', self.ntype), ('bias', self.dtype)],
+                         align=False)
+        cdef size_t[:] neig_view
+        cdef Bias[:] bias_view
+        cdef const unsigned char[:] out
+        cdef Py_ssize_t num_bytes
+
+        # we want to break the buffer into two sections, the head and the body.
+        # The body is made of (neighborhood, bias) pairs. The head is any
+        # partial pairs that preceed or the length of buffer in the case that
+        # that len(buff) is less than the length of a single pair
+
+        # determine which variable we're on
+        cdef VarIndex vi = pos // step_size
+
+        # determine the head length
+        cdef Py_ssize_t head_length = step_size - (pos % step_size)
+        if head_length == step_size and buff_view.shape[0] >= step_size:
+            # we're in the correct position already and we have room for at
+            # least one step of the body
+            head_length -= step_size
+        else:
+            # the simplest thing to do here is just make a new 1-length struct
+            # array and then copy the appropriate slice into the buffer.
+            # cython and numpy were having a lot of fights about type so this
+            # got a bit messy... but it seems to work
+            ldata = np.empty(1, dtype=stype)
+            neig_view = ldata['neigborhood']
+            bias_view = ldata['bias']
+            neig_view[0] = self.adj_.first[vi].first
+            bias_view[0] = self.adj_.first[vi].second
+            out = ldata.tobytes()
+
+            # copy into buffer, making sure that everything fits correctly
+            num_bytes = min(head_length, buff_view.shape[0])
+            buff_view[:num_bytes] = out[-head_length:out.shape[0]-head_length+num_bytes]
+            bi += num_bytes
+            vi += 1
+
+        # determine the number of elements in the body
+        cdef Py_ssize_t body_shape = (buff_view.shape[0] - bi) // step_size
+        cdef Py_ssize_t body_length = body_shape * step_size
+
+        # there might be an easier way to view the bytes as a struct array but
+        # this works for now
+        ldata = np.frombuffer(buff_view[bi:bi+body_length],
+                              dtype=stype)
+        neig_view = ldata['neigborhood']
+        bias_view = ldata['bias']
+
+        cdef Py_ssize_t i
+        for i in range(body_shape):
+            if vi >= num_var:
+                break
+
+            neig_view[i] = self.adj_.first[vi].first
+            bias_view[i] = self.adj_.first[vi].second
+
+            vi += 1
+            bi += step_size
+
+        return bi
+
+    def readinto_offset(self, buff, pos=0):
+        cdef unsigned char[:] buff_view = buff
+        cdef const unsigned char[:] offset = self.offset.tobytes()
+
+        cdef Py_ssize_t num_bytes
+        num_bytes = min(buff.shape[0], offset.shape[0] - pos)
+
+        if num_bytes < 0 or pos < 0:
+            return 0
+
+        buff_view[:num_bytes] = offset[pos:pos+num_bytes]
+
+        return num_bytes
+
+    def readinto_quadratic(self, buff, Py_ssize_t pos=0,
+                           accumulated_degrees=None):
+        """Read bytes representing the quadratic biases and the outvars
+        into a pre-allocated, writeable bytes-like object.
+
+        Args:
+            buff (bytes-likes):
+                A pre-allocated, writeable bytes-like object.
+
+            pos (int):
+                The stream position, relative to the start of the quadratic
+                data.
+
+            accumulated_degrees (sequence, optional):
+                This is not used, but accepted in order to maintain
+                compatibility with other `readinto_linear` methods.
+
+        Returns:
+            int: The number of bytes read.
+
+        """
+        cdef unsigned char[:] buff_view = buff
+        cdef Py_ssize_t bi = 0  # current position in the buffer
+
+        cdef Py_ssize_t num_int = num_interactions(self.adj_)
+
+        cdef Py_ssize_t itype_size = self.itype.itemsize
+        cdef Py_ssize_t dtype_size = self.dtype.itemsize
+        cdef Py_ssize_t step_size = itype_size + dtype_size
+
+        if pos >= 2*num_int*step_size:
+            return 0
+
+        # some type definitions
+        stype = np.dtype([('outvar', self.itype), ('bias', self.dtype)],
+                         align=False)  # we're packing for serialization
+        cdef VarIndex[:] outv_view
+        cdef Bias[:] bias_view
+        cdef const unsigned char[:] out
+        cdef Py_ssize_t num_bytes
+
+        # we want to break the buffer into two sections, the head and the body.
+        # The body is made of (neighborhood, bias) pairs. The head is any
+        # partial pairs that preceed or the length of buffer in the case that
+        # that len(buff) is less than the length of a single pair
+
+        # determine where we are in the ourvars
+        cdef Py_ssize_t ni = pos // step_size
+
+        # determine the head length
+        cdef Py_ssize_t head_length = step_size - (pos % step_size)
+        if head_length == step_size and buff_view.shape[0] >= step_size:
+            # we're in the correct position already and we have room for at
+            # least one step of the body
+            head_length -= step_size
+        else:
+            # the simplest thing to do here is just make a new 1-length struct
+            # array and then copy the appropriate slice into the buffer.
+            # cython and numpy were having a lot of fights about type so this
+            # got a bit messy... but it seems to work
+            qdata = np.empty(1, dtype=stype)
+            outv_view = qdata['outvar']
+            bias_view = qdata['bias']
+            outv_view[0] = self.adj_.second[ni].first
+            bias_view[0] = self.adj_.second[ni].second
+            out = qdata.tobytes()
+
+            # copy into buffer, making sure that everything fits correctly
+            num_bytes = min(head_length, buff_view.shape[0])
+            buff_view[:num_bytes] = out[-head_length:out.shape[0]-head_length+num_bytes]
+            bi += num_bytes
+            ni += 1
+
+        # determine the number of elements in the body
+        cdef Py_ssize_t body_shape = (buff_view.shape[0] - bi) // step_size
+        cdef Py_ssize_t body_length = body_shape * step_size
+
+        # there might be an easier way to view the bytes as a struct array but
+        # this works for now
+        qdata = np.frombuffer(buff_view[bi:bi+body_length],
+                              dtype=stype)
+        outv_view = qdata['outvar']
+        bias_view = qdata['bias']
+
+        cdef Py_ssize_t i
+        for i in range(body_shape):
+            if ni >= 2*num_int:
+                break
+
+            outv_view[i] = self.adj_.second[ni].first
+            bias_view[i] = self.adj_.second[ni].second
+
+            ni += 1
+            bi += step_size
+
+        return bi
+
     def set_linear(self, object v, Bias b):
         set_linear(self.adj_, self.label_to_idx(v), b)
 
@@ -504,8 +617,8 @@ cdef class cyAdjArrayBQM:
 
         # numpy arrays, we will return these
         ldata = np.empty(nv, dtype=self.dtype)
-        irow = np.empty(ni, dtype=self.index_dtype)
-        icol = np.empty(ni, dtype=self.index_dtype)
+        irow = np.empty(ni, dtype=self.itype)
+        icol = np.empty(ni, dtype=self.itype)
         qdata = np.empty(ni, dtype=self.dtype)
 
         # views into the numpy arrays for faster cython access
@@ -562,10 +675,6 @@ cdef class cyAdjArrayBQM:
                                         samples[row, :])
 
         return energies
-
-    def to_lists(self):
-        """Dump to two lists, mostly for testing"""
-        return list(self.adj_.first), list(self.adj_.second)
 
 
 class AdjArrayBQM(cyAdjArrayBQM, BQM):
