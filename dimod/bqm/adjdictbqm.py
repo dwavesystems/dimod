@@ -23,9 +23,16 @@ from numbers import Integral
 
 import numpy as np
 
-from dimod.bqm.common import dtype, itype, ntype
 from dimod.core.bqm import ShapeableBQM
 from dimod.vartypes import as_vartype
+
+try:
+    from dimod.bqm.common import dtype, itype, ntype
+except ImportError:
+    itype = np.dtype(np.uint32)
+    dtype = np.dtype(np.float64)
+    ntype = np.dtype(np.uint64)
+
 
 __all__ = ['AdjDictBQM']
 
