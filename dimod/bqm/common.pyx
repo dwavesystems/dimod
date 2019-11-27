@@ -18,5 +18,5 @@ import numpy as np
 itype = np.dtype(np.uint32)  # corresponds to VarIndex
 dtype = np.dtype(np.float64)  # corresponds to Bias
 
-# numpy does not have a dtype corresponding to size_t
+# numpy does not have a dtype corresponding to size_t, normally uint64
 ntype = np.dtype(('u' if ((<size_t>-1) > 0) else 'i') + str(sizeof(size_t)))
