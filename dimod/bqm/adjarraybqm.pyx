@@ -340,6 +340,12 @@ cdef class cyAdjArrayBQM:
         bqm.adj_.first.resize(num_var)
         bqm.adj_.second.resize(2*num_int)
 
+        # set the labels, skipping over the redundant ones
+        for vi, v in enumerate(data['variables']):
+            if vi != v:
+                bqm._label_to_idx[v] = vi
+                bqm._idx_to_label[vi] = v
+
         # offset, using the vartype it was encoded with
         bqm.offset = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
 
