@@ -21,7 +21,11 @@ import json
 
 import numpy as np
 
-from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
+try:
+    from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
+except ImportError:
+    pass  # not available in python < 3.5
+from dimod.bqm import AdjDictBQM  # should always be available
 
 
 class FileView(io.RawIOBase):
