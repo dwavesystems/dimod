@@ -29,11 +29,11 @@ from dimod.bqm import AdjDictBQM  # should always be available
 
 
 class FileView(io.RawIOBase):
-    """
+    """A seekable, readable view into a binary quadratic model.
 
     Format specification:
 
-    The first 5 bytes are a magic string: exactly "DIMOD".
+    The first 8 bytes are a magic string: exactly "DIMODBQM".
 
     The next 1 byte is an unsigned byte: the major version of the file format.
 
@@ -42,15 +42,35 @@ class FileView(io.RawIOBase):
     The next 4 bytes form a little-endian unsigned int, the length of the header
     data HEADER_LEN.
 
-    The next HEADER_LEN bytes form the header data. TODO, though let's do the
-    "divisible by 16" thing.
+    The next HEADER_LEN bytes form the header data. This is a json-serialized
+    dictionary. The dictionary is exactly:
+
+    .. code-block:: python
+
+        dict(shape=bqm.shape,
+             dtype=bqm.dtype.name,
+             itype=bqm.itype.name,
+             ntype=bqm.ntype.name,
+             vartype=bqm.vartype.name,
+             type=type(bqm).__name__,
+             variables=list(bqm.variables),
+             )
+
+    it is terminated by a newline `\n` and padded with spaces to make the entire
+    length of the entire header divisible by 16.
+
+    Args:
+        bqm:
+            Only currently support AdjArrayBQM. Also the BQM is NOT locked,
+            though in the future it should be and this view should be used
+            in a context-manager.
 
     See also
     https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
 
     """
 
-    MAGIC_PREFIX = b'DIMOD'
+    MAGIC_PREFIX = b'DIMODBQM'
     VERSION = bytes([1, 0])  # version 1.0
 
     def __init__(self, bqm):
@@ -148,6 +168,9 @@ class FileView(io.RawIOBase):
         self.pos = pos
         return pos - start
 
+    def readable(self):
+        return True
+
     def seek(self, offset, whence=io.SEEK_SET):
         if whence == io.SEEK_SET:
             self.pos = pos = offset
@@ -163,16 +186,30 @@ class FileView(io.RawIOBase):
             raise ValueError("unknown value for 'whence'")
         return pos
 
+    def seekable(self):
+        return True
+
 
 def load(fp, cls=None):
     """
 
     Args:
+        fp (bytes-like/file-like):
+            If file-like, should be readable, seekable file-like object. If
+            bytes-like it will be wrapped with `io.BytesIO`.
+
         cls (class, optional):
             The class of binary quadratic model. If not provided, the bqm will
-            be of the same class that was saved.
+            be of the same class that was saved. Note: currently only works
+            for AdjArrayBQM.
+
+    Returns:
+        The loaded bqm.
 
     """
+
+    if isinstance(fp, (bytes, bytearray)):
+        fp = io.BytesIO(fp)
 
     magic = fp.read(len(FileView.MAGIC_PREFIX))
 
