@@ -66,6 +66,7 @@ class FileView(io.RawIOBase):
                     ntype=bqm.ntype.name,
                     vartype=bqm.vartype.name,
                     type=type(bqm).__name__,
+                    variables=list(bqm.variables),  # this is ordered
                     )
 
         header_data = json.dumps(data, sort_keys=True).encode('ascii')
