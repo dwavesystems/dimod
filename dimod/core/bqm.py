@@ -268,6 +268,10 @@ class BQM:
         for _, v, _ in self.iter_quadratic(u):
             yield v
 
+    @classmethod
+    def shapeable(cls):
+        return issubclass(cls, ShapeableBQM)
+
     def to_coo(self):
         """The BQM as 4 numpy vectors, the offset and a list of variables."""
         nv = self.num_variables
