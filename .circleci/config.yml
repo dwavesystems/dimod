@@ -189,17 +189,12 @@ jobs:
       - run:  &win-install-python-template
           name: install python
           command: |
-            choco install python --version=$PYTHON
-            choco install boost-msvc-14.1
-            python -m pip install virtualenv
-
-      - restore_cache:
-          keys:
-            - dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+            choco install python --version=$env:PYTHON --allow-downgrade
 
       - run: &win-create-virtualenv-template
           name: create virtualenv
           command: |
+            python --version
             python -m pip install virtualenv
             python -m virtualenv env
 
@@ -210,10 +205,10 @@ jobs:
             python --version
             pip install -r requirements.txt
 
-      - save_cache:
-          paths:
-            - .\env
-          key: dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+      - run:  &win-install-boost-template
+          name: install boost
+          command: |
+            choco install boost-msvc-14.1
 
       - run: &win-build-ext-template
           name: build extension
@@ -236,27 +231,27 @@ jobs:
   test-win-py37:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.7.4
+      PYTHON: 3.7.5
 
   test-win-py36:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.6.5
+      PYTHON: 3.6.8
 
   test-win-py35:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.5.5
+      PYTHON: 3.5.4
 
   test-win-py34:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.4.8
+      PYTHON: 3.4.4
 
   test-win-py27:
     <<: *win-tests-template
     environment:
-      PYTHON: 2.7.15
+      PYTHON: 2.7.11
 
   test-doctest:
     docker:
@@ -450,6 +445,8 @@ jobs:
 
       - run: *win-install-python-template
 
+      - run: *win-install-boost-template
+
       - run: *win-create-virtualenv-template
 
       - run: *win-install-dependencies-template
@@ -470,36 +467,36 @@ jobs:
           command: |
             env\Scripts\activate.ps1
             python -m pip install twine
-            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
+            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
 
   deploy-win-py37:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.7.4
+      PYTHON: 3.7.0
       CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py36:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.6.5
+      PYTHON: 3.6.8
       CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py35:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.5.5
+      PYTHON: 3.5.4
       CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py34:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.4.8
+      PYTHON: 3.4.4
       CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py27:
     <<: *win-deploy-template
     environment:
-      PYTHON: 2.7.15
+      PYTHON: 2.7.11
       CL: -IC:\local\boost_1_67_0\
 
 workflows:
