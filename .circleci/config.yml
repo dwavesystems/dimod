@@ -187,21 +187,12 @@ jobs:
       - checkout
 
       - run:  &win-install-python-template
-          name: install python
+          name: install python and create virtualenv
           command: |
-            choco install python --version=$PYTHON
-            choco install boost-msvc-14.1
-            python -m pip install virtualenv
-
-      - restore_cache:
-          keys:
-            - dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
-
-      - run: &win-create-virtualenv-template
-          name: create virtualenv
-          command: |
-            python -m pip install virtualenv
-            python -m virtualenv env
+            nuget install python -Version $env:PYTHON -ExcludeVersion -OutputDirectory .
+            .\python\tools\python.exe --version
+            .\python\tools\python.exe -m pip install virtualenv
+            .\python\tools\python.exe -m virtualenv env
 
       - run: &win-install-dependencies-template
           name: install dependencies
@@ -210,53 +201,103 @@ jobs:
             python --version
             pip install -r requirements.txt
 
-      - save_cache:
-          paths:
-            - .\env
-          key: dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+      - run:  &win-install-boost-template
+          name: install boost
+          command: |
+             nuget install boost -ExcludeVersion -OutputDirectory .
 
       - run: &win-build-ext-template
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --include-dirs C:\local\boost_1_67_0\
-        
-      - run:
+            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
+
+      - run: &win-run-unittests-template
           name: run unittests
           command: |
             env\Scripts\activate.ps1
             coverage run -m unittest discover
 
-      - run:
+      - run: &win-build-wheel-template
+          name: create wheel
+          command: |
+            env\Scripts\activate.ps1
+            $env:CL='-Iboost\lib\native\include\'
+            python setup.py bdist_wheel
+
+      - store_artifacts:
+          path: .\dist
+
+      - run: &win-codecov-template
           name: codecov
           command: |
             env\Scripts\activate.ps1
             codecov
 
+  test-win-py38x86: &win-tests-template-x86
+    executor:
+      name: win/default
+
+    environment:
+      PYTHON: 3.8.0
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:  &win-install-pythonx86-template
+          name: install python and create virtualenv
+          command: |
+            nuget install pythonx86 -Version $env:PYTHON -ExcludeVersion -OutputDirectory .
+            .\pythonx86\tools\python.exe --version
+            .\pythonx86\tools\python.exe -m pip install virtualenv
+            .\pythonx86\tools\python.exe -m virtualenv env
+
+      - run: *win-install-dependencies-template
+
+      - run: *win-install-boost-template
+
+      - run: *win-run-unittests-template
+
+      - run: *win-build-ext-template
+
+      - run: *win-build-wheel-template
+
+      - store_artifacts:
+          path: .\dist
+
+      - run: *win-codecov-template
+
   test-win-py37:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.7.4
+      PYTHON: 3.7.5
+
+  test-win-py37x86:
+    <<: *win-tests-template-x86
+    environment:
+      PYTHON: 3.7.5
 
   test-win-py36:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.6.5
+      PYTHON: 3.6.8
+
+  test-win-py36x86:
+    <<: *win-tests-template-x86
+    environment:
+      PYTHON: 3.6.8
 
   test-win-py35:
     <<: *win-tests-template
     environment:
-      PYTHON: 3.5.5
+      PYTHON: 3.5.4
 
-  test-win-py34:
-    <<: *win-tests-template
+  test-win-py35x86:
+    <<: *win-tests-template-x86
     environment:
-      PYTHON: 3.4.8
-
-  test-win-py27:
-    <<: *win-tests-template
-    environment:
-      PYTHON: 2.7.15
+      PYTHON: 3.5.4
 
   test-doctest:
     docker:
@@ -441,7 +482,6 @@ jobs:
 
     environment:
       PYTHON: 3.8.0
-      CL: -IC:\local\boost_1_67_0\
 
     working_directory: ~/repo
 
@@ -450,57 +490,80 @@ jobs:
 
       - run: *win-install-python-template
 
-      - run: *win-create-virtualenv-template
-
       - run: *win-install-dependencies-template
+
+      - run: *win-install-boost-template
 
       - run: *win-build-ext-template
 
-      - run:
-          name: create bdist_wheel
-          command: |
-            env\Scripts\activate.ps1
-            python setup.py bdist_wheel
+      - run: *win-build-wheel-template
 
       - store_artifacts:
           path: .\dist
 
-      - run:
+      - run: &win-twine-template
           name: install twine and deploy
           command: |
             env\Scripts\activate.ps1
             python -m pip install twine
-            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
+            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
+
+  deploy-win-py38x86: &win-deploy-template-x86
+    executor:
+      name: win/default
+
+    environment:
+      PYTHON: 3.8.0
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run: *win-install-pythonx86-template
+
+      - run: *win-install-dependencies-template
+
+      - run: *win-install-boost-template
+
+      - run: *win-build-ext-template
+
+      - run: *win-build-wheel-template
+
+      - store_artifacts:
+          path: .\dist
+
+      - run: *win-twine-template
 
   deploy-win-py37:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.7.4
-      CL: -IC:\local\boost_1_67_0\
+      PYTHON: 3.7.0
+
+  deploy-win-py37x86:
+    <<: *win-deploy-template-x86
+    environment:
+      PYTHON: 3.7.0
 
   deploy-win-py36:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.6.5
-      CL: -IC:\local\boost_1_67_0\
+      PYTHON: 3.6.8
+
+  deploy-win-py36x86:
+    <<: *win-deploy-template-x86
+    environment:
+      PYTHON: 3.6.8
 
   deploy-win-py35:
     <<: *win-deploy-template
     environment:
-      PYTHON: 3.5.5
-      CL: -IC:\local\boost_1_67_0\
+      PYTHON: 3.5.4
 
-  deploy-win-py34:
-    <<: *win-deploy-template
+  deploy-win-py35x86:
+    <<: *win-deploy-template-x86
     environment:
-      PYTHON: 3.4.8
-      CL: -IC:\local\boost_1_67_0\
-
-  deploy-win-py27:
-    <<: *win-deploy-template
-    environment:
-      PYTHON: 2.7.15
-      CL: -IC:\local\boost_1_67_0\
+      PYTHON: 3.5.4
 
 workflows:
   version: 2
@@ -522,8 +585,10 @@ workflows:
       - test-win-py37
       - test-win-py36
       - test-win-py35
-      - test-win-py34
-      - test-win-py27
+      - test-win-py38x86
+      - test-win-py37x86
+      - test-win-py36x86
+      - test-win-py35x86
       - test-doctest
   deploy:
     jobs:
@@ -599,13 +664,25 @@ workflows:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-win-py34:
+      - deploy-win-py38x86:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-win-py27:
+      - deploy-win-py37x86:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py36x86:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py35x86:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
