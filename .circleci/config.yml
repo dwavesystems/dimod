@@ -208,19 +208,29 @@ jobs:
       - run:  &win-install-boost-template
           name: install boost
           command: |
-            choco install boost-msvc-14.1
+             nuget install boost -ExcludeVersion -OutputDirectory .
 
       - run: &win-build-ext-template
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --include-dirs C:\local\boost_1_67_0\
-        
+            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
+
       - run:
           name: run unittests
           command: |
             env\Scripts\activate.ps1
             coverage run -m unittest discover
+
+      - run: &win-build-wheel
+          name: create wheel
+          command: |
+            env\Scripts\activate.ps1
+            $env:CL='-Iboost\lib\native\include\'
+            python setup.py bdist_wheel
+
+      - store_artifacts:
+          path: .\dist
 
       - run:
           name: codecov
@@ -426,7 +436,6 @@ jobs:
 
     environment:
       PYTHON: 3.8.0
-      CL: -IC:\local\boost_1_67_0\
 
     working_directory: ~/repo
 
@@ -443,11 +452,7 @@ jobs:
 
       - run: *win-build-ext-template
 
-      - run:
-          name: create bdist_wheel
-          command: |
-            env\Scripts\activate.ps1
-            python setup.py bdist_wheel
+      - run: *win-build-wheel
 
       - store_artifacts:
           path: .\dist
@@ -463,19 +468,16 @@ jobs:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.7.0
-      CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py36:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.6.8
-      CL: -IC:\local\boost_1_67_0\
 
   deploy-win-py35:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.5.4
-      CL: -IC:\local\boost_1_67_0\
 
 workflows:
   version: 2
