@@ -483,8 +483,8 @@ class PolyFixedVariableComposite(ComposedPolySampler):
     accordingly. Returned samples include the fixed variable
 
     Args:
-       sampler (:obj:`dimod.Sampler`):
-            A dimod sampler
+       sampler (:obj:`dimod.PolySampler`):
+            A dimod polynomial sampler.
 
     Examples:
        This example uses :class:`.PolyFixedVariableComposite` to instantiate a
