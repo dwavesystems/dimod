@@ -189,14 +189,14 @@ jobs:
       - run:  &win-install-python-template
           name: install python
           command: |
-            choco install python --version=$env:PYTHON --allow-downgrade
+            nuget install python -Version $env:PYTHON -ExcludeVersion -OutputDirectory .
 
       - run: &win-create-virtualenv-template
           name: create virtualenv
           command: |
-            python --version
-            python -m pip install virtualenv
-            python -m virtualenv env
+            .\python\tools\python.exe --version
+            .\python\tools\python.exe -m pip install virtualenv
+            .\python\tools\python.exe -m virtualenv env
 
       - run: &win-install-dependencies-template
           name: install dependencies
@@ -242,16 +242,6 @@ jobs:
     <<: *win-tests-template
     environment:
       PYTHON: 3.5.4
-
-  test-win-py34:
-    <<: *win-tests-template
-    environment:
-      PYTHON: 3.4.4
-
-  test-win-py27:
-    <<: *win-tests-template
-    environment:
-      PYTHON: 2.7.11
 
   test-doctest:
     docker:
@@ -487,18 +477,6 @@ jobs:
       PYTHON: 3.5.4
       CL: -IC:\local\boost_1_67_0\
 
-  deploy-win-py34:
-    <<: *win-deploy-template
-    environment:
-      PYTHON: 3.4.4
-      CL: -IC:\local\boost_1_67_0\
-
-  deploy-win-py27:
-    <<: *win-deploy-template
-    environment:
-      PYTHON: 2.7.11
-      CL: -IC:\local\boost_1_67_0\
-
 workflows:
   version: 2
   tests:
@@ -519,8 +497,6 @@ workflows:
       - test-win-py37
       - test-win-py36
       - test-win-py35
-      - test-win-py34
-      - test-win-py27
       - test-doctest
   deploy:
     jobs:
@@ -591,18 +567,6 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-win-py35:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-win-py34:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-win-py27:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
