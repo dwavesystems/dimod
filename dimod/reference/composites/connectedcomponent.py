@@ -94,7 +94,7 @@ class ConnectedComponentsComposite(ComposedSampler):
         if isinstance(components, set):
             components = [components]
         sampleset = None
-        fixed_value = list(bqm.vartype.value)[0]
+        fixed_value = min(bqm.vartype.value)
         for component in components:
             bqm_copy = bqm.copy()
             bqm_copy.fix_variables({i: fixed_value for i in (variables - component)})
