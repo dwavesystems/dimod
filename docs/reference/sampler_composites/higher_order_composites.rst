@@ -36,6 +36,36 @@ Methods
    HigherOrderComposite.sample_hising
    HigherOrderComposite.sample_hubo
 
+PolyFixedVariableComposite
+==========================
+
+.. automodule:: dimod.reference.composites.higherordercomposites
+
+.. currentmodule:: dimod.reference.composites.higherordercomposites
+
+.. autoclass:: PolyFixedVariableComposite
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   PolyFixedVariableComposite.child
+   PolyFixedVariableComposite.children
+   PolyFixedVariableComposite.parameters
+   PolyFixedVariableComposite.properties
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   PolyFixedVariableComposite.sample_poly
+   PolyFixedVariableComposite.sample_hising
+   PolyFixedVariableComposite.sample_hubo
+
 PolyScaleComposite
 ==================
 
