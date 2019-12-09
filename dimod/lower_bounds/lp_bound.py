@@ -25,6 +25,7 @@ from mip.callbacks import ConstrsGenerator, CutPool
 import itertools
 import numpy as np
 
+
 class TriangleGenerator(ConstrsGenerator):
     # Constraint generator structure for the cut polytope inequalities used in the linear program.
 
