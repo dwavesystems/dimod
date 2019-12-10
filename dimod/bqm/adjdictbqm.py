@@ -19,6 +19,7 @@ except ImportError:
     import collections as abc
 
 from collections import OrderedDict
+from copy import deepcopy
 from numbers import Integral
 
 import numpy as np
@@ -186,6 +187,13 @@ class AdjDictBQM(ShapeableBQM):
 
         self._adj.setdefault(v, {v: self.dtype.type(0)})
         return v
+
+    def copy(self):
+        """Return a copy."""
+        bqm = type(self)(self.vartype)
+        bqm._adj = deepcopy(self._adj)
+        bqm.offset = self.offset
+        return bqm
 
     def degree(self, v):
         """The number of variables sharing an interaction with v."""
