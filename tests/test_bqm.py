@@ -126,6 +126,28 @@ class TestBQMAPI:
     #     for u in range(5):
     #         self.assertEqual(bqm.get_linear(u), 0)
 
+    def test_copy(self):
+        bqm = self.BQM(({'a': -1, 'b': 1}, {}), dimod.BINARY)
+        new = bqm.copy()
+        self.assertIsNot(bqm, new)
+        self.assertEqual(type(bqm), type(new))
+        self.assertEqual(bqm, new)
+
+        # modify the original and make sure it doesn't propogate
+        new.set_linear('a', 1)
+        self.assertEqual(new.linear['a'], 1)
+
+    def test_copy_subclass(self):
+        # copy should respect subclassing
+        class SubBQM(self.BQM):
+            pass
+
+        bqm = SubBQM(({'a': -1, 'b': 1}, {}), dimod.BINARY)
+        new = bqm.copy()
+        self.assertIsNot(bqm, new)
+        self.assertEqual(type(bqm), type(new))
+        self.assertEqual(bqm, new)
+
     def test_get_linear_disconnected_string_labels(self):
         bqm = self.BQM(({'a': -1, 'b': 1}, {}), dimod.BINARY)
         self.assertEqual(bqm.get_linear('a'), -1)
