@@ -170,6 +170,11 @@ class BQM:
         pass
 
     @abc.abstractmethod
+    def copy(self):
+        """Return a copy."""
+        pass
+
+    @abc.abstractmethod
     def degree(self, v):
         pass
 
