@@ -230,6 +230,18 @@ cdef class cyAdjArrayBQM:
 
         return vi
 
+    def copy(self):
+        """Return a copy."""
+        cdef cyAdjArrayBQM bqm = type(self)(self.vartype)
+
+        bqm.adj_ = self.adj_
+        bqm.offset_ = self.offset_
+
+        bqm._label_to_idx = self._label_to_idx.copy()
+        bqm._idx_to_label = self._idx_to_label.copy()
+
+        return bqm
+
     def degree(self, object v):
         cdef VarIndex vi = self.label_to_idx(v)
         return degree(self.adj_, vi)
