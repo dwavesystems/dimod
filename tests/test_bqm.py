@@ -68,6 +68,33 @@ class TestBQMAPI:
         self.assertEqual(len(bqm.variables), len(bqm.linear))
         self.assertEqual((bqm.num_variables, bqm.num_interactions), bqm.shape)
 
+    def assertConsistentEnergies(self, spin, binary):
+        # brute-force check that all samples have matching energy
+        assert spin.vartype is dimod.SPIN
+        assert binary.vartype is dimod.BINARY
+
+        variables = list(spin.variables)
+
+        self.assertEqual(set(spin.variables), set(binary.variables))
+
+        for spins in itertools.product([-1, +1], repeat=len(variables)):
+            spin_sample = dict(zip(variables, spins))
+            binary_sample = {v: (s + 1)//2 for v, s in spin_sample.items()}
+
+            spin_energy = spin.offset
+            spin_energy += sum(spin_sample[v] * bias
+                               for v, bias in spin.linear.items())
+            spin_energy += sum(spin_sample[v] * spin_sample[u] * bias
+                               for (u, v), bias in spin.quadratic.items())
+
+            binary_energy = binary.offset
+            binary_energy += sum(binary_sample[v] * bias
+                                 for v, bias in binary.linear.items())
+            binary_energy += sum(binary_sample[v] * binary_sample[u] * bias
+                                 for (u, v), bias in binary.quadratic.items())
+
+            self.assertAlmostEqual(spin_energy, binary_energy)
+
     def test__len__(self):
         bqm = self.BQM(np.ones((107, 107)), dimod.BINARY)
         self.assertEqual(len(bqm), 107)
@@ -85,6 +112,40 @@ class TestBQMAPI:
         self.assertEqual(len(bqm.adj['b']), 2)
         self.assertEqual(len(bqm.adj['c']), 3)
         self.assertEqual(len(bqm.adj['d']), 1)
+
+    def test_change_vartype_binary_to_binary_copy(self):
+        bqm = self.BQM(({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, 1.4),
+                       'BINARY')
+
+        new = bqm.change_vartype(dimod.BINARY, inplace=False)
+        self.assertEqual(bqm, new)
+        self.assertIsNot(bqm, new)  # should be a copy
+
+    def test_change_vartype_binary_to_spin_copy(self):
+        bqm = self.BQM(({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.8}, 1.8),
+                       'BINARY')
+
+        # change vartype
+        new = bqm.change_vartype(dimod.SPIN, inplace=False)
+
+        self.assertConsistentEnergies(spin=new, binary=bqm)
+
+    def test_change_vartype_spin_to_spin_copy(self):
+        bqm = self.BQM(({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, 1.4),
+                       'SPIN')
+
+        new = bqm.change_vartype(dimod.SPIN, inplace=False)
+        self.assertEqual(bqm, new)
+        self.assertIsNot(bqm, new)  # should be a copy
+
+    def test_change_vartype_spin_to_binary_copy(self):
+        bqm = self.BQM(({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.8}, 1.8),
+                       'SPIN')
+
+        # change vartype
+        new = bqm.change_vartype(dimod.BINARY, inplace=False)
+
+        self.assertConsistentEnergies(spin=bqm, binary=new)
 
     def test_construction_args(self):
         # make sure all the orderes are ok

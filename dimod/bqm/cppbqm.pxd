@@ -40,12 +40,8 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
 
     size_t degree[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
 
-    pair[vector[pair[V, B]].const_iterator,
-         vector[pair[V, B]].const_iterator] neighborhood[V, B](
-        const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
-    pair[vector[pair[V, B]].const_iterator,
-         vector[pair[V, B]].const_iterator] neighborhood[V, B](
-        const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V, bool)
+    pair[vector[pair[V, B]].iterator, vector[pair[V, B]].iterator] neighborhood[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
+    pair[vector[pair[V, B]].iterator, vector[pair[V, B]].iterator] neighborhood[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V, bool)
 
     void set_linear[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                           V, B)
@@ -68,11 +64,11 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
     B get_linear[V, B](vector[pair[cppmap[V, B], B]]&, V)
     pair[B, bool] get_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
 
-    pair[cppmap[V, B].const_iterator,
-         cppmap[V, B].const_iterator] neighborhood[V, B](
+    pair[cppmap[V, B].iterator,
+         cppmap[V, B].iterator] neighborhood[V, B](
         vector[pair[cppmap[V, B], B]]&, V)
-    pair[cppmap[V, B].const_iterator,
-         cppmap[V, B].const_iterator] neighborhood[V, B](
+    pair[cppmap[V, B].iterator,
+         cppmap[V, B].iterator] neighborhood[V, B](
         vector[pair[cppmap[V, B], B]]&, V, bool)
 
     size_t degree[V, B](vector[pair[cppmap[V, B], B]]&, V)
@@ -102,11 +98,11 @@ cdef extern from "src/adjvector.h" namespace "dimod" nogil:
     B get_linear[V, B](vector[pair[vector[pair[V, B]], B]]&, V)
     pair[B, bool] get_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
 
-    pair[vector[pair[V, B]].const_iterator,
-         vector[pair[V, B]].const_iterator] neighborhood[V, B](
+    pair[vector[pair[V, B]].iterator,
+         vector[pair[V, B]].iterator] neighborhood[V, B](
         vector[pair[vector[pair[V, B]], B]]&, V)
-    pair[vector[pair[V, B]].const_iterator,
-         vector[pair[V, B]].const_iterator] neighborhood[V, B](
+    pair[vector[pair[V, B]].iterator,
+         vector[pair[V, B]].iterator] neighborhood[V, B](
         vector[pair[vector[pair[V, B]], B]]&, V, bool)
 
     size_t degree[V, B](vector[pair[vector[pair[V, B]], B]]&, V)
