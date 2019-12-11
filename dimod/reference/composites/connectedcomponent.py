@@ -94,9 +94,10 @@ class ConnectedComponentsComposite(ComposedSampler):
         if isinstance(components, set):
             components = [components]
         sampleset = None
+        fixed_value = min(bqm.vartype.value)
         for component in components:
             bqm_copy = bqm.copy()
-            bqm_copy.fix_variables({i: 0 for i in (variables - component)})
+            bqm_copy.fix_variables({i: fixed_value for i in (variables - component)})
             if sampleset is None:
                 # here .truncate(1) is used to pick the best solution only. The other options
                 # for future development is to combine all sample with all.
