@@ -60,11 +60,11 @@ std::pair<Bias, bool> get_quadratic(const AdjMapBQM<VarIndex, Bias> &bqm,
 }
 
 template<typename VarIndex, typename Bias>
-std::pair<typename MapNeighbourhood<VarIndex, Bias>::const_iterator,
-          typename MapNeighbourhood<VarIndex, Bias>::const_iterator>
-neighborhood(const AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v,
+std::pair<typename MapNeighbourhood<VarIndex, Bias>::iterator,
+          typename MapNeighbourhood<VarIndex, Bias>::iterator>
+neighborhood(AdjMapBQM<VarIndex, Bias> &bqm, VarIndex v,
              bool upper_triangular) {
-    typename MapNeighbourhood<VarIndex, Bias>::const_iterator start;
+    typename MapNeighbourhood<VarIndex, Bias>::iterator start;
 
     if (upper_triangular) {
         // std::pair<VarIndex, Bias> target(v, 0);
