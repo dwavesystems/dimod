@@ -98,11 +98,11 @@ std::pair<Bias, bool> get_quadratic(const AdjVectorBQM<VarIndex, Bias> &bqm,
 }
 
 template<typename VarIndex, typename Bias>
-std::pair<typename VectorNeighbourhood<VarIndex, Bias>::const_iterator,
-          typename VectorNeighbourhood<VarIndex, Bias>::const_iterator>
-neighborhood(const AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex v,
+std::pair<typename VectorNeighbourhood<VarIndex, Bias>::iterator,
+          typename VectorNeighbourhood<VarIndex, Bias>::iterator>
+neighborhood(AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex v,
              bool upper_triangular) {
-    typename VectorNeighbourhood<VarIndex, Bias>::const_iterator start;
+    typename VectorNeighbourhood<VarIndex, Bias>::iterator start;
 
     if (upper_triangular) {
         std::pair<VarIndex, Bias> target(v, 0);

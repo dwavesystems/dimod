@@ -46,9 +46,9 @@ template<typename V, typename B>
 std::size_t degree(const AdjMapBQM<V, B>&, V);
 
 template<typename V, typename B>
-std::pair<typename MapNeighbourhood<V, B>::const_iterator,
-          typename MapNeighbourhood<V, B>::const_iterator>
-neighborhood(const AdjMapBQM<V, B>&, V, bool upper_triangular = false);
+std::pair<typename MapNeighbourhood<V, B>::iterator,
+          typename MapNeighbourhood<V, B>::iterator>
+neighborhood(AdjMapBQM<V, B>&, V, bool upper_triangular = false);
 
 // todo: variable_iterator
 // todo: interaction_iterator

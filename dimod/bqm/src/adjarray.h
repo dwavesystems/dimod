@@ -51,9 +51,9 @@ template<typename V, typename B>
 std::size_t degree(const AdjArrayBQM<V, B>&, V);
 
 template<typename V, typename B>
-std::pair<typename AdjArrayOutVars<V, B>::const_iterator,
-            typename AdjArrayOutVars<V, B>::const_iterator>
-neighborhood(const AdjArrayBQM<V, B>&, V, bool upper_triangular = false);
+std::pair<typename AdjArrayOutVars<V, B>::iterator,
+            typename AdjArrayOutVars<V, B>::iterator>
+neighborhood(AdjArrayBQM<V, B>&, V, bool upper_triangular = false);
 
 // todo: variable_iterator
 // todo: interaction_iterator
