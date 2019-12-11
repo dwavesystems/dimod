@@ -83,11 +83,10 @@ std::size_t degree(const AdjArrayBQM<VarIndex, Bias> &bqm, VarIndex v) {
 // Returns iterators to beginning and end of neighborhood.
 // upper_triangular will gives the start iterator at the first index > u
 template<typename VarIndex, typename Bias>
-std::pair<typename AdjArrayOutVars<VarIndex, Bias>::const_iterator,
-          typename AdjArrayOutVars<VarIndex, Bias>::const_iterator>
-neighborhood(const AdjArrayBQM<VarIndex, Bias> &bqm, VarIndex u,
-             bool upper_triangular) {
-    typename AdjArrayOutVars<VarIndex, Bias>::const_iterator start, stop;
+std::pair<typename AdjArrayOutVars<VarIndex, Bias>::iterator,
+          typename AdjArrayOutVars<VarIndex, Bias>::iterator>
+neighborhood(AdjArrayBQM<VarIndex, Bias> &bqm, VarIndex u, bool upper_triangular) {
+    typename AdjArrayOutVars<VarIndex, Bias>::iterator start, stop;
 
     if (u == bqm.first.size() - 1) {
         // last element so ends at the end out bqm.second
