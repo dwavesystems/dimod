@@ -24,6 +24,8 @@ import numpy as np
 
 from six import add_metaclass
 
+from dimod.vartypes import as_vartype
+
 __all__ = ['BQM', 'ShapeableBQM']
 
 
@@ -167,6 +169,11 @@ class BQM:
     @abc.abstractproperty
     def num_variables(self):
         """int: The number of variables in the model."""
+        pass
+
+    @abc.abstractmethod
+    def change_vartype(self, vartype, inplace=True):
+        """Return a binary quadratic model with the specified vartype."""
         pass
 
     @abc.abstractmethod
