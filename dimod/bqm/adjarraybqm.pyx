@@ -39,7 +39,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.core.bqm import BQM
-from dimod.vartypes import as_vartype
+from dimod.vartypes import as_vartype, Vartype
 
 
 # developer note: we use a function rather than a method because we want to
@@ -230,6 +230,68 @@ cdef class cyAdjArrayBQM:
 
         return vi
 
+    def change_vartype(self, vartype, inplace=True):
+        """Return a binary quadratic model with the specified vartype.
+
+        Args:
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the changed model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            :obj:`.AdjArrayBQM`: A binary quadratic model with the specified
+            vartype.
+
+        """
+        if not inplace:
+            return self.copy().change_vartype(vartype, inplace=True)
+
+        vartype = as_vartype(vartype)
+
+        # in place and we are already correct, so nothing to do
+        if self.vartype == vartype:
+            return self
+
+        cdef Bias lin_mp, lin_offset_mp, quad_mp, quad_offset_mp
+        if vartype is Vartype.BINARY:
+            lin_mp, lin_offset_mp = 2.0, -1.0
+            quad_mp, lin_quad_mp, quad_offset_mp = 4.0, -2.0, 0.5
+        elif vartype is Vartype.SPIN:
+            lin_mp, lin_offset_mp = 0.5, 0.5
+            quad_mp, lin_quad_mp, quad_offset_mp = 0.25, 0.25, 0.125
+        else:
+            raise ValueError("unkown vartype")
+
+        cdef VarIndex ui, vi
+        cdef Bias bias
+        cdef NeighborhoodIndex ni
+
+        for ui in range(num_variables(self.adj_)):
+            bias = self.adj_.first[ui].second
+
+            self.adj_.first[ui].second = lin_mp * bias
+            self.offset_ += lin_offset_mp * bias
+
+            span = neighborhood(self.adj_, ui)
+            while span.first != span.second:
+                bias = deref(span.first).second
+
+                deref(span.first).second = quad_mp * bias
+                self.adj_.first[ui].second += lin_quad_mp * bias
+                self.offset_ += quad_offset_mp * bias
+
+                inc(span.first)
+
+        self.vartype = vartype
+
+        return self
+
     def copy(self):
         """Return a copy."""
         cdef cyAdjArrayBQM bqm = type(self)(self.vartype)
@@ -265,28 +327,21 @@ cdef class cyAdjArrayBQM:
         cdef object u, v  # python labels
         cdef Bias b
 
-        cdef pair[vector[pair[VarIndex, Bias]].const_iterator,
-                  vector[pair[VarIndex, Bias]].const_iterator] it_eit
-        cdef vector[pair[VarIndex, Bias]].const_iterator it, eit
-
         if variables is None:
             # in the case that variables is unlabelled we can speed things up
             # by just walking through the range
             for ui in range(num_variables(self.adj_)):
-                it_eit = neighborhood(self.adj_, ui)
-                it = it_eit.first
-                eit = it_eit.second
-
                 u = self._idx_to_label.get(ui, ui)
 
-                while it != eit:
-                    vi = deref(it).first
-                    b = deref(it).second
+                span = neighborhood(self.adj_, ui)
+                while span.first != span.second:
+                    vi = deref(span.first).first
+                    b = deref(span.first).second
                     if vi > ui:  # have not already visited
                         v = self._idx_to_label.get(vi, vi)
                         yield u, v, as_numpy_scalar(b, self.dtype)
 
-                    inc(it)
+                    inc(span.first)
         elif self.has_variable(variables):
             yield from self.iter_quadratic([variables])
         else:
@@ -295,20 +350,17 @@ cdef class cyAdjArrayBQM:
                 ui = self.label_to_idx(u)
                 seen.add(u)
 
-                it_eit = neighborhood(self.adj_, ui)
-                it = it_eit.first
-                eit = it_eit.second
-
-                while it != eit:
-                    vi = deref(it).first
-                    b = deref(it).second
+                span = neighborhood(self.adj_, ui)
+                while span.first != span.second:
+                    vi = deref(span.first).first
+                    b = deref(span.first).second
 
                     v = self._idx_to_label.get(vi, vi)
 
                     if v not in seen:
                         yield u, v, as_numpy_scalar(b, self.dtype)
 
-                    inc(it)
+                    inc(span.first)
 
     def get_linear(self, object v):
         return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
@@ -646,7 +698,6 @@ cdef class cyAdjArrayBQM:
         cdef Bias[:] qdata_view = qdata
 
         # types needed for the loop
-        cdef pair[NeighborIterator, NeighborIterator] span
         cdef VarIndex vi
         cdef Py_ssize_t qi = 0  # index in the quadratic arrays
 

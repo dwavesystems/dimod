@@ -25,7 +25,7 @@ from numbers import Integral
 import numpy as np
 
 from dimod.core.bqm import ShapeableBQM
-from dimod.vartypes import as_vartype
+from dimod.vartypes import as_vartype, Vartype
 
 try:
     from dimod.bqm.common import dtype, itype, ntype
@@ -187,6 +187,59 @@ class AdjDictBQM(ShapeableBQM):
 
         self._adj.setdefault(v, {v: self.dtype.type(0)})
         return v
+
+    def change_vartype(self, vartype, inplace=True):
+        """Return a binary quadratic model with the specified vartype.
+
+        Args:
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the changed model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            :obj:`.AdjDictBQM`: A binary quadratic model with the specified
+            vartype.
+
+        """
+        if not inplace:
+            return self.copy().change_vartype(vartype, inplace=True)
+
+        vartype = as_vartype(vartype)
+
+        # in place and we are already correct, so nothing to do
+        if self.vartype == vartype:
+            return self
+
+        if vartype is Vartype.BINARY:
+            lin_mp, lin_offset_mp = 2.0, -1.0
+            quad_mp, lin_quad_mp, quad_offset_mp = 4.0, -2.0, 1.0
+        elif vartype is Vartype.SPIN:
+            lin_mp, lin_offset_mp = 0.5, .5
+            quad_mp, lin_quad_mp, quad_offset_mp = 0.25, 0.25, 0.25
+        else:
+            raise ValueError("unkown vartype")
+
+        for v, bias in self.linear.items():
+            self.linear[v] = lin_mp * bias
+            self.offset += lin_offset_mp * bias
+
+        for (u, v), bias in self.quadratic.items():
+            self.adj[u][v] = quad_mp * bias
+
+            self.linear[u] += lin_quad_mp * bias
+            self.linear[v] += lin_quad_mp * bias
+
+            self.offset += quad_offset_mp * bias
+
+        self._vartype = vartype
+
+        return self
 
     def copy(self):
         """Return a copy."""
