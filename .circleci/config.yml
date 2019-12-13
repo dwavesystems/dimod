@@ -90,10 +90,15 @@ jobs:
 
   test-osx-py38: &osx-tests-template
     macos:
-      xcode: "11.2.0"
+      xcode: "11.2.1"
     environment:
       PYTHON: 3.8.0
       HOMEBREW_NO_AUTO_UPDATE: 1
+
+      # Force (lie about) macOS 10.9 binary compatibility.
+      # Needed for properly versioned wheels.
+      # See: https://github.com/MacPython/wiki/wiki/Spinning-wheels
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
     working_directory: ~/repo
 
@@ -112,7 +117,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.0
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.1
 
       - run:
           name: install python
@@ -149,30 +154,35 @@ jobs:
     environment:
       PYTHON: 3.7.4
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   test-osx-py36:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.6.5
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   test-osx-py35:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.5.5
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   test-osx-py34:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.4.8
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   test-osx-py27:
     <<: *osx-tests-template
     environment:
       PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   test-win-py38: &win-tests-template
     executor:
@@ -396,6 +406,7 @@ jobs:
     environment:
       PYTHON: 3.8.0
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
     working_directory: ~/repo
 
@@ -451,30 +462,35 @@ jobs:
     environment:
       PYTHON: 3.7.4
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   deploy-osx-py36:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.6.5
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   deploy-osx-py35:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.5.5
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   deploy-osx-py34:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.4.8
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   deploy-osx-py27:
     <<: *osx-deploy-template
     environment:
       PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
 
   deploy-win-py38: &win-deploy-template
     executor:
