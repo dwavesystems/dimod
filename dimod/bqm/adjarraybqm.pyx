@@ -385,6 +385,8 @@ cdef class cyAdjArrayBQM:
         """This method is used by :func:`.load` and should not be invoked
         directly.
 
+        `fp` must be readable and seekable.
+
         `offset` should point to the start of the offset data.
         """
         fp.seek(offset, 0)
