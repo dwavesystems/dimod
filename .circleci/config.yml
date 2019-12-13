@@ -262,9 +262,9 @@ jobs:
 
       - run: *win-install-boost-template
 
-      - run: *win-run-unittests-template
-
       - run: *win-build-ext-template
+
+      - run: *win-run-unittests-template
 
       - run: *win-build-wheel-template
 
