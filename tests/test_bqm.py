@@ -34,20 +34,29 @@ def nullSubTest(*args, **kwargs):
     yield
 
 
-def all_subclasses(arg1):
-    """Run the wrapped test method for all subclasses of the given BQM(s)."""
+def multitest(args):
+    """Run the decorated test method with all of the given inputs.
 
-    if isinstance(arg1, type):
-        classes = (arg1,)
-    else:
-        classes = arg1
+    Args:
+        list: An iterable of arguments, each will be passed to the test method
+        as a seperate :meth:`unittest.TestCase.subTest`.
 
+    Example:
+
+        >>> import unittest
+        ...
+        >>> class Test(unittest.TestCase):
+                @multitest([0, 1]):
+                def test(self, arg):
+                    self.assertIn(arg, [0, 1])
+
+    """
     def _decorator(f):
         @wraps(f)
         def wrapper(test_case):
-            for cls in classes:
-                with getattr(test_case, 'subTest', nullSubTest)(cls=cls):
-                    f(test_case, cls)
+            for arg in args:
+                with getattr(test_case, 'subTest', nullSubTest)(case=arg):
+                    f(test_case, arg)
         return wrapper
     return _decorator
 
@@ -57,16 +66,16 @@ def all_subclasses(arg1):
 # the purpose of tests (as below in one of the copy tests) will cause that
 # subclass to be tested for everything. For now let's just do them by hand
 try:
-    all_bqm = all_subclasses([dimod.AdjArrayBQM,
-                              dimod.AdjDictBQM,
-                              dimod.AdjMapBQM,
-                              dimod.AdjVectorBQM])
-    all_shapeable = all_subclasses([dimod.AdjDictBQM,
-                                    dimod.AdjMapBQM,
-                                    dimod.AdjVectorBQM])
+    all_bqm = multitest([dimod.AdjArrayBQM,
+                         dimod.AdjDictBQM,
+                         dimod.AdjMapBQM,
+                         dimod.AdjVectorBQM])
+    all_shapeable = multitest([dimod.AdjDictBQM,
+                               dimod.AdjMapBQM,
+                               dimod.AdjVectorBQM])
 except AttributeError:
-    all_bqm = all_subclasses(dimod.AdjDictBQM)
-    all_shapeable = all_subclasses(dimod.AdjDictBQM)
+    all_bqm = multitest([dimod.AdjDictBQM])
+    all_shapeable = multitest([dimod.AdjDictBQM])
 
 
 class TestBQM(unittest.TestCase):
