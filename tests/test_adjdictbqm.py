@@ -13,12 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-import unittest
-
 from dimod.bqm.adjdictbqm import AdjDictBQM
+from tests.test_bqm import BQMTestCase
 
-from tests.test_bqm import TestBQM
-
-
-class TestAdjMapMutableShapeAPI(TestBQM, unittest.TestCase):
-    BQM = AdjDictBQM
+BQMTestCase.register(AdjDictBQM)

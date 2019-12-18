@@ -14,19 +14,9 @@
 #
 # =============================================================================
 import sys
-import unittest
 
+from tests.test_bqm import BQMTestCase
 
-from tests.test_bqm import TestBQM
-
-
-class TestAdjVector(TestBQM, unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        if sys.version_info.major == 2 or sys.version_info.minor < 5:
-            raise unittest.SkipTest("Not supported in Python <= 3.5")
-
-        from dimod.bqm import AdjVectorBQM
-
-        cls.BQM = AdjVectorBQM
+if sys.version_info.major > 2 and sys.version_info.minor >= 5:
+    from dimod.bqm import AdjVectorBQM
+    BQMTestCase.register(AdjVectorBQM)
