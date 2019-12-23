@@ -12,11 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-
-from __future__ import absolute_import
-
-import sys
+# =============================================================================
 import os
 
 from setuptools import setup
@@ -24,13 +20,8 @@ from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 
 # add __version__, __author__, __authoremail__, __description__ to this namespace
-_PY2 = sys.version_info.major == 2
-my_loc = os.path.dirname(os.path.abspath(__file__))
-os.chdir(my_loc)
-if _PY2:
-    execfile(os.path.join(".", "dimod", "package_info.py"))
-else:
-    exec(open(os.path.join(".", "dimod", "package_info.py")).read())
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+exec(open(os.path.join(".", "dimod", "package_info.py")).read())
 
 install_requires = ['numpy>=1.15.0,<2.0.0',
                     'six>=1.10.0,<2.0.0',
@@ -39,8 +30,7 @@ install_requires = ['numpy>=1.15.0,<2.0.0',
 extras_require = {'all': ['networkx>=2.0,<3.0',
                           'pandas>=0.22.0,<0.23.0',
                           'pymongo>=3.7.0,<3.8.0'],
-                  ':python_version == "2.7"': ['futures'],
-                  ':python_version <= "3.3"': ['enum34>=1.1.6,<2.0.0']}
+                  }
 
 packages = ['dimod',
             'dimod.core',
@@ -58,16 +48,14 @@ packages = ['dimod',
 classifiers = [
     'License :: OSI Approved :: Apache Software License',
     'Operating System :: OS Independent',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     ]
 
-python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*'
+python_requires = '>=3.5'
 
 try:
     from Cython.Build import cythonize
@@ -111,27 +99,15 @@ class build_ext_compiler_check(build_ext):
         build_ext.build_extensions(self)
 
 
+bqmdir = os.path.join(".", "dimod", "bqm")
+namespace = {}
+exec(open(os.path.join(bqmdir, "make.py")).read(), namespace)
+namespace['make_bqms'](bqmdir)
+
 extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
-              ]
-
-
-if sys.version_info.major == 3 and sys.version_info.minor >= 5:
-
-    bqmdir = os.path.join(".", "dimod", "bqm")
-
-    # construct the bqms from templates (if needed)
-    # we cannot import because not all of the dependencies are there yet.
-    namespace = {}
-    if _PY2:
-        execfile(os.path.join(bqmdir, "make.py"), namespace)
-    else:
-        exec(open(os.path.join(bqmdir, "make.py")).read(), namespace)
-    namespace['make_bqms'](bqmdir)
-
-    extensions.extend([
               Extension("dimod.bqm.adjmapbqm",
                         ['dimod/bqm/adjmapbqm'+ext],
                         include_dirs=['dimod/bqm/src/'],
@@ -148,7 +124,8 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 5:
                         ['dimod/bqm/utils'+ext]),
               Extension("dimod.bqm.common",
                         ['dimod/bqm/common'+ext]),
-              ])
+              ]
+
 
 if USE_CYTHON:
     from Cython.Build import cythonize

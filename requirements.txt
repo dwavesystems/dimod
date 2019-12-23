@@ -1,12 +1,8 @@
-enum34==1.1.6; python_version<="3.3"
-numpy==1.15.0; python_version<="3.4"
-numpy==1.17.3; python_version>="3.5"
+numpy==1.17.3
 six==1.11.0
-futures; python_version=="2.7"
 
 networkx==2.0
-pandas==0.25.3; python_version>="3.5"
-mock==2.0.0
+pandas==0.25.3
 simplejson==3.16.0
 
 cython
