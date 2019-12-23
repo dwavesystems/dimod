@@ -74,16 +74,6 @@ jobs:
     docker:
       - image: circleci/python:3.5-jessie
 
-  test-py34:
-    <<: *full-test-template
-    docker:
-      - image: circleci/python:3.4-jessie
-
-  test-py27:
-    <<: *full-test-template
-    docker:
-      - image: circleci/python:2.7-jessie
-
   test-osx-py38: &osx-tests-template
     macos:
       xcode: "11.2.1"
@@ -161,20 +151,6 @@ jobs:
     <<: *osx-tests-template
     environment:
       PYTHON: 3.5.5
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  test-osx-py34:
-    <<: *osx-tests-template
-    environment:
-      PYTHON: 3.4.8
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  test-osx-py27:
-    <<: *osx-tests-template
-    environment:
-      PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
@@ -359,6 +335,7 @@ jobs:
           name: build wheels
           command: |
             for PYBIN in /opt/python/*/bin; do
+              if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info>=(3, 5))"; then continue; fi;
               "${PYBIN}/pip" install -r requirements.txt
               "${PYBIN}/pip" wheel . -w ./wheelhouse
               "${PYBIN}/python" setup.py sdist -d ./dist
@@ -474,20 +451,6 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
-  deploy-osx-py34:
-    <<: *osx-deploy-template
-    environment:
-      PYTHON: 3.4.8
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  deploy-osx-py27:
-    <<: *osx-deploy-template
-    environment:
-      PYTHON: 2.7.15
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
   deploy-win-py38: &win-deploy-template
     executor:
       name: win/default
@@ -585,14 +548,10 @@ workflows:
       - test-py37
       - test-py36
       - test-py35
-      - test-py34
-      - test-py27
       - test-osx-py38
       - test-osx-py37
       - test-osx-py36
       - test-osx-py35
-      - test-osx-py34
-      - test-osx-py27
       - test-win-py38
       - test-win-py37
       - test-win-py36
@@ -635,18 +594,6 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-osx-py35:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-osx-py34:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-osx-py27:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
