@@ -40,7 +40,7 @@ This example constructs a simple QUBO and converts it to Ising format.
 >>> bqm = dimod.BinaryQuadraticModel({0: -1, 1: -1}, {(0, 1): 2}, 0.0, dimod.BINARY)  # QUBO
 >>> bqm_ising = bqm.change_vartype(dimod.SPIN, inplace=False)  # Ising
 
-This example uses one of dimod's test samplers, ExactSampler, a solver that calculates
+This example uses one of dimod's test samplers, ExactSolver, a solver that calculates
 the energies of all possible samples.
 
 >>> import dimod
@@ -83,7 +83,7 @@ To install from source:
     python setup.py install
 
 Note that for an installation from source some functionality requires that your
-system have Boost C++ libraries installed. 
+system have Boost C++ libraries installed.
 
 .. installation-end-marker
 
