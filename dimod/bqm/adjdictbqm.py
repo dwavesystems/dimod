@@ -24,14 +24,13 @@ from numbers import Integral
 
 import numpy as np
 
-from dimod.core.bqm import ShapeableBQM
+from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype, Vartype
 
 try:
-    from dimod.bqm.common import dtype, itype, ntype
+    from dimod.bqm.common import itype, ntype
 except ImportError:
     itype = np.dtype(np.uint32)
-    dtype = np.dtype(np.float64)
     ntype = np.dtype(np.uint64)
 
 
@@ -40,13 +39,41 @@ __all__ = ['AdjDictBQM']
 
 class AdjDictBQM(ShapeableBQM):
     """
+
+    This can be instantiated in several ways:
+
+        AdjDictBQM(vartype)
+            Creates an empty binary quadratic model.
+
+        AdjDictBQM(bqm)
+            Construct a new bqm that is a copy of the given one.
+
+        AdjDictBQM(bqm, vartype)
+            Construct a new bqm, changing to the appropriate vartype if
+            necessary.
+
+        AdjDictBQM(n, vartype)
+            Make a bqm with all zero biases, where n is the number of nodes.
+
+        AdjDictBQM(M, vartype)
+            Where M is a square, array_like_ or a dictionary of the form
+            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
+            biases on the diagonal are added to the offset.
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+
     """
-    def __init__(self, obj=0, vartype=None):
-        # we could actually have these as variable but to keep this consistent
-        # with the other BQMs we fix them for now
-        self.dtype = dtype
-        self.itype = itype
-        self.ntype = ntype
+    # developer note: we should add a FAQ for why spin-valued diagonal biases
+    # are offsets and reference it here
+
+    def __init__(self, *args, vartype=None):
+
+        if vartype is not None:
+            # pass in as a positional argument
+            self.__init__(*args, vartype)
+            return
+
+        self.dtype = np.dtype(object)
 
         # we use ordered dict because the other BQM types are ordered. However
         # collection's OrderedDict is optimized for both FILO and FIFO so has
@@ -55,60 +82,110 @@ class AdjDictBQM(ShapeableBQM):
         # implementation
         self._adj = adj = OrderedDict()
 
-        # handle the case where only vartype is given
-        if vartype is None:
-            try:
-                vartype = obj.vartype
-            except AttributeError:
-                vartype = obj
-                obj = 0
-        self._vartype = as_vartype(vartype)
-
-        if isinstance(obj, Integral):
-            adj.update((v, {v: dtype.type(0)}) for v in range(obj))
-        elif isinstance(obj, tuple):
-            if len(obj) == 2:
-                linear, quadratic = obj
-            elif len(obj) == 3:
-                linear, quadratic, self.offset = obj
+        if len(args) == 0:
+            raise TypeError("A valid vartype or another bqm must be provided")
+        if len(args) == 1:
+            # BQM(bqm) or BQM(vartype)
+            obj, = args
+            if isinstance(obj, BQM):
+                self._init_bqm(obj)
             else:
-                raise ValueError()
-
-            if isinstance(linear, abc.Mapping):
-                for var, b in linear.items():
-                    self.set_linear(var, b)
+                self._init_number(0, obj)
+        elif len(args) == 2:
+            # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
+            obj, vartype = args
+            if isinstance(obj, BQM):
+                self._init_bqm(obj, vartype)
+            elif isinstance(obj, Integral):
+                self._init_number(obj, vartype)
             else:
-                raise NotImplementedError
-
-            if isinstance(quadratic, abc.Mapping):
-                for (uvar, var), b in quadratic.items():
-                    self.set_quadratic(uvar, var, b)
-            else:
-                raise NotImplementedError
+                self._init_components({}, obj, 0.0, vartype)
+        elif len(args) == 3:
+            # BQM(linear, quadratic, vartype)
+            linear, quadratic, vartype = args
+            self._init_components(linear, quadratic, 0.0, vartype)
+        elif len(args) == 4:
+            # BQM(linear, quadratic, offset, vartype)
+            self._init_components(*args)
         else:
-            # assume it's dense
+            msg = "__init__() takes 4 positional arguments but {} were given"
+            raise TypeError(msg.format(len(args)))
 
-            D = np.atleast_2d(np.asarray(obj, dtype=self.dtype))
+    def _init_bqm(self, bqm, vartype=None):
+        self.linear.update(bqm.linear)
+        self.quadratic.update(bqm.quadratic)
+        self.offset = bqm.offset
+        self._vartype = bqm.vartype
+
+        if vartype is not None:
+            self.change_vartype(as_vartype(vartype), inplace=True)
+
+    def _init_components(self, linear, quadratic, offset, vartype):
+        self._vartype = vartype = as_vartype(vartype)
+
+        if isinstance(linear, abc.Mapping):
+            self.linear.update(linear)
+        else:
+            # assume a sequence
+            self.linear.update(enumerate(linear))
+
+        adj = self._adj
+
+        if isinstance(quadratic, abc.Mapping):
+            for (u, v), bias in quadratic.items():
+                self.add_variable(u)
+                self.add_variable(v)
+
+                if u == v and vartype is Vartype.SPIN:
+                    offset = offset + bias  # not += on off-chance it's mutable
+                elif u in adj[v]:
+                    adj[u][v] = adj[v][u] = adj[u][v] + bias
+                else:
+                    adj[u][v] = adj[v][u] = bias
+        else:
+            # unlike the other BQM types we let numpy handle the typing
+            if isinstance(quadratic, np.ndarray):
+                dtype = quadratic.dtype
+            else:
+                quadratic = np.asarray(quadratic, dtype=np.object)
+
+            D = np.atleast_2d(quadratic)
 
             num_variables = D.shape[0]
 
             if D.ndim != 2 or num_variables != D.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            adj.update((v, {v: dtype.type(0)}) for v in range(num_variables))
+            # make sure all the variables are present
+            for v in range(num_variables):
+                self.add_variable(v)
 
-            it = np.nditer(D, flags=['multi_index'])
+            it = np.nditer(D, flags=['multi_index', 'refs_ok'], op_flags=['readonly'])
             while not it.finished:
                 u, v = it.multi_index
-                bias = dtype.type(it.value)
 
-                if bias and not np.isnan(bias):
-                    if u in adj[v]:
+                # because of the way iteration over object arrays works, we
+                # need to do some funniness
+                # see https://stackoverflow.com/a/49790081/8766655
+                bias = it.value if D.dtype != np.object else it.value.item()
+
+                if bias:
+                    if u == v and vartype is Vartype.SPIN:
+                        # not += on off-chance it's mutable
+                        offset = offset + bias
+                    elif u in adj[v]:
                         adj[u][v] = adj[v][u] = adj[u][v] + bias
                     else:
                         adj[u][v] = adj[v][u] = bias
 
                 it.iternext()
+
+        self.offset = offset
+
+    def _init_number(self, n, vartype):
+        self.linear.update((v, 0.0) for v in range(n))
+        self.offset = 0.0
+        self._vartype = as_vartype(vartype)
 
     @property
     def num_variables(self):
@@ -119,19 +196,6 @@ class AdjDictBQM(ShapeableBQM):
     def num_interactions(self):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
-
-    @property
-    def offset(self):
-        try:
-            return self._offset
-        except AttributeError:
-            pass
-        self.offset = 0  # type coersion etc
-        return self.offset
-
-    @offset.setter
-    def offset(self, offset):
-        self._offset = self.dtype.type(offset)
 
     @property
     def vartype(self):
@@ -185,7 +249,7 @@ class AdjDictBQM(ShapeableBQM):
                     if not self.has_variable(v):
                         break
 
-        self._adj.setdefault(v, {v: self.dtype.type(0)})
+        self._adj.setdefault(v, OrderedDict({v: 0.0}))
         return v
 
     def change_vartype(self, vartype, inplace=True):
@@ -275,7 +339,7 @@ class AdjDictBQM(ShapeableBQM):
             pass
         raise ValueError("{} is not a variable".format(v))
 
-    def get_quadratic(self, u, v):
+    def get_quadratic(self, u, v, default=None):
         """Get the quadratic bias of (u, v).
 
         Args:
@@ -285,13 +349,18 @@ class AdjDictBQM(ShapeableBQM):
             v (hashable):
                 A variable in the binary quadratic model.
 
+            default (optional):
+                Value to return if there is no interactions between `u` and `v`.
+
         Returns:
-            float: The quadratic bias of (u, v).
+            The quadratic bias of (u, v).
 
         Raises:
-            ValueError: If either u or v is not a variable in the binary
-            quadratic model, if u == v or if (u, v) is not an interaction in
-            the binary quadratic model.
+            ValueError: If either `u` or `v` is not a variable in the binary
+            quadratic model or if `u == v`
+
+            ValueError: If `(u, v)` is not an interaction and `default` is
+            `None`.
 
         """
         if u == v:
@@ -300,6 +369,8 @@ class AdjDictBQM(ShapeableBQM):
             return self._adj[u][v]
         except KeyError:
             pass
+        if default is not None:
+            return default
         raise ValueError('No interaction between {} and {}'.format(u, v))
 
     def iter_linear(self):
@@ -401,8 +472,6 @@ class AdjDictBQM(ShapeableBQM):
             TypeError: If v is not hashable
 
         """
-        bias = self.dtype.type(bias)  # convert to the appropriate dtype
-
         if v in self._adj:
             self._adj[v][v] = bias
         else:
@@ -425,8 +494,6 @@ class AdjDictBQM(ShapeableBQM):
             TypeError: If u or v is not hashable.
 
         """
-        bias = self.dtype.type(bias)  # convert to the appropriate dtype
-
         # make sure the variables exist
         self.add_variable(u)
         self.add_variable(v)

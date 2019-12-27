@@ -13,13 +13,10 @@
 #    limitations under the License.
 #
 # =============================================================================
-import sys
-
+from dimod.bqm import AdjMapBQM
 from tests.test_bqm import BQMTestCase
 
-if sys.version_info.major > 2 and sys.version_info.minor >= 5:
-    from dimod.bqm import AdjMapBQM
-    BQMTestCase.register(AdjMapBQM)
+BQMTestCase.register(AdjMapBQM)
 
 # class TestQuadraticBase(unittest.TestCase):
 #     def test_get(self):
