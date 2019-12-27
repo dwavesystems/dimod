@@ -14,6 +14,9 @@
 #
 # =============================================================================
 import abc
+import io
+
+from pprint import PrettyPrinter
 
 try:
     from collections.abc import KeysView, Mapping, MutableMapping
@@ -24,6 +27,7 @@ import numpy as np
 
 from six import add_metaclass
 
+from dimod.serialization.format import Formatter
 from dimod.vartypes import as_vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
@@ -34,7 +38,7 @@ __all__ = ['BQM', 'ShapeableBQM']
 # at some point
 
 
-class BQMView:
+class BQMView(Mapping):
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -48,8 +52,26 @@ class BQMView:
     def __setstate__(self, state):
         self._bqm = state['_bqm']
 
+    def __repr__(self):
+        # want the repr to make clear that it's not the correct item
+        return "<{!s}: {!s}>".format(type(self).__name__, self)
 
-class Adjacency(BQMView, Mapping):
+    def __str__(self):
+        # let's just print the whole (potentially massive) thing for now, in
+        # the future we'd like to do something a bit more clever (like hook into
+        # dimod's Formatter)
+        stream = io.StringIO()
+        stream.write('{')
+        last = len(self) - 1
+        for i, (key, value) in enumerate(self.items()):
+            stream.write('{!s}: {!s}'.format(key, value))
+            if i != last:
+                stream.write(', ')
+        stream.write('}')
+        return stream.getvalue()
+
+
+class Adjacency(BQMView):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
@@ -69,11 +91,11 @@ class ShapeableAdjacency(Adjacency):
         return ShapeableNeighbour(self._bqm, v)
 
 
-class Neighbour(Mapping):
-    __slots__ = ['_bqm', '_var']
+class Neighbour(BQMView):
+    __slots__ = ['_var']
 
     def __init__(self, bqm, v):
-        self._bqm = bqm
+        super().__init__(bqm)
         self._var = v
 
     def __getitem__(self, v):
@@ -94,7 +116,7 @@ class ShapeableNeighbour(Neighbour, MutableMapping):
         self._bqm.remove_interaction(self._var, v)
 
 
-class Linear(BQMView, Mapping):
+class Linear(BQMView):
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -122,7 +144,7 @@ class ShapeableLinear(Linear, MutableMapping):
             raise KeyError(repr(v))
 
 
-class Quadratic(BQMView, Mapping):
+class Quadratic(BQMView):
     def __getitem__(self, uv):
         return self._bqm.get_quadratic(*uv)
 
@@ -214,6 +236,13 @@ class BQM:
     def __len__(self):
         """The number of variables in the binary quadratic model."""
         return self.num_variables
+
+    def __repr__(self):
+        return "{!s}({!s}, {!s}, {!r}, {!r})".format(type(self).__name__,
+                                                     self.linear,
+                                                     self.quadratic,
+                                                     self.offset,
+                                                     self.vartype.name)
 
     @property
     def adj(self):
@@ -373,3 +402,21 @@ class ShapeableBQM(BQM):
     @property
     def quadratic(self):
         return ShapeableQuadratic(self)
+
+
+# register the various objects with prettyprint
+def _pprint_bqm(printer, bqm, stream, indent, *args, **kwargs):
+    clsname = type(bqm).__name__
+    stream.write(clsname)
+    indent += len(clsname)
+    bqmtup = (bqm.linear, bqm.quadratic, bqm.offset, bqm.vartype.name)
+    printer._pprint_tuple(bqmtup, stream, indent, *args, **kwargs)
+
+
+try:
+    PrettyPrinter._dispatch[BQMView.__repr__] = PrettyPrinter._pprint_dict
+    PrettyPrinter._dispatch[BQM.__repr__] = _pprint_bqm
+except AttributeError:
+    # we're using some internal stuff in PrettyPrinter so let's silently fail
+    # for that
+    pass
