@@ -16,7 +16,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-
+from collections.abc import Mapping
 from numbers import Integral
 
 cimport cython
@@ -25,7 +25,8 @@ from cython.operator cimport postincrement as inc, dereference as deref
 
 import numpy as np
 
-from dimod.bqm cimport cyAdjVectorBQM
+from dimod.bqm cimport cyShapeableBQM
+from dimod.bqm.adjvectorbqm import AdjVectorBQM
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.cppbqm cimport (num_variables,
@@ -91,23 +92,24 @@ cdef class cyAdjArrayBQM:
     This can be instantiated in several ways:
 
         AdjArrayBQM(vartype)
-            Creates an empty binary quadratic model
-
-        AdjArrayBQM((linear, [quadratic, [offset]]))
-            Where linear, quadratic are:
-                dict[int, bias]
-                sequence[bias]  *NOT IMPLEMENTED YET*
+            Creates an empty binary quadratic model.
 
         AdjArrayBQM(bqm)
-            Where bqm is another binary quadratic model (equivalent to
-            bqm.to_adjarray())
-            *NOT IMPLEMENTED YET*
+            Construct a new bqm that is a copy of the given one.
 
-        AdjArrayBQM(D, vartype)
-            Where D is a dense matrix D
+        AdjArrayBQM(bqm, vartype)
+            Construct a new bqm, changing to the appropriate vartype if
+            necessary.
 
         AdjArrayBQM(n, vartype)
-            Where n is the number of nodes.
+            Make a bqm with all zero biases, where n is the number of nodes.
+
+        AdjArrayBQM(M, vartype)
+            Where M is a square, array_like_ or a dictionary of the form
+            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
+            biases on the diagonal are added to the offset.
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
 
@@ -120,77 +122,160 @@ cdef class cyAdjArrayBQM:
         self._label_to_idx = dict()
         self._idx_to_label = dict()
 
+        # this should happen implicitly but to make it explicit
+        self.offset_ = 0
 
-    def __init__(self, object obj=0, object vartype=None):
 
-        # handle the case where only vartype is given
-        if vartype is None:
-            try:
-                vartype = obj.vartype
-            except AttributeError:
-                vartype = obj
-                obj = 0
-        self.vartype = as_vartype(vartype)
-        
-        cdef Bias [:, :] D  # in case it's dense
-        cdef size_t num_variables, num_interactions, degree
-        cdef VarIndex ui, vi
-        cdef Bias b
-        cdef cyAdjArrayBQM other
+    def __init__(self, *args, vartype=None):
 
-        if isinstance(obj, Integral):
-            self.adj_.first.resize(obj)
-        elif isinstance(obj, tuple):
-            self.__init__(cyAdjVectorBQM(obj, vartype))  # via the map version
-        elif hasattr(obj, "to_adjarray"):
-            # this is not very elegent...
-            other = obj.to_adjarray()
-            self.adj_ = other.adj_  # is this a copy? We probably want to move
-            self.offset_ = other.offset_
-            self._label_to_idx = other._label_to_idx
-            self._idx_to_label = other._idx_to_label
+        if vartype is not None:
+            # pass in as a positional argument
+            self.__init__(*args, vartype)
+            return
+
+        if len(args) == 0:
+            raise TypeError("A valid vartype or another bqm must be provided")
+        if len(args) == 1:
+            # BQM(bqm) or BQM(vartype)
+            obj, = args
+            if isinstance(obj, BQM):
+                self._init_bqm(obj)
+            else:
+                self._init_number(0, obj)
+        elif len(args) == 2:
+            # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
+            obj, vartype = args
+            if isinstance(obj, BQM):
+                self._init_bqm(obj, vartype)
+            elif isinstance(obj, Integral):
+                self._init_number(obj, vartype)
+            else:
+                # make sure linear is NOT a mapping or else it would make
+                # another intermediate BQM
+                self._init_components([], obj, 0.0, vartype)
+        elif len(args) == 3:
+            # BQM(linear, quadratic, vartype)
+            linear, quadratic, vartype = args
+            self._init_components(linear, quadratic, 0.0, vartype)
+        elif len(args) == 4:
+            # BQM(linear, quadratic, offset, vartype)
+            self._init_components(*args)
         else:
-            # assume it's dense
+            msg = "__init__() takes 4 positional arguments but {} were given"
+            raise TypeError(msg.format(len(args)))
 
-            D = np.atleast_2d(np.asarray(obj, dtype=self.dtype))
+    def _init_bqm(self, bqm, vartype=None):
+        cdef cyAdjArrayBQM cybqm
+        if isinstance(bqm, cyAdjArrayBQM):
+            # this would actually work with _init_cybqm but it's faster to do
+            # straight copy
+            cybqm = bqm
+            self.adj_ = cybqm.adj_  # copy
+            self.offset_ = cybqm.offset_
+            self.vartype = cybqm.vartype
 
-            num_variables = D.shape[0]
+            # shallow copy is OK since everything is hashable
+            self._label_to_idx = cybqm._label_to_idx.copy()
+            self._idx_to_label = cybqm._idx_to_label.copy()
 
-            if D.ndim != 2 or num_variables != D.shape[1]:
-                raise ValueError("expected dense to be a 2 dim square array")
+        else:
+            try:
+                self._init_cybqm(bqm)
+            except TypeError:
+                # probably AdjDictBQM or subclass, just like when constructing
+                # with maps, it's a lot easier/nicer to pass through
+                # AdjVectorBQM
+                self._init_bqm(AdjVectorBQM(bqm), vartype=vartype)
 
-            self.adj_.first.resize(num_variables)
+        if vartype is not None:
+            self.change_vartype(as_vartype(vartype), inplace=True)
 
-            # we could grow the vectors going through it one at a time, but
-            # in the interest of future-proofing we will go through once,
-            # resize the adj_.second then go through it again to fill
+    def _init_cybqm(self, cyShapeableBQM bqm):
+        """Copy a shapeable BQM into self."""
 
-            # figure out the degree of each variable and consequently the
-            # number of interactions
-            num_interactions = 0  # 2x num_interactions because count degree
-            for ui in range(num_variables):
-                degree = 0
-                for vi in range(num_variables):
-                    if ui != vi and (D[vi, ui] or D[ui, vi]):
-                        degree += 1
+        # we know how big we'll need to be. Note that num_interactions is O(|V|)
+        # for the shapeable bqms. Testing shows it's faster to do it though.
+        self.adj_.first.reserve(num_variables(bqm.adj_))
+        self.adj_.second.reserve(2*num_interactions(bqm.adj_))  # O(|V|) for bqm
+        
+        cdef VarIndex vi
 
-                if ui < num_variables - 1:
-                    self.adj_.first[ui + 1].first = degree + self.adj_.first[ui].first
+        for vi in range(num_variables(bqm.adj_)):
+            self.adj_.first.push_back(
+                pair[size_t, Bias](self.adj_.second.size(), get_linear(bqm.adj_, vi)))
 
-                num_interactions += degree
+            span = neighborhood(bqm.adj_, vi)
+            self.adj_.second.insert(self.adj_.second.end(), span.first, span.second)
 
-            self.adj_.second.resize(num_interactions)
+        self.offset_ = bqm.offset_
+        self.vartype = bqm.vartype
 
-            # todo: fix this, we're assigning twice
-            for ui in range(num_variables):
-                degree = 0
-                for vi in range(num_variables):
-                    if ui == vi:
-                        self.adj_.first[ui].second = D[ui, vi]
-                    elif D[vi, ui] or D[ui, vi]:
-                        self.adj_.second[self.adj_.first[ui].first + degree].first = vi
-                        self.adj_.second[self.adj_.first[ui].first + degree].second = D[vi, ui] + D[ui, vi]
-                        degree += 1
+        # shallow copy is OK since everything is hashable
+        self._label_to_idx = bqm._label_to_idx.copy()
+        self._idx_to_label = bqm._idx_to_label.copy()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _init_components(self, linear, quadratic, offset, vartype):
+        self.vartype = vartype = as_vartype(vartype)
+
+        if isinstance(linear, Mapping) or isinstance(quadratic, Mapping):
+            # constructing from dictionaries is a lot easier if you have
+            # incremental construction, so we build using one of the shapeable
+            # bqms
+            self._init_bqm(AdjVectorBQM(linear, quadratic, offset, vartype))
+            return
+
+        cdef bool is_spin = self.vartype is Vartype.SPIN
+
+        cdef Bias[:, :] qmatrix = np.atleast_2d(np.asarray(quadratic, dtype=self.dtype))
+
+        cdef Py_ssize_t nvar = qmatrix.shape[0]
+
+        if qmatrix.ndim != 2 or nvar != qmatrix.shape[1]:
+            raise ValueError("expected dense to be a 2 dim square array")
+
+        # we know how big linear is going to be, so we can reserve it now. But,
+        # because we ignore 0s on the off-diagonal, we can't do the same for
+        # quadratic which is where we would get the big savings.
+        self.adj_.first.reserve(nvar)
+        # self.adj_.second.reserve(nvar*(nvar-1))  # if it was perfectly dense
+
+        cdef VarIndex ui, vi
+        cdef Bias qbias
+        for ui in range(nvar):
+            if is_spin:
+                self.adj_.first.push_back(
+                    pair[size_t, Bias](self.adj_.second.size(), 0))
+                self.offset_ += qmatrix[ui, ui]
+            else:
+                self.adj_.first.push_back(
+                    pair[size_t, Bias](self.adj_.second.size(), qmatrix[ui, ui]))
+
+            for vi in range(nvar):
+                if ui == vi:
+                    continue
+
+                qbias = qmatrix[ui, vi] + qmatrix[vi, ui]  # add upper and lower
+
+                if qbias:  # ignore 0 off-diagonal
+                    self.adj_.second.push_back(pair[VarIndex, Bias](vi, qbias))
+
+        cdef Bias[:] ldata = np.asarray(linear, dtype=self.dtype)
+        nvar = ldata.shape[0]
+
+        # handle the case that ldata is larger
+        for vi in range(num_variables(self.adj_), nvar):
+            self.adj_.first.push_back(
+                pair[size_t, Bias](self.adj_.second.size(), 0))
+
+        for vi in range(nvar):
+            set_linear(self.adj_, vi, ldata[vi] + get_linear(self.adj_, vi))
+
+    def _init_number(self, int n, vartype):
+        # Make a new BQM with n variables all with 0 bias
+        self.adj_.first.resize(n)
+        self.vartype = as_vartype(vartype)
 
     @property
     def num_variables(self):
@@ -366,17 +451,44 @@ cdef class cyAdjArrayBQM:
         return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
                                self.dtype)
 
-    def get_quadratic(self, object u, object v):
+    def get_quadratic(self, u, v, default=None):
+        """Get the quadratic bias of (u, v).
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            default (number, optional):
+                Value to return if there is no interactions between `u` and `v`.
+
+        Returns:
+            The quadratic bias of (u, v).
+
+        Raises:
+            ValueError: If either `u` or `v` is not a variable in the binary
+            quadratic model or if `u == v`
+
+            ValueError: If `(u, v)` is not an interaction and `default` is
+            `None`.
+
+        """
 
         if u == v:
             raise ValueError('No interaction between {} and {}'.format(u, v))
+
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
-
         cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
 
         if not out.second:
-            raise ValueError('No interaction between {} and {}'.format(u, v))
+            if default is None:
+                msg = 'No interaction between {!r} and {!r}'
+                raise ValueError(msg.format(u, v))
+
+            return self.dtype.type(default)
 
         return as_numpy_scalar(out.first, self.dtype)
 

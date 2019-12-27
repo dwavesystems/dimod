@@ -46,7 +46,7 @@ class TestFileViewBase:
         self.assertEqual(bqm, new)
 
     def test_functional_labelled(self):
-        bqm = self.BQM(({'a': -1}, {'ab': 1}, 7), 'SPIN')
+        bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
 
         with FileView(bqm) as fp:
             new = load(fp)
@@ -58,7 +58,7 @@ class TestFileViewBase:
         if not self.BQM.shapeable():
             raise unittest.SkipTest("test only applies to shapeable bqms")
 
-        bqm = self.BQM(({'a': -1}, {'ab': 1}, 7), 'SPIN')
+        bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
         bqm.add_variable()
 
         with FileView(bqm) as fp:

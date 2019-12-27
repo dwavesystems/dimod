@@ -19,7 +19,7 @@
 cimport numpy as np
 
 # Developer note: we'd like to use fused types here, which would allow us to
-# construct AdjMapBQMs of various type combinations. Unfortunately, cython
+# construct cyBQMs of various type combinations. Unfortunately, cython
 # does not allow fused types on cdef classes (yet) so for now we just fix them.
 ctypedef np.uint32_t VarIndex
 ctypedef np.float64_t Bias
