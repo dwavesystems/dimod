@@ -13,10 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-import sys
-
+from dimod.bqm import AdjVectorBQM
 from tests.test_bqm import BQMTestCase
 
-if sys.version_info.major > 2 and sys.version_info.minor >= 5:
-    from dimod.bqm import AdjVectorBQM
-    BQMTestCase.register(AdjVectorBQM)
+BQMTestCase.register(AdjVectorBQM)

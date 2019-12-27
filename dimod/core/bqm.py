@@ -289,10 +289,19 @@ class BQM:
         nv = self.num_variables
         ni = self.num_interactions
 
-        ldata = np.empty(nv, dtype=self.dtype)
-        irow = np.empty(ni, dtype=self.itype)
-        icol = np.empty(ni, dtype=self.itype)
-        qdata = np.empty(ni, dtype=self.dtype)
+        try:
+            dtype = self.dtype
+        except AttributeError:
+            dtype = np.float
+        try:
+            itype = self.itype
+        except AttributeError:
+            itype = np.uint32
+
+        ldata = np.empty(nv, dtype=dtype)
+        irow = np.empty(ni, dtype=itype)
+        icol = np.empty(ni, dtype=itype)
+        qdata = np.empty(ni, dtype=dtype)
 
         labels = list(self.iter_variables())
         label_to_idx = {v: i for i, v in enumerate(labels)}

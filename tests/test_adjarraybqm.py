@@ -13,14 +13,10 @@
 #    limitations under the License.
 #
 # =============================================================================
-import sys
-
+from dimod.bqm import AdjArrayBQM
 from tests.test_bqm import BQMTestCase
 
-if sys.version_info.major > 2 and sys.version_info.minor >= 5:
-    from dimod.bqm import AdjArrayBQM
-    BQMTestCase.register(AdjArrayBQM)
-
+BQMTestCase.register(AdjArrayBQM)
 
 # class TestEnergies(unittest.TestCase):
 #     def test_2path(self):

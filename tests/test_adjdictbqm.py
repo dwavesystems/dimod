@@ -13,7 +13,34 @@
 #    limitations under the License.
 #
 # =============================================================================
+import unittest
+
+import numpy as np
+
 from dimod.bqm.adjdictbqm import AdjDictBQM
 from tests.test_bqm import BQMTestCase
 
 BQMTestCase.register(AdjDictBQM)
+
+
+class TestObjectDtype(unittest.TestCase):
+    # AdjDictBQM has an object dtype so it has some special cases that need
+    # to be tested
+
+    def test_dtypes_array_like_ints(self):
+        # these should stay as python ints
+        obj = [[0, 1], [1, 2]]
+
+        bqm = AdjDictBQM(obj, 'BINARY')
+
+        for _, bias in bqm.quadratic.items():
+            self.assertIsInstance(bias, int)
+
+    def test_dtypes_ndarray_ints(self):
+        # these should stay as python ints
+        obj = np.asarray([[0, 1], [1, 2]], dtype=np.int32)
+
+        bqm = AdjDictBQM(obj, 'BINARY')
+
+        for _, bias in bqm.quadratic.items():
+            self.assertIsInstance(bias, np.int32)
