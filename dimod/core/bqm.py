@@ -16,18 +16,11 @@
 import abc
 import io
 
+from collections.abc import KeysView, Mapping, MutableMapping
 from pprint import PrettyPrinter
-
-try:
-    from collections.abc import KeysView, Mapping, MutableMapping
-except ImportError:
-    from collections import KeysView, Mapping, MutableMapping
 
 import numpy as np
 
-from six import add_metaclass
-
-from dimod.serialization.format import Formatter
 from dimod.vartypes import as_vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
@@ -168,8 +161,7 @@ class ShapeableQuadratic(Quadratic, MutableMapping):
             raise KeyError(repr(uv))
 
 
-@add_metaclass(abc.ABCMeta)
-class BQM:
+class BQM(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self, obj):
         pass
