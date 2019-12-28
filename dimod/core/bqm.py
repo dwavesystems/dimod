@@ -21,7 +21,7 @@ from pprint import PrettyPrinter
 
 import numpy as np
 
-from dimod.vartypes import as_vartype
+from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -263,6 +263,49 @@ class BQM(metaclass=abc.ABCMeta):
                                count=len(self), dtype=dtype)
         return {v: self.degree(v) for v in self.iter_variables()}
 
+    @classmethod
+    def from_ising(cls, h, J, offset=0):
+        """Create a binary quadratic model from an Ising problem.
+
+        Args:
+            h (dict/list):
+                Linear biases of the Ising problem. If a dict, should be of the
+                form `{v: bias, ...}` where v is a spin-valued variable and `bias`
+                is its associated bias. If a list, it is treated as a list of
+                biases where the indices are the variable labels.
+
+            J (dict[(variable, variable), bias]):
+                Quadratic biases of the Ising problem.
+
+            offset (optional, default=0.0):
+                Constant offset applied to the model.
+
+        Returns:
+            A spin-valued binary quadratic model.
+
+        """
+        return cls(h, J, offset, Vartype.SPIN)
+
+    @classmethod
+    def from_qubo(cls, Q, offset=0):
+        """Create a binary quadratic model from a QUBO problem.
+
+        Args:
+            Q (dict):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
+                where `u`, `v`, are binary-valued variables and `bias` is their
+                associated coefficient.
+
+            offset (optional, default=0.0):
+                Constant offset applied to the model.
+
+        Returns:
+            A binary-valued binary quadratic model.
+
+        """
+        return cls(Q, offset, Vartype.BINARY)
+
     def has_variable(self, v):
         """Return True if v is a variable in the binary quadratic model."""
         try:
@@ -305,52 +348,65 @@ class BQM(metaclass=abc.ABCMeta):
     def shapeable(cls):
         return issubclass(cls, ShapeableBQM)
 
-    def to_coo(self):
+    def to_numpy_vectors(self, variable_order=None,
+                         dtype=np.float, index_dtype=np.intc,
+                         sort_indices=False, sort_labels=True,
+                         return_labels=False):
         """The BQM as 4 numpy vectors, the offset and a list of variables."""
-        nv = self.num_variables
-        ni = self.num_interactions
+        num_variables = self.num_variables
+        num_interactions = self.num_interactions
+
+        irow = np.empty(num_interactions, dtype=index_dtype)
+        icol = np.empty(num_interactions, dtype=index_dtype)
+        qdata = np.empty(num_interactions, dtype=dtype)
+
+        if variable_order is None:
+            variable_order = list(self.iter_variables())
+
+            if sort_labels:
+                try:
+                    variable_order.sort()
+                except TypeError:
+                    # can't sort unlike types in py3
+                    pass
 
         try:
-            dtype = self.dtype
-        except AttributeError:
-            dtype = np.float
-        try:
-            itype = self.itype
-        except AttributeError:
-            itype = np.uint32
+            ldata = np.fromiter((self.linear[v] for v in variable_order),
+                                count=num_variables, dtype=dtype)
+        except KeyError:
+            msg = "provided 'variable_order' does not match binary quadratic model"
+            raise ValueError(msg)
 
-        ldata = np.empty(nv, dtype=dtype)
-        irow = np.empty(ni, dtype=itype)
-        icol = np.empty(ni, dtype=itype)
-        qdata = np.empty(ni, dtype=dtype)
+        label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
 
-        labels = list(self.iter_variables())
-        label_to_idx = {v: i for i, v in enumerate(labels)}
+        # we could speed this up a lot with cython
+        for idx, ((u, v), bias) in enumerate(self.quadratic.items()):
+            irow[idx] = label_to_idx[u]
+            icol[idx] = label_to_idx[v]
+            qdata[idx] = bias
 
-        for v, bias in self.linear.items():
-            ldata[label_to_idx[v]] = bias
-        qi = 0
-        for (u, v), bias in self.quadratic.items():
-            irow[qi] = label_to_idx[u]
-            icol[qi] = label_to_idx[v]
-            qdata[qi] = bias
-            qi += 1
+        if sort_indices:
+            # row index should be less than col index, this handles
+            # upper-triangular vs lower-triangular
+            swaps = irow > icol
+            if swaps.any():
+                # in-place
+                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
 
-        # we want to make sure the COO format is sorted
-        swaps = irow > icol
-        if swaps.any():
-            # in-place
-            irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+            # sort lexigraphically
+            order = np.lexsort((irow, icol))
+            if not (order == range(len(order))).all():
+                # copy
+                irow = irow[order]
+                icol = icol[order]
+                qdata = qdata[order]
 
-        # sort lexigraphically
-        order = np.lexsort((irow, icol))
-        if not (order == range(len(order))).all():
-            # copy
-            irow = irow[order]
-            icol = icol[order]
-            qdata = qdata[order]
+        ret = [ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)]
 
-        return ldata, (irow, icol, qdata), self.offset, labels
+        if return_labels:
+            ret.append(variable_order)
+
+        return tuple(ret)
 
 
 class ShapeableBQM(BQM):

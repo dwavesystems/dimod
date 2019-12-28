@@ -39,6 +39,7 @@ from dimod.bqm.cppbqm cimport (num_variables,
                                set_quadratic,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
+from dimod.bqm.utils import coo_sort
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -792,10 +793,13 @@ cdef class cyAdjArrayBQM:
         if not isset:
             raise ValueError('No interaction between {} and {}'.format(u, v))
 
-    # note that this is identical to the implemenation in shapeablebqm.pyx.src
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def to_coo(self):
+    def to_numpy_vectors(self, variable_order=None,
+                         dtype=None, index_dtype=None,
+                         sort_indices=False, sort_labels=True,
+                         return_labels=False):
+        """Convert to numpy vectors."""
         cdef Py_ssize_t nv = num_variables(self.adj_)
         cdef Py_ssize_t ni = num_interactions(self.adj_)
 
@@ -816,13 +820,9 @@ cdef class cyAdjArrayBQM:
         cdef Py_ssize_t qi = 0  # index in the quadratic arrays
 
         for vi in range(nv):
-            ldata_view[vi] = get_linear(self.adj_, vi)
+            span = neighborhood(self.adj_, vi)
 
-            # The last argument indicates we should only iterate over the
-            # neighbours that have higher index than vi
-            span = neighborhood(self.adj_, vi, True)
-
-            while span.first != span.second:
+            while span.first != span.second and deref(span.first).first < vi:
                 irow_view[qi] = vi
                 icol_view[qi] = deref(span.first).first
                 qdata_view[qi] = deref(span.first).second
@@ -830,10 +830,56 @@ cdef class cyAdjArrayBQM:
                 qi += 1
                 inc(span.first)
 
-        # all python objects
-        labels = [self._idx_to_label.get(v, v) for v in range(nv)]
+        # at this point we have the arrays but they are index-order, NOT the
+        # label-order. So we need to do some fiddling
+        cdef long[:] reindex
+        cdef long ri
+        if variable_order is not None or (sort_labels and self._label_to_idx):
+            if variable_order is None:
+                variable_order = [self._idx_to_label.get(v, v) for v in range(nv)]
+                if sort_labels:
+                    try:
+                        variable_order.sort()
+                    except TypeError:
+                        # can't sort unlike types in py3
+                        pass
 
-        return ldata, (irow, icol, qdata), self.offset, labels
+            # ok, using the variable_order, calculate the re-index
+            reindex = np.full(nv, -1, dtype=np.int_)
+            for ri, v in enumerate(variable_order):
+                vi = self.label_to_idx(v)
+                reindex[vi] = ri
+
+                ldata_view[ri] = get_linear(self.adj_, vi)
+
+            for qi in range(ni):
+                irow_view[qi] = reindex[irow_view[qi]]
+                icol_view[qi] = reindex[icol_view[qi]]
+
+            labels = variable_order
+
+        else:
+            # the fast case! We don't need to do anything except construct the
+            # linear
+            for vi in range(nv):
+                ldata_view[vi] = get_linear(self.adj_, vi)
+
+            if return_labels:
+                labels = [self._idx_to_label.get(v, v) for v in range(nv)]
+
+        if sort_indices:
+            coo_sort(irow, icol, qdata)
+
+        ret = [np.asarray(ldata, dtype),
+               (np.asarray(irow, index_dtype),
+                np.asarray(icol, index_dtype),
+                np.asarray(qdata, dtype)),
+               self.offset]
+
+        if return_labels:
+            ret.append(labels)
+
+        return tuple(ret)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

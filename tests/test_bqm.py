@@ -294,39 +294,61 @@ class TestConstruction(BQMTestCase):
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
 
-    # def test_bqm_spin(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.SPIN
-    #     for source, target in itertools.combinations(self.BQM_SUBCLASSES, 2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             self.assertEqual(bqm, target(bqm))
+    def test_bqm_spin(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.SPIN
+        for source, target in itertools.product(self.BQM_SUBCLASSES, repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm)
 
-    # def test_bqm_binary_to_spin(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.BINARY
-    #     for source, target in itertools.combinations(self.BQM_SUBCLASSES, 2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             self.assertEqual(bqm, target(bqm, dimod.SPIN))
-    #             self.assertIs(new.vartype, dimod.SPIN)
-    #             self.assertEqual(bqm, new.change_vartype(dimod.BINARY))
+                self.assertIsInstance(new, target)
+                self.assertConsistentBQM(new)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
-    # def test_bqm_spin_to_binary(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.SPIN
-    #     for source, target in itertools.combinations(self.BQM_SUBCLASSES, 2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             self.assertEqual(bqm, target(bqm, dimod.BINARY))
-    #             self.assertIs(new.vartype, dimod.BINARY)
-    #             self.assertEqual(bqm, new.change_vartype(dimod.SPIN))
+    def test_bqm_binary_to_spin(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.BINARY
+        for source, target in itertools.product(self.BQM_SUBCLASSES, repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm, vartype=dimod.SPIN)
+
+                self.assertIsInstance(new, target)
+                self.assertConsistentBQM(new)
+                self.assertEqual(new.vartype, dimod.SPIN)
+
+                # change back for equality check
+                new.change_vartype(dimod.BINARY)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
+
+    def test_bqm_spin_to_binary(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.SPIN
+        for source, target in itertools.product(self.BQM_SUBCLASSES, repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm, vartype=dimod.BINARY)
+
+                self.assertIsInstance(new, target)
+                self.assertConsistentBQM(new)
+                self.assertEqual(new.vartype, dimod.BINARY)
+
+                # change back for equality check
+                new.change_vartype(dimod.SPIN)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
     @multitest
     def test_dense_zeros(self, BQM):
@@ -736,22 +758,150 @@ class TestShape(BQMTestCase):
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
 
 
-class TestToCOO(BQMTestCase):
+class TestToNumpyVectors(BQMTestCase):
+    @multitest
+    def test_array_dense(self, BQM):
+        bqm = BQM(np.arange(9).reshape((3, 3)), 'BINARY')
+
+        ldata, (irow, icol, qdata), off = bqm.to_numpy_vectors()
+
+        np.testing.assert_array_equal(ldata, [0, 4, 8])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for u, v, bias in zip(irow, icol, qdata):
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
+    @multitest
+    def test_array_reversed_order(self, BQM):
+        bqm = BQM(np.arange(9).reshape((3, 3)), 'BINARY')
+
+        order = [2, 1, 0]
+        ldata, (irow, icol, qdata), off \
+            = bqm.to_numpy_vectors(variable_order=order)
+
+        np.testing.assert_array_equal(ldata, [8, 4, 0])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for ui, vi, bias in zip(irow, icol, qdata):
+            u = order[ui]
+            v = order[vi]
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
+    @multitest
+    def test_array_sparse(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        arr[1, 2] = arr[2, 1] = 0
+        bqm = BQM(arr, 'BINARY')
+        self.assertEqual(bqm.shape, (3, 2))  # sparse
+
+        ldata, (irow, icol, qdata), off = bqm.to_numpy_vectors()
+
+        np.testing.assert_array_equal(ldata, [0, 4, 8])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for u, v, bias in zip(irow, icol, qdata):
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
+    @multitest
+    def test_array_sparse_return_labels(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        arr[1, 2] = arr[2, 1] = 0
+        bqm = BQM(arr, 'BINARY')
+        self.assertEqual(bqm.shape, (3, 2))  # sparse
+
+        ldata, (irow, icol, qdata), off, labels \
+            = bqm.to_numpy_vectors(return_labels=True)
+
+        self.assertEqual(labels, list(range(3)))
+
+        np.testing.assert_array_equal(ldata, [0, 4, 8])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for u, v, bias in zip(irow, icol, qdata):
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
+    @multitest
+    def test_dict(self, BQM):
+        bqm = BQM({'c': 1, 'a': -1}, {'ba': 1, 'bc': -2}, 0, dimod.SPIN)
+
+        # these values are sortable, so returned order should be a,b,c
+        order = 'abc'
+        ldata, (irow, icol, qdata), off = bqm.to_numpy_vectors()
+
+        np.testing.assert_array_equal(ldata, [-1, 0, 1])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for ui, vi, bias in zip(irow, icol, qdata):
+            u = order[ui]
+            v = order[vi]
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
+    @multitest
+    def test_dict_return_labels(self, BQM):
+        bqm = BQM({'c': 1, 'a': -1}, {'ba': 1, 'bc': -2}, 0, dimod.SPIN)
+
+        # these values are sortable, so returned order should be a,b,c
+        ldata, (irow, icol, qdata), off, order \
+            = bqm.to_numpy_vectors(return_labels=True)
+
+        self.assertEqual(order, list('abc'))
+
+        np.testing.assert_array_equal(ldata, [-1, 0, 1])
+
+        self.assertEqual(len(irow), len(icol))
+        self.assertEqual(len(icol), len(qdata))
+        self.assertEqual(len(qdata), len(bqm.quadratic))
+        for ui, vi, bias in zip(irow, icol, qdata):
+            u = order[ui]
+            v = order[vi]
+            self.assertAlmostEqual(bqm.adj[u][v], bias)
+
     @multitest
     def test_empty(self, BQM):
         bqm = BQM('SPIN')
-        ldata, (irow, icol, qdata), off, labels = bqm.to_coo()
+        h, (i, j, values), off = bqm.to_numpy_vectors()
+
+        np.testing.assert_array_equal(h, [])
+        np.testing.assert_array_equal(i, [])
+        np.testing.assert_array_equal(j, [])
+        np.testing.assert_array_equal(values, [])
+        self.assertEqual(off, 0)
 
     @multitest
-    def test_to_coo(self, BQM):
-        bqm = BQM({'a': -1}, {'ab': 2}, 'SPIN')
-        ldata, (irow, icol, qdata), off, labels = bqm.to_coo()
+    def test_unsorted_labels(self, BQM):
+        bqm = BQM(OrderedDict([('b', -1), ('a', 1)]), {}, 'SPIN')
 
-        np.testing.assert_array_equal(ldata, [-1, 0])
-        np.testing.assert_array_equal(irow, [0])
-        np.testing.assert_array_equal(icol, [1])
-        np.testing.assert_array_equal(qdata, [2])
-        self.assertEqual(labels, ['a', 'b'])
+        ldata, (irow, icol, qdata), off, order \
+            = bqm.to_numpy_vectors(return_labels=True, sort_labels=False)
+
+        self.assertEqual(order, ['b', 'a'])
+
+        np.testing.assert_array_equal(ldata, [-1, 1])
+        np.testing.assert_array_equal(irow, [])
+        np.testing.assert_array_equal(icol, [])
+        np.testing.assert_array_equal(qdata, [])
+        self.assertEqual(off, 0)
+
+    @multitest
+    def test_sort_indices(self, BQM):
+        bqm = BQM.from_ising({}, {(0, 1): .5, (3, 2): -1, (0, 3): 1.5})
+
+        h, (i, j, values), off = bqm.to_numpy_vectors(sort_indices=True)
+
+        np.testing.assert_array_equal(h, [0, 0, 0, 0])
+        np.testing.assert_array_equal(i, [0, 0, 2])
+        np.testing.assert_array_equal(j, [1, 3, 3])
+        np.testing.assert_array_equal(values, [.5, 1.5, -1])
 
 
 class TestViews(BQMTestCase):
