@@ -21,6 +21,8 @@ from numbers import Integral
 
 cimport cython
 
+from libcpp cimport bool
+
 from cython.operator cimport postincrement as inc, dereference as deref
 
 import numpy as np
@@ -44,51 +46,9 @@ from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
 
 
-# developer note: we use a function rather than a method because we want to
-# use nogil
-# developer note: we probably want to make this a template function in c++
-# so we can determine the return type. For now we'll match Bias
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef Bias energy(vector[pair[size_t, Bias]] invars,
-                 vector[pair[VarIndex, Bias]] outvars,
-                 SampleVar[:] sample):
-    """Calculate the energy of a single sample"""
-    cdef Bias energy = 0
-
-    if invars.size() == 0:
-        return energy
-
-    cdef Bias b
-    cdef size_t u, v, qi
-    cdef size_t qimax = outvars.size()
-
-    # iterate backwards because it makes finding the neighbourhoods slightly
-    # nicer and the order does not matter.
-    # we could possibly parallelize this step (cython knows how to use +=)
-    for u in reversed(range(0, invars.size())):  # throws a comp warning
-        # linear bias
-        energy = energy + invars[u].second * sample[u]
-
-        # quadratic bias
-        for qi in range(invars[u].first, qimax):
-            v = outvars[qi].first
-
-            if v > u:
-                # we're only interested in upper-triangular
-                break
-
-            b = outvars[qi].second
-            energy = energy + b * sample[u] * sample[v]
-
-        qimax = invars[u].first
-
-    return energy
-
-
 @cython.embedsignature(True)
 cdef class cyAdjArrayBQM:
-    """
+    """A binary quadratic model.
 
     This can be instantiated in several ways:
 
@@ -130,19 +90,20 @@ cdef class cyAdjArrayBQM:
     def __init__(self, *args, vartype=None):
 
         if vartype is not None:
-            # pass in as a positional argument
-            self.__init__(*args, vartype)
-            return
+            args = list(args)
+            args.append(vartype)
 
         if len(args) == 0:
             raise TypeError("A valid vartype or another bqm must be provided")
-        if len(args) == 1:
+
+        elif len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             obj, = args
             if isinstance(obj, BQM):
                 self._init_bqm(obj)
             else:
                 self._init_number(0, obj)
+
         elif len(args) == 2:
             # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
             obj, vartype = args
@@ -154,13 +115,16 @@ cdef class cyAdjArrayBQM:
                 # make sure linear is NOT a mapping or else it would make
                 # another intermediate BQM
                 self._init_components([], obj, 0.0, vartype)
+
         elif len(args) == 3:
             # BQM(linear, quadratic, vartype)
             linear, quadratic, vartype = args
             self._init_components(linear, quadratic, 0.0, vartype)
+
         elif len(args) == 4:
             # BQM(linear, quadratic, offset, vartype)
             self._init_components(*args)
+
         else:
             msg = "__init__() takes 4 positional arguments but {} were given"
             raise TypeError(msg.format(len(args)))
@@ -878,30 +842,6 @@ cdef class cyAdjArrayBQM:
             ret.append(labels)
 
         return tuple(ret)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def energies(self, SampleVar[:, :] samples):
-        cdef size_t num_samples = samples.shape[0]
-
-        if samples.shape[1] != len(self):
-            raise ValueError("Mismatched variables")
-
-        # type is hardcoded for now
-        energies = np.empty(num_samples, dtype=self.dtype)  # gil
-        cdef Bias[::1] energies_view = energies
-
-        # todo: prange and nogil, we can use static schedule because the
-        # calculation should be the same for each sample.
-        # See https://github.com/dwavesystems/dimod/pull/379 for a discussion
-        # of some of the issues around OMP_NUM_THREADS
-        cdef size_t row
-        for row in range(num_samples):
-            energies_view[row] = energy(self.adj_.first,
-                                        self.adj_.second,
-                                        samples[row, :])
-
-        return energies
 
 
 class AdjArrayBQM(cyAdjArrayBQM, BQM):

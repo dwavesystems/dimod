@@ -16,26 +16,10 @@
 #    limitations under the License.
 #
 # =============================================================================
-
-from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
 from dimod.bqm.common cimport VarIndex, Bias
-
-ctypedef vector[pair[VarIndex, Bias]].const_iterator NeighborIterator
-
-ctypedef fused SampleVar:
-    signed char  # np.int8
-    signed short  # np.int16
-    signed int  # np.int32
-    signed long long  # np.int64
-    unsigned char  # np.uint8
-    unsigned short  # np.uint16
-    unsigned int  # np.uint32
-    unsigned long long  #np.uint64
-    float  # np.float32
-    double  # np.float64
 
 
 cdef class cyAdjArrayBQM:
