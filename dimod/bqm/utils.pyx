@@ -13,6 +13,9 @@
 #    limitations under the License.
 #
 # =============================================================================
+cimport cython
+
+from dimod.bqm.common cimport Bias, VarIndex
 
 cdef extern from "numpy/arrayobject.h":
     # The comment in
@@ -28,3 +31,80 @@ np.import_array()
 cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def coo_sort(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata):
+    """Sort the COO-vectors inplace by row then by column. This function will
+    not add duplicates.
+    """
+    cdef Py_ssize_t num_interactions = irow.shape[0]
+
+    if icol.shape[0] != num_interactions or qdata.shape[0] != num_interactions:
+        raise ValueError("vectors should all be the same length")
+
+    # row index should be less than col index, this handles upper-triangular vs
+    # lower-triangular
+    cdef Py_ssize_t i
+    for i in range(num_interactions):
+        if irow[i] > icol[i]:
+            irow[i], icol[i] = icol[i], irow[i]
+
+    # next we get to sorting!
+    quicksort_coo(irow, icol, qdata, 0, num_interactions - 1)
+
+
+cdef void quicksort_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
+                        Py_ssize_t low, Py_ssize_t high):
+    # nb: high is inclusive
+    cdef Py_ssize_t p
+    if low < high:
+        p = partition_coo(irow, icol, qdata, low, high)
+        quicksort_coo(irow, icol, qdata, low, p - 1)
+        quicksort_coo(irow, icol, qdata, p + 1, high)
+
+
+cdef Py_ssize_t partition_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
+                              Py_ssize_t low, Py_ssize_t high):
+
+    # median of three pivot
+    cdef Py_ssize_t mid = low + (high - low) // 2
+    if less(irow, icol, mid, low):
+        swap(irow, icol, qdata, low, mid)
+    if less(irow, icol, high, low):
+        swap(irow, icol, qdata, low, high)
+    if less(irow, icol, mid, high):
+        swap(irow, icol, qdata, mid, high)
+
+    cdef Py_ssize_t pi = high    
+
+    cdef Py_ssize_t i = low
+
+    cdef Py_ssize_t j
+    for j in range(low, high):
+        if less(irow, icol, j, pi):
+            # ok, smaller than pivot
+            swap(irow, icol, qdata, i, j)
+
+            i = i + 1
+
+    swap(irow, icol, qdata, i, pi)
+
+    return i
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline bint less(VarIndex[:] irow, VarIndex[:] icol,
+                      Py_ssize_t a, Py_ssize_t b):
+    """Return True if a < b"""
+    return irow[a] < irow[b] or (irow[a] == irow[b] and icol[a] < icol[b])
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline void swap(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
+                      Py_ssize_t a, Py_ssize_t b):
+    # swap the data
+    irow[a], irow[b] = irow[b], irow[a]
+    icol[a], icol[b] = icol[b], icol[a]
+    qdata[a], qdata[b] = qdata[b], qdata[a]
