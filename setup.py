@@ -33,6 +33,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
                   }
 
 packages = ['dimod',
+            'dimod.bqm',
             'dimod.core',
             'dimod.generators',
             'dimod.higherorder',
