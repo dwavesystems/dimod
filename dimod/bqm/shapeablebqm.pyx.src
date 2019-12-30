@@ -35,6 +35,7 @@ from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.cppbqm cimport (add_variable,
                                add_interaction,
+                               copy_bqm,
                                degree,
                                get_linear,
                                get_quadratic,
@@ -120,17 +121,7 @@ cdef class cyAdj@name@BQM:
 
     def _init_cybqm(self, cyBQM bqm):
         """Construct self from another cybqm."""
-        cdef VarIndex vi
-
-        self.adj_.resize(num_variables(bqm.adj_))
-        for vi in range(num_variables(bqm.adj_)):
-            set_linear(self.adj_, vi, get_linear(bqm.adj_, vi))
-
-            # we do some convolutions because map.insert and vector.insert do
-            # not have the same API
-            span = neighborhood(bqm.adj_, vi)
-            copy(span.first, span.second,
-                 inserter(self.adj_[vi].first, self.adj_[vi].first.begin()))
+        copy_bqm(bqm.adj_, self.adj_)
 
         self.offset_ = bqm.offset_
         self.vartype = bqm.vartype

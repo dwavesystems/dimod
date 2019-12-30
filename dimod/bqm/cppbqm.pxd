@@ -48,6 +48,8 @@ cdef extern from "src/adjarray.h" namespace "dimod" nogil:
     bool set_quadratic[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
                              V, V, B)
 
+    void copy_bqm[V, B, BQM](BQM&, pair[vector[pair[size_t, B]], vector[pair[V, B]]]&)
+
 
 cdef extern from "src/adjmap.cc":
     pass
@@ -78,6 +80,8 @@ cdef extern from "src/adjmap.h" namespace "dimod" nogil:
 
     V add_variable[V, B](vector[pair[cppmap[V, B], B]]&)
     bool add_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
+
+    void copy_bqm[V, B, BQM](BQM&, vector[pair[cppmap[V, B], B]]&)
 
     V pop_variable[V, B](vector[pair[cppmap[V, B], B]]&)
     bool remove_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
@@ -112,6 +116,8 @@ cdef extern from "src/adjvector.h" namespace "dimod" nogil:
 
     V add_variable[V, B](vector[pair[vector[pair[V, B]], B]]&)
     bool add_interaction[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
+
+    void copy_bqm[V, B, BQM](BQM&, vector[pair[vector[pair[V, B]], B]]&)
 
     V pop_variable[V, B](vector[pair[vector[pair[V, B]], B]]&)
     bool remove_interaction[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)

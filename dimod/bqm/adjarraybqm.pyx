@@ -31,7 +31,8 @@ from dimod.bqm cimport cyShapeableBQM
 from dimod.bqm.adjvectorbqm import AdjVectorBQM
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.common cimport NeighborhoodIndex
-from dimod.bqm.cppbqm cimport (num_variables,
+from dimod.bqm.cppbqm cimport (copy_bqm,
+                               num_variables,
                                num_interactions,
                                get_linear,
                                get_quadratic,
@@ -156,21 +157,8 @@ cdef class cyAdjArrayBQM:
             self.change_vartype(as_vartype(vartype), inplace=True)
 
     def _init_cybqm(self, cyShapeableBQM bqm):
-        """Copy a shapeable BQM into self."""
-
-        # we know how big we'll need to be. Note that num_interactions is O(|V|)
-        # for the shapeable bqms. Testing shows it's faster to do it though.
-        self.adj_.first.reserve(num_variables(bqm.adj_))
-        self.adj_.second.reserve(2*num_interactions(bqm.adj_))  # O(|V|) for bqm
-        
-        cdef VarIndex vi
-
-        for vi in range(num_variables(bqm.adj_)):
-            self.adj_.first.push_back(
-                pair[size_t, Bias](self.adj_.second.size(), get_linear(bqm.adj_, vi)))
-
-            span = neighborhood(bqm.adj_, vi)
-            self.adj_.second.insert(self.adj_.second.end(), span.first, span.second)
+        """Copy another BQM into self."""
+        copy_bqm(bqm.adj_, self.adj_)
 
         self.offset_ = bqm.offset_
         self.vartype = bqm.vartype

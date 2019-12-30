@@ -67,6 +67,9 @@ void set_linear(AdjArrayBQM<V, B>&, V, B);
 template<typename V, typename B>
 bool set_quadratic(AdjArrayBQM<V, B>&, V, V, B);
 
+template<typename V, typename B, class BQM>
+void copy_bqm(BQM &bqm, AdjArrayBQM<V, B> &bqm_copy);
+
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJARRAY_H_

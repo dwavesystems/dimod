@@ -12,6 +12,8 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
+#include "src/adjarray.h"
+#include "src/adjmap.h"
 #include "src/adjvector.h"
 
 #include <algorithm>
@@ -172,6 +174,24 @@ template<typename VarIndex, typename Bias>
 bool add_interaction(AdjVectorBQM<VarIndex, Bias> &bqm,
                      VarIndex u, VarIndex v, Bias b) {
     return set_quadratic(bqm, u, v, 0);
+}
+
+// copy `bqm` into `bqm_copy`.
+// dev note: I am not sure if this is an OK use of templates, I think probably
+// the BQM class should be better specified.
+template<typename VarIndex, typename Bias, class BQM>
+void copy_bqm(BQM &bqm, AdjVectorBQM<VarIndex, Bias> &bqm_copy) {
+
+    bqm_copy.resize(num_variables(bqm));
+    for (VarIndex v = 0; v < num_variables(bqm); v++) {
+        set_linear(bqm_copy, v, get_linear(bqm, v));
+
+        // we know how much space we'll need
+        bqm_copy[v].first.reserve(degree(bqm, v));
+
+        auto span = neighborhood(bqm, v);
+        bqm_copy[v].first.insert(bqm_copy[v].first.begin(), span.first, span.second);
+    }
 }
 
 template<typename VarIndex, typename Bias>

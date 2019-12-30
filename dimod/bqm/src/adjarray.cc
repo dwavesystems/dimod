@@ -13,6 +13,8 @@
 //    limitations under the License.
 
 #include "src/adjarray.h"
+#include "src/adjmap.h"
+#include "src/adjvector.h"
 
 #include <algorithm>
 #include <utility>
@@ -163,6 +165,24 @@ bool set_quadratic(AdjArrayBQM<VarIndex, Bias> &bqm,
     (*low).second = b;
 
     return true;
+}
+
+// copy `bqm` into `bqm_copy`.
+template<typename VarIndex, typename Bias, class BQM>
+void copy_bqm(BQM &bqm, AdjArrayBQM<VarIndex, Bias> &bqm_copy) {
+
+    // we know how big we'll need to be. Note that num_interactions is O(|V|)
+    // for the shapeable bqms. Testing shows it's faster to do it though.
+    bqm_copy.first.reserve(num_variables(bqm));
+    bqm_copy.second.reserve(2*num_interactions(bqm));  // O(|V|) for bqm
+
+    for (VarIndex v = 0; v < num_variables(bqm); v++) {
+        bqm_copy.first.push_back(std::pair<size_t, Bias>(bqm_copy.second.size(),
+                                                         get_linear(bqm, v)));
+
+        auto span = neighborhood(bqm, v);
+        bqm_copy.second.insert(bqm_copy.second.end(), span.first, span.second);
+    }
 }
 
 }  // namespace dimod

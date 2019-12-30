@@ -12,10 +12,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
+#include "src/adjarray.h"
 #include "src/adjmap.h"
+#include "src/adjvector.h"
 
 #include <utility>
-
 
 namespace dimod {
 
@@ -127,6 +128,20 @@ bool add_interaction(AdjMapBQM<VarIndex, Bias> &bqm,
     assert(ret_u.second == ret_v.second);
 
     return ret_u.second;
+}
+
+// copy `bqm` into `bqm_copy`.
+// dev note: I am not sure if this is an OK use of templates, I think probably
+// the BQM template class should be better specified.
+template<typename VarIndex, typename Bias, class BQM>
+void copy_bqm(BQM &bqm, AdjMapBQM<VarIndex, Bias> &bqm_copy) {
+    bqm_copy.resize(num_variables(bqm));
+    for (VarIndex v = 0; v < num_variables(bqm); v++) {
+        set_linear(bqm_copy, v, get_linear(bqm, v));
+
+        auto span = neighborhood(bqm, v);
+        bqm_copy[v].first.insert(span.first, span.second);
+    }
 }
 
 template<typename VarIndex, typename Bias>
