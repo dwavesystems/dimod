@@ -91,7 +91,7 @@ Mixin Methods
 Creating a Composed Sampler
 ===========================
 
-.. figure:: ../../_static/composing_samplers.png
+.. figure:: ../../_images/composing_samplers.png
     :align: center
     :name: Composing Samplers
     :scale: 70 %

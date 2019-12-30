@@ -93,7 +93,7 @@ class StructureComposite(Sampler, Composite, Structured):
 
         Examples:
             This example submits an Ising problem to a composed sampler that uses
-            the dimod ExactSampler only on problems structured for a K2 fully connected graph.
+            the dimod ExactSolver only on problems structured for a K2 fully connected graph.
 
             >>> import dimod
             ...

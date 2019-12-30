@@ -31,15 +31,24 @@ Documentation
   :Release: |version|
   :Date: |today|
 
+.. sdk-start-marker
+
 .. toctree::
   :maxdepth: 1
 
   introduction
   reference/index
+  bibliography
+
+.. sdk-end-marker
+
+.. toctree::
+  :caption: Code
+  :maxdepth: 1
+
+  Source <https://github.com/dwavesystems/dimod>
   installation
   license
-  bibliography
-  Source <https://github.com/dwavesystems/dimod>
 
 .. toctree::
   :caption: Ocean Software
