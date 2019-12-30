@@ -13,20 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-import sys
-import unittest
+from dimod.bqm import AdjVectorBQM
+from tests.test_bqm import BQMTestCase
 
-
-from tests.test_bqm import TestShapeableBQMAPI
-
-
-class TestAdjVector(TestShapeableBQMAPI, unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        if sys.version_info.major == 2 or sys.version_info.minor < 5:
-            raise unittest.SkipTest("Not supported in Python <= 3.5")
-
-        from dimod.bqm import AdjVectorBQM
-
-        cls.BQM = AdjVectorBQM
+BQMTestCase.register(AdjVectorBQM)

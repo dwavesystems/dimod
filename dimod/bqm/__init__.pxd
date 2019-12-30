@@ -16,3 +16,12 @@
 from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
 from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
 from dimod.bqm.adjvectorbqm cimport cyAdjVectorBQM
+
+ctypedef fused cyBQM:
+    cyAdjArrayBQM
+    cyAdjMapBQM
+    cyAdjVectorBQM
+
+ctypedef fused cyShapeableBQM:
+    cyAdjMapBQM
+    cyAdjVectorBQM

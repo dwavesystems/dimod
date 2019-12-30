@@ -14,17 +14,14 @@
 #
 # =============================================================================
 import abc
+import io
 
-try:
-    from collections.abc import KeysView, Mapping, MutableMapping
-except ImportError:
-    from collections import KeysView, Mapping, MutableMapping
+from collections.abc import KeysView, Mapping, MutableMapping
+from pprint import PrettyPrinter
 
 import numpy as np
 
-from six import add_metaclass
-
-from dimod.vartypes import as_vartype
+from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -34,7 +31,7 @@ __all__ = ['BQM', 'ShapeableBQM']
 # at some point
 
 
-class BQMView:
+class BQMView(Mapping):
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -48,8 +45,26 @@ class BQMView:
     def __setstate__(self, state):
         self._bqm = state['_bqm']
 
+    def __repr__(self):
+        # want the repr to make clear that it's not the correct item
+        return "<{!s}: {!s}>".format(type(self).__name__, self)
 
-class Adjacency(BQMView, Mapping):
+    def __str__(self):
+        # let's just print the whole (potentially massive) thing for now, in
+        # the future we'd like to do something a bit more clever (like hook into
+        # dimod's Formatter)
+        stream = io.StringIO()
+        stream.write('{')
+        last = len(self) - 1
+        for i, (key, value) in enumerate(self.items()):
+            stream.write('{!s}: {!s}'.format(key, value))
+            if i != last:
+                stream.write(', ')
+        stream.write('}')
+        return stream.getvalue()
+
+
+class Adjacency(BQMView):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
@@ -69,11 +84,11 @@ class ShapeableAdjacency(Adjacency):
         return ShapeableNeighbour(self._bqm, v)
 
 
-class Neighbour(Mapping):
-    __slots__ = ['_bqm', '_var']
+class Neighbour(BQMView):
+    __slots__ = ['_var']
 
     def __init__(self, bqm, v):
-        self._bqm = bqm
+        super().__init__(bqm)
         self._var = v
 
     def __getitem__(self, v):
@@ -94,7 +109,7 @@ class ShapeableNeighbour(Neighbour, MutableMapping):
         self._bqm.remove_interaction(self._var, v)
 
 
-class Linear(BQMView, Mapping):
+class Linear(BQMView):
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -122,7 +137,7 @@ class ShapeableLinear(Linear, MutableMapping):
             raise KeyError(repr(v))
 
 
-class Quadratic(BQMView, Mapping):
+class Quadratic(BQMView):
     def __getitem__(self, uv):
         return self._bqm.get_quadratic(*uv)
 
@@ -146,8 +161,7 @@ class ShapeableQuadratic(Quadratic, MutableMapping):
             raise KeyError(repr(uv))
 
 
-@add_metaclass(abc.ABCMeta)
-class BQM:
+class BQM(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self, obj):
         pass
@@ -215,6 +229,13 @@ class BQM:
         """The number of variables in the binary quadratic model."""
         return self.num_variables
 
+    def __repr__(self):
+        return "{!s}({!s}, {!s}, {!r}, {!r})".format(type(self).__name__,
+                                                     self.linear,
+                                                     self.quadratic,
+                                                     self.offset,
+                                                     self.vartype.name)
+
     @property
     def adj(self):
         return Adjacency(self)
@@ -241,6 +262,49 @@ class BQM:
             return np.fromiter((self.degree(v) for v in self.iter_variables()),
                                count=len(self), dtype=dtype)
         return {v: self.degree(v) for v in self.iter_variables()}
+
+    @classmethod
+    def from_ising(cls, h, J, offset=0):
+        """Create a binary quadratic model from an Ising problem.
+
+        Args:
+            h (dict/list):
+                Linear biases of the Ising problem. If a dict, should be of the
+                form `{v: bias, ...}` where v is a spin-valued variable and `bias`
+                is its associated bias. If a list, it is treated as a list of
+                biases where the indices are the variable labels.
+
+            J (dict[(variable, variable), bias]):
+                Quadratic biases of the Ising problem.
+
+            offset (optional, default=0.0):
+                Constant offset applied to the model.
+
+        Returns:
+            A spin-valued binary quadratic model.
+
+        """
+        return cls(h, J, offset, Vartype.SPIN)
+
+    @classmethod
+    def from_qubo(cls, Q, offset=0):
+        """Create a binary quadratic model from a QUBO problem.
+
+        Args:
+            Q (dict):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
+                where `u`, `v`, are binary-valued variables and `bias` is their
+                associated coefficient.
+
+            offset (optional, default=0.0):
+                Constant offset applied to the model.
+
+        Returns:
+            A binary-valued binary quadratic model.
+
+        """
+        return cls(Q, offset, Vartype.BINARY)
 
     def has_variable(self, v):
         """Return True if v is a variable in the binary quadratic model."""
@@ -284,43 +348,65 @@ class BQM:
     def shapeable(cls):
         return issubclass(cls, ShapeableBQM)
 
-    def to_coo(self):
+    def to_numpy_vectors(self, variable_order=None,
+                         dtype=np.float, index_dtype=np.intc,
+                         sort_indices=False, sort_labels=True,
+                         return_labels=False):
         """The BQM as 4 numpy vectors, the offset and a list of variables."""
-        nv = self.num_variables
-        ni = self.num_interactions
+        num_variables = self.num_variables
+        num_interactions = self.num_interactions
 
-        ldata = np.empty(nv, dtype=self.dtype)
-        irow = np.empty(ni, dtype=self.itype)
-        icol = np.empty(ni, dtype=self.itype)
-        qdata = np.empty(ni, dtype=self.dtype)
+        irow = np.empty(num_interactions, dtype=index_dtype)
+        icol = np.empty(num_interactions, dtype=index_dtype)
+        qdata = np.empty(num_interactions, dtype=dtype)
 
-        labels = list(self.iter_variables())
-        label_to_idx = {v: i for i, v in enumerate(labels)}
+        if variable_order is None:
+            variable_order = list(self.iter_variables())
 
-        for v, bias in self.linear.items():
-            ldata[label_to_idx[v]] = bias
-        qi = 0
-        for (u, v), bias in self.quadratic.items():
-            irow[qi] = label_to_idx[u]
-            icol[qi] = label_to_idx[v]
-            qdata[qi] = bias
-            qi += 1
+            if sort_labels:
+                try:
+                    variable_order.sort()
+                except TypeError:
+                    # can't sort unlike types in py3
+                    pass
 
-        # we want to make sure the COO format is sorted
-        swaps = irow > icol
-        if swaps.any():
-            # in-place
-            irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+        try:
+            ldata = np.fromiter((self.linear[v] for v in variable_order),
+                                count=num_variables, dtype=dtype)
+        except KeyError:
+            msg = "provided 'variable_order' does not match binary quadratic model"
+            raise ValueError(msg)
 
-        # sort lexigraphically
-        order = np.lexsort((irow, icol))
-        if not (order == range(len(order))).all():
-            # copy
-            irow = irow[order]
-            icol = icol[order]
-            qdata = qdata[order]
+        label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
 
-        return ldata, (irow, icol, qdata), self.offset, labels
+        # we could speed this up a lot with cython
+        for idx, ((u, v), bias) in enumerate(self.quadratic.items()):
+            irow[idx] = label_to_idx[u]
+            icol[idx] = label_to_idx[v]
+            qdata[idx] = bias
+
+        if sort_indices:
+            # row index should be less than col index, this handles
+            # upper-triangular vs lower-triangular
+            swaps = irow > icol
+            if swaps.any():
+                # in-place
+                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+
+            # sort lexigraphically
+            order = np.lexsort((irow, icol))
+            if not (order == range(len(order))).all():
+                # copy
+                irow = irow[order]
+                icol = icol[order]
+                qdata = qdata[order]
+
+        ret = [ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)]
+
+        if return_labels:
+            ret.append(variable_order)
+
+        return tuple(ret)
 
 
 class ShapeableBQM(BQM):
@@ -364,3 +450,21 @@ class ShapeableBQM(BQM):
     @property
     def quadratic(self):
         return ShapeableQuadratic(self)
+
+
+# register the various objects with prettyprint
+def _pprint_bqm(printer, bqm, stream, indent, *args, **kwargs):
+    clsname = type(bqm).__name__
+    stream.write(clsname)
+    indent += len(clsname)
+    bqmtup = (bqm.linear, bqm.quadratic, bqm.offset, bqm.vartype.name)
+    printer._pprint_tuple(bqmtup, stream, indent, *args, **kwargs)
+
+
+try:
+    PrettyPrinter._dispatch[BQMView.__repr__] = PrettyPrinter._pprint_dict
+    PrettyPrinter._dispatch[BQM.__repr__] = _pprint_bqm
+except AttributeError:
+    # we're using some internal stuff in PrettyPrinter so let's silently fail
+    # for that
+    pass

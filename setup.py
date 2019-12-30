@@ -27,12 +27,15 @@ install_requires = ['numpy>=1.15.0,<2.0.0',
                     'six>=1.10.0,<2.0.0',
                     ]
 
+setup_requires = ['numpy>=1.15.0,<2.0.0']
+
 extras_require = {'all': ['networkx>=2.0,<3.0',
                           'pandas>=0.22.0,<0.23.0',
                           'pymongo>=3.7.0,<3.8.0'],
                   }
 
 packages = ['dimod',
+            'dimod.bqm',
             'dimod.core',
             'dimod.generators',
             'dimod.higherorder',
@@ -146,6 +149,7 @@ setup(
     packages=packages,
     install_requires=install_requires,
     extras_require=extras_require,
+    setup_requires=setup_requires,
     include_package_data=True,
     classifiers=classifiers,
     zip_safe=False,

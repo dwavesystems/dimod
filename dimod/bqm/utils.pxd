@@ -16,9 +16,6 @@
 #    limitations under the License.
 #
 # =============================================================================
-
-from cython cimport numeric
-
 cimport numpy as np
 
 cdef object as_numpy_scalar(double a, np.dtype dtype)
