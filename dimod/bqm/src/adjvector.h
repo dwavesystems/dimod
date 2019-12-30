@@ -68,6 +68,9 @@ V add_variable(AdjVectorBQM<V, B>&);
 template<typename V, typename B>
 bool add_interaction(AdjVectorBQM<V, B>&, V, V);
 
+template<typename V, typename B, class BQM>
+void copy_bqm(BQM &bqm, AdjVectorBQM<V, B> &bqm_copy);
+
 template<typename V, typename B>
 V pop_variable(AdjVectorBQM<V, B>&);
 
