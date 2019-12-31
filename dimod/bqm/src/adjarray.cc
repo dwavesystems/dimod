@@ -13,8 +13,7 @@
 //    limitations under the License.
 
 #include "src/adjarray.h"
-#include "src/adjmap.h"
-#include "src/adjvector.h"
+#include "src/shapeable.h"
 
 #include <algorithm>
 #include <utility>
