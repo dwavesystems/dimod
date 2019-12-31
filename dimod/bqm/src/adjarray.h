@@ -12,11 +12,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#include <utility>
-#include <vector>
-
 #ifndef DIMOD_BQM_SRC_ADJARRAY_H_
 #define DIMOD_BQM_SRC_ADJARRAY_H_
+
+#include <utility>
+#include <vector>
 
 namespace dimod {
 
