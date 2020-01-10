@@ -34,7 +34,6 @@ from dimod.bqm cimport cyBQM
 from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.cppbqm cimport (add_variable,
-                               add_interaction,
                                copy_bqm,
                                degree,
                                get_linear,
