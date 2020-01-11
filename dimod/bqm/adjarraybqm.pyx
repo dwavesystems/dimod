@@ -42,7 +42,7 @@ from dimod.bqm.cppbqm cimport (copy_bqm,
                                set_quadratic,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
-from dimod.bqm.utils import coo_sort
+from dimod.bqm.utils import coo_sort, cyenergies
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -444,6 +444,20 @@ cdef class cyAdjArrayBQM:
             return self.dtype.type(default)
 
         return as_numpy_scalar(out.first, self.dtype)
+
+    # this function is generic to the different BQMs
+    energies = cyenergies
+    """Determine the energies of the given samples.
+
+    Args:
+        samples_like (samples_like):
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like structure. See :func:`.as_samples`.
+
+    Returns:
+        :obj:`numpy.ndarray`: The energies.
+
+    """
 
     @classmethod
     def _load(cls, fp, data, offset=0):
