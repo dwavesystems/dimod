@@ -479,6 +479,28 @@ class TestCopy(BQMTestCase):
         self.assertEqual(bqm, new)
 
 
+class TestEnergies(BQMTestCase):
+    @multitest
+    def test_2path(self, BQM):
+        bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
+        samples = [[-1, -1],
+                   [-1, +1],
+                   [+1, -1],
+                   [+1, +1]]
+
+        energies = bqm.energies(np.asarray(samples))
+
+        np.testing.assert_array_almost_equal(energies, [-.9, .7, 1.3, -1.1])
+
+    @multitest
+    def test_5chain(self, BQM):
+        arr = np.tril(np.triu(np.ones((5, 5)), 1), 1)
+        bqm = BQM(arr, 'BINARY')
+        samples = [[0, 0, 0, 0, 0]]
+
+        energies = bqm.energies(np.asarray(samples))
+        np.testing.assert_array_almost_equal(energies, [0])
+
 class TestGetLinear(BQMTestCase):
     @multitest
     def test_disconnected_string_labels(self, BQM):

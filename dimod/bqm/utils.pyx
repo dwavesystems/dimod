@@ -15,7 +15,16 @@
 # =============================================================================
 cimport cython
 
+from cython.operator cimport postincrement as inc, dereference as deref
+
+import numpy as np
+
+import dimod
+
+from dimod.bqm cimport cyBQM
+from dimod.bqm.common import itype, dtype
 from dimod.bqm.common cimport Bias, VarIndex
+from dimod.bqm.cppbqm cimport get_linear, neighborhood
 
 cdef extern from "numpy/arrayobject.h":
     # The comment in
@@ -108,3 +117,69 @@ cdef inline void swap(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
     irow[a], irow[b] = irow[b], irow[a]
     icol[a], icol[b] = icol[b], icol[a]
     qdata[a], qdata[b] = qdata[b], qdata[a]
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def cyenergies(cyBQM bqm, samples_like):
+    """Determine the energies of the given samples.
+
+    Args:
+        bqm (cybqm):
+            A cybqm.
+
+        samples_like (samples_like):
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like structure. See :func:`.as_samples`.
+
+    Returns:
+        :obj:`numpy.ndarray`: The energies.
+
+    """
+    samples, labels = dimod.as_samples(samples_like, dtype=np.int8)
+
+    cdef np.int8_t[:, :] samples_view = samples
+
+    cdef Py_ssize_t num_samples = samples_view.shape[0]
+    cdef Py_ssize_t num_variables = samples_view.shape[1]
+
+    if num_variables != bqm.num_variables:
+        raise ValueError("inconsistent number of variables")
+    if num_variables != len(labels):
+        # an internal error to as_samples. We do this check because
+        # the boundscheck is off
+        msg = "as_samples returned an inconsistent samples/variables"
+        raise RuntimeError(msg)
+
+    # we want a map such that bqm_to_sample[vi] = si
+    cdef VarIndex[:] bqm_to_sample = np.empty(num_variables, dtype=itype)
+    cdef VarIndex ui, vi, si
+    for si in range(num_variables):
+        v = labels[si]  # python label
+        bqm_to_sample[bqm.label_to_idx(v)] = si
+
+    # now calculate the energies
+    energies = np.zeros(num_samples, dtype=dtype)
+    cdef Bias[:] energies_view = energies
+
+    cdef np.int8_t uspin, vspin
+    for si in range(num_samples):
+
+        energies_view[si] += bqm.offset_
+
+        for ui in range(num_variables):
+            uspin = samples_view[si, bqm_to_sample[ui]]
+
+            energies_view[si] += get_linear(bqm.adj_, ui) * uspin
+
+            span = neighborhood(bqm.adj_, ui)
+            while span.first != span.second and deref(span.first).first < ui:
+                vi = deref(span.first).first
+
+                vspin = samples_view[si, bqm_to_sample[vi]]
+
+                energies_view[si] += uspin * vspin * deref(span.first).second
+
+                inc(span.first)
+
+    return energies
