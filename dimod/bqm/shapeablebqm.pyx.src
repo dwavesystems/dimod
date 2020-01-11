@@ -47,7 +47,7 @@ from dimod.bqm.cppbqm cimport (add_variable,
                                set_quadratic,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
-from dimod.bqm.utils import coo_sort
+from dimod.bqm.utils import coo_sort, cyenergies
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -594,6 +594,20 @@ cdef class cyAdj@name@BQM:
     def degree(self, object v):
         cdef VarIndex vi = self.label_to_idx(v)
         return degree(self.adj_, vi)
+
+    # this function is generic to the different BQMs
+    energies = cyenergies
+    """Determine the energies of the given samples.
+
+    Args:
+        samples_like (samples_like):
+            A collection of raw samples. `samples_like` is an extension of
+            NumPy's array_like structure. See :func:`.as_samples`.
+
+    Returns:
+        :obj:`numpy.ndarray`: The energies.
+
+    """
 
     # todo: overwrite degrees
 
