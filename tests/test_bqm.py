@@ -501,6 +501,33 @@ class TestEnergies(BQMTestCase):
         energies = bqm.energies(np.asarray(samples))
         np.testing.assert_array_almost_equal(energies, [0])
 
+
+class TestFromQUBO(BQMTestCase):
+    @multitest
+    def test_basic(self, BQM):
+        Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
+        bqm = BQM.from_qubo(Q)
+
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.linear, {0: -1, 1: 0, 2: 0})
+        self.assertEqual(bqm.adj, {0: {1: -1, 2: -1},
+                                   1: {0: -1, 2: 1},
+                                   2: {0: -1, 1: 1}})
+        self.assertEqual(bqm.offset, 0)
+
+    @multitest
+    def test_with_offset(self, BQM):
+        Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
+        bqm = BQM.from_qubo(Q, 1.6)
+
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.linear, {0: -1, 1: 0, 2: 0})
+        self.assertEqual(bqm.adj, {0: {1: -1, 2: -1},
+                                   1: {0: -1, 2: 1},
+                                   2: {0: -1, 1: 1}})
+        self.assertEqual(bqm.offset, 1.6)
+
+
 class TestGetLinear(BQMTestCase):
     @multitest
     def test_disconnected_string_labels(self, BQM):
