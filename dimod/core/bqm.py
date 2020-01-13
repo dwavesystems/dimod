@@ -304,7 +304,7 @@ class BQM(metaclass=abc.ABCMeta):
             A binary-valued binary quadratic model.
 
         """
-        return cls(Q, offset, Vartype.BINARY)
+        return cls({}, Q, offset, Vartype.BINARY)
 
     def has_variable(self, v):
         """Return True if v is a variable in the binary quadratic model."""
