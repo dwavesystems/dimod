@@ -28,7 +28,7 @@ import numpy as np
 
 from dimod.decorators import vartype_argument
 from dimod.sampleset import as_samples
-from dimod.utilities import resolve_label_conflict
+from dimod.utilities import iter_safe_relabels
 from dimod.vartypes import Vartype
 
 __all__ = 'BinaryPolynomial',
@@ -251,32 +251,14 @@ class BinaryPolynomial(abc.MutableMapping):
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
-        try:
-            old_labels = set(mapping)
-            new_labels = set(mapping.values())
-        except TypeError:
-            raise ValueError("mapping targets must be hashable objects")
+        for submap in iter_safe_relabels(mapping, self.variables):
 
-        variables = self.variables
-        for v in new_labels:
-            if v in variables and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
+            for oldterm, bias in list(self.items()):
+                newterm = frozenset((submap.get(v, v) for v in oldterm))
 
-        shared = old_labels & new_labels
-        if shared:
-            old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
-
-            self.relabel_variables(old_to_intermediate, inplace=True)
-            self.relabel_variables(intermediate_to_new, inplace=True)
-            return self
-
-        for oldterm, bias in list(self.items()):
-            newterm = frozenset((mapping.get(v, v) for v in oldterm))
-
-            if newterm != oldterm:
-                self[newterm] = bias
-                del self[oldterm]
+                if newterm != oldterm:
+                    self[newterm] = bias
+                    del self[oldterm]
 
         return self
 

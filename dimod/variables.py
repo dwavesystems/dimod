@@ -23,10 +23,7 @@ except ImportError:
 from operator import eq
 
 from dimod.decorators import lockable_method
-from dimod.utilities import resolve_label_conflict
-
-from six import PY3
-from six.moves import map
+from dimod.utilities import iter_safe_relabels
 
 __all__ = ['Variables']
 
@@ -143,42 +140,15 @@ class Variables(abc.Sequence, abc.Set):
     @lockable_method
     def relabel(self, mapping):
 
-        # put the new labels into a set for fast lookup
-        try:
-            new_labels = set(mapping.values())
-        except TypeError:
-            # when new labels are not hashable
-            raise ValueError("mapping targets must be hashable objects")
+        for submap in iter_safe_relabels(mapping, self):
 
-        if PY3:
-            old_labels = mapping.keys()
-        else:
-            # we actually want old_labels to be a keysview like in python3
-            # but since we don't get that in python2 we just use the mapping
-            # itself and treat it as a set rather than a dict.
-            old_labels = mapping
+            label = self._label
+            index = self.index
 
-        for v in new_labels:
-            if v in self and v not in old_labels:
-                msg = ("A variable cannot be relabeled {!r} without also "
-                       "relabeling the existing variable of the same name")
-                raise ValueError(msg.format(v))
+            for old, new in submap.items():
+                if old not in self:
+                    continue
 
-        if any(v in new_labels for v in old_labels):
-            old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
-
-            self.relabel(old_to_intermediate)
-            self.relabel(intermediate_to_new)
-
-            return
-
-        label = self._label
-        index = self.index
-
-        for old, new in mapping.items():
-            if old not in self:
-                continue
-
-            label[index[old]] = new
-            index[new] = index[old]
-            del index[old]
+                label[index[old]] = new
+                index[new] = index[old]
+                del index[old]
