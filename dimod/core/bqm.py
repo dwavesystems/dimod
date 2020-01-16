@@ -92,7 +92,10 @@ class Neighbour(BQMView):
         self._var = v
 
     def __getitem__(self, v):
-        return self._bqm.get_quadratic(self._var, v)
+        try:
+            return self._bqm.get_quadratic(self._var, v)
+        except ValueError as e:
+            raise KeyError(*e.args)
 
     def __iter__(self):
         return self._bqm.iter_neighbors(self._var)
@@ -116,7 +119,10 @@ class Linear(BQMView):
         self._bqm = bqm
 
     def __getitem__(self, v):
-        return self._bqm.get_linear(v)
+        try:
+            return self._bqm.get_linear(v)
+        except ValueError as e:
+            raise KeyError(*e.args)
 
     def __iter__(self):
         return self._bqm.iter_variables()
@@ -139,7 +145,10 @@ class ShapeableLinear(Linear, MutableMapping):
 
 class Quadratic(BQMView):
     def __getitem__(self, uv):
-        return self._bqm.get_quadratic(*uv)
+        try:
+            return self._bqm.get_quadratic(*uv)
+        except ValueError as e:
+            raise KeyError(*e.args)
 
     def __iter__(self):
         return self._bqm.iter_interactions()
