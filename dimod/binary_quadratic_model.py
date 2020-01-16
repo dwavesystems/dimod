@@ -62,7 +62,7 @@ from six import itervalues, iteritems
 from dimod.decorators import vartype_argument, lockable_method
 from dimod.sampleset import as_samples
 from dimod.serialization.utils import serialize_ndarrays, deserialize_ndarrays
-from dimod.utilities import resolve_label_conflict, LockableDict
+from dimod.utilities import LockableDict, iter_safe_relabels
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
 from dimod.variables import iter_serialize_variables
@@ -1244,68 +1244,34 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
 
         Args:
             mapping (dict):
-                Dict mapping current variable labels to new ones. If an incomplete mapping is
-                provided, unmapped variables retain their current labels.
+                Dict mapping current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
 
             inplace (bool, optional, default=True):
-                If True, the binary quadratic model is updated in-place; otherwise, a new binary
-                quadratic model is returned.
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
         Returns:
             :class:`.BinaryQuadraticModel`: A binary quadratic model
             with the variables relabeled. If `inplace` is set to True, returns
             itself.
 
-        Examples:
-            This example creates a binary quadratic model with two variables and relables one.
-
-            >>> import dimod
-            ...
-            >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> model.relabel_variables({0: 'a'})   # doctest: +SKIP
-            BinaryQuadraticModel({1: 1.0, 'a': 0.0}, {('a', 1): -1}, 0.0, Vartype.SPIN)
-
-            This example creates a binary quadratic model with two variables and returns a new
-            model with relabled variables.
-
-            >>> import dimod
-            ...
-            >>> model = dimod.BinaryQuadraticModel({0: 0., 1: 1.}, {(0, 1): -1}, 0.0, vartype=dimod.SPIN)
-            >>> new_model = model.relabel_variables({0: 'a', 1: 'b'}, inplace=False)  # doctest: +SKIP
-            >>> new_model.quadratic       # doctest: +SKIP
-            {('a', 'b'): -1}
-
         """
-        try:
-            old_labels = set(mapping)
-            new_labels = set(itervalues(mapping))
-        except TypeError:
-            raise ValueError("mapping targets must be hashable objects")
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
 
-        for v in new_labels:
-            if v in self.linear and v not in old_labels:
-                raise ValueError(('A variable cannot be relabeled "{}" without also relabeling '
-                                  "the existing variable of the same name").format(v))
+        linear = self.linear
+        adj = self.adj
 
-        if inplace:
-            shared = old_labels & new_labels
-            if shared:
-                old_to_intermediate, intermediate_to_new = resolve_label_conflict(mapping, old_labels, new_labels)
-
-                self.relabel_variables(old_to_intermediate, inplace=True)
-                self.relabel_variables(intermediate_to_new, inplace=True)
-                return self
-
-            linear = self.linear
-            quadratic = self.quadratic
-            adj = self.adj
+        for submap in iter_safe_relabels(mapping, self):
 
             # rebuild linear and adj with the new labels
             for old in list(linear):
-                if old not in mapping:
+                if old not in submap:
                     continue
 
-                new = mapping[old]
+                new = submap[old]
 
                 # get the new interactions that need to be added
                 new_interactions = [(new, v, adj[old][v]) for v in adj[old]]
@@ -1314,12 +1280,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
                 self.add_interactions_from(new_interactions)
                 self.remove_variable(old)
 
-            return self
-        else:
-            return BinaryQuadraticModel({mapping.get(v, v): bias for v, bias in iteritems(self.linear)},
-                                        {(mapping.get(u, u), mapping.get(v, v)): bias
-                                         for (u, v), bias in iteritems(self.quadratic)},
-                                        self.offset, self.vartype)
+        return self
 
     @vartype_argument('vartype')
     def change_vartype(self, vartype, inplace=True):
