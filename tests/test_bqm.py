@@ -233,6 +233,14 @@ class TestConstruction(BQMTestCase):
             self.assertEqual(bqm.get_linear(u), 1)
 
     @multitest
+    def test_array_like_1var(self, BQM):
+        D = [[1]]
+        bqm = BQM(D, 'BINARY')
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.shape, (1, 0))
+        self.assertEqual(bqm.linear[0], 1)
+
+    @multitest
     def test_array_like_spin(self, BQM):
         D = np.ones((5, 5)).tolist()
         bqm = BQM(D, 'SPIN')
@@ -403,6 +411,14 @@ class TestConstruction(BQMTestCase):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
             self.assertEqual(bqm.get_linear(u), 1)
+
+    @multitest
+    def test_numpy_array_1var(self, BQM):
+        D = np.ones((1, 1))
+        bqm = BQM(D, 'BINARY')
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.shape, (1, 0))
+        self.assertEqual(bqm.linear[0], 1)
 
     @multitest
     def test_vartype(self, BQM):
