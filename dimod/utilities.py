@@ -350,6 +350,42 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
     return old_to_intermediate, intermediate_to_new
 
 
+def iter_safe_relabels(mapping, existing):
+    """Iterator over "safe" intermediate relabelings.
+
+    Args:
+        mapping (dict):
+            A map from old lables to new.
+
+        existing (set):
+            A container of existing labels.
+
+    Yields:
+        dict: A "safe" relabelling.
+
+    """
+
+    # put the new labels into a set for fast lookup, also ensures that the
+    # values are valid labels
+    try:
+        new_labels = set(mapping.values())
+    except TypeError:
+        raise ValueError("mapping targets must be hashable objects")
+
+    old_labels = mapping.keys()
+
+    for v in new_labels:
+        if v in existing and v not in old_labels:
+            msg = ("A variable cannot be relabeled {!r} without also "
+                   "relabeling the existing variable of the same name")
+            raise ValueError(msg.format(v))
+
+    if any(v in new_labels for v in old_labels):
+        yield from resolve_label_conflict(mapping, old_labels, new_labels)
+    else:
+        yield mapping
+
+
 def child_structure_dfs(sampler, seen=None):
     """Return the structure of a composed sampler using a depth-first search on its
     children.
