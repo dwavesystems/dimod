@@ -6,12 +6,10 @@ Higher-Order Composites
 
 The `dimod` package includes several example higher-order composed samplers.
 
+.. currentmodule:: dimod.reference.composites
+
 HigherOrderComposite
 ====================
-
-.. automodule:: dimod.reference.composites.higherordercomposites
-
-.. currentmodule:: dimod.reference.composites.higherordercomposites
 
 .. autoclass:: HigherOrderComposite
 
@@ -38,10 +36,6 @@ Methods
 
 PolyFixedVariableComposite
 ==========================
-
-.. automodule:: dimod.reference.composites.higherordercomposites
-
-.. currentmodule:: dimod.reference.composites.higherordercomposites
 
 .. autoclass:: PolyFixedVariableComposite
 

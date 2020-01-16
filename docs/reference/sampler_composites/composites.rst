@@ -8,11 +8,8 @@ The `dimod` package includes several example composed samplers.
 
 .. currentmodule:: dimod.reference.composites
 
-.. automodule:: dimod.reference.composites
-
-
 Connected Components Composite
-------------------------
+------------------------------
 
 .. automodule:: dimod.reference.composites.connectedcomponent
 
@@ -31,7 +28,7 @@ Properties
    ConnectedComponentsComposite.children
    ConnectedComponentsComposite.parameters
    ConnectedComponentsComposite.properties
-   
+
 Methods
 ~~~~~~~
 
