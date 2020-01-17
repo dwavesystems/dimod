@@ -74,7 +74,7 @@ __all__ = ['Composite', 'ComposedSampler']
 class Composite:
     """Abstract base class for dimod composites.
 
-    Provides the :attr:`.child` mixin property and defines the :attr:`~.Composite.children`
+    Provides the :attr:`Composite.child` mixin property and defines the :attr:`Composite.children`
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
     """
@@ -87,7 +87,7 @@ class Composite:
 
     @property
     def child(self):
-        """:obj:`.Sampler`: The child sampler. First sampler in :attr:`.children`."""
+        """:obj:`.Sampler`: The child sampler. First sampler in :attr:`Composite.children`."""
         try:
             return self.children[0]
         except IndexError:

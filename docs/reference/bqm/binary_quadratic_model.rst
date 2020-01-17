@@ -126,6 +126,8 @@ Converting To and From Other Formats
    BinaryQuadraticModel.to_pandas_dataframe
    BinaryQuadraticModel.to_serializable
 
+.. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
 Alias
 =====
 .. autoclass:: BQM
