@@ -183,3 +183,27 @@ def cyenergies(cyBQM bqm, samples_like):
                 inc(span.first)
 
     return energies
+
+
+def cyrelabel(cyBQM bqm, mapping, inplace=True):
+    if not inplace:
+        return cyrelabel(bqm.copy(), mapping, inplace=True)
+
+    # in the future we could maybe do something that doesn't require a copy
+    existing = set(bqm.iter_variables())
+
+    for submap in dimod.utilities.iter_safe_relabels(mapping, existing):
+        
+        for old, new in submap.items():
+            if old == new:
+                continue
+
+            vi = bqm._label_to_idx.pop(old, old)
+
+            if new != vi:
+                bqm._label_to_idx[new] = vi
+                bqm._idx_to_label[vi] = new  # overwrites old vi if it's there
+            else:
+                bqm._idx_to_label.pop(vi, None)  # remove old reference
+
+    return bqm
