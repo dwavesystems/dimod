@@ -47,7 +47,7 @@ from dimod.bqm.cppbqm cimport (add_variable,
                                set_quadratic,
                                )
 from dimod.bqm.utils cimport as_numpy_scalar
-from dimod.bqm.utils import coo_sort, cyenergies
+from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -705,6 +705,25 @@ cdef class cyAdj@name@BQM:
         self.remove_variable()
 
         return v
+
+    relabel_variables = cyrelabel
+    """Relabel variables of a binary quadratic model as specified by mapping.
+
+    Args:
+        mapping (dict):
+            Dict mapping current variable labels to new ones. If an
+            incomplete mapping is provided, unmapped variables retain their
+            current labels.
+
+        inplace (bool, optional, default=True):
+            If True, the binary quadratic model is updated in-place;
+            otherwise, a new binary quadratic model is returned.
+
+    Returns:
+        A binary quadratic model with the variables relabeled. If `inplace`
+        is set to True, returns itself.
+
+    """
 
     def set_linear(self, object v, Bias b):
         """Set the linear biase of a variable v.
