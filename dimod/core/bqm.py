@@ -21,6 +21,7 @@ from pprint import PrettyPrinter
 
 import numpy as np
 
+from dimod.binary_quadratic_model import BinaryQuadraticModel as LegacyBQM
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
@@ -468,3 +469,11 @@ except AttributeError:
     # we're using some internal stuff in PrettyPrinter so let's silently fail
     # for that
     pass
+
+
+# register the legacy BQM as a subclass of BQM and ShapeableBQM. This actually
+# causes some issues because they don't have identical APIs, but in the mean
+# time it does things like allow AdjArrayBQM(LegacyBQM(...)) to work. Relatively
+# soon we'll replace LegacyBQM with AdjDictBQM
+BQM.register(LegacyBQM)
+ShapeableBQM.register(LegacyBQM)

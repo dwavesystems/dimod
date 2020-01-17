@@ -371,6 +371,17 @@ class TestConstruction(BQMTestCase):
         self.assertEqual(bqm.linear, {v: 0 for v in range(5)})
 
     @multitest
+    def test_legacy_bqm(self, BQM):
+        lbqm = dimod.BinaryQuadraticModel.from_ising({'a': 2}, {'ab': -1}, 7)
+
+        new = BQM(lbqm)
+
+        self.assertEqual(lbqm.linear, new.linear)
+        self.assertEqual(lbqm.adj, new.adj)
+        self.assertEqual(lbqm.offset, new.offset)
+        self.assertEqual(lbqm.vartype, new.vartype)
+
+    @multitest
     def test_quadratic_only(self, BQM):
         M = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
         bqm = BQM(M, 'BINARY')
