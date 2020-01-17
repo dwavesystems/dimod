@@ -27,6 +27,7 @@ import numpy as np
 from dimod.bqm import AdjArrayBQM
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.sampleset import as_samples
+from dimod.utilities import iter_safe_relabels
 from dimod.vartypes import as_vartype, Vartype
 
 try:
@@ -499,6 +500,46 @@ class AdjDictBQM(ShapeableBQM):
         self._adj[v].pop(u)
 
         return True
+
+    def relabel_variables(self, mapping, inplace=True):
+        """Relabel variables of a binary quadratic model as specified by mapping.
+
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
+
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            A binary quadratic model with the variables relabeled. If `inplace`
+            is set to True, returns itself.
+
+        """
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
+
+        adj = self._adj
+
+        for submap in iter_safe_relabels(mapping, self.linear):
+            for old, new in submap.items():
+                if old == new:
+                    continue
+
+                # replace the linear bias
+                adj[new] = {new: adj[old].pop(old)}
+
+                # copy the quadratic biases
+                for v in adj[old]:
+                    adj[new][v] = adj[v][new] = adj[v].pop(old)
+
+                # remove the old adj for old
+                del adj[old]
+
+        return self
 
     def set_linear(self, v, bias):
         """Set the linear biase of a variable v.

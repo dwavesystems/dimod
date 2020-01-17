@@ -765,6 +765,128 @@ class TestRemoveVariable(BQMTestCase):
         self.assertConsistentBQM(bqm)
 
 
+class TestRelabel(BQMTestCase):
+    @multitest
+    def test_inplace(self, BQM):
+        linear = {0: .5, 1: 1.3}
+        quadratic = {(0, 1): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        mapping = {0: 'a', 1: 'b'}
+        new = bqm.relabel_variables(mapping)
+        self.assertConsistentBQM(new)
+        self.assertIs(bqm, new)
+
+        # check that new model is correct
+        linear = {'a': .5, 'b': 1.3}
+        quadratic = {('a', 'b'): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
+        test = BQM(linear, quadratic, offset, vartype)
+        self.assertEqual(bqm, test)
+
+    @multitest
+    def test_not_inplace(self, BQM):
+        linear = {0: .5, 1: 1.3}
+        quadratic = {(0, 1): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        mapping = {0: 'a', 1: 'b'}
+        new = bqm.relabel_variables(mapping, inplace=False)
+        self.assertConsistentBQM(new)
+        self.assertIsNot(bqm, new)
+
+        # check that new model is the same as old model
+        linear = {'a': .5, 'b': 1.3}
+        quadratic = {('a', 'b'): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
+        test = BQM(linear, quadratic, offset, vartype)
+
+        self.assertEqual(new, test)
+
+    @multitest
+    def test_overlap(self, BQM):
+        linear = {v: .1 * v for v in range(-5, 4)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        partial_overlap_mapping = {v: -v for v in linear}  # has variables mapped to other old labels
+
+        # construct a test model by using copy
+        test = bqm.relabel_variables(partial_overlap_mapping, inplace=False)
+
+        # now apply in place
+        bqm.relabel_variables(partial_overlap_mapping, inplace=True)
+
+        # should have stayed the same
+        self.assertConsistentBQM(test)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(test, bqm)
+
+    @multitest
+    def test_identity(self, BQM):
+        linear = {v: .1 * v for v in range(-5, 4)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+        old = bqm.copy()
+
+        identity_mapping = {v: v for v in linear}
+
+        bqm.relabel_variables(identity_mapping, inplace=True)
+
+        # should have stayed the same
+        self.assertConsistentBQM(old)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(old, bqm)
+
+    @multitest
+    def test_partial_relabel_copy(self, BQM):
+        linear = {v: .1 * v for v in range(-5, 5)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        mapping = {0: 'a', 1: 'b'}  # partial mapping
+        newmodel = bqm.relabel_variables(mapping, inplace=False)
+
+        newlinear = linear.copy()
+        newlinear['a'] = newlinear[0]
+        newlinear['b'] = newlinear[1]
+        del newlinear[0]
+        del newlinear[1]
+
+        self.assertEqual(newlinear, newmodel.linear)
+
+    @multitest
+    def test_partial_relabel_inplace(self, BQM):
+        linear = {v: .1 * v for v in range(-5, 5)}
+        quadratic = {(u, v): .1 * u * v for u, v in itertools.combinations(linear, 2)}
+        offset = 1.2
+        vartype = dimod.SPIN
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        newlinear = linear.copy()
+        newlinear['a'] = newlinear[0]
+        newlinear['b'] = newlinear[1]
+        del newlinear[0]
+        del newlinear[1]
+
+        mapping = {0: 'a', 1: 'b'}  # partial mapping
+        bqm.relabel_variables(mapping, inplace=True)
+
+        self.assertEqual(newlinear, bqm.linear)
+
+
 class TestSetLinear(BQMTestCase):
     @multitest
     def test_basic(self, BQM):
