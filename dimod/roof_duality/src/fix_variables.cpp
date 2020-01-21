@@ -234,7 +234,7 @@ compressed_matrix::CompressedMatrix<long long int> posiformToImplicationNetwork_
 	//n+1: sink
 	//n+2 to 2*n+1: \overline_x_1 to \overline_x_n
 	std::map<std::pair<int, int>, long long int> m;
-	for (int i = 0; i < p.linear.size(); i++)
+	for (size_t i = 0; i < p.linear.size(); i++)
 	{
 		int v = p.linear[i].first;
 
@@ -252,7 +252,7 @@ compressed_matrix::CompressedMatrix<long long int> posiformToImplicationNetwork_
 		}
 	}
 
-	for (int i = 0; i < p.quadratic.size(); i++)
+	for (size_t i = 0; i < p.quadratic.size(); i++)
 	{
 		int v_1 = p.quadratic[i].first.first;
 		int v_2 = p.quadratic[i].first.second;
@@ -293,7 +293,7 @@ compressed_matrix::CompressedMatrix<long long int> posiformToImplicationNetwork_
 	//n+1 to 2*n: \overline_x_1 to \overline_x_n
 	//2*n+1: sink
 	std::map<std::pair<int, int>, long long int> m;
-	for (int i = 0; i < p.linear.size(); i++)
+	for (size_t i = 0; i < p.linear.size(); i++)
 	{
 		int v = p.linear[i].first;
 		long long int capacity = p.linear[i].second; // originally p.linear[i].second/2
@@ -310,7 +310,7 @@ compressed_matrix::CompressedMatrix<long long int> posiformToImplicationNetwork_
 		}
 	}
 
-	for (int i = 0; i < p.quadratic.size(); i++)
+	for (size_t i = 0; i < p.quadratic.size(); i++)
 	{
 		int v_1 = p.quadratic[i].first.first;
 		int v_2 = p.quadratic[i].first.second;
@@ -402,7 +402,7 @@ compressed_matrix::CompressedMatrix<long long int> maxFlow(const compressed_matr
 	std::vector<int> RColIndices;
 	std::vector<long long int> RValues;
 	int offset = 0;
-	int currRow = 0;
+	size_t currRow = 0;
 	graph_traits<Graph>::vertex_iterator u_iter, u_end;
 	graph_traits<Graph>::out_edge_iterator ei, e_end;
 	for (boost::tie(u_iter, u_end) = vertices(g); u_iter != u_end; ++u_iter)
@@ -412,7 +412,7 @@ compressed_matrix::CompressedMatrix<long long int> maxFlow(const compressed_matr
 			{
 				if (currRow <= *u_iter)
 				{
-					for (int i = currRow; i <= *u_iter; i++)
+					for (size_t i = currRow; i <= *u_iter; i++)
 						RRowOffsets[i] = offset;
 					currRow = static_cast<int>((*u_iter) + 1);
 				}
@@ -422,7 +422,7 @@ compressed_matrix::CompressedMatrix<long long int> maxFlow(const compressed_matr
 				++offset;
 			}
 		}
-	for (int i = currRow; i < RRowOffsets.size(); i++)
+	for (size_t i = currRow; i < RRowOffsets.size(); i++)
 		RRowOffsets[i] = offset;
 
 	compressed_matrix::CompressedMatrix<long long int> R(numVertices, numVertices, RRowOffsets, RColIndices, RValues); //residual
@@ -563,7 +563,7 @@ SCRet stronglyConnectedComponents(const compressed_matrix::CompressedMatrix<long
 		property < vertex_predecessor_t, Traits::edge_descriptor > > > > >
 	> Graph;
 
-	typedef graph_traits<Graph>::vertex_descriptor Vertex;
+//	typedef graph_traits<Graph>::vertex_descriptor Vertex;
 
 	Graph G;
 
@@ -602,7 +602,7 @@ SCRet stronglyConnectedComponents(const compressed_matrix::CompressedMatrix<long
 	//positive: from 1 to n (1-based variables index)
 	//negative: from 1 to n (1-based variables index)
 	std::vector<SC> vsc(num);
-	for (int i = 0; i < component.size(); i++)
+	for (size_t i = 0; i < component.size(); i++)
 	{
 		int whichComponent = component[i];
 		vsc[whichComponent].original.push_back(i);
@@ -646,11 +646,11 @@ std::vector<int> classifyStronglyConnectedComponents(const std::vector<SC>& S)
 {
 	std::vector<int> ret(S.size()); //0: self-complement, 1: non-self-complement
 
-	for (int i = 0; i < S.size(); i++)
+	for (size_t i = 0; i < S.size(); i++)
 	{
 		bool flag = true;
 		std::set<int> pos(S[i].positive.begin(), S[i].positive.end());
-		for (int j = 0; j < S[i].negative.size(); j++)
+		for (size_t j = 0; j < S[i].negative.size(); j++)
 		{
 			if (pos.find(S[i].negative[j]) != pos.end())
 			{
@@ -697,11 +697,11 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 {
 	std::vector<std::pair<int, int> > ret;
 
-	int x0Location;
-	int x0BarLocation;
+	size_t x0Location = 0; //FIXME is this a sane value?
+	size_t x0BarLocation = 0; //FIXME is this a sane value?
 	std::vector<int> I;
 
-	for (int i = 0; i < classifiedSC.size(); i++)
+	for (size_t i = 0; i < classifiedSC.size(); i++)
 	{
 		if (classifiedSC[i] == 1) //1: non self-complement
 		{
@@ -721,16 +721,16 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 	//find complement pairs
 	std::vector<int> positive(numVariables + 1, -1);
 	std::vector<int> negative(numVariables + 1, -1);
-	for (int i = 0; i < I.size(); i++)
+	for (size_t i = 0; i < I.size(); i++)
 	{
-		for (int k = 0; k < scRet.S[I[i]].positive.size(); k++)
+		for (size_t k = 0; k < scRet.S[I[i]].positive.size(); k++)
 			positive[scRet.S[I[i]].positive[k]] = I[i];
-		for (int k = 0; k < scRet.S[I[i]].negative.size(); k++)
+		for (size_t k = 0; k < scRet.S[I[i]].negative.size(); k++)
 			negative[scRet.S[I[i]].negative[k]] = I[i];
 	}
 
 	std::map<int, int> complementPairs;
-	for (int i = 0; i < positive.size(); i++)
+	for (size_t i = 0; i < positive.size(); i++)
 	{
 		if (positive[i] != -1 && negative[i] != -1)
 		{
@@ -752,7 +752,7 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 	compressed_matrix::CompressedMatrix<long long int> GTrans(scRet.G.numRows(), scRet.G.numRows(), GTransMap);
 
 	std::vector<int> outDegrees(scRet.G.numRows(), -1);
-	for (int i = 0; i < classifiedSC.size(); i++)
+	for (size_t i = 0; i < classifiedSC.size(); i++)
 	{
 		if (classifiedSC[i] == 1) //non self-complement components
 		{
@@ -764,14 +764,14 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 	outDegrees[x0Location] = -1;
 	outDegrees[x0BarLocation] = -1;
 
-	for (int i = 0; i < visited.size(); i++)
+	for (size_t i = 0; i < visited.size(); i++)
 	{
 		if (visited[i] == 2) //exclude x0
 		{
-			for (int k = 0; k < scRet.S[i].positive.size(); k++)
+			for (size_t k = 0; k < scRet.S[i].positive.size(); k++)
 				ret.push_back(std::make_pair(scRet.S[i].positive[k], 1));
 
-			for (int k = 0; k < scRet.S[i].negative.size(); k++)
+			for (size_t k = 0; k < scRet.S[i].negative.size(); k++)
 				ret.push_back(std::make_pair(scRet.S[i].negative[k], 0));
 
 			int complement = complementPairs[i];
@@ -784,7 +784,7 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 
 	//decrease the outdegrees of node which has outgoing edges to i and to complement
 	//push node which has 0 outdegrees into the queue
-	for (int i = 0; i < visited.size(); i++)
+	for (size_t i = 0; i < visited.size(); i++)
 	{
 		if (visited[i] == 2) //exclude x0
 		{
@@ -826,10 +826,10 @@ std::vector<std::pair<int, int> > fixVariables(const std::vector<int>& classifie
 			outDegrees[complement] = -1;
 
 			//fixed all variables in component curr
-			for (int k = 0; k < scRet.S[curr].positive.size(); k++)
+			for (size_t k = 0; k < scRet.S[curr].positive.size(); k++)
 				ret.push_back(std::make_pair(scRet.S[curr].positive[k], 1));
 
-			for (int k = 0; k < scRet.S[curr].negative.size(); k++)
+			for (size_t k = 0; k < scRet.S[curr].negative.size(); k++)
 				ret.push_back(std::make_pair(scRet.S[curr].negative[k], 0));
 
 			//decrease the outdegrees of node which has outgoing edges to i and to complement
@@ -873,7 +873,7 @@ compressed_matrix::CompressedMatrix<double> computeNewQAndOffset(const compresse
 		int numVariables = Q.numRows();
 
 		std::map<int, int> mI;
-		for (int i = 0; i < fixed.size(); i++)
+		for (size_t i = 0; i < fixed.size(); i++)
 			mI[fixed[i].first - 1] = i; //-1 to make it 0-based
 
 		std::vector<int> J;
@@ -970,8 +970,8 @@ compressed_matrix::CompressedMatrix<double> computeNewQAndOffset(const compresse
 
 std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::CompressedMatrix<long long int>& A)
 {
-	int numVertices = A.numRows();
-	int numVariables = numVertices / 2 - 1;
+	size_t numVertices = A.numRows();
+	size_t numVariables = numVertices / 2 - 1;
 
 	//debuging only
 	//clock_t curr_1 = clock();
@@ -990,7 +990,7 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 	property_map<Graph, edge_residual_capacity_t>::type residual_capacity = get(edge_residual_capacity, g);
 
 	std::vector<Traits::vertex_descriptor> verts(numVertices);
-	for (int i = 0; i < numVertices; ++i)
+	for (size_t i = 0; i < numVertices; ++i)
 		verts[i] = add_vertex(g);
 
 	Traits::vertex_descriptor s = verts[numVariables];
@@ -1038,7 +1038,7 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 	std::vector<long long int> FValues;
 
 	int offset = 0;
-	int currRow = 0;
+	size_t currRow = 0;
 	graph_traits<Graph>::vertex_iterator u_iter, u_end;
 	graph_traits<Graph>::out_edge_iterator ei, e_end;
 	for (boost::tie(u_iter, u_end) = vertices(g); u_iter != u_end; ++u_iter)
@@ -1048,7 +1048,7 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 			{
 				if (currRow <= *u_iter)
 				{
-					for (int i = currRow; i <= *u_iter; i++)
+					for (size_t i = currRow; i <= *u_iter; i++)
 					{
 						RRowOffsets[i] = offset;
 						FRowOffsets[i] = offset;
@@ -1062,9 +1062,9 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 				++offset;
 			}
 		}
-	for (int i = currRow; i < RRowOffsets.size(); i++)
+	for (size_t i = currRow; i < RRowOffsets.size(); i++)
 		RRowOffsets[i] = offset;
-	for (int i = currRow; i < FRowOffsets.size(); i++)
+	for (size_t i = currRow; i < FRowOffsets.size(); i++)
 		FRowOffsets[i] = offset;
 
 	compressed_matrix::CompressedMatrix<long long int> R(numVertices, numVertices, RRowOffsets, RColIndices, RValues); //residual
@@ -1082,8 +1082,8 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 		int end = A.rowOffsets()[i + 1];
 		for (int j = start; j < end; j++)
 		{
-			int r = i;
-			int c = A.colIndices()[j];
+			size_t r = i;
+			size_t c = A.colIndices()[j];
 			long long int RValue = R.get(r, c);
 			if (A.values()[j] > 0 && RValue != 0 && r != 2 * numVariables + 1 && c != numVariables)
 				residM[std::make_pair(r, c)] += RValue;
@@ -1107,7 +1107,7 @@ std::vector<std::pair<int, int> > applyImplication(const compressed_matrix::Comp
 	//curr_1 = curr_2;
 
 	std::vector<std::pair<int, int> > fixed;
-	for (int i = 0; i < forced.size(); i++)
+	for (size_t i = 0; i < forced.size(); i++)
 	{
 		if (forced[i] > 0)
 		{
@@ -1150,7 +1150,7 @@ FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<do
 		return ret;
 	}
 
-	int numVariables = Q.numRows();
+	size_t numVariables = Q.numRows();
 
 	//clock_t curr_1 = clock();
 	//clock_t curr_2;
@@ -1266,7 +1266,7 @@ FixVariablesResult fixQuboVariables(const compressed_matrix::CompressedMatrix<do
 
 	// remove unused variables from ret.fixedVars
 	std::vector<std::pair<int, int> > updatedFixedVars;
-	for (int i = 0; i < ret.fixedVars.size(); ++i)
+	for (size_t i = 0; i < ret.fixedVars.size(); ++i)
 	{
 		if (usedVariables.find(ret.fixedVars[i].first - 1) != usedVariables.end()) // -1 to make it 0-based since usedVariables is 0-based
 			updatedFixedVars.push_back(ret.fixedVars[i]);

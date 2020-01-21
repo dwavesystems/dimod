@@ -405,14 +405,14 @@ compressed_matrix::CompressedMatrix<T>::CompressedMatrix(int numRows, int numCol
 		values_.push_back(it->second);
 		++offset;
 	}
-	for (int i = currRow; i < rowOffsets_.size(); i++)
+	for (size_t i = currRow; i < rowOffsets_.size(); i++)
 		rowOffsets_[i] = offset;
 }
 
 template <typename T>
 compressed_matrix::CompressedMatrix<T>::CompressedMatrix(int numRows, int numCols, std::vector<int> rowOffsets, std::vector<int> colIndices, std::vector<T> values) : numRows_(numRows), numCols_(numCols)
 {
-	if (rowOffsets.size() != numRows_ + 1)
+	if (rowOffsets.size() != static_cast<size_t>(numRows_) + 1)
 		throw CompressedMatrixException("row offset vector's size is incorrect.");
 	if (colIndices.size() != values.size())
 		throw CompressedMatrixException("column indices vector's size and values vector's size are different.");
@@ -481,7 +481,7 @@ T& compressed_matrix::CompressedMatrix<T>::operator()(int row, int col)
 
 	if (start == end) //not found
 	{
-		for (int i = row + 1; i < rowOffsets_.size(); i++)
+		for (size_t i = row + 1; i < rowOffsets_.size(); i++)
 			++rowOffsets_[i];
 		colIndices_.insert(colIndices_.begin() + start, col);
 		values_.insert(values_.begin() + start, 0);
@@ -490,7 +490,7 @@ T& compressed_matrix::CompressedMatrix<T>::operator()(int row, int col)
 
 	int low = start;
 	int high = end - 1;
-	int mid;
+	int mid = start;
 	while (low <= high)
 	{
 		mid = low + (high - low) / 2;
@@ -503,7 +503,7 @@ T& compressed_matrix::CompressedMatrix<T>::operator()(int row, int col)
 	}
 
 	//not found
-	for (int i = row + 1; i < rowOffsets_.size(); i++)
+	for (size_t i = row + 1; i < rowOffsets_.size(); i++)
 		++rowOffsets_[i];
 	if (colIndices_[mid] < col)
 		++mid;
