@@ -25,10 +25,48 @@ from dimod.bqm.utils import ilinear_biases, ineighborhood
 
 
 class FileView(io.RawIOBase):
+    """A seekable, readable view into a binary quadratic model.
 
-    # developer note: we use RawIOBase with an "extra" implemented readinto1
-    # because the BufferedIOBase's stub methods are `read1` and `read`, whereas
-    # for performance reasons, we want to implement `readinto1` and `readinto`.
+    Format specification:
+
+    The first 8 bytes are a magic string: exactly "DIMODBQM".
+
+    The next 1 byte is an unsigned byte: the major version of the file format.
+
+    The next 1 byte is an unsigned byte: the minor version of the file format.
+
+    The next 4 bytes form a little-endian unsigned int, the length of the header
+    data HEADER_LEN.
+
+    The next HEADER_LEN bytes form the header data. This is a json-serialized
+    dictionary. The dictionary is exactly:
+
+    .. code-block:: python
+
+        dict(shape=bqm.shape,
+             dtype=bqm.dtype.name,
+             itype=bqm.itype.name,
+             ntype=bqm.ntype.name,
+             vartype=bqm.vartype.name,
+             type=type(bqm).__name__,
+             variables=list(bqm.variables),
+             )
+
+    it is terminated by a newline `\n` and padded with spaces to make the entire
+    length of the entire header divisible by 16.
+
+    Args:
+        bqm (:class:`~dimod.core.bqm.BQM`):
+            The binary quadratic model.
+
+    Note:
+        Currently the BQM is not locked while the file view is open, in the
+        future this will change.
+
+    See also
+    https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+
+    """
 
     MAGIC_PREFIX = b'DIMODBQM'
     VERSION = bytes([1, 0])  # version 1.0
@@ -48,6 +86,7 @@ class FileView(io.RawIOBase):
 
     @property
     def neighborhood_starts(self):
+        """The indices of the neighborhood starts."""
         # lazy construction
         try:
             return self._neighborhood_starts
@@ -108,10 +147,12 @@ class FileView(io.RawIOBase):
 
     @property
     def header_end(self):
+        """The location (in bytes) that the header ends."""
         return len(self.header)
 
     @property
     def offset_start(self):
+        """The location (in bytes) that the offset starts."""
         return self.header_end
 
     @property
@@ -120,26 +161,42 @@ class FileView(io.RawIOBase):
 
     @property
     def linear_start(self):
+        """The location (in bytes) that the linear data starts."""
         return self.offset_end
 
     @property
     def linear_end(self):
+        """The location (in bytes) that the linear data end."""
         return self.linear_start + self.linear_length
 
     @property
     def quadratic_start(self):
+        """The location (in bytes) that the quadratic data starts."""
         return self.linear_end
 
     @property
     def quadratic_end(self):
+        """The location (in bytes) that the quadratic data end."""
         return self.quadratic_start + self.quadratic_length
 
     def close(self):
+        """Close the file view. The BQM will no longer be viewable."""
         # todo: decrement viewcount
         super(FileView, self).close()
+        del self.bqm
 
     def readinto(self, buff):
+        """Read bytes into a pre-allocated, writable bytes-like object.
 
+        Args:
+            buff (bytes-like):
+                A pre-allocated writeable bytes-like object.
+
+        Returns:
+            int: The number of bytes read. If 0 bytes are read this indicated
+            the end of the file view.
+
+        """
         buff = memoryview(buff)  # we're going to be slicing
 
         num_read = 0
@@ -151,8 +208,24 @@ class FileView(io.RawIOBase):
 
         return num_read
 
+    # developer note: we use RawIOBase with an "extra" implemented readinto1
+    # because the BufferedIOBase's stub methods are `read1` and `read`, whereas
+    # for performance reasons, we want to implement `readinto1` and `readinto`.
     def readinto1(self, buff):
+        """Read bytes into a pre-allocated, writable bytes-like object.
 
+        `readinto1` differs from :meth:`.readinto` by only reading a single
+        c++ object at a time.
+
+        Args:
+            buff (bytes-like):
+                A pre-allocated writeable bytes-like object.
+
+        Returns:
+            int: The number of bytes read. If 0 bytes are read this indicated
+            the end of the file view.
+
+        """
         pos = self.pos
         bqm = self.bqm
 
@@ -211,6 +284,19 @@ class FileView(io.RawIOBase):
         return True
 
     def seek(self, offset, whence=io.SEEK_SET):
+        """Change the stream position to the given `offset`.
+
+        Args:
+            offset (int):
+                The offset relative to `whence`.
+
+            whence (int):
+                See :mod:`io` for a description of the different seek locations.
+
+        Returns:
+            The new stream position.
+
+        """
         if whence == io.SEEK_SET:
             self.pos = offset
         elif whence == io.SEEK_CUR:
