@@ -494,7 +494,7 @@ cdef class cyAdjArrayBQM:
                 bqm._idx_to_label[vi] = v
 
         # offset, using the vartype it was encoded with
-        bqm.offset = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
+        bqm.offset_ = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
 
         # linear
         # annoyingly this does two copies, one into the bytes object returned
