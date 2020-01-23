@@ -214,11 +214,11 @@ cdef class cyAdj@name@BQM:
             if self._label_to_idx:
                 # we've overwritten some labels, so we have to do all the label
                 # checking which is slow
-                for v in range(ldata.shape[0]):
-                    if self.has_variable(v):
-                        self.set_linear(v, b + self.get_linear(v))
+                for vi in range(ldata.shape[0]):
+                    if self.has_variable(vi):
+                        self.set_linear(vi, ldata[vi] + self.get_linear(vi))
                     else:
-                        self.set_linear(v, b)
+                        self.set_linear(vi, ldata[vi])
             else:
                 if ldata.shape[0] > num_variables(self.adj_):
                     self.adj_.resize(ldata.shape[0])  # append

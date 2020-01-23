@@ -181,6 +181,8 @@ cdef class cyAdjArrayBQM:
 
         cdef bool is_spin = self.vartype is Vartype.SPIN
 
+        self.offset_ = offset
+
         cdef Bias[:, :] qmatrix = np.atleast_2d(np.asarray(quadratic, dtype=self.dtype))
 
         cdef Py_ssize_t nvar = qmatrix.shape[0]
