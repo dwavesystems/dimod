@@ -499,6 +499,7 @@ cdef class cyAdjArrayBQM:
         # by read, the other into the array. We could potentially get around
         # this by using readinto and providing the bytesarray, then passing that
         # into np.asarray()
+        # TODO: bug, read might actually return fewer bytes
         ldata = np.frombuffer(fp.read(num_var*(ntype.itemsize + dtype.itemsize)),
                               dtype=np.dtype([('nidx', ntype), ('bias', dtype)]))
 
