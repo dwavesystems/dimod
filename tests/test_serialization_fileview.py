@@ -13,191 +13,208 @@
 #    limitations under the License.
 #
 # =============================================================================
-import tempfile
-import sys
+import io
 import unittest
 
 import numpy as np
 
 import dimod
+
 from dimod.serialization.fileview import FileView, load
 
+# use relative import to handle running tests from different places
+from .test_bqm import BQMTestCase, multitest
 
-class TestFileViewBase:
-    BQM = None   # this will be overwritten
 
-    def test_functional(self):
-        bqm = self.BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
-        bqm.offset = -1
+class TestFileView(BQMTestCase):
 
-        with FileView(bqm) as fp:
-            new = load(fp)
+    @multitest
+    def test_readall_dense(self, BQM):
+        # construct the bytes by hand
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
+        arr = np.triu(np.arange(4).reshape((2, 2)))
 
-    def test_functional_empty(self):
-        bqm = self.BQM('SPIN')
+        bqm = BQM(arr, 'BINARY')
+        bqm.offset = 17
 
-        with FileView(bqm) as fp:
-            new = load(fp)
+        fv = FileView(bqm)
 
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
+        b = fv.readall()
 
-    def test_functional_labelled(self):
-        bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        # offset
+        offset_bytes = bqm.dtype.type(17).tobytes()
 
-        with FileView(bqm) as fp:
-            new = load(fp)
+        self.assertEqual(b[fv.offset_start:fv.offset_end], offset_bytes)
 
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
+        # linear
+        ltype = np.dtype([('n', bqm.ntype), ('b', bqm.dtype)], align=False)
+        ldata = np.empty(2, dtype=ltype)
+        ldata['n'][0] = 0
+        ldata['n'][1] = 1
+        ldata['b'][0] = 0
+        ldata['b'][1] = 3
+        linear_bytes = ldata.tobytes()
 
-    def test_functional_labelled_shapeable(self):
-        if not self.BQM.shapeable():
-            raise unittest.SkipTest("test only applies to shapeable bqms")
+        self.assertEqual(b[fv.linear_start:fv.linear_end], linear_bytes)
 
-        bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
-        bqm.add_variable()
+        # quadratic
+        qtype = np.dtype([('v', bqm.itype), ('b', bqm.dtype)], align=False)
+        qdata = np.empty(2, dtype=qtype)
+        qdata['v'][0] = 1
+        qdata['v'][1] = 0
+        qdata['b'][0] = 1
+        qdata['b'][1] = 1
+        quadratic_bytes = qdata.tobytes()
 
-        with FileView(bqm) as fp:
-            new = load(fp)
+        self.assertEqual(b[fv.quadratic_start:fv.quadratic_end], quadratic_bytes)
 
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
+        # and finally check everything
+        self.assertEqual(fv.header + offset_bytes + linear_bytes + quadratic_bytes, b)
 
-    def test_readinto_linear_partial(self):
-        bqm = self.BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
+    # @multitest
+    # def test_functional(self, BQM):
+    #     bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
+    #     bqm.offset = -1
 
-        # the number of bytes we expect to get
-        num_bytes = len(bqm)*(bqm.ntype.itemsize+bqm.dtype.itemsize)
+    #     with FileView(bqm) as fp:
+    #         new = load(fp)
+
+    #     self.assertIs(type(new), type(bqm))
+    #     self.assertEqual(bqm, new)
+
+    # def test_functional_empty(self):
+    #     bqm = self.BQM('SPIN')
+
+    #     with FileView(bqm) as fp:
+    #         new = load(fp)
+
+    #     self.assertIs(type(new), type(bqm))
+    #     self.assertEqual(bqm, new)
+
+    # def test_functional_labelled(self):
+    #     bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+
+    #     with FileView(bqm) as fp:
+    #         new = load(fp)
+
+    #     self.assertIs(type(new), type(bqm))
+    #     self.assertEqual(bqm, new)
+
+    # def test_functional_labelled_shapeable(self):
+    #     if not self.BQM.shapeable():
+    #         raise unittest.SkipTest("test only applies to shapeable bqms")
+
+    #     bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+    #     bqm.add_variable()
+
+    #     with FileView(bqm) as fp:
+    #         new = load(fp)
+
+    #     self.assertIs(type(new), type(bqm))
+    #     self.assertEqual(bqm, new)
+
+    @multitest
+    def test_readinto(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
+
+        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
+        bqm.offset = 14
+
+        fv = FileView(bqm)
+
+        num_bytes = fv.quadratic_end
 
         # make a buffer that's a bit bigger
-        buff = bytearray(num_bytes+10)
+        buff = bytearray(num_bytes + 10)
 
-        # we expect that the buffer is filled to num_bytes
-        self.assertEqual(bqm.readinto_linear(buff), num_bytes)
+        self.assertEqual(fv.readinto(buff), num_bytes)
 
-        # check that all the sub-bytearrays starting from front match
-        for nb in range(1, num_bytes):
+        # reset and make sure that a total read it the same
+        fv.seek(0)
+        self.assertEqual(fv.read(), buff[:num_bytes])
+
+    @multitest
+    def test_readinto_partial_back_to_front(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
+
+        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
+        bqm.offset = 14
+
+        fv = FileView(bqm)
+
+        buff = fv.readall()
+
+        for pos in range(1, fv.quadratic_end):
+            fv.seek(-pos, io.SEEK_END)
+
+            subbuff = bytearray(pos)  # length pos
+
+            self.assertEqual(fv.readinto(subbuff), len(subbuff))
+            self.assertEqual(buff[-pos:], subbuff)
+
+    @multitest
+    def test_readinto_partial_front_to_back(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
+
+        bqm = BQM(np.triu(np.arange(9).reshape((3, 3))), 'BINARY')
+        bqm.offset = 14
+
+        fv = FileView(bqm)
+
+        buff = fv.readall()
+
+        for nb in range(fv.quadratic_end):
+            self.assertEqual(fv.seek(0), 0)
             subbuff = bytearray(nb)
-            num_read = bqm.readinto_linear(subbuff)
-            self.assertGreater(num_read, 0)
+            num_read = fv.readinto(subbuff)
+            self.assertEqual(num_read, nb)
             self.assertEqual(subbuff[:num_read], buff[:num_read])
 
-        # and starting from the back
-        for pos in range(num_bytes):
-            subbuff = bytearray(num_bytes)
-            num_read = bqm.readinto_linear(subbuff, pos=pos)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
+    @multitest
+    def test_readinto_partial_sliding1(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-        # sliding 1
-        for pos in range(num_bytes):
+        bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
+        bqm.offset = -6
+
+        fv = FileView(bqm)
+
+        buff = fv.readall()
+
+        for pos in range(fv.quadratic_end):
+            self.assertEqual(pos, fv.seek(pos))
             subbuff = bytearray(1)
-            num_read = bqm.readinto_linear(subbuff, pos=pos)
+            num_read = fv.readinto(subbuff)
             self.assertEqual(num_read, 1)
             self.assertEqual(subbuff, buff[pos:pos+num_read])
 
-        # sliding 7
-        for pos in range(num_bytes):
-            subbuff = bytearray(7)
-            num_read = bqm.readinto_linear(subbuff, pos=pos)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
+    @multitest
+    def test_readinto_partial_sliding17(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-        # sliding 17
-        for pos in range(num_bytes):
+        bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
+        bqm.offset = -6
+
+        fv = FileView(bqm)
+
+        buff = fv.readall()
+
+        for pos in range(fv.quadratic_end):
+            self.assertEqual(pos, fv.seek(pos))
             subbuff = bytearray(17)
-            num_read = bqm.readinto_linear(subbuff, pos=pos)
+            num_read = fv.readinto(subbuff)
             self.assertGreater(num_read, 0)
             self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
-
-    def test_readinto_quadratic_partial(self):
-        bqm = self.BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
-
-        # the number of bytes we expect to get
-        num_bytes = 2*bqm.num_interactions*(bqm.itype.itemsize+bqm.dtype.itemsize)
-
-        # make a buffer that's a bit bigger
-        buff = bytearray(num_bytes+10)
-
-        # we expect that the buffer is filled to num_bytes
-        self.assertEqual(bqm.readinto_quadratic(buff), num_bytes)
-
-        # check that all the sub-bytearrays starting from front match
-        for nb in range(1, num_bytes):
-            subbuff = bytearray(nb)
-            num_read = bqm.readinto_quadratic(subbuff)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[:num_read])
-
-        # and starting from the back
-        for pos in range(num_bytes):
-            subbuff = bytearray(num_bytes)
-            num_read = bqm.readinto_quadratic(subbuff, pos=pos)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
-
-        # sliding 1
-        for pos in range(num_bytes):
-            subbuff = bytearray(1)
-            num_read = bqm.readinto_quadratic(subbuff, pos=pos)
-            self.assertEqual(num_read, 1)
-            self.assertEqual(subbuff, buff[pos:pos+num_read])
-
-        # sliding 7
-        for pos in range(num_bytes):
-            subbuff = bytearray(7)
-            num_read = bqm.readinto_quadratic(subbuff, pos=pos)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
-
-        # sliding 17
-        for pos in range(num_bytes):
-            subbuff = bytearray(17)
-            num_read = bqm.readinto_quadratic(subbuff, pos=pos)
-            self.assertGreater(num_read, 0)
-            self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
-
-
-class TestFileViewAdjArrayBQM(TestFileViewBase, unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        if sys.version_info.major == 2 or sys.version_info.minor < 5:
-            raise unittest.SkipTest("Not supported in Python <= 3.5")
-
-        from dimod.bqm import AdjArrayBQM
-
-        cls.BQM = AdjArrayBQM
-
-
-# class TestFileViewAdjDictBQM(TestFileViewBase, unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         from dimod.bqm import AdjDictBQM
-
-#         cls.BQM = AdjDictBQM
-
-
-# class TestFileViewAdjMapBQM(TestFileViewBase, unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         if sys.version_info.major == 2 or sys.version_info.minor < 5:
-#             raise unittest.SkipTest("Not supported in Python <= 3.5")
-
-#         from dimod.bqm import AdjMapBQM
-
-#         cls.BQM = AdjMapBQM
-
-
-# class TestFileViewAdjVectorBQM(TestFileViewBase, unittest.TestCase):
-#     @classmethod
-#     def setUpClass(cls):
-#         if sys.version_info.major == 2 or sys.version_info.minor < 5:
-#             raise unittest.SkipTest("Not supported in Python <= 3.5")
-
-#         from dimod.bqm import AdjVectorBQM
-
-#         cls.BQM = AdjVectorBQM
