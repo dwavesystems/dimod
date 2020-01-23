@@ -21,7 +21,10 @@ import numpy as np
 from dimod.bqm.utils import ilinear_biases, ineighborhood
 
 
-# todo: implement some of our own seeks, SEEK_OFFSET, SEEK_LINEAR, SEEK_QUADRATIC
+# we try to pick values much higher than io's
+SEEK_OFFSET = 100
+SEEK_LINEAR = 101
+SEEK_QUADRATIC = 102
 
 
 class FileView(io.RawIOBase):
@@ -70,6 +73,10 @@ class FileView(io.RawIOBase):
 
     MAGIC_PREFIX = b'DIMODBQM'
     VERSION = bytes([1, 0])  # version 1.0
+
+    SEEK_OFFSET = SEEK_OFFSET
+    SEEK_LINEAR = SEEK_LINEAR
+    SEEK_QUADRATIC = SEEK_QUADRATIC
 
     def __init__(self, bqm):
         super(FileView, self).__init__()
@@ -291,7 +298,12 @@ class FileView(io.RawIOBase):
                 The offset relative to `whence`.
 
             whence (int):
-                See :mod:`io` for a description of the different seek locations.
+                In addition to values for whence provided in the :mod:`io`
+                module, additional values for whence are:
+
+                    * SEEK_OFFSET or 100 - the start of the offset data
+                    * SEEK_LINEAR or 101 - the start of the linear data
+                    * SEEK_QUADRATIC or 102 - the start of the quadratic data
 
         Returns:
             The new stream position.
@@ -303,6 +315,12 @@ class FileView(io.RawIOBase):
             self.pos += offset
         elif whence == io.SEEK_END:
             self.pos = self.quadratic_end + offset
+        elif whence == SEEK_OFFSET:
+            self.pos = self.offset_start + offset
+        elif whence == SEEK_LINEAR:
+            self.pos = self.linear_start + offset
+        elif whence == SEEK_QUADRATIC:
+            self.pos = self.quadratic_start + offset
         else:
             raise ValueError("unknown value for 'whence'")
         return self.pos
