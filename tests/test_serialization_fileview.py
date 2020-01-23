@@ -74,47 +74,66 @@ class TestFileView(BQMTestCase):
         # and finally check everything
         self.assertEqual(fv.header + offset_bytes + linear_bytes + quadratic_bytes, b)
 
-    # @multitest
-    # def test_functional(self, BQM):
-    #     bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
-    #     bqm.offset = -1
+    @multitest
+    def test_functional(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-    #     with FileView(bqm) as fp:
-    #         new = load(fp)
+        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
+        bqm.offset = -1
 
-    #     self.assertIs(type(new), type(bqm))
-    #     self.assertEqual(bqm, new)
+        with FileView(bqm) as fp:
+            new = load(fp)
 
-    # def test_functional_empty(self):
-    #     bqm = self.BQM('SPIN')
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
 
-    #     with FileView(bqm) as fp:
-    #         new = load(fp)
+    @multitest
+    def test_functional_empty(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-    #     self.assertIs(type(new), type(bqm))
-    #     self.assertEqual(bqm, new)
+        bqm = BQM('SPIN')
 
-    # def test_functional_labelled(self):
-    #     bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        with FileView(bqm) as fp:
+            new = load(fp)
 
-    #     with FileView(bqm) as fp:
-    #         new = load(fp)
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
 
-    #     self.assertIs(type(new), type(bqm))
-    #     self.assertEqual(bqm, new)
+    @multitest
+    def test_functional_labelled(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
 
-    # def test_functional_labelled_shapeable(self):
-    #     if not self.BQM.shapeable():
-    #         raise unittest.SkipTest("test only applies to shapeable bqms")
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
 
-    #     bqm = self.BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
-    #     bqm.add_variable()
+        with FileView(bqm) as fp:
+            new = load(fp)
 
-    #     with FileView(bqm) as fp:
-    #         new = load(fp)
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
 
-    #     self.assertIs(type(new), type(bqm))
-    #     self.assertEqual(bqm, new)
+    @multitest
+    def test_functional_labelled_shapeable(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
+
+        if not BQM.shapeable():
+            raise unittest.SkipTest("test only applies to shapeable bqms")
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        bqm.add_variable()
+
+        with FileView(bqm) as fp:
+            new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
 
     @multitest
     def test_readinto(self, BQM):

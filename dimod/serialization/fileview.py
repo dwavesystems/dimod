@@ -263,8 +263,8 @@ class FileView(io.RawIOBase):
             # which pair (in the concatenated neighborhoods) we're on
             pair_idx = qpos // quadratic_itemsize
 
-            # use the pair to figure out which variable we're on
-            # print(self.neighborhood_starts)
+            # use the pair to figure out which variable we're on. In practice
+            # pair_idx is often 0 which makes this fast.
             vi = np.searchsorted(self.neighborhood_starts, pair_idx, side='right') - 1
 
             # use the variable and the pair_idx to determine which pair within
@@ -456,7 +456,7 @@ def load(fp, cls=None):
 
     data = json.loads(header_data.decode('ascii'))
 
-    from dimod.bqm import AdjArrayBQM, AdjDictBQM, AdjMapBQM, AdjVectorBQM
+    from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
 
     if cls is None:
         cls = locals().get(data['type'])
