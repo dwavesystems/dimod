@@ -1,6 +1,3 @@
-# distutils: language = c++
-# cython: language_level=3
-#
 # Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,14 +18,214 @@ import json
 
 import numpy as np
 
-try:
-    from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
-except ImportError:
-    pass  # not available in python < 3.5
-from dimod.bqm import AdjDictBQM  # should always be available
+from dimod.bqm.utils import ilinear_biases, ineighborhood
+
+
+# todo: implement some of our own seeks, SEEK_OFFSET, SEEK_LINEAR, SEEK_QUADRATIC
 
 
 class FileView(io.RawIOBase):
+
+    # developer note: we use RawIOBase with an "extra" implemented readinto1
+    # because the BufferedIOBase's stub methods are `read1` and `read`, whereas
+    # for performance reasons, we want to implement `readinto1` and `readinto`.
+
+    MAGIC_PREFIX = b'DIMODBQM'
+    VERSION = bytes([1, 0])  # version 1.0
+
+    def __init__(self, bqm):
+        super(FileView, self).__init__()
+
+        self.bqm = bqm  # todo: increment viewcount
+        self.pos = 0
+
+        # the lengths of the various components
+        num_var, num_int = bqm.shape
+
+        self.offset_length = bqm.dtype.itemsize  # one bias
+        self.linear_length = num_var*(bqm.ntype.itemsize + bqm.dtype.itemsize)
+        self.quadratic_length = 2*num_int*(bqm.itype.itemsize + bqm.dtype.itemsize)
+
+    @property
+    def neighborhood_starts(self):
+        # lazy construction
+        try:
+            return self._neighborhood_starts
+        except AttributeError:
+            pass
+
+        bqm = self.bqm
+
+        starts = np.zeros(bqm.num_variables, dtype=bqm.ntype)
+
+        if bqm.num_variables:
+            starts[1:] = np.add.accumulate(bqm.degrees(array=True),
+                                           dtype=bqm.ntype)[:-1]
+
+        self._neighborhood_starts = starts
+
+        return self.neighborhood_starts
+
+    @property
+    def header(self):
+        """The header associated with the BQM."""
+        # lazy construction
+
+        try:
+            return self._header
+        except AttributeError:
+            pass
+
+        bqm = self.bqm
+        prefix = self.MAGIC_PREFIX
+        version = bytes([1, 0])  # version 1.0
+
+        data = dict(shape=bqm.shape,
+                    dtype=bqm.dtype.name,
+                    itype=bqm.itype.name,
+                    ntype=bqm.ntype.name,
+                    vartype=bqm.vartype.name,
+                    type=type(bqm).__name__,
+                    variables=list(bqm.variables),  # this is ordered
+                    )
+
+        header_data = json.dumps(data, sort_keys=True).encode('ascii')
+        header_data += b'\n'
+
+        # whole header length should be divisible by 16
+        header_data += b' '*(16 - (len(prefix) +
+                                   len(version) +
+                                   4 +
+                                   len(header_data)) % 16)
+
+        header_len = np.dtype('<u4').type(len(header_data)).tobytes()
+
+        self._header = header = prefix + version + header_len + header_data
+
+        assert len(header) % 16 == 0  # sanity check
+
+        return self.header
+
+    @property
+    def header_end(self):
+        return len(self.header)
+
+    @property
+    def offset_start(self):
+        return self.header_end
+
+    @property
+    def offset_end(self):
+        return self.offset_start + self.offset_length
+
+    @property
+    def linear_start(self):
+        return self.offset_end
+
+    @property
+    def linear_end(self):
+        return self.linear_start + self.linear_length
+
+    @property
+    def quadratic_start(self):
+        return self.linear_end
+
+    @property
+    def quadratic_end(self):
+        return self.quadratic_start + self.quadratic_length
+
+    def close(self):
+        # todo: decrement viewcount
+        super(FileView, self).close()
+
+    def readinto(self, buff):
+
+        buff = memoryview(buff)  # we're going to be slicing
+
+        num_read = 0
+        while num_read < len(buff):
+            n = self.readinto1(buff[num_read:])
+            if n == 0:
+                break
+            num_read += n
+
+        return num_read
+
+    def readinto1(self, buff):
+
+        pos = self.pos
+        bqm = self.bqm
+
+        if pos < 0:
+            raise RuntimeError("invalid position")
+
+        elif pos < self.header_end:
+            # header
+            data = memoryview(self.header)[pos:]
+
+        elif pos < self.offset_end:
+            # offset
+            data = memoryview(bqm.offset.tobytes())[pos - self.offset_start:]
+
+        elif pos < self.linear_end:
+            # linear biases
+            ldata = ilinear_biases(bqm)
+            data = memoryview(ldata).cast('B')[pos - self.linear_start:]
+
+        elif pos < self.quadratic_end:
+            # quadratic biases
+
+            quadratic_itemsize = bqm.itype.itemsize + bqm.dtype.itemsize
+
+            # position relative to the start of the quadratic biases
+            qpos = pos - self.quadratic_start
+
+            # which pair (in the concatenated neighborhoods) we're on
+            pair_idx = qpos // quadratic_itemsize
+
+            # use the pair to figure out which variable we're on
+            # print(self.neighborhood_starts)
+            vi = np.searchsorted(self.neighborhood_starts, pair_idx, side='right') - 1
+
+            # use the variable and the pair_idx to determine which pair within
+            # the neighborhood we're on
+            ni = pair_idx - int(self.neighborhood_starts[vi])
+
+            start = ni * quadratic_itemsize + qpos % quadratic_itemsize
+
+            qdata = ineighborhood(bqm, vi)
+
+            data = memoryview(qdata).cast('B')[start:]
+
+        else:
+            data = bytes()
+
+        num_bytes = min(len(buff), len(data))
+        buff[:num_bytes] = data[:num_bytes]
+
+        self.pos += num_bytes
+
+        return num_bytes
+
+    def readable(self):
+        return True
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        if whence == io.SEEK_SET:
+            self.pos = offset
+        elif whence == io.SEEK_CUR:
+            self.pos += offset
+        elif whence == io.SEEK_END:
+            self.pos = self.quadratic_end + offset
+        else:
+            raise ValueError("unknown value for 'whence'")
+        return self.pos
+
+    def seekable(self):
+        return True
+
+
+class _FileView(io.RawIOBase):
     """A seekable, readable view into a binary quadratic model.
 
     Format specification:
@@ -74,7 +271,7 @@ class FileView(io.RawIOBase):
     VERSION = bytes([1, 0])  # version 1.0
 
     def __init__(self, bqm):
-        super(FileView, self).__init__()
+        super(_FileView, self).__init__()
 
         self.bqm = bqm  # todo: increment viewcount
         self.pos = 0
@@ -122,7 +319,7 @@ class FileView(io.RawIOBase):
 
     def close(self):
         # todo: decrement viewcount
-        super(FileView, self).close()
+        super(_FileView, self).close()
 
     def _readinto_header(self, buff, pos):
         header = self.header
@@ -304,11 +501,12 @@ def load(fp, cls=None):
     magic = fp.read(len(FileView.MAGIC_PREFIX))
 
     if magic != FileView.MAGIC_PREFIX:
-        raise NotImplementedError
+        # todo: expand on error message (print actual magic prefix)
+        raise ValueError("unknown file type")
 
     version = fp.read(len(FileView.VERSION))
     if version != FileView.VERSION:
-        raise NotImplementedError
+        raise ValueError("Given serialization does not have a matching version")
 
     # next get the header
     header_len = np.frombuffer(fp.read(4), '<u4')[0]
@@ -316,8 +514,10 @@ def load(fp, cls=None):
 
     data = json.loads(header_data.decode('ascii'))
 
+    from dimod.bqm import AdjArrayBQM, AdjDictBQM, AdjMapBQM, AdjVectorBQM
+
     if cls is None:
-        cls = globals().get(data['type'])
+        cls = locals().get(data['type'])
 
     offset = len(FileView.MAGIC_PREFIX) + len(FileView.VERSION) + 4 + header_len
 
