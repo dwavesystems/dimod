@@ -611,6 +611,79 @@ cdef class cyAdj@name@BQM:
 
     # todo: overwrite degrees
 
+    @classmethod
+    def _load(cls, fp, data, offset=0):
+        """This method is used by :func:`.load` and should not be invoked
+        directly.
+
+        `fp` must be readable and seekable.
+
+        `offset` should point to the start of the offset data.
+        """
+        fp.seek(offset, 0)
+
+        # these are the vartypes used to encode
+        dtype = np.dtype(data['dtype'])
+        itype = np.dtype(data['itype'])  # variable index type
+        ntype = np.dtype(data['ntype'])  # index of neighborhood type
+
+        cdef Py_ssize_t num_var = data['shape'][0]
+        cdef Py_ssize_t num_int = data['shape'][1]
+
+        # make the bqm with the right number of variables and outvars
+        cdef cyAdj@name@BQM bqm = cls(num_var, data['vartype'])
+
+        # set the labels, skipping over the redundant ones
+        for vi, v in enumerate(data['variables']):
+            if vi != v:
+                bqm._label_to_idx[v] = vi
+                bqm._idx_to_label[vi] = v
+
+        # offset, using the vartype it was encoded with
+        bqm.offset_ = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
+
+        # linear
+        # annoyingly this does two copies, one into the bytes object returned
+        # by read, the other into the array. We could potentially get around
+        # this by using readinto and providing the bytesarray, then passing that
+        # into np.asarray()
+        # TODO: bug, read might actually return fewer bytes
+        ldata = np.frombuffer(fp.read(num_var*(ntype.itemsize + dtype.itemsize)),
+                              dtype=np.dtype([('nidx', ntype), ('bias', dtype)]))
+
+        # and using the dtypes of the bqm. If they match, this is luckily not a
+        # copy! Numpy is cool
+        cdef const Bias[:] lbiases = np.asarray(ldata['bias'], dtype=bqm.dtype)
+        cdef const NeighborhoodIndex[:] nidxs = np.asarray(ldata['nidx'],
+                                                           dtype=bqm.ntype)
+
+        cdef VarIndex ui
+        cdef Py_ssize_t nstart, nend, num_bytes, i
+        cdef const Bias[:] qbiases
+        cdef const VarIndex[:] outvars
+        for ui in range(num_var):
+            set_linear(bqm.adj_, ui, <Bias>lbiases[ui])
+
+            nstart = nidxs[ui]
+            nend = nidxs[ui+1] if ui < num_var-1 else 2*num_int
+
+            num_bytes = (nend-nstart)*(itype.itemsize+dtype.itemsize)
+
+            qdata = np.frombuffer(fp.read(num_bytes),
+                                  dtype=np.dtype([('outvar', itype),
+                                                  ('bias', dtype)]))
+
+            # convert to the correct vartypes, not a copy if they match
+            outvars = np.asarray(qdata['outvar'], dtype=bqm.itype)
+            qbiases = np.asarray(qdata['bias'], dtype=bqm.dtype)
+
+            for i in range(outvars.shape[0]):
+                bqm.adj_[ui].first.insert(bqm.adj_[ui].first.end(),
+                                          pair[VarIndex, Bias](outvars[i], qbiases[i]))
+
+        return bqm
+
+
     def remove_interaction(self, object u, object v):
         """Remove the interaction between variables u and v.
 
