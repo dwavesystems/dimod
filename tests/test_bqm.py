@@ -19,7 +19,6 @@ Generic dimod/bqm tests.
 To run these tests for all bqms, you need to run them on the various adj
 files AND this file, e.g. `python -m unittest tests/test_adj* tests/test_bqm.py`
 """
-import contextlib
 import itertools
 import unittest
 
@@ -388,6 +387,32 @@ class TestConstruction(BQMTestCase):
         self.assertEqual(lbqm.adj, new.adj)
         self.assertEqual(lbqm.offset, new.offset)
         self.assertEqual(lbqm.vartype, new.vartype)
+
+    @multitest
+    def test_linear_array_quadratic_array(self, BQM):
+        h = [1, 2, 3, 4, 5]
+        J = np.zeros((5, 5))
+        bqm = BQM(h, J, 1.2, 'SPIN')
+
+        self.assertEqual(bqm.linear, {v: v+1 for v in range(5)})
+        self.assertEqual(bqm.quadratic, {})
+        self.assertEqual(bqm.offset, 1.2)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    @multitest
+    def test_linear_array_quadratic_dict(self, BQM):
+        h = [1, 2, 3, 4, 5]
+        J = {'ab': -1}
+        bqm = BQM(h, J, 1.2, 'SPIN')
+
+        htarget = {v: v+1 for v in range(5)}
+        htarget.update(a=0, b=0)
+        adj_target = {v: {} for v in range(5)}
+        adj_target.update(a=dict(b=-1), b=dict(a=-1))
+        self.assertEqual(bqm.linear, htarget)
+        self.assertEqual(bqm.adj, adj_target)
+        self.assertEqual(bqm.offset, 1.2)
+        self.assertIs(bqm.vartype, dimod.SPIN)
 
     @multitest
     def test_quadratic_only(self, BQM):
