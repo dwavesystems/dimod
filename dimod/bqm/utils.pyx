@@ -24,7 +24,7 @@ import dimod
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common import itype, dtype
 from dimod.bqm.common cimport Bias, VarIndex
-from dimod.bqm.cppbqm cimport get_linear, neighborhood
+from dimod.bqm.cppbqm cimport degree, get_linear, neighborhood, num_variables
 
 cdef extern from "numpy/arrayobject.h":
     # The comment in
@@ -207,3 +207,73 @@ def cyrelabel(cyBQM bqm, mapping, inplace=True):
                 bqm._idx_to_label.pop(vi, None)  # remove old reference
 
     return bqm
+
+
+@cython.boundscheck
+@cython.wraparound
+def ilinear_biases(cyBQM bqm):
+    """Get the linear biases as well as the neighborhood indices."""
+
+    cdef Py_ssize_t numvar = num_variables(bqm.adj_)
+
+    dtype = np.dtype([('ni', bqm.ntype), ('b', bqm.dtype)], align=False)
+    ldata = np.empty(numvar, dtype=dtype)
+
+    if numvar == 0:
+        return ldata
+
+    # if in the future the BQM does not have fixed dtypes, these will error
+    cdef size_t[:] neighbors_view = ldata['ni']
+    cdef Bias[:] bias_view = ldata['b']
+
+    neighbors_view[0] = 0
+
+    cdef VarIndex vi
+    for vi in range(numvar):
+        if vi + 1 < numvar:
+            neighbors_view[vi + 1] = neighbors_view[vi] + degree(bqm.adj_, vi)
+
+        bias_view[vi] = get_linear(bqm.adj_, vi)
+
+    return ldata
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def ineighborhood(cyBQM bqm, VarIndex ui):
+    """Get the neighborhood (as a struct array) of variable ui.
+
+    Note that this function is in terms of the underlying index, NOT the
+    labels.
+
+    Returns:
+        A numpy struct array with two fields, `'vi'` corresponding to the
+        neighbours of `ui` and `'b'` corresponding to their associated
+        quadratic biases.
+
+    """
+
+    if ui >= num_variables(bqm.adj_):
+        raise ValueError("out of range variable, {!r}".format(ui))
+
+    cdef Py_ssize_t d = degree(bqm.adj_, ui)
+
+    dtype = np.dtype([('ui', bqm.itype), ('b', bqm.dtype)], align=False)
+    neighbors = np.empty(d, dtype=dtype)
+
+    # if in the future the BQM does not have fixed dtypes, these will error
+    cdef VarIndex[:] index_view = neighbors['ui']
+    cdef Bias[:] bias_view = neighbors['b']
+
+    span = neighborhood(bqm.adj_, ui)
+
+    cdef Py_ssize_t i = 0
+    while span.first != span.second:
+
+        index_view[i] = deref(span.first).first
+        bias_view[i] = deref(span.first).second
+
+        i += 1
+        inc(span.first)
+
+    return neighbors
