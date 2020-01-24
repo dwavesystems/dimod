@@ -11,7 +11,7 @@ It provides useful functionality for working with these models and samplers;
 for example :ref:`generators_dimod` to build BQMs and :ref:`utilities_dimod` for calculating the energy of a
 sample or serializing dimod objects.
 
-It includes reference :ref:`samplers` and :ref:`composites` for processing binary quadratic programs
+It includes reference :term:`sampler`\ s and :term:`composite`\ s for processing binary quadratic programs
 and refining sampling, and useful for testing your code during development.
 
 It also provides an :ref:`api` for constructing new samplers and composed samplers
