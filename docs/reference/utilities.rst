@@ -1,4 +1,4 @@
-.. _utilities:
+.. _utilities_dimod:
 
 =========
 Utilities

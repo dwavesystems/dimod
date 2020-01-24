@@ -8,7 +8,7 @@ as described in :std:doc:`Solving Problems on a D-Wave System <oceandocs:overvie
 by samplers such as the D-Wave system.
 
 It provides useful functionality for working with these models and samplers;
-for example :ref:`generators` to build BQMs and :ref:`utilities` for calculating the energy of a
+for example :ref:`generators_dimod` to build BQMs and :ref:`utilities_dimod` for calculating the energy of a
 sample or serializing dimod objects.
 
 It includes reference :ref:`samplers` and :ref:`composites` for processing binary quadratic programs
