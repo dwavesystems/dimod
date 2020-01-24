@@ -28,7 +28,7 @@ methods such as branch-and-bound to reduce the number of variables. The followin
 illustrative example reduces an Ising model for a small problem (the K4 complete graph),
 and converts the reduced-variables model to QUBO formulation.
 
-.. [#] Ocean software's :std:doc:`D-Wave Hybrid <hybrid:index>` provides tools for
+.. [#] Ocean software's :std:doc:`D-Wave Hybrid <oceandocs:docs_hybrid/index>` provides tools for
    decomposing large problems.
 
 .. code-block:: python
