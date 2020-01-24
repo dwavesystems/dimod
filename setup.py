@@ -70,12 +70,12 @@ else:
 ext = '.pyx' if USE_CYTHON else '.cpp'
 
 extra_compile_args = {
-    'msvc': ['/std:c++latest', '/EHsc'],
+    'msvc': ['/std:c++latest', '/EHsc', '/d2FH4-'],
     'unix': ['-std=c++11'],
 }
 
 extra_link_args = {
-    'msvc': [],
+    'msvc': ['/d2FH4-'],
     'unix': ['-std=c++11'],
 }
 
