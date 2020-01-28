@@ -160,6 +160,7 @@ jobs:
 
     environment:
       PYTHON: 3.8.0
+      CL: /d2FH4-
 
     working_directory: ~/repo
 
@@ -202,7 +203,7 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
-            $env:CL+='-Iboost\lib\native\include\'
+            $env:CL+=' -Iboost\lib\native\include\'
             python setup.py bdist_wheel
 
       - store_artifacts:
@@ -253,21 +254,25 @@ jobs:
     <<: *win-tests-template
     environment:
       PYTHON: 3.7.5
+      CL: /d2FH4-
 
   test-win-py37x86:
     <<: *win-tests-template-x86
     environment:
       PYTHON: 3.7.5
+      CL: /d2FH4-
 
   test-win-py36:
     <<: *win-tests-template
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   test-win-py36x86:
     <<: *win-tests-template-x86
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   test-win-py35:
     <<: *win-tests-template
@@ -514,21 +519,25 @@ jobs:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.7.0
+      CL: /d2FH4-
 
   deploy-win-py37x86:
     <<: *win-deploy-template-x86
     environment:
       PYTHON: 3.7.0
+      CL: /d2FH4-
 
   deploy-win-py36:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   deploy-win-py36x86:
     <<: *win-deploy-template-x86
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   deploy-win-py35:
     <<: *win-deploy-template
