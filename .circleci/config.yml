@@ -202,7 +202,7 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
-            $env:CL='-Iboost\lib\native\include\'
+            $env:CL+='-Iboost\lib\native\include\'
             python setup.py bdist_wheel
 
       - store_artifacts:
