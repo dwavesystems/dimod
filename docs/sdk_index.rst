@@ -4,7 +4,7 @@
 dimod
 =====
 
-.. include:: /readmes/dimod.rst
+.. include:: README.rst
    :start-after: index-start-marker1
    :end-before: index-end-marker1
 
