@@ -23,6 +23,82 @@ import itertools
 import dimod
 
 from dimod import ising_to_qubo, qubo_to_ising, ising_energy, qubo_energy
+from dimod.exceptions import WriteableError
+from dimod.utilities import LockableDict
+
+
+class TestLockableDict(unittest.TestCase):
+
+    def test__setitem__(self):
+        d = LockableDict({'a': -1})
+
+        d.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            d['a'] = 5
+
+    def test__delitem__(self):
+        d = LockableDict({'a': -1})
+
+        d.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            del d['a']
+
+    def test_clear(self):
+        d = LockableDict({'a': -1})
+        d.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            d.clear()
+
+        d.is_writeable = True
+        d.clear()
+        self.assertEqual(d, {})
+
+    def test_pop(self):
+        d = LockableDict({'a': -1})
+        self.assertEqual(d.pop('a'), -1)
+
+    def test_pop_locked(self):
+        d = LockableDict({'a': -1})
+        d.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            d.pop('a')
+
+    def test_popitem(self):
+        d = LockableDict({'a': -1, 'b': 2})
+
+        d.popitem()
+        self.assertEqual(len(d), 1)
+
+        d.is_writeable = False
+
+        with self.assertRaises(WriteableError):
+            d.popitem()
+
+    def test_setdefault(self):
+        d = LockableDict()
+
+        d.setdefault('a')
+        self.assertEqual(d.setdefault('b', 5), 5)
+        self.assertEqual(d, {'a': None, 'b': 5})
+
+        d.is_writeable = False
+        with self.assertRaises(WriteableError):
+            d.setdefault('c', None)
+
+    def test_update(self):
+        d = LockableDict()
+
+        # check that it works normally
+        d.update({'a': 1})
+        self.assertEqual(d, {'a': 1})
+
+        d.is_writeable = False
+        with self.assertRaises(WriteableError):
+            d.update({'b': -1})
 
 
 class TestIsingEnergy(unittest.TestCase):

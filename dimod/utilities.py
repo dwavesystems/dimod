@@ -423,11 +423,11 @@ class LockableDict(dict):
 
     @lockable_method
     def __setitem__(self, key, value):
-        super(LockableDict, self).__setitem__(key, value)
+        return super(LockableDict, self).__setitem__(key, value)
 
     @lockable_method
     def __delitem__(self, key):
-        super(LockableDict, self).__delitem__(key)
+        return super(LockableDict, self).__delitem__(key)
 
     def __deepcopy__(self, memo):
         new = type(self)()
@@ -439,20 +439,20 @@ class LockableDict(dict):
 
     @lockable_method
     def clear(self):
-        super(LockableDict, self).clear()
+        return super(LockableDict, self).clear()
 
     @lockable_method
     def pop(self, *args, **kwargs):
-        super(LockableDict, self).pop(*args, **kwargs)
+        return super(LockableDict, self).pop(*args, **kwargs)
 
     @lockable_method
     def popitem(self):
-        super(LockableDict, self).popitem()
+        return super(LockableDict, self).popitem()
 
     @lockable_method
     def setdefault(self, *args, **kwargs):
-        super(LockableDict, self).setdefault(*args, **kwargs)
+        return super(LockableDict, self).setdefault(*args, **kwargs)
 
     @lockable_method
     def update(self, *args, **kwargs):
-        super(LockableDict, self).update(*args, **kwargs)
+        return super(LockableDict, self).update(*args, **kwargs)

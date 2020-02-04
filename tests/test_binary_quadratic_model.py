@@ -32,7 +32,6 @@ import numpy as np
 import dimod
 
 from dimod.exceptions import WriteableError
-from dimod.binary_quadratic_model import LockableDict
 
 try:
     import networkx as nx
@@ -45,76 +44,6 @@ try:
     _pandas = True
 except ImportError:
     _pandas = False
-
-
-class TestLockableDict(unittest.TestCase):
-
-    def test__setitem__(self):
-        d = LockableDict({'a': -1})
-
-        d.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            d['a'] = 5
-
-    def test__delitem__(self):
-        d = LockableDict({'a': -1})
-
-        d.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            del d['a']
-
-    def test_clear(self):
-        d = LockableDict({'a': -1})
-        d.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            d.clear()
-
-        d.is_writeable = True
-        d.clear()
-        self.assertEqual(d, {})
-
-    def test_pop(self):
-        d = LockableDict({'a': -1})
-        d.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            d.pop('a')
-
-    def test_popitem(self):
-        d = LockableDict({'a': -1, 'b': 2})
-
-        d.popitem()
-        self.assertEqual(len(d), 1)
-
-        d.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            d.popitem()
-
-    def test_setdefault(self):
-        d = LockableDict()
-
-        d.setdefault('a')
-        d.setdefault('b', 5)
-        self.assertEqual(d, {'a': None, 'b': 5})
-
-        d.is_writeable = False
-        with self.assertRaises(WriteableError):
-            d.setdefault('c', None)
-
-    def test_update(self):
-        d = LockableDict()
-
-        # check that it works normally
-        d.update({'a': 1})
-        self.assertEqual(d, {'a': 1})
-
-        d.is_writeable = False
-        with self.assertRaises(WriteableError):
-            d.update({'b': -1})
 
 
 class TestBinaryQuadraticModel(unittest.TestCase):
