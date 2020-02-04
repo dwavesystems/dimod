@@ -73,7 +73,7 @@ std::pair<typename std::vector<std::pair<VarIndex, Bias>>::const_iterator, bool>
     it = std::lower_bound(bqm[u].first.begin(), bqm[u].first.end(),
                           target, pair_lt<VarIndex, Bias>);
 
-    return std::make_pair(it, !(it == bqm[u].first.end() || (*it).first != v));
+    return std::make_pair(it, !(it == bqm[u].first.end() || it->first != v));
 }
 
 template<typename VarIndex, typename Bias>
@@ -103,7 +103,7 @@ void copy_bqm(BQM &bqm, AdjVectorBQM<VarIndex, Bias> &bqm_copy) {
 
     bqm_copy.resize(num_variables(bqm));
 
-    for (VarIndex v = 0; v < num_variables(bqm); v++) {
+    for (VarIndex v = 0; v < num_variables(bqm); ++v) {
         set_linear(bqm_copy, v, get_linear(bqm, v));
 
         // in case there is anything already in there
@@ -174,7 +174,7 @@ std::pair<Bias, bool> get_quadratic(const ShapeableBQM<Neighborhood, Bias> &bqm,
     if (it == bqm[u].first.end() || (*it).first != v)
         return std::make_pair(0, false);
 
-    return std::make_pair((*it).second, true);
+    return std::make_pair(it->second, true);
 }
 
 
@@ -229,9 +229,9 @@ void set_quadratic(AdjVectorBQM<VarIndex, Bias> &bqm,
     assert(u != v);
 
     auto vit = find_outvar(bqm[u].first, v);
-    bool uv_exists = !(vit == bqm[u].first.end() || (*vit).first != v);
+    bool uv_exists = !(vit == bqm[u].first.end() || vit->first != v);
     if (uv_exists) {
-        (*vit).second = b;
+        vit->second = b;
     } else {
         bqm[u].first.insert(vit, std::make_pair(v, b));
     }
@@ -239,7 +239,7 @@ void set_quadratic(AdjVectorBQM<VarIndex, Bias> &bqm,
     auto uit = find_outvar(bqm[v].first, u);
     bool vu_exists = !(uit == bqm[v].first.end() || (*uit).first != u);
     if (vu_exists) {
-        (*uit).second = b;
+        uit->second = b;
     } else {
         bqm[v].first.insert(uit, std::make_pair(u, b));
     }
@@ -299,12 +299,12 @@ bool remove_interaction(AdjVectorBQM<VarIndex, Bias> &bqm, VarIndex u, VarIndex 
     assert(u != v);
 
     auto vit = find_outvar(bqm[u].first, v);
-    bool uv_exists = !(vit == bqm[u].first.end() || (*vit).first != v);
+    bool uv_exists = !(vit == bqm[u].first.end() || vit->first != v);
     if (uv_exists) 
         bqm[u].first.erase(vit);
 
     auto uit = find_outvar(bqm[v].first, u);
-    bool vu_exists = !(uit == bqm[v].first.end() || (*uit).first != u);
+    bool vu_exists = !(uit == bqm[v].first.end() || uit->first != u);
     if (vu_exists) 
         bqm[v].first.erase(uit);
 
