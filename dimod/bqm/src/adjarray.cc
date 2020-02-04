@@ -55,8 +55,8 @@ std::pair<Bias, bool> get_quadratic(const AdjArrayBQM<VarIndex, Bias> &bqm,
 
     if (v < u) std::swap(u, v);
 
-    std::size_t start = bqm.first[u].first;
-    std::size_t end = bqm.first[u+1].first;  // safe if u < v and asserts above
+    auto start = bqm.first[u].first;
+    auto end = bqm.first[u+1].first;  // safe if u < v and asserts above
 
     const std::pair<VarIndex, Bias> target(v, 0);
 
@@ -66,7 +66,7 @@ std::pair<Bias, bool> get_quadratic(const AdjArrayBQM<VarIndex, Bias> &bqm,
 
     if (low == bqm.second.begin()+end)
         return std::make_pair(0, false);
-    return std::make_pair((*low).second, true);
+    return std::make_pair(low->second, true);
 }
 
 template<typename VarIndex, typename Bias>
@@ -145,7 +145,7 @@ bool set_quadratic(AdjArrayBQM<VarIndex, Bias> &bqm,
     if (low == bqm.second.begin()+end)
         return false;
 
-    (*low).second = b;
+    low->second = b;
 
     // interaction (v, u)
     start = bqm.first[v].first;
@@ -161,7 +161,7 @@ bool set_quadratic(AdjArrayBQM<VarIndex, Bias> &bqm,
                             u_target, pair_lt<VarIndex, Bias>);
 
     // we already know that this exists
-    (*low).second = b;
+    low->second = b;
 
     return true;
 }
@@ -175,7 +175,7 @@ void copy_bqm(BQM &bqm, AdjArrayBQM<VarIndex, Bias> &bqm_copy) {
     bqm_copy.first.reserve(num_variables(bqm));
     bqm_copy.second.reserve(2*num_interactions(bqm));  // O(|V|) for bqm
 
-    for (VarIndex v = 0; v < num_variables(bqm); v++) {
+    for (VarIndex v = 0; v < num_variables(bqm); ++v) {
         bqm_copy.first.push_back(std::pair<size_t, Bias>(bqm_copy.second.size(),
                                                          get_linear(bqm, v)));
 
