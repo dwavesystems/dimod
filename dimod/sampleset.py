@@ -292,15 +292,6 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     """
 
-    __slots__ = ('_info',
-                 '_future',
-                 '_record',
-                 '_result_hook',
-                 '_variables',
-                 '_vartype',
-                 '_writeable',
-                 )
-
     _REQUIRED_FIELDS = ['sample', 'energy', 'num_occurrences']
 
     ###############################################################################################
@@ -584,14 +575,11 @@ class SampleSet(abc.Iterable, abc.Sized):
         return (self.record.sample == other.record.sample[:, other_idx]).all()
 
     def __getstate__(self):
-        """Ensure that any futures are resolved before pickling."""
+        # Ensure that any futures are resolved before pickling.
         self.resolve()
-        return {attr: getattr(self, attr)
-                for attr in self.__slots__ if hasattr(self, attr)}
-
-    def __setstate__(self, state):
-        for attr, obj in state.items():
-            setattr(self, attr, obj)
+        # we'd prefer to do super().__getstate__ but unfortunately that's not
+        # present, so instead we recreate the (documented) behaviour
+        return self.__dict__
 
     def __repr__(self):
         return "{}({!r}, {}, {}, {!r})".format(self.__class__.__name__,
