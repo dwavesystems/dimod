@@ -269,14 +269,19 @@ cdef class cyAdj@name@BQM:
 
         return vi
 
-    def add_variable(self, object label=None):
+    def add_variable(self, object v=None, Bias bias=0.0):
         """Add a variable to the binary quadratic model.
 
         Args:
-            label (hashable, optional):
+            v (hashable, optional):
                 A label for the variable. Defaults to the length of the binary
                 quadratic model, if that label is available. Otherwise defaults
                 to the lowest available positive integer label.
+
+            bias (numeric, optional, default=0):
+                The initial bias value for the added variable. If `v` is already
+                a variable, then `bias` (if any) is adding to its existing
+                linear bias.
 
         Returns:
             hashable: The label of the added variable.
@@ -285,37 +290,31 @@ cdef class cyAdj@name@BQM:
             TypeError: If the label is not hashable.
 
         """
-        if label is None:
-            # if nothing has been overwritten we can go ahead and exit here
-            # this is not necessary but good for performance
-            if not self._label_to_idx:
-                return add_variable(self.adj_)
+        cdef VarIndex vi
 
-            label = num_variables(self.adj_)
+        if v is None:
+            # we're definitely adding a new variable
+            vi = add_variable(self.adj_)
+            v = vi  # python version
 
-            if self.has_variable(label):
-                # if the integer label already is taken, there must be a missing
+            if v in self._label_to_idx:
+                # the index is already in use, there must be a missing
                 # smaller integer we can use
-                for v in range(label):
-                    if not self.has_variable(v):
+                for v in range(v):
+                    if v not in self._label_to_idx:
                         break
-                label = v
-
         else:
             try:
-                self.label_to_idx(label)
+                vi = self.label_to_idx(v)
             except ValueError:
-                pass
-            else:
-                # it exists already
-                return label
+                # doesn't exist to make a new one and track it
+                vi = add_variable(self.adj_)
+                if vi != v:
+                    self._label_to_idx[v] = vi
+                    self._idx_to_label[vi] = v
 
-        cdef object vi = add_variable(self.adj_)
-        if vi != label:
-            self._label_to_idx[label] = vi
-            self._idx_to_label[vi] = label
-
-        return label
+        set_linear(self.adj_, vi, bias + get_linear(self.adj_, vi))
+        return v
 
     def iter_linear(self):
         # this should really be done with an iterator, but we don't have them
