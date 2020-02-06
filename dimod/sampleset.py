@@ -1456,7 +1456,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         vectors = {name: np.load(io.BytesIO(vector)) for name, vector in record.items()}
 
         # get the samples and unpack then
-        shape = obj['sample_shape']
+        shape = np.array(obj['sample_shape'],dtype=int)
         dtype = obj['sample_dtype']
         sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
 
