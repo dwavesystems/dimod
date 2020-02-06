@@ -208,14 +208,19 @@ class AdjDictBQM(ShapeableBQM):
         # so it's readonly
         return self._vartype
 
-    def add_variable(self, v=None):
+    def add_variable(self, v=None, bias=0.0):
         """Add a variable to the binary quadratic model.
 
         Args:
-            label (hashable, optional):
+            v (hashable, optional):
                 A label for the variable. Defaults to the length of the binary
                 quadratic model, if that label is available. Otherwise defaults
                 to the lowest available positive integer label.
+
+            bias (numeric, optional, default=0):
+                The initial bias value for the added variable. If `v` is already
+                a variable, then `bias` (if any) is adding to its existing
+                linear bias.
 
         Returns:
             hashable: The label of the added variable.
@@ -252,7 +257,7 @@ class AdjDictBQM(ShapeableBQM):
                     if not self.has_variable(v):
                         break
 
-        self._adj.setdefault(v, OrderedDict({v: 0.0}))
+        self._adj.setdefault(v, OrderedDict({v: 0.0}))[v] += bias
         return v
 
     def change_vartype(self, vartype, inplace=True):
