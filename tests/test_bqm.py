@@ -139,6 +139,29 @@ class TestAddVariable(BQMTestCase):
             bqm.add_variable([])
 
     @multitest
+    def test_bias_new_variable(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        bqm = BQM(dimod.BINARY)
+        bqm.add_variable(bias=5)
+
+        self.assertEqual(bqm.linear, {0: 5})
+
+        bqm.add_variable('a', -6)
+        self.assertEqual(bqm.linear, {0: 5, 'a': -6})
+
+    @multitest
+    def test_bias_additive(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        bqm = BQM(dimod.BINARY)
+        bqm.add_variable(bqm.add_variable(bias=3), 3)
+
+        self.assertEqual(bqm.linear, {0: 6})
+
+    @multitest
     def test_index_labelled(self, BQM):
         if not BQM.shapeable():
             raise unittest.SkipTest
