@@ -29,6 +29,12 @@ Documentation
   :Release: |version|
   :Date: |today|
 
+.. note:: This documentation is for the latest version of
+   `dimod <https://github.com/dwavesystems/dimod>`_.
+   Documentation for the version currently installed by
+   `dwave-ocean-sdk <https://github.com/dwavesystems/dwave-ocean-sdk>`_
+   is here: :std:doc:`dimod <oceandocs:docs_dimod/sdk_index>`.
+
 .. sdk-start-marker
 
 .. toctree::
