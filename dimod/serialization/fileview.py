@@ -19,6 +19,7 @@ import json
 import numpy as np
 
 from dimod.bqm.utils import ilinear_biases, ineighborhood
+from dimod.variables import iter_deserialize_variables
 
 
 # we try to pick values much higher than io's
@@ -455,6 +456,9 @@ def load(fp, cls=None):
     header_data = fp.read(header_len)
 
     data = json.loads(header_data.decode('ascii'))
+
+    # convert list-variable names to tuples (including nested)
+    data['variables'] = list(iter_deserialize_variables(data['variables']))
 
     from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
 

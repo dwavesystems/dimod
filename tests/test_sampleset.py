@@ -846,6 +846,17 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(sampleset, new)
 
+    def test_tuple_variable_labels_nested(self):
+        variables = [((0, 1), 0), (('a', (0, 'a')), 1), ("a", "b", 2)]
+        sampleset = dimod.SampleSet.from_samples(([], variables), dimod.BINARY,
+                                                 energy=[])
+
+        json_str = json.dumps(sampleset.to_serializable())
+
+        new = dimod.SampleSet.from_serializable(json.loads(json_str))
+
+        self.assertEqual(sampleset, new)
+
     def test_numpy_variable_labels(self):
         h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
              fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,

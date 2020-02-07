@@ -65,7 +65,7 @@ from dimod.serialization.utils import serialize_ndarrays, deserialize_ndarrays
 from dimod.utilities import LockableDict, iter_safe_relabels
 from dimod.views.bqm import LinearView, QuadraticView, AdjacencyView
 from dimod.views.samples import SampleView
-from dimod.variables import iter_serialize_variables
+from dimod.variables import iter_serialize_variables, iter_deserialize_variables
 from dimod.vartypes import Vartype
 
 __all__ = ['BinaryQuadraticModel', 'BQM']
@@ -1869,8 +1869,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             # from 2.0.0 to 3.0.0 the formatting of the bytes changed
             return cls._from_serializable_v2(obj)
 
-        variables = [tuple(v) if isinstance(v, list) else v
-                     for v in obj["variable_labels"]]
+        variables = tuple(iter_deserialize_variables(v))
 
         if obj["use_bytes"]:
             bias_dtype = np.dtype(obj['bias_type'])
