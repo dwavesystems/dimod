@@ -1869,7 +1869,7 @@ class BinaryQuadraticModel(abc.Sized, abc.Container, abc.Iterable):
             # from 2.0.0 to 3.0.0 the formatting of the bytes changed
             return cls._from_serializable_v2(obj)
 
-        variables = tuple(iter_deserialize_variables(v))
+        variables = tuple(iter_deserialize_variables(obj["variable_labels"]))
 
         if obj["use_bytes"]:
             bias_dtype = np.dtype(obj['bias_type'])
