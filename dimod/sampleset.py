@@ -40,7 +40,7 @@ from dimod.serialization.utils import (pack_samples,
                                        serialize_ndarrays,
                                        deserialize_ndarrays)
 from dimod.utilities import LockableDict
-from dimod.variables import Variables
+from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import Vartype
 from dimod.views.samples import SampleView, SamplesArray
 
@@ -1514,8 +1514,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         # other data
         vartype = str(obj['variable_type'])  # cast to str for python2
         num_variables = obj['num_variables']
-        variables = [tuple(v) if isinstance(v, list) else v
-                     for v in obj["variable_labels"]]
+        variables = list(iter_deserialize_variables(obj['variable_labels']))
         info = deserialize_ndarrays(obj['info'])
 
         # vectors

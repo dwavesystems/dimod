@@ -55,6 +55,15 @@ def iter_serialize_variables(variables):
             yield v
 
 
+def iter_deserialize_variables(variables):
+    # convert list back into tuples
+    for v in variables:
+        if isinstance(v, abc.Collection) and not isinstance(v, str):
+            yield tuple(iter_deserialize_variables(v))
+        else:
+            yield v
+
+
 class Variables(abc.Sequence, abc.Set):
     """set-like and list-like variable tracking.
 

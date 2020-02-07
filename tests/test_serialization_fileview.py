@@ -237,3 +237,16 @@ class TestFileView(BQMTestCase):
             num_read = fv.readinto(subbuff)
             self.assertGreater(num_read, 0)
             self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
+
+    @multitest
+    def test_unhashable_variables(self, BQM):
+        if issubclass(BQM, dimod.AdjDictBQM):
+            # not (yet) implemented for non cybqms
+            return
+
+        bqm = BQM({(0, 1): 1}, {}, 'SPIN')
+
+        with FileView(bqm) as fv:
+            new = load(fv)
+
+        self.assertEqual(new, bqm)
