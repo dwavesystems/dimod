@@ -1,4 +1,4 @@
-.. _generators:
+.. _generators_dimod:
 
 ==============
 BQM Generators

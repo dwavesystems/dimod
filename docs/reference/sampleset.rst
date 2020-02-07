@@ -8,7 +8,7 @@ dimod :term:`sampler`\ s sample from a problem's :term:`objective function`, suc
 as a BQM, and return an iterable of samples contained in a :class:`.SampleSet` class.
 In addition to containing the returned solutions and some additional
 information, and providing methods to work with the solutions, :class:`.SampleSet`
-is also used, for example, by :std:doc:`dwave-hybrid <hybrid:index>`,
+is also used, for example, by :std:doc:`dwave-hybrid <oceandocs:docs_hybrid/sdk_index>`,
 which iterates sets of samples through samplers to solve arbitrary QUBOs. dimod
 provides functionality for creating and manipulating samples.
 

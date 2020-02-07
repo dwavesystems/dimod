@@ -1,8 +1,12 @@
-.. _sdk_index:
+.. _sdk_index_dimod:
 
 =====
 dimod
 =====
+
+.. include:: README.rst
+   :start-after: index-start-marker1
+   :end-before: index-end-marker1
 
 .. include:: index.rst
    :start-after: sdk-start-marker

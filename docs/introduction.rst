@@ -8,10 +8,10 @@ as described in :std:doc:`Solving Problems on a D-Wave System <oceandocs:overvie
 by samplers such as the D-Wave system.
 
 It provides useful functionality for working with these models and samplers;
-for example :ref:`generators` to build BQMs and :ref:`utilities` for calculating the energy of a
+for example :ref:`generators_dimod` to build BQMs and :ref:`utilities_dimod` for calculating the energy of a
 sample or serializing dimod objects.
 
-It includes reference :ref:`samplers` and :ref:`composites` for processing binary quadratic programs
+It includes reference :term:`sampler`\ s and :term:`composite`\ s for processing binary quadratic programs
 and refining sampling, and useful for testing your code during development.
 
 It also provides an :ref:`api` for constructing new samplers and composed samplers
@@ -28,7 +28,7 @@ methods such as branch-and-bound to reduce the number of variables. The followin
 illustrative example reduces an Ising model for a small problem (the K4 complete graph),
 and converts the reduced-variables model to QUBO formulation.
 
-.. [#] Ocean software's :std:doc:`D-Wave Hybrid <hybrid:index>` provides tools for
+.. [#] Ocean software's :std:doc:`D-Wave Hybrid <oceandocs:docs_hybrid/sdk_index>` provides tools for
    decomposing large problems.
 
 .. code-block:: python

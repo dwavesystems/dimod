@@ -1,12 +1,10 @@
 ..  -*- coding: utf-8 -*-
 
-.. _contents:
-
 =====
 dimod
 =====
 
-.. include:: ../README.rst
+.. include:: README.rst
   :start-after: index-start-marker1
   :end-before: index-end-marker1
 
@@ -17,7 +15,7 @@ The QUBO form, :math:`\text{E}(a_i, b_{i,j}; q_i) = -q_1 -q_2 + 2q_1 q_2`,
 is related to the Ising form, :math:`\text{E}(h_i, j_{i,j}; s_i) = \frac{1}{2}(s_1s_2-1)`,
 via the simple manipulation :math:`s_i=2q_i-1`.
 
-.. include:: ../README.rst
+.. include:: README.rst
   :start-after: index-start-marker2
   :end-before: index-end-marker2
 

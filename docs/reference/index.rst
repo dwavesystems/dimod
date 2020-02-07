@@ -1,4 +1,4 @@
-.. _reference:
+.. _reference_dimod:
 
 Reference Documentation
 ***********************
