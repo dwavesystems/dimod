@@ -227,6 +227,28 @@ class TestAddVariablesFrom(BQMTestCase):
         self.assertEqual(bqm.linear, {'a': -.5, 'b': 2.5, 'c': 4})
 
 
+class TestAddInteractionsFrom(BQMTestCase):
+    @multitest
+    def test_iterable(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        bqm = BQM(dimod.SPIN)
+        bqm.add_interactions_from({('a', 'b'): -.5})
+        self.assertEqual(bqm.adj, {'a': {'b': -.5},
+                                   'b': {'a': -.5}})
+
+    @multitest
+    def test_mapping(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        bqm = BQM(dimod.SPIN)
+        bqm.add_interactions_from([('a', 'b', -.5)])
+        self.assertEqual(bqm.adj, {'a': {'b': -.5},
+                                   'b': {'a': -.5}})
+
+
 class TestAsBQM(BQMTestCase):
     def test_basic(self):
         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
