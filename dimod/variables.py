@@ -48,7 +48,7 @@ def iter_serialize_variables(variables):
             yield float(v)
         elif isinstance(v, str):
             yield v
-        # we want Collection, but that's not available in py2.7
+        # we want Collection, but that's not available in py3.5
         elif isinstance(v, (abc.Sequence, abc.Set)):
             yield tuple(iter_serialize_variables(v))
         else:
@@ -58,7 +58,8 @@ def iter_serialize_variables(variables):
 def iter_deserialize_variables(variables):
     # convert list back into tuples
     for v in variables:
-        if isinstance(v, abc.Collection) and not isinstance(v, str):
+        # we want Collection, but that's not available in py3.5
+        if isinstance(v, (abc.Sequence, abc.Set)) and not isinstance(v, str):
             yield tuple(iter_deserialize_variables(v))
         else:
             yield v
