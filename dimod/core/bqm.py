@@ -421,14 +421,19 @@ class BQM(metaclass=abc.ABCMeta):
 
 class ShapeableBQM(BQM):
     @abc.abstractmethod
-    def add_variable(self, v=None):
+    def add_variable(self, v=None, bias=0):
         """Add a variable to the binary quadratic model.
 
         Args:
-            label (hashable, optional):
+            v (hashable, optional):
                 A label for the variable. Defaults to the length of the binary
                 quadratic model, if that label is available. Otherwise defaults
                 to the lowest available positive integer label.
+
+            bias (numeric, optional, default=0):
+                The initial bias value for the added variable. If `v` is already
+                a variable, then `bias` (if any) is adding to its existing
+                linear bias.
 
         Returns:
             hashable: The label of the added variable.
@@ -460,6 +465,28 @@ class ShapeableBQM(BQM):
     @property
     def quadratic(self):
         return ShapeableQuadratic(self)
+
+    def add_variables_from(self, linear):
+        """Add variables and/or linear biases to a binary quadratic model.
+
+        Args:
+            linear (dict/iterable):
+                A collection of variables in their associated linear biases.
+                If a dict, should be of the form `{v: bias, ...}` where `v` is
+                a variable and `bias` is its associated linear bias. Otherwise
+                should be an iterable of `(v, bias)` pairs.
+
+        """
+        if isinstance(linear, Mapping):
+            for v, bias in linear.items():
+                self.add_variable(v, bias)
+        else:
+            try:
+                for v, bias in linear:
+                    self.add_variable(v, bias)
+            except TypeError:
+                raise TypeError("expected 'linear' to be a dict or an iterable"
+                                " of 2-tuples.")
 
 
 # register the various objects with prettyprint
