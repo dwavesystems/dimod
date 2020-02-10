@@ -199,6 +199,34 @@ class TestAddVariable(BQMTestCase):
         self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
 
+class TestAddVariablesFrom(BQMTestCase):
+    @multitest
+    def test_iterable(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        # add from 2-tuples
+        bqm = BQM(dimod.SPIN)
+        bqm.add_variables_from(iter([('a', .5), ('b', -.5)]))
+
+        self.assertEqual(bqm.linear, {'a': .5, 'b': -.5})
+
+    @multitest
+    def test_mapping(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+
+        bqm = BQM(dimod.SPIN)
+        bqm.add_variables_from({'a': .5, 'b': -.5})
+
+        self.assertEqual(bqm.linear, {'a': .5, 'b': -.5})
+
+        # check that it's additive
+        bqm.add_variables_from({'a': -1, 'b': 3, 'c': 4})
+
+        self.assertEqual(bqm.linear, {'a': -.5, 'b': 2.5, 'c': 4})
+
+
 class TestAsBQM(BQMTestCase):
     def test_basic(self):
         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
