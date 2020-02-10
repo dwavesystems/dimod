@@ -176,6 +176,97 @@ class TestAddVariable(BQMTestCase):
         self.assertEqual(list(bqm.iter_variables()), [0, 1])
 
 
+class TestAsBQM(BQMTestCase):
+    def test_basic(self):
+        bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
+
+        self.assertConsistentBQM(bqm)
+
+    @multitest
+    def test_bqm_input(self, BQM):
+        bqm = BQM({'ab': -1}, dimod.BINARY)
+
+        self.assertIs(dimod.as_bqm(bqm), bqm)
+        self.assertEqual(dimod.as_bqm(bqm), bqm)
+        self.assertIsNot(dimod.as_bqm(bqm, copy=True), bqm)
+        self.assertEqual(dimod.as_bqm(bqm, copy=True), bqm)
+
+    @multitest
+    def test_bqm_input_change_vartype(self, BQM):
+        bqm = BQM({'ab': -1}, dimod.BINARY)
+
+        self.assertEqual(dimod.as_bqm(bqm, 'SPIN').vartype, dimod.SPIN)
+
+        self.assertIs(dimod.as_bqm(bqm, 'BINARY'), bqm)
+        self.assertIsNot(dimod.as_bqm(bqm, 'BINARY', copy=True), bqm)
+        self.assertEqual(dimod.as_bqm(bqm, 'BINARY', copy=True), bqm)
+
+    def test_type_target(self):
+
+        for source, target in itertools.product(self.BQM_SUBCLASSES, repeat=2):
+            bqm = source({'a': -1}, {}, dimod.BINARY)
+            new = dimod.as_bqm(bqm, cls=target)
+
+            self.assertIsInstance(new, target)
+            self.assertEqual(bqm, new)
+
+            if source is target:
+                self.assertIs(bqm, new)
+            else:
+                self.assertIsNot(bqm, new)
+
+    def test_type_target_copy(self):
+
+        for source, target in itertools.product(self.BQM_SUBCLASSES, repeat=2):
+            bqm = source({'a': -1}, {}, dimod.BINARY)
+            new = dimod.as_bqm(bqm, cls=target, copy=True)
+
+            self.assertIsInstance(new, target)
+            self.assertEqual(bqm, new)
+            self.assertIsNot(bqm, new)
+
+    def test_type_filter_empty(self):
+        subclasses = list(self.BQM_SUBCLASSES)
+
+        if len(subclasses) < 1:
+            return
+
+        BQM = subclasses[0]
+
+        with self.assertRaises(ValueError):
+            dimod.as_bqm(BQM('SPIN'), cls=[])
+
+    def test_type_filter_exclusive(self):
+        subclasses = list(self.BQM_SUBCLASSES)
+
+        if len(subclasses) < 3:
+            return
+
+        BQM0, BQM1, BQM2 = subclasses[0], subclasses[1], subclasses[2]
+
+        bqm = BQM0({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, .4, 'SPIN')
+
+        new = dimod.as_bqm(bqm, cls=[BQM1, BQM2])
+
+        self.assertIsInstance(new, (BQM1, BQM2))
+        self.assertEqual(new, bqm)
+
+    def test_type_filter_inclusive(self):
+        subclasses = list(self.BQM_SUBCLASSES)
+
+        if len(subclasses) < 2:
+            return
+
+        BQM0, BQM1 = subclasses[0], subclasses[1]
+
+        bqm = BQM0({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, .4, 'SPIN')
+
+        new = dimod.as_bqm(bqm, cls=[BQM1, BQM0])
+
+        self.assertIsInstance(new, BQM0)
+        self.assertIs(new, bqm)  # pass through
+
+
 class TestChangeVartype(BQMTestCase):
     @multitest
     def test_change_vartype_binary_to_binary_copy(self, BQM):
