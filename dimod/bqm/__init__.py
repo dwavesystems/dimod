@@ -17,3 +17,4 @@ from dimod.bqm.adjarraybqm import AdjArrayBQM
 from dimod.bqm.adjdictbqm import AdjDictBQM
 from dimod.bqm.adjmapbqm import AdjMapBQM
 from dimod.bqm.adjvectorbqm import AdjVectorBQM
+from dimod.bqm.construction import as_bqm
