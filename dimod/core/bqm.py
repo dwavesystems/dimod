@@ -274,6 +274,11 @@ class BQM(metaclass=abc.ABCMeta):
         return {v: self.degree(v) for v in self.iter_variables()}
 
     @classmethod
+    def empty(cls, vartype):
+        """Create a new empty binary quadratic model."""
+        return cls(vartype)
+
+    @classmethod
     def from_ising(cls, h, J, offset=0):
         """Create a binary quadratic model from an Ising problem.
 

@@ -695,6 +695,24 @@ class TestCopy(BQMTestCase):
         self.assertEqual(bqm, new)
 
 
+class TestEmpty(BQMTestCase):
+    @multitest
+    def test_binary(self, BQM):
+        bqm = BQM.empty(dimod.BINARY)
+        self.assertIsInstance(bqm, BQM)
+        self.assertConsistentBQM(bqm)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.assertEqual(bqm.shape, (0, 0))
+
+    @multitest
+    def test_spin(self, BQM):
+        bqm = BQM.empty(dimod.SPIN)
+        self.assertIsInstance(bqm, BQM)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm.shape, (0, 0))
+
+
 class TestEnergies(BQMTestCase):
     @multitest
     def test_2path(self, BQM):
