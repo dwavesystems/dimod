@@ -488,6 +488,53 @@ class ShapeableBQM(BQM):
                 raise TypeError("expected 'linear' to be a dict or an iterable"
                                 " of 2-tuples.")
 
+    def add_interaction(self, u, v, bias):
+        """Add an interaction and/or quadratic bias to a binary quadratic model.
+
+        Args:
+            u (variable):
+                One of the pair of variables to add to the model. Can be any
+                python object that is a valid dict key.
+
+            v (variable):
+                One of the pair of variables to add to the model. Can be any
+                python object that is a valid dict key.
+
+            bias (bias):
+                Quadratic bias associated with u, v. If u, v is already in the
+                model, this value is added to the current quadratic bias.
+
+        """
+        try:
+            # not += on the off chance bias is mutable
+            bias = bias + self.get_quadratic(u, v)
+        except ValueError:
+            pass
+        self.set_quadratic(u, v, bias)
+
+    def add_interactions_from(self, quadratic):
+        """Add interactions and/or quadratic biases to a binary quadratic model.
+
+        Args:
+            quadratic (dict/iterable):
+                A collection of interactions and their associated quadratic
+                bias. If a dict, should be of the form `{(u, v): bias, ...}`
+                where `u` and `v` are variables in the model and `bias` is
+                there associated quadratic bias. Otherwise, whould be an
+                iterable of `(u, v, bias)` triplets.
+
+        """
+        if isinstance(quadratic, Mapping):
+            for (u, v), bias in quadratic.items():
+                self.add_interaction(u, v, bias)
+        else:
+            try:
+                for u, v, bias in quadratic:
+                    self.add_interaction(u, v, bias)
+            except TypeError:
+                raise TypeError("expected 'quadratic' to be a dict or an "
+                                "iterable of 3-tuples.")
+
 
 # register the various objects with prettyprint
 def _pprint_bqm(printer, bqm, stream, indent, *args, **kwargs):
