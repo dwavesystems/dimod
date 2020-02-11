@@ -180,10 +180,11 @@ class BQM(metaclass=abc.ABCMeta):
         return (self.vartype == other.vartype
                 and self.shape == other.shape  # not necessary but fast to check
                 and self.offset == other.offset
+                and self.linear == other.linear
                 and self.adj == other.adj)
 
     def __ne__(self, other):
-        return not self == other
+        return not (self == other)
 
     @abc.abstractproperty
     def num_interactions(self):
