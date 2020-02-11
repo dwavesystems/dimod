@@ -127,7 +127,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.0
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.1
 
       - restore_cache: *restore-cache-template
 
