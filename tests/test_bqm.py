@@ -128,6 +128,14 @@ class BQMTestCase(unittest.TestCase):
 multitest = BQMTestCase.multitest
 
 
+class TestAddOffset(BQMTestCase):
+    @multitest
+    def test_typical(self, BQM):
+        bqm = BQM({}, {'ab': -1}, 1.5, 'SPIN')
+        bqm.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
+
+
 class TestAddVariable(BQMTestCase):
     @multitest
     def test_bad_variable_type(self, BQM):
@@ -920,6 +928,18 @@ class TestRemoveInteraction(BQMTestCase):
 
         with self.assertRaises(ValueError):
             bqm.remove_interaction(1, 1)
+
+
+class TestRemoveInteractionsFrom(BQMTestCase):
+    @multitest
+    def test_basic(self, BQM):
+        if not BQM.shapeable():
+            raise unittest.SkipTest
+        bqm = BQM(np.triu(np.ones((3, 3))), dimod.BINARY)
+
+        bqm.remove_interactions_from([(0, 2), (2, 1)])
+
+        self.assertEqual(bqm.num_interactions, 1)
 
 
 class TestRemoveVariable(BQMTestCase):
