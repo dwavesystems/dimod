@@ -268,6 +268,15 @@ class BQM(metaclass=abc.ABCMeta):
     def variables(self):
         return KeysView(self.linear)
 
+    def add_offset(self, offset):
+        """Add specified value to the offset of a binary quadratic model."""
+        self.offset += offset
+
+    def remove_offset(self):
+        """Set the binary quadratic model's offset to zero."""
+        # maintain type
+        self.offset -= self.offset
+
     def degrees(self, array=False, dtype=np.int):
         if array:
             return np.fromiter((self.degree(v) for v in self.iter_variables()),
@@ -540,6 +549,16 @@ class ShapeableBQM(BQM):
             except TypeError:
                 raise TypeError("expected 'quadratic' to be a dict or an "
                                 "iterable of 3-tuples.")
+
+    def remove_variables_from(self, variables):
+        """Remove the given variables from the binary quadratic model."""
+        for v in variables:
+            self.remove_variable(v)
+
+    def remove_interactions_from(self, interactions):
+        """Remove the given interactions from the binary quadratic model."""
+        for u, v in interactions:
+            self.remove_interaction(u, v)
 
 
 # register the various objects with prettyprint
