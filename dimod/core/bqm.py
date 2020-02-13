@@ -751,6 +751,45 @@ class ShapeableBQM(BQM):
                 raise TypeError("expected 'quadratic' to be a dict or an "
                                 "iterable of 3-tuples.")
 
+    def fix_variable(self, v, value):
+        """Remove a variable by fixing its value.
+
+        Args:
+            v (variable):
+                Variable in the binary quadratic model to be fixed.
+
+            value (int):
+                Value assigned to the variable. Values must match the
+                :class:`.Vartype` of the binary quadratic model.
+
+        """
+
+        if value not in self.vartype.value:
+            raise ValueError("expected value to be in {}, received {} "
+                             "instead".format(self.vartype.value, value))
+
+        try:
+            for u, bias in self.adj[v].items():
+                self.linear[u] += bias*value
+        except KeyError:
+            raise ValueError('{} is not a variable'.format(v))
+
+        self.offset += value*self.linear[v]
+        self.remove_variable(v)
+
+    def fix_variables(self, fixed):
+        """Fix the value of the variables and remove them.
+
+        Args:
+            fixed (dict/iterable):
+                A dictionary or an iterable of 2-tuples of variable assignments.
+
+        """
+        if isinstance(fixed, Mapping):
+            fixed = fixed.items()
+        for v, val in fixed:
+            self.fix_variable(v, val)
+
     def remove_variables_from(self, variables):
         """Remove the given variables from the binary quadratic model."""
         for v in variables:
