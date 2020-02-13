@@ -744,6 +744,69 @@ class TestEnergies(BQMTestCase):
         np.testing.assert_array_almost_equal(energies, [0])
 
 
+class TestFixVariable(BQMTestCase):
+    @multitest
+    def test_spin(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        bqm.fix_variable('a', +1)
+        self.assertEqual(bqm, BQM({'b': -1}, {}, 1.5, dimod.SPIN))
+
+        bqm = BQM({'a': .5}, {('a', 'b'): -1}, 1.5, dimod.SPIN)
+        bqm.fix_variable('a', -1)
+        self.assertEqual(bqm, BQM({'b': +1}, {}, 1, dimod.SPIN))
+
+    @multitest
+    def test_binary(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        bqm.fix_variable('a', 1)
+        self.assertEqual(bqm, BQM({'b': -1}, {}, 1.5, dimod.BINARY))
+
+        bqm = BQM({'a': .5}, {('a', 'b'): -1}, 1.5, dimod.BINARY)
+        bqm.fix_variable('a', 0)
+        self.assertEqual(bqm, BQM({'b': 0}, {}, 1.5, dimod.BINARY))
+
+    @multitest
+    def test_cross_type(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+        with self.assertRaises(ValueError):
+            bqm.fix_variable('a', -1)
+
+        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
+        with self.assertRaises(ValueError):
+            bqm.fix_variable('a', 0)
+
+    @multitest
+    def test_missing_variable(self, BQM):
+        if not BQM.shapeable():
+            return
+        with self.assertRaises(ValueError):
+            BQM('SPIN').fix_variable('a', -1)
+
+
+class TestFixVariables(BQMTestCase):
+    @multitest
+    def test_typical(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': -1, 'b': 1, 'c': 3}, {}, dimod.SPIN)
+
+        bqm.fix_variables({'a': 1, 'b': -1})
+
+        self.assertEqual(bqm.linear, {'c': 3})
+        self.assertEqual(bqm.quadratic, {})
+        self.assertEqual(bqm.offset, -2)
+
+
 class TestFromQUBO(BQMTestCase):
     @multitest
     def test_basic(self, BQM):
