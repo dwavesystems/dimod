@@ -17,7 +17,8 @@ import abc
 import io
 import functools
 
-from collections.abc import KeysView, Mapping, MutableMapping
+from collections.abc import Container, KeysView, Mapping, MutableMapping
+from numbers import Number
 from pprint import PrettyPrinter
 
 import numpy as np
@@ -449,6 +450,125 @@ class BQM(metaclass=abc.ABCMeta):
         """
         for _, v, _ in self.iter_quadratic(u):
             yield v
+
+    def normalize(self, bias_range=1, quadratic_range=None,
+                  ignored_variables=None, ignored_interactions=None,
+                  ignore_offset=False):
+        """Normalizes the biases of the binary quadratic model such that they
+        fall in the provided range(s), and adjusts the offset appropriately.
+
+        If `quadratic_range` is provided, then `bias_range` will be treated as
+        the range for the linear biases and `quadratic_range` will be used for
+        the range of the quadratic biases.
+
+        Args:
+            bias_range (number/pair):
+                Value/range by which to normalize the all the biases, or if
+                `quadratic_range` is provided, just the linear biases.
+
+            quadratic_range (number/pair):
+                Value/range by which to normalize the quadratic biases.
+
+            ignored_variables (iterable, optional):
+                Biases associated with these variables are not scaled.
+
+            ignored_interactions (iterable[tuple], optional):
+                As an iterable of 2-tuples. Biases associated with these
+                interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
+
+        """
+
+        def parse_range(r):
+            if isinstance(r, Number):
+                return -abs(r), abs(r)
+            return r
+
+        def min_and_max(iterable):
+            if not iterable:
+                return 0, 0
+            return min(iterable), max(iterable)
+
+        if ignored_variables is None:
+            ignored_variables = set()
+        elif not isinstance(ignored_variables, Container):
+            ignored_variables = set(ignored_variables)
+
+        if ignored_interactions is None:
+            ignored_interactions = set()
+        elif not isinstance(ignored_interactions, Container):
+            ignored_interactions = set(ignored_interactions)
+
+        if quadratic_range is None:
+            linear_range, quadratic_range = bias_range, bias_range
+        else:
+            linear_range = bias_range
+
+        lin_range, quad_range = map(parse_range, (linear_range,
+                                                  quadratic_range))
+
+        lin_min, lin_max = min_and_max([v for k, v in self.linear.items()
+                                        if k not in ignored_variables])
+        quad_min, quad_max = min_and_max([v for (a, b), v in self.quadratic.items()
+                                          if ((a, b) not in ignored_interactions
+                                              and (b, a) not in
+                                              ignored_interactions)])
+
+        inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
+                         quad_min / quad_range[0], quad_max / quad_range[1])
+
+        if inv_scalar != 0:
+            self.scale(1 / inv_scalar, ignored_variables=ignored_variables,
+                       ignored_interactions=ignored_interactions,
+                       ignore_offset=ignore_offset)
+
+    def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
+              ignore_offset=False):
+        """Multiply all the biases by the specified scalar.
+
+        Args:
+            scalar (number):
+                Value by which to scale the energy range of the binary
+                quadratic model.
+
+            ignored_variables (iterable, optional):
+                Biases associated with these variables are not scaled.
+
+            ignored_interactions (iterable[tuple], optional):
+                As an iterable of 2-tuples. Biases associated with these
+                interactions are not scaled.
+
+            ignore_offset (bool, default=False):
+                If True, the offset is not scaled.
+
+        """
+
+        if ignored_variables is None:
+            ignored_variables = set()
+        elif not isinstance(ignored_variables, Container):
+            ignored_variables = set(ignored_variables)
+
+        if ignored_interactions is None:
+            ignored_interactions = set()
+        elif not isinstance(ignored_interactions, Container):
+            ignored_interactions = set(ignored_interactions)
+
+        linear = self.linear
+        for v in linear:
+            if v in ignored_variables:
+                continue
+            linear[v] *= scalar
+
+        quadratic = self.quadratic
+        for u, v in quadratic:
+            if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
+                continue
+            quadratic[(u, v)] *= scalar
+
+        if not ignore_offset:
+            self.offset *= scalar
 
     @classmethod
     def shapeable(cls):
