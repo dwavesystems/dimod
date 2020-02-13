@@ -889,6 +889,47 @@ class TestLen(BQMTestCase):
         self.assertEqual(len(bqm), 107)
 
 
+class TestNormalize(BQMTestCase):
+    @multitest
+    def test_normalize(self, BQM):
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+    @multitest
+    def test_exclusions(self, BQM):
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5, ignored_variables=[0])
+        self.assertAlmostEqual(bqm.linear, {0: -2, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5, ignored_interactions=[(1, 0)])
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -1})
+        self.assertAlmostEqual(bqm.offset, .25)
+        self.assertConsistentBQM(bqm)
+
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.normalize(.5, ignore_offset=True)
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
+        self.assertAlmostEqual(bqm.offset, 1.)
+        self.assertConsistentBQM(bqm)
+
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -5}, 1., dimod.SPIN)
+        bqm.normalize(0.5, ignored_interactions=[(0, 1)])
+        self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -5})
+        self.assertAlmostEqual(bqm.offset, 0.25)
+        self.assertConsistentBQM(bqm)
+
+
 class TestOffset(BQMTestCase):
     @multitest
     def test_offset(self, BQM):
@@ -1112,6 +1153,37 @@ class TestRelabel(BQMTestCase):
         bqm.relabel_variables(mapping, inplace=True)
 
         self.assertEqual(newlinear, bqm.linear)
+
+
+class TestScale(BQMTestCase):
+    @multitest
+    def test_exclusions(self, BQM):
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_variables=[0])
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, BQM({0: -2, 1: 1}, {(0, 1): -.5}, .5, dimod.SPIN))
+
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignored_interactions=[(1, 0)])
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, BQM({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
+
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5, ignore_offset=True)
+        self.assertConsistentBQM(bqm)
+        self.assertEqual(bqm, BQM({0: -1, 1: 1}, {(0, 1): -.5}, 1., dimod.SPIN))
+
+    @multitest
+    def test_typical(self, BQM):
+        bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
+        bqm.scale(.5)
+        self.assertAlmostEqual(bqm.linear, {0: -1., 1: 1.})
+        self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.5})
+        self.assertAlmostEqual(bqm.offset, .5)
+        self.assertConsistentBQM(bqm)
+
+        with self.assertRaises(TypeError):
+            bqm.scale('a')
 
 
 class TestSetLinear(BQMTestCase):
