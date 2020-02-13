@@ -26,7 +26,6 @@ import numpy as np
 
 from dimod.bqm import AdjArrayBQM
 from dimod.core.bqm import BQM, ShapeableBQM
-from dimod.sampleset import as_samples
 from dimod.utilities import iter_safe_relabels
 from dimod.vartypes import as_vartype, Vartype
 
@@ -326,47 +325,6 @@ class AdjDictBQM(ShapeableBQM):
             return len(self._adj[v]) - 1
         except KeyError:
             raise ValueError("{} is not a variable".format(v))
-
-    def energies(self, samples_like, dtype=np.float):
-        """Determine the energies of the given samples.
-
-        Args:
-            samples_like (samples_like):
-                A collection of raw samples. `samples_like` is an extension of
-                NumPy's array_like structure. See :func:`.as_samples`.
-
-            dtype (:class:`numpy.dtype`):
-                The data type of the returned energies.
-
-        Returns:
-            :obj:`numpy.ndarray`: The energies.
-
-        """
-        samples, labels = as_samples(samples_like)
-
-        bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
-
-        num_samples, num_variables = samples.shape
-
-        energies = np.empty(num_samples, dtype=dtype)
-
-        for si in range(num_samples):
-            energy = self.offset
-
-            for u, lbias in self.linear.items():
-                uspin = samples[si, bqm_to_sample[u]]
-
-                energy += lbias * uspin
-
-            for (u, v), qbias in self.quadratic.items():
-                uspin = samples[si, bqm_to_sample[u]]
-                vspin = samples[si, bqm_to_sample[v]]
-
-                energy += uspin * vspin * qbias
-
-            energies[si] = energy
-
-        return energies
 
     def get_linear(self, v):
         """Get the linear bias of v.

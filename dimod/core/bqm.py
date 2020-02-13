@@ -15,6 +15,7 @@
 # =============================================================================
 import abc
 import io
+import functools
 
 from collections.abc import KeysView, Mapping, MutableMapping
 from pprint import PrettyPrinter
@@ -22,6 +23,7 @@ from pprint import PrettyPrinter
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel as LegacyBQM
+from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
@@ -196,6 +198,10 @@ class BQM(metaclass=abc.ABCMeta):
         """int: The number of variables in the model."""
         pass
 
+    @abc.abstractproperty
+    def vartype(self):
+        pass
+
     @abc.abstractmethod
     def change_vartype(self, vartype, inplace=True):
         """Return a binary quadratic model with the specified vartype."""
@@ -211,7 +217,7 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_linear(self, u, v):
+    def get_linear(self, v):
         pass
 
     @abc.abstractmethod
@@ -224,6 +230,10 @@ class BQM(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def iter_quadratic(self, variables=None):
+        pass
+
+    @abc.abstractmethod
+    def relabel_variables(self, mapping, inplace=True):
         pass
 
     @abc.abstractmethod
@@ -252,6 +262,21 @@ class BQM(metaclass=abc.ABCMeta):
         return Adjacency(self)
 
     @property
+    def binary(self):
+        if self.vartype is Vartype.BINARY:
+            return self
+
+        try:
+            return self._binary
+        except AttributeError:
+            pass
+
+        # this may be kept around even if self.vartype is changed, but that's
+        # covered by the above check
+        self._binary = binary = BinaryView(self)
+        return binary
+
+    @property
     def linear(self):
         return Linear(self)
 
@@ -263,6 +288,21 @@ class BQM(metaclass=abc.ABCMeta):
     def shape(self):
         """2-tuple: (num_variables, num_interactions)."""
         return self.num_variables, self.num_interactions
+
+    @property
+    def spin(self):
+        if self.vartype is Vartype.SPIN:
+            return self
+
+        try:
+            return self._spin
+        except AttributeError:
+            pass
+
+        # this may be kept around even if self.vartype is changed, but that's
+        # covered by the above check
+        self._spin = spin = SpinView(self)
+        return spin
 
     @property
     def variables(self):
@@ -287,6 +327,47 @@ class BQM(metaclass=abc.ABCMeta):
     def empty(cls, vartype):
         """Create a new empty binary quadratic model."""
         return cls(vartype)
+
+    def energies(self, samples_like, dtype=np.float):
+        """Determine the energies of the given samples.
+
+        Args:
+            samples_like (samples_like):
+                A collection of raw samples. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (:class:`numpy.dtype`):
+                The data type of the returned energies.
+
+        Returns:
+            :obj:`numpy.ndarray`: The energies.
+
+        """
+        samples, labels = as_samples(samples_like)
+
+        bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
+
+        num_samples, num_variables = samples.shape
+
+        energies = np.empty(num_samples, dtype=dtype)
+
+        for si in range(num_samples):
+            energy = self.offset
+
+            for u, lbias in self.linear.items():
+                uspin = samples[si, bqm_to_sample[u]]
+
+                energy += lbias * uspin
+
+            for (u, v), qbias in self.quadratic.items():
+                uspin = samples[si, bqm_to_sample[u]]
+                vspin = samples[si, bqm_to_sample[v]]
+
+                energy += uspin * vspin * qbias
+
+            energies[si] = energy
+
+        return energies
 
     @classmethod
     def from_ising(cls, h, J, offset=0):
@@ -559,6 +640,129 @@ class ShapeableBQM(BQM):
         """Remove the given interactions from the binary quadratic model."""
         for u, v in interactions:
             self.remove_interaction(u, v)
+
+
+class VartypeView(BQM):
+
+    def __init__(self, bqm):
+        self._bqm = bqm
+
+    @property
+    def num_interactions(self):
+        return self._bqm.num_interactions
+
+    @property
+    def num_variables(self):
+        return self._bqm.num_variables
+
+    def change_vartype(self, *args, **kwargs):
+        msg = '{} can only be {}-valued'.format(type(self).__name__,
+                                                self.vartype.name)
+        raise NotImplementedError(msg)
+
+    def degree(self, *args, **kwargs):
+        return self._bqm.degree(*args, **kwargs)
+
+    def iter_linear(self):
+        for v, _ in self._bqm.iter_linear():
+            yield v, self.get_linear(v)
+
+    def iter_quadratic(self, variables=None):
+        for u, v, _ in self._bqm.iter_quadratic(variables):
+            yield u, v, self.get_quadratic(u, v)
+
+    def relabel_variables(self, *args, **kwargs):
+        return self._bqm.relabel_variables(*args, **kwargs)
+
+
+class BinaryView(VartypeView):
+    @property
+    def binary(self):
+        return self
+
+    @property
+    def offset(self):
+        bqm = self._bqm
+        return (bqm.offset
+                - sum(b for _, b in bqm.iter_linear())
+                + sum(b for _, _, b in bqm.iter_quadratic()))
+
+    @property
+    def spin(self):
+        return self._bqm.spin
+
+    @property
+    def vartype(self):
+        return Vartype.BINARY
+
+    def copy(self):
+        return self._bqm.change_vartype(Vartype.BINARY, inplace=False)
+
+    def get_linear(self, v):
+        bqm = self._bqm
+        return 2 * bqm.get_linear(v) - 2 * sum(b for _, _, b in bqm.iter_quadratic(v))
+
+    def get_quadratic(self, u, v):
+        return 4 * self._bqm.get_quadratic(u, v)
+
+    def set_linear(self, v, bias):
+        bqm = self._bqm
+
+        bqm.set_linear(v, bqm.get_linear(v) + .5*bias)
+        bqm.offset += .5 * bias
+
+    def set_quadratic(self, u, v, bias):
+        bqm = self._bqm
+
+        bqm.set_linear(u, bqm.get_linear(u) - .25*bias)
+        bqm.set_linear(v, bqm.get_linear(v) - .25*bias)
+        bqm.set_quadratic(u, v, .25*bias)
+        bqm.offset += .25 * bias
+
+
+class SpinView(VartypeView):
+    @property
+    def binary(self):
+        return self._bqm.binary
+
+    @property
+    def offset(self):
+        bqm = self._bqm
+        return (bqm.offset
+                + .5 * sum(b for _, b in bqm.iter_linear())
+                + .25 * sum(b for _, _, b in bqm.iter_quadratic()))
+
+    @property
+    def spin(self):
+        return self
+
+    @property
+    def vartype(self):
+        return Vartype.SPIN
+
+    def copy(self):
+        return self._bqm.change_vartype(Vartype.SPIN, inplace=False)
+
+    def get_linear(self, v):
+        bqm = self._bqm
+        return .5 * bqm.get_linear(v) + .25 * sum(b for _, _, b in bqm.iter_quadratic(v))
+
+    def get_quadratic(self, u, v):
+        return .25 * self._bqm.get_quadratic(u, v)
+
+    def set_linear(self, v, bias):
+        bqm = self._bqm
+
+        bqm.set_linear(v, bqm.get_linear(v) + 2*bias)
+        bqm.offset -= bias
+
+    def set_quadratic(self, u, v, bias):
+        bqm = self._bqm
+
+        bqm.set_linear(u, bqm.get_linear(u) - 2*bias)
+        bqm.set_linear(v, bqm.get_linear(v) - 2*bias)
+        bqm.set_quadratic(u, v, 4*bias)
+        bqm.offset += bias
 
 
 # register the various objects with prettyprint
