@@ -777,6 +777,26 @@ class TestEnergies(BQMTestCase):
         energies = bqm.energies(np.asarray(samples))
         np.testing.assert_array_almost_equal(energies, [0])
 
+    @multitest
+    def test_dtype(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        samples = [[0, 0, 1], [1, 1, 0]]
+
+        energies = bqm.energies(samples, dtype=np.float16)
+
+        self.assertEqual(energies.dtype, np.float16)
+
+    @multitest
+    def test_energy(self, BQM):
+        arr = np.triu(np.ones((5, 5)))
+        bqm = BQM(arr, 'BINARY')
+        samples = [[0, 0, 1, 0, 0]]
+
+        energy = bqm.energy(np.asarray(samples))
+        self.assertEqual(energy, 1)
+
 
 class TestFixVariable(BQMTestCase):
     @multitest

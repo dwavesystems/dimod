@@ -447,19 +447,23 @@ cdef class cyAdjArrayBQM:
 
         return as_numpy_scalar(out.first, self.dtype)
 
-    # this function is generic to the different BQMs
-    energies = cyenergies
-    """Determine the energies of the given samples.
+    def energies(self, samples, dtype=None):
+        """Determine the energies of the given samples.
 
-    Args:
-        samples_like (samples_like):
-            A collection of raw samples. `samples_like` is an extension of
-            NumPy's array_like structure. See :func:`.as_samples`.
+        Args:
+            samples_like (samples_like):
+                A collection of raw samples. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
 
-    Returns:
-        :obj:`numpy.ndarray`: The energies.
+            dtype (data-type, optional, default=None):
+                The desired NumPy data type for the energies. Matches
+                :attr:`.dtype` by default.
 
-    """
+        Returns:
+            :obj:`numpy.ndarray`: The energies.
+
+        """
+        return np.asarray(cyenergies(self, samples), dtype=dtype)
 
     @classmethod
     def _load(cls, fp, data, offset=0):
