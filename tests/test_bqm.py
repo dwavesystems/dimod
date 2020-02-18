@@ -1386,6 +1386,48 @@ class TestShape(BQMTestCase):
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
 
 
+class TestToIsing(BQMTestCase):
+    @multitest
+    def test_spin(self, BQM):
+        linear = {0: 7.1, 1: 103}
+        quadratic = {(0, 1): .97}
+        offset = 0.3
+        vartype = dimod.SPIN
+
+        model = BQM(linear, quadratic, offset, vartype)
+
+        h, J, off = model.to_ising()
+
+        self.assertEqual(off, offset)
+        self.assertEqual(linear, h)
+        self.assertEqual(quadratic, J)
+
+    @multitest
+    def test_to_ising_binary_to_ising(self, BQM):
+        linear = {0: 7.1, 1: 103}
+        quadratic = {(0, 1): .97}
+        offset = 0.3
+        vartype = dimod.BINARY
+
+        model = BQM(linear, quadratic, offset, vartype)
+
+        h, J, off = model.to_ising()
+
+        for spins in itertools.product((-1, 1), repeat=len(model)):
+            spin_sample = dict(zip(range(len(spins)), spins))
+            bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
+
+            # calculate the qubo's energy
+            energy = off
+            for (u, v), bias in J.items():
+                energy += spin_sample[u] * spin_sample[v] * bias
+            for v, bias in h.items():
+                energy += spin_sample[v] * bias
+
+            # and the energy of the model
+            self.assertAlmostEqual(energy, model.energy(bin_sample))
+
+
 class TestVartypeViews(BQMTestCase):
     # SpinView and BinaryView
 
@@ -1680,6 +1722,45 @@ class TestToNumpyVectors(BQMTestCase):
         np.testing.assert_array_equal(i, [0, 0, 2])
         np.testing.assert_array_equal(j, [1, 3, 3])
         np.testing.assert_array_equal(values, [.5, 1.5, -1])
+
+
+class TestToQUBO(BQMTestCase):
+    @multitest
+    def test_binary(self, BQM):
+        linear = {0: 0, 1: 0}
+        quadratic = {(0, 1): 1}
+        offset = 0.0
+        vartype = dimod.BINARY
+
+        model = BQM(linear, quadratic, offset, vartype)
+
+        Q, off = model.to_qubo()
+
+        self.assertEqual(off, offset)
+        self.assertEqual({(0, 0): 0, (1, 1): 0, (0, 1): 1}, Q)
+
+    @multitest
+    def test_spin(self, BQM):
+        linear = {0: .5, 1: 1.3}
+        quadratic = {(0, 1): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
+
+        model = BQM(linear, quadratic, offset, vartype)
+
+        Q, off = model.to_qubo()
+
+        for spins in itertools.product((-1, 1), repeat=len(model)):
+            spin_sample = dict(zip(range(len(spins)), spins))
+            bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
+
+            # calculate the qubo's energy
+            energy = off
+            for (u, v), bias in Q.items():
+                energy += bin_sample[u] * bin_sample[v] * bias
+
+            # and the energy of the model
+            self.assertAlmostEqual(energy, model.energy(spin_sample))
 
 
 class TestUpdate(BQMTestCase):
