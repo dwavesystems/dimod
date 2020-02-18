@@ -329,7 +329,7 @@ class BQM(metaclass=abc.ABCMeta):
         """Create a new empty binary quadratic model."""
         return cls(vartype)
 
-    def energies(self, samples_like, dtype=np.float):
+    def energies(self, samples_like, dtype=None):
         """Determine the energies of the given samples.
 
         Args:
@@ -337,7 +337,7 @@ class BQM(metaclass=abc.ABCMeta):
                 A collection of raw samples. `samples_like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
-            dtype (:class:`numpy.dtype`):
+            dtype (:class:`numpy.dtype`, optional):
                 The data type of the returned energies.
 
         Returns:
@@ -349,6 +349,9 @@ class BQM(metaclass=abc.ABCMeta):
         bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
 
         num_samples, num_variables = samples.shape
+
+        if dtype is None:
+            dtype = np.float
 
         energies = np.empty(num_samples, dtype=dtype)
 
@@ -369,6 +372,10 @@ class BQM(metaclass=abc.ABCMeta):
             energies[si] = energy
 
         return energies
+
+    def energy(self, sample, dtype=None):
+        energy, = self.energies(sample, dtype=dtype)
+        return energy
 
     def flip_variable(self, v):
         """Flip variable v in a binary quadratic model.
