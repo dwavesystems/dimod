@@ -677,6 +677,40 @@ class TestConstruction(BQMTestCase):
             bqm.vartype = dimod.BINARY
 
 
+class TestContractVariables(BQMTestCase):
+    @multitest
+    def test_binary(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': 2, 'b': -8}, {('a', 'b'): -2, ('b', 'c'): 1}, 1.2,
+                  dimod.BINARY)
+
+        bqm.contract_variables('a', 'b')
+
+        self.assertConsistentBQM(bqm)
+
+        target = BQM({'a': -8}, {'ac': 1}, 1.2, dimod.BINARY)
+
+        self.assertEqual(bqm, target)
+
+    @multitest
+    def test_spin(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({'a': 2, 'b': -8}, {('a', 'b'): -2, ('b', 'c'): 1}, 1.2,
+                  dimod.SPIN)
+
+        bqm.contract_variables('a', 'b')
+
+        self.assertConsistentBQM(bqm)
+
+        target = BQM({'a': -6}, {'ac': 1}, -.8, dimod.SPIN)
+
+        self.assertEqual(bqm, target)
+
+
 class TestCopy(BQMTestCase):
     @multitest
     def test_copy(self, BQM):
