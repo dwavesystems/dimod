@@ -1628,6 +1628,22 @@ class TestToNumpyVectors(BQMTestCase):
         np.testing.assert_array_equal(values, [.5, 1.5, -1])
 
 
+class TestUpdate(BQMTestCase):
+    @multitest
+    def test_cross_vartype(self, BQM):
+        if not BQM.shapeable():
+            return
+        binary = BQM({'a': .3}, {('a', 'b'): -1}, 0, dimod.BINARY)
+        spin = BQM({'c': -1}, {('b', 'c'): 1}, 1.2, dimod.SPIN)
+
+        binary.update(spin)
+
+        target = BQM({'a': .3, 'b': -2, 'c': -4}, {'ab': -1, 'cb': 4},
+                     3.2, dimod.BINARY)
+
+        self.assertEqual(binary, target)
+
+
 class TestViews(BQMTestCase):
     @multitest
     def test_adj_setitem(self, BQM):
