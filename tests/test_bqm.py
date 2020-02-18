@@ -807,6 +807,20 @@ class TestFixVariables(BQMTestCase):
         self.assertEqual(bqm.offset, -2)
 
 
+class TestFlipVariable(BQMTestCase):
+    @multitest
+    def test_binary(self, BQM):
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 0, dimod.BINARY)
+        bqm.flip_variable('a')
+        self.assertEqual(bqm, BQM({'a': 1}, {'ab': 1}, -1.0, dimod.BINARY))
+
+    @multitest
+    def test_spin(self, BQM):
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 1.0, dimod.SPIN)
+        bqm.flip_variable('a')
+        self.assertEqual(bqm, BQM({'a': 1, 'b': 1}, {'ab': 1}, 1.0, dimod.SPIN))
+
+
 class TestFromQUBO(BQMTestCase):
     @multitest
     def test_basic(self, BQM):
@@ -1373,41 +1387,99 @@ class TestVartypeViews(BQMTestCase):
 
     @multitest
     def test_set_linear_binary(self, BQM):
-        bqm = BQM(1, dimod.SPIN)
-        bqm.binary.set_linear(0, .5)
-        samples = np.asarray([[0], [1]])
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
 
-        np.testing.assert_array_equal(bqm.energies(2*samples-1),
-                                      bqm.binary.energies(samples))
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
+
+        view.set_linear(0, .5)
+        copy.set_linear(0, .5)
+
+        self.assertEqual(view.get_linear(0), .5)
+        self.assertEqual(copy.get_linear(0), .5)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
     @multitest
     def test_set_linear_spin(self, BQM):
-        bqm = BQM(1, dimod.BINARY)
-        bqm.spin.set_linear(0, .5)
-        samples = np.asarray([[0], [1]])
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
 
-        np.testing.assert_array_equal(bqm.energies(samples),
-                                      bqm.spin.energies(2*samples-1))
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
+
+        view.set_linear(0, .5)
+        copy.set_linear(0, .5)
+
+        self.assertEqual(view.get_linear(0), .5)
+        self.assertEqual(copy.get_linear(0), .5)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
+
+    @multitest
+    def test_set_offset_binary(self, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
+
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
+
+        view.offset = .5
+        copy.offset = .5
+
+        self.assertEqual(view.offset, .5)
+        self.assertEqual(copy.offset, .5)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
+
+    @multitest
+    def test_set_offset_spin(self, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
+
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
+
+        view.offset = .5
+        copy.offset = .5
+
+        self.assertEqual(view.offset, .5)
+        self.assertEqual(copy.offset, .5)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
     @multitest
     def test_set_quadratic_binary(self, BQM):
-        bqm = BQM({(0, 1): 0}, dimod.SPIN)
-        bqm.binary.set_quadratic(0, 1, -1)
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
 
-        samples = np.asarray([[0, 0], [0, 1], [1, 0], [1, 1]])
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
 
-        np.testing.assert_array_equal(bqm.energies(2*samples-1),
-                                      bqm.binary.energies(samples))
+        view.set_quadratic(0, 1, -1)
+        copy.set_quadratic(0, 1, -1)
+
+        self.assertEqual(view.get_quadratic(0, 1), -1)
+        self.assertEqual(copy.get_quadratic(0, 1), -1)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
     @multitest
     def test_set_quadratic_spin(self, BQM):
-        bqm = BQM({(0, 1): 0}, dimod.BINARY)
-        bqm.spin.set_quadratic(0, 1, -1)
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
 
-        samples = np.asarray([[0, 0], [0, 1], [1, 0], [1, 1]])
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
 
-        np.testing.assert_array_equal(bqm.energies(samples),
-                                      bqm.spin.energies(2*samples-1))
+        view.set_quadratic(0, 1, -1)
+        copy.set_quadratic(0, 1, -1)
+
+        self.assertEqual(view.get_quadratic(0, 1), -1)
+        self.assertEqual(copy.get_quadratic(0, 1), -1)
+
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
 
 class TestToNumpyVectors(BQMTestCase):
