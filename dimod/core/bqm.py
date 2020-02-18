@@ -763,6 +763,46 @@ class ShapeableBQM(BQM):
                 raise TypeError("expected 'quadratic' to be a dict or an "
                                 "iterable of 3-tuples.")
 
+    def contract_variables(self, u, v):
+        """Enforce u, v being the same variable in a binary quadratic model.
+
+        The resulting variable is labeled 'u'. Values of interactions between
+        `v` and variables that `u` interacts with are added to the
+        corresponding interactions of `u`.
+
+        Args:
+            u (variable):
+                Variable in the binary quadratic model.
+
+            v (variable):
+                Variable in the binary quadratic model.
+
+        """
+        if not self.has_variable(u):
+            msg = "{} is not a variable in the binary quadratic model"
+            raise ValueError(msg.format(u))
+        if not self.has_variable(v):
+            msg = "{} is not a variable in the binary quadratic model"
+            raise ValueError(msg.format(v))
+
+        if self.vartype is Vartype.BINARY:
+            # the quadratic bias becomes linear
+            self.set_linear(u, (self.get_linear(u) + self.get_linear(v)
+                                + self.get_quadratic(u, v, default=0)))
+        elif self.vartype is Vartype.SPIN:
+            # the quadratic bias becomes an offset
+            self.set_linear(u, self.get_linear(u) + self.get_linear(v))
+            self.offset += self.get_quadratic(u, v)
+
+        self.remove_interaction(u, v)
+
+        # add all of v's interactions to u's
+        for _, w, b in self.iter_quadratic(v):
+            self.set_quadratic(u, w, self.get_quadratic(u, w, default=0) + b)
+
+        # finally remove v
+        self.remove_variable(v)
+
     def fix_variable(self, v, value):
         """Remove a variable by fixing its value.
 
