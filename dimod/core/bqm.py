@@ -370,6 +370,18 @@ class BQM(metaclass=abc.ABCMeta):
 
         return energies
 
+    def flip_variable(self, v):
+        """Flip variable v in a binary quadratic model.
+
+        Args:
+            v (variable):
+                Variable in the binary quadratic model.
+
+        """
+        for u in self.adj[v]:
+            self.spin.adj[v][u] *= -1
+        self.spin.linear[v] *= -1
+
     @classmethod
     def from_ising(cls, h, J, offset=0):
         """Create a binary quadratic model from an Ising problem.
@@ -846,6 +858,11 @@ class BinaryView(VartypeView):
                 - sum(b for _, b in bqm.iter_linear())
                 + sum(b for _, _, b in bqm.iter_quadratic()))
 
+    @offset.setter
+    def offset(self, bias):
+        # just add the difference
+        self._bqm.offset += bias - self.offset
+
     @property
     def spin(self):
         return self._bqm.spin
@@ -867,16 +884,25 @@ class BinaryView(VartypeView):
     def set_linear(self, v, bias):
         bqm = self._bqm
 
-        bqm.set_linear(v, bqm.get_linear(v) + .5*bias)
-        bqm.offset += .5 * bias
+        # need the difference
+        delta = bias - self.get_linear(v)
+
+        bqm.set_linear(v, bqm.get_linear(v) + delta / 2)
+        bqm.offset += delta / 2
 
     def set_quadratic(self, u, v, bias):
         bqm = self._bqm
 
-        bqm.set_linear(u, bqm.get_linear(u) - .25*bias)
-        bqm.set_linear(v, bqm.get_linear(v) - .25*bias)
-        bqm.set_quadratic(u, v, .25*bias)
-        bqm.offset += .25 * bias
+        # need the difference
+        delta = bias - self.get_quadratic(u, v)
+
+        bqm.set_quadratic(u, v, bias / 4)  # this one is easy
+
+        # the other values get the delta
+        bqm.set_linear(u, bqm.get_linear(u) + delta / 4)
+        bqm.set_linear(v, bqm.get_linear(v) + delta / 4)
+
+        bqm.offset += delta / 4
 
 
 class SpinView(VartypeView):
@@ -888,8 +914,13 @@ class SpinView(VartypeView):
     def offset(self):
         bqm = self._bqm
         return (bqm.offset
-                + .5 * sum(b for _, b in bqm.iter_linear())
-                + .25 * sum(b for _, _, b in bqm.iter_quadratic()))
+                + sum(b for _, b in bqm.iter_linear()) / 2
+                + sum(b for _, _, b in bqm.iter_quadratic()) / 4)
+
+    @offset.setter
+    def offset(self, bias):
+        # just add the difference
+        self._bqm.offset += bias - self.offset
 
     @property
     def spin(self):
@@ -904,24 +935,34 @@ class SpinView(VartypeView):
 
     def get_linear(self, v):
         bqm = self._bqm
-        return .5 * bqm.get_linear(v) + .25 * sum(b for _, _, b in bqm.iter_quadratic(v))
+        return (bqm.get_linear(v) / 2
+                + sum(b for _, _, b in bqm.iter_quadratic(v)) / 4)
 
     def get_quadratic(self, u, v):
-        return .25 * self._bqm.get_quadratic(u, v)
+        return self._bqm.get_quadratic(u, v) / 4
 
     def set_linear(self, v, bias):
         bqm = self._bqm
 
-        bqm.set_linear(v, bqm.get_linear(v) + 2*bias)
-        bqm.offset -= bias
+        # need the difference
+        delta = bias - self.get_linear(v)
+
+        bqm.set_linear(v, bqm.get_linear(v) + 2 * delta)
+        bqm.offset -= delta
 
     def set_quadratic(self, u, v, bias):
         bqm = self._bqm
 
-        bqm.set_linear(u, bqm.get_linear(u) - 2*bias)
-        bqm.set_linear(v, bqm.get_linear(v) - 2*bias)
-        bqm.set_quadratic(u, v, 4*bias)
-        bqm.offset += bias
+        # need the difference
+        delta = bias - self.get_quadratic(u, v)
+
+        bqm.set_quadratic(u, v, 4 * bias)  # this one is easy
+
+        # the other values get the delta
+        bqm.set_linear(u, bqm.get_linear(u) - 2 * delta)
+        bqm.set_linear(v, bqm.get_linear(v) - 2 * delta)
+
+        bqm.offset += delta
 
 
 # register the various objects with prettyprint
