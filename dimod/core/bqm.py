@@ -812,6 +812,20 @@ class ShapeableBQM(BQM):
         for u, v in interactions:
             self.remove_interaction(u, v)
 
+    def update(self, other):
+        """Update the binary quadratic model, adding biases from another."""
+
+        if self.vartype is Vartype.SPIN:
+            bqm = other.spin
+        elif self.vartype is Vartype.BINARY:
+            bqm = other.binary
+        else:
+            raise ValueError("unknown vartype")
+
+        self.add_variables_from(bqm.linear)
+        self.add_interactions_from(bqm.quadratic)
+        self.add_offset(bqm.offset)
+
 
 class VartypeView(BQM):
 
