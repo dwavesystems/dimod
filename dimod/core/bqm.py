@@ -593,6 +593,22 @@ class BQM(metaclass=abc.ABCMeta):
     def shapeable(cls):
         return issubclass(cls, ShapeableBQM)
 
+    def to_ising(self):
+        """Converts a binary quadratic model to Ising format.
+
+        If the binary quadratic model's vartype is not :class:`.Vartype.SPIN`,
+        values are converted.
+
+        Returns:
+            tuple: 3-tuple of form (`linear`, `quadratic`, `offset`), where
+            `linear` is a dict of linear biases, `quadratic` is a dict of
+            quadratic biases, and `offset` is a number that represents the
+            constant offset of the binary quadratic model.
+
+        """
+        bqm = self.spin
+        return dict(bqm.linear), dict(bqm.quadratic), bqm.offset
+
     def to_numpy_vectors(self, variable_order=None,
                          dtype=np.float, index_dtype=np.intc,
                          sort_indices=False, sort_labels=True,
@@ -652,6 +668,23 @@ class BQM(metaclass=abc.ABCMeta):
             ret.append(variable_order)
 
         return tuple(ret)
+
+    def to_qubo(self):
+        """Convert a binary quadratic model to QUBO format.
+
+        If the binary quadratic model's vartype is not :class:`.Vartype.BINARY`,
+        values are converted.
+
+        Returns:
+            tuple: 2-tuple of form (`biases`, `offset`), where `biases` is a
+            dict in which keys are pairs of variables and values are the
+            associated linear or quadratic bias and `offset` is a number that
+            represents the constant offset of the binary quadratic model.
+
+        """
+        qubo = dict(self.binary.quadratic)
+        qubo.update(((v, v), bias) for v, bias in self.binary.linear.items())
+        return qubo, self.binary.offset
 
 
 class ShapeableBQM(BQM):
