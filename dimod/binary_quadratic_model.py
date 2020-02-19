@@ -47,7 +47,7 @@ of a problem.
 import inspect
 import warnings
 
-from collections.abc import Collection
+from collections.abc import Sized, Iterable, Container
 
 import numpy as np
 
@@ -59,7 +59,7 @@ from dimod.bqm.adjdictbqm import AdjDictBQM
 __all__ = ['BinaryQuadraticModel', 'BQM']
 
 
-class BinaryQuadraticModel(AdjDictBQM, Collection):
+class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
     """Encodes a binary quadratic model.
 
     Binary quadratic model is the superclass that contains the `Ising model`_ and the QUBO_.
