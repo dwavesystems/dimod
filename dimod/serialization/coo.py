@@ -99,7 +99,7 @@ def _iter_triplets(bqm, vartype_header):
     # developer note: we could (for some threshold sparseness) sort the neighborhoods,
     # but this is simple and probably sufficient
 
-    variables = sorted(bqm)  # integer labeled so we can sort in py3
+    variables = sorted(bqm.variables)  # integer labeled so we can sort in py3
 
     for idx, u in enumerate(variables):
         for v in variables[idx:]:

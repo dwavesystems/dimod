@@ -32,9 +32,9 @@ class TestConnectedComponentsComposite(unittest.TestCase):
         dtest.assert_sampler_api(sampler)
 
     def test_sample(self):
-        bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
-                                   quadratic={(1, 4): -0.6},
-                                   offset=0,
+        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                   {(1, 4): -0.6},
+                                   0,
                                    vartype=Vartype.SPIN)
         sampler = ConnectedComponentsComposite(ExactSolver())
         response = sampler.sample(bqm)
@@ -43,9 +43,9 @@ class TestConnectedComponentsComposite(unittest.TestCase):
         self.assertAlmostEqual(response.first.energy, -2.4)
 
     def test_empty_bqm(self):
-        bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
-                                   quadratic={(1, 4): -0.6},
-                                   offset=0,
+        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                   {(1, 4): -0.6},
+                                   0,
                                    vartype=Vartype.SPIN)
 
         fixed_variables = {1: -1, 4: -1}
@@ -80,5 +80,3 @@ class TestConnectedComponentsComposite(unittest.TestCase):
         self.assertIsInstance(response, SampleSet)
         self.assertEqual(response.first.sample, {0: 0, 1: 0, 2: 1, 3: 0})
         self.assertAlmostEqual(response.first.energy, bqm.energy({0: 0, 1: 0, 2: 1, 3: 0}))
-
-

@@ -1433,50 +1433,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         return self.to_serializable()
 
     @classmethod
-    def _from_serializable_v1(cls, obj):
-        # deprecated
-        import warnings
-
-        msg = ("sampleset is serialized with a deprecated format and will no "
-               "longer work in dimod 0.9.0.")
-        warnings.warn(msg)
-
-        from dimod.serialization.json import sampleset_decode_hook
-
-        return sampleset_decode_hook(obj, cls=cls)
-
-    @classmethod
-    def _from_serializable_v2(cls, obj):
-        import io
-
-        vartype = Vartype[obj['variable_type']]
-
-        if obj['use_bytes']:
-            record = obj['record']
-        else:
-            record = {name: base64.b64decode(vector)
-                      for name, vector in obj['record'].items()}
-
-        vectors = {name: np.load(io.BytesIO(vector)) for name, vector in record.items()}
-
-        # get the samples and unpack then
-        shape = np.array(obj['sample_shape'], dtype=int)
-        dtype = obj['sample_dtype']
-        sample = np.unpackbits(vectors.pop('sample'))[:shape[0]*shape[1]].astype(dtype).reshape(shape)
-
-        # convert to the correct dtype
-        if vartype is Vartype.SPIN:
-            sample = np.asarray(2*sample-1, dtype=dtype)
-
-        variables = [tuple(v) if isinstance(v, list) else v
-                     for v in obj["variable_labels"]]
-
-        info = obj['info']
-
-        return cls.from_samples((sample, variables), vartype, info=info,
-                                **vectors)
-
-    @classmethod
     def from_serializable(cls, obj):
         """Deserialize a :class:`SampleSet`.
 
@@ -1503,11 +1459,11 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
 
         if obj["version"]['sampleset_schema'] == "1.0.0":
-            return cls._from_serializable_v1(obj)
+            raise ValueError("No longer supported serialization format")
 
         version = obj["version"]["sampleset_schema"]
         if version < "3.0.0":
-            return cls._from_serializable_v2(obj)
+            raise ValueError("No longer supported serialization format")
 
         # assume we're working with v3
 

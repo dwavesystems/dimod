@@ -97,11 +97,9 @@ def combinations(n, k, strength=1, vartype=BINARY):
     lbias = float(strength*(1 - 2*k))
     qbias = float(2*strength)
 
-    bqm = BinaryQuadraticModel.empty(vartype)
-    bqm.add_variables_from(((v, lbias) for v in variables), vartype=BINARY)
-    bqm.add_interactions_from(((u, v, qbias)
-                               for u, v in itertools.combinations(variables, 2)),
-                              vartype=BINARY)
+    bqm = BinaryQuadraticModel.empty(BINARY)
+    bqm.add_variables_from(((v, lbias) for v in variables))
+    bqm.add_interactions_from(((u, v, qbias) for u, v in itertools.combinations(variables, 2)))
     bqm.add_offset(strength*(k**2))
 
-    return bqm
+    return bqm.change_vartype(vartype, inplace=True)

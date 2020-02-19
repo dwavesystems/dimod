@@ -24,7 +24,6 @@ from numbers import Integral
 
 import numpy as np
 
-from dimod.bqm import AdjArrayBQM
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.utilities import iter_safe_relabels
 from dimod.vartypes import as_vartype, Vartype

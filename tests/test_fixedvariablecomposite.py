@@ -41,9 +41,9 @@ class TestFixedVariableComposite(unittest.TestCase):
         dtest.assert_sampler_api(sampler)
 
     def test_sample(self):
-        bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
-                                   quadratic={(1, 4): -0.6},
-                                   offset=0,
+        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                   {(1, 4): -0.6},
+                                   0,
                                    vartype=Vartype.SPIN)
 
         fixed_variables = {1: -1}
@@ -54,9 +54,9 @@ class TestFixedVariableComposite(unittest.TestCase):
         self.assertAlmostEqual(response.first.energy, 1.2)
 
     def test_empty_bqm(self):
-        bqm = BinaryQuadraticModel(linear={1: -1.3, 4: -0.5},
-                                   quadratic={(1, 4): -0.6},
-                                   offset=0,
+        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                   {(1, 4): -0.6},
+                                   0,
                                    vartype=Vartype.SPIN)
 
         fixed_variables = {1: -1, 4: -1}
