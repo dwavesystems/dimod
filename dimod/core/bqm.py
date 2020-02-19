@@ -23,16 +23,10 @@ from pprint import PrettyPrinter
 
 import numpy as np
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel as LegacyBQM
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BQM', 'ShapeableBQM']
-
-
-# todo: there is a lot of duplication between dimod/views/bqm.py and
-# dimod/core/bqm.py. For now we'll maintain both but this needs to resolved
-# at some point
 
 
 class BQMView(Mapping):
@@ -180,11 +174,14 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     def __eq__(self, other):
-        return (self.vartype == other.vartype
-                and self.shape == other.shape  # not necessary but fast to check
-                and self.offset == other.offset
-                and self.linear == other.linear
-                and self.adj == other.adj)
+        try:
+            return (self.vartype == other.vartype
+                    and self.shape == other.shape  # not necessary but fast to check
+                    and self.offset == other.offset
+                    and self.linear == other.linear
+                    and self.adj == other.adj)
+        except AttributeError:
+            return False
 
     def __ne__(self, other):
         return not (self == other)
@@ -411,6 +408,51 @@ class BQM(metaclass=abc.ABCMeta):
 
         """
         return cls(h, J, offset, Vartype.SPIN)
+
+    @classmethod
+    def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
+        """Create a binary quadratic model from vectors.
+
+        Args:
+            linear (array_like):
+                A 1D array-like iterable of linear biases.
+
+            quadratic (tuple[array_like, array_like, array_like]):
+                A 3-tuple of 1D array_like vectors of the form (row, col, bias).
+
+            offset (numeric, optional):
+                Constant offset for the binary quadratic model.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            variable_order (iterable, optional):
+                If provided, labels the variables; otherwise, indices are used.
+
+        Returns:
+            A binary quadratic model
+
+        """
+
+        try:
+            heads, tails, values = quadratic
+        except ValueError:
+            raise ValueError("quadratic should be a 3-tuple")
+
+        if not len(heads) == len(tails) == len(values):
+            raise ValueError("row, col, and bias should be of equal length")
+
+        if variable_order is None:
+            variable_order = list(range(len(linear)))
+
+        linear = {v: float(bias) for v, bias in zip(variable_order, linear)}
+        quadratic = {(variable_order[u], variable_order[v]): float(bias)
+                     for u, v, bias in zip(heads, tails, values)}
+
+        return cls(linear, quadratic, offset, vartype)
 
     @classmethod
     def from_qubo(cls, Q, offset=0):
@@ -1075,11 +1117,3 @@ except AttributeError:
     # we're using some internal stuff in PrettyPrinter so let's silently fail
     # for that
     pass
-
-
-# register the legacy BQM as a subclass of BQM and ShapeableBQM. This actually
-# causes some issues because they don't have identical APIs, but in the mean
-# time it does things like allow AdjArrayBQM(LegacyBQM(...)) to work. Relatively
-# soon we'll replace LegacyBQM with AdjDictBQM
-BQM.register(LegacyBQM)
-ShapeableBQM.register(LegacyBQM)
