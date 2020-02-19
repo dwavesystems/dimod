@@ -43,8 +43,7 @@ def fix_variables(bqm, sampling_mode=True):
         This example creates a binary quadratic model with a single ground state
         and fixes the model's single variable to the minimizing assignment.
 
-        >>> bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-        >>> bqm.add_variable('a', 1.0)
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1.0}, {})
         >>> dimod.fix_variables(bqm)
         {'a': -1}
 
