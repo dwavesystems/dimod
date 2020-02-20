@@ -25,51 +25,50 @@ __all__ = ['as_bqm']
 def as_bqm(*args, cls=None, copy=False):
     """Convert the input to a binary quadratic model.
 
-    Many formats can be converted to a binary quadratic model:
+    Converts the following input formats to a binary quadratic model (BQM):
 
         as_bqm(vartype)
             Creates an empty binary quadratic model.
 
         as_bqm(bqm)
-            Creates a bqm from another bqm. See `copy` and `cls` kwargs below.
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
 
         as_bqm(bqm, vartype)
-            Creates a bqm from another bqm, changing to the appropriate vartype
+            Creates a BQM from another BQM, changing to the appropriate `vartype`
             if necessary. See `copy` and `cls` kwargs below.
 
         as_bqm(n, vartype)
-            Make a bqm with all zero biases, where n is the number of nodes.
+            Make a BQM with `n` nodes, indexed linearly from zero, setting all biases
+            to zero.
 
-        as_bqm(Q, vartype)
-            Where Q is a square array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
+        as_bqm(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_ or a dictionary
+            of the form `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
             biases on the diagonal are added to the offset.
 
-        as_bqm(L, Q, vartype)
-            Where L is a one dimensional array_like_ or a dictionary of the form
-            `{v: b, ...}`.
-            And where Q is a square array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
-            biases on the diagonal are added to the offset.
+        as_bqm(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a one-dimensional
+            array_like_ or a dictionary of the form `{v: b, ...}`, and `quadratic` is a
+            square array_like_ or a dictionary of the form `{(u, v): b, ...}`. Note that
+            when formed with SPIN-variables, biases on the diagonal are added to the offset.
 
-        as_bqm(L, Q, offset, vartype)
-            Where L is a one dimensional array_like_ or a dictionary of the form
-            `{v: b, ...}`.
-            And where Q is a square array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
-            biases on the diagonal are added to the offset.
-            And where offset is a numerical offset.
+        as_bqm(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a one-dimensional
+            array_like_ or a dictionary of the form `{v: b, ...}`, and `quadratic` is a square
+            array_like_ or a dictionary of the form `{(u, v): b, ...}`, and `offset` is a numerical
+            offset. Note that when formed with SPIN-variables, biases on the diagonal are added
+            to the offset.
 
     Args:
         *args:
             See above.
 
         cls (type/list, optional, default=:class:`.AdjVectorBQM`):
-            The class of the returned binary quadratic model. If given as a list
-            the returned bqm will be of one of the types in the list.
+            Class of the returned BQM. If given as a list,
+            the returned BQM is of one of the types in the list.
 
         copy (bool, optional, default=False):
-            If False, a new binary quadratic model is only constructed when
+            If False, a new BQM is only constructed when
             necessary.
 
     Returns:
