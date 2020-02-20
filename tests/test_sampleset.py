@@ -13,6 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
+import concurrent.futures
 import unittest
 import fractions
 import json
@@ -387,6 +388,83 @@ class TestAppend(unittest.TestCase):
         self.assertEqual(sampleset0.append_variables(sampleset1), target)
 
 
+class TestFromFuture(unittest.TestCase):
+    def test_default(self):
+
+        future = concurrent.futures.Future()
+
+        response = dimod.SampleSet.from_future(future)
+
+        self.assertIsInstance(response, dimod.SampleSet)
+        self.assertFalse(hasattr(response, '_record'))  # should not have a record yet
+
+        self.assertFalse(response.done())
+
+        # make future return a Response
+        future.set_result(dimod.SampleSet.from_samples([-1, -1, 1], energy=.5, info={'another_field': .5}, vartype=dimod.SPIN))
+
+        self.assertTrue(response.done())
+
+        # accessing response.record should resolve the future
+        np.testing.assert_array_equal(response.record.sample,
+                                      np.array([[-1, -1, 1]]))
+        np.testing.assert_array_equal(response.record.energy,
+                                      np.array([.5]))
+        np.testing.assert_array_equal(response.record.num_occurrences,
+                                      np.array([1]))
+        self.assertEqual(response.info, {'another_field': .5})
+        self.assertIs(response.vartype, dimod.SPIN)
+        self.assertEqual(response.variables, [0, 1, 2])
+
+    def test_typical(self):
+        result = {'occurrences': [1],
+                  'active_variables': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                                       18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+                                       33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+                                       48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
+                                       63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+                                       78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,
+                                       93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
+                                       106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+                                       118, 119, 120, 121, 122, 123, 124, 125, 126, 127],
+                  'num_occurrences': [1],
+                  'num_variables': 128,
+                  'format': 'qp',
+                  'timing': {},
+                  'solutions': [[1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1,
+                                 1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1,
+                                 -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1]],
+                  'energies': [-704.0],
+                  'samples': [[1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                               -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1,
+                               1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1,
+                               -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1,
+                               1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1,
+                               -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1,
+                               1, 1, 1, 1, 1, 1, -1, -1, -1, -1]]}
+
+        future = concurrent.futures.Future()
+
+        def result_to_response(future):
+            result = future.result()
+            return dimod.SampleSet.from_samples(result['solutions'],
+                                                energy=result['energies'],
+                                                num_occurrences=result['occurrences'],
+                                                vartype=dimod.SPIN)
+
+        response = dimod.SampleSet.from_future(future, result_hook=result_to_response)
+
+        future.set_result(result)
+
+        matrix = response.record.sample
+
+        np.testing.assert_equal(matrix, result['samples'])
+
+
 class TestLowest(unittest.TestCase):
     def test_all_equal(self):
         sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 0})
@@ -522,6 +600,58 @@ class TestIteration(unittest.TestCase):
         self.assertIsInstance(sampleset.samples(n=2), abc.Iterator)
         spl = next(sampleset.samples())
         self.assertEqual(spl, {'a': 1, 'b': 1})
+
+
+class TestRelabelVariables(unittest.TestCase):
+    def test_copy(self):
+        bqm = dimod.BinaryQuadraticModel({'a': .1}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
+        samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': -1},
+                   {'a': -1, 'b': +1}, {'a': -1, 'b': -1}]
+        energies = [bqm.energy(sample) for sample in samples]
+        response = dimod.SampleSet.from_samples(samples, energy=energies, vartype=dimod.SPIN)
+
+        new_response = response.relabel_variables({'a': 0, 'b': 1}, inplace=False)
+
+        # original response should not change
+        for sample in response:
+            self.assertIn(sample, samples)
+
+        for sample in new_response:
+            self.assertEqual(set(sample), {0, 1})
+
+    def test_docstring(self):
+        response = dimod.SampleSet.from_samples([{'a': -1}, {'a': +1}], energy=[-1, 1], vartype=dimod.SPIN)
+        new_response = response.relabel_variables({'a': 0}, inplace=False)
+
+    def test_partial_inplace(self):
+        mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
+
+        response = dimod.SampleSet.from_samples([[-1, +1, -1, +1, -1, +1, -1, +1]], energy=-1, vartype=dimod.SPIN)
+
+        new_response = response.relabel_variables(mapping, inplace=False)
+
+        for new_sample, sample in zip(new_response, response):
+            for v, val in sample.items():
+                self.assertIn(mapping[v], new_sample)
+                self.assertEqual(new_sample[mapping[v]], val)
+
+            self.assertEqual(len(sample), len(new_sample))
+
+    def test_partial(self):
+
+        mapping = {0: '3', 1: 4, 2: 5, 3: 6, 4: 7, 5: '1', 6: '2', 7: '0'}
+
+        response = dimod.SampleSet.from_samples([[-1, +1, -1, +1, -1, +1, -1, +1]], energy=-1, vartype=dimod.SPIN)
+        response2 = dimod.SampleSet.from_samples([[-1, +1, -1, +1, -1, +1, -1, +1]], energy=-1, vartype=dimod.SPIN)
+
+        response.relabel_variables(mapping, inplace=True)
+
+        for new_sample, sample in zip(response, response2):
+            for v, val in sample.items():
+                self.assertIn(mapping[v], new_sample)
+                self.assertEqual(new_sample[mapping[v]], val)
+
+            self.assertEqual(len(sample), len(new_sample))
 
 
 class TestSerialization(unittest.TestCase):

@@ -32,7 +32,7 @@ import numpy as np
 from dimod.core.polysampler import ComposedPolySampler, PolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
-from dimod.response import SampleSet
+from dimod.sampleset import SampleSet
 from collections import defaultdict
 
 

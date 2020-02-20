@@ -54,9 +54,6 @@ from dimod.sampleset import as_samples, concatenate, SampleSet
 
 from dimod.serialization.format import set_printoptions
 
-from dimod.response import *
-import dimod.response
-
 from dimod.utilities import *
 import dimod.utilities
 
