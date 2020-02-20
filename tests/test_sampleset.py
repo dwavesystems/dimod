@@ -737,108 +737,19 @@ class TestSerialization(unittest.TestCase):
         new_samples = dimod.SampleSet.from_serializable(json.loads(s))
         self.assertEqual(samples, new_samples)
 
-    def test_from_serializable_empty_v1(self):
-        samples = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
-
-        s = """
-        {"record": {"sample": {"data": "", "shape": [0, 0], "dtype": "int8"},
-                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
-                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
-         "variable_type": "BINARY", "info": {},
-         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
-         "variable_labels": []}"""
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
-
-    def test_from_serializable_empty_variables_v1(self):
-        samples = dimod.SampleSet.from_samples(([], 'abcd'), dimod.BINARY, energy=[])
-
-        s = """
-        {"record": {"sample": {"data": "", "shape": [0, 4], "dtype": "int8"},
-                    "energy": {"data": "", "shape": [0], "dtype": "float64"},
-                    "num_occurrences": {"data": "", "shape": [0], "dtype": "int64"}},
-         "variable_type": "BINARY", "info": {},
-         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
-         "variable_labels": ["a", "b", "c", "d"]}"""
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
-
-    def test_from_serializable_triu_v1(self):
-        samples = dimod.SampleSet.from_samples(np.triu(np.ones((10, 10))),
-                                               dimod.BINARY,
-                                               energy=np.arange(-1, 1, 10))
-
-        s = """
-        {"record": {"sample": {"data": "/9/z/H8PwfA8BwDAEA==",
-                               "shape": [10, 10], "dtype": "float64"},
-                    "energy": {"data": "//////////////////////////////////////////////////////////////////////////////////////////////////////////8=",
-                               "shape": [10], "dtype": "int64"},
-                    "num_occurrences": {"data": "AQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAA=",
-                               "shape": [10], "dtype": "int64"}},
-         "variable_type": "BINARY", "info": {},
-         "version": {"dimod": "0.8.5", "sampleset_schema": "1.0.0"},
-         "variable_labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}"""
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(json.loads(s)))
-
-    def test_from_serializable_empty_v2(self):
-        samples = dimod.SampleSet.from_samples([], dimod.BINARY, energy=[])
-
-        s = {'basetype': 'SampleSet',
-             'info': {},
-             'record': {'energy': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGY4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo=',
-                        'num_occurrences': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGk4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo=',
-                        'sample': 'k05VTVBZAQB2AHsnZGVzY3InOiAnfHUxJywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo='},
-             'sample_dtype': 'int8',
-             'sample_shape': (0, 0),
-             'type': 'SampleSet',
-             'use_bytes': False,
-             'variable_labels': [],
-             'variable_type': 'BINARY',
-             'version': {'dimod': '0.8.14', 'sampleset_schema': '2.0.0'}}
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(s))
-
-    def test_from_serializable_empty_variables_v2(self):
-        samples = dimod.SampleSet.from_samples(([], 'abcd'), dimod.BINARY, energy=[])
-
-        s = {'basetype': 'SampleSet',
-             'info': {},
-             'record': {'energy': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGY4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo=',
-                        'num_occurrences': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGk4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo=',
-                        'sample': 'k05VTVBZAQB2AHsnZGVzY3InOiAnfHUxJywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDAsKSwgfSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo='},
-             'sample_dtype': 'int8',
-             'sample_shape': (0, 4),
-             'type': 'SampleSet',
-             'use_bytes': False,
-             'variable_labels': ['a', 'b', 'c', 'd'],
-             'variable_type': 'BINARY',
-             'version': {'dimod': '0.8.14', 'sampleset_schema': '2.0.0'}}
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(s))
-
-    def test_from_serializable_triu_v2(self):
-        samples = dimod.SampleSet.from_samples(np.triu(np.ones((10, 10))),
-                                               dimod.BINARY,
-                                               energy=np.arange(-1, 1, 10))
-
-        s = {'basetype': 'SampleSet',
-             'info': {},
-             'record': {'energy': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGk4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDEwLCksIH0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAr//////////////////////////////////////////////////////////////////////////////////////////////////////////w==',
-                        'num_occurrences': 'k05VTVBZAQB2AHsnZGVzY3InOiAnPGk4JywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDEwLCksIH0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAoBAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAA==',
-                        'sample': 'k05VTVBZAQB2AHsnZGVzY3InOiAnfHUxJywgJ2ZvcnRyYW5fb3JkZXInOiBGYWxzZSwgJ3NoYXBlJzogKDEzLCksIH0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAr/3/P8fw/B8DwHAMAQ'},
-             'sample_dtype': 'float64',
-             'sample_shape': (10, 10),
-             'type': 'SampleSet',
-             'use_bytes': False,
-             'variable_labels': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-             'variable_type': 'BINARY',
-             'version': {'dimod': '0.8.14', 'sampleset_schema': '2.0.0'}}
-
-        self.assertEqual(samples, dimod.SampleSet.from_serializable(s))
-
     def test_tuple_variable_labels(self):
         sampleset = dimod.SampleSet.from_samples(([], [(0, 0), (0, 1), ("a", "b", 2)]), dimod.BINARY, energy=[])
+
+        json_str = json.dumps(sampleset.to_serializable())
+
+        new = dimod.SampleSet.from_serializable(json.loads(json_str))
+
+        self.assertEqual(sampleset, new)
+
+    def test_tuple_variable_labels_nested(self):
+        variables = [((0, 1), 0), (('a', (0, 'a')), 1), ("a", "b", 2)]
+        sampleset = dimod.SampleSet.from_samples(([], variables), dimod.BINARY,
+                                                 energy=[])
 
         json_str = json.dumps(sampleset.to_serializable())
 

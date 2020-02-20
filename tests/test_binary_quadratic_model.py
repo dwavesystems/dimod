@@ -143,28 +143,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         self.assertEqual(dimod.BinaryQuadraticModel(linear, quadratic, offset, 'BINARY').vartype, dimod.BINARY)
 
-    def test_construction_quadratic(self):
-        linear = {v: v * .01 for v in range(10)}
-        quadratic = {(u, v): u * v * .01 for u, v in itertools.combinations(linear, 2)}
-        offset = 1.2
-        vartype = dimod.SPIN
-
-        self.assertEqual(dimod.BinaryQuadraticModel(linear, quadratic, offset, dimod.BINARY).quadratic, quadratic)
-
-        # quadratic should be a dict or an iterable of 3-tuples
-        with self.assertRaises(ValueError):
-            dimod.BinaryQuadraticModel(linear, ['a'], offset, dimod.BINARY)
-        with self.assertRaises(TypeError):
-            dimod.BinaryQuadraticModel(linear, 1, offset, dimod.BINARY)
-
-        # not 2-tuple
-        with self.assertRaises(ValueError):
-            dimod.BinaryQuadraticModel(linear, {'edge': .5}, offset, dimod.BINARY)
-
-        # no self-loops
-        with self.assertRaises(ValueError):
-            dimod.BinaryQuadraticModel(linear, {(0, 0): .5}, offset, dimod.BINARY)
-
     def test__eq__(self):
         linear = {v: v * -.13 for v in range(10)}
         quadratic = {(u, v): u * v * .021 for u, v in itertools.combinations(linear, 2)}
@@ -245,89 +223,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertEqual(bqm.variables & {'b'}, {'b'})
         self.assertEqual(bqm.variables | {'c'}, {'a', 'b', 'c'})
 
-    def test_add_variable(self):
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        bqm.add_variable('a', .5)
-        self.assertEqual(bqm.linear['a'], .5)
-
-        # add a single variable of a different type
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        bqm.add_variable('a', .5, vartype=dimod.BINARY)
-
-        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), -1)
-        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -.5)
-
-        # and again
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-        bqm.add_variable('a', .4, vartype=dimod.SPIN)
-
-        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -.4)
-        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -.6)
-
-        # add a new variable
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        bqm.add_variable('c', .5)
-        self.assertEqual({'a': 0, 'b': 0, 'c': .5}, bqm.linear)
-        bqm.add_variable('c', .5)
-        self.assertEqual({'a': 0, 'b': 0, 'c': 1}, bqm.linear)
-
-        # bad type
-        with self.assertRaises(ValueError):
-            bqm.add_variable('a', 1.2, -1)
-
-    def test_add_variable_counterpart(self):
-        # spin
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        bqm.add_variable('a', .5)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.binary.energy({'a': av, 'b': bv}))
-
-        #
-
-        # spin
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        __ = bqm.binary  # create counterpart
-        bqm.add_variable('a', .5)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.binary.energy({'a': av, 'b': bv}))
-
-        #
-
-        # binary
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-        bqm.add_variable('a', .5)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.spin.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.energy({'a': av, 'b': bv}))
-
-        #
-
-        # binary
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-        __ = bqm.spin  # create counterpart
-        bqm.add_variable('a', .5)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.spin.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.energy({'a': av, 'b': bv}))
-
-        #
-
-        bqm = dimod.BinaryQuadraticModel({'a': 1.}, {}, 0, dimod.SPIN)
-        self.assertEqual(bqm.energy({'a': -1}), bqm.binary.energy({'a': 0}))
-        bqm.add_variables_from({'a': .5, 'b': -2})
-        self.assertEqual(bqm.linear, {'a': 1.5, 'b': -2})
-
-        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), bqm.binary.energy({'a': 0, 'b': 0}))
-        self.assertEqual(bqm.energy({'a': +1, 'b': -1}), bqm.binary.energy({'a': 1, 'b': 0}))
-        self.assertEqual(bqm.energy({'a': -1, 'b': +1}), bqm.binary.energy({'a': 0, 'b': 1}))
-        self.assertEqual(bqm.energy({'a': +1, 'b': +1}), bqm.binary.energy({'a': 1, 'b': 1}))
-
     def test_add_variables_from(self):
         linear = {'a': .5, 'b': -.5}
         offset = 0.0
@@ -347,134 +242,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             bqm.add_variables_from(1)
-
-    def test_add_interaction(self):
-        # spin-to-binary
-        bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {}, 0.0, dimod.BINARY)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.SPIN)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -1)
-        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -1)
-        self.assertConsistentBQM(bqm)
-
-        bqm = dimod.BinaryQuadraticModel({'b': 0}, {}, 0.0, dimod.BINARY)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.SPIN)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -1)
-        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -1)
-        self.assertConsistentBQM(bqm)
-
-        bqm = dimod.BinaryQuadraticModel({'a': 0}, {}, 0.0, dimod.BINARY)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.SPIN)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': 0, 'b': 0}), -1)
-        self.assertEqual(bqm.energy({'a': 1, 'b': 1}), -1)
-        self.assertConsistentBQM(bqm)
-
-        # binary-to-spin
-        bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.BINARY)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': +1, 'b': +1}), -1)
-        self.assertEqual(bqm.energy({'a': -1, 'b': +1}), 0)
-        self.assertEqual(bqm.energy({'a': +1, 'b': -1}), 0)
-        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), 0)
-        self.assertConsistentBQM(bqm)
-
-        bqm = dimod.BinaryQuadraticModel({'b': 0}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.BINARY)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': +1, 'b': +1}), -1)
-        self.assertEqual(bqm.energy({'a': -1, 'b': +1}), 0)
-        self.assertEqual(bqm.energy({'a': +1, 'b': -1}), 0)
-        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), 0)
-        self.assertConsistentBQM(bqm)
-
-        bqm = dimod.BinaryQuadraticModel({'a': 0}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1, vartype=dimod.BINARY)  # add a chain link
-
-        self.assertEqual(bqm.energy({'a': +1, 'b': +1}), -1)
-        self.assertEqual(bqm.energy({'a': -1, 'b': +1}), 0)
-        self.assertEqual(bqm.energy({'a': +1, 'b': -1}), 0)
-        self.assertEqual(bqm.energy({'a': -1, 'b': -1}), 0)
-        self.assertConsistentBQM(bqm)
-
-        # no type specified
-        bqm = dimod.BinaryQuadraticModel({'a': 0, 'b': 0}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1)
-        self.assertEqual(bqm.adj, {'a': {'b': -1}, 'b': {'a': -1}})
-        self.assertConsistentBQM(bqm)
-
-        # add to empty
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1)
-        self.assertEqual(bqm.adj, {'a': {'b': -1}, 'b': {'a': -1}})
-        self.assertConsistentBQM(bqm)
-
-        # existing biases
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', -1)
-        self.assertEqual(bqm.adj, {'a': {'b': -2}, 'b': {'a': -2}})
-        bqm.add_interaction('b', 'a', -1)
-        self.assertEqual(bqm.adj, {'a': {'b': -3}, 'b': {'a': -3}})
-        self.assertConsistentBQM(bqm)
-
-        # unknown vartype
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.SPIN)
-        with self.assertRaises(ValueError):
-            bqm.add_interaction('a', 'b', -1, vartype=-1)
-
-    def test_add_interaction_counterpart(self):
-        # spin
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-        bqm.add_interaction('a', 'b', .5)
-        self.assertConsistentBQM(bqm)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.binary.energy({'a': av, 'b': bv}))
-
-        bqm.add_interaction('a', 'b', .5)
-        self.assertConsistentBQM(bqm)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.binary.energy({'a': av, 'b': bv}))
-
-        #
-
-        # spin
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-        __ = bqm.binary  # create counterpart
-        bqm.add_interaction('a', 'b', -1)
-        self.assertConsistentBQM(bqm)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.binary.energy({'a': av, 'b': bv}))
-
-        #
-
-        # binary
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-        bqm.add_interaction('a', 'b', .5)
-        self.assertConsistentBQM(bqm)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.spin.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.energy({'a': av, 'b': bv}))
-
-        #
-
-        # binary
-        bqm = dimod.BinaryQuadraticModel({}, {('a', 'b'): -1}, 0.0, dimod.BINARY)
-        __ = bqm.spin  # create counterpart
-        bqm.add_interaction('a', 'b', -1)
-        self.assertConsistentBQM(bqm)
-
-        for av, bv in itertools.product((0, 1), repeat=2):
-            self.assertEqual(bqm.spin.energy({'a': 2 * av - 1, 'b': 2 * bv - 1}),
-                             bqm.energy({'a': av, 'b': bv}))
 
     def test_add_interactions_from(self):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
@@ -562,11 +329,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertAlmostEqual(bqm.energy({v: v % 2 for v in bqm.linear}),
                                bqm.spin.energy({v: 2 * (v % 2) - 1 for v in bqm.linear}))
 
-        #
-
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.BINARY)
-        bqm.remove_variable(3)  # silent fail
-
     def test_remove_variables_from(self):
         linear = {v: v * -.13 for v in range(10)}
         quadratic = {(u, v): u * v * .021 for u, v in itertools.combinations(linear, 2)}
@@ -598,8 +360,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         self.assertNotIn((5, 3), bqm.quadratic)
         self.assertNotIn((3, 5), bqm.quadratic)
         self.assertConsistentBQM(bqm)
-
-        bqm.remove_interaction('a', 1)  # silent fail
 
         # remove all interactions
         interactions = list(bqm.quadratic)
@@ -910,80 +670,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.fix_variable('b', -1)  # spin for binary
 
-    def test_flip_variable(self):
-
-        # single spin variable, trivial
-        bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
-        original_bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
-        bqm.flip_variable('a')
-        self.assertAlmostEqual(bqm.energy({'a': +1}), original_bqm.energy({'a': -1}))
-        self.assertAlmostEqual(bqm.energy({'a': -1}), original_bqm.energy({'a': +1}))
-        self.assertConsistentBQM(bqm)
-
-        bqm.flip_variable('a')  # should return to original
-        self.assertEqual(bqm, original_bqm)
-
-        #
-
-        # more complicated spin model
-        linear = {v: v * -.43 for v in range(10)}
-        quadratic = {(u, v): u * v * -.021 for u, v in itertools.combinations(linear, 2)}
-        offset = -1.2
-        vartype = dimod.SPIN
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-        original_bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-
-        bqm.flip_variable(4)
-        self.assertConsistentBQM(bqm)
-        self.assertEqual(linear[4], bqm.linear[4] * -1)
-        self.assertNotEqual(bqm, original_bqm)
-
-        sample = {v: 1 for v in linear}
-        flipped_sample = sample.copy()
-        flipped_sample[4] = -1
-        self.assertAlmostEqual(bqm.energy(flipped_sample), original_bqm.energy(sample))
-
-        bqm.flip_variable(4)  # should return to original
-        self.assertEqual(bqm, original_bqm)
-
-        #
-
-        # single binary variable
-        bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.BINARY)
-        original_bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.BINARY)
-        bqm.flip_variable('a')
-        self.assertAlmostEqual(bqm.energy({'a': 1}), original_bqm.energy({'a': 0}))
-        self.assertAlmostEqual(bqm.energy({'a': 0}), original_bqm.energy({'a': 1}))
-        self.assertConsistentBQM(bqm)
-
-        bqm.flip_variable('a')  # should return to original
-        self.assertEqual(bqm, original_bqm)
-
-        #
-
-        linear = {v: v * -.43 for v in range(10)}
-        quadratic = {(u, v): u * v * -.021 for u, v in itertools.combinations(linear, 2)}
-        offset = -1.2
-        vartype = dimod.BINARY
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-        original_bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-
-        bqm.flip_variable(4)
-        self.assertConsistentBQM(bqm)
-        self.assertNotEqual(bqm, original_bqm)
-
-        sample = {v: 1 for v in linear}
-        flipped_sample = sample.copy()
-        flipped_sample[4] = 0
-        self.assertAlmostEqual(bqm.energy(flipped_sample), original_bqm.energy(sample))
-
-        bqm.flip_variable(4)  # should return to original
-        self.assertEqual(bqm, original_bqm)
-
-        #
-
-        bqm.flip_variable(100000)  # silent fail
-
     def test_update(self):
         binary_bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 0, dimod.BINARY)
         spin_bqm = dimod.BinaryQuadraticModel({'c': -1}, {('b', 'c'): 1}, 1.2, dimod.SPIN)
@@ -1056,9 +742,9 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         mapping = {0: 'a', 1: 'b'}
         newmodel = model.relabel_variables(mapping, inplace=False)
-        self.assertNotEqual(id(model), id(newmodel))
-        self.assertNotEqual(id(model.linear), id(newmodel.linear))
-        self.assertNotEqual(id(model.quadratic), id(newmodel.quadratic))
+        self.assertIsNot(model, newmodel)
+        self.assertIsNot(model.linear, newmodel.linear)
+        self.assertIsNot(model.quadratic, newmodel.quadratic)
 
         # check that new model is the same as old model
         linear = {'a': .5, 'b': 1.3}
@@ -1078,9 +764,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
         mapping = {0: 'a', 1: 'b'}
         newmodel = model.relabel_variables(mapping)
-        self.assertEqual(id(model), id(newmodel))
-        self.assertEqual(id(model.linear), id(newmodel.linear))
-        self.assertEqual(id(model.quadratic), id(newmodel.quadratic))
+        self.assertIs(model, newmodel)
 
         # check that model is the same as old model
         linear = {'a': .5, 'b': 1.3}
@@ -1173,9 +857,9 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         new_bqm = bqm.copy()
 
         # everything should have a new id
-        self.assertNotEqual(id(bqm.linear), id(new_bqm.linear))
-        self.assertNotEqual(id(bqm.quadratic), id(new_bqm.quadratic))
-        self.assertNotEqual(id(bqm.adj), id(new_bqm.adj))
+        self.assertIsNot(bqm.linear, new_bqm.linear)
+        self.assertIsNot(bqm.quadratic, new_bqm.quadratic)
+        self.assertIsNot(bqm.adj, new_bqm.adj)
 
         for v in bqm.linear:
             self.assertIsNot(bqm.adj[v], new_bqm.adj[v])
@@ -1412,25 +1096,6 @@ class TestBinaryQuadraticModel(unittest.TestCase):
 
 
 class TestConvert(unittest.TestCase):
-    @unittest.skipUnless(_networkx, "No networkx installed")
-    def test_to_networkx_graph(self):
-        graph = nx.barbell_graph(7, 6)
-
-        # build a BQM
-        model = dimod.BinaryQuadraticModel({v: -.1 for v in graph},
-                                           {edge: -.4 for edge in graph.edges},
-                                           1.3,
-                                           vartype=dimod.SPIN)
-
-        # get the graph
-        BQM = model.to_networkx_graph()
-
-        self.assertEqual(set(graph), set(BQM))
-        for u, v in graph.edges:
-            self.assertIn(u, BQM[v])
-
-        for v, bias in model.linear.items():
-            self.assertEqual(bias, BQM.nodes[v]['bias'])
 
     def test_to_ising_spin_to_ising(self):
         linear = {0: 7.1, 1: 103}
@@ -1508,95 +1173,6 @@ class TestConvert(unittest.TestCase):
             # and the energy of the model
             self.assertAlmostEqual(energy, model.energy(spin_sample))
 
-    def test_to_numpy_matrix(self):
-        # integer-indexed, binary bqm
-        linear = {v: v * .01 for v in range(10)}
-        quadratic = {(v, u): u * v * .01 for u, v in itertools.combinations(linear, 2)}
-        quadratic[(0, 1)] = quadratic[(1, 0)]
-        del quadratic[(1, 0)]
-        offset = 1.2
-        vartype = dimod.BINARY
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-
-        M = bqm.to_numpy_matrix()
-
-        self.assertTrue(np.array_equal(M, np.triu(M)))  # upper triangular
-
-        for (row, col), bias in np.ndenumerate(M):
-            if row == col:
-                self.assertEqual(bias, linear[row])
-            else:
-                self.assertTrue((row, col) in quadratic or (col, row) in quadratic)
-                self.assertFalse((row, col) in quadratic and (col, row) in quadratic)
-
-                if row > col:
-                    self.assertEqual(bias, 0)
-                else:
-                    if (row, col) in quadratic:
-                        self.assertEqual(quadratic[(row, col)], bias)
-                    else:
-                        self.assertEqual(quadratic[(col, row)], bias)
-
-        #
-
-        # integer-indexed, not contiguous
-        bqm = dimod.BinaryQuadraticModel({}, {(0, 3): -1}, 0.0, dimod.BINARY)
-
-        with self.assertRaises(ValueError):
-            M = bqm.to_numpy_matrix()
-
-        #
-
-        # string-labeled, variable_order provided
-        linear = {'a': -1}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
-
-        with self.assertRaises(ValueError):
-            bqm.to_numpy_matrix(['a', 'c'])  # incomplete variable order
-
-        M = bqm.to_numpy_matrix(['a', 'c', 'b'])
-
-        self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
-
-    def test_from_numpy_matrix(self):
-
-        linear = {'a': -1}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
-
-        variable_order = ['a', 'c', 'b']
-
-        M = bqm.to_numpy_matrix(variable_order=variable_order)
-
-        new_bqm = dimod.BinaryQuadraticModel.from_numpy_matrix(M, variable_order=variable_order)
-
-        self.assertEqual(bqm, new_bqm)
-
-        #
-
-        # zero-interactions get ignored unless provided in interactions
-        linear = {'a': -1}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
-        variable_order = ['a', 'c', 'b']
-        M = bqm.to_numpy_matrix(variable_order=variable_order)
-
-        new_bqm = dimod.BinaryQuadraticModel.from_numpy_matrix(M, variable_order=variable_order)
-
-        self.assertNotIn(('a', 'b'), new_bqm.quadratic)
-        self.assertNotIn(('b', 'a'), new_bqm.quadratic)
-
-        new_bqm = dimod.BinaryQuadraticModel.from_numpy_matrix(M, variable_order=variable_order, interactions=quadratic)
-
-        self.assertEqual(bqm, new_bqm)
-
-        #
-
-        M = np.asarray([[0, 1], [0, 0]])
-        bqm = dimod.BinaryQuadraticModel.from_numpy_matrix(M)
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
-
     def test_to_numpy_vectors(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {(0, 1): .5, (2, 3): -1, (0, 3): 1.5})
 
@@ -1627,8 +1203,8 @@ class TestConvert(unittest.TestCase):
     def test_to_numpy_vectors_labels_sorted(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): .5, ('d', 'c'): -1, ('a', 'd'): 1.5})
 
-        with self.assertRaises(ValueError):
-            bqm.to_numpy_vectors(sort_indices=True)
+        # with self.assertRaises(ValueError):
+        #     bqm.to_numpy_vectors(sort_indices=True)
 
         h, (i, j, values), off = bqm.to_numpy_vectors(sort_indices=True, variable_order=['a', 'b', 'c', 'd'])
 
@@ -1739,53 +1315,6 @@ class TestConvert(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_ising(h, J, offset=1)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))
 
-    @unittest.skipUnless(_pandas, "No pandas installed")
-    def test_to_pandas_dataframe(self):
-        linear = {'a': -1}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
-
-        bqm_df = bqm.to_pandas_dataframe()
-
-        for config in itertools.product((0, 1), repeat=3):
-            sample = dict(zip('abc', config))
-            sample_series = pd.Series(sample)
-
-            self.assertAlmostEqual(bqm.energy(sample), sample_series.dot(bqm_df.dot(sample_series)))
-
-        bqm_new = dimod.BinaryQuadraticModel.from_pandas_dataframe(bqm_df, interactions=quadratic)
-
-        self.assertAlmostEqual(bqm.linear, bqm_new.linear)
-        for u in bqm.adj:
-            for v in bqm.adj[u]:
-                self.assertAlmostEqual(bqm.adj[u][v], bqm_new.adj[u][v])
-
-        #
-
-        # unlike var names
-        linear = {'a': -1, 16: 0.}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, dimod.BINARY)
-
-        bqm_df = bqm.to_pandas_dataframe()
-        variables = list(bqm_df)
-
-        for config in itertools.product((0, 1), repeat=4):
-            sample = dict(zip(variables, config))
-            # Note: explicitly set the index of Series object to be equal (in same order)
-            # to the column list of the DataFrame multiplied later, to avoid sorting of
-            # indexes with mixed types. See https://github.com/dwavesystems/dimod/pull/167.
-            sample_series = pd.Series(data=sample, index=variables)
-
-            self.assertAlmostEqual(bqm.energy(sample), sample_series.dot(bqm_df.dot(sample_series)))
-
-        bqm_new = dimod.BinaryQuadraticModel.from_pandas_dataframe(bqm_df, interactions=quadratic)
-
-        self.assertAlmostEqual(bqm.linear, bqm_new.linear)
-        for u in bqm.adj:
-            for v in bqm.adj[u]:
-                self.assertAlmostEqual(bqm.adj[u][v], bqm_new.adj[u][v])
-
     def test_info(self):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, tag=1)
 
@@ -1797,307 +1326,26 @@ class TestConvert(unittest.TestCase):
         self.assertIn('tag', new_bqm.info)
         self.assertEqual(new_bqm.info['tag'], 1)
 
-        another_bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, id=5)
+        # another_bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, id=5)
 
-        bqm.update(another_bqm, ignore_info=False)
-        self.assertIn('tag', bqm.info)
-        self.assertEqual(bqm.info['tag'], 1)
-        self.assertIn('id', bqm.info)
-        self.assertEqual(bqm.info['id'], 5)
+        # bqm.update(another_bqm, ignore_info=False)
+        # self.assertIn('tag', bqm.info)
+        # self.assertEqual(bqm.info['tag'], 1)
+        # self.assertIn('id', bqm.info)
+        # self.assertEqual(bqm.info['id'], 5)
 
-        new_bqm.update(another_bqm, ignore_info=True)
-        self.assertIn('tag', new_bqm.info)
-        self.assertEqual(new_bqm.info['tag'], 1)
-        self.assertNotIn('id', new_bqm.info)
+        # new_bqm.update(another_bqm, ignore_info=True)
+        # self.assertIn('tag', new_bqm.info)
+        # self.assertEqual(new_bqm.info['tag'], 1)
+        # self.assertNotIn('id', new_bqm.info)
 
     def test_empty(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))
 
-    def test_to_coo_string_empty_BINARY(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        bqm_str = bqm.to_coo()
-
-        self.assertIsInstance(bqm_str, str)
-
-        self.assertEqual(bqm_str, '')
-
-    def test_to_coo_string_empty_SPIN(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        bqm_str = bqm.to_coo()
-
-        self.assertIsInstance(bqm_str, str)
-
-        self.assertEqual(bqm_str, '')
-
-    def test_to_coo_string_typical_SPIN(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4})
-        s = bqm.to_coo()
-        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
-        self.assertEqual(s, contents)
-
-    def test_to_coo_string_typical_BINARY(self):
-        bqm = dimod.BinaryQuadraticModel.from_qubo({(0, 0): 1, (0, 1): 2, (2, 3): .4})
-        s = bqm.to_coo()
-        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
-        self.assertEqual(s, contents)
-
-    def test_from_coo_file(self):
-        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'coo_qubo.qubo')
-
-        with open(filepath, 'r') as fp:
-            bqm = dimod.BinaryQuadraticModel.from_coo(fp, dimod.BINARY)
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
-
-    def test_from_coo_string(self):
-        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
-        bqm = dimod.BinaryQuadraticModel.from_coo(contents, dimod.SPIN)
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
-
-    def test_coo_functional_file_empty_BINARY(self):
-
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.qubo')
-
-        with open(filename, 'w') as file:
-            bqm.to_coo(file)
-
-        with open(filename, 'r') as file:
-            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
-
-        shutil.rmtree(tmpdir)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_file_empty_SPIN(self):
-
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.qubo')
-
-        with open(filename, 'w') as file:
-            bqm.to_coo(file)
-
-        with open(filename, 'r') as file:
-            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.SPIN)
-
-        shutil.rmtree(tmpdir)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_file_BINARY(self):
-
-        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.qubo')
-
-        with open(filename, 'w') as file:
-            bqm.to_coo(file)
-
-        with open(filename, 'r') as file:
-            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.BINARY)
-
-        shutil.rmtree(tmpdir)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_file_SPIN(self):
-
-        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
-
-        tmpdir = tempfile.mkdtemp()
-        filename = path.join(tmpdir, 'test.qubo')
-
-        with open(filename, 'w') as file:
-            bqm.to_coo(file)
-
-        with open(filename, 'r') as file:
-            new_bqm = dimod.BinaryQuadraticModel.from_coo(file, dimod.SPIN)
-
-        shutil.rmtree(tmpdir)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_string_empty_BINARY(self):
-
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
-
-        s = bqm.to_coo()
-        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.BINARY)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_string_empty_SPIN(self):
-
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        s = bqm.to_coo()
-        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_string_BINARY(self):
-
-        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
-
-        s = bqm.to_coo()
-        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.BINARY)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_two_digit_integers_string(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({12: .5, 0: 1}, {(0, 12): .5})
-
-        s = bqm.to_coo()
-        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
-
-        self.assertEqual(bqm, new_bqm)
-
-    def test_coo_functional_string_SPIN(self):
-
-        bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
-
-        s = bqm.to_coo()
-        new_bqm = dimod.BinaryQuadraticModel.from_coo(s, dimod.SPIN)
-
-        self.assertEqual(bqm, new_bqm)
-
 
 class TestSerialization(unittest.TestCase):
-    def test_from_serializable_empty_v1(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        s = {'linear_terms': [],
-             'quadratic_terms': [], 'offset': 0.0, 'variable_type': 'SPIN',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '1.0.0'},
-             'variable_labels': [], 'info': {}}
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
-
-    def test_from_serializable_v1(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        s = {'linear_terms': [{'bias': -1, 'label': 'a'},
-                              {'bias': 1, 'label': 4},
-                              {'bias': 3, 'label': ['a', 'complex key']},
-                              {'bias': 0, 'label': 'c'},
-                              {'bias': 0, 'label': 'b'},
-                              {'bias': 0, 'label': 3}],
-             'quadratic_terms': [{'bias': 1.2, 'label_head': 'a', 'label_tail': 'c'},
-                                 {'bias': -1, 'label_head': 'a', 'label_tail': 3},
-                                 {'bias': 0.3, 'label_head': 'c', 'label_tail': 'b'}],
-             'offset': 3, 'variable_type': 'SPIN',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '1.0.0'},
-             'variable_labels': ['a', 4, ['a', 'complex key'], 'c', 'b', 3],
-             'info': {}}
-
-        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
-
-    def test_from_serializable_bytes_empty_v1(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        s = {'as_complete': False,
-             'linear': b'',
-             'quadratic_vals': b'',
-             'variable_type': 'SPIN',
-             'offset': 0.0,
-             'variable_order': [],
-             'index_dtype': '<u2',
-             'bias_dtype': '<f4',
-             'quadratic_head': b'',
-             'quadratic_tail': b''}
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
-
-    def test_from_serializable_bytes_v1(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        s = {'as_complete': False,
-             'linear': b'\x00\x00\x80\xbf\x00\x00\x80?\x00\x00@@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
-             'quadratic_vals': b'\x00\x00\x80?\x00\x00\x80\xbf\x00\x00@@',
-             'variable_type': 'SPIN', 'offset': 3.0,
-             'variable_order': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
-             'index_dtype': '<u2', 'bias_dtype': '<f4',
-             'quadratic_head': b'\x00\x00\x00\x00\x03\x00',
-             'quadratic_tail': b'\x03\x00\x05\x00\x04\x00'}
-
-        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
-
-    def test_from_serializable_empty_v2(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        s = {'basetype': 'BinaryQuadraticModel',
-             'type': 'BinaryQuadraticModel',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
-             'variable_labels': [], 'variable_type': 'SPIN', 'info': {},
-             'offset': 0.0, 'use_bytes': False,
-             'linear_biases': [], 'quadratic_biases': [],
-             'quadratic_head': [], 'quadratic_tail': []}
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
-
-    def test_from_serializable_v2(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        s = {'basetype': 'BinaryQuadraticModel',
-             'type': 'BinaryQuadraticModel',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
-             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
-             'variable_type': 'SPIN', 'info': {}, 'offset': 3.0,
-             'use_bytes': False,
-             'linear_biases': [-1.0, 1.0, 3.0, 0.0, 0.0, 0.0],
-             'quadratic_biases': [1.0, 3.0, -1.0],
-             'quadratic_head': [0, 3, 0],
-             'quadratic_tail': [3, 4, 5]}
-
-        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
-
-    def test_from_serializable_bytes_empty_v2(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        s = {'basetype': 'BinaryQuadraticModel',
-             'type': 'BinaryQuadraticModel',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
-             'variable_labels': [], 'variable_type': 'SPIN', 'info': {},
-             'offset': 0.0, 'use_bytes': True,
-             'linear_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (0,), }                                                            \n",
-             'quadratic_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (0,), }                                                            \n",
-             'quadratic_head': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (0,), }                                                            \n",
-             'quadratic_tail': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (0,), }                                                            \n"}
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_serializable(s))
-
-    def test_from_serializable_bytes_v2(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1, ('b', 'c'): 3.0, ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
-
-        s = {'basetype': 'BinaryQuadraticModel',
-             'type': 'BinaryQuadraticModel',
-             'version': {'dimod': '0.8.5', 'bqm_schema': '2.0.0'},
-             'variable_labels': ['a', 4, ('a', 'complex key'), 'c', 'b', 3],
-             'variable_type': 'SPIN', 'info': {}, 'offset': 3.0,
-             'use_bytes': True,
-             'linear_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (6,), }                                                            \n\x00\x00\x80\xbf\x00\x00\x80?\x00\x00@@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-             'quadratic_biases': b"\x93NUMPY\x01\x00v\x00{'descr': '<f4', 'fortran_order': False, 'shape': (3,), }                                                            \n\x00\x00\x80?\x00\x00@@\x00\x00\x80\xbf",
-             'quadratic_head': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (3,), }                                                            \n\x00\x00\x03\x00\x00\x00",
-             'quadratic_tail': b"\x93NUMPY\x01\x00v\x00{'descr': '<u2', 'fortran_order': False, 'shape': (3,), }                                                            \n\x03\x00\x04\x00\x05\x00"}
-
-        self.assertEqual(dimod.BinaryQuadraticModel.from_serializable(s), bqm)
 
     def test_from_serializable_empty_v3(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
@@ -2260,105 +1508,3 @@ class TestZeroField(unittest.TestCase):
         self.assertEqual(bqm.adj, {'a': {'b': -1}, 'b': {'a': -1}})
         self.assertEqual(set(bqm.linear.keys()), {'a', 'b'})
         self.assertEqual(set(bqm.linear.items()), {('a', 0), ('b', 0)})
-
-
-@unittest.skipUnless(_networkx, "NetworkX is not installed")
-class TestFromNetworkxGraph(unittest.TestCase):
-    def test_empty(self):
-        G = nx.Graph()
-        G.vartype = 'SPIN'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
-        self.assertEqual(len(bqm), 0)
-        self.assertIs(bqm.vartype, dimod.SPIN)
-
-    def test_no_biases(self):
-        G = nx.complete_graph(5)
-        G.vartype = 'BINARY'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
-
-        self.assertIs(bqm.vartype, dimod.BINARY)
-        self.assertEqual(set(bqm.variables), set(range(5)))
-        for u, v in itertools.combinations(range(5), 2):
-            self.assertEqual(bqm.adj[u][v], 0)
-            self.assertEqual(bqm.linear[v], 0)
-        self.assertEqual(len(bqm.quadratic), len(G.edges))
-
-    def test_functional(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
-                                                    {'bc': 1, 'cd': -4},
-                                                    offset=6)
-        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
-        self.assertEqual(bqm, new)
-
-
-class TestIsWriteable(unittest.TestCase):
-    def test_offset(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        bqm.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            bqm.offset = 5
-
-    def test_info(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        bqm.is_writeable = False
-        with self.assertRaises(WriteableError):
-            bqm.info['a'] = 1
-
-    def test_biases(self):
-        bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
-
-        bqm.is_writeable = False
-        with self.assertRaises(WriteableError):
-            bqm.linear['a'] = 5
-
-        with self.assertRaises(WriteableError):
-            bqm.add_variable('a', 5)
-
-        with self.assertRaises(WriteableError):
-            bqm.add_interaction('a', 'b', 5)
-
-    def test_already_existing_biases(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
-
-        bqm.is_writeable = False
-
-        with self.assertRaises(WriteableError):
-            bqm.add_variable('a', 1)
-
-        with self.assertRaises(WriteableError):
-            bqm.add_interaction('a', 'b', 1)
-
-        with self.assertRaises(WriteableError):
-            bqm.linear['a'] += 6
-
-        with self.assertRaises(WriteableError):
-            bqm.adj['a']['b'] += 5
-
-    def test_copy(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
-        bqm.is_writeable = False
-
-        new = bqm.copy()
-        self.assertEqual(new, bqm)
-        self.assertIsNot(new, bqm)
-        self.assertFalse(new.is_writeable)
-
-    def test_deepcopy(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
-        bqm.is_writeable = False
-
-        new = copy.deepcopy(bqm)
-        self.assertEqual(new, bqm)
-        self.assertIsNot(new, bqm)
-        self.assertFalse(new.is_writeable)
-
-    def test_pickle(self):
-        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
-        bqm.is_writeable = False
-
-        new = pickle.loads(pickle.dumps(bqm))
-        self.assertEqual(new, bqm)
-        self.assertFalse(new.is_writeable)

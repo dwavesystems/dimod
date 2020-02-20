@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-
-__version__ = '0.9.0.dev4'
-__author__ = 'D-Wave Systems Inc.'
-__authoremail__ = 'acondello@dwavesys.com'
-__description__ = 'A shared API for binary quadratic model samplers.'
+# =============================================================================
+from dimod.bqm.adjarraybqm import AdjArrayBQM
+from dimod.bqm.adjdictbqm import AdjDictBQM
+from dimod.bqm.adjmapbqm import AdjMapBQM
+from dimod.bqm.adjvectorbqm import AdjVectorBQM
+from dimod.bqm.construction import as_bqm

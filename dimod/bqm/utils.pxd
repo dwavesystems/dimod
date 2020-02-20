@@ -1,4 +1,7 @@
-# Copyright 2018 D-Wave Systems Inc.
+# distutils: language = c++
+# cython: language_level=3
+#
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,9 +15,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+cimport numpy as np
 
-__version__ = '0.9.0.dev4'
-__author__ = 'D-Wave Systems Inc.'
-__authoremail__ = 'acondello@dwavesys.com'
-__description__ = 'A shared API for binary quadratic model samplers.'
+cdef object as_numpy_scalar(double a, np.dtype dtype)

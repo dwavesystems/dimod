@@ -1,4 +1,4 @@
-# Copyright 2018 D-Wave Systems Inc.
+# Copyright 2019 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,9 +12,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+import numpy as np
 
-__version__ = '0.9.0.dev4'
-__author__ = 'D-Wave Systems Inc.'
-__authoremail__ = 'acondello@dwavesys.com'
-__description__ = 'A shared API for binary quadratic model samplers.'
+itype = np.dtype(np.uint32)  # corresponds to VarIndex
+dtype = np.dtype(np.float64)  # corresponds to Bias
+
+# numpy does not have a dtype corresponding to size_t, normally uint64
+ntype = np.dtype(('u' if ((<size_t>-1) > 0) else 'i') + str(sizeof(size_t)))

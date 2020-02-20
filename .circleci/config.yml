@@ -40,22 +40,18 @@ jobs:
             - ./env
           key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
-      # tests should work without the extension built
-      - run: &run-tests-template
-          name: run unittests
-          command: |
-            . env/bin/activate
-            python --version
-            coverage run -m unittest discover
-
-      # test the extension as well
       - run: &build-ext-template
           name: build extension
           command: |
             . env/bin/activate
             python setup.py build_ext --inplace
 
-      - run: *run-tests-template
+      - run: &run-tests-template
+          name: run unittests
+          command: |
+            . env/bin/activate
+            python --version
+            coverage run -m unittest discover
 
       - run:
           name: codecov
@@ -77,16 +73,6 @@ jobs:
     <<: *full-test-template
     docker:
       - image: circleci/python:3.5-jessie
-
-  test-py34:
-    <<: *full-test-template
-    docker:
-      - image: circleci/python:3.4-jessie
-
-  test-py27:
-    <<: *full-test-template
-    docker:
-      - image: circleci/python:2.7-jessie
 
   test-osx-py38: &osx-tests-template
     macos:
@@ -143,8 +129,6 @@ jobs:
 
       - save_cache: *save-cache-template
 
-      - run: *run-tests-template
-
       - run: *build-ext-template
         
       - run: *run-tests-template
@@ -170,26 +154,13 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
-  test-osx-py34:
-    <<: *osx-tests-template
-    environment:
-      PYTHON: 3.4.8
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  test-osx-py27:
-    <<: *osx-tests-template
-    environment:
-      PYTHON: 2.7.15
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
   test-win-py38: &win-tests-template
     executor:
       name: win/default
 
     environment:
       PYTHON: 3.8.0
+      CL: /d2FH4-
 
     working_directory: ~/repo
 
@@ -232,7 +203,7 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
-            $env:CL='-Iboost\lib\native\include\'
+            $env:CL+=' -Iboost\lib\native\include\'
             python setup.py bdist_wheel
 
       - store_artifacts:
@@ -268,9 +239,9 @@ jobs:
 
       - run: *win-install-boost-template
 
-      - run: *win-run-unittests-template
-
       - run: *win-build-ext-template
+
+      - run: *win-run-unittests-template
 
       - run: *win-build-wheel-template
 
@@ -283,21 +254,25 @@ jobs:
     <<: *win-tests-template
     environment:
       PYTHON: 3.7.5
+      CL: /d2FH4-
 
   test-win-py37x86:
     <<: *win-tests-template-x86
     environment:
       PYTHON: 3.7.5
+      CL: /d2FH4-
 
   test-win-py36:
     <<: *win-tests-template
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   test-win-py36x86:
     <<: *win-tests-template-x86
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   test-win-py35:
     <<: *win-tests-template
@@ -365,6 +340,7 @@ jobs:
           name: build wheels
           command: |
             for PYBIN in /opt/python/*/bin; do
+              if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info>=(3, 5))"; then continue; fi;
               "${PYBIN}/pip" install -r requirements.txt
               "${PYBIN}/pip" wheel . -w ./wheelhouse
               "${PYBIN}/python" setup.py sdist -d ./dist
@@ -419,6 +395,8 @@ jobs:
             brew install pyenv
 
       - run: *install-boost-osx-template
+
+      # - run: *install-openmp-osx-template
 
       - restore_cache:
           keys:
@@ -475,20 +453,6 @@ jobs:
     <<: *osx-deploy-template
     environment:
       PYTHON: 3.5.5
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  deploy-osx-py34:
-    <<: *osx-deploy-template
-    environment:
-      PYTHON: 3.4.8
-      HOMEBREW_NO_AUTO_UPDATE: 1
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-  deploy-osx-py27:
-    <<: *osx-deploy-template
-    environment:
-      PYTHON: 2.7.15
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
@@ -555,21 +519,25 @@ jobs:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.7.0
+      CL: /d2FH4-
 
   deploy-win-py37x86:
     <<: *win-deploy-template-x86
     environment:
       PYTHON: 3.7.0
+      CL: /d2FH4-
 
   deploy-win-py36:
     <<: *win-deploy-template
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   deploy-win-py36x86:
     <<: *win-deploy-template-x86
     environment:
       PYTHON: 3.6.8
+      CL: /d2FH4-
 
   deploy-win-py35:
     <<: *win-deploy-template
@@ -589,14 +557,10 @@ workflows:
       - test-py37
       - test-py36
       - test-py35
-      - test-py34
-      - test-py27
       - test-osx-py38
       - test-osx-py37
       - test-osx-py36
       - test-osx-py35
-      - test-osx-py34
-      - test-osx-py27
       - test-win-py38
       - test-win-py37
       - test-win-py36
@@ -639,18 +603,6 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-osx-py35:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-osx-py34:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-osx-py27:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
