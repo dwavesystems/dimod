@@ -222,7 +222,7 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
 
     def __iter__(self):
         msg = ("iterating over binary quadratic models is deprecated, "
-               "please use `for in bqm.variables` or `bqm.iter_variables()` "
+               "please use `for v in bqm.variables` or `bqm.iter_variables()` "
                "instead")
         warnings.warn(msg, DeprecationWarning, stacklevel=2)
         return iter(self.adj)
@@ -258,9 +258,7 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
 
             bytes_type (class, optional, default=bytes):
                 This class will be used to wrap the bytes objects in the
-                serialization if `use_bytes` is true. Useful for when using
-                Python 2 and using BSON encoding, which will not accept the raw
-                `bytes` type, so `bson.Binary` can be used instead.
+                serialization if `use_bytes` is true.
 
         Returns:
             dict: An object that can be serialized.
@@ -269,30 +267,17 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
 
             Encode using JSON
 
-            >>> import dimod
             >>> import json
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> s = json.dumps(bqm.to_serializable())
 
-            Encode using BSON_ in python 3.5+
+            Encode using BSON_
 
-            >>> import dimod
             >>> import bson
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> doc = bqm.to_serializable(use_bytes=True)
-            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
-
-            Encode using BSON in python 2.7. Because :class:`bytes` is an alias for :class:`str`,
-            we need to signal to the encoder that it should encode the biases and labels as binary
-            data.
-
-            >>> import dimod
-            >>> import bson
-            ...
-            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
-            >>> doc = bqm.to_serializable(use_bytes=True, bytes_type=bson.Binary)
             >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
 
         See also:
