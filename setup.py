@@ -23,7 +23,7 @@ from distutils.command.build_ext import build_ext
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 exec(open(os.path.join(".", "dimod", "package_info.py")).read())
 
-install_requires = ['numpy>=1.15.0,<2.0.0',
+install_requires = ['numpy>=1.16.0,<2.0.0',
                     'six>=1.10.0,<2.0.0',
                     ]
 
