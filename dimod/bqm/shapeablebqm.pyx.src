@@ -219,6 +219,11 @@ cdef class cyAdj@name@BQM:
                 # get the index of the variable, ensuring that it exists
                 vi = self.label_to_idx(self.add_variable(v))
                 set_linear(self.adj_, vi, get_linear(self.adj_, vi) + b)
+        elif isinstance(linear, abc.Iterator):
+            for v, b in linear:
+                # get the index of the variable, ensuring that it exists
+                vi = self.label_to_idx(self.add_variable(v))
+                set_linear(self.adj_, vi, get_linear(self.adj_, vi) + b)
         else:
             ldata = np.asarray(linear, dtype=self.dtype)
 
