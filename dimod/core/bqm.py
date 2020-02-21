@@ -815,12 +815,7 @@ class ShapeableBQM(BQM):
                 model, this value is added to the current quadratic bias.
 
         """
-        try:
-            # not += on the off chance bias is mutable
-            bias = bias + self.get_quadratic(u, v)
-        except ValueError:
-            pass
-        self.set_quadratic(u, v, bias)
+        self.set_quadratic(u, v, bias + self.get_quadratic(u, v, default=0))
 
     def add_interactions_from(self, quadratic):
         """Add interactions and/or quadratic biases to a binary quadratic model.
