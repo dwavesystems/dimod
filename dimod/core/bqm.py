@@ -1018,8 +1018,13 @@ class BinaryView(VartypeView):
         bqm = self._bqm
         return 2 * bqm.get_linear(v) - 2 * sum(b for _, _, b in bqm.iter_quadratic(v))
 
-    def get_quadratic(self, u, v):
-        return 4 * self._bqm.get_quadratic(u, v)
+    def get_quadratic(self, u, v, default=None):
+        try:
+            return 4 * self._bqm.get_quadratic(u, v)
+        except ValueError as err:
+            if default is None:
+                raise err
+        return default
 
     def set_linear(self, v, bias):
         bqm = self._bqm
@@ -1079,8 +1084,13 @@ class SpinView(VartypeView):
         return (bqm.get_linear(v) / 2
                 + sum(b for _, _, b in bqm.iter_quadratic(v)) / 4)
 
-    def get_quadratic(self, u, v):
-        return self._bqm.get_quadratic(u, v) / 4
+    def get_quadratic(self, u, v, default=None):
+        try:
+            return self._bqm.get_quadratic(u, v) / 4
+        except ValueError as err:
+            if default is None:
+                raise err
+        return default
 
     def set_linear(self, v, bias):
         bqm = self._bqm
