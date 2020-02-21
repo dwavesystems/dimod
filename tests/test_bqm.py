@@ -1228,6 +1228,116 @@ class TestLen(BQMTestCase):
         self.assertEqual(len(bqm), 107)
 
 
+class TestNumpyMatrix(BQMTestCase):
+    @multitest
+    def test_to_numpy_matrix(self, BQM):
+        # integer-indexed, binary bqm
+        linear = {v: v * .01 for v in range(10)}
+        quadratic = {(v, u): u * v * .01 for u, v in itertools.combinations(linear, 2)}
+        quadratic[(0, 1)] = quadratic[(1, 0)]
+        del quadratic[(1, 0)]
+        offset = 1.2
+        vartype = dimod.BINARY
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        M = bqm.to_numpy_matrix()
+
+        self.assertTrue(np.array_equal(M, np.triu(M)))  # upper triangular
+
+        for (row, col), bias in np.ndenumerate(M):
+            if row == col:
+                self.assertEqual(bias, linear[row])
+            else:
+                self.assertTrue((row, col) in quadratic or (col, row) in quadratic)
+                self.assertFalse((row, col) in quadratic and (col, row) in quadratic)
+
+                if row > col:
+                    self.assertEqual(bias, 0)
+                else:
+                    if (row, col) in quadratic:
+                        self.assertEqual(quadratic[(row, col)], bias)
+                    else:
+                        self.assertEqual(quadratic[(col, row)], bias)
+
+        #
+
+        # integer-indexed, not contiguous
+        bqm = BQM({}, {(0, 3): -1}, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            M = bqm.to_numpy_matrix()
+
+        #
+
+        # string-labeled, variable_order provided
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            bqm.to_numpy_matrix(['a', 'c'])  # incomplete variable order
+
+        M = bqm.to_numpy_matrix(['a', 'c', 'b'])
+
+        self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
+
+    @multitest
+    def test_functional(self, BQM):
+        bqm = BQM({'a': -1}, {'ac': 1.2, 'bc': .3}, dimod.BINARY)
+
+        order = ['a', 'b', 'c']
+
+        M = bqm.to_numpy_matrix(variable_order=order)
+
+        new = BQM.from_numpy_matrix(M, variable_order=order)
+
+        self.assertConsistentBQM(new)
+        self.assertEqual(bqm, new)
+
+    @multitest
+    def test_from_numpy_matrix(self, BQM):
+
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+
+        variable_order = ['a', 'c', 'b']
+
+        M = bqm.to_numpy_matrix(variable_order=variable_order)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        if not BQM.shapeable():
+            # this part only applies to shapeable
+            return
+
+        # zero-interactions get ignored unless provided in interactions
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+        variable_order = ['a', 'c', 'b']
+        M = bqm.to_numpy_matrix(variable_order=variable_order)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order)
+
+        self.assertNotIn(('a', 'b'), new_bqm.quadratic)
+        self.assertNotIn(('b', 'a'), new_bqm.quadratic)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order, interactions=quadratic)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        M = np.asarray([[0, 1], [0, 0]])
+        bqm = BQM.from_numpy_matrix(M)
+        self.assertEqual(bqm, BQM({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
+
+
 class TestNormalize(BQMTestCase):
     @multitest
     def test_normalize(self, BQM):
