@@ -419,16 +419,19 @@ cdef class cyAdj@name@BQM:
         if u == v:
             raise ValueError("No interaction between {} and itself".format(u))
 
+        if default is not None:
+            try:
+                return self.get_quadratic(u, v)
+            except ValueError:
+                return self.dtype.type(default)
+
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
         cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
 
         if not out.second:
-            if default is None:
-                msg = 'No interaction between {!r} and {!r}'
-                raise ValueError(msg.format(u, v))
-
-            return self.dtype.type(default)
+            msg = 'No interaction between {!r} and {!r}'
+            raise ValueError(msg.format(u, v))
 
         return as_numpy_scalar(out.first, self.dtype)
 
