@@ -243,6 +243,12 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
         new.info.update(self.info)
         return new
 
+    @classmethod
+    def empty(cls, vartype):
+        # for backwards compatibility reasons, some subclasses out there relied
+        # on there being 4 arguments, so we recreate that here temporarily
+        return cls([], [], 0.0, vartype)
+
     def to_serializable(self, use_bytes=False, bias_dtype=np.float32,
                         bytes_type=bytes):
         """Convert the binary quadratic model to a serializable object.
