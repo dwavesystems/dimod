@@ -247,7 +247,7 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
     def empty(cls, vartype):
         # for backwards compatibility reasons, some subclasses out there relied
         # on there being 4 arguments, so we recreate that here temporarily
-        return cls([], [], 0.0, vartype)
+        return cls({}, {}, 0.0, vartype)
 
     def to_serializable(self, use_bytes=False, bias_dtype=np.float32,
                         bytes_type=bytes):
