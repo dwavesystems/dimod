@@ -124,7 +124,7 @@ class AdjDictBQM(ShapeableBQM):
     def _init_components(self, linear, quadratic, offset, vartype):
         self._vartype = vartype = as_vartype(vartype)
 
-        if isinstance(linear, abc.Mapping):
+        if isinstance(linear, (abc.Mapping, abc.Iterator)):
             self.linear.update(linear)
         else:
             # assume a sequence

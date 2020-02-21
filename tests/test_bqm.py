@@ -555,7 +555,15 @@ class TestConstruction(BQMTestCase):
     @multitest
     def test_iterator_2arg(self, BQM):
         Q = ((u, v, -1) for u in range(5) for v in range(u+1, 5))
-        bqm = BQM(Q, dimod.SPIN)
+        bqm = BQM(Q, dimod.BINARY)
+
+        self.assertEqual(bqm.shape, (5, 10))
+
+    @multitest
+    def test_iterator_3arg(self, BQM):
+        h = ((v, 1) for v in range(5))
+        J = ((u, v, -1) for u in range(5) for v in range(u+1, 5))
+        bqm = BQM(h, J, dimod.SPIN)
 
         self.assertEqual(bqm.shape, (5, 10))
 
