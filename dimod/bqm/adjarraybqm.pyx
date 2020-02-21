@@ -172,7 +172,7 @@ cdef class cyAdjArrayBQM:
     def _init_components(self, linear, quadratic, offset, vartype):
         self.vartype = vartype = as_vartype(vartype)
 
-        if isinstance(linear, Mapping) or isinstance(quadratic, (Mapping, Iterator)):
+        if isinstance(linear,(Mapping, Iterator)) or isinstance(quadratic, (Mapping, Iterator)):
             # constructing from dictionaries is a lot easier if you have
             # incremental construction, so we build using one of the shapeable
             # bqms
