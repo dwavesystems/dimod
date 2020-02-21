@@ -260,6 +260,11 @@ class BQM(metaclass=abc.ABCMeta):
         return Adjacency(self)
 
     @property
+    def base(self):
+        """The base bqm, itself if not a view."""
+        return self
+
+    @property
     def binary(self):
         if self.vartype is Vartype.BINARY:
             return self
@@ -950,6 +955,10 @@ class VartypeView(BQM):
         self._bqm = bqm
 
     @property
+    def base(self):
+        return self._bqm
+
+    @property
     def num_interactions(self):
         return self._bqm.num_interactions
 
@@ -1025,8 +1034,9 @@ class BinaryView(VartypeView):
         bqm = self._bqm
 
         # need the difference
-        delta = bias - self.get_quadratic(u, v)
+        delta = bias - self.get_quadratic(u, v, default=0)
 
+        # if it doesn't exist and BQM is not shapeable, this will fail
         bqm.set_quadratic(u, v, bias / 4)  # this one is easy
 
         # the other values get the delta
@@ -1085,8 +1095,9 @@ class SpinView(VartypeView):
         bqm = self._bqm
 
         # need the difference
-        delta = bias - self.get_quadratic(u, v)
+        delta = bias - self.get_quadratic(u, v, default=0)
 
+        # if it doesn't exist and BQM is not shapeable, this will fail
         bqm.set_quadratic(u, v, 4 * bias)  # this one is easy
 
         # the other values get the delta
