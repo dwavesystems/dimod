@@ -851,7 +851,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         """
         num_variables = self.num_variables
-        M = np.zeros((num_variables, num_variables), dtype=self.dtype)
+        M = np.zeros((num_variables, num_variables), dtype=self.base.dtype)
 
         if variable_order is None:
             variable_order = range(num_variables)
