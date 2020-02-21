@@ -1228,6 +1228,65 @@ class TestLen(BQMTestCase):
         self.assertEqual(len(bqm), 107)
 
 
+class TestNetworkxGraph(unittest.TestCase):
+    # developer note: these tests should be moved to converter tests when
+    # the methods are deprecated.
+
+    def setUp(self):
+        try:
+            import networkx as nx
+        except ImportError:
+            raise unittest.SkipTest("NetworkX is not installed")
+
+    def test_empty(self):
+        import networkx as nx
+        G = nx.Graph()
+        G.vartype = 'SPIN'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        self.assertEqual(len(bqm), 0)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    def test_no_biases(self):
+        import networkx as nx
+        G = nx.complete_graph(5)
+        G.vartype = 'BINARY'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.assertEqual(set(bqm.variables), set(range(5)))
+        for u, v in itertools.combinations(range(5), 2):
+            self.assertEqual(bqm.adj[u][v], 0)
+            self.assertEqual(bqm.linear[v], 0)
+        self.assertEqual(len(bqm.quadratic), len(G.edges))
+
+    def test_functional(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
+                                                    {'bc': 1, 'cd': -4},
+                                                    offset=6)
+        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
+        self.assertEqual(bqm, new)
+
+    def test_to_networkx_graph(self):
+        import networkx as nx
+        graph = nx.barbell_graph(7, 6)
+
+        # build a BQM
+        model = dimod.BinaryQuadraticModel({v: -.1 for v in graph},
+                                           {edge: -.4 for edge in graph.edges},
+                                           1.3,
+                                           vartype=dimod.SPIN)
+
+        # get the graph
+        BQM = model.to_networkx_graph()
+
+        self.assertEqual(set(graph), set(BQM))
+        for u, v in graph.edges:
+            self.assertIn(u, BQM[v])
+
+        for v, bias in model.linear.items():
+            self.assertEqual(bias, BQM.nodes[v]['bias'])
+
+
 class TestNumpyMatrix(BQMTestCase):
     @multitest
     def test_to_numpy_matrix(self, BQM):

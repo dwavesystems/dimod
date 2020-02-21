@@ -38,6 +38,8 @@ import dimod.testing
 from dimod.binary_quadratic_model import BinaryQuadraticModel, BQM
 import dimod.binary_quadratic_model
 
+from dimod.converters import *
+
 import dimod.decorators
 
 import dimod.generators
