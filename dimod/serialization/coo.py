@@ -88,8 +88,6 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
 
 
 def _iter_triplets(bqm, vartype_header):
-    if not isinstance(bqm, BinaryQuadraticModel):
-        raise TypeError("expected input to be a BinaryQuadraticModel")
     if not all(isinstance(v, int) and v >= 0 for v in bqm.linear):
         raise ValueError("only positive index-labeled binary quadratic models can be dumped to COOrdinate format")
 

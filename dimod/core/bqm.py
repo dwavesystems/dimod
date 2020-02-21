@@ -392,6 +392,46 @@ class BQM(metaclass=abc.ABCMeta):
         self.spin.linear[v] *= -1
 
     @classmethod
+    def from_coo(cls, obj, vartype=None):
+        """Deserialize a binary quadratic model from a COOrdinate_ format encoding.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            obj: (str/file):
+                Either a string or a `.read()`-supporting `file object`_ that represents
+                linear and quadratic biases for a binary quadratic model. This data
+                is stored as a list of 3-tuples, (i, j, bias), where :math:`i=j`
+                for linear biases.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the vartype must be specified with a header in the
+                file.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models created from COOrdinate format encoding have offsets set to
+            zero.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :func:`~dimod.serialization.coo.load` or
+            :func:`~dimod.serialization.coo.loads` directly.
+
+        """
+        import dimod.serialization.coo as coo
+
+        if isinstance(obj, str):
+            return coo.loads(obj, cls=cls, vartype=vartype)
+
+        return coo.load(obj, cls=cls, vartype=vartype)
+
+    @classmethod
     def from_ising(cls, h, J, offset=0):
         """Create a binary quadratic model from an Ising problem.
 
@@ -639,6 +679,39 @@ class BQM(metaclass=abc.ABCMeta):
     @classmethod
     def shapeable(cls):
         return issubclass(cls, ShapeableBQM)
+
+    def to_coo(self, fp=None, vartype_header=False):
+        """Serialize the binary quadratic model to a COOrdinate_ format encoding.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            fp (file, optional):
+                `.write()`-supporting `file object`_ to save the linear and quadratic biases
+                of a binary quadratic model to. The model is stored as a list of 3-tuples,
+                (i, j, bias), where :math:`i=j` for linear biases. If not provided,
+                returns a string.
+
+            vartype_header (bool, optional, default=False):
+                If true, the binary quadratic model's variable type as prepended to the
+                string or file as a header.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models saved to COOrdinate format encoding do not preserve offsets.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :func:`~dimod.serialization.coo.dump` or
+            :func:`~dimod.serialization.coo.dumps` directly.
+
+        """
+        import dimod.serialization.coo as coo
+
+        if fp is None:
+            return coo.dumps(self, vartype_header)
+        else:
+            coo.dump(self, fp, vartype_header)
 
     def to_ising(self):
         """Converts a binary quadratic model to Ising format.
