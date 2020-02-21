@@ -455,6 +455,48 @@ class BQM(metaclass=abc.ABCMeta):
         return cls(h, J, offset, Vartype.SPIN)
 
     @classmethod
+    def from_numpy_matrix(cls, mat, variable_order=None, offset=0.0,
+                          interactions=None):
+        """Create a binary quadratic model from a NumPy array.
+
+        Args:
+            mat (:class:`numpy.ndarray`):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) model formatted as a square NumPy 2D array.
+
+            variable_order (list, optional):
+                If provided, labels the QUBO variables; otherwise, row/column
+                indices are used. If `variable_order` is longer than the array,
+                extra values are ignored.
+
+            offset (optional, default=0.0):
+                Constant offset for the binary quadratic model.
+
+            interactions (iterable, optional, default=[]):
+                Any additional 0.0-bias interactions to be added to the binary
+                quadratic model. Only works for shapeable binary quadratic
+                models.
+
+        Returns:
+            Binary quadratic model with vartype set to :class:`.Vartype.BINARY`.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use the constructor directly.
+
+        """
+        bqm = cls(mat, Vartype.BINARY)
+        bqm.offset = offset
+
+        if variable_order is not None:
+            bqm.relabel_variables(dict(enumerate(variable_order)))
+
+        if interactions is not None:
+            for u, v in interactions:
+                bqm.add_interaction(u, v, 0.0)
+
+        return bqm
+
+    @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
         """Create a binary quadratic model from vectors.
 
@@ -728,6 +770,48 @@ class BQM(metaclass=abc.ABCMeta):
         """
         bqm = self.spin
         return dict(bqm.linear), dict(bqm.quadratic), bqm.offset
+
+    def to_numpy_matrix(self, variable_order=None):
+        """Convert a binary quadratic model to NumPy 2D array.
+
+        Args:
+            variable_order (list, optional):
+                If provided, indexes the rows/columns of the NumPy array. If
+                `variable_order` includes any variables not in the binary
+                quadratic model, these are added to the NumPy array.
+
+        Returns:
+            :class:`numpy.ndarray`: The binary quadratic model as a NumPy 2D
+            array. Note that the binary quadratic model is converted to
+            :class:`~.Vartype.BINARY` vartype.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :meth:`.to_dense`.
+
+        """
+        num_variables = self.num_variables
+        M = np.zeros((num_variables, num_variables), dtype=self.dtype)
+
+        if variable_order is None:
+            variable_order = range(num_variables)
+        elif len(variable_order) != num_variables:
+            raise ValueError("variable_order does not include all variables")
+
+        label_to_idx = {v: i for i, v in enumerate(self.variables)}
+
+        # do the dense thing
+        for ui, u in enumerate(variable_order):
+            try:
+                M[ui, ui] = self.binary.linear[u]
+            except KeyError:
+                raise ValueError(("if 'variable_order' is not provided, binary "
+                                  "quadratic model must be "
+                                  "index labeled [0, ..., N-1]"))
+
+            for vi, v in enumerate(variable_order[ui+1:], start=ui+1):
+                M[ui, vi] = self.binary.quadratic.get((u, v), 0.0)
+
+        return M
 
     def to_numpy_vectors(self, variable_order=None,
                          dtype=np.float, index_dtype=np.intc,
