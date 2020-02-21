@@ -1005,6 +1005,26 @@ class TestEnergies(BQMTestCase):
         energy = bqm.energy(np.asarray(samples))
         self.assertEqual(energy, 1)
 
+    @multitest
+    def test_label_mismatch(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        samples = ([[0, 0, 1], [1, 1, 0]], 'abc')
+
+        with self.assertRaises(ValueError):
+            bqm.energies(samples)
+
+    @multitest
+    def test_length(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        samples = [0, 0]
+
+        with self.assertRaises(ValueError):
+            bqm.energies(samples)
+
 
 class TestFixVariable(BQMTestCase):
     @multitest
