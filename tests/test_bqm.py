@@ -294,7 +294,7 @@ class TestAsBQM(BQMTestCase):
             self.assertIsInstance(new, target)
             self.assertEqual(bqm, new)
 
-            if source is target:
+            if issubclass(source, target):
                 self.assertIs(bqm, new)
             else:
                 self.assertIsNot(bqm, new)
