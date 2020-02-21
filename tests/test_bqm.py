@@ -550,6 +550,13 @@ class TestConstruction(BQMTestCase):
         self.assertEqual(bqm.linear, {v: 0 for v in range(5)})
 
     @multitest
+    def test_iterator_2arg(self, BQM):
+        Q = ((u, v, -1) for u in range(5) for v in range(u+1, 5))
+        bqm = BQM(Q, dimod.SPIN)
+
+        self.assertEqual(bqm.shape, (5, 10))
+
+    @multitest
     def test_legacy_bqm(self, BQM):
         lbqm = dimod.BinaryQuadraticModel.from_ising({'a': 2}, {'ab': -1}, 7)
 

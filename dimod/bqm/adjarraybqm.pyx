@@ -16,7 +16,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from numbers import Integral
 
 cimport cython
@@ -172,7 +172,7 @@ cdef class cyAdjArrayBQM:
     def _init_components(self, linear, quadratic, offset, vartype):
         self.vartype = vartype = as_vartype(vartype)
 
-        if isinstance(linear, Mapping) or isinstance(quadratic, Mapping):
+        if isinstance(linear, Mapping) or isinstance(quadratic, (Mapping, Iterator)):
             # constructing from dictionaries is a lot easier if you have
             # incremental construction, so we build using one of the shapeable
             # bqms

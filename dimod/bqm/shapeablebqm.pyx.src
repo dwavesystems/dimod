@@ -162,6 +162,20 @@ cdef class cyAdj@name@BQM:
                     vi = self.label_to_idx(self.add_variable(v))
                     # this does two binary searches
                     set_quadratic(self.adj_, ui, vi, get_quadratic(self.adj_, ui, vi).first + b)
+        elif isinstance(quadratic, abc.Iterator):
+            for u, v, b in quadratic:
+                if u == v:
+                    if is_spin:
+                        self.offset_ += b
+                    else:
+                        # because we're doing this first on an empty bqm we
+                        # can just set
+                        self.set_linear(u, b)
+                else:
+                    ui = self.label_to_idx(self.add_variable(u))
+                    vi = self.label_to_idx(self.add_variable(v))
+                    # this does two binary searches
+                    set_quadratic(self.adj_, ui, vi, get_quadratic(self.adj_, ui, vi).first + b)
         else:
             qmatrix = np.atleast_2d(np.asarray(quadratic, dtype=self.dtype))
 

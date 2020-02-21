@@ -143,6 +143,17 @@ class AdjDictBQM(ShapeableBQM):
                     adj[u][v] = adj[v][u] = adj[u][v] + bias
                 else:
                     adj[u][v] = adj[v][u] = bias
+        elif isinstance(quadratic, abc.Iterator):
+            for u, v, bias in quadratic:
+                self.add_variable(u)
+                self.add_variable(v)
+
+                if u == v and vartype is Vartype.SPIN:
+                    offset = offset + bias  # not += on off-chance it's mutable
+                elif u in adj[v]:
+                    adj[u][v] = adj[v][u] = adj[u][v] + bias
+                else:
+                    adj[u][v] = adj[v][u] = bias
         else:
             # unlike the other BQM types we let numpy handle the typing
             if isinstance(quadratic, np.ndarray):
