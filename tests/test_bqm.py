@@ -1432,6 +1432,20 @@ class TestVartypeViews(BQMTestCase):
     # SpinView and BinaryView
 
     @multitest
+    def test_add_offset_binary(self, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.SPIN)
+
+        bqm.binary.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
+
+    @multitest
+    def test_add_offset_spin(self, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.BINARY)
+
+        bqm.spin.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
+
+    @multitest
     def test_binary_binary(self, BQM):
         bqm = BQM(dimod.BINARY)
         self.assertIs(bqm.binary, bqm)
@@ -1480,6 +1494,20 @@ class TestVartypeViews(BQMTestCase):
         new = bqm.spin.copy()
         self.assertIsNot(new, bqm.spin)
         self.assertIsInstance(new, BQM)
+
+    @multitest
+    def test_offset_binary(self, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.SPIN)
+
+        bqm.binary.offset -= 2
+        self.assertEqual(bqm.offset, 1)
+
+    @multitest
+    def test_offset_spin(self, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.BINARY)
+
+        bqm.spin.offset -= 2
+        self.assertEqual(bqm.offset, 1)
 
     @multitest
     def test_set_linear_binary(self, BQM):
