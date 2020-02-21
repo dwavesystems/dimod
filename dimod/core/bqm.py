@@ -348,48 +348,11 @@ class BQM(metaclass=abc.ABCMeta):
         """
         samples, labels = as_samples(samples_like)
 
-        bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
+        ldata, (irow, icol, qdata), offset \
+            = self.to_numpy_vectors(variable_order=labels, dtype=dtype)
 
-        if len(bqm_to_sample) != self.num_variables:
-            raise ValueError("mismatch between the sample and BQM variables")
-
-        num_samples, num_variables = samples.shape
-
-        if dtype is None:
-            dtype = np.float
-
-        energies = np.empty(num_samples, dtype=dtype)
-
-        for si in range(num_samples):
-            energy = self.offset
-
-            for u, lbias in self.linear.items():
-
-                try:
-                    ui = bqm_to_sample[u]
-                except KeyError:
-                    msg = "mismatch between the sample and BQM variables"
-                    raise ValueError(msg)
-
-                uspin = samples[si, ui]
-
-                energy += lbias * uspin
-
-            for (u, v), qbias in self.quadratic.items():
-                try:
-                    ui = bqm_to_sample[u]
-                    vi = bqm_to_sample[v]
-                except KeyError:
-                    msg = "mismatch between the sample and BQM variables"
-                    raise ValueError(msg)
-                uspin = samples[si, ui]
-                vspin = samples[si, vi]
-
-                energy += uspin * vspin * qbias
-
-            energies[si] = energy
-
-        return energies
+        energies = samples.dot(ldata) + (samples[:, irow]*samples[:, icol]).dot(qdata) + offset
+        return np.asarray(energies, dtype=dtype)  # handle any type promotions
 
     def energy(self, sample, dtype=None):
         energy, = self.energies(sample, dtype=dtype)
