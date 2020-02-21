@@ -350,6 +350,9 @@ class BQM(metaclass=abc.ABCMeta):
 
         bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
 
+        if len(bqm_to_sample) != self.num_variables:
+            raise ValueError("mismatch between the sample and BQM variables")
+
         num_samples, num_variables = samples.shape
 
         if dtype is None:
@@ -361,13 +364,26 @@ class BQM(metaclass=abc.ABCMeta):
             energy = self.offset
 
             for u, lbias in self.linear.items():
-                uspin = samples[si, bqm_to_sample[u]]
+
+                try:
+                    ui = bqm_to_sample[u]
+                except KeyError:
+                    msg = "mismatch between the sample and BQM variables"
+                    raise ValueError(msg)
+
+                uspin = samples[si, ui]
 
                 energy += lbias * uspin
 
             for (u, v), qbias in self.quadratic.items():
-                uspin = samples[si, bqm_to_sample[u]]
-                vspin = samples[si, bqm_to_sample[v]]
+                try:
+                    ui = bqm_to_sample[u]
+                    vi = bqm_to_sample[v]
+                except KeyError:
+                    msg = "mismatch between the sample and BQM variables"
+                    raise ValueError(msg)
+                uspin = samples[si, ui]
+                vspin = samples[si, vi]
 
                 energy += uspin * vspin * qbias
 
