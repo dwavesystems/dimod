@@ -115,7 +115,6 @@ Converting To and From Other Formats
    BinaryQuadraticModel.from_numpy_matrix
    BinaryQuadraticModel.from_numpy_vectors
    BinaryQuadraticModel.from_qubo
-   BinaryQuadraticModel.from_pandas_dataframe
    BinaryQuadraticModel.from_serializable
    BinaryQuadraticModel.to_coo
    BinaryQuadraticModel.to_ising
@@ -123,7 +122,6 @@ Converting To and From Other Formats
    BinaryQuadraticModel.to_numpy_matrix
    BinaryQuadraticModel.to_numpy_vectors
    BinaryQuadraticModel.to_qubo
-   BinaryQuadraticModel.to_pandas_dataframe
    BinaryQuadraticModel.to_serializable
 
 .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
