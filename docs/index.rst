@@ -42,7 +42,6 @@ Documentation
 
   introduction
   reference/index
-  bibliography
 
 .. sdk-end-marker
 
