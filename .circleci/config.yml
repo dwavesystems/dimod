@@ -305,8 +305,7 @@ jobs:
           name: install sphinx
           command: |
             . env/bin/activate
-            pip install sphinx
-            pip install sphinx_rtd_theme
+            pip install -r docs/requirements.txt
 
       - save_cache: *save-cache-template
 
