@@ -9,7 +9,7 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   bqm/index
+   bqm
    sampler_composites/index
    sampleset
    higherorder

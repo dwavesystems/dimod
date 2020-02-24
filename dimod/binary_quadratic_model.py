@@ -39,10 +39,6 @@ and the nonzero off-diagonal terms the quadratic coefficients.
     \\text{QUBO:} \\qquad E(\\bf{x}| \\bf{Q})  =  \\sum_{i\\le j}^N x_i Q_{i,j} x_j
     \\qquad\\qquad x_i\\in \\{0,1\\}
 
-The :class:`.BinaryQuadraticModel` class can contain both these models and its methods provide
-convenient utilities for working with, and interworking between, the two representations
-of a problem.
-
 """
 import inspect
 import warnings
