@@ -372,7 +372,9 @@ class BQM(metaclass=abc.ABCMeta):
 
     @classmethod
     def from_coo(cls, obj, vartype=None):
-        """Deserialize a binary quadratic model from a COOrdinate_ format encoding.
+        """Deserialize a binary quadratic model from a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
 
@@ -741,7 +743,9 @@ class BQM(metaclass=abc.ABCMeta):
         return issubclass(cls, ShapeableBQM)
 
     def to_coo(self, fp=None, vartype_header=False):
-        """Serialize the binary quadratic model to a COOrdinate_ format encoding.
+        """Serialize the binary quadratic model to a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
 

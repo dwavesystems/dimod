@@ -56,8 +56,8 @@ class FileView(io.RawIOBase):
              variables=list(bqm.variables),
              )
 
-    it is terminated by a newline `\n` and padded with spaces to make the entire
-    length of the entire header divisible by 16.
+    it is terminated by a newline character and padded with spaces to make the
+    entire length of the entire header divisible by 16.
 
     Args:
         bqm (:class:`~dimod.core.bqm.BQM`):
@@ -67,8 +67,8 @@ class FileView(io.RawIOBase):
         Currently the BQM is not locked while the file view is open, in the
         future this will change.
 
-    See also
-    https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+    See also: `numpy.lib.format
+    <https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html>`_
 
     """
 
