@@ -74,6 +74,8 @@ def as_bqm(*args, cls=None, copy=False):
     Returns:
         A binary quadratic model.
 
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+
     """
 
     if cls is None:
