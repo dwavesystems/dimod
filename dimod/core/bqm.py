@@ -63,6 +63,13 @@ class BQMView(Mapping):
 
 
 class Adjacency(BQMView):
+    """Quadratic biases as a nested dict of dicts.
+
+    Accessed like a dict of dicts, where the keys of the outer dict are all
+    of the model's variables (e.g. `v`) and the values are the neighborhood of
+    `v`. Each neighborhood if a dict where the keys are the neighbors of `v`
+    and the values are their associated quadratic biases.
+    """
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
@@ -111,6 +118,11 @@ class ShapeableNeighbour(Neighbour, MutableMapping):
 
 
 class Linear(BQMView):
+    """Linear biases as a mapping.
+
+    Accessed like a dict, where keys are the variables of the binary quadratic
+    model and values are the linear biases.
+    """
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -142,6 +154,11 @@ class ShapeableLinear(Linear, MutableMapping):
 
 
 class Quadratic(BQMView):
+    """Quadratic biases as a flat mapping.
+
+    Accessed like a dict, where keys are 2-tuples of varables, which represent
+    an interaction and values are the quadratic biases.
+    """
     def __getitem__(self, uv):
         try:
             return self._bqm.get_quadratic(*uv)
@@ -197,7 +214,15 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractproperty
+    def offset(self):
+        """The constant energy offset associated with the model."""
+        pass
+
+    @abc.abstractproperty
     def vartype(self):
+        """The variable type, :class:`.Vartype.SPIN` or
+        :class:`.Vartype.BINARY`.
+        """
         pass
 
     @abc.abstractmethod
@@ -258,6 +283,7 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def adj(self):
         return Adjacency(self)
+    adj.__doc__ = Adjacency.__doc__
 
     @property
     def base(self):
@@ -266,6 +292,11 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def binary(self):
+        """The binary-valued version of the binary quadratic model.
+
+        If the binary quadratic model is binary-valued, this references itself,
+        otherwise it is a :class:`.BinaryView`.
+        """
         if self.vartype is Vartype.BINARY:
             return self
 
@@ -282,18 +313,25 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def linear(self):
         return Linear(self)
+    linear.__doc__ = Linear.__doc__
 
     @property
     def quadratic(self):
         return Quadratic(self)
+    quadratic.__doc__ = Quadratic.__doc__
 
     @property
     def shape(self):
-        """2-tuple: (num_variables, num_interactions)."""
+        """A 2-tuple, the :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self):
+        """The spin-valued version of the binary quadratic model.
+
+        If the binary quadratic model is spin-valued, this references itself,
+        otherwise it is a :class:`.SpinView`.
+        """
         if self.vartype is Vartype.SPIN:
             return self
 
@@ -309,6 +347,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def variables(self):
+        """The variables of the binary quadratic model."""
         return KeysView(self.linear)
 
     def add_offset(self, offset):
