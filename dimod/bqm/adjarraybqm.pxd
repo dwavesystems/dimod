@@ -28,10 +28,16 @@ cdef class cyAdjArrayBQM:
     cdef Bias offset_
 
     cdef readonly object vartype
+    """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
+    """The data type of the linear biases, int8."""
+
     cdef readonly object itype
+    """The data type of the indices, uint32."""
+
     cdef readonly object ntype
+    """The data type of the neighborhood indices, varies by platform."""
 
     # these are not public because the user has no way to access the underlying
     # variable indices

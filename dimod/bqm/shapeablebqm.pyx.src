@@ -52,9 +52,8 @@ from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype, Vartype
 
 
+@cython.embedsignature(True)
 cdef class cyAdj@name@BQM:
-    """
-    """
 
     def __cinit__(self, *args, **kwargs):
         self.dtype = dtype
@@ -253,14 +252,17 @@ cdef class cyAdj@name@BQM:
 
     @property
     def num_variables(self):
+        """int: The number of variables in the model."""
         return num_variables(self.adj_)
 
     @property
     def num_interactions(self):
+        """int: The number of interactions in the model."""
         return num_interactions(self.adj_)
 
     @property
     def offset(self):
+        """The constant energy offset associated with the model."""
         return as_numpy_scalar(self.offset_, self.dtype)
 
     @offset.setter

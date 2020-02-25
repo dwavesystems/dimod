@@ -17,14 +17,24 @@ BQM Classes
 
 .. currentmodule:: dimod
 
+.. we need this toctree for the autosummary links below work
+.. toctree::
+   :hidden:
+
+   bqm_classes/adjarraybqm
+   bqm_classes/adjdictbqm
+   bqm_classes/adjmapbqm
+   bqm_classes/adjvectorbqm
+   bqm_classes/binary_quadratic_model.rst
+
 .. autosummary::
-   :toctree: generated/
 
    BinaryQuadraticModel
    AdjArrayBQM
    AdjDictBQM
    AdjMapBQM
    AdjVectorBQM
+
 
 Functions
 ---------

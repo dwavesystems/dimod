@@ -49,27 +49,52 @@ from dimod.vartypes import as_vartype, Vartype
 
 @cython.embedsignature(True)
 cdef class cyAdjArrayBQM:
-    """A binary quadratic model.
+    """A binary quadratic model structured as two c++ vectors.
 
-    This can be instantiated in several ways:
+    Can be created in several ways:
 
         AdjArrayBQM(vartype)
             Creates an empty binary quadratic model.
 
         AdjArrayBQM(bqm)
-            Construct a new bqm that is a copy of the given one.
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
 
         AdjArrayBQM(bqm, vartype)
-            Construct a new bqm, changing to the appropriate vartype if
-            necessary.
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary.
 
         AdjArrayBQM(n, vartype)
-            Make a bqm with all zero biases, where n is the number of nodes.
+            Make a BQM with `n` variables, indexed linearly from zero, setting
+            all biases to zero.
 
-        AdjArrayBQM(M, vartype)
-            Where M is a square, array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
-            biases on the diagonal are added to the offset.
+        AdjArrayBQM(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        AdjArrayBQM(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        AdjArrayBQM(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
+
+    The AdjArrayBQM is implenented using two c++ vectors. The first
+    vector contains the linear biases and the index of the start of each
+    variable's neighborhood in the second vector. The second
+    vector contains the out-variables and their associated quadratic biases.
+
+    The AdjArrayBQM is useful when the application requires fast iteration
+    over continuous memory.
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
@@ -234,6 +259,7 @@ cdef class cyAdjArrayBQM:
 
     @property
     def num_variables(self):
+        """int: The number of variables in the model."""
         return num_variables(self.adj_)
 
     @property
@@ -243,6 +269,7 @@ cdef class cyAdjArrayBQM:
 
     @property
     def offset(self):
+        """The constant energy offset associated with the model."""
         return as_numpy_scalar(self.offset_, self.dtype)
 
     @offset.setter

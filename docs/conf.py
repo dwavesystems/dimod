@@ -202,5 +202,6 @@ epub_exclude_files = ['search.html']
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'bson': ('https://api.mongodb.com/python/current/', None),
+                       'networkx': ('https://networkx.github.io/documentation/stable/', None),
                        'oceandocs': ('https://docs.ocean.dwavesys.com/en/latest/', None),
                        'sysdocs_gettingstarted': ('https://docs.dwavesys.com/docs/latest/', None)}

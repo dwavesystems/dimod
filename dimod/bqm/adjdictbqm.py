@@ -39,27 +39,44 @@ __all__ = ['AdjDictBQM']
 
 
 class AdjDictBQM(ShapeableBQM):
-    """
+    """A binary quadratic model structured as a dict-of-dicts.
 
-    This can be instantiated in several ways:
+    Can be created in several ways:
 
         AdjDictBQM(vartype)
             Creates an empty binary quadratic model.
 
         AdjDictBQM(bqm)
-            Construct a new bqm that is a copy of the given one.
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
 
         AdjDictBQM(bqm, vartype)
-            Construct a new bqm, changing to the appropriate vartype if
-            necessary.
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary.
 
         AdjDictBQM(n, vartype)
-            Make a bqm with all zero biases, where n is the number of nodes.
+            Make a BQM with `n` variables, indexed linearly from zero, setting
+            all biases to zero.
 
-        AdjDictBQM(M, vartype)
-            Where M is a square, array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
-            biases on the diagonal are added to the offset.
+        AdjDictBQM(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        AdjDictBQM(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        AdjDictBQM(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
@@ -208,6 +225,15 @@ class AdjDictBQM(ShapeableBQM):
     def num_interactions(self):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
+
+    @property
+    def offset(self):
+        """The constant energy offset associated with the model."""
+        return self._offset
+
+    @offset.setter
+    def offset(self, offset):
+        self._offset = offset
 
     @property
     def vartype(self):
