@@ -23,6 +23,57 @@ from dimod.bqm.common cimport VarIndex, Bias
 
 
 cdef class cyAdjArrayBQM:
+    """A binary quadratic model structured as two c++ vectors.
+
+    Can be created in several ways:
+
+        AdjArrayBQM(vartype)
+            Creates an empty binary quadratic model.
+
+        AdjArrayBQM(bqm)
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
+
+        AdjArrayBQM(bqm, vartype)
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary.
+
+        AdjArrayBQM(n, vartype)
+            Make a BQM with `n` variables, indexed linearly from zero, setting
+            all biases to zero.
+
+        AdjArrayBQM(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        AdjArrayBQM(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        AdjArrayBQM(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
+
+    The AdjArrayBQM is implenented using two c++ vectors. The first
+    vector contains the linear biases and the index of the start of each
+    variable's neighborhood in the second vector. The second
+    vector contains the out-variables and their associated quadratic biases.
+
+    The AdjArrayBQM is useful when the application requires fast iteration
+    over continuous memory.
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+
+    """
+
     cdef pair[vector[pair[size_t, Bias]], vector[pair[VarIndex, Bias]]] adj_
 
     cdef Bias offset_
