@@ -312,10 +312,19 @@ jobs:
       - run: *build-ext-template
 
       - run:
+          name: build docs
+          command: |
+            . env/bin/activate
+            make -C docs/ html
+
+      - store_artifacts:
+          path: ./docs/build/html
+
+      - run:
           name: doctest
           command: |
             . env/bin/activate
-            make -C docs/ html doctest
+            make -C docs/ doctest
 
 ##################################################################################################
 # Deploy
