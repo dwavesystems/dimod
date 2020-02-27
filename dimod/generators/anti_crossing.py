@@ -15,7 +15,7 @@
 # =============================================================================
 
 
-def anti_crossing_problems(num_qubits):
+def anti_crossing(num_qubits):
     """ given number of qubits, the code will generate instances with perturbative anticrossing. These
         instances are known to be hard for Quantum annealing. For more information please refer to
         [Phys. Rev. A 85, 032303] and [Phys. Rev. A 96, 042322] """
