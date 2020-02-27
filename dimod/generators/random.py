@@ -205,3 +205,33 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
     return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
                                   variable_order=variables)
+
+
+def doped(p, graph, cls=BinaryQuadraticModel, seed=None,fm = True):
+    """ Generate an Ising model for doped problem
+
+    Args:
+        p (float):
+            Doping parameter [0,1].
+
+        graph (:obj:`~networkx.Graph`):
+            The graph to build the bqm on provided as a NetworkX graph.
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+        seed (int, optional, default=None):
+            Random seed.
+
+        fm (bool):
+            toggle to change the default undoped graph.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`.
+
+    """
+    rnd = np.random.RandomState(seed)
+
+    if not fm:
+        p = 1 - p
+    return cls.from_ising({}, {e: rnd.choice([1, -1], p=[p, 1 - p]) for e in graph.edges})
