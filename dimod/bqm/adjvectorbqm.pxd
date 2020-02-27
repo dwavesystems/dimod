@@ -42,8 +42,8 @@ cdef class cyAdjVectorBQM:
             `vartype` if necessary.
 
         AdjVectorBQM(n, vartype)
-            Make a BQM with `n` variables, indexed linearly from zero, setting
-            all biases to zero.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
         AdjVectorBQM(quadratic, vartype)
             Creates a BQM from quadratic biases given as a square array_like_

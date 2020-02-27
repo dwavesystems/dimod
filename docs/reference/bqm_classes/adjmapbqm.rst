@@ -1,3 +1,5 @@
+.. _adjmapbqm_dimod:
+
 dimod.AdjMapBQM
 ===============
 

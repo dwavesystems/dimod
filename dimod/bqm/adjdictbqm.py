@@ -54,8 +54,8 @@ class AdjDictBQM(ShapeableBQM):
             `vartype` if necessary.
 
         AdjDictBQM(n, vartype)
-            Make a BQM with `n` variables, indexed linearly from zero, setting
-            all biases to zero.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
         AdjDictBQM(quadratic, vartype)
             Creates a BQM from quadratic biases given as a square array_like_

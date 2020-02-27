@@ -43,8 +43,8 @@ cdef class cyAdjMapBQM:
             `vartype` if necessary.
 
         AdjMapBQM(n, vartype)
-            Make a BQM with `n` variables, indexed linearly from zero, setting
-            all biases to zero.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
         AdjMapBQM(quadratic, vartype)
             Creates a BQM from quadratic biases given as a square array_like_
