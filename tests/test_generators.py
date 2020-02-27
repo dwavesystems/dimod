@@ -192,7 +192,7 @@ class TestChimeraAnticluster(unittest.TestCase):
 
 
 @unittest.skipUnless(_networkx, "no networkx installed")
-class TestFCL(unittest.TestCase):
+class TestFL(unittest.TestCase):
     def test_singletile(self):
         G = nx.Graph()
 
