@@ -38,8 +38,8 @@ cdef class cyAdjArrayBQM:
             `vartype` if necessary.
 
         AdjArrayBQM(n, vartype)
-            Make a BQM with `n` variables, indexed linearly from zero, setting
-            all biases to zero.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
         AdjArrayBQM(quadratic, vartype)
             Creates a BQM from quadratic biases given as a square array_like_
@@ -62,10 +62,11 @@ cdef class cyAdjArrayBQM:
             numerical offset. Note that when formed with SPIN-variables, biases
             on the diagonal are added to the offset.
 
-    The AdjArrayBQM is implenented using two c++ vectors. The first
+    The AdjArrayBQM is implemented using two c++ vectors. The first
     vector contains the linear biases and the index of the start of each
     variable's neighborhood in the second vector. The second
-    vector contains the out-variables and their associated quadratic biases.
+    vector contains the neighboring variables and their associated quadratic
+    biases.
 
     The AdjArrayBQM is useful when the application requires fast iteration
     over continuous memory.

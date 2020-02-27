@@ -38,8 +38,8 @@ def as_bqm(*args, cls=None, copy=False):
             `vartype` if necessary. See `copy` and `cls` kwargs below.
 
         as_bqm(n, vartype)
-            Make a BQM with `n` variables, indexed linearly from zero, setting
-            all biases to zero.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
         as_bqm(quadratic, vartype)
             Creates a BQM from quadratic biases given as a square array_like_

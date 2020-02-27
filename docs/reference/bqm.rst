@@ -9,11 +9,11 @@ Binary Quadratic Models
 
 .. automodule:: dimod.binary_quadratic_model
 
-Contents
-========
+To learn about using BQMs to formulate problems for the quantum computer, start
+here:  https://docs.ocean.dwavesys.com/en/latest/getting_started.html
 
 BQM Classes
------------
+===========
 
 .. currentmodule:: dimod
 
@@ -37,7 +37,7 @@ BQM Classes
 
 
 Functions
----------
+=========
 
 Generic constructor:
 
@@ -72,7 +72,7 @@ Fixing variables:
 
    fix_variables
 
-Traversing:
+Traversing as a graph:
 
 .. currentmodule:: dimod.traversal
 
@@ -83,7 +83,7 @@ Traversing:
    bfs_variables
 
 
-Converting to and from other data types:
+Converting to and from other data structures:
 
 .. currentmodule:: dimod
 
@@ -98,23 +98,12 @@ See also: :ref:`serialization functions<serialization_dimod>`
 Usage
 =====
 
-This section is concerned with using binary quadratic models, the following
-links describe how to formulate problems
-
-* :std:doc:`Getting Started with the D-Wave System <sysdocs_gettingstarted:doc_getting_started>`
-   Introduces key concepts such as objective functions, Ising model, QUBOs, and graphs, explains
-   how these models are used to represent problems, and provides some simple examples.
-* :std:doc:`D-Wave Problem-Solving Handbook <sysdocs_gettingstarted:doc_handbook>`
-   Provides a variety of techniques for, and examples of, reformulating problems as BQMs.
-* :std:doc:`Ocean's Getting Started <oceandocs:getting_started>`
-   Describes and demonstrates the use of BQM in the context of Ocean software.
-
 In Ocean, there are four objects that represent BQMs
 
-* AdjDictBQM: Uses python dictionaries
-* AdjArrayBQM: Uses c++ vectors as arrays
-* AdjMapBQM: Uses c++ maps
-* AdjVectorBQM: Uses c++ vectors
+* :ref:`AdjArrayBQM <adjarraybqm_dimod>`: Uses c++ vectors as arrays
+* :ref:`AdjDictBQM <adjdictbqm_dimod>`: Uses python dictionaries
+* :ref:`AdjMapBQM <adjmapbqm_dimod>`: Uses c++ maps
+* :ref:`AdjVectorBQM <adjvectorbqm_dimod>`: Uses c++ vectors
 
 All of these BQM types use an adjacency structure, in which each variable
 tracks its own linear bias and its neighborhood. For instance, given
@@ -153,7 +142,7 @@ BQM
 .. [#third] Amortized
 .. [#second] Average case, amortized worst case is O(v^2)
 
-It is worth noting, that although the AdjDictBQM is superior in terms of
+It is worth noting that although the AdjDictBQM is superior in terms of
 complexity, in practice it is much slower for large BQMs.
 
 .. todo: maybe we should put some time-comparisons, fixing system etc?

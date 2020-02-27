@@ -1,3 +1,5 @@
+.. _adjvectorbqm_dimod:
+
 dimod.AdjVectorBQM
 ==================
 

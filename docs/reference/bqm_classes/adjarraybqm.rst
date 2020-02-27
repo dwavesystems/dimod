@@ -1,3 +1,5 @@
+.. _adjarraybqm_dimod:
+
 dimod.AdjArrayBQM
 =================
 
