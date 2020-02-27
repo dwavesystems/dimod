@@ -26,9 +26,9 @@ Constraints
 
    combinations
 
-Frustrated Cluster Loops
-========================
-.. automodule:: dimod.generators.fcl
+Frustrated Loops
+================
+.. automodule:: dimod.generators.fl
 
 .. autosummary::
    :toctree: generated/

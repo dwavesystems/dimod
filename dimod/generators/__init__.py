@@ -15,5 +15,5 @@
 # =============================================================================
 from dimod.generators.chimera import chimera_anticluster
 from dimod.generators.constraints import combinations
-from dimod.generators.fcl import frustrated_loop
+from dimod.generators.fl import frustrated_loop
 from dimod.generators.random import uniform, randint, ran_r
