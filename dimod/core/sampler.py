@@ -162,27 +162,22 @@ class Sampler:
                 # sample_ising is implemented
                 h, J, offset = bqm.to_ising()
                 sampleset = self.sample_ising(h, J, **parameters)
-                sampleset.record.energy += offset
-                return sampleset
             else:
                 Q, offset = bqm.to_qubo()
                 sampleset = self.sample_qubo(Q, **parameters)
-                sampleset.change_vartype(Vartype.SPIN, energy_offset=offset)
-                return sampleset
         elif bqm.vartype is Vartype.BINARY:
             if not getattr(self.sample_qubo, '__issamplemixin__', False):
                 # sample_qubo is implemented
                 Q, offset = bqm.to_qubo()
                 sampleset = self.sample_qubo(Q, **parameters)
-                sampleset.record.energy += offset
-                return sampleset
             else:
                 h, J, offset = bqm.to_ising()
                 sampleset = self.sample_ising(h, J, **parameters)
-                sampleset.change_vartype(Vartype.BINARY, energy_offset=offset)
-                return sampleset
         else:
             raise RuntimeError("binary quadratic model has an unknown vartype")
+
+        # if the vartype already matches this will just adjust the offset
+        return sampleset.change_vartype(bqm.vartype, energy_offset=offset)
 
     @samplemixinmethod
     def sample_ising(self, h, J, **parameters):

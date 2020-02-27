@@ -935,6 +935,10 @@ class SampleSet(abc.Iterable, abc.Sized):
         Returns:
             :obj:`.SampleSet`: SampleSet with changed vartype. If `inplace` is True, returns itself.
 
+        Notes:
+            This function is non-blocking unless `inplace==True`, in which case
+            the sample set is resolved.
+
         Examples:
             This example creates a binary copy of a spin-valued :class:`SampleSet`.
 
@@ -955,6 +959,12 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         if not inplace:
             return self.copy().change_vartype(vartype, energy_offset, inplace=True)
+
+        if not self.done():
+            def hook(sampleset):
+                sampleset.resolve()
+                return sampleset.change_vartype(vartype, energy_offset)
+            return self.from_future(self, hook)
 
         if not self.is_writeable:
             raise WriteableError("SampleSet is not writeable")
