@@ -14,11 +14,26 @@
 #
 # =============================================================================
 
+from dimod import BinaryQuadraticModel
+__all__ = ['anti_crossing_clique', 'anti_crossing_loops']
 
-def anti_crossing(num_qubits):
-    """ given number of qubits, the code will generate instances with perturbative anticrossing. These
-        instances are known to be hard for Quantum annealing. For more information please refer to
-        [Phys. Rev. A 85, 032303] and [Phys. Rev. A 96, 042322] """
+
+
+def anti_crossing_clique(num_qubits):
+    """Anti crossing problems with a single clique.
+
+    Given the number of qubits, the code will generate a clique of
+    size num_qubits/2 each qubit ferromagnetically coupled to a partner qubit with opposite bias. Single qubit in
+    the cluster will have no bias applied
+
+    Args:
+        num_qubits (int):
+            number of qubits to use to generate the problem
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`.
+
+    """
 
     if num_qubits % 2 != 0 or num_qubits < 6:
         raise ValueError('num_qubits  must be an even number > 6')
@@ -32,4 +47,44 @@ def anti_crossing(num_qubits):
         h[n] = 1
         h[n + hf] = -1
     h[1] = 0
-    return h, J
+    return BinaryQuadraticModel.from_ising(h, J)
+
+
+def anti_crossing_loops(num_qubits):
+    """ Anti crossing problems with two loops. These instances are copies of the instance studied in
+    [Nature Comms. 4, 1903 (2013)]
+
+    Args:
+        num_qubits (int): number of qubits to use to generate the problem
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`.
+
+    """
+
+    if num_qubits % 2 != 0 or num_qubits < 8:
+        raise ValueError('num_qubits  must be an even number > 8')
+    J = {}
+    h = {}
+    hf = int(num_qubits / 4)
+
+    for n in range(hf):
+        if n % 2 == 1:
+            J[(n, n + hf)] = -1
+
+        J[(n, (n + 1) % hf)] = -1
+        J[(n + hf, (n + 1) % hf + hf)] = -1
+
+        J[(n, n + 2 * hf)] = -1
+        J[(n + hf, n + 3 * hf)] = -1
+
+        h[n] = 1
+        h[n + hf] = 1
+        h[n + 2 * hf] = -1
+        h[n + 3 * hf] = -1
+    h[0] = 0
+    h[hf] = 0
+
+    J = {tuple(sorted(k)): v for k, v in J.items()}
+    return BinaryQuadraticModel.from_ising(h, J)
+
