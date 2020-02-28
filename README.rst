@@ -80,7 +80,7 @@ To install from source:
     python setup.py install
 
 When developing on dimod, it is often convenient to build the extensions
-in-place:
+in place:
 
 .. code-block:: bash
 
