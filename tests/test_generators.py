@@ -13,7 +13,6 @@
 #    limitations under the License.
 #
 # =============================================================================
-import itertools
 import unittest
 
 import dimod
@@ -287,16 +286,17 @@ class TestAntiCrossing(unittest.TestCase):
 
     def test_fixed_size(self):
         bqm = dimod.generators.anti_crossing_loops(8)
-        self.assertEqual(len(bqm.variables),8)
-        self.assertDictEqual(bqm.linear, {0: 0, 2: 0, 4: -1, 6: -1, 1: 1, 3: 1, 5: -1, 7: -1})
-        self.assertDictEqual(bqm.quadratic, {(0, 1): -1, (2, 3): -1, (0, 4): -1,
-                                             (2, 6): -1, (1, 3): -1, (1, 5): -1, (3, 7): -1})
+        bqm_fixed = dimod.BinaryQuadraticModel({0: 0, 2: 0, 4: -1, 6: -1, 1: 1, 3: 1, 5: -1, 7: -1},
+                                               {(0, 1): -1, (2, 3): -1, (0, 4): -1,
+                                                (2, 6): -1, (1, 3): -1, (1, 5): -1, (3, 7): -1})
+        self.assertEqual(bqm, bqm_fixed)
 
         bqm = dimod.generators.anti_crossing_clique(8)
-        self.assertEqual(len(bqm.variables), 8)
-        self.assertDictEqual(bqm.linear, {0: 1, 4: -1, 1: 0, 5: -1, 2: 1, 6: -1, 3: 1, 7: -1})
-        self.assertDictEqual(bqm.quadratic, {(0, 1): -1, (0, 2): -1, (0, 3): -1, (0, 4): -1, (1, 2): -1, (1, 3): -1,
-                                             (1, 5): -1, (2, 3): -1, (2, 6): -1, (3, 7): -1})
+        bqm_fixed = dimod.BinaryQuadraticModel({0: 1, 4: -1, 1: 0, 5: -1, 2: 1, 6: -1, 3: 1, 7: -1},
+                                               {(0, 1): -1, (0, 2): -1, (0, 3): -1, (0, 4): -1, (1, 2): -1, (1, 3): -1,
+                                                (1, 5): -1, (2, 3): -1, (2, 6): -1, (3, 7): -1})
+        self.assertEqual(bqm, bqm_fixed)
+
 
 class TestDoped(unittest.TestCase):
 
@@ -317,17 +317,11 @@ class TestDoped(unittest.TestCase):
     def test_correct_ratio(self):
         bqm = dimod.generators.random.doped(0.3, 100, seed=506)
         total = len(bqm.quadratic)
-        afm = sum([val==-1 for val in bqm.quadratic.values()])
-        self.assertAlmostEqual(afm/total,0.3)
+        afm = sum([val == 1 for val in bqm.quadratic.values()])
+        self.assertAlmostEqual(afm / total, 0.3)
 
     def test_correct_ratio_fm(self):
         bqm = dimod.generators.random.doped(0.3, 100, seed=506, fm=False)
         total = len(bqm.quadratic)
-        fm = sum([val==1 for val in bqm.quadratic.values()])
-        self.assertAlmostEqual(fm/total,0.3)
-
-
-
-
-
-
+        fm = sum([val == -1 for val in bqm.quadratic.values()])
+        self.assertAlmostEqual(fm / total, 0.3)
