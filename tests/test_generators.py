@@ -286,13 +286,13 @@ class TestAntiCrossing(unittest.TestCase):
 
     def test_fixed_size(self):
         bqm = dimod.generators.anti_crossing_loops(8)
-        bqm_fixed = dimod.BinaryQuadraticModel({0: 0, 2: 0, 4: -1, 6: -1, 1: 1, 3: 1, 5: -1, 7: -1},
+        bqm_fixed = dimod.BinaryQuadraticModel.from_ising({0: 0, 2: 0, 4: -1, 6: -1, 1: 1, 3: 1, 5: -1, 7: -1},
                                                {(0, 1): -1, (2, 3): -1, (0, 4): -1,
                                                 (2, 6): -1, (1, 3): -1, (1, 5): -1, (3, 7): -1})
         self.assertEqual(bqm, bqm_fixed)
 
         bqm = dimod.generators.anti_crossing_clique(8)
-        bqm_fixed = dimod.BinaryQuadraticModel({0: 1, 4: -1, 1: 0, 5: -1, 2: 1, 6: -1, 3: 1, 7: -1},
+        bqm_fixed = dimod.BinaryQuadraticModel.from_ising({0: 1, 4: -1, 1: 0, 5: -1, 2: 1, 6: -1, 3: 1, 7: -1},
                                                {(0, 1): -1, (0, 2): -1, (0, 3): -1, (0, 4): -1, (1, 2): -1, (1, 3): -1,
                                                 (1, 5): -1, (2, 3): -1, (2, 6): -1, (3, 7): -1})
         self.assertEqual(bqm, bqm_fixed)
