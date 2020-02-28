@@ -62,14 +62,39 @@ cdef class cyAdjArrayBQM:
             numerical offset. Note that when formed with SPIN-variables, biases
             on the diagonal are added to the offset.
 
-    The AdjArrayBQM is implemented using two c++ vectors. The first
-    vector contains the linear biases and the index of the start of each
-    variable's neighborhood in the second vector. The second
-    vector contains the neighboring variables and their associated quadratic
-    biases.
+    Notes:
 
-    The AdjArrayBQM is useful when the application requires fast iteration
-    over continuous memory.
+        The AdjArrayBQM is implemented using two c++ vectors. The first
+        vector contains the linear biases and the index of the start of each
+        variable's neighborhood in the second vector. The second
+        vector contains the neighboring variables and their associated quadratic
+        biases. The vectors, once initialized, are not resized.
+
+        Advantages:
+
+        - Very fast iteration over the biases
+
+        Disadvantages:
+        
+        - Does not support incremental construction
+        - Only supports float64 biases
+
+        Intended Use:
+        
+        - When performance is important and the BQM can be treated as read-only
+
+    Examples:
+
+        >>> import numpy as np
+        >>> from dimod import AdjArrayBQM
+
+        >>> # Construct from a numpy array
+        >>> AdjArrayBQM(np.triu(np.ones((2, 2))), 'BINARY')
+        AdjArrayBQM({0: 1.0, 1: 1.0}, {(0, 1): 1.0}, 0.0, 'BINARY')
+
+        >>> # Construct from dicts
+        >>> AdjArrayBQM({'a': -1}, {('a', 'b'): 1}, 'SPIN')
+        AdjArrayBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
@@ -83,7 +108,7 @@ cdef class cyAdjArrayBQM:
     """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
-    """The data type of the linear biases, int8."""
+    """The data type of the linear biases, float64."""
 
     cdef readonly object itype
     """The data type of the indices, uint32."""
