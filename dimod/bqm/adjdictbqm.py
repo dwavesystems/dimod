@@ -78,6 +78,54 @@ class AdjDictBQM(ShapeableBQM):
             numerical offset. Note that when formed with SPIN-variables, biases
             on the diagonal are added to the offset.
 
+    Notes:
+
+        The AdjDictBQM is implemented using a dict-of-dicts structure. The
+        outer dict contains the BQM's variables as keys and the neighborhoods
+        as values. Each neighborhood dict contains the neighbors as keys and
+        the quadratic biases as values. The linear biases are stored as
+        self-interactions.
+
+        Advantages:
+
+        - Pure python implementation
+        - Supports arbitrary python types as biases
+        - Low complexity for lookup operations
+        - Supports incremental construction
+
+        Disadvantages:
+
+        - Slow iteration
+        - High memory usage
+
+        Intended Use:
+
+        - For small problems or when flexibility is important
+
+    Examples:
+
+        >>> import numpy as np
+        >>> from dimod import AdjDictBQM
+
+        >>> # Construct from dicts
+        >>> AdjDictBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
+        AdjDictBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
+
+        >>> # Incremental Construction
+        >>> bqm = AdjDictBQM('SPIN')
+        >>> bqm.add_variable('a')
+        'a'
+        >>> bqm.add_variable()
+        1
+        >>> bqm.set_quadratic('a', 1, 3.0)
+        >>> bqm
+        AdjDictBQM({a: 0.0, 1: 0.0}, {('a', 1): 3.0}, 0.0, 'SPIN')
+
+        >>> # Supports arbitrary types
+        >>> from fractions import Fraction
+        >>> AdjDictBQM({('a', 'b'): Fraction(1, 3)}, 'BINARY')
+        AdjDictBQM({a: 0.0, b: 0.0}, {('a', 'b'): 1/3}, 0.0, 'BINARY')
+
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """

@@ -10,7 +10,7 @@ Binary Quadratic Models
 .. automodule:: dimod.binary_quadratic_model
 
 To learn about using BQMs to formulate problems for the quantum computer, start
-here:  https://docs.ocean.dwavesys.com/en/latest/getting_started.html
+with Ocean's `getting started <https://docs.ocean.dwavesys.com/en/latest/getting_started.html>`.
 
 BQM Classes
 ===========
@@ -98,14 +98,21 @@ See also: :ref:`serialization functions<serialization_dimod>`
 Usage
 =====
 
-In Ocean, there are four objects that represent BQMs
+In Ocean, there are four objects that represent BQMs, differentiated by the
+data structure used to encode their structure and biases.
 
 * :ref:`AdjArrayBQM <adjarraybqm_dimod>`: Uses c++ vectors as arrays
 * :ref:`AdjDictBQM <adjdictbqm_dimod>`: Uses python dictionaries
 * :ref:`AdjMapBQM <adjmapbqm_dimod>`: Uses c++ maps
 * :ref:`AdjVectorBQM <adjvectorbqm_dimod>`: Uses c++ vectors
 
-All of these BQM types use an adjacency structure, in which each variable
+The documentation for each class outlines some of the advantages and
+disadvantages of the different representations.
+
+.. todo: we'll probably want a comparative adj/disadv table here but for now
+.. I am not sure how to best represent it succinctly
+
+All of the BQM types use an adjacency structure, in which each variable
 tracks its own linear bias and its neighborhood. For instance, given
 a BQM,
 

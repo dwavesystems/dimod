@@ -7,6 +7,8 @@ dimod.AdjArrayBQM
 
 .. autoclass:: AdjArrayBQM
 
+.. automodule:: dimod.bqm.adjarraybqm
+
 Attributes
 ----------
 

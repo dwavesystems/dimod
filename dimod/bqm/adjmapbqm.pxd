@@ -67,6 +67,45 @@ cdef class cyAdjMapBQM:
             numerical offset. Note that when formed with SPIN-variables, biases
             on the diagonal are added to the offset.
 
+    Notes:
+
+        The AdjMapBQM is implemented using an adjacency structure where the
+        neighborhoods are implemented as c++ maps.
+
+        Advantages:
+
+        - Fast incremental construction and destruction
+
+        Disadvantages:
+
+        - Slower iteration than :class:`.AdjArrayBQM` and
+          :class:`.AdjVectorBQM`
+        - Only supports float64 biases
+
+        Intended Use:
+
+        - When performance is important but the BQM's shape is changing
+          frequently
+
+    Examples:
+
+        >>> import numpy as np
+        >>> from dimod import AdjMapBQM
+
+        >>> # Construct from dicts
+        >>> AdjMapBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
+        AdjMapBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
+
+        >>> # Incremental Construction
+        >>> bqm = AdjMapBQM('SPIN')
+        >>> bqm.add_variable('a')
+        'a'
+        >>> bqm.add_variable()
+        1
+        >>> bqm.set_quadratic('a', 1, 3.0)
+        >>> bqm
+        AdjMapBQM({a: 0.0, 1: 0.0}, {('a', 1): 3.0}, 0.0, 'SPIN')
+
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
@@ -78,7 +117,7 @@ cdef class cyAdjMapBQM:
     """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
-    """The data type of the linear biases, int8."""
+    """The data type of the linear biases, float64."""
 
     cdef readonly object itype
     """The data type of the indices, uint32."""

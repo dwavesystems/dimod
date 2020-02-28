@@ -44,10 +44,6 @@ class BQMView(Mapping):
         self._bqm = state['_bqm']
 
     def __repr__(self):
-        # want the repr to make clear that it's not the correct item
-        return "<{!s}: {!s}>".format(type(self).__name__, self)
-
-    def __str__(self):
         # let's just print the whole (potentially massive) thing for now, in
         # the future we'd like to do something a bit more clever (like hook into
         # dimod's Formatter)
