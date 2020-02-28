@@ -79,8 +79,18 @@ To install from source:
     pip install -r requirements.txt
     python setup.py install
 
-Note that for an installation from source some functionality requires that your
-system have Boost C++ libraries installed.
+When developing on dimod, it is often convenient to build the extensions
+in-place:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
+    python setup.py build_ext --inplace
+
+Note that installation from source requires that your system have the Boost_
+C++ libraries installed.
+
+.. _Boost: https://www.boost.org/
 
 .. installation-end-marker
 
