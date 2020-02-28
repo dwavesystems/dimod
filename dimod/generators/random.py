@@ -207,15 +207,18 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
                                   variable_order=variables)
 
 
-def doped(p, graph, cls=BinaryQuadraticModel, seed=None,fm = True):
-    """ Generate an Ising model for doped problem
+@graph_argument('graph')
+def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
+    """Generate bqm with weighted couplings parametrized by the doping variable p
 
     Args:
         p (float):
             Doping parameter [0,1].
 
-        graph (:obj:`~networkx.Graph`):
-            The graph to build the bqm on provided as a NetworkX graph.
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the bqm on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
 
         cls (:class:`.BinaryQuadraticModel`):
             Binary quadratic model class to build from.
@@ -223,15 +226,37 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None,fm = True):
         seed (int, optional, default=None):
             Random seed.
 
-        fm (bool):
+                fm (bool):
             toggle to change the default undoped graph.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`.
+        :obj:`.BinaryQuadraticModel`
 
     """
-    rnd = np.random.RandomState(seed)
+
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    rnd = numpy.random.RandomState(seed)
+
+    if p>1 or p<0:
+        raise ValueError('Doping must be in the range [0,1]')
+
+    variables, edges = graph
+
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    ldata = np.zeros(len(variables))
 
     if not fm:
         p = 1 - p
-    return cls.from_ising({}, {e: rnd.choice([1, -1], p=[p, 1 - p]) for e in graph.edges})
+    qdata = rnd.choice([1,-1], size=len(irow), p=[p, 1 - p])
+
+    offset = 0
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
+                                  variable_order=variables)
