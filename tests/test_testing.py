@@ -14,6 +14,7 @@
 #
 # =============================================================================
 import unittest
+import warnings
 
 import dimod
 
@@ -68,3 +69,37 @@ class Test_assert_almost_equal_bqm(unittest.TestCase):
         with self.assertRaises(AssertionError):
             dimod.testing.assert_bqm_almost_equal(bqm1, bqm0)
         dimod.testing.assert_bqm_almost_equal(bqm1, bqm0, ignore_zero_interactions=True)
+
+
+class TestCreateBQMTests(unittest.TestCase):
+    def test_overload_warning(self):
+
+        def my_sampler():
+            pass
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            @dimod.testing.load_sampler_bqm_tests(my_sampler)
+            class MyTestCase:
+                def test_sample_qubo_empty_my_sampler(self):
+                    pass
+
+            n = sum(wa.category is dimod.testing.sampler.TestCaseOverloadWarning
+                    for wa in w)
+
+            self.assertEqual(n, 1)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            @dimod.testing.load_sampler_bqm_tests(my_sampler,
+                                                  suppress_overload_warning=True)
+            class MyTestCase:
+                def test_sample_qubo_empty_my_sampler(self):
+                    pass
+
+            n = sum(wa.category is dimod.testing.sampler.TestCaseOverloadWarning
+                    for wa in w)
+
+            self.assertEqual(n, 0)

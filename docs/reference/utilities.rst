@@ -114,6 +114,16 @@ Correctness Asserts
    assert_response_energies
    assert_sampleset_energies
 
+Test Case Loader
+----------------
+
+.. currentmodule:: dimod.testing.sampler
+
+.. autosummary::
+   :toctree: generated/
+
+   load_sampler_bqm_tests
+
 
 Vartype Conversion
 ==================
