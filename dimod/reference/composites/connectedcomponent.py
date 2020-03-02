@@ -19,6 +19,7 @@ connected components of the binary
 quadratic model graph before sending to its child sampler.
 """
 
+from dimod.bqm import as_bqm, AdjDictBQM, AdjMapBQM, AdjVectorBQM
 from dimod.core.composite import ComposedSampler
 from dimod.sampleset import SampleSet
 from dimod.traversal import connected_components
@@ -85,6 +86,8 @@ class ConnectedComponentsComposite(ComposedSampler):
             :obj:`dimod.SampleSet`
 
         """
+        # make sure the BQM is shapeable
+        bqm = as_bqm(bqm, cls=[AdjVectorBQM, AdjDictBQM, AdjMapBQM])
 
         # solve the problem on the child system
         child = self.child

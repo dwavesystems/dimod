@@ -68,7 +68,7 @@ def connected_components(bqm):
 
     """
     seen = set()
-    for v in bqm:
+    for v in bqm.variables:
         if v not in seen:
             c = set(bfs_variables(bqm, v))
             yield c
