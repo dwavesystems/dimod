@@ -16,6 +16,7 @@
 
 import unittest
 
+import dimod
 import dimod.testing as dtest
 from dimod import ExactSolver, ScaleComposite, HigherOrderComposite, \
     BinaryQuadraticModel, Sampler, PolySampler
@@ -118,6 +119,8 @@ class ScalingChecker(Sampler, PolySampler):
         return self.child.properties()
 
 
+# @dimod.testing.load_sampler_bqm_tests(ScaleComposite(ExactSolver()))
+# @dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.NullSampler))
 class TestScaleComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):

@@ -22,6 +22,8 @@ import dimod
 import dimod.testing as dit
 
 
+# @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.ExactSolver()))
+# @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.RandomSampler()))
 class TestSpinTransformComposite(unittest.TestCase):
     def test_instantiation(self):
         for factory in [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]:

@@ -33,6 +33,7 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(sampler.parameters, {'a': [1.5]})
 
 
+@dimod.testing.load_sampler_bqm_tests(dimod.NullSampler)
 class TestSample(unittest.TestCase):
     def test_empty_bqm(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
