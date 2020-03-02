@@ -33,7 +33,8 @@ else:
     cpp = True
 
 
-# @dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(dimod.NullSampler()))
 class TestFixedVariableComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):
