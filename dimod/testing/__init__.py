@@ -21,3 +21,4 @@ namespace. For example:
 
 """
 from dimod.testing.asserts import *
+from dimod.testing.sampler import *
