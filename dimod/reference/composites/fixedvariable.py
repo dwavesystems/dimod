@@ -85,26 +85,31 @@ class FixedVariableComposite(ComposedSampler):
 
         """
 
-        # solve the problem on the child system
-        child = self.child
+        if not fixed_variables:  # None is falsey
+            return self.child.sample(bqm, **parameters)
 
         # make sure that we're shapeable and that we have a BQM we can mutate
         bqm_copy = as_bqm(bqm, cls=[AdjVectorBQM, AdjDictBQM, AdjMapBQM],
                           copy=True)
 
-        if fixed_variables is None:
-            fixed_variables = {}
-
         bqm_copy.fix_variables(fixed_variables)
-        sampleset = child.sample(bqm_copy, **parameters)
 
-        def _hook(sampleset):  # in case the child sampler is not blocking
-            if len(sampleset):
-                return sampleset.append_variables(fixed_variables)
-            elif fixed_variables:
-                return type(sampleset).from_samples_bqm(fixed_variables, bqm=bqm)
-            else:
-                # no fixed variables and sampleset is empty
-                return sampleset
+        sampleset = self.child.sample(bqm_copy, **parameters)
+
+        def _hook(sampleset):
+            # make RoofDualityComposite non-blocking
+
+            if sampleset.variables:
+                if len(sampleset):
+                    return sampleset.append_variables(fixed_variables)
+                else:
+                    return sampleset.from_samples_bqm((np.empty((0, len(bqm))),
+                                                       bqm.variables), bqm=bqm)
+
+            # there are only fixed variables, make sure that the correct number
+            # of samples are returned
+            samples = [fixed_variables]*max(len(sampleset), 1)
+
+            return sampleset.from_samples_bqm(samples, bqm=bqm)
 
         return SampleSet.from_future(sampleset, _hook)

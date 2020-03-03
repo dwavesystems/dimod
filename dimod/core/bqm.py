@@ -914,6 +914,10 @@ class BQM(metaclass=abc.ABCMeta):
                     # can't sort unlike types in py3
                     pass
 
+        if len(variable_order) != num_variables:
+            raise ValueError("variable_order does not match the number of "
+                             "variables")
+
         try:
             ldata = np.fromiter((self.linear[v] for v in variable_order),
                                 count=num_variables, dtype=dtype)
