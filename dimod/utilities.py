@@ -12,11 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-"""
-Utility functions useful for samplers.
-"""
+# =============================================================================
 import copy
+import os
 import itertools
 
 from six import iteritems, itervalues
@@ -28,6 +26,7 @@ __all__ = ['ising_energy',
            'ising_to_qubo',
            'qubo_to_ising',
            'child_structure_dfs',
+           'get_include',
            ]
 
 
@@ -492,3 +491,8 @@ class LockableDict(dict):
     @lockable_method
     def update(self, *args, **kwargs):
         return super(LockableDict, self).update(*args, **kwargs)
+
+
+def get_include():
+    """Return the directory with dimod's header files."""
+    return os.path.join(os.path.dirname(__file__), 'include')
