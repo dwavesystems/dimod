@@ -21,6 +21,13 @@
 
 namespace dimod {
 
+namespace {
+    template<class V, class B>
+    bool comp_v(const std::pair<V, B> ub, V v) {
+        return ub.first < v;
+    }
+} // namespace anonymous
+
 template<class V, class B, class N = std::size_t>
 class AdjArrayBQM {
 public:
@@ -32,7 +39,6 @@ public:
     std::vector<std::pair<N, B>> invars;
     std::vector<std::pair<V, B>> outvars;
 
-    typedef typename std::vector<std::pair<N, B>>::iterator invars_iterator;
     typedef typename std::vector<std::pair<V, B>>::iterator outvars_iterator;
     typedef typename std::vector<std::pair<V, B>>::const_iterator const_outvars_iterator;
 
@@ -42,9 +48,6 @@ public:
     template<class BQM>
     AdjArrayBQM(BQM &bqm) {
 
-        // We know how big we'll need to be. Note that num_interactions is
-        // O(|V|) for the shapeable bqms. Testing shows it's faster to do it
-        // though.
         invars.reserve(bqm.num_variables());
         outvars.reserve(2*bqm.num_interactions());
 
@@ -77,8 +80,7 @@ public:
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    [](const std::pair<V, B> ub, V v) {return ub.first < v;});
+        auto low = std::lower_bound(span.first, span.second, v, comp_v<V, B>);
 
         if (low == span.second)
             return std::make_pair(0, false);
@@ -134,26 +136,23 @@ public:
         assert(u != v);
 
         auto span = neighborhood(u);
-
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    [](const std::pair<V, B> ub, V v) {return ub.first < v;});
+        auto low = std::lower_bound(span.first, span.second, v, comp_v<V, B>);
 
         // if u, v does not exist when we are done
-        if (low == span.second) return false;
+        if (low == span.second || low->first != v) return false;
 
         low->second = b;
 
         span = neighborhood(v);
-        low = std::lower_bound(span.first, span.second, u,
-                              [](const std::pair<V, B> ub, V v) {return ub.first < v;});
+        low = std::lower_bound(span.first, span.second, u, comp_v<V, B>);
 
-        low->second = b;  // can rely on it existing
+        assert(low->first == u);
+
+        low->second = b;
 
         return true;
     }
-
 };
-
 }  // namespace dimod
 
 #endif  // DIMOD_BQM_SRC_ADJARRAYBQM_H_
