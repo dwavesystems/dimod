@@ -12,8 +12,8 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef DIMOD_BQM_SRC_ADJARRAYBQM_H_
-#define DIMOD_BQM_SRC_ADJARRAYBQM_H_
+#ifndef DIMOD_ADJARRAYBQM_H_
+#define DIMOD_ADJARRAYBQM_H_
 
 #include <algorithm>
 #include <utility>
@@ -153,4 +153,4 @@ class AdjArrayBQM {
 };
 }  // namespace dimod
 
-#endif  // DIMOD_BQM_SRC_ADJARRAYBQM_H_
+#endif  // DIMOD_ADJARRAYBQM_H_
