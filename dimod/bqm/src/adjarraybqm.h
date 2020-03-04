@@ -21,16 +21,14 @@
 
 namespace dimod {
 
-namespace {
-    template<class V, class B>
-    bool comp_v(const std::pair<V, B> ub, V v) {
-        return ub.first < v;
-    }
-} // namespace anonymous
+template<class V, class B>
+bool comp_v(const std::pair<V, B> ub, V v) {
+    return ub.first < v;
+}
 
 template<class V, class B, class N = std::size_t>
 class AdjArrayBQM {
-public:
+ public:
     typedef B bias_type;
     typedef N neighborhood_type;
     typedef V variable_type;
@@ -40,14 +38,14 @@ public:
     std::vector<std::pair<V, B>> outvars;
 
     typedef typename std::vector<std::pair<V, B>>::iterator outvars_iterator;
+
     typedef typename std::vector<std::pair<V, B>>::const_iterator const_outvars_iterator;
 
     AdjArrayBQM() {}
 
     // can we specify this slightly better?
     template<class BQM>
-    AdjArrayBQM(BQM &bqm) {
-
+    explicit AdjArrayBQM(const BQM &bqm) {
         invars.reserve(bqm.num_variables());
         outvars.reserve(2*bqm.num_interactions());
 
