@@ -20,8 +20,7 @@ from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 
 # add __version__, __author__, __authoremail__, __description__ to this namespace
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-exec(open(os.path.join(".", "dimod", "package_info.py")).read())
+exec(open(os.path.join(os.path.dirname(__file__), "dimod", "package_info.py")).read())
 
 install_requires = ['numpy>=1.16.0,<2.0.0',
                     'six>=1.10.0,<2.0.0',
@@ -82,9 +81,13 @@ extra_link_args = {
 
 class build_ext_compiler_check(build_ext):
     def run(self):
+        # add numpy headers
         import numpy
-
         self.include_dirs.append(numpy.get_include())
+
+        # add dimod headers
+        include = os.path.join(os.path.dirname(__file__), 'dimod', 'include')
+        self.include_dirs.append(include)
 
         build_ext.run(self)
 
