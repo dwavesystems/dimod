@@ -260,6 +260,29 @@ class TestAddInteractionsFrom(BQMTestCase):
                                    'b': {'a': -.5}})
 
 
+class TestAdjacency(BQMTestCase):
+    @multitest
+    def test_contains(self, BQM):
+        bqm = BQM({0: 1.0}, {(0, 1): 2.0, (2, 1): 0.4}, 0.0, dimod.SPIN)
+
+        self.assertIn(0, bqm.adj[1])
+        self.assertEqual(2.0, bqm.adj[1][0])
+        self.assertIn(1, bqm.adj[0])
+        self.assertEqual(2.0, bqm.adj[0][1])
+
+        self.assertIn(2, bqm.adj[1])
+        self.assertEqual(.4, bqm.adj[1][2])
+        self.assertIn(1, bqm.adj[2])
+        self.assertEqual(.4, bqm.adj[2][1])
+
+        self.assertNotIn(2, bqm.adj[0])
+        with self.assertRaises(KeyError):
+            bqm.adj[0][2]
+        self.assertNotIn(0, bqm.adj[2])
+        with self.assertRaises(KeyError):
+            bqm.adj[2][0]
+
+
 class TestAsBQM(BQMTestCase):
     def test_basic(self):
         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)

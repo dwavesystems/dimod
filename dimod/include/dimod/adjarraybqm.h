@@ -80,7 +80,7 @@ class AdjArrayBQM {
         auto span = neighborhood(u);
         auto low = std::lower_bound(span.first, span.second, v, comp_v<V, B>);
 
-        if (low == span.second)
+        if (low == span.second || low->first != v)
             return std::make_pair(0, false);
         return std::make_pair(low->second, true);
     }
