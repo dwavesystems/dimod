@@ -69,7 +69,7 @@ class Adjacency(BQMView):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return Neighbour(self._bqm, v)
+        return Neighborhood(self._bqm, v)
 
     def __iter__(self):
         return self._bqm.iter_variables()
@@ -82,10 +82,10 @@ class ShapeableAdjacency(Adjacency):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return ShapeableNeighbour(self._bqm, v)
+        return ShapeableNeighborhood(self._bqm, v)
 
 
-class Neighbour(BQMView):
+class Neighborhood(BQMView):
     __slots__ = ['_var']
 
     def __init__(self, bqm, v):
@@ -108,7 +108,7 @@ class Neighbour(BQMView):
         self._bqm.set_quadratic(self._var, v, bias)
 
 
-class ShapeableNeighbour(Neighbour, MutableMapping):
+class ShapeableNeighborhood(Neighborhood, MutableMapping):
     def __delitem__(self, v):
         self._bqm.remove_interaction(self._var, v)
 
