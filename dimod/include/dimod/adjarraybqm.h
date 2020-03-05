@@ -100,7 +100,7 @@ class AdjArrayBQM {
         assert(u >= 0 && u < invars.size());
 
         outvars_iterator end;
-        if (((unsigned) u == invars.size())) {
+        if (((unsigned) u == invars.size() - 1)) {
             end = outvars.end();
         } else {
             end = outvars.begin() + invars[u+1].first;
@@ -114,7 +114,7 @@ class AdjArrayBQM {
         assert(u >= 0 && u < invars.size());
 
         const_outvars_iterator end;
-        if (((unsigned) u == invars.size())) {
+        if (((unsigned) u == invars.size() - 1)) {
             end = outvars.cend();
         } else {
             end = outvars.cbegin() + invars[u+1].first;
