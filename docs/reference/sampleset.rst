@@ -4,13 +4,8 @@
 Samples
 =======
 
-dimod :term:`sampler`\ s sample from a problem's :term:`objective function`, such
-as a BQM, and return an iterable of samples contained in a :class:`.SampleSet` class.
-In addition to containing the returned solutions and some additional
-information, and providing methods to work with the solutions, :class:`.SampleSet`
-is also used, for example, by :std:doc:`dwave-hybrid <oceandocs:docs_hybrid/sdk_index>`,
-which iterates sets of samples through samplers to solve arbitrary QUBOs. dimod
-provides functionality for creating and manipulating samples.
+Returned solutions and samples are described under
+:std:doc:`Binary Quadratic Models <oceandocs:concepts/solutions>`.
 
 sample_like Objects
 ===================
