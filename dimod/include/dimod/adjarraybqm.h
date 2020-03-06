@@ -22,24 +22,23 @@
 namespace dimod {
 
 template<class V, class B>
-bool comp_v(const std::pair<V, B> ub, V v) {
+bool comp_v(std::pair<V, B> ub, V v) {
     return ub.first < v;
 }
 
 template<class V, class B, class N = std::size_t>
 class AdjArrayBQM {
  public:
-    typedef B bias_type;
-    typedef N neighborhood_type;
-    typedef V variable_type;
-    typedef std::size_t size_type;
+    using bias_type = B;
+    using neighborhood_type = N;
+    using variable_type = V;
+    using size_type = std::size_t;
+
+    using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
+    using const_outvars_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
 
     std::vector<std::pair<N, B>> invars;
     std::vector<std::pair<V, B>> outvars;
-
-    typedef typename std::vector<std::pair<V, B>>::iterator outvars_iterator;
-
-    typedef typename std::vector<std::pair<V, B>>::const_iterator const_outvars_iterator;
 
     AdjArrayBQM() {}
 
@@ -56,8 +55,6 @@ class AdjArrayBQM {
             outvars.insert(outvars.end(), span.first, span.second);
         }
     }
-
-    ~AdjArrayBQM() {}
 
     size_type num_interactions() const {
         return outvars.size() / 2;
@@ -100,7 +97,7 @@ class AdjArrayBQM {
         assert(u >= 0 && u < invars.size());
 
         outvars_iterator end;
-        if (((unsigned) u == invars.size() - 1)) {
+        if ((unsigned) u == invars.size() - 1) {
             end = outvars.end();
         } else {
             end = outvars.begin() + invars[u+1].first;
@@ -114,7 +111,7 @@ class AdjArrayBQM {
         assert(u >= 0 && u < invars.size());
 
         const_outvars_iterator end;
-        if (((unsigned) u == invars.size() - 1)) {
+        if ((unsigned) u == invars.size() - 1) {
             end = outvars.cend();
         } else {
             end = outvars.cbegin() + invars[u+1].first;
