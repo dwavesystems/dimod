@@ -4,13 +4,8 @@
 Binary Quadratic Models
 =======================
 
-.. todo: probably we'll want a shorter summary
-
-
-.. automodule:: dimod.binary_quadratic_model
-
-To learn about using BQMs to formulate problems for the quantum computer, start
-with Ocean's `getting started <https://docs.ocean.dwavesys.com/en/latest/getting_started.html>`_.
+:term:`Binary quadratic model`\ s (BQMs) are described under
+:std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
 BQM Classes
 ===========
