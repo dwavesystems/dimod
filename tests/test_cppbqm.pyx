@@ -1,3 +1,5 @@
+# distutils: language = c++
+# cython: language_level=3
 # Copyright 2020 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +16,18 @@
 #
 # =============================================================================
 
-# developer note: we could mess around with discovery, but this is much simpler
-try:
-    from tests.test_cppbqm import *
-except ImportError:
-    print("tests/test_cppbqm.pyx is not built or discoverable")
+# note: for these tests to be discoverable, they must be imported in
+# tests/__init__.py
+
+import unittest
+
+from dimod cimport cyAdjArrayBQM, cyAdjMapBQM, cyAdjVectorBQM
+
+__all__ = ['TestConstruction']
+
+
+class TestConstruction(unittest.TestCase):
+    def test_cdef_construction_vartype_only(self):
+        cdef cyAdjArrayBQM abqm = cyAdjArrayBQM('SPIN')
+        cdef cyAdjMapBQM mbqm = cyAdjMapBQM('SPIN')
+        cdef cyAdjVectorBQM cbqm = cyAdjVectorBQM('SPIN')

@@ -107,6 +107,8 @@ dimod/roof_duality/_fix_variables.cpp
 dimod/roof_duality/*.html
 dimod/bqm/*.cpp
 dimod/bqm/*.html
+tests/*.cpp
+tests/*.html
 # generated files:
 dimod/bqm/adjmapbqm.pyx
 dimod/bqm/adjvectorbqm.pyx
