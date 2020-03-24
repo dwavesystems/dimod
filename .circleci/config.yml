@@ -44,7 +44,7 @@ jobs:
           name: build extension
           command: |
             . env/bin/activate
-            python setup.py build_ext --inplace
+            python setup.py build_ext --inplace --build-tests
 
       - run: &run-tests-template
           name: run unittests
@@ -191,7 +191,7 @@ jobs:
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
+            python setup.py build_ext --inplace --build-tests --include-dirs boost\lib\native\include\
 
       - run: &win-run-unittests-template
           name: run unittests
