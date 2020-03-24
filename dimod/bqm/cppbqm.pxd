@@ -22,72 +22,147 @@ from libcpp.map cimport map as cppmap
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
+from dimod.bqm.common cimport VarIndex, Bias
 
-cdef extern from "src/adjarray.cc":
-    pass
+cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
 
-cdef extern from "src/adjarray.h" namespace "dimod" nogil:
+    cdef cppclass AdjArrayBQM[V, B]:
+        ctypedef V variable_type
+        ctypedef size_t neighborhood_type
+        ctypedef B bias_type
+        ctypedef size_t size_type
 
-    size_t num_variables[V, B](const pair[vector[pair[size_t, B]],
-                                          vector[pair[V, B]]]&)
-    size_t num_interactions[V, B](const pair[vector[pair[size_t, B]],
-                                             vector[pair[V, B]]]&)
+        vector[pair[neighborhood_type, bias_type]] invars
+        vector[pair[variable_type, bias_type]] outvars
 
-    B get_linear[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
-                       V)
-    pair[B, bool] get_quadratic[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
-                                      V, V)
+        cppclass outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            outvars_iterator operator++()
+            outvars_iterator operator--()
+            outvars_iterator operator+(size_type)
+            outvars_iterator operator-(size_type)
+            size_t operator-(outvars_iterator)
+            bint operator==(outvars_iterator)
+            bint operator!=(outvars_iterator)
+            bint operator<(outvars_iterator)
+            bint operator>(outvars_iterator)
+            bint operator<=(outvars_iterator)
+            bint operator>=(outvars_iterator)
 
-    size_t degree[V, B](const pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
+        # constructors
+        # cython cannot handle templated constructors, so we call out the types
+        # explicitly
 
-    pair[vector[pair[V, B]].iterator, vector[pair[V, B]].iterator] neighborhood[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V)
-    pair[vector[pair[V, B]].iterator, vector[pair[V, B]].iterator] neighborhood[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&, V, bool)
+        AdjArrayBQM() except +
+        AdjArrayBQM(AdjArrayBQM&) except +
+        AdjArrayBQM(AdjMapBQM&) except +
+        AdjArrayBQM(AdjVectorBQM&) except +
 
-    void set_linear[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
-                          V, B)
-    bool set_quadratic[V, B](pair[vector[pair[size_t, B]], vector[pair[V, B]]]&,
-                             V, V, B)
+        # methods
 
-    void copy_bqm[V, B, BQM](BQM&, pair[vector[pair[size_t, B]], vector[pair[V, B]]]&)
+        size_type degree(variable_type) except +
+        bias_type get_linear(variable_type) except +
+        pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        size_type num_interactions() except +
+        size_type num_variables() except +
+        void set_linear(variable_type, bias_type) except +
+        bool set_quadratic(variable_type, variable_type, bias_type) except +
 
+cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
 
-cdef extern from "src/shapeable.cc":
-    pass
+    cdef cppclass AdjMapBQM[V, B]:
+        ctypedef V variable_type
+        ctypedef B bias_type
+        ctypedef size_t size_type
 
-cdef extern from "src/shapeable.h" namespace "dimod" nogil:
+        vector[pair[cppmap[variable_type, bias_type], bias_type]] adj
 
-    # some of these should have const bqm inputs but cython seems to have
-    # trouble with that
+        cppclass outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            outvars_iterator operator++()
+            outvars_iterator operator--()
+            outvars_iterator operator+(size_type)
+            outvars_iterator operator-(size_type)
+            size_t operator-(outvars_iterator)
+            bint operator==(outvars_iterator)
+            bint operator!=(outvars_iterator)
+            bint operator<(outvars_iterator)
+            bint operator>(outvars_iterator)
+            bint operator<=(outvars_iterator)
+            bint operator>=(outvars_iterator)
 
-    size_t num_variables[N, B](vector[pair[N, B]]&)
-    size_t num_interactions[N, B](vector[pair[N, B]]&)
+        # constructors
+        # cython cannot handle templated constructors, so we call out the types
+        # explicitly
 
-    B get_linear[N, V, B](vector[pair[N, B]]&, V)
-    pair[B, bool] get_quadratic[N, V, B](vector[pair[N, B]]&, V, V)
+        AdjMapBQM() except +
+        AdjMapBQM(const AdjArrayBQM&) except +
+        AdjMapBQM(const AdjMapBQM&) except +
+        AdjMapBQM(const AdjVectorBQM&) except +
 
-    size_t degree[N, V, B](vector[pair[N, B]]&, V)
+        # methods
 
-    pair[vector[pair[V, B]].iterator,
-         vector[pair[V, B]].iterator] neighborhood[V, B](
-        vector[pair[vector[pair[V, B]], B]]&, V)
-    pair[cppmap[V, B].iterator,
-         cppmap[V, B].iterator] neighborhood[V, B](
-        vector[pair[cppmap[V, B], B]]&, V)
+        size_type degree(variable_type) except +
+        bias_type get_linear(variable_type) except +
+        pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        size_type num_interactions() except +
+        size_type num_variables() except +
+        void set_linear(variable_type, bias_type) except +
+        bool set_quadratic(variable_type, variable_type, bias_type) except +
 
-    void set_linear[N, V, B](vector[pair[N, B]]&, V, B)
+        # shapeable methods
 
-    void set_quadratic[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V, B)
-    void set_quadratic[V, B](vector[pair[cppmap[V, B], B]]&, V, V, B)
+        variable_type add_variable() except +
+        variable_type pop_variable() except +
+        bool remove_interaction(variable_type, variable_type) except +
 
-    size_t add_variable[N, B](vector[pair[N, B]]&)
+cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
 
+    cdef cppclass AdjVectorBQM[V, B]:
+        ctypedef V variable_type
+        ctypedef B bias_type
+        ctypedef size_t size_type
 
-    V add_variable[V, B](vector[pair[vector[pair[V, B]], B]]&)
+        vector[pair[vector[pair[variable_type, bias_type]], bias_type]] adj
 
-    void copy_bqm[V, B, BQM](BQM&, vector[pair[vector[pair[V, B]], B]]&)
-    void copy_bqm[V, B, BQM](BQM&, vector[pair[cppmap[V, B], B]]&)
+        cppclass outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            outvars_iterator operator++()
+            outvars_iterator operator--()
+            outvars_iterator operator+(size_type)
+            outvars_iterator operator-(size_type)
+            size_t operator-(outvars_iterator)
+            bint operator==(outvars_iterator)
+            bint operator!=(outvars_iterator)
+            bint operator<(outvars_iterator)
+            bint operator>(outvars_iterator)
+            bint operator<=(outvars_iterator)
+            bint operator>=(outvars_iterator)
 
-    size_t pop_variable[N, B](vector[pair[N, B]]&)
+        # constructors
+        # cython cannot handle templated constructors, so we call out the types
+        # explicitly
 
-    bool remove_interaction[V, B](vector[pair[vector[pair[V, B]], B]]&, V, V)
-    bool remove_interaction[V, B](vector[pair[cppmap[V, B], B]]&, V, V)
+        AdjVectorBQM() except +
+        AdjVectorBQM(const AdjArrayBQM&) except +
+        AdjVectorBQM(const AdjMapBQM&) except +
+        AdjVectorBQM(const AdjVectorBQM&) except +
+
+        # methods
+
+        size_type degree(variable_type) except +
+        bias_type get_linear(variable_type) except +
+        pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        size_type num_interactions() except +
+        size_type num_variables() except +
+        void set_linear(variable_type, bias_type) except +
+        bool set_quadratic(variable_type, variable_type, bias_type) except +
+
+        # shapeable methods
+
+        variable_type add_variable() except +
+        variable_type pop_variable() except +
+        bool remove_interaction(variable_type, variable_type) except +

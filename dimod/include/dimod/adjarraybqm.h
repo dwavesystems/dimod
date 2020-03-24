@@ -1,4 +1,4 @@
-// Copyright 2019 D-Wave Systems Inc.
+// Copyright 2020 D-Wave Systems Inc.
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -19,12 +19,9 @@
 #include <utility>
 #include <vector>
 
-namespace dimod {
+#include "dimod/utils.h"
 
-template<class V, class B>
-bool comp_v(std::pair<V, B> ub, V v) {
-    return ub.first < v;
-}
+namespace dimod {
 
 template<class V, class B, class N = std::size_t>
 class AdjArrayBQM {
@@ -37,6 +34,7 @@ class AdjArrayBQM {
     using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
     using const_outvars_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
 
+    // in the future we'd probably like to make this protected
     std::vector<std::pair<N, B>> invars;
     std::vector<std::pair<V, B>> outvars;
 
@@ -75,7 +73,8 @@ class AdjArrayBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v, comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         if (low == span.second || low->first != v)
             return std::make_pair(0, false);
@@ -131,7 +130,8 @@ class AdjArrayBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v, comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         // if u, v does not exist when we are done
         if (low == span.second || low->first != v) return false;
@@ -139,7 +139,7 @@ class AdjArrayBQM {
         low->second = b;
 
         span = neighborhood(v);
-        low = std::lower_bound(span.first, span.second, u, comp_v<V, B>);
+        low = std::lower_bound(span.first, span.second, u, utils::comp_v<V, B>);
 
         assert(low->first == u);
 
