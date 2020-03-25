@@ -57,6 +57,10 @@ cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
         AdjArrayBQM(AdjArrayBQM&) except +
         AdjArrayBQM(AdjMapBQM&) except +
         AdjArrayBQM(AdjVectorBQM&) except +
+        AdjArrayBQM(const float[], size_type)
+        AdjArrayBQM(const float[], size_type, bool)
+        AdjArrayBQM(const double[], size_type)
+        AdjArrayBQM(const double[], size_type, bool)
 
         # methods
 
@@ -100,6 +104,10 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
         AdjMapBQM(const AdjArrayBQM&) except +
         AdjMapBQM(const AdjMapBQM&) except +
         AdjMapBQM(const AdjVectorBQM&) except +
+        AdjMapBQM(const float[], size_type)
+        AdjMapBQM(const float[], size_type, bool)
+        AdjMapBQM(const double[], size_type)
+        AdjMapBQM(const double[], size_type, bool)
 
         # methods
 
@@ -149,6 +157,10 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         AdjVectorBQM(const AdjArrayBQM&) except +
         AdjVectorBQM(const AdjMapBQM&) except +
         AdjVectorBQM(const AdjVectorBQM&) except +
+        AdjVectorBQM(const float[], size_type)
+        AdjVectorBQM(const float[], size_type, bool)
+        AdjVectorBQM(const double[], size_type)
+        AdjVectorBQM(const double[], size_type, bool)
 
         # methods
 

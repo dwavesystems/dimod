@@ -54,6 +54,41 @@ class AdjArrayBQM {
         }
     }
 
+    /**
+     * Construct a BQM from a dense array.
+     *
+     * @param dense An array containing the biases. Assumed to contain
+     *     `num_variables`^2 elements. The upper and lower triangle are summed.
+     * @param num_variables The number of variables. 
+     */
+    template<class B2>
+    AdjArrayBQM(const B2 dense[], size_type num_variables,
+                bool ignore_diagonal = false) {
+        // we know how big our linear is going to be. We'd also like to
+        // reserve quadratic, but we ignore 0s on the off-digonal so we can't
+        invars.reserve(num_variables);
+
+        bias_type qbias;
+
+        for (size_type u = 0; u < num_variables; ++u) {
+            // handle the linear
+            if (ignore_diagonal) {
+                invars.emplace_back(outvars.size(), 0);
+            } else {
+                invars.emplace_back(outvars.size(), dense[u*(num_variables+1)]);
+            }
+
+            for (size_type v = 0; v < num_variables; ++v) {
+                if (u == v) continue;  // already did linear
+
+                qbias = dense[u*num_variables+v] + dense[v*num_variables+u];
+
+                if (qbias != 0)
+                    outvars.emplace_back(v, qbias);
+            }
+        }
+    }
+
     size_type num_interactions() const {
         return outvars.size() / 2;
     }

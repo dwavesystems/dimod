@@ -50,6 +50,39 @@ class AdjMapBQM {
         }
     }
 
+    /**
+     * Construct a BQM from a dense array.
+     *
+     * @param dense An array containing the biases. Assumed to contain
+     *     `num_variables`^2 elements. The upper and lower triangle are summed.
+     * @param num_variables The number of variables. 
+     */
+    template<class B2>
+    AdjMapBQM(const B2 dense[], size_type num_variables,
+              bool ignore_diagonal = false) {
+        // we know how big our linear is going to be
+        adj.resize(num_variables);
+
+        bias_type qbias;
+
+        if (!ignore_diagonal) {
+            for (size_type v = 0; v < num_variables; ++v) {
+                set_linear(v, dense[v*(num_variables+1)]);
+            }
+        }
+
+        for (size_type u = 0; u < num_variables; ++u) {
+            for (size_type v = u + 1; v < num_variables; ++v) {
+                qbias = dense[u*num_variables+v] + dense[v*num_variables+u];
+
+                if (qbias != 0) {
+                    adj[u].first.emplace_hint(adj[u].first.end(), v, qbias);
+                    adj[v].first.emplace_hint(adj[v].first.end(), u, qbias);
+                }
+            }
+        }
+    }
+
     /// Add one (disconnected) variable to the BQM and return its index.
     variable_type add_variable() {
         adj.resize(adj.size()+1);
