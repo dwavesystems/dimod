@@ -90,7 +90,7 @@ class AdjVectorBQM {
     }
 
     /// Get the degree of variable `v`.
-    size_type degree(variable_type v) {
+    size_type degree(variable_type v) const {
         return adj[v].first.size();
     }
 
@@ -98,7 +98,8 @@ class AdjVectorBQM {
         return adj[v].second;
     }
 
-    std::pair<bias_type, bool> get_quadratic(variable_type u, variable_type v) {
+    std::pair<bias_type, bool>
+    get_quadratic(variable_type u, variable_type v) const {
         assert(u >= 0 && u < adj.size());
         assert(v >= 0 && v < adj.size());
         assert(u != v);
