@@ -27,14 +27,14 @@ __all__ = ['ClipComposite']
 
 
 class ClipComposite(ComposedSampler):
-    """Composite to clip variables of a problem
+    """Composite to clip variables of a problem.
 
     Clips the variables of a bqm and modifies linear and quadratic terms
     accordingly.
 
     Args:
        sampler (:obj:`dimod.Sampler`):
-            A dimod sampler
+            A dimod sampler.
 
     Examples:
        This example uses :class:`.ClipComposite` to instantiate a
@@ -119,4 +119,3 @@ def _clip_bqm(bqm, lower_bound, upper_bound):
             if v > upper_bound:
                 quadratic[k] = upper_bound
     return bqm_copy
-

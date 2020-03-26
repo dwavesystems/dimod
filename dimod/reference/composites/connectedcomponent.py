@@ -42,14 +42,20 @@ class ConnectedComponentsComposite(ComposedSampler):
             A dimod sampler
 
     Examples:
-       This example uses :class:`.ConnectedComponentsComposite` to instantiate a
-       composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler finds the connected components and solves each.
+       This example uses :class:`.ConnectedComponentsComposite` to solve a simple
+       Ising problem that can be separated into two components. This small example
+       uses :class:`dimod.ExactSolver` and is just illustrative.
 
-       >>> h = {1: -1.3, 2: 2.3, 3:-1.2, 4: -0.5}
-       >>> J = {(1, 4): -0.6, (1, 3): 0.6, (3, 4): 1.0, (2, 3): -1.0}
-       >>> sampler = dimod.ConnectedComponentsComposite(dimod.ExactSolver())
-       >>> sampleset = sampler.sample_ising(h, J)
+       >>> h = {}
+       >>> J1 = {(1, 2): -1.0, (2, 3): 2.0, (3, 4): 3.0}
+       >>> J2 = {(12, 13): 6}
+       >>> sampler = dimod.ExactSolver()
+       >>> sampler_ccc = dimod.ConnectedComponentsComposite(sampler)
+       >>> e1 = sampler.sample_ising(h, J1).first.energy
+       >>> e2 = sampler.sample_ising(h, J2).first.energy
+       >>> e_ccc = sampler_ccc.sample_ising(h, {**J1, **J2}).first.energy
+       >>> e_ccc == e1 + e2
+       True
 
     """
 
