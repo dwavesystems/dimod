@@ -65,7 +65,7 @@ Examples:
     >>> import itertools
     >>> sampler = TwoVariablesSampler()
     >>> solutions = sampler.sample_ising({}, {(0, 1): -1})
-    >> solutions.first.energy
+    >>> solutions.first.energy
     -1.0
 
 """
