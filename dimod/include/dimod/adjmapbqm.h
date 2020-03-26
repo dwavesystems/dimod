@@ -67,7 +67,7 @@ class AdjMapBQM {
 
         if (!ignore_diagonal) {
             for (size_type v = 0; v < num_variables; ++v) {
-                set_linear(v, dense[v*(num_variables+1)]);
+                adj[v].second = dense[v*(num_variables+1)];
             }
         }
 
