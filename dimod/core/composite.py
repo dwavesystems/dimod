@@ -53,12 +53,14 @@ Examples:
                 # flipped_response = self.child.sample(bqm, **kwargs)
                 return response
 
-    Given a sampler, `sampler1`, the composed sampler is used as any dimod sampler.
-    For example, the composed sampler inherits an Ising sampling method:
+    Given dimod sampler :class:`.ExactSolver` for example, the composed sampler is
+    used as any dimod sampler, inheriting an Ising sampling method:
 
-    >>> composed_sampler = dimod.SpinReversalTransformComposite(sampler1) # doctest: +SKIP
-    >>> h = {0: -1, 1: 1} # doctest: +SKIP
-    >>> response = composed_sampler.sample_ising(h, {}) # doctest: +SKIP
+    >>> composed_sampler = dimod.SpinReversalTransformComposite(dimod.ExactSolver())
+    >>> h = {0: -1, 1: 1}
+    >>> solutions = composed_sampler.sample_ising(h, {})
+    >>> len(solutions) == 8
+    True
 
 """
 import abc
