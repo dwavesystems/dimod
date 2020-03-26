@@ -97,7 +97,9 @@ class build_ext(_build_ext):
 
             test_extensions = [Extension('*', ['tests/test_*'+ext])]
             if USE_CYTHON:
-                test_extensions = cythonize(test_extensions)
+                test_extensions = cythonize(test_extensions,
+                                            # annotate=True
+                                            )
             self.extensions.extend(test_extensions)
 
         super().run()
@@ -145,7 +147,7 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
 if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions,
-                           annotate=True,
+                           # annotate=True,
                            )
 
 setup(
