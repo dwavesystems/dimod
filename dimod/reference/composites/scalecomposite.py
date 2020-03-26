@@ -122,12 +122,12 @@ class ScaleComposite(ComposedSampler):
             ignored_variables, ignored_interactions)
 
         child = self.child
-        bqm_copy = _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
+        bqm_copy, scalar = _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
                                ignored_variables, ignored_interactions,
                                ignore_offset)
         response = child.sample(bqm_copy, **parameters)
 
-        return _scale_back_response(bqm, response, bqm_copy.info['scalar'],
+        return _scale_back_response(bqm, response, scalar,
                                     ignored_variables, ignored_interactions,
                                     ignore_offset)
 
@@ -219,6 +219,7 @@ def _scale_back_response(bqm, response, scalar, ignored_interactions,
     else:
         response.record.energy = bqm.energies((response.record.sample,
                                                response.variables))
+    response.info['scalar'] = scalar
     return response
 
 
@@ -292,8 +293,8 @@ def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
     bqm_copy.scale(scalar, ignored_variables=ignored_variables,
                    ignored_interactions=ignored_interactions,
                    ignore_offset=ignore_offset)
-    bqm_copy.info.update({'scalar': scalar})
-    return bqm_copy
+
+    return bqm_copy, scalar
 
 
 def check_isin(key, key_list):
