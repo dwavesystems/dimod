@@ -170,6 +170,8 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
     >>> import networkx as nx
     >>> K_7 = nx.complete_graph(7)
     >>> bqm = dimod.generators.random.ran_r(1, K_7)
+    >>> max(bqm.quadratic.values()) == -min(bqm.quadratic.values()) 
+    True
 
     .. [Kin2015] James King, Sheir Yarkoni, Mayssam M. Nevisi, Jeremy P. Hilton,
         Catherine C. McGeoch. Benchmarking a quantum annealing processor with the
