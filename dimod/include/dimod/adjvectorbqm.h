@@ -144,7 +144,7 @@ class AdjVectorBQM {
         // remove v from all of its neighbor's neighborhoods
         for (auto it = adj[v].first.cbegin(); it != adj[v].first.cend(); ++it) {
             auto span = neighborhood(it->first);
-            auto low = std::lower_bound(span.first, span.second, it->first,
+            auto low = std::lower_bound(span.first, span.second, v,
                                         utils::comp_v<V, B>);
             adj[it->first].first.erase(low);
         }

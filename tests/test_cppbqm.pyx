@@ -27,7 +27,10 @@ from dimod.bqm.cppbqm cimport AdjArrayBQM as cppAdjArrayBQM
 from dimod.bqm.cppbqm cimport AdjMapBQM as cppAdjMapBQM
 from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
 
-__all__ = ['TestConstruction']
+__all__ = ['TestConstruction',
+           'TestPopVariable',
+           'TestRemoveInteraction',
+           ]
 
 ctypedef cppAdjArrayBQM[size_t, float] cppAdjArrayBQM_t
 ctypedef cppAdjMapBQM[size_t, float] cppAdjMapBQM_t
@@ -203,3 +206,43 @@ class TestConstruction(unittest.TestCase):
                 else:
                     self.assertFalse(bqm.get_quadratic(ui, vi).second)
                     self.assertFalse(bqm.get_quadratic(ui, vi).second)
+
+
+class TestPopVariable(unittest.TestCase):
+    def test_adjvectorbqm_typical(self):
+        cdef cppAdjVectorBQM_t bqm = cppAdjVectorBQM_t()
+
+        for _ in range(3):        
+            bqm.add_variable()
+
+        bqm.set_quadratic(0, 1, 1)
+        bqm.set_quadratic(0, 2, 1)
+
+        bqm.pop_variable()
+
+        self.assertEqual(bqm.num_variables(), 2)
+        self.assertEqual(bqm.num_interactions(), 1)
+        self.assertEqual(bqm.adj[0].first.size(), 1)
+        self.assertEqual(bqm.adj[1].first.size(), 1)
+        self.assertEqual(bqm.adj[0].first[0].first, 1)
+        self.assertEqual(bqm.adj[1].first[0].first, 0)
+
+
+class TestRemoveInteraction(unittest.TestCase):
+    def test_adjvectorbqm_typical(self):
+        cdef cppAdjVectorBQM_t bqm = cppAdjVectorBQM_t()
+
+        for _ in range(3):        
+            bqm.add_variable()
+
+        bqm.set_quadratic(0, 2, .5)
+        bqm.set_quadratic(0, 1, 6)
+        bqm.set_quadratic(1, 2, 1.6)
+
+        bqm.remove_interaction(0, 1)
+
+        self.assertEqual(bqm.num_variables(), 3)
+        self.assertEqual(bqm.num_interactions(), 2)
+        self.assertEqual(bqm.adj[0].first.size(), 1)
+        self.assertEqual(bqm.adj[1].first.size(), 1)
+        self.assertEqual(bqm.adj[2].first.size(), 2)

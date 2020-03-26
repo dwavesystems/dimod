@@ -107,15 +107,14 @@ cdef class cyAdj@name@BQM:
 
     def _init_cybqm(self, cyBQM bqm):
         """Construct self from another cybqm."""
-        raise NotImplementedError
-        # copy_bqm(bqm.adj_, self.adj_)
+        self.bqm_ = cppAdj@name@BQM[VarIndex, Bias](bqm.bqm_)
 
-        # self.offset_ = bqm.offset_
-        # self.vartype = bqm.vartype
+        self.offset_ = bqm.offset_
+        self.vartype = bqm.vartype
 
-        # # shallow copy is OK since everything is hashable
-        # self._label_to_idx = bqm._label_to_idx.copy()
-        # self._idx_to_label = bqm._idx_to_label.copy()
+        # shallow copy is OK since everything is hashable
+        self._label_to_idx = bqm._label_to_idx.copy()
+        self._idx_to_label = bqm._idx_to_label.copy()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

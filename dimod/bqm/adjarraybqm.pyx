@@ -29,7 +29,7 @@ from cython.operator cimport postincrement as inc, dereference as deref
 import numpy as np
 
 from dimod.bqm cimport cyShapeableBQM
-# from dimod.bqm.adjvectorbqm import AdjVectorBQM
+from dimod.bqm.adjvectorbqm import AdjVectorBQM
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.utils cimport as_numpy_scalar
@@ -112,31 +112,21 @@ cdef class cyAdjArrayBQM:
                 # probably AdjDictBQM or subclass, just like when constructing
                 # with maps, it's a lot easier/nicer to pass through
                 # AdjVectorBQM
-                raise NotImplementedError
-                # self._init_bqm(AdjVectorBQM(bqm), vartype=vartype)
+                self._init_bqm(AdjVectorBQM(bqm), vartype=vartype)
 
         if vartype is not None:
             self.change_vartype(as_vartype(vartype), inplace=True)
 
     def _init_cybqm(self, cyShapeableBQM bqm):
         """Copy another BQM into self."""
-        # we'll want to change this once constructors work properly
+        self.bqm_ = cppAdjArrayBQM[VarIndex, Bias](bqm.bqm_)
 
-        raise NotImplementedError
+        self.offset_ = bqm.offset_
+        self.vartype = bqm.vartype
 
-        # cdef VarIndex vi
-        # for vi in range(bqm.adj_.size()):
-        #     self.bqm_.invars.push_back((self.bqm_.outvars.size(), get_linear(bqm.adj_, vi)))
-
-        #     span = neighborhood(bqm.adj_, vi)
-        #     self.bqm_.outvars.insert(self.bqm_.outvars.end(), span.first, span.second)
-
-        # self.offset_ = bqm.offset_
-        # self.vartype = bqm.vartype
-
-        # # shallow copy is OK since everything is hashable
-        # self._label_to_idx = bqm._label_to_idx.copy()
-        # self._idx_to_label = bqm._idx_to_label.copy()
+        # shallow copy is OK since everything is hashable
+        self._label_to_idx = bqm._label_to_idx.copy()
+        self._idx_to_label = bqm._idx_to_label.copy()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -147,8 +137,7 @@ cdef class cyAdjArrayBQM:
             # constructing from dictionaries is a lot easier if you have
             # incremental construction, so we build using one of the shapeable
             # bqms
-            raise NotImplementedError
-            # self._init_bqm(AdjVectorBQM(linear, quadratic, offset, vartype))
+            self._init_bqm(AdjVectorBQM(linear, quadratic, offset, vartype))
             return
 
         cdef bint is_spin = self.vartype is Vartype.SPIN
