@@ -45,7 +45,8 @@ class NullSampler(Sampler):
         >>> len(sampleset)
         0
 
-        Setting additional parameters for the null sampler.
+        The next example shows how to enable additional parameters for the null 
+        sampler.
 
         >>> bqm = dimod.BinaryQuadraticModel.from_qubo({('a', 'b'): 1})
         >>> sampler = dimod.NullSampler(parameters=['a'])

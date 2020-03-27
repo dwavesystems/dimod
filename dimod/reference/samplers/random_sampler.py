@@ -25,7 +25,17 @@ __all__ = ['RandomSampler']
 
 
 class RandomSampler(Sampler):
-    """A sampler that gives random samples for testing."""
+    """A sampler that gives random samples for testing.
+
+    Examples:
+        This example produces 10 samples for a two-variable problem.
+
+        >>> bqm = dimod.BinaryQuadraticModel.from_qubo({('a', 'b'): 1})
+        >>> sampler = dimod.RandomSampler()
+        >>> sampleset = sampler.sample(bqm, num_reads=10)
+        >>> len(sampleset)
+        10
+    """
     properties = None
 
     parameters = None
