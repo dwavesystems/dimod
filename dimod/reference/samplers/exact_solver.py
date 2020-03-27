@@ -14,11 +14,11 @@
 #
 # ================================================================================================
 """
-A simple exact solver for testing and debugging code using your local CPU.
+Solvers that calculate the energy of all possible samples.
 
 Note:
-    This sampler is designed for use in testing. Because it calculates the
-    energy for every possible sample, it is very slow.
+    These samplers are designed for use in testing. Because they calculate
+    energy for every possible sample, they are very slow.
 """
 
 import numpy as np
