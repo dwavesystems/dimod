@@ -770,7 +770,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
             ...                                              {('a', 'b'): 1})
-            >>> for sample in sampleset.samples():
+            >>> for sample in sampleset.samples():   # doctest: +SKIP
             ...     print(sample)
             {'a': -1, 'b': 1}
             {'a': 1, 'b': -1}

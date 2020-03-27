@@ -104,7 +104,7 @@ class StructureComposite(Sampler, Composite, Structured):
             >>> edges = [(0, 1)]
             >>> composed_sampler = dimod.StructureComposite(dimod.ExactSolver(),
             ...                          nodes, edges)
-            response = composed_sampler.sample_ising({0: 1, 1: 1}, {})
+            >>> response = composed_sampler.sample_ising({0: 1, 1: 1}, {})
             >>> set(response.first.sample.values())
             {-1}
         """
