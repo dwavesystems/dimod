@@ -103,16 +103,14 @@ class AdjDictBQM(ShapeableBQM):
         - For small problems or when flexibility is important
 
     Examples:
+        The first example constructs a BQM from a dict.
 
-        >>> import numpy as np
-        >>> from dimod import AdjDictBQM
-
-        >>> # Construct from dicts
-        >>> AdjDictBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
+        >>> dimod.AdjDictBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
         AdjDictBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
 
-        >>> # Incremental Construction
-        >>> bqm = AdjDictBQM('SPIN')
+        The next example demonstrates incremental construction:
+
+        >>> bqm = dimod.AdjDictBQM('SPIN')
         >>> bqm.add_variable('a')
         'a'
         >>> bqm.add_variable()
@@ -121,9 +119,11 @@ class AdjDictBQM(ShapeableBQM):
         >>> bqm
         AdjDictBQM({a: 0.0, 1: 0.0}, {('a', 1): 3.0}, 0.0, 'SPIN')
 
-        >>> # Supports arbitrary types
+        This example shows support for arbitrary types.
+
+        >>> import numpy as np
         >>> from fractions import Fraction
-        >>> AdjDictBQM({('a', 'b'): Fraction(1, 3)}, 'BINARY')
+        >>> dimod.AdjDictBQM({('a', 'b'): Fraction(1, 3)}, 'BINARY')
         AdjDictBQM({a: 0.0, b: 0.0}, {('a', 'b'): 1/3}, 0.0, 'BINARY')
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
@@ -487,14 +487,14 @@ class AdjDictBQM(ShapeableBQM):
 
         Args:
             v (variable, optional):
-                The variable to be removed from the bqm. If not provided, the
-                last variable added is removed.
+                The variable to be removed from the binary quadratic model
+                (BQM). If not provided, the last variable added is removed.
 
         Returns:
             variable: The removed variable.
 
         Raises:
-            ValueError: If the binary quadratic model is empty or if `v` is not
+            ValueError: If the BQM is empty or if `v` is not
             a variable.
 
         """

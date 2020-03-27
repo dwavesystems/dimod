@@ -14,8 +14,8 @@
 #
 # =============================================================================
 """
-A composite that scales problem variables as directed. if scalar is not given
-calculates it based on quadratic and bias ranges.
+A composite that scales problem variables as directed. If a scaling value is
+not specified, calculates it based on quadratic and bias ranges.
 
 """
 try:
@@ -34,20 +34,20 @@ __all__ = 'ScaleComposite',
 
 
 class ScaleComposite(ComposedSampler):
-    """Composite to scale variables of a problem
+    """Composite that scales variables of a problem.
 
-    Scales the variables of a bqm and modifies linear and quadratic terms
-    accordingly.
+    Scales the variables of a binary quadratic model (BQM) and modifies linear
+    and quadratic terms accordingly.
 
     Args:
        sampler (:obj:`dimod.Sampler`):
-            A dimod sampler
+            A dimod sampler.
 
     Examples:
        This example uses :class:`.ScaleComposite` to instantiate a
        composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler scales linear, quadratic biases and offset as
-       indicated by options.
+       The composed sampler scales linear biases, quadratic biases, and
+       offset as indicated by options.
 
        >>> h = {'a': -4.0, 'b': -4.0}
        >>> J = {('a', 'b'): 3.2}
@@ -282,7 +282,7 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables,
 def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
                 ignored_variables, ignored_interactions,
                 ignore_offset):
-    """Helper function of sample for scaling"""
+    """Helper function of sample for scaling."""
 
     bqm_copy = bqm.copy()
     if scalar is None:

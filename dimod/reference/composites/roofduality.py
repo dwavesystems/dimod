@@ -40,8 +40,8 @@ class RoofDualityComposite(FixedVariableComposite):
 
     Args:
        child (:obj:`dimod.Sampler`):
-            A dimod sampler. Used to sample the bqm after variables have been
-            fixed.
+            A dimod sampler. Used to sample the binary quadratic model after
+            variables have been fixed.
 
     """
 

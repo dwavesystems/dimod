@@ -517,7 +517,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> with ThreadPoolExecutor(max_workers=1) as executor:
             ...     future = executor.submit(dimod.ExactSolver().sample, bqm)
             ...     sampleset = dimod.SampleSet.from_future(future)
-            >>> sampleset.record
+            >>> sampleset.record    # doctest: +SKIP
             rec.array([([-1, -1], -1., 1), ([ 1, -1],  1., 1), ([ 1,  1], -1., 1),
                        ([-1,  1],  1., 1)],
                       dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
@@ -617,7 +617,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> sampleset = dimod.SampleSet.from_samples([[-1, 1], [1, 1]], dimod.SPIN,
                                                          energy=[-1, 1])
-            >>> sampleset.record['energy']
+            >>> sampleset.record['energy']   # doctest: +SKIP
             array([-1,  1])
 
 
@@ -674,16 +674,16 @@ class SampleSet(abc.Iterable, abc.Sized):
             ...
             >>> sampler = dimod.ExactSolver()
             >>> sampleset = sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1.0})
-            >>> sampleset.record
+            >>> sampleset.record     # doctest: +SKIP
             rec.array([([-1, -1], -1.5, 1), ([ 1, -1], -0.5, 1), ([ 1,  1], -0.5, 1),
                        ([-1,  1],  2.5, 1)],
                       dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
-            >>> sampleset.record.sample
+            >>> sampleset.record.sample     # doctest: +SKIP
             array([[-1, -1],
                    [ 1, -1],
                    [ 1,  1],
                    [-1,  1]], dtype=int8)
-            >>> sampleset.record.energy
+            >>> sampleset.record.energy       # doctest: +SKIP
             array([-1.5, -0.5, -0.5,  2.5])
 
         """
@@ -744,7 +744,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> future.set_result(dimod.ExactSolver().sample_ising({0: -1}, {}))
             >>> future.done()
             True
-            >>> sampleset.record.sample
+            >>> sampleset.record.sample    # doctest: +SKIP
             array([[-1],
                    [ 1]], dtype=int8)
 
@@ -770,7 +770,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
             ...                                              {('a', 'b'): 1})
-            >>> for sample in sampleset.samples():
+            >>> for sample in sampleset.samples():   # doctest: +SKIP
             ...     print(sample)
             {'a': -1, 'b': 1}
             {'a': 1, 'b': -1}

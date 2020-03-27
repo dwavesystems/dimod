@@ -45,7 +45,7 @@ class ExactSolver(Sampler):
         >>> h = {'a': -0.5, 'b': 1.0}
         >>> J = {('a', 'b'): -1.5}
         >>> sampleset = dimod.ExactSolver().sample_ising(h, J)
-        >>> print(sampleset)
+        >>> print(sampleset)   # doctest: +SKIP
            a  b energy num_oc.
         0 -1 -1   -2.0       1
         2 +1 +1   -1.0       1
