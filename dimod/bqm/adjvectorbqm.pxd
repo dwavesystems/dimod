@@ -16,14 +16,8 @@
 #    limitations under the License.
 #
 # =============================================================================
-
-from libcpp cimport bool
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
+from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
 from dimod.bqm.common cimport VarIndex, Bias
-
-ctypedef vector[pair[VarIndex, Bias]].const_iterator NeighborIterator
 
 
 cdef class cyAdjVectorBQM:
@@ -109,7 +103,7 @@ cdef class cyAdjVectorBQM:
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
-    cdef vector[pair[vector[pair[VarIndex, Bias]], Bias]] adj_
+    cdef cppAdjVectorBQM[VarIndex, Bias] bqm_
 
     cdef Bias offset_
 

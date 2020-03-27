@@ -16,15 +16,8 @@
 #    limitations under the License.
 #
 # =============================================================================
-
-from libcpp cimport bool
-from libcpp.map cimport map
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
+from dimod.bqm.cppbqm cimport AdjMapBQM as cppAdjMapBQM
 from dimod.bqm.common cimport VarIndex, Bias
-
-ctypedef map[VarIndex, Bias].const_iterator NeighborIterator
 
 
 cdef class cyAdjMapBQM:
@@ -109,7 +102,7 @@ cdef class cyAdjMapBQM:
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
-    cdef vector[pair[map[VarIndex, Bias], Bias]] adj_
+    cdef cppAdjMapBQM[VarIndex, Bias] bqm_
 
     cdef Bias offset_
 

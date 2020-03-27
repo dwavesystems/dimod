@@ -97,7 +97,9 @@ class build_ext(_build_ext):
 
             test_extensions = [Extension('*', ['tests/test_*'+ext])]
             if USE_CYTHON:
-                test_extensions = cythonize(test_extensions)
+                test_extensions = cythonize(test_extensions,
+                                            # annotate=True
+                                            )
             self.extensions.extend(test_extensions)
 
         super().run()
@@ -130,17 +132,11 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
               Extension("dimod.bqm.adjmapbqm",
-                        ['dimod/bqm/adjmapbqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjmapbqm'+ext]),
               Extension("dimod.bqm.adjarraybqm",
-                        ['dimod/bqm/adjarraybqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjarraybqm'+ext]),
               Extension("dimod.bqm.adjvectorbqm",
-                        ['dimod/bqm/adjvectorbqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjvectorbqm'+ext]),
               Extension("dimod.bqm.utils",
                         ['dimod/bqm/utils'+ext]),
               Extension("dimod.bqm.common",

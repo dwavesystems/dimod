@@ -24,7 +24,6 @@ import dimod
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common import itype, dtype
 from dimod.bqm.common cimport Bias, VarIndex
-from dimod.bqm.cppbqm cimport degree, get_linear, neighborhood, num_variables
 
 cdef extern from "numpy/arrayobject.h":
     # The comment in
@@ -143,7 +142,7 @@ def cyenergies(cyBQM bqm, samples_like):
     cdef Py_ssize_t num_samples = samples_view.shape[0]
     cdef Py_ssize_t num_variables = samples_view.shape[1]
 
-    if num_variables != bqm.num_variables:
+    if num_variables != bqm.bqm_.num_variables():
         raise ValueError("inconsistent number of variables")
     if num_variables != len(labels):
         # an internal error to as_samples. We do this check because
@@ -170,9 +169,9 @@ def cyenergies(cyBQM bqm, samples_like):
         for ui in range(num_variables):
             uspin = samples_view[si, bqm_to_sample[ui]]
 
-            energies_view[si] += get_linear(bqm.adj_, ui) * uspin
+            energies_view[si] += bqm.bqm_.get_linear(ui) * uspin
 
-            span = neighborhood(bqm.adj_, ui)
+            span = bqm.bqm_.neighborhood(ui)
             while span.first != span.second and deref(span.first).first < ui:
                 vi = deref(span.first).first
 
@@ -214,7 +213,7 @@ def cyrelabel(cyBQM bqm, mapping, inplace=True):
 def ilinear_biases(cyBQM bqm):
     """Get the linear biases as well as the neighborhood indices."""
 
-    cdef Py_ssize_t numvar = num_variables(bqm.adj_)
+    cdef Py_ssize_t numvar = bqm.bqm_.num_variables()
 
     dtype = np.dtype([('ni', bqm.ntype), ('b', bqm.dtype)], align=False)
     ldata = np.empty(numvar, dtype=dtype)
@@ -231,9 +230,9 @@ def ilinear_biases(cyBQM bqm):
     cdef VarIndex vi
     for vi in range(numvar):
         if vi + 1 < numvar:
-            neighbors_view[vi + 1] = neighbors_view[vi] + degree(bqm.adj_, vi)
+            neighbors_view[vi + 1] = neighbors_view[vi] + bqm.bqm_.degree(vi)
 
-        bias_view[vi] = get_linear(bqm.adj_, vi)
+        bias_view[vi] = bqm.bqm_.get_linear(vi)
 
     return ldata
 
@@ -253,10 +252,10 @@ def ineighborhood(cyBQM bqm, VarIndex ui):
 
     """
 
-    if ui >= num_variables(bqm.adj_):
+    if ui >= bqm.bqm_.num_variables():
         raise ValueError("out of range variable, {!r}".format(ui))
 
-    cdef Py_ssize_t d = degree(bqm.adj_, ui)
+    cdef Py_ssize_t d = bqm.bqm_.degree(ui)
 
     dtype = np.dtype([('ui', bqm.itype), ('b', bqm.dtype)], align=False)
     neighbors = np.empty(d, dtype=dtype)
@@ -265,7 +264,7 @@ def ineighborhood(cyBQM bqm, VarIndex ui):
     cdef VarIndex[:] index_view = neighbors['ui']
     cdef Bias[:] bias_view = neighbors['b']
 
-    span = neighborhood(bqm.adj_, ui)
+    span = bqm.bqm_.neighborhood(ui)
 
     cdef Py_ssize_t i = 0
     while span.first != span.second:

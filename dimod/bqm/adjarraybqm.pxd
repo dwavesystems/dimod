@@ -16,9 +16,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
+from dimod.bqm.cppbqm cimport AdjArrayBQM as cppAdjArrayBQM
 from dimod.bqm.common cimport VarIndex, Bias
 
 
@@ -99,8 +97,7 @@ cdef class cyAdjArrayBQM:
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
     """
-
-    cdef pair[vector[pair[size_t, Bias]], vector[pair[VarIndex, Bias]]] adj_
+    cdef cppAdjArrayBQM[VarIndex, Bias] bqm_
 
     cdef Bias offset_
 
