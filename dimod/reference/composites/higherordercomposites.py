@@ -194,9 +194,9 @@ def expand_initial_state(bqm, initial_state):
 def penalty_satisfaction(response, bqm):
     """Create a penalty satisfaction list.
 
-    Given a SampleSet and a binary quadratic model (BQM) object, creates a
+    Given a sample set and a binary quadratic model (BQM) object, creates a
     binary list informing whether the penalties introduced during degree
-    reduction are satisfied for each sample in the SampleSet
+    reduction are satisfied for each sample in the sample set.
 
     Args:
         response (:obj:`.SampleSet`): Samples corresponding to provided BQM
@@ -227,9 +227,9 @@ def polymorph_response(response, poly, bqm,
                        penalty_strength=None,
                        keep_penalty_variables=True,
                        discard_unsatisfied=False):
-    """Transform the SampleSet for the higher order problem.
+    """Transform the sample set for the higher order problem.
 
-    Given a response of a penalized HUBO, this function creates a new SampleSet
+    Given a response of a penalized HUBO, this function creates a new sample set
     object, taking into account penalty information and calculates the
     energies of samples for the higherorder problem.
 
@@ -243,7 +243,8 @@ def polymorph_response(response, poly, bqm,
             reduced problem.
 
         penalty_strength (float, optional, default=None):
-            If provided, added to the info field of the returned SampleSet.
+            If provided, added to the info field of the
+            returned :obj:`dimod.SampleSet`.
 
         keep_penalty_variables (bool, optional, default=True):
             Setting to False removes variables used for penalty from the samples.
@@ -422,7 +423,7 @@ class PolyTruncateComposite(ComposedPolySampler):
             A dimod binary polynomial sampler.
 
         n (int):
-            Maximum number of rows in the returned SampleSet.
+            Maximum number of rows in the returned sample set.
 
         sorted_by (str/None, optional, default='energy'):
             Selects the record field used to sort the samples before
