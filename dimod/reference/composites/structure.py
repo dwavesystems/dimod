@@ -38,23 +38,27 @@ class StructureComposite(Sampler, Composite, Structured):
         This example creates a composed sampler from the unstructure dimod ExactSolver sampler.
         The target structure is a square graph.
 
-        >>> import dimod
-        ...
         >>> base_sampler = dimod.ExactSolver()
         >>> node_list = [0, 1, 2, 3]
         >>> edge_list = [(0, 1), (1, 2), (2, 3), (0, 3)]
         >>> structured_sampler = dimod.StructureComposite(base_sampler, node_list, edge_list)
+        ...
         >>> linear = {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}
         >>> quadratic = {(0, 1): 1.0, (1, 2): 1.0, (0, 3): 1.0, (2, 3): -1.0}
         >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 1.0, dimod.Vartype.SPIN)
+        ...
         >>> response = structured_sampler.sample(bqm)
-        >>> print(next(response.data()))
-        Sample(sample={0: 1, 1: -1, 2: -1, 3: -1}, energy=-1.0, num_occurrences=1)
-        >>> # Try giving the composed sampler a non-square model
+        >>> response.first.energy
+        -1.0
+
+        The next part of the example tries giving the composed sampler a
+        non-square model:
+
         >>> del quadratic[(0, 1)]
         >>> quadratic[(0, 2)] = 1.0
         >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 1.0, dimod.Vartype.SPIN)
-        >>> try: response = structured_sampler.sample(bqm)    # doctest: +SKIP
+        ...
+        >>> try: response = structured_sampler.sample(bqm)
         ... except dimod.BinaryQuadraticModelStructureError as details:
         ...     print(details)
         ...
@@ -93,13 +97,15 @@ class StructureComposite(Sampler, Composite, Structured):
 
         Examples:
             This example submits an Ising problem to a composed sampler that uses
-            the dimod ExactSolver only on problems structured for a K2 fully connected graph.
+            the dimod :class:`ExactSolver` only on problems structured for a
+            K2 fully connected graph.
 
-            >>> import dimod
-            ...
-            >>> response = dimod.StructureComposite(dimod.ExactSolver(),
-            ...                  [0, 1], [(0, 1)]).sample_ising({0: 1, 1: 1}, {})
-            >>> print(next(response.data()))
-            Sample(sample={0: -1, 1: -1}, energy=-2.0, num_occurrences=1)
+            >>> nodes = [0, 1]
+            >>> edges = [(0, 1)]
+            >>> composed_sampler = dimod.StructureComposite(dimod.ExactSolver(),
+            ...                          nodes, edges)
+            response = composed_sampler.sample_ising({0: 1, 1: 1}, {})
+            >>> set(response.first.sample.values())
+            {-1}
         """
         return self.child.sample(bqm, **sample_kwargs)

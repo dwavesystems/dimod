@@ -51,15 +51,12 @@ class SpinReversalTransformComposite(Sampler, Composite):
         This example composes a dimod ExactSolver sampler with spin transforms then
         uses it to sample an Ising problem.
 
-        >>> # Compose the sampler
         >>> base_sampler = dimod.ExactSolver()
         >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
-        >>> base_sampler in composed_sampler.children
-        True
-        >>> # Sample an Ising problem
+        ... # Sample an Ising problem
         >>> response = composed_sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> print(next(response.data()))           # doctest: +SKIP
-        Sample(sample={'a': 1, 'b': 1}, energy=-1.5)
+        >>> response.first.sample
+        {'a': -1, 'b': -1}
 
     References
     ----------
@@ -100,18 +97,14 @@ class SpinReversalTransformComposite(Sampler, Composite):
         Examples:
             This example runs 100 spin reversals applied to one variable of a QUBO problem.
 
-            >>> import dimod
-            ...
             >>> base_sampler = dimod.ExactSolver()
             >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
+            ...
             >>> Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
             >>> response = composed_sampler.sample_qubo(Q,
             ...               num_spin_reversal_transforms=100)
             >>> len(response)
             400
-            >>> print(next(response.data()))           # doctest: +SKIP
-            Sample(sample={'a': 0, 'b': 1}, energy=-1.0)
-
         """
 
         # make a main response
