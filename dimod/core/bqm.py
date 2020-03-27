@@ -283,7 +283,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def base(self):
-        """The base bqm, itself if not a view."""
+        """The base binary quadratic model, itself if not a view."""
         return self
 
     @property
@@ -645,7 +645,7 @@ class BQM(metaclass=abc.ABCMeta):
             yield u, v
 
     def iter_neighbors(self, u):
-        """Iterate over the neighbors of a variable in the bqm.
+        """Iterate over neighbors of a variable in the binary quadratic model.
 
         Yields:
             variable: The neighbors of `v`.

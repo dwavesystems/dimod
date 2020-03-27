@@ -30,8 +30,8 @@ __all__ = ['FixedVariableComposite']
 class FixedVariableComposite(ComposedSampler):
     """Composite to fix variables of a problem to provided.
 
-    Fixes variables of a bqm and modifies linear and quadratic terms
-    accordingly. Returned samples include the fixed variable
+    Fixes variables of a binary quadratic model (BQM) and modifies linear and
+    quadratic terms accordingly. Returned samples include the fixed variable
 
     Args:
        sampler (:obj:`dimod.Sampler`):

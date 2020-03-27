@@ -487,14 +487,14 @@ class AdjDictBQM(ShapeableBQM):
 
         Args:
             v (variable, optional):
-                The variable to be removed from the bqm. If not provided, the
-                last variable added is removed.
+                The variable to be removed from the binary quadratic model
+                (BQM). If not provided, the last variable added is removed.
 
         Returns:
             variable: The removed variable.
 
         Raises:
-            ValueError: If the binary quadratic model is empty or if `v` is not
+            ValueError: If the BQM is empty or if `v` is not
             a variable.
 
         """

@@ -36,8 +36,8 @@ __all__ = 'ScaleComposite',
 class ScaleComposite(ComposedSampler):
     """Composite to scale variables of a problem
 
-    Scales the variables of a bqm and modifies linear and quadratic terms
-    accordingly.
+    Scales the variables of a binary quadratic model (BQM) and modifies linear
+    and quadratic terms accordingly.
 
     Args:
        sampler (:obj:`dimod.Sampler`):

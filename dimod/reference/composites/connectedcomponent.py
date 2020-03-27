@@ -31,8 +31,8 @@ class ConnectedComponentsComposite(ComposedSampler):
     """Composite to decompose a problem to the connected components
     and solve each.
 
-    Connected components of a bqm graph are computed (if not provided),
-    and each subproblem is passed to the child sampler.
+    Connected components of a binary quadratic model (BQM) graph are computed
+    (if not provided), and each subproblem is passed to the child sampler.
     Returned samples from each child sampler are merged. Only the best solution
     of each response is pick and merge with others
     (i.e. this composite returns a single solution).

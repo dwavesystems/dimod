@@ -27,18 +27,18 @@ __all__ = ['uniform', 'ran_r', 'randint']
 @graph_argument('graph')
 def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
             seed=None):
-    """Generate a bqm with random biases and offset.
+    """Generate a binary quadratic model with random biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
 
     Args:
         graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
-            The graph to build the bqm on. Either an integer n,
-            interpreted as a complete graph of size n, a nodes/edges pair, a
-            list of edges or a NetworkX graph.
+            The graph to build the binary quadratic model (BQM) on. Either an
+            integer n, interpreted as a complete graph of size n, a nodes/edges
+            pair, a list of edges or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
-            Variable type for the binary quadratic model. Accepted input values:
+            Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
@@ -50,7 +50,7 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
             The high end of the range for the random biases.
 
         cls (:class:`.BinaryQuadraticModel`):
-            Binary quadratic model class to build from.
+            BQM class to build from.
 
         seed (int, optional, default=None):
             Random seed.
@@ -83,18 +83,18 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
 @graph_argument('graph')
 def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
             seed=None):
-    """Generate a bqm with random biases and offset.
+    """Generate a binary quadratic model with random biases and offset.
 
     Biases and offset are integer-valued in range [low, high] inclusive.
 
     Args:
         graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
-            The graph to build the bqm on. Either an integer n,
-            interpreted as a complete graph of size n, a nodes/edges pair, a
-            list of edges or a NetworkX graph.
+            The graph to build the binary quadratic model (BQM) on. Either an
+            integer n, interpreted as a complete graph of size n, a nodes/edges
+            pair, a list of edges or a NetworkX graph.
 
         vartype (:class:`.Vartype`/str/set):
-            Variable type for the binary quadratic model. Accepted input values:
+            Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
@@ -106,7 +106,7 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
             The high end of the range for the random biases.
 
         cls (:class:`.BinaryQuadraticModel`):
-            Binary quadratic model class to build from.
+            BQM class to build from.
 
         seed (int, optional, default=None):
             Random seed.
@@ -170,7 +170,7 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
     >>> import networkx as nx
     >>> K_7 = nx.complete_graph(7)
     >>> bqm = dimod.generators.random.ran_r(1, K_7)
-    >>> max(bqm.quadratic.values()) == -min(bqm.quadratic.values()) 
+    >>> max(bqm.quadratic.values()) == -min(bqm.quadratic.values())
     True
 
     .. [Kin2015] James King, Sheir Yarkoni, Mayssam M. Nevisi, Jeremy P. Hilton,

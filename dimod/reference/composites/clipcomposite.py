@@ -29,8 +29,8 @@ __all__ = ['ClipComposite']
 class ClipComposite(ComposedSampler):
     """Composite to clip variables of a problem.
 
-    Clips the variables of a bqm and modifies linear and quadratic terms
-    accordingly.
+    Clips the variables of a binary quadratic model (BQM) and modifies linear
+    and quadratic terms accordingly.
 
     Args:
        sampler (:obj:`dimod.Sampler`):

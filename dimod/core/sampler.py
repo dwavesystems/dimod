@@ -68,7 +68,7 @@ as mixins.
 >>> response = sampler.sample_ising({'a': -1}, {})
 ...
 ...  # Mixins provided by Sampler class:
->>> response = sampler.sample_qubo({('a', 'a'): 1})  # Mixin provided by Sampler class
+>>> response = sampler.sample_qubo({('a', 'a'): 1})  
 >>> response = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
 
 Below is a more complex version of the same sampler, where the :attr:`properties` and

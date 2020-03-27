@@ -55,7 +55,8 @@ class HigherOrderComposite(ComposedPolySampler):
     Example:
         This example uses :class:`.HigherOrderComposite` to instantiate a
         composed sampler that submits a simple Ising problem to a sampler.
-        The composed sampler creates a bqm from a higher order problem.
+        The composed sampler creates a binary quadratic model (BQM) from a
+        higher order problem.
 
         >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
         >>> h = {0: -0.5, 1: -0.3, 2: -0.8}
@@ -152,12 +153,12 @@ def expand_initial_state(bqm, initial_state):
     generated from a higher order polynomial.
 
     Args:
-        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
-            its reduction info.
+        bqm (:obj:`.BinaryQuadraticModel`): a binary quadratic model (BQM)
+        object that contains its reduction info.
 
         initial_state (dict):
             An initial state for the higher order polynomial that generated the
-            binary quadratic model.
+            BQM.
 
     Returns:
         dict: A fully specified initial state.
@@ -192,14 +193,14 @@ def expand_initial_state(bqm, initial_state):
 def penalty_satisfaction(response, bqm):
     """ Creates a penalty satisfaction list
 
-    Given a sampleSet and a bqm object, will create a binary list informing
-    whether the penalties introduced during degree reduction are satisfied for
-    each sample in sampleSet
+    Given a SampleSet and a binary quadratic model (BQM) object, creates a
+    binary list informing whether the penalties introduced during degree
+    reduction are satisfied for each sample in the SampleSet
 
     Args:
-        response (:obj:`.SampleSet`): Samples corresponding to provided bqm
+        response (:obj:`.SampleSet`): Samples corresponding to provided BQM
 
-        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
+        bqm (:obj:`.BinaryQuadraticModel`): a BQM object that contains
             its reduction info.
 
     Returns:
@@ -569,4 +570,3 @@ def fix_variables(poly, fixed_variables):
             offset += v
     poly_copy[()] = offset
     return BinaryPolynomial(poly_copy, poly.vartype)
-

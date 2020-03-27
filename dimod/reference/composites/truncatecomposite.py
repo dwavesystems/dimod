@@ -76,7 +76,7 @@ class TruncateComposite(ComposedSampler):
         return {'child_properties': self.child.properties.copy()}
 
     def sample(self, bqm, **kwargs):
-        """Sample from the problem provided by bqm and truncate output.
+        """Sample from the problem provided by BQM and truncate output.
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):
