@@ -34,24 +34,21 @@ and converts the reduced-variables model to QUBO formulation.
 .. [#] Ocean software's :std:doc:`D-Wave Hybrid <oceandocs:docs_hybrid/sdk_index>` provides tools for
    decomposing large problems.
 
-.. code-block:: python
-
-    >>> import dimod
-    >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
-    >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
-    ...              (2, 3): 23, (2, 4): 24,
-    ...              (3, 4): 34}
-    >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
-    >>> bqm_k4.vartype
-    <Vartype.SPIN: frozenset([1, -1])>
-    >>> len(bqm_k4.linear)
-    4
-    >>> bqm_k4.contract_variables(2, 3)
-    >>> len(bqm_k4.linear)
-    3
-    >>> bqm_no3_qubo = bqm_k4.binary
-    >>> bqm_no3_qubo.vartype
-    <Vartype.BINARY: frozenset([0, 1])>
+>>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
+>>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
+...              (2, 3): 23, (2, 4): 24,
+...              (3, 4): 34}
+>>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
+>>> bqm_k4.vartype
+<Vartype.SPIN: frozenset([1, -1])>
+>>> len(bqm_k4.linear)
+4
+>>> bqm_k4.contract_variables(2, 3)
+>>> len(bqm_k4.linear)
+3
+>>> bqm_no3_qubo = bqm_k4.binary
+>>> bqm_no3_qubo.vartype
+<Vartype.BINARY: frozenset([0, 1])>
 
 The next example uses a composed sampler on the :std:doc:`Boolean NOT Gate <oceandocs:examples/not>`
 example detailed in the :std:doc:`Getting Started <oceandocs:getting_started>` documentation.
@@ -75,7 +72,7 @@ state for a NOT gate.
 The next example creates a dimod sampler by implementing a single method (in this example
 the :meth:`sample_ising` method).
 
-.. code-block:: python
+.. testcode:: 
 
     class LinearIsingSampler(dimod.Sampler):
 
