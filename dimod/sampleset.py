@@ -929,7 +929,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset_binary = sampleset.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
             >>> sampleset_binary.vartype is dimod.BINARY
             True
-            sampleset_binary.first.sample
+            >>> sampleset_binary.first.sample
             {'a': 0, 'b': 0}
 
         """
@@ -1493,7 +1493,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                a  b  c  energy  num_occurrences
             0 -1  1 -1    -0.5                1
             1 -1 -1  1    -0.5                1
-            >>> samples.to_pandas_dataframe(sample_column=True)  
+            >>> samples.to_pandas_dataframe(sample_column=True)
                                    sample  energy  num_occurrences
             0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1
