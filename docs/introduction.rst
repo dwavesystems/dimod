@@ -40,7 +40,7 @@ and converts the reduced-variables model to QUBO formulation.
 ...              (3, 4): 34}
 >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, 0.5, dimod.SPIN)
 >>> bqm_k4.vartype
-<Vartype.SPIN: frozenset([1, -1])>
+<Vartype.SPIN: frozenset({1, -1})>
 >>> len(bqm_k4.linear)
 4
 >>> bqm_k4.contract_variables(2, 3)
@@ -48,7 +48,7 @@ and converts the reduced-variables model to QUBO formulation.
 3
 >>> bqm_no3_qubo = bqm_k4.binary
 >>> bqm_no3_qubo.vartype
-<Vartype.BINARY: frozenset([0, 1])>
+<Vartype.BINARY: frozenset({0, 1})>
 
 The next example uses a composed sampler on the :std:doc:`Boolean NOT Gate <oceandocs:examples/not>`
 example detailed in the :std:doc:`Getting Started <oceandocs:getting_started>` documentation.
@@ -72,7 +72,7 @@ state for a NOT gate.
 The next example creates a dimod sampler by implementing a single method (in this example
 the :meth:`sample_ising` method).
 
-.. testcode:: 
+.. testcode::
 
     class LinearIsingSampler(dimod.Sampler):
 
