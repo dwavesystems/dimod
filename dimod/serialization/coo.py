@@ -42,7 +42,7 @@ def dumps(bqm, vartype_header=False):
 
 
 def dump(bqm, fp, vartype_header=False):
-    """Dump a binary quadratic model to a string in COOrdinate format."""
+    """Dump a binary quadratic model to a file in COOrdinate format."""
     for triplet in _iter_triplets(bqm, vartype_header):
         fp.write('%s\n' % triplet)
 
