@@ -34,6 +34,7 @@ from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
+from dimod.bqm.utils import cyrelabel_variables_as_integers
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -523,6 +524,27 @@ cdef class cyAdjArrayBQM:
     Returns:
         A binary quadratic model with the variables relabeled. If `inplace`
         is set to True, returns itself.
+
+    """
+
+    relabel_variables_as_integers = cyrelabel_variables_as_integers
+    """Relabel the variables of the BQM to integers.
+
+    Note that this method uses the natural labelling of the underlying c++
+    objects.
+
+    Args:
+        inplace (bool, optional, default=True):
+            If True, the binary quadratic model is updated in-place;
+            otherwise, a new binary quadratic model is returned.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            A binary quadratic model with the variables relabeled. If
+            `inplace` is set to True, returns itself.
+
+            dict: The mapping that will restore the original labels.
 
     """
 

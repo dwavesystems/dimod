@@ -68,6 +68,7 @@ Methods
    ~AdjArrayBQM.iter_variables
    ~AdjArrayBQM.normalize
    ~AdjArrayBQM.relabel_variables
+   ~AdjArrayBQM.relabel_variables_as_integers
    ~AdjArrayBQM.scale
    ~AdjArrayBQM.set_linear
    ~AdjArrayBQM.set_quadratic

@@ -19,3 +19,8 @@ try:
     from tests.test_cppbqm import *
 except ImportError:
     print("tests/test_cppbqm.pyx is not built or discoverable")
+
+try:
+    from tests.test_cybqm import *
+except ImportError:
+    print("tests/test_cybqm.pyx is not built or discoverable")
