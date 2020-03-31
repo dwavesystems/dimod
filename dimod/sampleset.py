@@ -1489,11 +1489,11 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
             ...                                         {'a': -1, 'b': -1, 'c': +1}],
             ...                                        dimod.SPIN, energy=-.5)
-            >>> samples.to_pandas_dataframe()
+            >>> samples.to_pandas_dataframe()    # doctest: +SKIP
                a  b  c  energy  num_occurrences
             0 -1  1 -1    -0.5                1
             1 -1 -1  1    -0.5                1
-            >>> samples.to_pandas_dataframe(sample_column=True)
+            >>> samples.to_pandas_dataframe(sample_column=True)    # doctest: +SKIP
                                    sample  energy  num_occurrences
             0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1
