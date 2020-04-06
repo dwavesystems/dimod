@@ -13,14 +13,9 @@
 #    limitations under the License.
 #
 # =============================================================================
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 import numpy as np
-
-from six.moves import zip
 
 from dimod.variables import Variables
 

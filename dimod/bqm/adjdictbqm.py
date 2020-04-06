@@ -13,10 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from collections import OrderedDict
 from copy import deepcopy

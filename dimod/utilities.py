@@ -17,8 +17,6 @@ import copy
 import os
 import itertools
 
-from six import iteritems, itervalues
-
 from dimod.decorators import lockable_method
 
 __all__ = ['ising_energy',
@@ -197,10 +195,10 @@ def ising_to_qubo(h, J, offset=0.0):
 
     """
     # the linear biases are the easiest
-    q = {(v, v): 2. * bias for v, bias in iteritems(h)}
+    q = {(v, v): 2. * bias for v, bias in h.items()}
 
     # next the quadratic biases
-    for (u, v), bias in iteritems(J):
+    for (u, v), bias in J.items():
         if bias == 0.0:
             continue
         q[(u, v)] = 4. * bias
@@ -208,7 +206,7 @@ def ising_to_qubo(h, J, offset=0.0):
         q[(v, v)] -= 2. * bias
 
     # finally calculate the offset
-    offset += sum(itervalues(J)) - sum(itervalues(h))
+    offset += sum(J.values()) - sum(h.values())
 
     return q, offset
 
@@ -262,7 +260,7 @@ def qubo_to_ising(Q, offset=0.0):
     linear_offset = 0.0
     quadratic_offset = 0.0
 
-    for (u, v), bias in iteritems(Q):
+    for (u, v), bias in Q.items():
         if u == v:
             if u in h:
                 h[u] += .5 * bias
@@ -316,7 +314,7 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
     if old_labels is None:
         old_labels = set(mapping)
     if new_labels is None:
-        new_labels = set(itervalues(mapping))
+        new_labels = set(mapping.values())
 
     # counter will be used to generate the intermediate labels, as an easy optimization
     # we start the counter with a high number because often variables are labeled by
@@ -326,7 +324,7 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
     old_to_intermediate = {}
     intermediate_to_new = {}
 
-    for old, new in iteritems(mapping):
+    for old, new in mapping.items():
         if old == new:
             # we can remove self-labels
             continue

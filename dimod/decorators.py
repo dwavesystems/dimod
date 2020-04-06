@@ -22,16 +22,10 @@ example:
 
 import inspect
 import itertools
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from functools import wraps
 from numbers import Integral
-
-from six import iteritems, integer_types
 
 from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
@@ -64,7 +58,7 @@ def bqm_index_labels(f):
         except TypeError:
             # in python3 unlike types cannot be sorted
             inverse_mapping = dict(enumerate(linear))
-        mapping = {v: i for i, v in iteritems(inverse_mapping)}
+        mapping = {v: i for i, v in inverse_mapping.items()}
 
         response = f(sampler, bqm.relabel_variables(mapping, inplace=False), **kwargs)
 
@@ -124,10 +118,10 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
                 except TypeError:
                     # in python3 unlike types cannot be sorted
                     inverse_mapping = dict(enumerate(linear))
-                var_labels = {v: i for i, v in iteritems(inverse_mapping)}
+                var_labels = {v: i for i, v in inverse_mapping.items()}
 
             else:
-                inverse_mapping = {i: v for v, i in iteritems(var_labels)}
+                inverse_mapping = {i: v for v, i in var_labels.items()}
 
             response = f(sampler,
                          bqm.relabel_variables(var_labels, inplace=False),
@@ -262,7 +256,7 @@ def vartype_argument(*arg_names):
 
 
 def _is_integer(a):
-    if isinstance(a, integer_types):
+    if isinstance(a, int):
         return True
     if hasattr(a, "is_integer") and a.is_integer():
         return True
@@ -323,7 +317,7 @@ def graph_argument(*arg_names, **options):
                 else:  # len(G) == 2
                     # need to determine if this is a nodes/edges pair or an
                     # edgelist
-                    if isinstance(G[0], integer_types):
+                    if isinstance(G[0], int):
                         # nodes are an int so definitely nodelist
                         kwargs[name] = (list(range(G[0])), G[1])
                     elif all(isinstance(e, abc.Sequence) and len(e) == 2

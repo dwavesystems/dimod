@@ -73,15 +73,12 @@ import abc
 
 from collections import namedtuple
 
-from six import add_metaclass
-
 __all__ = ['Structured']
 
 _Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
 
 
-@add_metaclass(abc.ABCMeta)
-class Structured:
+class Structured(abc.ABC):
     """The abstract base class for dimod structured samplers.
 
     Provides the :attr:`.Structured.adjacency` and :attr:`.Structured.structure` properties.

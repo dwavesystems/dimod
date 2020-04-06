@@ -65,15 +65,12 @@ Examples:
 """
 import abc
 
-from six import add_metaclass
-
 from dimod.core.sampler import Sampler
 
 __all__ = ['Composite', 'ComposedSampler']
 
 
-@add_metaclass(abc.ABCMeta)
-class Composite:
+class Composite(abc.ABC):
     """Abstract base class for dimod composites.
 
     Provides the :attr:`Composite.child` mixin property and defines the :attr:`Composite.children`

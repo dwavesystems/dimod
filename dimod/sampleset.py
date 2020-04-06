@@ -18,11 +18,7 @@ import copy
 import itertools
 import json
 import numbers
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from collections import namedtuple
 

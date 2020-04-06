@@ -13,16 +13,10 @@
 #    limitations under the License.
 #
 # =============================================================================
+import collections.abc as abc
 from numbers import Integral, Number
 
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
-
 import numpy as np
-
-from six import string_types
 
 
 def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
@@ -95,7 +89,7 @@ def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
     elif isinstance(obj, abc.Mapping):
         return {serialize_ndarrays(key): serialize_ndarrays(val)
                 for key, val in obj.items()}
-    elif isinstance(obj, abc.Sequence) and not isinstance(obj, string_types):
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
         return list(map(serialize_ndarrays, obj))
     if isinstance(obj, Integral):
         return int(obj)
@@ -110,7 +104,7 @@ def deserialize_ndarrays(obj):
         if obj.get('type', '') == 'array':
             return deserialize_ndarray(obj)
         return {key: deserialize_ndarrays(val) for key, val in obj.items()}
-    elif isinstance(obj, abc.Sequence) and not isinstance(obj, string_types):
+    elif isinstance(obj, abc.Sequence) and not isinstance(obj, str):
         return list(map(deserialize_ndarrays, obj))
     return obj
 

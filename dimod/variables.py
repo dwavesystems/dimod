@@ -13,12 +13,9 @@
 #    limitations under the License.
 #
 # =============================================================================
-from numbers import Integral, Number
+import collections.abc as abc
 
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+from numbers import Integral, Number
 
 from operator import eq
 

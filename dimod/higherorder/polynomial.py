@@ -16,11 +16,7 @@
 from __future__ import division
 
 import itertools
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from numbers import Number
 

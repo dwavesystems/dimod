@@ -21,16 +21,13 @@ not constrained to quadratic interactions.
 import abc
 import warnings
 
-from six import add_metaclass
-
 from dimod.core.composite import Composite
 from dimod.higherorder.polynomial import BinaryPolynomial
 
 __all__ = 'PolySampler', 'ComposedPolySampler'
 
 
-@add_metaclass(abc.ABCMeta)
-class PolySampler:
+class PolySampler(abc.ABC):
     """Sampler that supports binary polynomials.
 
     Binary polynomials are an extension of binary quadratic models that allow
