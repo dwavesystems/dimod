@@ -72,6 +72,7 @@ Methods
    ~AdjVectorBQM.iter_variables
    ~AdjVectorBQM.normalize
    ~AdjVectorBQM.relabel_variables
+   ~AdjVectorBQM.relabel_variables_as_integers
    ~AdjVectorBQM.scale
    ~AdjVectorBQM.set_linear
    ~AdjVectorBQM.set_quadratic

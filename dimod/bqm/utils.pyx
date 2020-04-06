@@ -208,6 +208,23 @@ def cyrelabel(cyBQM bqm, mapping, inplace=True):
     return bqm
 
 
+def cyrelabel_variables_as_integers(cyBQM bqm, inplace=True):
+    """Relabel the variables in the BQM to integers.
+
+    Note that this fuction uses the natural labelling of the underlying c++
+    objects.
+    """
+    if not inplace:
+        return cyrelabel_variables_as_integers(bqm.copy(), inplace=True)
+
+    inverse = bqm._idx_to_label.copy()  # everything is hashable so no deep copy
+    
+    bqm._label_to_idx.clear()
+    bqm._idx_to_label.clear()
+
+    return bqm, inverse
+
+
 @cython.boundscheck
 @cython.wraparound
 def ilinear_biases(cyBQM bqm):

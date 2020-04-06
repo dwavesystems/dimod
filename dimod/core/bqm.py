@@ -727,6 +727,30 @@ class BQM(metaclass=abc.ABCMeta):
                        ignored_interactions=ignored_interactions,
                        ignore_offset=ignore_offset)
 
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel the variables of the BQM to integers.
+
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            tuple: A 2-tuple containing:
+
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
+
+                dict: The mapping that will restore the original labels.
+
+        """
+        if not inplace:
+            return self.copy().relabel_variables(inplace=True)
+
+        mapping = dict((v, i) for i, v in enumerate(self.variables) if i != v)
+        return (self.relabel_variables(mapping, inplace=True),
+                dict((i, v) for v, i in mapping.items()))
+
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
         """Multiply all the biases by the specified scalar.

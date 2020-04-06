@@ -72,6 +72,7 @@ Methods
    ~AdjMapBQM.iter_variables
    ~AdjMapBQM.normalize
    ~AdjMapBQM.relabel_variables
+   ~AdjMapBQM.relabel_variables_as_integers
    ~AdjMapBQM.scale
    ~AdjMapBQM.set_linear
    ~AdjMapBQM.set_quadratic

@@ -1615,6 +1615,18 @@ class TestRelabel(BQMTestCase):
         self.assertEqual(bqm, test)
 
     @multitest
+    def test_integer(self, BQM):
+        bqm = BQM(np.arange(25).reshape((5, 5)), 'SPIN')
+        bqm.relabel_variables({0: 'a', 1: 'b', 3: 'c', 4: 'd'})
+
+        new, inverse = bqm.relabel_variables_as_integers()
+
+        self.assertEqual(set(new.variables), set(range(5)))
+
+        new.relabel_variables(inverse, inplace=True)
+        self.assertEqual(new, bqm)
+
+    @multitest
     def test_not_inplace(self, BQM):
         linear = {0: .5, 1: 1.3}
         quadratic = {(0, 1): -.435}
