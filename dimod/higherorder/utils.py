@@ -21,8 +21,6 @@ from collections import Counter
 
 import numpy as np
 
-from six import iteritems
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples

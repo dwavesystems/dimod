@@ -18,10 +18,7 @@ A composite that scales problem variables as directed. If a scaling value is
 not specified, calculates it based on quadratic and bias ranges.
 
 """
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from numbers import Number
 

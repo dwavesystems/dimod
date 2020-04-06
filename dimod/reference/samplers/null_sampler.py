@@ -14,10 +14,7 @@
 #
 # =============================================================================
 """A sampler that always returns an empty sample set."""
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 import numpy as np
 

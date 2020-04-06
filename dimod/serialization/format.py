@@ -19,18 +19,12 @@
 
 import numbers
 import sys
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from collections import deque
+from io import StringIO
 
 import numpy as np
-
-from six import StringIO
-from six.moves import map
 
 import dimod
 

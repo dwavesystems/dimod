@@ -23,8 +23,6 @@ solving problems.
 import random
 import math
 
-from six import itervalues
-
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
 from dimod.utilities import ising_energy
@@ -155,7 +153,7 @@ def ising_simulated_annealing(h, J, beta_range=None, num_sweeps=1000):
             sigmas[v] += abs(J[(u, v)])
 
         if sigmas:
-            beta_final = 2. * max(itervalues(sigmas))
+            beta_final = 2. * max(sigmas.values())
         else:
             beta_final = 0.0
 

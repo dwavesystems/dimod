@@ -100,8 +100,6 @@ Below is a more complex version of the same sampler, where the :attr:`properties
 """
 import abc
 
-from six import add_metaclass
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.meta import SamplerABCMeta, samplemixinmethod
@@ -111,8 +109,7 @@ from dimod.vartypes import Vartype
 __all__ = ['Sampler']
 
 
-@add_metaclass(SamplerABCMeta)
-class Sampler:
+class Sampler(metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
 
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,

@@ -14,11 +14,7 @@
 #
 # =============================================================================
 import itertools
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument, vartype_argument
