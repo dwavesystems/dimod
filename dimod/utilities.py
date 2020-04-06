@@ -70,7 +70,6 @@ def ising_energy(sample, h, J, offset=0.0):
         an Ising model of two variables that have positive biases of value 1 and
         are positively coupled with an interaction of value 1.
 
-        >>> import dimod
         >>> sample = {1: -1, 2: -1}
         >>> h = {1: 1, 2: 1}
         >>> J = {(1, 2): 1}
@@ -133,7 +132,6 @@ def qubo_energy(sample, Q, offset=0.0):
         a QUBO model of two variables that have positive biases of value 1 and
         are positively coupled with an interaction of value 1.
 
-        >>> import dimod
         >>> sample = {1: 0, 2: 0}
         >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
         >>> dimod.qubo_energy(sample, Q, 0.5)
@@ -187,13 +185,12 @@ def ising_to_qubo(h, J, offset=0.0):
     Examples:
         This example converts an Ising problem of two variables that have positive
         biases of value 1 and are positively coupled with an interaction of value 1
-        to a QUBO problem.
+        to a QUBO problem and prints the resulting energy offset.
 
-        >>> import dimod
         >>> h = {1: 1, 2: 1}
         >>> J = {(1, 2): 1}
-        >>> dimod.ising_to_qubo(h, J, 0.5)  # doctest: +SKIP
-        ({(1, 1): 0.0, (1, 2): 4.0, (2, 2): 0.0}, -0.5)
+        >>> dimod.ising_to_qubo(h, J, 0.5)[1]
+        -0.5
 
     """
     # the linear biases are the easiest
@@ -249,12 +246,11 @@ def qubo_to_ising(Q, offset=0.0):
     Examples:
         This example converts a QUBO problem of two variables that have positive
         biases of value 1 and are positively coupled with an interaction of value 1
-        to an Ising problem.
+        to an Ising problem, and shows the new energy offset.
 
-        >>> import dimod
         >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
-        >>> dimod.qubo_to_ising(Q, 0.5)    # doctest: +SKIP
-        ({1: 0.75, 2: 0.75}, {(1, 2): 0.25}, 1.75)
+        >>> dimod.qubo_to_ising(Q, 0.5)[2]
+        1.75
 
     """
     h = {}
@@ -409,7 +405,6 @@ def child_structure_dfs(sampler, seen=None):
 
     Examples:
 
-    >>> import dimod
     >>> sampler = dimod.TrackingComposite(
     ...                 dimod.StructureComposite(
     ...                 dimod.ExactSolver(), [0, 1], [(0, 1)]))

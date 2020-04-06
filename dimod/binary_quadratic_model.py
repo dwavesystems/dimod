@@ -163,8 +163,6 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
        set equal to their sequential labels and interactions are the
        concatenations of the node pairs (e.g., 23 for u,v = 2,3).
 
-       >>> import dimod
-       ...
        >>> linear = {1: 1, 2: 2, 3: 3, 4: 4}
        >>> quadratic = {(1, 2): 12, (1, 3): 13, (1, 4): 14,
        ...              (2, 3): 23, (2, 4): 24,
@@ -172,19 +170,9 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
        >>> offset = 0.0
        >>> vartype = dimod.BINARY
        >>> bqm_k4 = dimod.BinaryQuadraticModel(linear, quadratic, offset, vartype)
-       >>> bqm_k4.info = {'Complete K4 binary quadratic model.'}
-       >>> bqm_k4.info.issubset({'Complete K3 binary quadratic model.',
-       ...                       'Complete K4 binary quadratic model.',
-       ...                       'Complete K5 binary quadratic model.'})
-       True
-       >>> bqm_k4.adj.viewitems()   # Show all adjacencies  # doctest: +SKIP
-       [(1, {2: 12, 3: 13, 4: 14}),
-        (2, {1: 12, 3: 23, 4: 24}),
-        (3, {1: 13, 2: 23, 4: 34}),
-        (4, {1: 14, 2: 24, 3: 34})]
-       >>> bqm_k4.adj[2]            # Show adjacencies for node 2  # doctest: +SKIP
-       {1: 12, 3: 23, 4: 24}
-       >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3 # doctest: +SKIP
+       >>> len(bqm_k4.adj[2])            # Adjacencies for node 2
+       3
+       >>> bqm_k4.adj[2][3]         # Show the quadratic bias for nodes 2,3
        23
 
     """
@@ -280,7 +268,7 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)
             >>> doc = bqm.to_serializable(use_bytes=True)
-            >>> b = bson.BSON.encode(doc)  # doctest: +SKIP
+            >>> b = bson.BSON.encode(doc)
 
         See also:
             :meth:`~.BinaryQuadraticModel.from_serializable`
@@ -369,7 +357,6 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
 
             Encode and decode using JSON
 
-            >>> import dimod
             >>> import json
             ...
             >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0}, {('a', 'b'): -1.0}, 0.0, dimod.SPIN)

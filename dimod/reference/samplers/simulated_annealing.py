@@ -42,6 +42,8 @@ class SimulatedAnnealingSampler(Sampler):
         >>> h = {'a': -0.5, 'b': 1.0}
         >>> J = {('a', 'b'): -1.5}
         >>> sampleset = dimod.SimulatedAnnealingSampler().sample_ising(h, J)
+        >>> sampleset.first.sample
+        {'a': -1, 'b': -1}
 
     """
     properties = None

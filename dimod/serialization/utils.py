@@ -26,7 +26,7 @@ from six import string_types
 
 
 def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
-    """Serializes a NumPy array.
+    """Serialize a NumPy array.
 
     Args:
         arr (array-like):
@@ -58,7 +58,7 @@ def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
 
 
 def deserialize_ndarray(obj):
-    """Inverse of serialize_ndarray.
+    """Inverse a serialize_ndarray object.
 
     Args:
         obj (dict):
@@ -77,7 +77,7 @@ def deserialize_ndarray(obj):
 
 
 def serialize_ndarrays(obj, use_bytes=False, bytes_type=bytes):
-    """Looks through the object, serializing numpy arrays.
+    """Look through the object, serializing NumPy arrays.
 
     Developer note: this function was written for serializing info fields
     in the sample set and binary quadratic model objects. This is not a general
