@@ -193,13 +193,15 @@ class TestChimeraAnticluster(unittest.TestCase):
 
 @unittest.skipUnless(_networkx, "no networkx installed")
 class TestFCL(unittest.TestCase):
-    def test_singletile(self):
-        G = nx.Graph()
 
+    def setUp(self):
+        self.G = nx.Graph()
         for u in range(4):
             for v in range(4, 8):
-                G.add_edge(u, v)
+                self.G.add_edge(u, v)
 
+    def test_singletile(self):
+        G = self.G
         bqm = dimod.generators.frustrated_loop(G, 10)
 
         self.assertEqual(len(bqm), 8)
@@ -210,11 +212,7 @@ class TestFCL(unittest.TestCase):
                 self.assertIn(j, bqm.adj[i])
 
     def test_seed(self):
-        G = nx.Graph()
-
-        for u in range(4):
-            for v in range(4, 8):
-                G.add_edge(u, v)
+        G = self.G
 
         bqm0 = dimod.generators.frustrated_loop(G, 10, seed=506)
         bqm1 = dimod.generators.frustrated_loop(G, 10, seed=506)
@@ -225,6 +223,17 @@ class TestFCL(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_planted_solution(self):
+        G = self.G
+
+        planted = {v:v%2*2-1 for v in G}
+        bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
+
+        inv_solution = {k:-v for k,v in planted_solution.items()}
+        self.assertEqual(bqm.energy(planted_solution),bqm.energy(inv_solution))
+
+        all_ones = {v:1 for v in G}
+        self.assertNotEqual(bqm.energy(planted_solution),bqm.energy(all_ones))
 
 class TestCombinations(unittest.TestCase):
 
