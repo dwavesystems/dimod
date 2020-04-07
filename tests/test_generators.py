@@ -229,11 +229,11 @@ class TestFCL(unittest.TestCase):
         planted = {v:v%2*2-1 for v in G}
         bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
 
-        inv_solution = {k:-v for k,v in planted_solution.items()}
-        self.assertEqual(bqm.energy(planted_solution),bqm.energy(inv_solution))
+        inv_solution = {k:-v for k,v in planted.items()}
+        self.assertEqual(bqm.energy(planted),bqm.energy(inv_solution))
 
         all_ones = {v:1 for v in G}
-        self.assertNotEqual(bqm.energy(planted_solution),bqm.energy(all_ones))
+        self.assertNotEqual(bqm.energy(planted),bqm.energy(all_ones))
 
 class TestCombinations(unittest.TestCase):
 
