@@ -14,14 +14,11 @@
 #
 # =============================================================================
 """
-A composite that scales problem variables as directed. if scalar is not given
-calculates it based on quadratic and bias ranges.
+A composite that scales problem variables as directed. If a scaling value is
+not specified, calculates it based on quadratic and bias ranges.
 
 """
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from numbers import Number
 
@@ -34,20 +31,20 @@ __all__ = 'ScaleComposite',
 
 
 class ScaleComposite(ComposedSampler):
-    """Composite to scale variables of a problem
+    """Composite that scales variables of a problem.
 
-    Scales the variables of a bqm and modifies linear and quadratic terms
-    accordingly.
+    Scales the variables of a binary quadratic model (BQM) and modifies linear
+    and quadratic terms accordingly.
 
     Args:
        sampler (:obj:`dimod.Sampler`):
-            A dimod sampler
+            A dimod sampler.
 
     Examples:
        This example uses :class:`.ScaleComposite` to instantiate a
        composed sampler that submits a simple Ising problem to a sampler.
-       The composed sampler scales linear, quadratic biases and offset as
-       indicated by options.
+       The composed sampler scales linear biases, quadratic biases, and
+       offset as indicated by options.
 
        >>> h = {'a': -4.0, 'b': -4.0}
        >>> J = {('a', 'b'): 3.2}
@@ -122,12 +119,12 @@ class ScaleComposite(ComposedSampler):
             ignored_variables, ignored_interactions)
 
         child = self.child
-        bqm_copy = _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
+        bqm_copy, scalar = _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
                                ignored_variables, ignored_interactions,
                                ignore_offset)
         response = child.sample(bqm_copy, **parameters)
 
-        return _scale_back_response(bqm, response, bqm_copy.info['scalar'],
+        return _scale_back_response(bqm, response, scalar,
                                     ignored_variables, ignored_interactions,
                                     ignore_offset)
 
@@ -219,6 +216,7 @@ def _scale_back_response(bqm, response, scalar, ignored_interactions,
     else:
         response.record.energy = bqm.energies((response.record.sample,
                                                response.variables))
+    response.info['scalar'] = scalar
     return response
 
 
@@ -281,7 +279,7 @@ def _calc_norm_coeff(h, J, bias_range, quadratic_range, ignored_variables,
 def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
                 ignored_variables, ignored_interactions,
                 ignore_offset):
-    """Helper function of sample for scaling"""
+    """Helper function of sample for scaling."""
 
     bqm_copy = bqm.copy()
     if scalar is None:
@@ -292,8 +290,8 @@ def _scaled_bqm(bqm, scalar, bias_range, quadratic_range,
     bqm_copy.scale(scalar, ignored_variables=ignored_variables,
                    ignored_interactions=ignored_interactions,
                    ignore_offset=ignore_offset)
-    bqm_copy.info.update({'scalar': scalar})
-    return bqm_copy
+
+    return bqm_copy, scalar
 
 
 def check_isin(key, key_list):

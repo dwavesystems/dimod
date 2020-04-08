@@ -25,14 +25,9 @@ from dimod import BinaryQuadraticModel
 from dimod import FixedVariableComposite, ExactSolver, RoofDualityComposite
 from dimod import SampleSet
 
-try:
-    from dimod import fix_variables
-except ImportError:
-    cpp = False
-else:
-    cpp = True
 
-
+@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(dimod.NullSampler()))
 class TestFixedVariableComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):
@@ -76,18 +71,13 @@ class TestFixedVariableComposite(unittest.TestCase):
         self.assertAlmostEqual(response.first.energy, -2.4)
 
 
+@dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(dimod.NullSampler()))
 class TestRoofDualityComposite(unittest.TestCase):
-    @unittest.skipIf(cpp, "cpp extensions built")
-    def test_nocpp_error(self):
-        with self.assertRaises(ImportError):
-            RoofDualityComposite(dimod.ExactSolver()).sample_ising({}, {})
-
-    @unittest.skipUnless(cpp, "no cpp extensions built")
     def test_construction(self):
         sampler = RoofDualityComposite(dimod.ExactSolver())
         dtest.assert_sampler_api(sampler)
 
-    @unittest.skipUnless(cpp, "no cpp extensions built")
     def test_3path(self):
         sampler = RoofDualityComposite(dimod.ExactSolver())
         sampleset = sampler.sample_ising({'a': 10},  {'ab': -1, 'bc': 1})
@@ -96,7 +86,6 @@ class TestRoofDualityComposite(unittest.TestCase):
         self.assertEqual(len(sampleset), 1)
         self.assertEqual(set(sampleset.variables), set('abc'))
 
-    @unittest.skipUnless(cpp, "no cpp extensions built")
     def test_triangle(self):
         sampler = RoofDualityComposite(dimod.ExactSolver())
 
@@ -108,7 +97,6 @@ class TestRoofDualityComposite(unittest.TestCase):
         self.assertEqual(set(sampleset.variables), set('abc'))
         dimod.testing.assert_response_energies(sampleset, bqm)
 
-    @unittest.skipUnless(cpp, "no cpp extensions built")
     def test_triangle_sampling_mode_off(self):
         sampler = RoofDualityComposite(dimod.ExactSolver())
 

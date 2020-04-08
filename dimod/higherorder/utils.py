@@ -21,8 +21,6 @@ from collections import Counter
 
 import numpy as np
 
-from six import iteritems
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
@@ -32,7 +30,7 @@ __all__ = ['make_quadratic']
 
 
 def _spin_product(variables):
-    """A bqm with a gap of 1 that represents the product of two spin variables.
+    """A BQM with a gap of 1 that represents the product of two spin variables.
 
     Note that spin-product requires an auxiliary variable.
 
@@ -61,7 +59,7 @@ def _spin_product(variables):
 
 
 def _binary_product(variables):
-    """A bqm with a gap of 1 that represents the product of two binary variables.
+    """A BQM with a gap of 1 that represents the product of two binary variables.
 
     Args:
         variables (list):

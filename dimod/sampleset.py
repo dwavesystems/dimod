@@ -18,11 +18,7 @@ import copy
 import itertools
 import json
 import numbers
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from collections import namedtuple
 
@@ -286,13 +282,12 @@ class SampleSet(abc.Iterable, abc.Sized):
     Examples:
         This example creates a SampleSet out of a samples_like object (a NumPy array).
 
-        >>> import dimod
         >>> import numpy as np
         ...
-        >>> dimod.SampleSet.from_samples(np.ones(5, dtype='int8'), 'BINARY', 0)   # doctest: +SKIP
-        SampleSet(rec.array([([1, 1, 1, 1, 1], 0, 1)],
-        ...       dtype=[('sample', 'i1', (5,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
-        ...       [0, 1, 2, 3, 4], {}, 'BINARY')
+        >>> sampleset =  dimod.SampleSet.from_samples(np.ones(5, dtype='int8'),
+        ...                                           'BINARY', 0)
+        >>> sampleset.variables
+        Variables([0, 1, 2, 3, 4])
 
     """
 
@@ -369,14 +364,12 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
             This example creates a SampleSet out of a samples_like object (a dict).
 
-            >>> import dimod
             >>> import numpy as np
             ...
-            >>> dimod.SampleSet.from_samples(dimod.as_samples({'a': 0, 'b': 1, 'c': 0}),
-            ...                              'BINARY', 0)   # doctest: +SKIP
-            SampleSet(rec.array([([0, 1, 0], 0, 1)],
-            ...       dtype=[('sample', 'i1', (3,)), ('energy', '<i4'), ('num_occurrences', '<i4')]),
-            ...       ['a', 'b', 'c'], {}, 'BINARY')
+            >>> sampleset = dimod.SampleSet.from_samples(
+            ...   dimod.as_samples({'a': 0, 'b': 1, 'c': 0}), 'BINARY', 0)
+            >>> sampleset.variables
+            Variables(['a', 'b', 'c'])
 
         .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
         """
@@ -471,7 +464,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
 
             >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
-            >>> samples = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
+            >>> sampleset = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
 
         """
         # more performant to do this once, here rather than again in bqm.energies
@@ -510,17 +503,13 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
             Run a dimod sampler on a single thread and load the returned future into :class:`SampleSet`.
 
-            >>> import dimod
             >>> from concurrent.futures import ThreadPoolExecutor
             ...
             >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
             >>> with ThreadPoolExecutor(max_workers=1) as executor:
             ...     future = executor.submit(dimod.ExactSolver().sample, bqm)
             ...     sampleset = dimod.SampleSet.from_future(future)
-            >>> sampleset.record
-            rec.array([([-1, -1], -1., 1), ([ 1, -1],  1., 1), ([ 1,  1], -1., 1),
-                       ([-1,  1],  1., 1)],
-                      dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
+            >>> sampleset.first.energy    # doctest: +SKIP
 
         """
         obj = cls.__new__(cls)
@@ -653,7 +642,7 @@ class SampleSet(abc.Iterable, abc.Sized):
            a dimod sampler by submitting a BQM that sets a value on a D-Wave
            system's first listed coupler.
 
-           >>> from dwave.system.samplers import DWaveSampler    # doctest: +SKIP
+           >>> from dwave.system import DWaveSampler    # doctest: +SKIP
            >>> sampler = DWaveSampler()    # doctest: +SKIP
            >>> bqm = dimod.BQM({}, {sampler.edgelist[0]: -1}, 0, dimod.SPIN)   # doctest: +SKIP
            >>> sampler.sample(bqm).info   # doctest: +SKIP
@@ -670,21 +659,15 @@ class SampleSet(abc.Iterable, abc.Sized):
         """:obj:`numpy.recarray` containing the samples, energies, number of occurences, and other sample data.
 
         Examples:
-            >>> import dimod
-            ...
             >>> sampler = dimod.ExactSolver()
             >>> sampleset = sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1.0})
-            >>> sampleset.record
-            rec.array([([-1, -1], -1.5, 1), ([ 1, -1], -0.5, 1), ([ 1,  1], -0.5, 1),
-                       ([-1,  1],  2.5, 1)],
-                      dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')])
-            >>> sampleset.record.sample
+            >>> sampleset.record.sample     # doctest: +SKIP
             array([[-1, -1],
                    [ 1, -1],
                    [ 1,  1],
                    [-1,  1]], dtype=int8)
-            >>> sampleset.record.energy
-            array([-1.5, -0.5, -0.5,  2.5])
+            >>> len(sampleset.record.energy)
+            4
 
         """
         self.resolve()
@@ -734,7 +717,6 @@ class SampleSet(abc.Iterable, abc.Sized):
             a :class:`~concurrent.futures.Executor` sets the result of the future
             (see documentation for :mod:`concurrent.futures`).
 
-            >>> import dimod
             >>> from concurrent.futures import Future
             ...
             >>> future = Future()
@@ -744,9 +726,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> future.set_result(dimod.ExactSolver().sample_ising({0: -1}, {}))
             >>> future.done()
             True
-            >>> sampleset.record.sample
-            array([[-1],
-                   [ 1]], dtype=int8)
+            >>> sampleset.first.energy
+            -1.0
 
         """
         return (not hasattr(self, '_future')) or (not hasattr(self._future, 'done')) or self._future.done()
@@ -770,7 +751,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': 0.1, 'b': 0.0},
             ...                                              {('a', 'b'): 1})
-            >>> for sample in sampleset.samples():
+            >>> for sample in sampleset.samples():   # doctest: +SKIP
             ...     print(sample)
             {'a': -1, 'b': 1}
             {'a': 1, 'b': -1}
@@ -837,8 +818,6 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         Examples:
 
-            >>> import dimod
-            ...
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> for datum in sampleset.data(fields=['sample', 'energy']):   # doctest: +SKIP
             ...     print(datum)
@@ -935,26 +914,29 @@ class SampleSet(abc.Iterable, abc.Sized):
         Returns:
             :obj:`.SampleSet`: SampleSet with changed vartype. If `inplace` is True, returns itself.
 
+        Notes:
+            This function is non-blocking unless `inplace==True`, in which case
+            the sample set is resolved.
+
         Examples:
             This example creates a binary copy of a spin-valued :class:`SampleSet`.
 
-            >>> import dimod
-            ...
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> sampleset_binary = sampleset.change_vartype(dimod.BINARY, energy_offset=1.0, inplace=False)
             >>> sampleset_binary.vartype is dimod.BINARY
             True
-            >>> for datum in sampleset_binary.data(fields=['sample', 'energy', 'num_occurrences']):    # doctest: +SKIP
-            ...    print(datum)
-            Sample(sample={'a': 0, 'b': 0}, energy=-0.5, num_occurrences=1)
-            Sample(sample={'a': 1, 'b': 0}, energy=0.5, num_occurrences=1)
-            Sample(sample={'a': 1, 'b': 1}, energy=0.5, num_occurrences=1)
-            Sample(sample={'a': 0, 'b': 1}, energy=3.5, num_occurrences=1)
-
+            >>> sampleset_binary.first.sample
+            {'a': 0, 'b': 0}
 
         """
         if not inplace:
             return self.copy().change_vartype(vartype, energy_offset, inplace=True)
+
+        if not self.done():
+            def hook(sampleset):
+                sampleset.resolve()
+                return sampleset.change_vartype(vartype, energy_offset)
+            return self.from_future(self, hook)
 
         if not self.is_writeable:
             raise WriteableError("SampleSet is not writeable")
@@ -995,12 +977,10 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
             This example creates a relabeled copy of a :class:`SampleSet`.
 
-            >>> import dimod
-            ...
             >>> sampleset = dimod.ExactSolver().sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
             >>> new_sampleset = sampleset.relabel_variables({'a': 0, 'b': 1}, inplace=False)
-            >>> sampleset.variable_labels    # doctest: +SKIP
-            [0, 1]
+            >>> new_sampleset.variables
+            Variables([0, 1])
 
         """
         if not inplace:
@@ -1371,7 +1351,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
             This example encodes using JSON.
 
-            >>> import dimod
             >>> import json
             ...
             >>> samples = dimod.SampleSet.from_samples([-1, 1, -1], dimod.SPIN, energy=-.5)
@@ -1446,7 +1425,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         Examples:
             This example encodes and decodes using JSON.
 
-            >>> import dimod
             >>> import json
             ...
             >>> samples = dimod.SampleSet.from_samples([-1, 1, -1], dimod.SPIN, energy=-.5)
@@ -1507,11 +1485,11 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
             ...                                         {'a': -1, 'b': -1, 'c': +1}],
             ...                                        dimod.SPIN, energy=-.5)
-            >>> samples.to_pandas_dataframe()  # doctest: +SKIP
+            >>> samples.to_pandas_dataframe()    # doctest: +SKIP
                a  b  c  energy  num_occurrences
             0 -1  1 -1    -0.5                1
             1 -1 -1  1    -0.5                1
-            >>> samples.to_pandas_dataframe(sample_column=True)  # doctest: +SKIP
+            >>> samples.to_pandas_dataframe(sample_column=True)    # doctest: +SKIP
                                    sample  energy  num_occurrences
             0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1

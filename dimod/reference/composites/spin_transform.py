@@ -51,15 +51,12 @@ class SpinReversalTransformComposite(Sampler, Composite):
         This example composes a dimod ExactSolver sampler with spin transforms then
         uses it to sample an Ising problem.
 
-        >>> # Compose the sampler
         >>> base_sampler = dimod.ExactSolver()
         >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
-        >>> base_sampler in composed_sampler.children
-        True
-        >>> # Sample an Ising problem
+        ... # Sample an Ising problem
         >>> response = composed_sampler.sample_ising({'a': -0.5, 'b': 1.0}, {('a', 'b'): -1})
-        >>> print(next(response.data()))           # doctest: +SKIP
-        Sample(sample={'a': 1, 'b': 1}, energy=-1.5)
+        >>> response.first.sample
+        {'a': -1, 'b': -1}
 
     References
     ----------
@@ -84,7 +81,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
         self.properties = {'child_properties': child.properties}
 
-    def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
+    def sample(self, bqm, num_spin_reversal_transforms=2, **kwargs):
         """Sample from the binary quadratic model.
 
         Args:
@@ -94,37 +91,21 @@ class SpinReversalTransformComposite(Sampler, Composite):
             num_spin_reversal_transforms (integer, optional, default=2):
                 Number of spin reversal transform runs.
 
-            spin_reversal_variables (list/dict, optional):
-                Deprecated and no longer functional.
-
         Returns:
             :obj:`.SampleSet`
 
         Examples:
             This example runs 100 spin reversals applied to one variable of a QUBO problem.
 
-            >>> import dimod
-            ...
             >>> base_sampler = dimod.ExactSolver()
             >>> composed_sampler = dimod.SpinReversalTransformComposite(base_sampler)
+            ...
             >>> Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
             >>> response = composed_sampler.sample_qubo(Q,
-            ...               num_spin_reversal_transforms=100,
-            ...               spin_reversal_variables={'a'})
+            ...               num_spin_reversal_transforms=100)
             >>> len(response)
             400
-            >>> print(next(response.data()))           # doctest: +SKIP
-            Sample(sample={'a': 0, 'b': 1}, energy=-1.0)
-
         """
-
-        if spin_reversal_variables is not None:
-            # this kwarg does not actually make sense for multiple SRTs. To
-            # get the same functionality a user should apply them by hand
-            # to their BQM before submitting.
-            import warnings
-            warnings.warn("'spin_reversal_variables' kwarg is deprecated and no longer functions.",
-                          DeprecationWarning)
 
         # make a main response
         responses = []

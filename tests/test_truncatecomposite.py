@@ -34,6 +34,7 @@ class TestConstruction(unittest.TestCase):
             TruncateComposite(ExactSolver(), 0)
 
 
+@dtest.load_sampler_bqm_tests(TruncateComposite(ExactSolver(), 100))
 class TestSample(unittest.TestCase):
     def test_sampleset_shorter(self):
         h = {'a': -4.0, 'b': -4.0, 'c': 0}

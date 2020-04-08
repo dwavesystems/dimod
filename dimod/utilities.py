@@ -12,14 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
-"""
-Utility functions useful for samplers.
-"""
+# =============================================================================
 import copy
+import os
 import itertools
-
-from six import iteritems, itervalues
 
 from dimod.decorators import lockable_method
 
@@ -28,6 +24,7 @@ __all__ = ['ising_energy',
            'ising_to_qubo',
            'qubo_to_ising',
            'child_structure_dfs',
+           'get_include',
            ]
 
 
@@ -71,7 +68,6 @@ def ising_energy(sample, h, J, offset=0.0):
         an Ising model of two variables that have positive biases of value 1 and
         are positively coupled with an interaction of value 1.
 
-        >>> import dimod
         >>> sample = {1: -1, 2: -1}
         >>> h = {1: 1, 2: 1}
         >>> J = {(1, 2): 1}
@@ -134,7 +130,6 @@ def qubo_energy(sample, Q, offset=0.0):
         a QUBO model of two variables that have positive biases of value 1 and
         are positively coupled with an interaction of value 1.
 
-        >>> import dimod
         >>> sample = {1: 0, 2: 0}
         >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
         >>> dimod.qubo_energy(sample, Q, 0.5)
@@ -188,20 +183,19 @@ def ising_to_qubo(h, J, offset=0.0):
     Examples:
         This example converts an Ising problem of two variables that have positive
         biases of value 1 and are positively coupled with an interaction of value 1
-        to a QUBO problem.
+        to a QUBO problem and prints the resulting energy offset.
 
-        >>> import dimod
         >>> h = {1: 1, 2: 1}
         >>> J = {(1, 2): 1}
-        >>> dimod.ising_to_qubo(h, J, 0.5)  # doctest: +SKIP
-        ({(1, 1): 0.0, (1, 2): 4.0, (2, 2): 0.0}, -0.5)
+        >>> dimod.ising_to_qubo(h, J, 0.5)[1]
+        -0.5
 
     """
     # the linear biases are the easiest
-    q = {(v, v): 2. * bias for v, bias in iteritems(h)}
+    q = {(v, v): 2. * bias for v, bias in h.items()}
 
     # next the quadratic biases
-    for (u, v), bias in iteritems(J):
+    for (u, v), bias in J.items():
         if bias == 0.0:
             continue
         q[(u, v)] = 4. * bias
@@ -209,7 +203,7 @@ def ising_to_qubo(h, J, offset=0.0):
         q[(v, v)] -= 2. * bias
 
     # finally calculate the offset
-    offset += sum(itervalues(J)) - sum(itervalues(h))
+    offset += sum(J.values()) - sum(h.values())
 
     return q, offset
 
@@ -250,12 +244,11 @@ def qubo_to_ising(Q, offset=0.0):
     Examples:
         This example converts a QUBO problem of two variables that have positive
         biases of value 1 and are positively coupled with an interaction of value 1
-        to an Ising problem.
+        to an Ising problem, and shows the new energy offset.
 
-        >>> import dimod
         >>> Q = {(1, 1): 1, (2, 2): 1, (1, 2): 1}
-        >>> dimod.qubo_to_ising(Q, 0.5)    # doctest: +SKIP
-        ({1: 0.75, 2: 0.75}, {(1, 2): 0.25}, 1.75)
+        >>> dimod.qubo_to_ising(Q, 0.5)[2]
+        1.75
 
     """
     h = {}
@@ -263,7 +256,7 @@ def qubo_to_ising(Q, offset=0.0):
     linear_offset = 0.0
     quadratic_offset = 0.0
 
-    for (u, v), bias in iteritems(Q):
+    for (u, v), bias in Q.items():
         if u == v:
             if u in h:
                 h[u] += .5 * bias
@@ -317,7 +310,7 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
     if old_labels is None:
         old_labels = set(mapping)
     if new_labels is None:
-        new_labels = set(itervalues(mapping))
+        new_labels = set(mapping.values())
 
     # counter will be used to generate the intermediate labels, as an easy optimization
     # we start the counter with a high number because often variables are labeled by
@@ -327,7 +320,7 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
     old_to_intermediate = {}
     intermediate_to_new = {}
 
-    for old, new in iteritems(mapping):
+    for old, new in mapping.items():
         if old == new:
             # we can remove self-labels
             continue
@@ -410,7 +403,6 @@ def child_structure_dfs(sampler, seen=None):
 
     Examples:
 
-    >>> import dimod
     >>> sampler = dimod.TrackingComposite(
     ...                 dimod.StructureComposite(
     ...                 dimod.ExactSolver(), [0, 1], [(0, 1)]))
@@ -492,3 +484,8 @@ class LockableDict(dict):
     @lockable_method
     def update(self, *args, **kwargs):
         return super(LockableDict, self).update(*args, **kwargs)
+
+
+def get_include():
+    """Return the directory with dimod's header files."""
+    return os.path.join(os.path.dirname(__file__), 'include')

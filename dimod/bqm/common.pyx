@@ -15,6 +15,8 @@
 # =============================================================================
 import numpy as np
 
+__all__ = ['itype', 'dtype', 'ntype']
+
 itype = np.dtype(np.uint32)  # corresponds to VarIndex
 dtype = np.dtype(np.float64)  # corresponds to Bias
 

@@ -44,10 +44,6 @@ class BQMView(Mapping):
         self._bqm = state['_bqm']
 
     def __repr__(self):
-        # want the repr to make clear that it's not the correct item
-        return "<{!s}: {!s}>".format(type(self).__name__, self)
-
-    def __str__(self):
         # let's just print the whole (potentially massive) thing for now, in
         # the future we'd like to do something a bit more clever (like hook into
         # dimod's Formatter)
@@ -63,10 +59,17 @@ class BQMView(Mapping):
 
 
 class Adjacency(BQMView):
+    """Quadratic biases as a nested dict of dicts.
+
+    Accessed like a dict of dicts, where the keys of the outer dict are all
+    of the model's variables (e.g. `v`) and the values are the neighborhood of
+    `v`. Each neighborhood if a dict where the keys are the neighbors of `v`
+    and the values are their associated quadratic biases.
+    """
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return Neighbour(self._bqm, v)
+        return Neighborhood(self._bqm, v)
 
     def __iter__(self):
         return self._bqm.iter_variables()
@@ -79,10 +82,10 @@ class ShapeableAdjacency(Adjacency):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return ShapeableNeighbour(self._bqm, v)
+        return ShapeableNeighborhood(self._bqm, v)
 
 
-class Neighbour(BQMView):
+class Neighborhood(BQMView):
     __slots__ = ['_var']
 
     def __init__(self, bqm, v):
@@ -105,12 +108,17 @@ class Neighbour(BQMView):
         self._bqm.set_quadratic(self._var, v, bias)
 
 
-class ShapeableNeighbour(Neighbour, MutableMapping):
+class ShapeableNeighborhood(Neighborhood, MutableMapping):
     def __delitem__(self, v):
         self._bqm.remove_interaction(self._var, v)
 
 
 class Linear(BQMView):
+    """Linear biases as a mapping.
+
+    Accessed like a dict, where keys are the variables of the binary quadratic
+    model and values are the linear biases.
+    """
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -142,6 +150,11 @@ class ShapeableLinear(Linear, MutableMapping):
 
 
 class Quadratic(BQMView):
+    """Quadratic biases as a flat mapping.
+
+    Accessed like a dict, where keys are 2-tuples of varables, which represent
+    an interaction and values are the quadratic biases.
+    """
     def __getitem__(self, uv):
         try:
             return self._bqm.get_quadratic(*uv)
@@ -197,7 +210,15 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractproperty
+    def offset(self):
+        """The constant energy offset associated with the model."""
+        pass
+
+    @abc.abstractproperty
     def vartype(self):
+        """The variable type, :class:`.Vartype.SPIN` or
+        :class:`.Vartype.BINARY`.
+        """
         pass
 
     @abc.abstractmethod
@@ -258,9 +279,20 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def adj(self):
         return Adjacency(self)
+    adj.__doc__ = Adjacency.__doc__
+
+    @property
+    def base(self):
+        """The base binary quadratic model, itself if not a view."""
+        return self
 
     @property
     def binary(self):
+        """The binary-valued version of the binary quadratic model.
+
+        If the binary quadratic model is binary-valued, this references itself,
+        otherwise it is a :class:`.BinaryView`.
+        """
         if self.vartype is Vartype.BINARY:
             return self
 
@@ -277,18 +309,25 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def linear(self):
         return Linear(self)
+    linear.__doc__ = Linear.__doc__
 
     @property
     def quadratic(self):
         return Quadratic(self)
+    quadratic.__doc__ = Quadratic.__doc__
 
     @property
     def shape(self):
-        """2-tuple: (num_variables, num_interactions)."""
+        """A 2-tuple, the :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self):
+        """The spin-valued version of the binary quadratic model.
+
+        If the binary quadratic model is spin-valued, this references itself,
+        otherwise it is a :class:`.SpinView`.
+        """
         if self.vartype is Vartype.SPIN:
             return self
 
@@ -304,6 +343,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def variables(self):
+        """The variables of the binary quadratic model."""
         return KeysView(self.linear)
 
     def add_offset(self, offset):
@@ -343,32 +383,11 @@ class BQM(metaclass=abc.ABCMeta):
         """
         samples, labels = as_samples(samples_like)
 
-        bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
+        ldata, (irow, icol, qdata), offset \
+            = self.to_numpy_vectors(variable_order=labels, dtype=dtype)
 
-        num_samples, num_variables = samples.shape
-
-        if dtype is None:
-            dtype = np.float
-
-        energies = np.empty(num_samples, dtype=dtype)
-
-        for si in range(num_samples):
-            energy = self.offset
-
-            for u, lbias in self.linear.items():
-                uspin = samples[si, bqm_to_sample[u]]
-
-                energy += lbias * uspin
-
-            for (u, v), qbias in self.quadratic.items():
-                uspin = samples[si, bqm_to_sample[u]]
-                vspin = samples[si, bqm_to_sample[v]]
-
-                energy += uspin * vspin * qbias
-
-            energies[si] = energy
-
-        return energies
+        energies = samples.dot(ldata) + (samples[:, irow]*samples[:, icol]).dot(qdata) + offset
+        return np.asarray(energies, dtype=dtype)  # handle any type promotions
 
     def energy(self, sample, dtype=None):
         energy, = self.energies(sample, dtype=dtype)
@@ -385,6 +404,48 @@ class BQM(metaclass=abc.ABCMeta):
         for u in self.adj[v]:
             self.spin.adj[v][u] *= -1
         self.spin.linear[v] *= -1
+
+    @classmethod
+    def from_coo(cls, obj, vartype=None):
+        """Deserialize a binary quadratic model from a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            obj: (str/file):
+                Either a string or a `.read()`-supporting `file object`_ that represents
+                linear and quadratic biases for a binary quadratic model. This data
+                is stored as a list of 3-tuples, (i, j, bias), where :math:`i=j`
+                for linear biases.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the vartype must be specified with a header in the
+                file.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models created from COOrdinate format encoding have offsets set to
+            zero.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :func:`~dimod.serialization.coo.load` or
+            :func:`~dimod.serialization.coo.loads` directly.
+
+        """
+        import dimod.serialization.coo as coo
+
+        if isinstance(obj, str):
+            return coo.loads(obj, cls=cls, vartype=vartype)
+
+        return coo.load(obj, cls=cls, vartype=vartype)
 
     @classmethod
     def from_ising(cls, h, J, offset=0):
@@ -408,6 +469,87 @@ class BQM(metaclass=abc.ABCMeta):
 
         """
         return cls(h, J, offset, Vartype.SPIN)
+
+    @classmethod
+    def from_networkx_graph(cls, G, vartype=None, node_attribute_name='bias',
+                            edge_attribute_name='bias'):
+        """Create a binary quadratic model from a NetworkX graph.
+
+        Args:
+            G (:obj:`networkx.Graph`):
+                A NetworkX graph with biases stored as node/edge attributes.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input
+                values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the `G` should have a vartype attribute. If
+                `vartype` is provided and `G.vartype` exists then the argument
+                overrides the property.
+
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases. If the node does not have a
+                matching attribute then the bias defaults to 0.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases. If the edge does not have a
+                matching attribute then the bias defaults to 0.
+
+        Returns:
+            Binary quadratic model
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use the :func:`.from_networkx_graph` function.
+
+        """
+        from dimod.converters import from_networkx_graph  # avoid circular import
+        return from_networkx_graph(G, vartype, node_attribute_name,
+                                   edge_attribute_name, cls=cls)
+
+    @classmethod
+    def from_numpy_matrix(cls, mat, variable_order=None, offset=0.0,
+                          interactions=None):
+        """Create a binary quadratic model from a NumPy array.
+
+        Args:
+            mat (:class:`numpy.ndarray`):
+                Coefficients of a quadratic unconstrained binary optimization
+                (QUBO) model formatted as a square NumPy 2D array.
+
+            variable_order (list, optional):
+                If provided, labels the QUBO variables; otherwise, row/column
+                indices are used. If `variable_order` is longer than the array,
+                extra values are ignored.
+
+            offset (optional, default=0.0):
+                Constant offset for the binary quadratic model.
+
+            interactions (iterable, optional, default=[]):
+                Any additional 0.0-bias interactions to be added to the binary
+                quadratic model. Only works for shapeable binary quadratic
+                models.
+
+        Returns:
+            Binary quadratic model with vartype set to :class:`.Vartype.BINARY`.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use the constructor directly.
+
+        """
+        bqm = cls(mat, Vartype.BINARY)
+        bqm.offset = offset
+
+        if variable_order is not None:
+            bqm.relabel_variables(dict(enumerate(variable_order)))
+
+        if interactions is not None:
+            for u, v in interactions:
+                bqm.add_interaction(u, v, 0.0)
+
+        return bqm
 
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, variable_order=None):
@@ -503,7 +645,7 @@ class BQM(metaclass=abc.ABCMeta):
             yield u, v
 
     def iter_neighbors(self, u):
-        """Iterate over the neighbors of a variable in the bqm.
+        """Iterate over neighbors of a variable in the binary quadratic model.
 
         Yields:
             variable: The neighbors of `v`.
@@ -585,6 +727,30 @@ class BQM(metaclass=abc.ABCMeta):
                        ignored_interactions=ignored_interactions,
                        ignore_offset=ignore_offset)
 
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel the variables of the BQM to integers.
+
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            tuple: A 2-tuple containing:
+
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
+
+                dict: The mapping that will restore the original labels.
+
+        """
+        if not inplace:
+            return self.copy().relabel_variables(inplace=True)
+
+        mapping = dict((v, i) for i, v in enumerate(self.variables) if i != v)
+        return (self.relabel_variables(mapping, inplace=True),
+                dict((i, v) for v, i in mapping.items()))
+
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
         """Multiply all the biases by the specified scalar.
@@ -635,6 +801,41 @@ class BQM(metaclass=abc.ABCMeta):
     def shapeable(cls):
         return issubclass(cls, ShapeableBQM)
 
+    def to_coo(self, fp=None, vartype_header=False):
+        """Serialize the binary quadratic model to a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
+
+        .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+        Args:
+            fp (file, optional):
+                `.write()`-supporting `file object`_ to save the linear and quadratic biases
+                of a binary quadratic model to. The model is stored as a list of 3-tuples,
+                (i, j, bias), where :math:`i=j` for linear biases. If not provided,
+                returns a string.
+
+            vartype_header (bool, optional, default=False):
+                If true, the binary quadratic model's variable type as prepended to the
+                string or file as a header.
+
+        .. _file object: https://docs.python.org/3/glossary.html#term-file-object
+
+        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+            models saved to COOrdinate format encoding do not preserve offsets.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :func:`~dimod.serialization.coo.dump` or
+            :func:`~dimod.serialization.coo.dumps` directly.
+
+        """
+        import dimod.serialization.coo as coo
+
+        if fp is None:
+            return coo.dumps(self, vartype_header)
+        else:
+            coo.dump(self, fp, vartype_header)
+
     def to_ising(self):
         """Converts a binary quadratic model to Ising format.
 
@@ -650,6 +851,70 @@ class BQM(metaclass=abc.ABCMeta):
         """
         bqm = self.spin
         return dict(bqm.linear), dict(bqm.quadratic), bqm.offset
+
+    def to_networkx_graph(self, node_attribute_name='bias',
+                          edge_attribute_name='bias'):
+        """Convert a binary quadratic model to NetworkX graph format.
+
+        Args:
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases.
+
+        Returns:
+            :class:`networkx.Graph`: A NetworkX graph with biases stored as
+            node/edge attributes.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :func:`.to_networkx_graph`.
+
+        """
+        from dimod.converters import to_networkx_graph  # avoid circular import
+        return to_networkx_graph(self, node_attribute_name, edge_attribute_name)
+
+    def to_numpy_matrix(self, variable_order=None):
+        """Convert a binary quadratic model to NumPy 2D array.
+
+        Args:
+            variable_order (list, optional):
+                If provided, indexes the rows/columns of the NumPy array. If
+                `variable_order` includes any variables not in the binary
+                quadratic model, these are added to the NumPy array.
+
+        Returns:
+            :class:`numpy.ndarray`: The binary quadratic model as a NumPy 2D
+            array. Note that the binary quadratic model is converted to
+            :class:`~.Vartype.BINARY` vartype.
+
+        .. note:: This method will be deprecated in the future. The preferred
+            pattern is to use :meth:`.to_dense`.
+
+        """
+        num_variables = self.num_variables
+        M = np.zeros((num_variables, num_variables), dtype=self.base.dtype)
+
+        if variable_order is None:
+            variable_order = range(num_variables)
+        elif len(variable_order) != num_variables:
+            raise ValueError("variable_order does not include all variables")
+
+        label_to_idx = {v: i for i, v in enumerate(self.variables)}
+
+        # do the dense thing
+        for ui, u in enumerate(variable_order):
+            try:
+                M[ui, ui] = self.binary.linear[u]
+            except KeyError:
+                raise ValueError(("if 'variable_order' is not provided, binary "
+                                  "quadratic model must be "
+                                  "index labeled [0, ..., N-1]"))
+
+            for vi, v in enumerate(variable_order[ui+1:], start=ui+1):
+                M[ui, vi] = self.binary.quadratic.get((u, v), 0.0)
+
+        return M
 
     def to_numpy_vectors(self, variable_order=None,
                          dtype=np.float, index_dtype=np.intc,
@@ -672,6 +937,10 @@ class BQM(metaclass=abc.ABCMeta):
                 except TypeError:
                     # can't sort unlike types in py3
                     pass
+
+        if len(variable_order) != num_variables:
+            raise ValueError("variable_order does not match the number of "
+                             "variables")
 
         try:
             ldata = np.fromiter((self.linear[v] for v in variable_order),
@@ -815,12 +1084,7 @@ class ShapeableBQM(BQM):
                 model, this value is added to the current quadratic bias.
 
         """
-        try:
-            # not += on the off chance bias is mutable
-            bias = bias + self.get_quadratic(u, v)
-        except ValueError:
-            pass
-        self.set_quadratic(u, v, bias)
+        self.set_quadratic(u, v, bias + self.get_quadratic(u, v, default=0))
 
     def add_interactions_from(self, quadratic):
         """Add interactions and/or quadratic biases to a binary quadratic model.
@@ -955,6 +1219,10 @@ class VartypeView(BQM):
         self._bqm = bqm
 
     @property
+    def base(self):
+        return self._bqm
+
+    @property
     def num_interactions(self):
         return self._bqm.num_interactions
 
@@ -1014,8 +1282,13 @@ class BinaryView(VartypeView):
         bqm = self._bqm
         return 2 * bqm.get_linear(v) - 2 * sum(b for _, _, b in bqm.iter_quadratic(v))
 
-    def get_quadratic(self, u, v):
-        return 4 * self._bqm.get_quadratic(u, v)
+    def get_quadratic(self, u, v, default=None):
+        try:
+            return 4 * self._bqm.get_quadratic(u, v)
+        except ValueError as err:
+            if default is None:
+                raise err
+        return default
 
     def set_linear(self, v, bias):
         bqm = self._bqm
@@ -1030,8 +1303,9 @@ class BinaryView(VartypeView):
         bqm = self._bqm
 
         # need the difference
-        delta = bias - self.get_quadratic(u, v)
+        delta = bias - self.get_quadratic(u, v, default=0)
 
+        # if it doesn't exist and BQM is not shapeable, this will fail
         bqm.set_quadratic(u, v, bias / 4)  # this one is easy
 
         # the other values get the delta
@@ -1074,8 +1348,13 @@ class SpinView(VartypeView):
         return (bqm.get_linear(v) / 2
                 + sum(b for _, _, b in bqm.iter_quadratic(v)) / 4)
 
-    def get_quadratic(self, u, v):
-        return self._bqm.get_quadratic(u, v) / 4
+    def get_quadratic(self, u, v, default=None):
+        try:
+            return self._bqm.get_quadratic(u, v) / 4
+        except ValueError as err:
+            if default is None:
+                raise err
+        return default
 
     def set_linear(self, v, bias):
         bqm = self._bqm
@@ -1090,8 +1369,9 @@ class SpinView(VartypeView):
         bqm = self._bqm
 
         # need the difference
-        delta = bias - self.get_quadratic(u, v)
+        delta = bias - self.get_quadratic(u, v, default=0)
 
+        # if it doesn't exist and BQM is not shapeable, this will fail
         bqm.set_quadratic(u, v, 4 * bias)  # this one is easy
 
         # the other values get the delta

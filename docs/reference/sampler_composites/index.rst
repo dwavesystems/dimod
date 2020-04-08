@@ -9,5 +9,6 @@ Samplers and Composites
 
    samplers
    composites
+   higher_order_samplers 
    higher_order_composites
    api

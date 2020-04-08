@@ -20,6 +20,7 @@ import dimod
 import dimod.testing as dtest
 
 
+@dimod.testing.load_sampler_bqm_tests(dimod.RandomSampler)
 class TestRandomSampler(unittest.TestCase):
     def test_initialization(self):
         sampler = dimod.RandomSampler()

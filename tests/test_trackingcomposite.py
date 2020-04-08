@@ -29,6 +29,7 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(sampler.outputs, [])
 
 
+@dimod.testing.load_sampler_bqm_tests(dimod.TrackingComposite(dimod.ExactSolver()))
 class TestSample(unittest.TestCase):
     def test_clear(self):
         sampler = dimod.TrackingComposite(dimod.ExactSolver())

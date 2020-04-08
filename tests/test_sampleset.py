@@ -135,6 +135,23 @@ class Test_as_samples(unittest.TestCase):
         self.assertEqual(arr.dtype, np.int32)
 
 
+class TestChangeVartype(unittest.TestCase):
+    def test_non_blocking(self):
+
+        future = concurrent.futures.Future()
+
+        sampleset = dimod.SampleSet.from_future(future)
+
+        # shouldn't block or raise
+        new = sampleset.change_vartype(dimod.BINARY)
+
+        future.set_result(dimod.SampleSet.from_samples({'a': -1},
+                                                       dimod.SPIN,
+                                                       energy=1))
+
+        np.testing.assert_array_equal(new.record.sample, [[0]])
+
+
 class TestConstruction(unittest.TestCase):
     def test_from_samples(self):
 

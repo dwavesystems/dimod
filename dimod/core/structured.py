@@ -25,10 +25,10 @@ base class. The :obj:`~.bqm_structured` decorator verifies that any given binary
 model conforms to the supported structure.
 
 Examples:
-    This simple example shows a structured sampler that can only sample from a binary quadratic model
-    with two variables and one interaction.
+    This simple example shows a structured sampler that can only sample from a binary
+    quadratic model with two variables and one interaction.
 
-    .. code-block:: python
+    .. testcode::
 
         class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
             @property
@@ -58,24 +58,27 @@ Examples:
                     samples.append(sample)
                     energies.append(bqm.energy(sample))
 
-                return dimod.SampleSet.from_samples(samples, bqm.Vartype, energies)
+                return dimod.SampleSet.from_samples(samples, bqm.vartype, energies)
 
                 return response
+
+    >>> import itertools
+    >>> sampler = TwoVariablesSampler()
+    >>> solutions = sampler.sample_ising({}, {(0, 1): -1})
+    >>> solutions.first.energy
+    -1.0
 
 """
 import abc
 
 from collections import namedtuple
 
-from six import add_metaclass
-
 __all__ = ['Structured']
 
 _Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
 
 
-@add_metaclass(abc.ABCMeta)
-class Structured:
+class Structured(abc.ABC):
     """The abstract base class for dimod structured samplers.
 
     Provides the :attr:`.Structured.adjacency` and :attr:`.Structured.structure` properties.

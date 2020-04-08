@@ -13,10 +13,7 @@
 #    limitations under the License.
 #
 # =============================================================================
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from collections import OrderedDict
 from copy import deepcopy
@@ -39,27 +36,92 @@ __all__ = ['AdjDictBQM']
 
 
 class AdjDictBQM(ShapeableBQM):
-    """
+    """A binary quadratic model structured as a dict-of-dicts.
 
-    This can be instantiated in several ways:
+    Can be created in several ways:
 
         AdjDictBQM(vartype)
             Creates an empty binary quadratic model.
 
         AdjDictBQM(bqm)
-            Construct a new bqm that is a copy of the given one.
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
 
         AdjDictBQM(bqm, vartype)
-            Construct a new bqm, changing to the appropriate vartype if
-            necessary.
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary.
 
         AdjDictBQM(n, vartype)
-            Make a bqm with all zero biases, where n is the number of nodes.
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
 
-        AdjDictBQM(M, vartype)
-            Where M is a square, array_like_ or a dictionary of the form
-            `{(u, v): b, ...}`. Note that when formed with SPIN-variables,
-            biases on the diagonal are added to the offset.
+        AdjDictBQM(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        AdjDictBQM(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        AdjDictBQM(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
+
+    Notes:
+
+        The AdjDictBQM is implemented using a dict-of-dicts structure. The
+        outer dict contains the BQM's variables as keys and the neighborhoods
+        as values. Each neighborhood dict contains the neighbors as keys and
+        the quadratic biases as values. The linear biases are stored as
+        self-interactions.
+
+        Advantages:
+
+        - Pure python implementation
+        - Supports arbitrary python types as biases
+        - Low complexity for lookup operations
+        - Supports incremental construction
+
+        Disadvantages:
+
+        - Slow iteration
+        - High memory usage
+
+        Intended Use:
+
+        - For small problems or when flexibility is important
+
+    Examples:
+        The first example constructs a BQM from a dict.
+
+        >>> dimod.AdjDictBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
+        AdjDictBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
+
+        The next example demonstrates incremental construction:
+
+        >>> bqm = dimod.AdjDictBQM('SPIN')
+        >>> bqm.add_variable('a')
+        'a'
+        >>> bqm.add_variable()
+        1
+        >>> bqm.set_quadratic('a', 1, 3.0)
+        >>> bqm
+        AdjDictBQM({a: 0.0, 1: 0.0}, {('a', 1): 3.0}, 0.0, 'SPIN')
+
+        This example shows support for arbitrary types.
+
+        >>> import numpy as np
+        >>> from fractions import Fraction
+        >>> dimod.AdjDictBQM({('a', 'b'): Fraction(1, 3)}, 'BINARY')
+        AdjDictBQM({a: 0.0, b: 0.0}, {('a', 'b'): 1/3}, 0.0, 'BINARY')
 
     .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
 
@@ -124,7 +186,7 @@ class AdjDictBQM(ShapeableBQM):
     def _init_components(self, linear, quadratic, offset, vartype):
         self._vartype = vartype = as_vartype(vartype)
 
-        if isinstance(linear, abc.Mapping):
+        if isinstance(linear, (abc.Mapping, abc.Iterator)):
             self.linear.update(linear)
         else:
             # assume a sequence
@@ -134,6 +196,17 @@ class AdjDictBQM(ShapeableBQM):
 
         if isinstance(quadratic, abc.Mapping):
             for (u, v), bias in quadratic.items():
+                self.add_variable(u)
+                self.add_variable(v)
+
+                if u == v and vartype is Vartype.SPIN:
+                    offset = offset + bias  # not += on off-chance it's mutable
+                elif u in adj[v]:
+                    adj[u][v] = adj[v][u] = adj[u][v] + bias
+                else:
+                    adj[u][v] = adj[v][u] = bias
+        elif isinstance(quadratic, abc.Iterator):
+            for u, v, bias in quadratic:
                 self.add_variable(u)
                 self.add_variable(v)
 
@@ -197,6 +270,15 @@ class AdjDictBQM(ShapeableBQM):
     def num_interactions(self):
         """int: The number of interactions in the model."""
         return (sum(map(len, self._adj.values())) - len(self._adj)) // 2
+
+    @property
+    def offset(self):
+        """The constant energy offset associated with the model."""
+        return self._offset
+
+    @offset.setter
+    def offset(self, offset):
+        self._offset = offset
 
     @property
     def vartype(self):
@@ -402,14 +484,14 @@ class AdjDictBQM(ShapeableBQM):
 
         Args:
             v (variable, optional):
-                The variable to be removed from the bqm. If not provided, the
-                last variable added is removed.
+                The variable to be removed from the binary quadratic model
+                (BQM). If not provided, the last variable added is removed.
 
         Returns:
             variable: The removed variable.
 
         Raises:
-            ValueError: If the binary quadratic model is empty or if `v` is not
+            ValueError: If the BQM is empty or if `v` is not
             a variable.
 
         """

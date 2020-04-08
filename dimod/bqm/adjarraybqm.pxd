@@ -16,22 +16,102 @@
 #    limitations under the License.
 #
 # =============================================================================
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
+from dimod.bqm.cppbqm cimport AdjArrayBQM as cppAdjArrayBQM
 from dimod.bqm.common cimport VarIndex, Bias
 
 
 cdef class cyAdjArrayBQM:
-    cdef pair[vector[pair[size_t, Bias]], vector[pair[VarIndex, Bias]]] adj_
+    """A binary quadratic model structured as two c++ vectors.
+
+    Can be created in several ways:
+
+        AdjArrayBQM(vartype)
+            Creates an empty binary quadratic model.
+
+        AdjArrayBQM(bqm)
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
+
+        AdjArrayBQM(bqm, vartype)
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary.
+
+        AdjArrayBQM(n, vartype)
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
+
+        AdjArrayBQM(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        AdjArrayBQM(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        AdjArrayBQM(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
+
+    Notes:
+
+        The AdjArrayBQM is implemented using two c++ vectors. The first
+        vector contains the linear biases and the index of the start of each
+        variable's neighborhood in the second vector. The second
+        vector contains the neighboring variables and their associated quadratic
+        biases. The vectors, once initialized, are not resized.
+
+        Advantages:
+
+        - Very fast iteration over the biases
+
+        Disadvantages:
+        
+        - Does not support incremental construction
+        - Only supports float64 biases
+
+        Intended Use:
+        
+        - When performance is important and the BQM can be treated as read-only
+
+    Examples:
+
+        >>> import numpy as np
+        >>> from dimod import AdjArrayBQM
+
+        >>> # Construct from a numpy array
+        >>> AdjArrayBQM(np.triu(np.ones((2, 2))), 'BINARY')
+        AdjArrayBQM({0: 1.0, 1: 1.0}, {(0, 1): 1.0}, 0.0, 'BINARY')
+
+        >>> # Construct from dicts
+        >>> AdjArrayBQM({'a': -1}, {('a', 'b'): 1}, 'SPIN')
+        AdjArrayBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+
+    """
+    cdef cppAdjArrayBQM[VarIndex, Bias] bqm_
 
     cdef Bias offset_
 
     cdef readonly object vartype
+    """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
+    """The data type of the linear biases, float64."""
+
     cdef readonly object itype
+    """The data type of the indices, uint32."""
+
     cdef readonly object ntype
+    """The data type of the neighborhood indices, varies by platform."""
 
     # these are not public because the user has no way to access the underlying
     # variable indices

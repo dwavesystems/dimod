@@ -46,24 +46,44 @@ Graph-like
    child_structure_dfs
 
 
+.. _serialization_dimod:
+
 Serialization
 =============
 
-JSON
-----
-.. currentmodule:: dimod.serialization.json
-.. automodule:: dimod.serialization.json
-
-.. autoclass:: DimodEncoder
-
-.. autoclass:: DimodDecoder
-
-Functions
-~~~~~~~~~
+COOrdinate
+----------
+.. currentmodule:: dimod.serialization.coo
 
 .. autosummary::
    :toctree: generated/
 
+   dump
+   dumps
+   load
+   loads
+
+FileView
+--------
+
+.. currentmodule:: dimod.serialization.fileview
+
+.. autosummary::
+   :toctree: generated/
+
+   FileView
+
+JSON
+----
+
+.. currentmodule:: dimod.serialization.json
+.. automodule:: dimod.serialization.json
+
+.. autosummary::
+   :toctree: generated/
+
+   DimodEncoder
+   DimodDecoder
    dimod_object_hook
 
 
@@ -94,7 +114,15 @@ Correctness Asserts
    assert_response_energies
    assert_sampleset_energies
 
+Test Case Loader
+----------------
 
+.. currentmodule:: dimod.testing.sampler
+
+.. autosummary::
+   :toctree: generated/
+
+   load_sampler_bqm_tests
 
 
 Vartype Conversion

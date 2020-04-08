@@ -20,6 +20,9 @@ To run these tests for all bqms, you need to run them on the various adj
 files AND this file, e.g. `python -m unittest tests/test_adj* tests/test_bqm.py`
 """
 import itertools
+import os.path as path
+import shutil
+import tempfile
 import unittest
 
 from collections import OrderedDict
@@ -257,6 +260,29 @@ class TestAddInteractionsFrom(BQMTestCase):
                                    'b': {'a': -.5}})
 
 
+class TestAdjacency(BQMTestCase):
+    @multitest
+    def test_contains(self, BQM):
+        bqm = BQM({0: 1.0}, {(0, 1): 2.0, (2, 1): 0.4}, 0.0, dimod.SPIN)
+
+        self.assertIn(0, bqm.adj[1])
+        self.assertEqual(2.0, bqm.adj[1][0])
+        self.assertIn(1, bqm.adj[0])
+        self.assertEqual(2.0, bqm.adj[0][1])
+
+        self.assertIn(2, bqm.adj[1])
+        self.assertEqual(.4, bqm.adj[1][2])
+        self.assertIn(1, bqm.adj[2])
+        self.assertEqual(.4, bqm.adj[2][1])
+
+        self.assertNotIn(2, bqm.adj[0])
+        with self.assertRaises(KeyError):
+            bqm.adj[0][2]
+        self.assertNotIn(0, bqm.adj[2])
+        with self.assertRaises(KeyError):
+            bqm.adj[2][0]
+
+
 class TestAsBQM(BQMTestCase):
     def test_basic(self):
         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
@@ -291,7 +317,7 @@ class TestAsBQM(BQMTestCase):
             self.assertIsInstance(new, target)
             self.assertEqual(bqm, new)
 
-            if source is target:
+            if issubclass(source, target):
                 self.assertIs(bqm, new)
             else:
                 self.assertIsNot(bqm, new)
@@ -550,6 +576,21 @@ class TestConstruction(BQMTestCase):
         self.assertEqual(bqm.linear, {v: 0 for v in range(5)})
 
     @multitest
+    def test_iterator_2arg(self, BQM):
+        Q = ((u, v, -1) for u in range(5) for v in range(u+1, 5))
+        bqm = BQM(Q, dimod.BINARY)
+
+        self.assertEqual(bqm.shape, (5, 10))
+
+    @multitest
+    def test_iterator_3arg(self, BQM):
+        h = ((v, 1) for v in range(5))
+        J = ((u, v, -1) for u in range(5) for v in range(u+1, 5))
+        bqm = BQM(h, J, dimod.SPIN)
+
+        self.assertEqual(bqm.shape, (5, 10))
+
+    @multitest
     def test_legacy_bqm(self, BQM):
         lbqm = dimod.BinaryQuadraticModel.from_ising({'a': 2}, {'ab': -1}, 7)
 
@@ -711,6 +752,204 @@ class TestContractVariables(BQMTestCase):
         self.assertEqual(bqm, target)
 
 
+class TestCoo(BQMTestCase):
+    @multitest
+    def test_to_coo_string_empty_BINARY(self, BQM):
+        bqm = BQM.empty(dimod.BINARY)
+
+        bqm_str = bqm.to_coo()
+
+        self.assertIsInstance(bqm_str, str)
+
+        self.assertEqual(bqm_str, '')
+
+    @multitest
+    def test_to_coo_string_empty_SPIN(self, BQM):
+        bqm = BQM.empty(dimod.SPIN)
+
+        bqm_str = bqm.to_coo()
+
+        self.assertIsInstance(bqm_str, str)
+
+        self.assertEqual(bqm_str, '')
+
+    @multitest
+    def test_to_coo_string_typical_SPIN(self, BQM):
+        bqm = BQM.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4})
+        s = bqm.to_coo()
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        self.assertEqual(s, contents)
+
+    @multitest
+    def test_to_coo_string_typical_BINARY(self, BQM):
+        bqm = BQM.from_qubo({(0, 0): 1, (0, 1): 2, (2, 3): .4})
+        s = bqm.to_coo()
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        self.assertEqual(s, contents)
+
+    @multitest
+    def test_from_coo_file(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        import os.path as path
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'coo_qubo.qubo')
+
+        with open(filepath, 'r') as fp:
+            bqm = BQM.from_coo(fp, dimod.BINARY)
+
+        self.assertEqual(bqm, BQM.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
+
+    @multitest
+    def test_from_coo_string(self, BQM):
+        if not BQM.shapeable():
+            return
+        contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+        bqm = BQM.from_coo(contents, dimod.SPIN)
+        self.assertEqual(bqm, BQM.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
+
+    @multitest
+    def test_coo_functional_file_empty_BINARY(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM.empty(dimod.BINARY)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = BQM.from_coo(file, dimod.BINARY)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_file_empty_SPIN(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM.empty(dimod.SPIN)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = BQM.from_coo(file, dimod.SPIN)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_file_BINARY(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = BQM.from_coo(file, dimod.BINARY)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_file_SPIN(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+
+        tmpdir = tempfile.mkdtemp()
+        filename = path.join(tmpdir, 'test.qubo')
+
+        with open(filename, 'w') as file:
+            bqm.to_coo(file)
+
+        with open(filename, 'r') as file:
+            new_bqm = BQM.from_coo(file, dimod.SPIN)
+
+        shutil.rmtree(tmpdir)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_string_empty_BINARY(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM.empty(dimod.BINARY)
+
+        s = bqm.to_coo()
+        new_bqm = BQM.from_coo(s, dimod.BINARY)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_string_empty_SPIN(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM.empty(dimod.SPIN)
+
+        s = bqm.to_coo()
+        new_bqm = BQM.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_string_BINARY(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+
+        s = bqm.to_coo()
+        new_bqm = BQM.from_coo(s, dimod.BINARY)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_two_digit_integers_string(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM.from_ising({12: .5, 0: 1}, {(0, 12): .5})
+
+        s = bqm.to_coo()
+        new_bqm = BQM.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
+    @multitest
+    def test_coo_functional_string_SPIN(self, BQM):
+        if not BQM.shapeable():
+            return
+
+        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+
+        s = bqm.to_coo()
+        new_bqm = BQM.from_coo(s, dimod.SPIN)
+
+        self.assertEqual(bqm, new_bqm)
+
+
 class TestCopy(BQMTestCase):
     @multitest
     def test_copy(self, BQM):
@@ -796,6 +1035,26 @@ class TestEnergies(BQMTestCase):
 
         energy = bqm.energy(np.asarray(samples))
         self.assertEqual(energy, 1)
+
+    @multitest
+    def test_label_mismatch(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        samples = ([[0, 0, 1], [1, 1, 0]], 'abc')
+
+        with self.assertRaises(ValueError):
+            bqm.energies(samples)
+
+    @multitest
+    def test_length(self, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        samples = [0, 0]
+
+        with self.assertRaises(ValueError):
+            bqm.energies(samples)
 
 
 class TestFixVariable(BQMTestCase):
@@ -1020,6 +1279,175 @@ class TestLen(BQMTestCase):
         self.assertEqual(len(bqm), 107)
 
 
+class TestNetworkxGraph(unittest.TestCase):
+    # developer note: these tests should be moved to converter tests when
+    # the methods are deprecated.
+
+    def setUp(self):
+        try:
+            import networkx as nx
+        except ImportError:
+            raise unittest.SkipTest("NetworkX is not installed")
+
+    def test_empty(self):
+        import networkx as nx
+        G = nx.Graph()
+        G.vartype = 'SPIN'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        self.assertEqual(len(bqm), 0)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    def test_no_biases(self):
+        import networkx as nx
+        G = nx.complete_graph(5)
+        G.vartype = 'BINARY'
+        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+
+        self.assertIs(bqm.vartype, dimod.BINARY)
+        self.assertEqual(set(bqm.variables), set(range(5)))
+        for u, v in itertools.combinations(range(5), 2):
+            self.assertEqual(bqm.adj[u][v], 0)
+            self.assertEqual(bqm.linear[v], 0)
+        self.assertEqual(len(bqm.quadratic), len(G.edges))
+
+    def test_functional(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
+                                                    {'bc': 1, 'cd': -4},
+                                                    offset=6)
+        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
+        self.assertEqual(bqm, new)
+
+    def test_to_networkx_graph(self):
+        import networkx as nx
+        graph = nx.barbell_graph(7, 6)
+
+        # build a BQM
+        model = dimod.BinaryQuadraticModel({v: -.1 for v in graph},
+                                           {edge: -.4 for edge in graph.edges},
+                                           1.3,
+                                           vartype=dimod.SPIN)
+
+        # get the graph
+        BQM = model.to_networkx_graph()
+
+        self.assertEqual(set(graph), set(BQM))
+        for u, v in graph.edges:
+            self.assertIn(u, BQM[v])
+
+        for v, bias in model.linear.items():
+            self.assertEqual(bias, BQM.nodes[v]['bias'])
+
+
+class TestNumpyMatrix(BQMTestCase):
+    @multitest
+    def test_to_numpy_matrix(self, BQM):
+        # integer-indexed, binary bqm
+        linear = {v: v * .01 for v in range(10)}
+        quadratic = {(v, u): u * v * .01 for u, v in itertools.combinations(linear, 2)}
+        quadratic[(0, 1)] = quadratic[(1, 0)]
+        del quadratic[(1, 0)]
+        offset = 1.2
+        vartype = dimod.BINARY
+        bqm = BQM(linear, quadratic, offset, vartype)
+
+        M = bqm.to_numpy_matrix()
+
+        self.assertTrue(np.array_equal(M, np.triu(M)))  # upper triangular
+
+        for (row, col), bias in np.ndenumerate(M):
+            if row == col:
+                self.assertEqual(bias, linear[row])
+            else:
+                self.assertTrue((row, col) in quadratic or (col, row) in quadratic)
+                self.assertFalse((row, col) in quadratic and (col, row) in quadratic)
+
+                if row > col:
+                    self.assertEqual(bias, 0)
+                else:
+                    if (row, col) in quadratic:
+                        self.assertEqual(quadratic[(row, col)], bias)
+                    else:
+                        self.assertEqual(quadratic[(col, row)], bias)
+
+        #
+
+        # integer-indexed, not contiguous
+        bqm = BQM({}, {(0, 3): -1}, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            M = bqm.to_numpy_matrix()
+
+        #
+
+        # string-labeled, variable_order provided
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            bqm.to_numpy_matrix(['a', 'c'])  # incomplete variable order
+
+        M = bqm.to_numpy_matrix(['a', 'c', 'b'])
+
+        self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
+
+    @multitest
+    def test_functional(self, BQM):
+        bqm = BQM({'a': -1}, {'ac': 1.2, 'bc': .3}, dimod.BINARY)
+
+        order = ['a', 'b', 'c']
+
+        M = bqm.to_numpy_matrix(variable_order=order)
+
+        new = BQM.from_numpy_matrix(M, variable_order=order)
+
+        self.assertConsistentBQM(new)
+        self.assertEqual(bqm, new)
+
+    @multitest
+    def test_from_numpy_matrix(self, BQM):
+
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+
+        variable_order = ['a', 'c', 'b']
+
+        M = bqm.to_numpy_matrix(variable_order=variable_order)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        if not BQM.shapeable():
+            # this part only applies to shapeable
+            return
+
+        # zero-interactions get ignored unless provided in interactions
+        linear = {'a': -1}
+        quadratic = {('a', 'c'): 1.2, ('b', 'c'): .3, ('a', 'b'): 0}
+        bqm = BQM(linear, quadratic, 0.0, dimod.BINARY)
+        variable_order = ['a', 'c', 'b']
+        M = bqm.to_numpy_matrix(variable_order=variable_order)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order)
+
+        self.assertNotIn(('a', 'b'), new_bqm.quadratic)
+        self.assertNotIn(('b', 'a'), new_bqm.quadratic)
+
+        new_bqm = BQM.from_numpy_matrix(M, variable_order=variable_order, interactions=quadratic)
+
+        self.assertEqual(bqm, new_bqm)
+
+        #
+
+        M = np.asarray([[0, 1], [0, 0]])
+        bqm = BQM.from_numpy_matrix(M)
+        self.assertEqual(bqm, BQM({0: 0, 1: 0}, {(0, 1): 1}, 0, dimod.BINARY))
+
+
 class TestNormalize(BQMTestCase):
     @multitest
     def test_normalize(self, BQM):
@@ -1185,6 +1613,18 @@ class TestRelabel(BQMTestCase):
         vartype = dimod.SPIN
         test = BQM(linear, quadratic, offset, vartype)
         self.assertEqual(bqm, test)
+
+    @multitest
+    def test_integer(self, BQM):
+        bqm = BQM(np.arange(25).reshape((5, 5)), 'SPIN')
+        bqm.relabel_variables({0: 'a', 1: 'b', 3: 'c', 4: 'd'})
+
+        new, inverse = bqm.relabel_variables_as_integers()
+
+        self.assertEqual(set(new.variables), set(range(5)))
+
+        new.relabel_variables(inverse, inplace=True)
+        self.assertEqual(new, bqm)
 
     @multitest
     def test_not_inplace(self, BQM):
@@ -1432,6 +1872,20 @@ class TestVartypeViews(BQMTestCase):
     # SpinView and BinaryView
 
     @multitest
+    def test_add_offset_binary(self, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.SPIN)
+
+        bqm.binary.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
+
+    @multitest
+    def test_add_offset_spin(self, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.BINARY)
+
+        bqm.spin.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
+
+    @multitest
     def test_binary_binary(self, BQM):
         bqm = BQM(dimod.BINARY)
         self.assertIs(bqm.binary, bqm)
@@ -1480,6 +1934,20 @@ class TestVartypeViews(BQMTestCase):
         new = bqm.spin.copy()
         self.assertIsNot(new, bqm.spin)
         self.assertIsInstance(new, BQM)
+
+    @multitest
+    def test_offset_binary(self, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.SPIN)
+
+        bqm.binary.offset -= 2
+        self.assertEqual(bqm.offset, 1)
+
+    @multitest
+    def test_offset_spin(self, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.BINARY)
+
+        bqm.spin.offset -= 2
+        self.assertEqual(bqm.offset, 1)
 
     @multitest
     def test_set_linear_binary(self, BQM):

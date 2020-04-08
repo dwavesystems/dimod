@@ -42,7 +42,7 @@ def dumps(bqm, vartype_header=False):
 
 
 def dump(bqm, fp, vartype_header=False):
-    """Dump a binary quadratic model to a string in COOrdinate format."""
+    """Dump a binary quadratic model to a file in COOrdinate format."""
     for triplet in _iter_triplets(bqm, vartype_header):
         fp.write('%s\n' % triplet)
 
@@ -88,8 +88,6 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
 
 
 def _iter_triplets(bqm, vartype_header):
-    if not isinstance(bqm, BinaryQuadraticModel):
-        raise TypeError("expected input to be a BinaryQuadraticModel")
     if not all(isinstance(v, int) and v >= 0 for v in bqm.linear):
         raise ValueError("only positive index-labeled binary quadratic models can be dumped to COOrdinate format")
 

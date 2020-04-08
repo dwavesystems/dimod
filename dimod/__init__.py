@@ -33,10 +33,12 @@ else:
     # is built
     from dimod.roof_duality import fix_variables
 
-import dimod.testing
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel, BQM
 import dimod.binary_quadratic_model
+
+import dimod.testing
+
+from dimod.converters import *
 
 import dimod.decorators
 

@@ -15,7 +15,12 @@ The `dimod` package includes several example samplers.
 Exact Solver
 ------------
 
-.. automodule:: dimod.reference.samplers.exact_solver
+A simple exact solver for testing and debugging code using your local CPU.
+
+Note:
+    This sampler is designed for use in testing. Because it calculates the
+    energy for every possible sample, it is very slow.
+
 
 Class
 ~~~~~

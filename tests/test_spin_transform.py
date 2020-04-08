@@ -22,6 +22,8 @@ import dimod
 import dimod.testing as dit
 
 
+# @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.ExactSolver()))
+# @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.RandomSampler()))
 class TestSpinTransformComposite(unittest.TestCase):
     def test_instantiation(self):
         for factory in [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]:
@@ -30,10 +32,3 @@ class TestSpinTransformComposite(unittest.TestCase):
 
             dit.assert_sampler_api(sampler)
             dit.assert_composite_api(sampler)
-
-    def test_typical(self):
-        sampler = dimod.SpinReversalTransformComposite(dimod.ExactSolver())
-        Q = {('a', 'a'): -1, ('b', 'b'): -1, ('a', 'b'): 2}
-        response = sampler.sample_qubo(Q, num_spin_reversal_transforms=100, spin_reversal_variables={'a'})
-
-        dimod.testing.assert_response_energies(response, dimod.BinaryQuadraticModel.from_qubo(Q))

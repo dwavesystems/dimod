@@ -1,5 +1,4 @@
 numpy==1.17.3
-six==1.11.0
 
 networkx==2.0
 pandas==0.25.3

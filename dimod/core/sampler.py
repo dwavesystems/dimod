@@ -27,14 +27,14 @@ For example, the following steps show how to easily create a dimod sampler. It i
 sufficient to implement a single method (in this example the :meth:`sample_ising` method)
 to create a dimod sampler with the :class:`.Sampler` class.
 
-.. code-block:: python
+.. testcode::
 
     class LinearIsingSampler(dimod.Sampler):
 
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.SampleSet.from_samples([sample], energy=[energy]})
+            return dimod.SampleSet.from_samples([sample], vartype='SPIN', energy=[energy])
 
         @property
         def properties(self):
@@ -47,7 +47,7 @@ to create a dimod sampler with the :class:`.Sampler` class.
 For this example, the implemented sampler :meth:`~.Sampler.sample_ising` can be based on
 a simple placeholder function, which returns a sample that minimizes the linear terms:
 
-.. code-block:: python
+.. testcode::
 
     def linear_ising(h, J):
         sample = {}
@@ -62,17 +62,19 @@ a simple placeholder function, which returns a sample that minimizes the linear 
 The :class:`.Sampler` ABC provides the other sample methods "for free"
 as mixins.
 
-.. code-block:: python
-
-    sampler = LinearIsingSampler()
-    response = sampler.sample_ising({'a': -1}, {})  # Implemented by class LinearIsingSampler
-    response = sampler.sample_qubo({('a', 'a'): 1})  # Mixin provided by Sampler class
-    response = sampler.sample(BinaryQuadraticModel.from_ising({'a': -1}, {}))  # Mixin provided by Sampler class
+>>> sampler = LinearIsingSampler()
+...
+... # Implemented by class LinearIsingSampler:
+>>> response = sampler.sample_ising({'a': -1}, {})
+...
+...  # Mixins provided by Sampler class:
+>>> response = sampler.sample_qubo({('a', 'a'): 1})  
+>>> response = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
 
 Below is a more complex version of the same sampler, where the :attr:`properties` and
 :attr:`parameters` properties return non-empty dicts.
 
-.. code-block:: python
+.. testcode::
 
     class FancyLinearIsingSampler(dimod.Sampler):
         def __init__(self):
@@ -84,7 +86,7 @@ Below is a more complex version of the same sampler, where the :attr:`properties
             energy = dimod.ising_energy(sample, h, J)
             if verbose:
                 print(sample)
-            return dimod.SampleSet.from_samples([sample], energy=[energy]})
+            return dimod.SampleSet.from_samples([sample], energy=[energy])
 
         @property
         def properties(self):
@@ -98,8 +100,6 @@ Below is a more complex version of the same sampler, where the :attr:`properties
 """
 import abc
 
-from six import add_metaclass
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
 from dimod.meta import SamplerABCMeta, samplemixinmethod
@@ -109,8 +109,7 @@ from dimod.vartypes import Vartype
 __all__ = ['Sampler']
 
 
-@add_metaclass(SamplerABCMeta)
-class Sampler:
+class Sampler(metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
 
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
@@ -162,27 +161,22 @@ class Sampler:
                 # sample_ising is implemented
                 h, J, offset = bqm.to_ising()
                 sampleset = self.sample_ising(h, J, **parameters)
-                sampleset.record.energy += offset
-                return sampleset
             else:
                 Q, offset = bqm.to_qubo()
                 sampleset = self.sample_qubo(Q, **parameters)
-                sampleset.change_vartype(Vartype.SPIN, energy_offset=offset)
-                return sampleset
         elif bqm.vartype is Vartype.BINARY:
             if not getattr(self.sample_qubo, '__issamplemixin__', False):
                 # sample_qubo is implemented
                 Q, offset = bqm.to_qubo()
                 sampleset = self.sample_qubo(Q, **parameters)
-                sampleset.record.energy += offset
-                return sampleset
             else:
                 h, J, offset = bqm.to_ising()
                 sampleset = self.sample_ising(h, J, **parameters)
-                sampleset.change_vartype(Vartype.BINARY, energy_offset=offset)
-                return sampleset
         else:
             raise RuntimeError("binary quadratic model has an unknown vartype")
+
+        # if the vartype already matches this will just adjust the offset
+        return sampleset.change_vartype(bqm.vartype, energy_offset=offset)
 
     @samplemixinmethod
     def sample_ising(self, h, J, **parameters):

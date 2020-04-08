@@ -55,17 +55,15 @@ class HigherOrderComposite(ComposedPolySampler):
     Example:
         This example uses :class:`.HigherOrderComposite` to instantiate a
         composed sampler that submits a simple Ising problem to a sampler.
-        The composed sampler creates a bqm from a higher order problem.
+        The composed sampler creates a binary quadratic model (BQM) from a
+        higher order problem.
 
         >>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
         >>> h = {0: -0.5, 1: -0.3, 2: -0.8}
         >>> J = {(0, 1, 2): -1.7}
         >>> sampleset = sampler.sample_hising(h, J, discard_unsatisfied=True)
-        >>> sampleset.first # doctest: +SKIP
-        Sample(sample={0: 1, 1: 1, 2: 1},
-               energy=-3.3,
-               num_occurrences=1,
-               penalty_satisfaction=True)
+        >>> set(sampleset.first.sample.values()) == {1}
+        True
 
         """
 
@@ -100,23 +98,25 @@ class HigherOrderComposite(ComposedPolySampler):
                     discard_unsatisfied=False, **parameters):
         """Sample from the given binary polynomial.
 
-        Takes the given binary polynomial, introduces penalties, reduces the
-        higher-order problem into a quadratic problem and sends it to its child
-        sampler.
+        Introduces penalties to reduce the given higher-order binary polynomial
+        to a quadratic problem and sends it to its child sampler.
 
         Args:
             poly (:obj:`.BinaryPolynomial`):
                 A binary polynomial.
 
-            penalty_strength (float, optional): Strength of the reduction constraint.
-                Insufficient strength can result in the binary quadratic model
-                not having the same minimization as the polynomial.
+            penalty_strength (float, optional):
+                Strength of the reduction constraint. Insufficient strength can
+                result in the binary quadratic model not having the same
+                minimization as the polynomial.
 
-            keep_penalty_variables (bool, optional): default is True. if False
-                will remove the variables used for penalty from the samples
+            keep_penalty_variables (bool, optional, default=True):
+                Setting to False removes the variables used for penalty from
+                the samples.
 
-            discard_unsatisfied (bool, optional): default is False. If True
-                will discard samples that do not satisfy the penalty conditions.
+            discard_unsatisfied (bool, optional, default=False):
+                Setting to True discards samples that do not satisfy the penalty
+                conditions.
 
             initial_state (dict, optional):
                 Only accepted when the child sampler accepts an initial state.
@@ -124,8 +124,9 @@ class HigherOrderComposite(ComposedPolySampler):
                 the binary polynomial. The corresponding initial values are
                 populated for use by the child sampler.
 
-            **parameters: Parameters for the sampling method, specified by
-            the child sampler.
+            **parameters:
+                Parameters for the sampling method, specified by the child
+                sampler.
 
         Returns:
             :obj:`dimod.SampleSet`
@@ -148,16 +149,17 @@ class HigherOrderComposite(ComposedPolySampler):
 
 
 def expand_initial_state(bqm, initial_state):
-    """Determine the values for the initial state for a binary quadratic model
-    generated from a higher order polynomial.
+    """Determine values for the initial state.
+
+    Used on a binary quadratic model generated from a higher order polynomial.
 
     Args:
-        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
-            its reduction info.
+        bqm (:obj:`.BinaryQuadraticModel`): a binary quadratic model (BQM)
+        object that contains its reduction info.
 
         initial_state (dict):
             An initial state for the higher order polynomial that generated the
-            binary quadratic model.
+            BQM.
 
     Returns:
         dict: A fully specified initial state.
@@ -190,16 +192,16 @@ def expand_initial_state(bqm, initial_state):
 
 
 def penalty_satisfaction(response, bqm):
-    """ Creates a penalty satisfaction list
+    """Create a penalty satisfaction list.
 
-    Given a sampleSet and a bqm object, will create a binary list informing
-    whether the penalties introduced during degree reduction are satisfied for
-    each sample in sampleSet
+    Given a sample set and a binary quadratic model (BQM) object, creates a
+    binary list informing whether the penalties introduced during degree
+    reduction are satisfied for each sample in the sample set.
 
     Args:
-        response (:obj:`.SampleSet`): Samples corresponding to provided bqm
+        response (:obj:`.SampleSet`): Samples corresponding to provided BQM
 
-        bqm (:obj:`.BinaryQuadraticModel`): a bqm object that contains
+        bqm (:obj:`.BinaryQuadraticModel`): a BQM object that contains
             its reduction info.
 
     Returns:
@@ -225,9 +227,9 @@ def polymorph_response(response, poly, bqm,
                        penalty_strength=None,
                        keep_penalty_variables=True,
                        discard_unsatisfied=False):
-    """ Transforms the sampleset for the higher order problem.
+    """Transform the sample set for the higher order problem.
 
-    Given a response of a penalized HUBO, this function creates a new sampleset
+    Given a response of a penalized HUBO, this function creates a new sample set
     object, taking into account penalty information and calculates the
     energies of samples for the higherorder problem.
 
@@ -240,17 +242,19 @@ def polymorph_response(response, poly, bqm,
         bqm (:obj:`dimod.BinaryQuadraticModel`): Binary quadratic model of the
             reduced problem.
 
-        penalty_strength (float, optional): default is None, if provided,
-            will be added to the info field of the returned sampleSet object.
+        penalty_strength (float, optional, default=None):
+            If provided, added to the info field of the
+            returned :obj:`dimod.SampleSet`.
 
-        keep_penalty_variables (bool, optional): default is True. if False
-            will remove the variables used for penalty from the samples
+        keep_penalty_variables (bool, optional, default=True):
+            Setting to False removes variables used for penalty from the samples.
 
-        discard_unsatisfied (bool, optional): default is False. If True
-            will discard samples that do not satisfy the penalty conditions.
+        discard_unsatisfied (bool, optional, default=False):
+            Setting to True discards samples that do not satisfy the penalty
+            conditions.
 
     Returns:
-        (:obj:`.SampleSet'): A sampleSet object that has additional penalty
+        (:obj:`.SampleSet'): A SampleSet object that has additional penalty
             information. The energies of samples are calculated for the HUBO
             ignoring the penalty variables.
 
@@ -344,7 +348,7 @@ class PolyScaleComposite(ComposedPolySampler):
                     ignored_terms=None, **parameters):
         """Scale and sample from the given binary polynomial.
 
-        If scalar is not given, problem is scaled based on bias and polynomial
+        If `scalar` is not given, problem is scaled based on bias and polynomial
         ranges. See :meth:`.BinaryPolynomial.scale` and
         :meth:`.BinaryPolynomial.normalize`
 
@@ -355,11 +359,11 @@ class PolyScaleComposite(ComposedPolySampler):
                 Value by which to scale the energy range of the binary polynomial.
 
             bias_range (number/pair, optional, default=1):
-                Value/range by which to normalize the all the biases, or if
+                Value/range by which to normalize all the biases, or if
                 `poly_range` is provided, just the linear biases.
 
             poly_range (number/pair, optional):
-                Value/range by which to normalize the higher order biases.
+                Value/range by which to normalize higher-order biases.
 
             ignored_terms (iterable, optional):
                 Biases associated with these terms are not scaled.
@@ -408,11 +412,11 @@ class PolyScaleComposite(ComposedPolySampler):
 
 
 class PolyTruncateComposite(ComposedPolySampler):
-    """Composite to truncate the returned samples
+    """Composite that truncates returned samples.
 
     Post-processing is expensive and sometimes one might want to only
-    treat the lowest energy samples. This composite layer allows one to
-    pre-select the samples within a multi-composite pipeline
+    treat the lowest-energy samples. This composite layer allows one to
+    pre-select the samples within a multi-composite pipeline.
 
     Args:
         child_sampler (:obj:`dimod.PolySampler`):
@@ -430,7 +434,7 @@ class PolyTruncateComposite(ComposedPolySampler):
             If True, aggregate the samples before truncating.
 
     Note:
-        If aggregate is True :attr:`.SampleSet.record.num_occurrences` are
+        If `aggregate` is True, :attr:`.SampleSet.record.num_occurrences` are
         accumulated but no other fields are.
 
     """
@@ -477,10 +481,10 @@ class PolyTruncateComposite(ComposedPolySampler):
 
 
 class PolyFixedVariableComposite(ComposedPolySampler):
-    """Composite to fix variables of a problem to provided.
+    """Composite that fixes variables of a problem.
 
     Fixes variables of a binary polynomial and modifies linear and k-local terms
-    accordingly. Returned samples include the fixed variable
+    accordingly. Returned samples include the fixed variable.
 
     Args:
        sampler (:obj:`dimod.PolySampler`):
@@ -488,9 +492,9 @@ class PolyFixedVariableComposite(ComposedPolySampler):
 
     Examples:
        This example uses :class:`.PolyFixedVariableComposite` to instantiate a
-       composed sampler that submits a simple high order Ising problem to a sampler.
+       composed sampler that submits a simple high-order Ising problem to a sampler.
        The composed sampler fixes a variable and modifies linear and k-local terms
-       biases according.
+       biases.
 
        >>> h = {1: -1.3, 2: 1.2, 3: -3.4, 4: -0.5}
        >>> J = {(1, 4): -0.6, (1, 2, 3): 0.2, (1, 2, 3, 4): -0.1}
@@ -569,4 +573,3 @@ def fix_variables(poly, fixed_variables):
             offset += v
     poly_copy[()] = offset
     return BinaryPolynomial(poly_copy, poly.vartype)
-

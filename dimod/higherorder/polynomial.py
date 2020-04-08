@@ -16,11 +16,7 @@
 from __future__ import division
 
 import itertools
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import collections.abc as abc
 
 from numbers import Number
 
@@ -362,6 +358,8 @@ class BinaryPolynomial(abc.MutableMapping):
 
         Examples:
             >>> poly = dimod.BinaryPolynomial.from_hising({'a': 2}, {'ab': -1}, 0)
+            >>> poly.degree
+            2
 
         """
         poly = {(k,): v for k, v in h.items()}
@@ -417,6 +415,8 @@ class BinaryPolynomial(abc.MutableMapping):
 
         Examples:
             >>> poly = dimod.BinaryPolynomial.from_hubo({('a', 'b', 'c'): -1})
+            >>> poly.degree
+            3
 
         """
         poly = cls(H, Vartype.BINARY)

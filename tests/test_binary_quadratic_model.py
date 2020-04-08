@@ -32,6 +32,7 @@ import numpy as np
 import dimod
 
 from dimod.exceptions import WriteableError
+from tests.test_bqm import BQMTestCase
 
 try:
     import networkx as nx
@@ -44,6 +45,8 @@ try:
     _pandas = True
 except ImportError:
     _pandas = False
+
+BQMTestCase.register(dimod.BinaryQuadraticModel)
 
 
 class TestBinaryQuadraticModel(unittest.TestCase):
@@ -574,10 +577,10 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         original_bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
         bqm.fix_variable('a', +1)
 
-        self.assertEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
-        self.assertEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
-        self.assertEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 1}))
-        self.assertEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 1}))
 
         #
 
@@ -587,10 +590,10 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = bqm.binary  # create the binary version
         bqm.fix_variable('a', +1)
 
-        self.assertEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
-        self.assertEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
-        self.assertEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 1}))
-        self.assertEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': +1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': +1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 1}))
 
         #
 
@@ -599,10 +602,10 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         original_bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
         bqm.fix_variable('a', -1)
 
-        self.assertEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
-        self.assertEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
-        self.assertEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 0}))
-        self.assertEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 0}))
 
         #
 
@@ -612,10 +615,10 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = bqm.binary  # create the binary version
         bqm.fix_variable('a', -1)
 
-        self.assertEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
-        self.assertEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
-        self.assertEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 0}))
-        self.assertEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.energy({'b': +1}), original_bqm.energy({'b': +1, 'a': -1}))
+        self.assertAlmostEqual(bqm.energy({'b': -1}), original_bqm.energy({'b': -1, 'a': -1}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 1}), original_bqm.binary.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.binary.energy({'b': 0}), original_bqm.binary.energy({'b': 0, 'a': 0}))
 
         #
 
@@ -624,8 +627,8 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         original_bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
         bqm.fix_variable('a', 1)
 
-        self.assertEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
-        self.assertEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.spin.energy({'b': +1, 'a': +1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.spin.energy({'b': -1, 'a': +1}))
 
@@ -636,8 +639,8 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = bqm.spin
         bqm.fix_variable('a', 1)
 
-        self.assertEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
-        self.assertEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 1}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.spin.energy({'b': +1, 'a': +1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.spin.energy({'b': -1, 'a': +1}))
 
@@ -648,8 +651,8 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         original_bqm = dimod.BinaryQuadraticModel({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
         bqm.fix_variable('a', 0)
 
-        self.assertEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
-        self.assertEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
         self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.spin.energy({'b': +1, 'a': -1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.spin.energy({'b': -1, 'a': -1}))
 
@@ -660,8 +663,8 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         __ = bqm.spin
         bqm.fix_variable('a', 0)
 
-        self.assertEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
-        self.assertEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.energy({'b': 1, 'a': 0}))
+        self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.energy({'b': 0, 'a': 0}))
         self.assertAlmostEqual(bqm.spin.energy({'b': +1}), original_bqm.spin.energy({'b': +1, 'a': -1}))
         self.assertAlmostEqual(bqm.spin.energy({'b': -1}), original_bqm.spin.energy({'b': -1, 'a': -1}))
 
@@ -677,7 +680,7 @@ class TestBinaryQuadraticModel(unittest.TestCase):
         binary_bqm.update(spin_bqm)
 
         # binary contribution is 0.0
-        self.assertEqual(binary_bqm.energy({'a': 0, 'b': 0, 'c': 0}), spin_bqm.energy({'c': -1, 'b': -1}))
+        self.assertAlmostEqual(binary_bqm.energy({'a': 0, 'b': 0, 'c': 0}), spin_bqm.energy({'c': -1, 'b': -1}))
 
     def test_contract_variables(self):
         bqm = dimod.BinaryQuadraticModel({'a': .3, 'b': -.7}, {('a', 'b'): -1, ('b', 'c'): 1}, 1.2, dimod.BINARY)

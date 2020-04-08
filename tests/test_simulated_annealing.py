@@ -23,6 +23,7 @@ import dimod
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
 
 
+@dimod.testing.load_sampler_bqm_tests(dimod.SimulatedAnnealingSampler)
 class TestSASampler(unittest.TestCase):
     def setUp(self):
         self.sampler = dimod.SimulatedAnnealingSampler()

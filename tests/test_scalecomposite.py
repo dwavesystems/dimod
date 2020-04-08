@@ -16,6 +16,7 @@
 
 import unittest
 
+import dimod
 import dimod.testing as dtest
 from dimod import ExactSolver, ScaleComposite, HigherOrderComposite, \
     BinaryQuadraticModel, Sampler, PolySampler
@@ -79,12 +80,12 @@ class ScalingChecker(Sampler, PolySampler):
         self.child = child_sampler
 
         if bqm is not None:
-            self.bqm = _scaled_bqm(bqm, **scale_options)
+            self.bqm, _ = _scaled_bqm(bqm, **scale_options)
 
         elif h is not None and J is not None:
             if max(map(len, J.keys())) == 2:
                 bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
-                self.bqm = _scaled_bqm(bqm, **scale_options)
+                self.bqm, _ = _scaled_bqm(bqm, **scale_options)
             else:
                 h_sc, J_sc, offset_sc = _scaled_hubo(h, J, offset=offset,
                                                      **scale_options)
@@ -118,6 +119,8 @@ class ScalingChecker(Sampler, PolySampler):
         return self.child.properties()
 
 
+# @dimod.testing.load_sampler_bqm_tests(ScaleComposite(ExactSolver()))
+# @dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.NullSampler))
 class TestScaleComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):
@@ -133,7 +136,7 @@ class TestScaleComposite(unittest.TestCase):
         scalar = None
         quadratic_range = None
         ignore_offset = False
-        bqm_new = _scaled_bqm(bqm, scalar, 2, quadratic_range,
+        bqm_new, _ = _scaled_bqm(bqm, scalar, 2, quadratic_range,
                               ignored_variables, ignored_interactions,
                               ignore_offset)
 
@@ -147,7 +150,7 @@ class TestScaleComposite(unittest.TestCase):
 
         ignored_variables, ignored_interactions = _check_params(None, None)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic, offset=5.0)
-        bqm_new = _scaled_bqm(bqm, scalar, 2, quadratic_range,
+        bqm_new, _ = _scaled_bqm(bqm, scalar, 2, quadratic_range,
                               ignored_variables, ignored_interactions,
                               True)
 
@@ -159,7 +162,7 @@ class TestScaleComposite(unittest.TestCase):
         bqm_scaled = BinaryQuadraticModel.from_ising(hsc, Jsc, offset=5.0)
         self.assertEqual(bqm_scaled, bqm_new)
 
-        bqm_new = _scaled_bqm(bqm, scalar, 1, (-1, 0.4),
+        bqm_new, _ = _scaled_bqm(bqm, scalar, 1, (-1, 0.4),
                               ignored_variables, ignored_interactions,
                               ignore_offset)
 
@@ -178,7 +181,7 @@ class TestScaleComposite(unittest.TestCase):
             ignored_variables, ignored_interactions)
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
 
-        bqm_new = _scaled_bqm(bqm, scalar, (2, 2), quadratic_range,
+        bqm_new, _ = _scaled_bqm(bqm, scalar, (2, 2), quadratic_range,
                               ignored_variables, ignored_interactions,
                               ignore_offset)
 
@@ -197,7 +200,7 @@ class TestScaleComposite(unittest.TestCase):
             ignored_variables, ignored_interactions)
 
         bqm = BinaryQuadraticModel.from_ising(linear, quadratic)
-        bqm_new = _scaled_bqm(bqm, scalar, 1, 0.5,
+        bqm_new, _ = _scaled_bqm(bqm, scalar, 1, 0.5,
                               ignored_variables, ignored_interactions,
                               ignore_offset)
 

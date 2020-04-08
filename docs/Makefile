@@ -11,6 +11,7 @@ help:
 clean:
 	-rm -rf build/
 	-rm -rf reference/generated
+	-rm -rf reference/sampler_composites/generated
 
 .PHONY: help Makefile
 
