@@ -258,6 +258,27 @@ def _iter_records(samplesets, vartype, variables):
             yield samples.record
 
 
+def infer_vartype(samples_like):
+    if isinstance(samples_like, SampleSet):
+        return samples_like.vartype
+
+    samples, _ = as_samples(samples_like)
+
+    ones_mask = (samples == 1)
+
+    if ones_mask.all():
+        # either empty or all 1s, in either case ambiguous
+        return None
+
+    if (ones_mask ^ (samples == 0)).all():
+        return Vartype.BINARY
+
+    if (ones_mask ^ (samples == -1)).all():
+        return Vartype.SPIN
+
+    raise ValueError("given samples_like is of an unknown vartype")
+
+
 class SampleSet(abc.Iterable, abc.Sized):
     """Samples and any other data returned by dimod samplers.
 
