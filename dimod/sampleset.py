@@ -259,6 +259,16 @@ def _iter_records(samplesets, vartype, variables):
 
 
 def infer_vartype(samples_like):
+    """Infer the vartype of the given samples-like.
+
+    Args:
+        A collection of samples. 'samples_like' is an extension of NumPy's
+        array_like_. See :func:`.as_samples`.
+
+    Returns:
+        The :class:`.Vartype`, or None in the case that it is ambiguous.
+
+    """
     if isinstance(samples_like, SampleSet):
         return samples_like.vartype
 
