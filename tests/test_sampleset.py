@@ -906,6 +906,39 @@ class Test_concatenate(unittest.TestCase):
             dimod.concatenate([])
 
 
+class TestInferVartype(unittest.TestCase):
+    def test_array_ambiguous_all_1s(self):
+        arr = np.ones((5, 5))
+        self.assertIs(dimod.sampleset.infer_vartype(arr), None)
+
+    def test_array_ambiguous_empty(self):
+        arr = []
+        self.assertIs(dimod.sampleset.infer_vartype(arr), None)
+
+    def test_array_binary(self):
+        arr = np.triu(np.ones((5, 5)))
+        self.assertIs(dimod.sampleset.infer_vartype(arr), dimod.BINARY)
+
+    def test_array_invalid(self):
+        arr = [1, 2, 1]
+        with self.assertRaises(ValueError):
+            dimod.sampleset.infer_vartype(arr)
+
+    def test_array_spin(self):
+        arr = 2*np.triu(np.ones((5, 5)))-1
+        self.assertIs(dimod.sampleset.infer_vartype(arr), dimod.SPIN)
+
+    def test_sampleset_binary(self):
+        ss = dimod.SampleSet.from_samples(([[1, 1], [0, 0]], 'ab'),
+                                          dimod.BINARY, energy=[1, 1])
+        self.assertIs(dimod.sampleset.infer_vartype(ss), dimod.BINARY)
+
+    def test_sampleset_spin(self):
+        ss = dimod.SampleSet.from_samples(([[1, 1], [-1, -1]], 'ab'),
+                                          dimod.SPIN, energy=[1, 1])
+        self.assertIs(dimod.sampleset.infer_vartype(ss), dimod.SPIN)
+
+
 class TestWriteable(unittest.TestCase):
     def test_locked(self):
         ss = dimod.SampleSet.from_samples(([[1, 1], [0, 0]], 'ab'),
