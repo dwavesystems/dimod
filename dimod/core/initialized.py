@@ -15,6 +15,10 @@
 # =============================================================================
 """
 Some samplers require or accept an initial starting point in sample-space.
+
+See the source code for :class:`.IdentitySampler` for an example of using
+this abstract base class in a sampler.
+
 """
 # todo: link implementation of IdentitySampler in docstring ^ as an example
 # of using this ABC
@@ -54,7 +58,7 @@ class Initialized(abc.ABC):
 
         Args:
             bqm (:class:`~dimod.BinaryQuadraticModel`):
-                The binary quadratic model to be sampled.
+                The binary quadratic model.
 
             num_reads (int, optional, default=len(initial_states) or 1):
                 Number of reads. If `num_reads` is not explicitly given, it is
