@@ -16,10 +16,10 @@
 """
 A sampler that gives random samples.
 """
-from random import choice
 
 from dimod.core.sampler import Sampler
-from dimod.sampleset import SampleSet
+from dimod.reference.samplers.identity_sampler import IdentitySampler
+
 
 __all__ = ['RandomSampler']
 
@@ -48,7 +48,7 @@ class RandomSampler(Sampler):
         self.parameters = {'num_reads': []}
         self.properties = {}
 
-    def sample(self, bqm, num_reads=10):
+    def sample(self, bqm, num_reads=10, seed=None):
         """Give random samples for a binary quadratic model.
 
         Variable assignments are chosen by coin flip.
@@ -60,19 +60,17 @@ class RandomSampler(Sampler):
             num_reads (int, optional, default=10):
                 Number of reads.
 
+            seed (int (32-bit unsigned integer), optional):
+                Seed to use for the PRNG. Specifying a particular seed with a
+                constant set of parameters produces identical results. If not
+                provided, a random seed is chosen.
+
         Returns:
             :obj:`.SampleSet`
 
         """
-        values = tuple(bqm.vartype.value)
-
-        def _itersample():
-            for __ in range(num_reads):
-                sample = {v: choice(values) for v in bqm.linear}
-                energy = bqm.energy(sample)
-
-                yield sample, energy
-
-        samples, energies = zip(*_itersample())
-
-        return SampleSet.from_samples(samples, bqm.vartype, energies)
+        # as an implementation detail, we can use IdentitySampler here, but
+        # in order to save on future changes that decouple them, we won't
+        # subclass
+        return IdentitySampler().sample(bqm, num_reads=num_reads, seed=seed,
+                                        initial_states_generator='random')
