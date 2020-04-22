@@ -13,12 +13,29 @@
 #    limitations under the License.
 #
 # =============================================================================
+"""A sampler that returns the provided initial states."""
 from dimod.core import Sampler, Initialized
 
 __all__ = ['IdentitySampler']
 
 
 class IdentitySampler(Sampler, Initialized):
+    """A sampler that returns the provided initial states.
+
+    Examples:
+
+    >>> samples = [{'a': -1, 'b': +1}, {'a': +1, 'b': +1}]
+    >>> Q = {('a', 'b'): -1}
+    >>> sampler = dimod.IdentitySampler()
+    >>> sampleset = sampler.sample_qubo(Q, initial_states=samples)
+    >>> print(sampleset)
+       a  b energy num_oc.
+    1  1  1   -1.0       1
+    0  0  1    0.0       1
+    ['BINARY', 2 rows, 2 samples, 2 variables]
+
+    """
+
     parameters = {'initial_states': [],
                   'initial_states_generator': [],
                   'num_reads': [],

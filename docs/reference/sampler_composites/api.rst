@@ -27,7 +27,7 @@ ABCs.
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`
         - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
-        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
+        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :metz`h:`~.Sampler.sample_qubo`
     *   - :class:`.Structured`
         -
         - :attr:`~.Structured.nodelist`, :attr:`~.Structured.edgelist`
@@ -45,6 +45,11 @@ ABCs.
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
           :attr:`~.Composite.child`
+    *   - :class:`.Initialized`
+        -
+        -
+        -
+        - :attr:`~.Initialized.parse_initial_states`
     *   - :class:`.PolySampler`
         -
         - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`
@@ -151,6 +156,23 @@ Mixin Properties
 
    Structured.adjacency
    Structured.structure
+
+
+Creating a Initialized Sampler
+==============================
+
+.. automodule:: dimod.core.initialized
+
+.. currentmodule:: dimod
+.. autoclass:: Initialized
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Initialized.parse_initial_states
 
 
 Creating a Binary Polynomial Sampler

@@ -37,6 +37,34 @@ Methods
    ExactSolver.sample_ising
    ExactSolver.sample_qubo
 
+Identity Sampler
+----------------
+
+.. automodule:: dimod.reference.samplers.identity_sampler
+
+Class
+~~~~~
+
+.. autoclass:: IdentitySampler
+
+Properties
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   IdentitySampler.parameters
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   IdentitySampler.sample
+   IdentitySampler.sample_ising
+   IdentitySampler.sample_qubo
+
 Null Sampler
 ------------
 
