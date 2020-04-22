@@ -110,6 +110,27 @@ class TestGenerators(unittest.TestCase):
         np.testing.assert_array_equal(init.initial_states.record.sample[0:2, :],
                                       init.initial_states.record.sample[2:4, :])
 
+    def test_x_vartype(self):
+        samples = {'a': -1, 'b': 1}
+        bqm = dimod.BQM.from_qubo({'ab': 1})
+
+        init = Initialized().parse_initial_states(
+            bqm=bqm, initial_states=samples, num_reads=10)
+
+        self.assertIs(init.initial_states.vartype, dimod.BINARY)
+        arr = init.initial_states.record.sample
+        self.assertTrue(((arr == 1) ^ (arr == 0)).all())
+
+        samples = {'a': 0, 'b': 1}
+        bqm = dimod.BQM.from_ising({}, {'ab': 1})
+
+        init = Initialized().parse_initial_states(
+            bqm=bqm, initial_states=samples, num_reads=10)
+
+        self.assertIs(init.initial_states.vartype, dimod.SPIN)
+        arr = init.initial_states.record.sample
+        self.assertTrue(((arr == 1) ^ (arr == -1)).all())
+
     def test_tile_empty(self):
         with self.assertRaises(ValueError):
             Initialized().parse_initial_states(

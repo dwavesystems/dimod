@@ -91,7 +91,6 @@ class Initialized(abc.ABC):
         """
 
         num_variables = len(bqm)
-        vartype = bqm.vartype
 
         # validate/initialize initial_states
         if initial_states is None:
@@ -107,7 +106,7 @@ class Initialized(abc.ABC):
                 initial_states_vartype = initial_states.vartype
             else:
                 # check based on values, defaulting to match the current bqm
-                initial_states_vartype = infer_vartype(initial_states_array) or vartype
+                initial_states_vartype = infer_vartype(initial_states_array) or bqm.vartype
 
             # confirm that the variables match
             if not all(v in bqm.variables for v in initial_states_variables):
@@ -115,12 +114,12 @@ class Initialized(abc.ABC):
                                  "'initial_states' and 'bqm'")
 
         # match the vartype of the initial_states to the bqm
-        if initial_states_vartype is Vartype.SPIN and vartype is Vartype.BINARY:
-            initial_states_variables -= 1
-            initial_states_variables /= 2
-        elif initial_states_vartype is Vartype.BINARY and vartype is Vartype.SPIN:
-            initial_states_vartype *= 2
-            initial_states_vartype -= 1
+        if initial_states_vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            initial_states_array += 1
+            initial_states_array //= 2
+        elif initial_states_vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            initial_states_array *= 2
+            initial_states_array -= 1
 
         # validate num_reads and/or infer them from initial_states
         if num_reads is None:
@@ -138,7 +137,8 @@ class Initialized(abc.ABC):
         initial_states_array = extrapolate(initial_states=initial_states_array,
                                            num_reads=num_reads,
                                            num_variables=num_variables,
-                                           seed=seed)
+                                           seed=seed,
+                                           vartype=bqm.vartype)
         initial_states_array = self._truncate_filter(initial_states_array, num_reads)
 
         sampleset = SampleSet.from_samples_bqm((initial_states_array,
@@ -181,11 +181,16 @@ def _tile_generator(initial_states, num_reads, *args, **kwargs):
 Initialized._generators.update(tile=_tile_generator)
 
 
-def _random_generator(initial_states, num_reads, num_variables, seed=None):
+def _random_generator(initial_states, num_reads, num_variables, vartype, seed=None):
     rem = max(0, num_reads - len(initial_states))
 
     np_rand = np.random.RandomState(seed)
-    random_states = 2 * np_rand.randint(2, size=(rem, num_variables)).astype(np.int8) - 1
+
+    # sort vartype so that seed is reproducable
+    values = np.asarray(sorted(vartype.value), dtype=np.int8)
+
+    # takes dtype from values
+    random_states = np_rand.choice(values, size=(rem, num_variables))
 
     # handle zero-length array of input states
     if len(initial_states):
