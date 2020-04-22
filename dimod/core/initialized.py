@@ -109,7 +109,7 @@ class Initialized(abc.ABC):
                 initial_states_vartype = infer_vartype(initial_states_array) or bqm.vartype
 
             # confirm that the variables match
-            if not all(v in bqm.variables for v in initial_states_variables):
+            if bqm.variables ^ initial_states_variables:
                 raise ValueError("mismatch between variables in "
                                  "'initial_states' and 'bqm'")
 
