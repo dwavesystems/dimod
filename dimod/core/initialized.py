@@ -27,11 +27,11 @@ from dimod.vartypes import Vartype
 __all__ = ['Initialized']
 
 
-_parsed = namedtuple('ParsedInputs',
-                     ['initial_states',
-                      'initial_states_generator',
-                      'num_reads',
-                      'seed'])
+ParsedInputs = namedtuple('ParsedInputs',
+                          ['initial_states',
+                           'initial_states_generator',
+                           'num_reads',
+                           'seed'])
 
 
 class Initialized(abc.ABC):
@@ -52,7 +52,7 @@ class Initialized(abc.ABC):
             num_reads (int, optional, default=len(initial_states) or 1):
                 Number of reads. If `num_reads` is not explicitly given, it is
                 selected to match the number of initial states given.
-                If initial states, it is defaulted to 1.
+                If no initial states are given, it defaults to 1.
 
             initial_states (samples-like, optional, default=None):
                 One or more samples, each defining an initial state for all the
@@ -145,7 +145,8 @@ class Initialized(abc.ABC):
                                                 initial_states_variables),
                                                bqm)
 
-        return _parsed(sampleset, initial_states_generator, num_reads, seed)
+        return ParsedInputs(sampleset, initial_states_generator, num_reads,
+                            seed)
 
     @staticmethod
     def _truncate_filter(initial_states, num_reads):
