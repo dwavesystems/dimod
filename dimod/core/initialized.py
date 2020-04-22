@@ -13,6 +13,11 @@
 #    limitations under the License.
 #
 # =============================================================================
+"""
+Some samplers require or accept an initial starting point in sample-space.
+"""
+# todo: link implementation of IdentitySampler in docstring ^ as an example
+# of using this ABC
 
 import abc
 
@@ -39,6 +44,8 @@ class Initialized(abc.ABC):
     # Allows new generators to be registered
     _generators = {}
 
+    # dev note: if this function is updated, make sure to also update
+    # IdentitySampler
     def parse_initial_states(self, bqm,
                              initial_states=None,
                              initial_states_generator='random',
