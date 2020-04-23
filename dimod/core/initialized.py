@@ -20,8 +20,6 @@ See the source code for :class:`.IdentitySampler` for an example of using
 this abstract base class in a sampler.
 
 """
-# todo: link implementation of IdentitySampler in docstring ^ as an example
-# of using this ABC
 
 import abc
 
