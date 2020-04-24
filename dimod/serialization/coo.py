@@ -29,7 +29,7 @@ Examples:
 
     >>> from dimod.serialization import coo
 
-    Serialize a QUBO
+    Serialize a QUBO.
 
     >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
     >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
@@ -38,7 +38,7 @@ Examples:
     0 1 1.000000
     1 2 -4.500000
 
-    We can also include the vartype as a header
+    We can also include the vartype as a header.
 
     >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
     >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
@@ -48,7 +48,7 @@ Examples:
     0 1 1.000000
     1 2 -4.500000
 
-    Loading the same, note that we must specify the vartype
+    Loading from a COO string. Note that you must specify a vartype.
 
     >>> coo_string = '''
     ... 0 0 -1
@@ -58,7 +58,7 @@ Examples:
     >>> coo.loads(coo_string, vartype=dimod.BINARY)
     BinaryQuadraticModel({1: 0.0, 2: 0.0}, {(1, 2): -4.5}, 0.0, 'BINARY')
 
-    Or provide the vartype as a header
+    Or provide the vartype as a header.
 
     >>> coo_string = '''
     ... # vartype=BINARY
