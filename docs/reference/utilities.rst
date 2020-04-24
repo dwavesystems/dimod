@@ -54,6 +54,7 @@ Serialization
 COOrdinate
 ----------
 .. currentmodule:: dimod.serialization.coo
+.. automodule:: dimod.serialization.coo
 
 .. autosummary::
    :toctree: generated/

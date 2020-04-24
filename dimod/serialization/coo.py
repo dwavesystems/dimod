@@ -12,13 +12,73 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# =============================================================================
+"""
+A simple text encoding of dimod BQMs.
+
+The COOrdinate_ list is a sparse matrix representation which can be used to
+store binary quadratic models. This format is best used when readability is
+important.
+
+Note that this format only works for BQMs that are labelled with positive
+integers.
+
+.. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
+
+Examples:
+
+    >>> from dimod.serialization import coo
+
+    Serialize a QUBO.
+
+    >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
+    >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+    >>> print(coo.dumps(bqm))
+    0 0 -1.000000
+    0 1 1.000000
+    1 2 -4.500000
+
+    We can also include the vartype as a header.
+
+    >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
+    >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+    >>> print(coo.dumps(bqm, vartype_header=True))
+    # vartype=BINARY
+    0 0 -1.000000
+    0 1 1.000000
+    1 2 -4.500000
+
+    Loading from a COO string. Note that you must specify a vartype.
+
+    >>> coo_string = '''
+    ... 0 0 -1
+    ... 0 1 1
+    ... 1 2 -4.5
+    ... '''
+    >>> coo.loads(coo_string, vartype=dimod.BINARY)
+    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(0, 1): 1.0, (1, 2): -4.5}, 0.0, 'BINARY')
+
+    Or provide the vartype as a header.
+
+    >>> coo_string = '''
+    ... # vartype=BINARY
+    ... 0 0 -1
+    ... 0 1 1
+    ... 1 2 -4.5
+    ... '''
+    >>> coo.loads(coo_string)
+    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(0, 1): 1.0, (1, 2): -4.5}, 0.0, 'BINARY')
+
+"""
 
 import re
+
+from numbers import Integral
+
 from dimod import Vartype
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
-_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?(?:[0-9]*[.]):?[0-9]+)\s*$'
+_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?\d*(?:\.\d+)?)\s*$'
 """
 Each line should look like
 
@@ -88,7 +148,7 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
 
 
 def _iter_triplets(bqm, vartype_header):
-    if not all(isinstance(v, int) and v >= 0 for v in bqm.linear):
+    if not all(isinstance(v, Integral) and v >= 0 for v in bqm.linear):
         raise ValueError("only positive index-labeled binary quadratic models can be dumped to COOrdinate format")
 
     if vartype_header:
