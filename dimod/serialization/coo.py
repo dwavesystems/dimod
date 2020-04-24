@@ -78,7 +78,7 @@ from numbers import Integral
 from dimod import Vartype
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
-_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?\d*(\.\d+)?)\s*$'
+_LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?\d*(?:\.\d+)?)\s*$'
 """
 Each line should look like
 
