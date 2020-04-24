@@ -72,6 +72,9 @@ Examples:
 """
 
 import re
+
+from numbers import Integral
+
 from dimod import Vartype
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
@@ -145,7 +148,7 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
 
 
 def _iter_triplets(bqm, vartype_header):
-    if not all(isinstance(v, int) and v >= 0 for v in bqm.linear):
+    if not all(isinstance(v, Integral) and v >= 0 for v in bqm.linear):
         raise ValueError("only positive index-labeled binary quadratic models can be dumped to COOrdinate format")
 
     if vartype_header:
