@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
+# ===============================================================================================
 from __future__ import absolute_import
 
 import itertools
@@ -30,7 +30,7 @@ __all__ = ['frustrated_loop']
 
 @graph_argument('graph')
 def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
-                    max_failed_cycles=100, seed=None):
+                    max_failed_cycles=100, planted_solution=None, seed=None):
     """Generate a frustrated loop problem.
 
     A (generic) frustrated loop (FL) problem is a sum of Hamiltonians, each generated from a single
@@ -63,6 +63,11 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         max_failed_cycles (int, optional, default=100):
             Maximum number of failures to find a cycle before terminating.
 
+        planted_solution (dict, optional, default=None):
+            Other solutions with the same energy may exist, but the energy value
+            of the (possibly degenerate) ground state will hold. If None,
+            planted_solution is: {v:-1 for v in graph}
+
         seed (int, optional, default=None):
             Random seed.
 
@@ -80,13 +85,12 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         raise ValueError("R should be a positive integer")
     if max_failed_cycles <= 0:
         raise ValueError("max_failed_cycles should be a positive integer")
-
+    if planted_solution is None:
+        planted_solution = {v:-1 for v in nodes}
     if seed is None:
         seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
 
-    # G = nx.Graph(edges)
-    # J = collections.defaultdict(int)
     adj = {v: set() for v in nodes}
     for u, v in edges:
         if u in adj:
@@ -109,11 +113,14 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         if cycle is None or not all(pred(cycle) for pred in cycle_predicates):
             failed_cycles += 1
             continue
-
-        # If its a good cycle, modify J with it.
         good_cycles += 1
 
-        cycle_J = {(cycle[i - 1], cycle[i]): -1. for i in range(len(cycle))}
+        # If its a good cycle, modify J with it, according to plated solution
+        cycle_J = {}
+        for i, c in enumerate(cycle):
+            u,v = cycle[i - 1], cycle[i]
+            J = -planted_solution[u]*planted_solution[v]
+            cycle_J[(u,v)] = J
 
         # randomly select an edge and flip it
         idx = r.randint(len(cycle))
@@ -121,7 +128,6 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
 
         # update the bqm
         bqm.add_interactions_from(cycle_J)
-
         for u, v in cycle_J:
             if abs(bqm.adj[u][v]) >= R:
                 adj[u].remove(v)
