@@ -27,7 +27,7 @@ ABCs.
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`
         - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
-        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :metz`h:`~.Sampler.sample_qubo`
+        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
     *   - :class:`.Structured`
         -
         - :attr:`~.Structured.nodelist`, :attr:`~.Structured.edgelist`
