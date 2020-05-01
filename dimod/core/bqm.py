@@ -14,6 +14,7 @@
 #
 # =============================================================================
 import abc
+import copy
 import io
 import functools
 
@@ -227,11 +228,6 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def copy(self):
-        """Return a copy."""
-        pass
-
-    @abc.abstractmethod
     def degree(self, v):
         pass
 
@@ -354,6 +350,11 @@ class BQM(metaclass=abc.ABCMeta):
         """Set the binary quadratic model's offset to zero."""
         # maintain type
         self.offset -= self.offset
+
+    # This may be overwritten for speed
+    def copy(self, deep=False):
+        """Return a copy."""
+        return copy.deepcopy(self) if deep else copy.copy(self)
 
     def degrees(self, array=False, dtype=np.int):
         if array:

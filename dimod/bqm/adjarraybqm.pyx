@@ -191,6 +191,28 @@ cdef class cyAdjArrayBQM:
         self.bqm_.invars.resize(n)
         self.vartype = as_vartype(vartype)
 
+    def __copy__(self):
+        cdef cyAdjArrayBQM bqm = type(self)(self.vartype)
+
+        bqm.bqm_ = self.bqm_
+        bqm.offset_ = self.offset_
+
+        # everything is immutable, so this is a deep copy
+        bqm._label_to_idx = self._label_to_idx.copy()
+        bqm._idx_to_label = self._idx_to_label.copy()
+
+        return bqm
+
+    def __deepcopy__(self, memo):
+        # all copies are deep
+        memo[id(self)] = new = self.__copy__()
+        return new
+
+    # todo: support protocol 5, if possible
+    def __reduce__(self):
+        from dimod.serialization.fileview import FileView, load
+        return (load, (FileView(self).readall(),))
+
     @property
     def num_variables(self):
         """int: The number of variables in the model."""
@@ -292,18 +314,6 @@ cdef class cyAdjArrayBQM:
         self.vartype = vartype
 
         return self
-
-    def copy(self):
-        """Return a copy."""
-        cdef cyAdjArrayBQM bqm = type(self)(self.vartype)
-
-        bqm.bqm_ = self.bqm_
-        bqm.offset_ = self.offset_
-
-        bqm._label_to_idx = self._label_to_idx.copy()
-        bqm._idx_to_label = self._idx_to_label.copy()
-
-        return bqm
 
     def degree(self, object v):
         cdef VarIndex vi = self.label_to_idx(v)

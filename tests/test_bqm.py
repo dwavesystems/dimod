@@ -953,7 +953,7 @@ class TestCoo(BQMTestCase):
 class TestCopy(BQMTestCase):
     @multitest
     def test_copy(self, BQM):
-        bqm = BQM({'a': -1, 'b': 1}, {}, dimod.BINARY)
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
         new = bqm.copy()
         self.assertIsNot(bqm, new)
         self.assertEqual(type(bqm), type(new))
@@ -964,12 +964,46 @@ class TestCopy(BQMTestCase):
         self.assertEqual(new.linear['a'], 1)
 
     @multitest
+    def test_standardlib_copy(self, BQM):
+        from copy import copy
+
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
+        new = copy(bqm)
+        self.assertIsNot(bqm, new)
+        self.assertEqual(type(bqm), type(new))
+        self.assertEqual(bqm, new)
+
+    @multitest
+    def test_standardlib_deepcopy(self, BQM):
+        from copy import deepcopy
+
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
+        new = deepcopy(bqm)
+        self.assertIsNot(bqm, new)
+        self.assertEqual(type(bqm), type(new))
+        self.assertEqual(bqm, new)
+
+    @multitest
+    def test_standardlib_deepcopy_multi(self, BQM):
+        from copy import deepcopy
+
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
+        copied = deepcopy([bqm, [bqm]])
+
+        new = copied[0]
+        self.assertIsNot(bqm, new)
+        self.assertEqual(type(bqm), type(new))
+        self.assertEqual(bqm, new)
+
+        self.assertIs(new, copied[1][0])
+
+    @multitest
     def test_subclass(self, BQM):
         # copy should respect subclassing
         class SubBQM(BQM):
             pass
 
-        bqm = SubBQM({'a': -1, 'b': 1}, {}, dimod.BINARY)
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
         new = bqm.copy()
         self.assertIsNot(bqm, new)
         self.assertEqual(type(bqm), type(new))
@@ -1510,6 +1544,17 @@ class TestOffset(BQMTestCase):
         self.assertEqual(bqm.offset, 6)
         dtype = object if bqm.dtype.type is np.object_ else bqm.dtype.type
         self.assertIsInstance(bqm.offset, dtype)
+
+
+class TestPickle(BQMTestCase):
+    @multitest
+    def test_picklable(self, BQM):
+        import pickle
+
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
+        new = pickle.loads(pickle.dumps(bqm))
+        self.assertIs(type(bqm), type(new))
+        self.assertEqual(bqm, new)
 
 
 class TestRemoveInteraction(BQMTestCase):
