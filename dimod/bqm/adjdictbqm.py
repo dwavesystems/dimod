@@ -393,12 +393,10 @@ class AdjDictBQM(ShapeableBQM):
 
         return self
 
-    def copy(self):
-        """Return a copy."""
-        bqm = type(self)(self.vartype)
-        bqm._adj = deepcopy(self._adj)
-        bqm.offset = self.offset
-        return bqm
+    def __copy__(self):
+        # We want to make new nested dictionaries, but keep the biases
+        # in case they are mutable (e.g. sympy variables)
+        return type(self)(self)
 
     def degree(self, v):
         """The number of variables sharing an interaction with v."""
