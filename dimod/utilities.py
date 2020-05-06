@@ -199,8 +199,8 @@ def ising_to_qubo(h, J, offset=0.0):
         if bias == 0.0:
             continue
         q[(u, v)] = 4. * bias
-        q[(u, u)] -= 2. * bias
-        q[(v, v)] -= 2. * bias
+        q[(u, u)] = q.setdefault((u, u), 0) - 2. * bias
+        q[(v, v)] = q.setdefault((v, v), 0) - 2. * bias
 
     # finally calculate the offset
     offset += sum(J.values()) - sum(h.values())

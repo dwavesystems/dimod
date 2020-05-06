@@ -214,6 +214,15 @@ class TestIsingToQubo(unittest.TestCase):
 
         self.assertAlmostEqual(offset + 3, offset2)
 
+    def test_underspecified_h(self):
+        h = {}
+        J = {'ab': -1}
+
+        Q, offset = ising_to_qubo(h, J)
+
+        self.assertEqual(Q, {('a', 'b'): -4, ('a', 'a'): 2, ('b', 'b'): 2})
+        self.assertEqual(offset, -1.0)
+
 
 class TestQuboToIsing(unittest.TestCase):
     def test_trivial(self):
