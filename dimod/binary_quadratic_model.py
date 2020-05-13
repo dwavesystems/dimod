@@ -285,12 +285,7 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
         schema_version = "3.0.0"
 
         variables = list(iter_serialize_variables(self.variables))
-
-        try:
-            variables.sort()
-        except TypeError:
-            # cannot unlike types in py3
-            pass
+        variables.sort(key=lambda x: str(x))
 
         num_variables = len(variables)
 
