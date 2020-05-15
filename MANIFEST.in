@@ -1,3 +1,4 @@
-recursive-include dimod/roof_duality *.cpp *.pyx *.hpp
-recursive-include dimod/bqm *.cc *.h *.pyx *.pxd *.pyx.src
+recursive-include dimod/roof_duality *.cpp *.hpp
+recursive-include dimod/bqm *.cc *.h
 recursive-include dimod/include *h
+recursive-include dimod/ *.pyx *.pxd *.pyx.src
