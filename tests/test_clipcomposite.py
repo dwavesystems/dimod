@@ -94,3 +94,14 @@ class TestClipCompositeClass(unittest.TestCase):
         bqm = BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
         sampler = ClipComposite(ExactSolver())
         sampler.sample(bqm, lower_bound=-1, upper_bound=1)
+
+    def test_info_propagation(self):
+        bqm = BinaryQuadraticModel.from_ising({}, {})
+
+        class MySampler:
+            @staticmethod
+            def sample(bqm):
+                return dimod.SampleSet.from_samples_bqm([], bqm, info=dict(a=1))
+
+        sampleset = ClipComposite(MySampler).sample(bqm)
+        self.assertEqual(sampleset.info, {'a': 1})
