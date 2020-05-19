@@ -92,7 +92,7 @@ class ClipComposite(ComposedSampler):
         bqm_copy = _clip_bqm(bqm, lower_bound, upper_bound)
         response = child.sample(bqm_copy, **parameters)
 
-        return SampleSet.from_samples_bqm(response, bqm)
+        return SampleSet.from_samples_bqm(response, bqm, info=response.info)
 
 
 def _clip_bqm(bqm, lower_bound, upper_bound):
