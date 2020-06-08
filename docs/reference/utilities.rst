@@ -7,6 +7,14 @@ Utilities
 .. contents::
     :depth: 3
 
+Collections
+===========
+
+.. currentmodule:: dimod.bidict
+
+.. autoclass:: BiDict
+
+
 Energy Calculations
 ===================
 
