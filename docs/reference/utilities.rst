@@ -7,17 +7,6 @@ Utilities
 .. contents::
     :depth: 3
 
-Energy Calculations
-===================
-
-.. currentmodule:: dimod.utilities
-
-.. autosummary::
-   :toctree: generated/
-
-   ising_energy
-   qubo_energy
-
 Decorators
 ==========
 
@@ -33,6 +22,18 @@ Decorators
    bqm_structured
    graph_argument
    vartype_argument
+
+
+Energy Calculations
+===================
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   ising_energy
+   qubo_energy
 
 
 Graph-like
