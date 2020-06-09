@@ -799,6 +799,30 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(sampleset, new)
 
+    def test_unpacked(self):
+        # dev note: we are using an unsupported back door that allows
+        # samplesets to handle integer variables. This support could
+        # disappear at any time
+        samples = np.arange(25).reshape((5, 5))
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        s = sampleset.to_serializable(use_bytes=False, pack_samples=False)
+        new = dimod.SampleSet.from_serializable(s)
+
+        np.testing.assert_array_equal(sampleset.record, new.record)
+
+    def test_unpacked_bytes(self):
+        # dev note: we are using an unsupported back door that allows
+        # samplesets to handle integer variables. This support could
+        # disappear at any time
+        samples = np.arange(25).reshape((5, 5))
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        s = sampleset.to_serializable(use_bytes=True, pack_samples=False)
+        new = dimod.SampleSet.from_serializable(s)
+
+        np.testing.assert_array_equal(sampleset.record, new.record)
+
 
 @unittest.skipUnless(_pandas, "no pandas present")
 class TestPandas(unittest.TestCase):
