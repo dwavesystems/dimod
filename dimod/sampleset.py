@@ -29,7 +29,7 @@ from numpy.lib import recfunctions
 from dimod.decorators import vartype_argument
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
-from dimod.serialization.utils import (pack_samples,
+from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        unpack_samples,
                                        serialize_ndarray,
                                        deserialize_ndarray,
@@ -1360,7 +1360,8 @@ class SampleSet(abc.Iterable, abc.Sized):
     # Serialization
     ###############################################################################################
 
-    def to_serializable(self, use_bytes=False, bytes_type=bytes):
+    def to_serializable(self, use_bytes=False, bytes_type=bytes,
+                        pack_samples=True):
         """Convert a :class:`SampleSet` to a serializable object.
 
         Note that the contents of the :attr:`.SampleSet.info` field are assumed
@@ -1375,6 +1376,9 @@ class SampleSet(abc.Iterable, abc.Sized):
                 objects in the serialization. Useful for Python 2 using BSON
                 encoding, which does not accept the raw `bytes` type;
                 `bson.Binary` can be used instead.
+
+            pack_samples (bool, optional, default=True):
+                Pack the samples using 1 bit per sample.
 
         Returns:
             dict: Object that can be serialized.
@@ -1391,7 +1395,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        schema_version = "3.0.0"
+        schema_version = "3.1.0"
 
         # developer note: numpy's record array stores the samples, energies,
         # num_occ. etc as a struct array. If we dumped that array directly to
@@ -1402,20 +1406,25 @@ class SampleSet(abc.Iterable, abc.Sized):
                                            bytes_type=bytes_type)
                    for name, data in self.data_vectors.items()}
 
-        # we could just do self.record.sample > 0 for all of these, but to save
-        # on the copy if we are already binary and bool/integer we check and
-        # just pass through in that case
-        samples = self.record.sample
-        if (self.vartype is Vartype.BINARY and
-                (np.issubdtype(samples.dtype, np.integer) or
-                 np.issubdtype(samples.dtype, np.bool_))):
-            packed = pack_samples(samples)
-        else:
-            packed = pack_samples(samples > 0)
+        if pack_samples:
+            # we could just do self.record.sample > 0 for all of these, but to
+            # save on the copy if we are already binary and bool/integer we
+            # check and just pass through in that case
+            samples = self.record.sample
+            if (self.vartype is Vartype.BINARY and
+                    (np.issubdtype(samples.dtype, np.integer) or
+                     np.issubdtype(samples.dtype, np.bool_))):
+                packed = _pack_samples(samples)
+            else:
+                packed = _pack_samples(samples > 0)
 
-        sample_data = serialize_ndarray(packed,
-                                        use_bytes=use_bytes,
-                                        bytes_type=bytes_type)
+            sample_data = serialize_ndarray(packed,
+                                            use_bytes=use_bytes,
+                                            bytes_type=bytes_type)
+        else:
+            sample_data = serialize_ndarray(self.record.sample,
+                                            use_bytes=use_bytes,
+                                            bytes_type=bytes_type)
 
         return {
             # metadata
@@ -1427,6 +1436,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             "num_rows": len(self),
             "sample_data": sample_data,
             "sample_type": self.record.sample.dtype.name,
+            "sample_packed": bool(pack_samples),  # 3.1.0+, default=True
 
             # vectors
             "vectors": vectors,
@@ -1467,9 +1477,6 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         """
 
-        if obj["version"]['sampleset_schema'] == "1.0.0":
-            raise ValueError("No longer supported serialization format")
-
         version = obj["version"]["sampleset_schema"]
         if version < "3.0.0":
             raise ValueError("No longer supported serialization format")
@@ -1486,14 +1493,15 @@ class SampleSet(abc.Iterable, abc.Sized):
         vectors = {name: deserialize_ndarray(data)
                    for name, data in obj['vectors'].items()}
 
-        packed = deserialize_ndarray(obj['sample_data'])
-        sample = unpack_samples(packed,
-                                n=num_variables,
-                                dtype=obj['sample_type'])
+        sample = deserialize_ndarray(obj['sample_data'])
+        if obj.get('sample_packed', True):  # 3.1.0
+            sample = unpack_samples(sample,
+                                    n=num_variables,
+                                    dtype=obj['sample_type'])
 
-        if vartype == 'SPIN':
-            sample *= 2
-            sample -= 1
+            if vartype == 'SPIN':
+                sample *= 2
+                sample -= 1
 
         return cls.from_samples((sample, variables), vartype, info=info,
                                 **vectors)
