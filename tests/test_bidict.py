@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import sys
 import unittest
 
 from dimod.bidict import BiDict
@@ -22,6 +23,7 @@ class TestForward(unittest.TestCase):
         bidict = BiDict()
         self.assertEqual(bidict, {})
 
+    @unittest.skipUnless(sys.version_info[1] >= 7, "dicts only orders in 3.7+")
     def test_construction_duplicate_keys(self):
         d = {}
         d['a'] = 1
@@ -48,7 +50,6 @@ class TestInverse(unittest.TestCase):
         del bidict.inverse[1]
         self.assertEqual(bidict, dict(b=2))
         self.assertEqual(bidict.inverse, {2: 'b'})
-
 
     def test_inverse_inverse(self):
         bidict = BiDict(a=1, b=2)

@@ -121,7 +121,10 @@ class BiDict(MutableMapping):
         if len(self) != len(other):
             return False
 
-        return all(other[key] == value for key, value in self.items())
+        try:
+            return all(other[key] == value for key, value in self.items())
+        except KeyError:
+            return False
 
     def clear(self):
         self._forward.clear()
