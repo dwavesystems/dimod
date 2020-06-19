@@ -12,7 +12,61 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# =============================================================================
+"""
+A format for saving large binary quadratic models.
+
+This format is inspired by the `NPY format`_
+
+.. _NPY format: https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+
+Extension Convention
+--------------------
+
+Binary quadratic models are typically saved using the `.bqm` extension.
+
+
+Format Version 1.0
+------------------
+
+Format specification:
+
+The first 8 bytes are a magic string: exactly "DIMODBQM".
+
+The next 1 byte is an unsigned byte: the major version of the file format.
+
+The next 1 byte is an unsigned byte: the minor version of the file format.
+
+The next 4 bytes form a little-endian unsigned int, the length of the header
+data HEADER_LEN.
+
+The next HEADER_LEN bytes form the header data. This is a json-serialized
+dictionary. The dictionary is exactly:
+
+.. code-block:: python
+
+    dict(shape=bqm.shape,
+         dtype=bqm.dtype.name,
+         itype=bqm.itype.name,
+         ntype=bqm.ntype.name,
+         vartype=bqm.vartype.name,
+         type=type(bqm).__name__,
+         variables=list(bqm.variables),
+         )
+
+it is terminated by a newline character and padded with spaces to make the
+entire length of the entire header divisible by 16.
+
+The binary quadratic model data comes after the header. The number of bytes
+can be determined by the data types and the number of variables and number
+of interactions (described in the `shape`).
+
+The first `dtype.itemsize` bytes are the offset.
+The next `num_variables * (ntype.itemsize + dtype.itemsize) bytes are the
+linear data. The linear data includes the neighborhood starts and the biases.
+The final `2 * num_interactions * (itype.itemsize + dtype.itemsize) bytes
+are the quadratic data. Stored as `(outvar, bias)` pairs.
+
+"""
 import io
 import json
 
@@ -31,34 +85,6 @@ SEEK_QUADRATIC = 102
 class FileView(io.RawIOBase):
     """A seekable, readable view into a binary quadratic model.
 
-    Format specification:
-
-    The first 8 bytes are a magic string: exactly "DIMODBQM".
-
-    The next 1 byte is an unsigned byte: the major version of the file format.
-
-    The next 1 byte is an unsigned byte: the minor version of the file format.
-
-    The next 4 bytes form a little-endian unsigned int, the length of the header
-    data HEADER_LEN.
-
-    The next HEADER_LEN bytes form the header data. This is a json-serialized
-    dictionary. The dictionary is exactly:
-
-    .. code-block:: python
-
-        dict(shape=bqm.shape,
-             dtype=bqm.dtype.name,
-             itype=bqm.itype.name,
-             ntype=bqm.ntype.name,
-             vartype=bqm.vartype.name,
-             type=type(bqm).__name__,
-             variables=list(bqm.variables),
-             )
-
-    it is terminated by a newline character and padded with spaces to make the
-    entire length of the entire header divisible by 16.
-
     Args:
         bqm (:class:`~dimod.core.bqm.BQM`):
             The binary quadratic model.
@@ -66,9 +92,6 @@ class FileView(io.RawIOBase):
     Note:
         Currently the BQM is not locked while the file view is open, in the
         future this will change.
-
-    See also: `numpy.lib.format
-    <https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html>`_
 
     """
 
@@ -421,7 +444,7 @@ class _BytesIO(io.RawIOBase):
 
 
 def load(fp, cls=None):
-    """
+    """Load a binary quadratic model from a file.
 
     Args:
         fp (bytes-like/file-like):
