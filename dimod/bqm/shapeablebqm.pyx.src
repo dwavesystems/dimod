@@ -575,12 +575,6 @@ cdef class cyAdj@name@BQM:
         # make the bqm with the right number of variables and outvars
         cdef cyAdj@name@BQM bqm = cls(num_var, data['vartype'])
 
-        # set the labels, skipping over the redundant ones
-        for vi, v in enumerate(data['variables']):
-            if vi != v:
-                bqm._label_to_idx[v] = vi
-                bqm._idx_to_label[vi] = v
-
         # offset, using the vartype it was encoded with
         bqm.offset_ = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
 

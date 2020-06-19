@@ -66,22 +66,55 @@ linear data. The linear data includes the neighborhood starts and the biases.
 The final `2 * num_interactions * (itype.itemsize + dtype.itemsize) bytes
 are the quadratic data. Stored as `(outvar, bias)` pairs.
 
+Format Version 2.0
+------------------
+
+In order to make the header a more reasonable length, the variable labels
+have been moved to the body. The `variables` field of the header dictionary
+now has a boolean value, making the dictionary:
+
+.. code-block:: python
+
+    dict(shape=bqm.shape,
+         dtype=bqm.dtype.name,
+         itype=bqm.itype.name,
+         ntype=bqm.ntype.name,
+         vartype=bqm.vartype.name,
+         type=type(bqm).__name__,
+         variables=all(v == i for i, v in enumerate(bqm.variables)),
+         )
+
+If the BQM is index-labeled, then no additional data is added. Otherwise,
+a new section is appended after the bias data.
+
+The first 11 bytes are exactly "[VARIABLES]".
+
+The next 4 bytes form a little-endian unsigned int, the length of the variables
+array VARIABLES_LENGTH.
+
+The next VARIABLES_LENGTH bytes are a json-serialized array. As constructed by
+`json.dumps(list(bqm.variables)). The variables section is padded with spaces
+to make the entire length of divisible by 16.
+
 """
 import io
 import json
 
 from collections.abc import Sequence
+from operator import eq
 from numbers import Integral
 
 import numpy as np
 
 from dimod.bqm.utils import ilinear_biases, ineighborhood
-from dimod.variables import iter_deserialize_variables
+from dimod.variables import iter_deserialize_variables, iter_serialize_variables
 
 BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 DEFAULT_VERSION = (1, 0)
-SUPPORTED_VERSIONS = [(1, 0)]
+SUPPORTED_VERSIONS = [(1, 0),
+                      (2, 0),
+                      ]
 
 # we try to pick values much higher than io's
 SEEK_OFFSET = 100
@@ -117,6 +150,8 @@ class FileView(io.RawIOBase):
         if version not in SUPPORTED_VERSIONS:
             raise ValueError("Unsupported version: {!r}".format(version))
         self.version = version
+
+        self._variables_in_header = version[0] == 1
 
         self.bqm = bqm  # todo: increment viewcount
         self.pos = 0
@@ -163,14 +198,21 @@ class FileView(io.RawIOBase):
         prefix = BQM_MAGIC_PREFIX
         version = bytes(self.version)
 
+        index_labeled = all(i == v for i, v in enumerate(bqm.variables))
+        self._index_labeled = index_labeled
+
         data = dict(shape=bqm.shape,
                     dtype=bqm.dtype.name,
                     itype=bqm.itype.name,
                     ntype=bqm.ntype.name,
                     vartype=bqm.vartype.name,
                     type=type(bqm).__name__,
-                    variables=list(bqm.variables),  # this is ordered
                     )
+
+        if self._variables_in_header:
+            data.update(variables=list(iter_serialize_variables(bqm.variables)))
+        else:
+            data.update(variables=not index_labeled)
 
         header_data = json.dumps(data, sort_keys=True).encode('ascii')
         header_data += b'\n'
@@ -188,6 +230,31 @@ class FileView(io.RawIOBase):
         assert len(header) % 16 == 0  # sanity check
 
         return self.header
+
+    @property
+    def variables_footer(self):
+        try:
+            return self._variables_footer
+        except AttributeError:
+            pass
+
+        if self._index_labeled:
+            self._variables_footer = footer = bytes()
+            return footer
+
+        data = json.dumps(list(iter_serialize_variables(self.bqm.variables)))
+
+        footer = b'[VARIABLES]'
+        footer += np.dtype('<u4').type(len(data)).tobytes()
+        footer += data.encode('ascii')
+
+        if len(footer) % 16:
+            footer += b' '*(16 - len(footer) % 16)
+        assert not len(footer) % 16
+
+        self._variables_footer = footer
+
+        return footer
 
     @property
     def header_end(self):
@@ -222,6 +289,17 @@ class FileView(io.RawIOBase):
     def quadratic_end(self):
         """The location (in bytes) that the quadratic data end."""
         return self.quadratic_start + self.quadratic_length
+
+    @property
+    def variables_start(self):
+        return self.quadratic_end
+
+    @property
+    def variables_end(self):
+        if self._variables_in_header:
+            return self.variables_start
+        else:
+            return self.variables_start + len(self.variables_footer)
 
     def close(self):
         """Close the file view. The BQM will no longer be viewable."""
@@ -313,6 +391,11 @@ class FileView(io.RawIOBase):
             qdata = ineighborhood(bqm, vi)
 
             data = memoryview(qdata).cast('B')[start:]
+
+        elif pos < self.variables_end:
+            # variables
+            vpos = pos - self.variables_start
+            data = memoryview(self.variables_footer)[vpos:]
 
         else:
             data = bytes()
@@ -483,18 +566,18 @@ def load(fp, cls=None):
         # todo: expand on error message (print actual magic prefix)
         raise ValueError("unknown file type")
 
-    version = fp.read(len(bytes(DEFAULT_VERSION)))
-    if version != bytes(DEFAULT_VERSION):
-        raise ValueError("Given serialization does not have a matching version")
+    version = tuple(fp.read(2))
+    if version not in SUPPORTED_VERSIONS:
+        raise ValueError("cannot load a BQM serialized with version {!r}, "
+                         "try upgrading your dimod version".format(version))
+
+    variables_in_header = version[0] == 1
 
     # next get the header
     header_len = np.frombuffer(fp.read(4), '<u4')[0]
     header_data = fp.read(header_len)
 
     data = json.loads(header_data.decode('ascii'))
-
-    # convert list-variable names to tuples (including nested)
-    data['variables'] = list(iter_deserialize_variables(data['variables']))
 
     from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
 
@@ -503,4 +586,18 @@ def load(fp, cls=None):
 
     offset = len(BQM_MAGIC_PREFIX) + len(bytes(DEFAULT_VERSION)) + 4 + header_len
 
-    return cls._load(fp, data, offset=offset)
+    bqm = cls._load(fp, data, offset=offset)
+
+    if variables_in_header:
+        labels = list(iter_deserialize_variables(data['variables']))
+        bqm.relabel_variables(dict(enumerate(labels)))
+    elif data['variables']:
+        subheader = fp.read(11)
+        if subheader != b'[VARIABLES]':
+            raise ValueError("unknown subheader for variable labels")
+        variables_length = np.frombuffer(fp.read(4), '<u4')[0]
+        variables = json.loads(fp.read(variables_length).decode('ascii'))
+        variables = iter_deserialize_variables(variables)
+        bqm.relabel_variables(dict(enumerate(variables)))
+
+    return bqm
