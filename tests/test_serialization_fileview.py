@@ -14,15 +14,16 @@
 #
 # =============================================================================
 import io
+import os
 import unittest
 
 import numpy as np
 
-from parameterized import parameterized
+from parameterized import parameterized, parameterized_class
 
 import dimod
 
-from dimod.serialization.fileview import FileView, load
+from dimod.serialization.fileview import FileView, load, SUPPORTED_VERSIONS
 
 BQM_SUBCLASSES = [dimod.AdjArrayBQM,
                   # dimod.AdjDictBQM,  # not supported yet
@@ -32,18 +33,23 @@ BQM_SUBCLASSES = [dimod.AdjArrayBQM,
                   ]
 
 
+BQM_x_VERSION = [('v{}.{}_{}'.format(version[0], version[1], cls.__name__),
+                  cls, version)
+                 for cls in BQM_SUBCLASSES
+                 for version in SUPPORTED_VERSIONS]
+
+TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data', 'fileview')
+
+
 class TestFileView(unittest.TestCase):
-
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readall_dense(self, name, BQM):
-        # construct the bytes by hand
-
+    def test_dense_v1(self, name, BQM):
         arr = np.triu(np.arange(4).reshape((2, 2)))
 
         bqm = BQM(arr, 'BINARY')
         bqm.offset = 17
 
-        fv = FileView(bqm)
+        fv = FileView(bqm, version=1)
 
         b = fv.readall()
 
@@ -77,62 +83,13 @@ class TestFileView(unittest.TestCase):
         # and finally check everything
         self.assertEqual(fv.header + offset_bytes + linear_bytes + quadratic_bytes, b)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_functional(self, name, BQM):
-
-        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
-        bqm.offset = -1
-
-        with FileView(bqm) as fp:
-            new = load(fp)
-
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
-
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_functional_empty(self, name, BQM):
-
-        bqm = BQM('SPIN')
-
-        with FileView(bqm) as fp:
-            new = load(fp)
-
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
-
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_functional_labelled(self, name, BQM):
-
-        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
-
-        with FileView(bqm) as fp:
-            new = load(fp)
-
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
-
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_functional_labelled_shapeable(self, name, BQM):
-
-        if not BQM.shapeable():
-            raise unittest.SkipTest("test only applies to shapeable bqms")
-
-        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
-        bqm.add_variable()
-
-        with FileView(bqm) as fp:
-            new = load(fp)
-
-        self.assertIs(type(new), type(bqm))
-        self.assertEqual(bqm, new)
-
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readinto(self, name, BQM):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_readinto(self, name, BQM, version):
 
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = 14
 
-        fv = FileView(bqm)
+        fv = FileView(bqm, version=version)
 
         num_bytes = fv.quadratic_end
 
@@ -145,13 +102,13 @@ class TestFileView(unittest.TestCase):
         fv.seek(0)
         self.assertEqual(fv.read(), buff[:num_bytes])
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readinto_partial_back_to_front(self, name, BQM):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_readinto_partial_back_to_front(self, name, BQM, version):
 
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = 14
 
-        fv = FileView(bqm)
+        fv = FileView(bqm, version=version)
 
         buff = fv.readall()
 
@@ -163,13 +120,13 @@ class TestFileView(unittest.TestCase):
             self.assertEqual(fv.readinto(subbuff), len(subbuff))
             self.assertEqual(buff[-pos:], subbuff)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readinto_partial_front_to_back(self, name, BQM):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_readinto_partial_front_to_back(self, name, BQM, version):
 
         bqm = BQM(np.triu(np.arange(9).reshape((3, 3))), 'BINARY')
         bqm.offset = 14
 
-        fv = FileView(bqm)
+        fv = FileView(bqm, version=version)
 
         buff = fv.readall()
 
@@ -180,8 +137,8 @@ class TestFileView(unittest.TestCase):
             self.assertEqual(num_read, nb)
             self.assertEqual(subbuff[:num_read], buff[:num_read])
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readinto_partial_sliding1(self, name, BQM):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_readinto_partial_sliding1(self, name, BQM, version):
 
         bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = -6
@@ -197,13 +154,13 @@ class TestFileView(unittest.TestCase):
             self.assertEqual(num_read, 1)
             self.assertEqual(subbuff, buff[pos:pos+num_read])
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_readinto_partial_sliding17(self, name, BQM):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_readinto_partial_sliding17(self, name, BQM, version):
 
         bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = -6
 
-        fv = FileView(bqm)
+        fv = FileView(bqm, version=version)
 
         buff = fv.readall()
 
@@ -214,12 +171,79 @@ class TestFileView(unittest.TestCase):
             self.assertGreater(num_read, 0)
             self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_unhashable_variables(self, name, BQM):
+    def test_saved_adjvector_5x5_v1(self):
+        bqm = dimod.AdjVectorBQM(np.triu(np.arange(25).reshape((5, 5))),
+                                 'BINARY')
 
+        filename = os.path.join(TEST_DATA_DIR, '5x5_v1.bqm')
+
+        # with open(filename, 'wb') as fp:
+        #     with FileView(bqm, version=1) as fv:
+        #         fp.write(fv.readall())
+
+        with open(filename, 'rb') as fp:
+            buff = fp.read()
+
+        # test that we still encode the same way
+        with FileView(bqm, version=1) as fv:
+            self.assertEqual(buff, fv.read())
+
+        # and that loading gives the same
+        new = load(buff)
+        self.assertEqual(new, bqm)
+
+
+class TestFunctional(unittest.TestCase):
+    @parameterized.expand(BQM_x_VERSION)
+    def test_empty(self, name, BQM, version):
+        bqm = BQM('SPIN')
+        with FileView(bqm, version=version) as fp:
+            new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_labelled(self, name, BQM, version):
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+
+        with FileView(bqm, version=version) as fp:
+            new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_labelled_shapeable(self, name, BQM, version):
+        if not BQM.shapeable():
+            raise unittest.SkipTest("test only applies to shapeable bqms")
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        bqm.add_variable()
+
+        with FileView(bqm, version=version) as fp:
+            new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_typical(self, name, BQM, version):
+        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
+        bqm.offset = -1
+
+        with FileView(bqm, version=version) as fp:
+            new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_unhashable_variables(self, name, BQM, version):
         bqm = BQM({(0, 1): 1}, {}, 'SPIN')
 
-        with FileView(bqm) as fv:
+        with FileView(bqm, version=version) as fv:
             new = load(fv)
 
         self.assertEqual(new, bqm)
