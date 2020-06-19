@@ -18,22 +18,25 @@ import unittest
 
 import numpy as np
 
+from parameterized import parameterized
+
 import dimod
 
 from dimod.serialization.fileview import FileView, load
 
-# use relative import to handle running tests from different places
-from .test_bqm import BQMTestCase, multitest
+BQM_SUBCLASSES = [dimod.AdjArrayBQM,
+                  # dimod.AdjDictBQM,  # not supported yet
+                  dimod.AdjMapBQM,
+                  dimod.AdjVectorBQM,
+                  # dimod.BinaryQuadraticModel,  # not supported yet
+                  ]
 
 
-class TestFileView(BQMTestCase):
+class TestFileView(unittest.TestCase):
 
-    @multitest
-    def test_readall_dense(self, BQM):
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readall_dense(self, name, BQM):
         # construct the bytes by hand
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
 
         arr = np.triu(np.arange(4).reshape((2, 2)))
 
@@ -74,11 +77,8 @@ class TestFileView(BQMTestCase):
         # and finally check everything
         self.assertEqual(fv.header + offset_bytes + linear_bytes + quadratic_bytes, b)
 
-    @multitest
-    def test_functional(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_functional(self, name, BQM):
 
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
         bqm.offset = -1
@@ -89,11 +89,8 @@ class TestFileView(BQMTestCase):
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
 
-    @multitest
-    def test_functional_empty(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_functional_empty(self, name, BQM):
 
         bqm = BQM('SPIN')
 
@@ -103,11 +100,8 @@ class TestFileView(BQMTestCase):
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
 
-    @multitest
-    def test_functional_labelled(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_functional_labelled(self, name, BQM):
 
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
 
@@ -117,11 +111,8 @@ class TestFileView(BQMTestCase):
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
 
-    @multitest
-    def test_functional_labelled_shapeable(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_functional_labelled_shapeable(self, name, BQM):
 
         if not BQM.shapeable():
             raise unittest.SkipTest("test only applies to shapeable bqms")
@@ -135,11 +126,8 @@ class TestFileView(BQMTestCase):
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
 
-    @multitest
-    def test_readinto(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readinto(self, name, BQM):
 
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = 14
@@ -157,11 +145,8 @@ class TestFileView(BQMTestCase):
         fv.seek(0)
         self.assertEqual(fv.read(), buff[:num_bytes])
 
-    @multitest
-    def test_readinto_partial_back_to_front(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readinto_partial_back_to_front(self, name, BQM):
 
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = 14
@@ -178,11 +163,8 @@ class TestFileView(BQMTestCase):
             self.assertEqual(fv.readinto(subbuff), len(subbuff))
             self.assertEqual(buff[-pos:], subbuff)
 
-    @multitest
-    def test_readinto_partial_front_to_back(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readinto_partial_front_to_back(self, name, BQM):
 
         bqm = BQM(np.triu(np.arange(9).reshape((3, 3))), 'BINARY')
         bqm.offset = 14
@@ -198,11 +180,8 @@ class TestFileView(BQMTestCase):
             self.assertEqual(num_read, nb)
             self.assertEqual(subbuff[:num_read], buff[:num_read])
 
-    @multitest
-    def test_readinto_partial_sliding1(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readinto_partial_sliding1(self, name, BQM):
 
         bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = -6
@@ -218,11 +197,8 @@ class TestFileView(BQMTestCase):
             self.assertEqual(num_read, 1)
             self.assertEqual(subbuff, buff[pos:pos+num_read])
 
-    @multitest
-    def test_readinto_partial_sliding17(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_readinto_partial_sliding17(self, name, BQM):
 
         bqm = BQM(np.tril(np.arange(25).reshape((5, 5))), 'BINARY')
         bqm.offset = -6
@@ -238,11 +214,8 @@ class TestFileView(BQMTestCase):
             self.assertGreater(num_read, 0)
             self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
 
-    @multitest
-    def test_unhashable_variables(self, BQM):
-        if issubclass(BQM, dimod.AdjDictBQM):
-            # not (yet) implemented for non cybqms
-            return
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_unhashable_variables(self, name, BQM):
 
         bqm = BQM({(0, 1): 1}, {}, 'SPIN')
 

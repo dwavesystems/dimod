@@ -32,7 +32,6 @@ import numpy as np
 import dimod
 
 from dimod.exceptions import WriteableError
-from tests.test_bqm import BQMTestCase
 
 try:
     import networkx as nx
@@ -45,8 +44,6 @@ try:
     _pandas = True
 except ImportError:
     _pandas = False
-
-BQMTestCase.register(dimod.BinaryQuadraticModel)
 
 
 class TestBinaryQuadraticModel(unittest.TestCase):
