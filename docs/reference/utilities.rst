@@ -69,11 +69,13 @@ FileView
 --------
 
 .. currentmodule:: dimod.serialization.fileview
+.. automodule:: dimod.serialization.fileview
 
 .. autosummary::
    :toctree: generated/
 
    FileView
+   load
 
 JSON
 ----
