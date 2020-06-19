@@ -70,11 +70,18 @@ are the quadratic data. Stored as `(outvar, bias)` pairs.
 import io
 import json
 
+from collections.abc import Sequence
+from numbers import Integral
+
 import numpy as np
 
 from dimod.bqm.utils import ilinear_biases, ineighborhood
 from dimod.variables import iter_deserialize_variables
 
+BQM_MAGIC_PREFIX = b'DIMODBQM'
+
+DEFAULT_VERSION = (1, 0)
+SUPPORTED_VERSIONS = [(1, 0)]
 
 # we try to pick values much higher than io's
 SEEK_OFFSET = 100
@@ -94,16 +101,22 @@ class FileView(io.RawIOBase):
         future this will change.
 
     """
-
-    MAGIC_PREFIX = b'DIMODBQM'
-    VERSION = bytes([1, 0])  # version 1.0
-
     SEEK_OFFSET = SEEK_OFFSET
     SEEK_LINEAR = SEEK_LINEAR
     SEEK_QUADRATIC = SEEK_QUADRATIC
 
-    def __init__(self, bqm):
+    def __init__(self, bqm, version=DEFAULT_VERSION):
         super(FileView, self).__init__()
+
+        # determine if we support the version
+        if isinstance(version, Integral):
+            version = (version, 0)
+        else:
+            version = tuple(map(int, version))
+
+        if version not in SUPPORTED_VERSIONS:
+            raise ValueError("Unsupported version: {!r}".format(version))
+        self.version = version
 
         self.bqm = bqm  # todo: increment viewcount
         self.pos = 0
@@ -147,8 +160,8 @@ class FileView(io.RawIOBase):
             pass
 
         bqm = self.bqm
-        prefix = self.MAGIC_PREFIX
-        version = bytes([1, 0])  # version 1.0
+        prefix = BQM_MAGIC_PREFIX
+        version = bytes(self.version)
 
         data = dict(shape=bqm.shape,
                     dtype=bqm.dtype.name,
@@ -464,14 +477,14 @@ def load(fp, cls=None):
     if isinstance(fp, (bytes, bytearray, memoryview)):
         fp = _BytesIO(fp)
 
-    magic = fp.read(len(FileView.MAGIC_PREFIX))
+    magic = fp.read(len(BQM_MAGIC_PREFIX))
 
-    if magic != FileView.MAGIC_PREFIX:
+    if magic != BQM_MAGIC_PREFIX:
         # todo: expand on error message (print actual magic prefix)
         raise ValueError("unknown file type")
 
-    version = fp.read(len(FileView.VERSION))
-    if version != FileView.VERSION:
+    version = fp.read(len(bytes(DEFAULT_VERSION)))
+    if version != bytes(DEFAULT_VERSION):
         raise ValueError("Given serialization does not have a matching version")
 
     # next get the header
@@ -488,6 +501,6 @@ def load(fp, cls=None):
     if cls is None:
         cls = locals().get(data['type'])
 
-    offset = len(FileView.MAGIC_PREFIX) + len(FileView.VERSION) + 4 + header_len
+    offset = len(BQM_MAGIC_PREFIX) + len(bytes(DEFAULT_VERSION)) + 4 + header_len
 
     return cls._load(fp, data, offset=offset)
