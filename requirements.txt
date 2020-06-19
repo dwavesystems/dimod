@@ -3,6 +3,7 @@ numpy==1.17.3
 networkx==2.0
 pandas==0.25.3
 simplejson==3.16.0
+parameterized==0.7.4
 
 cython
 
