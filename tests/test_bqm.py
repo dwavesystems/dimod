@@ -32,6 +32,8 @@ import numpy as np
 
 import dimod
 
+from dimod.testing import assert_consistent_bqm
+
 __all__ = ['BQMTestCase']
 
 
@@ -56,46 +58,6 @@ class BQMTestCase(unittest.TestCase):
                 with test_case.subTest(cls=BQM):
                     f(test_case, BQM)
         return _wrapper
-
-    def assertConsistentBQM(self, bqm):
-        """Check that the BQM's attributes are self-consistent."""
-
-        # adjacency and linear are self-consistent
-        for v in bqm.linear:
-            self.assertIn(v, bqm.adj)
-        for v in bqm.adj:
-            self.assertIn(v, bqm.linear)
-
-        # adjacency and quadratic are self-consistent
-        for u, v in bqm.quadratic:
-            self.assertIn(v, bqm.linear)
-            self.assertIn(v, bqm.adj)
-            self.assertIn(u, bqm.adj[v])
-
-            self.assertIn(u, bqm.linear)
-            self.assertIn(u, bqm.adj)
-            self.assertIn(v, bqm.adj[u])
-
-            self.assertEqual(bqm.adj[u][v], bqm.quadratic[(u, v)])
-            self.assertEqual(bqm.adj[u][v], bqm.quadratic[(v, u)])
-            self.assertEqual(bqm.adj[v][u], bqm.adj[u][v])
-
-        for u, v in bqm.quadratic:
-            self.assertEqual(bqm.get_quadratic(u, v), bqm.quadratic[(u, v)])
-            self.assertEqual(bqm.get_quadratic(u, v), bqm.quadratic[(v, u)])
-            self.assertEqual(bqm.get_quadratic(v, u), bqm.quadratic[(u, v)])
-            self.assertEqual(bqm.get_quadratic(v, u), bqm.quadratic[(v, u)])
-
-        for u in bqm.adj:
-            for v in bqm.adj[u]:
-                self.assertIn((u, v), bqm.quadratic)
-                self.assertIn((v, u), bqm.quadratic)
-
-        self.assertEqual(len(bqm.quadratic), bqm.num_interactions)
-        self.assertEqual(len(bqm.linear), bqm.num_variables)
-        self.assertEqual(len(bqm.quadratic), len(set(bqm.quadratic)))
-        self.assertEqual(len(bqm.variables), len(bqm.linear))
-        self.assertEqual((bqm.num_variables, bqm.num_interactions), bqm.shape)
 
     def assertConsistentEnergies(self, spin, binary):
         """Brute force check that spin and binary bqms have idential energy
@@ -287,7 +249,7 @@ class TestAsBQM(BQMTestCase):
     def test_basic(self):
         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
     @multitest
     def test_bqm_input(self, BQM):
@@ -415,7 +377,7 @@ class TestConstruction(BQMTestCase):
     def test_array_like(self, BQM):
         D = np.ones((5, 5)).tolist()
         bqm = BQM(D, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -423,7 +385,7 @@ class TestConstruction(BQMTestCase):
 
         # with explicit kwarg
         bqm = BQM(D, vartype='BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -433,7 +395,7 @@ class TestConstruction(BQMTestCase):
     def test_array_like_1var(self, BQM):
         D = [[1]]
         bqm = BQM(D, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.shape, (1, 0))
         self.assertEqual(bqm.linear[0], 1)
 
@@ -441,7 +403,7 @@ class TestConstruction(BQMTestCase):
     def test_array_like_spin(self, BQM):
         D = np.ones((5, 5)).tolist()
         bqm = BQM(D, 'SPIN')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -453,7 +415,7 @@ class TestConstruction(BQMTestCase):
         ldata = np.ones(5)
         qdata = np.ones((5, 5))
         bqm = BQM(ldata, qdata, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -464,7 +426,7 @@ class TestConstruction(BQMTestCase):
         ldata = np.ones(5)
         qdata = np.ones((5, 5))
         bqm = BQM(ldata, qdata, 'SPIN')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -476,7 +438,7 @@ class TestConstruction(BQMTestCase):
         ldata = np.ones(5)
         qdata = {(u, v): 1 for u in range(5) for v in range(5)}
         bqm = BQM(ldata, qdata, 'SPIN')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -494,7 +456,7 @@ class TestConstruction(BQMTestCase):
                 new = target(bqm)
 
                 self.assertIsInstance(new, target)
-                self.assertConsistentBQM(new)
+                assert_consistent_bqm(new)
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
@@ -510,7 +472,7 @@ class TestConstruction(BQMTestCase):
                 new = target(bqm)
 
                 self.assertIsInstance(new, target)
-                self.assertConsistentBQM(new)
+                assert_consistent_bqm(new)
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
@@ -526,7 +488,7 @@ class TestConstruction(BQMTestCase):
                 new = target(bqm, vartype=dimod.SPIN)
 
                 self.assertIsInstance(new, target)
-                self.assertConsistentBQM(new)
+                assert_consistent_bqm(new)
                 self.assertEqual(new.vartype, dimod.SPIN)
 
                 # change back for equality check
@@ -546,7 +508,7 @@ class TestConstruction(BQMTestCase):
                 new = target(bqm, vartype=dimod.BINARY)
 
                 self.assertIsInstance(new, target)
-                self.assertConsistentBQM(new)
+                assert_consistent_bqm(new)
                 self.assertEqual(new.vartype, dimod.BINARY)
 
                 # change back for equality check
@@ -567,12 +529,12 @@ class TestConstruction(BQMTestCase):
         bqm = BQM(0, 'SPIN')
         self.assertEqual(bqm.vartype, dimod.SPIN)
         self.assertEqual(bqm.shape, (0, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM(5, 'SPIN')
         self.assertEqual(bqm.vartype, dimod.SPIN)
         self.assertEqual(bqm.shape, (5, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {v: 0 for v in range(5)})
 
     @multitest
@@ -631,7 +593,7 @@ class TestConstruction(BQMTestCase):
     def test_quadratic_only(self, BQM):
         M = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
         bqm = BQM(M, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {0: 1, 1: 0, 2: 4, 4: 0, 5: 0})
         self.assertEqual(bqm.quadratic, {(0, 1): -1, (1, 2): 1.5, (4, 5): 7})
 
@@ -639,7 +601,7 @@ class TestConstruction(BQMTestCase):
     def test_quadratic_only_spin(self, BQM):
         M = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
         bqm = BQM(M, 'SPIN')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {0: 0, 1: 0, 2: 0, 4: 0, 5: 0})
         self.assertEqual(bqm.quadratic, {(0, 1): -1, (1, 2): 1.5, (4, 5): 7})
         self.assertEqual(bqm.offset, 5)
@@ -655,7 +617,7 @@ class TestConstruction(BQMTestCase):
     def test_numpy_array(self, BQM):
         D = np.ones((5, 5))
         bqm = BQM(D, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         for u, v in itertools.combinations(range(5), 2):
             self.assertEqual(bqm.get_quadratic(u, v), 2)  # added
         for u in range(5):
@@ -665,7 +627,7 @@ class TestConstruction(BQMTestCase):
     def test_numpy_array_1var(self, BQM):
         D = np.ones((1, 1))
         bqm = BQM(D, 'BINARY')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.shape, (1, 0))
         self.assertEqual(bqm.linear[0], 1)
 
@@ -694,22 +656,22 @@ class TestConstruction(BQMTestCase):
         bqm = BQM('SPIN')
         self.assertEqual(bqm.vartype, dimod.SPIN)
         self.assertEqual(bqm.shape, (0, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM(vartype='SPIN')
         self.assertEqual(bqm.vartype, dimod.SPIN)
         self.assertEqual(bqm.shape, (0, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM('BINARY')
         self.assertEqual(bqm.vartype, dimod.BINARY)
         self.assertEqual(bqm.shape, (0, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM(vartype='BINARY')
         self.assertEqual(bqm.vartype, dimod.BINARY)
         self.assertEqual(bqm.shape, (0, 0))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
     @multitest
     def test_vartype_readonly(self, BQM):
@@ -729,7 +691,7 @@ class TestContractVariables(BQMTestCase):
 
         bqm.contract_variables('a', 'b')
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         target = BQM({'a': -8}, {'ac': 1}, 1.2, dimod.BINARY)
 
@@ -745,7 +707,7 @@ class TestContractVariables(BQMTestCase):
 
         bqm.contract_variables('a', 'b')
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         target = BQM({'a': -6}, {'ac': 1}, -.8, dimod.SPIN)
 
@@ -1015,7 +977,7 @@ class TestEmpty(BQMTestCase):
     def test_binary(self, BQM):
         bqm = BQM.empty(dimod.BINARY)
         self.assertIsInstance(bqm, BQM)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertIs(bqm.vartype, dimod.BINARY)
         self.assertEqual(bqm.shape, (0, 0))
 
@@ -1024,7 +986,7 @@ class TestEmpty(BQMTestCase):
         bqm = BQM.empty(dimod.SPIN)
         self.assertIsInstance(bqm, BQM)
         self.assertIs(bqm.vartype, dimod.SPIN)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.shape, (0, 0))
 
 
@@ -1174,7 +1136,7 @@ class TestFromQUBO(BQMTestCase):
         Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
         bqm = BQM.from_qubo(Q)
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {0: -1, 1: 0, 2: 0})
         self.assertEqual(bqm.adj, {0: {1: -1, 2: -1},
                                    1: {0: -1, 2: 1},
@@ -1186,7 +1148,7 @@ class TestFromQUBO(BQMTestCase):
         Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
         bqm = BQM.from_qubo(Q, 1.6)
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {0: -1, 1: 0, 2: 0})
         self.assertEqual(bqm.adj, {0: {1: -1, 2: -1},
                                    1: {0: -1, 2: 1},
@@ -1435,7 +1397,7 @@ class TestNumpyMatrix(BQMTestCase):
 
         new = BQM.from_numpy_matrix(M, variable_order=order)
 
-        self.assertConsistentBQM(new)
+        assert_consistent_bqm(new)
         self.assertEqual(bqm, new)
 
     @multitest
@@ -1490,7 +1452,7 @@ class TestNormalize(BQMTestCase):
         self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
         self.assertAlmostEqual(bqm.offset, .25)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
     @multitest
     def test_exclusions(self, BQM):
@@ -1499,28 +1461,28 @@ class TestNormalize(BQMTestCase):
         self.assertAlmostEqual(bqm.linear, {0: -2, 1: .5})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
         self.assertAlmostEqual(bqm.offset, .25)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.normalize(.5, ignored_interactions=[(1, 0)])
         self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -1})
         self.assertAlmostEqual(bqm.offset, .25)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.normalize(.5, ignore_offset=True)
         self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.25})
         self.assertAlmostEqual(bqm.offset, 1.)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -5}, 1., dimod.SPIN)
         bqm.normalize(0.5, ignored_interactions=[(0, 1)])
         self.assertAlmostEqual(bqm.linear, {0: -.5, 1: .5})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -5})
         self.assertAlmostEqual(bqm.offset, 0.25)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
 
 class TestOffset(BQMTestCase):
@@ -1597,11 +1559,11 @@ class TestRemoveVariable(BQMTestCase):
         bqm.add_variable(1)
         bqm.add_variable(0)
         self.assertEqual(bqm.remove_variable(), 0)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.remove_variable(), 1)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.remove_variable(), 'a')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         with self.assertRaises(ValueError):
             bqm.remove_variable()
 
@@ -1615,7 +1577,7 @@ class TestRemoveVariable(BQMTestCase):
         bqm.add_variable('c')
 
         bqm.remove_variable('b')
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         # maintained order
         self.assertEqual(list(bqm.iter_variables()), ['a', 'c'])
@@ -1629,12 +1591,12 @@ class TestRemoveVariable(BQMTestCase):
             raise unittest.SkipTest
         bqm = BQM(2, dimod.BINARY)
         self.assertEqual(bqm.remove_variable(), 1)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm.remove_variable(), 0)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         with self.assertRaises(ValueError):
             bqm.remove_variable()
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
 
 class TestRelabel(BQMTestCase):
@@ -1648,7 +1610,7 @@ class TestRelabel(BQMTestCase):
 
         mapping = {0: 'a', 1: 'b'}
         new = bqm.relabel_variables(mapping)
-        self.assertConsistentBQM(new)
+        assert_consistent_bqm(new)
         self.assertIs(bqm, new)
 
         # check that new model is correct
@@ -1681,7 +1643,7 @@ class TestRelabel(BQMTestCase):
 
         mapping = {0: 'a', 1: 'b'}
         new = bqm.relabel_variables(mapping, inplace=False)
-        self.assertConsistentBQM(new)
+        assert_consistent_bqm(new)
         self.assertIsNot(bqm, new)
 
         # check that new model is the same as old model
@@ -1710,8 +1672,8 @@ class TestRelabel(BQMTestCase):
         bqm.relabel_variables(partial_overlap_mapping, inplace=True)
 
         # should have stayed the same
-        self.assertConsistentBQM(test)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(test)
+        assert_consistent_bqm(bqm)
         self.assertEqual(test, bqm)
 
     @multitest
@@ -1728,8 +1690,8 @@ class TestRelabel(BQMTestCase):
         bqm.relabel_variables(identity_mapping, inplace=True)
 
         # should have stayed the same
-        self.assertConsistentBQM(old)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(old)
+        assert_consistent_bqm(bqm)
         self.assertEqual(old, bqm)
 
     @multitest
@@ -1776,17 +1738,17 @@ class TestScale(BQMTestCase):
     def test_exclusions(self, BQM):
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.scale(.5, ignored_variables=[0])
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm, BQM({0: -2, 1: 1}, {(0, 1): -.5}, .5, dimod.SPIN))
 
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.scale(.5, ignored_interactions=[(1, 0)])
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm, BQM({0: -1, 1: 1}, {(0, 1): -1.}, .5, dimod.SPIN))
 
         bqm = BQM({0: -2, 1: 2}, {(0, 1): -1}, 1., dimod.SPIN)
         bqm.scale(.5, ignore_offset=True)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
         self.assertEqual(bqm, BQM({0: -1, 1: 1}, {(0, 1): -.5}, 1., dimod.SPIN))
 
     @multitest
@@ -1796,7 +1758,7 @@ class TestScale(BQMTestCase):
         self.assertAlmostEqual(bqm.linear, {0: -1., 1: 1.})
         self.assertAlmostEqual(bqm.quadratic, {(0, 1): -.5})
         self.assertAlmostEqual(bqm.offset, .5)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         with self.assertRaises(TypeError):
             bqm.scale('a')
@@ -1946,7 +1908,7 @@ class TestVartypeViews(BQMTestCase):
     def test_simple_binary(self, BQM):
         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
 
-        self.assertConsistentBQM(bqm.binary)
+        assert_consistent_bqm(bqm.binary)
         self.assertIs(bqm.binary.vartype, dimod.BINARY)
         binary = bqm.change_vartype(dimod.BINARY, inplace=False)
         self.assertEqual(binary, bqm.binary)
@@ -1958,7 +1920,7 @@ class TestVartypeViews(BQMTestCase):
     def test_simple_spin(self, BQM):
         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
 
-        self.assertConsistentBQM(bqm.spin)
+        assert_consistent_bqm(bqm.spin)
         self.assertIs(bqm.spin.vartype, dimod.SPIN)
         spin = bqm.change_vartype(dimod.SPIN, inplace=False)
         self.assertEqual(spin, bqm.spin)
@@ -2298,7 +2260,7 @@ class TestViews(BQMTestCase):
         bqm = BQM({'ab': -1}, 'SPIN')
         bqm.adj['a']['b'] = 5
         self.assertEqual(bqm.adj['a']['b'], 5)
-        self.assertConsistentBQM(bqm)  # all the other cases
+        assert_consistent_bqm(bqm)  # all the other cases
 
     @multitest
     def test_adj_neighborhoods(self, BQM):
@@ -2333,7 +2295,7 @@ class TestViews(BQMTestCase):
         self.assertEqual(bqm.quadratic[1, 4], 9)
         self.assertEqual(bqm.quadratic[3, 4], 14)
 
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         with self.assertRaises(KeyError):
             del bqm.linear[2]
@@ -2343,7 +2305,7 @@ class TestViews(BQMTestCase):
         bqm = BQM({'ab': -1}, dimod.SPIN)
         bqm.linear['a'] = 5
         self.assertEqual(bqm.get_linear('a'), 5)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
     @multitest
     def test_quadratic_delitem(self, BQM):
@@ -2356,7 +2318,7 @@ class TestViews(BQMTestCase):
                    [0, 0, 0, 0, 15]], 'SPIN')
         del bqm.quadratic[0, 1]
         self.assertEqual(set(bqm.iter_neighbors(0)), set([2, 3, 4]))
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)
 
         with self.assertRaises(KeyError):
             del bqm.quadratic[0, 1]
@@ -2366,4 +2328,4 @@ class TestViews(BQMTestCase):
         bqm = BQM({'ab': -1}, dimod.SPIN)
         bqm.quadratic[('a', 'b')] = 5
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
-        self.assertConsistentBQM(bqm)
+        assert_consistent_bqm(bqm)

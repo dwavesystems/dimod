@@ -273,3 +273,51 @@ def assert_bqm_almost_equal(actual, desired, places=7,
         if round(bias - other_bias, places):
             msg = 'quadratic bias associated with {!r} does not match, {!r} != {!r}'
             raise AssertionError(msg.format(inter, bias, other_bias))
+
+
+def assert_consistent_bqm(bqm):
+    """Test whether a BQM is self-consistent.
+
+    This is useful when making new BQM subclasses. Asserts that all of the
+    attributes are self-consistent.
+
+    Args:
+        bqm: A binary quadratic model.
+
+    """
+    # adjacency and linear are self-consistent
+    for v in bqm.linear:
+        assert v in bqm.adj
+    for v in bqm.adj:
+        assert v in bqm.linear
+
+    # adjacency and quadratic are self-consistent
+    for u, v in bqm.quadratic:
+        assert v in bqm.linear
+        assert v in bqm.adj
+        assert u in bqm.adj[v]
+
+        assert u in bqm.linear
+        assert u in bqm.adj
+        assert v in bqm.adj[u]
+
+        assert bqm.adj[u][v] == bqm.quadratic[(u, v)]
+        assert bqm.adj[u][v] == bqm.quadratic[(v, u)]
+        assert bqm.adj[v][u] == bqm.adj[u][v]
+
+    for u, v in bqm.quadratic:
+        assert bqm.get_quadratic(u, v) == bqm.quadratic[(u, v)]
+        assert bqm.get_quadratic(u, v) == bqm.quadratic[(v, u)]
+        assert bqm.get_quadratic(v, u) == bqm.quadratic[(u, v)]
+        assert bqm.get_quadratic(v, u) == bqm.quadratic[(v, u)]
+
+    for u in bqm.adj:
+        for v in bqm.adj[u]:
+            assert (u, v) in bqm.quadratic
+            assert (v, u) in bqm.quadratic
+
+    assert len(bqm.quadratic) == bqm.num_interactions
+    assert len(bqm.linear) == bqm.num_variables
+    assert len(bqm.quadratic) == len(set(bqm.quadratic))
+    assert len(bqm.variables) == len(bqm.linear)
+    assert (bqm.num_variables, bqm.num_interactions) == bqm.shape
