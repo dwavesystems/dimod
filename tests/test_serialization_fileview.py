@@ -15,6 +15,7 @@
 # =============================================================================
 import io
 import os
+import sys
 import unittest
 
 import numpy as np
@@ -171,6 +172,8 @@ class TestFileView(unittest.TestCase):
             self.assertGreater(num_read, 0)
             self.assertEqual(subbuff[:num_read], buff[pos:pos+num_read])
 
+    # Ocean only supports 64bit python
+    @unittest.skipUnless(sys.maxsize > 2**32, "test is for 64 bit")
     def test_saved_adjvector_5x5_v1(self):
         bqm = dimod.AdjVectorBQM(np.triu(np.arange(25).reshape((5, 5))),
                                  'BINARY')
