@@ -87,7 +87,7 @@ now has a boolean value, making the dictionary:
 If the BQM is index-labeled, then no additional data is added. Otherwise,
 a new section is appended after the bias data.
 
-The first 11 bytes are exactly "[VARIABLES]".
+The first 4 bytes are exactly "VARS".
 
 The next 4 bytes form a little-endian unsigned int, the length of the variables
 array VARIABLES_LENGTH.
@@ -96,7 +96,15 @@ The next VARIABLES_LENGTH bytes are a json-serialized array. As constructed by
 `json.dumps(list(bqm.variables)). The variables section is padded with spaces
 to make the entire length of divisible by 16.
 
+Future
+------
+
+If more sections are required in the future, they should be structured
+like the variables section from Version 2.0, i.e. a 4 byte section identifier
+and 4 bytes of length.
+
 """
+import abc
 import io
 import json
 
@@ -109,6 +117,10 @@ import numpy as np
 from dimod.bqm.utils import ilinear_biases, ineighborhood
 from dimod.variables import iter_deserialize_variables, iter_serialize_variables
 
+
+__all__ = ['FileView', 'load']
+
+
 BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 DEFAULT_VERSION = (1, 0)
@@ -120,6 +132,76 @@ SUPPORTED_VERSIONS = [(1, 0),
 SEEK_OFFSET = 100
 SEEK_LINEAR = 101
 SEEK_QUADRATIC = 102
+
+
+class Section(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def magic(self):
+        """A 4-byte section identifier. Must be a class variable."""
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def loads_data(cls, buff):
+        """Accepts a bytes-like object and returns the saved data."""
+        pass
+
+    @abc.abstractmethod
+    def dump_data():
+        """Returns a bytes-like object encoding the relevant data."""
+        pass
+
+    def dumps(self):
+        """Wraps .dump_data to include the identifier and section length."""
+        magic = self.magic
+
+        if not isinstance(magic, bytes):
+            raise TypeError("magic string should by bytes object")
+        if len(magic) != 4:
+            raise ValueError("magic string should be 4 bytes in length")
+
+        length = bytes(4)  # placeholder 4 bytes for length
+
+        data = self.dump_data()
+
+        data_length = len(data)
+
+        parts = [magic, length, data]
+
+        if (data_length + len(magic) + len(length)) % 64:
+            pad_length = 64 - (data_length + len(magic) + len(length)) % 64
+            parts.append(b' '*pad_length)
+            data_length += pad_length
+
+        parts[1] = np.dtype('<u4').type(data_length).tobytes()
+
+        assert sum(map(len, parts)) % 64 == 0
+
+        return b''.join(parts)
+
+    @classmethod
+    def load(cls, fp):
+        """Wraps .loads_data and checks the identifier and length."""
+        if fp.read(len(cls.magic)) != cls.magic:
+            raise ValueError("unknown subheader")
+        length = np.frombuffer(fp.read(4), '<u4')[0]
+        return cls.loads_data(fp.read(length))
+
+
+class VariablesSection(Section):
+    magic = b'VARS'
+
+    def __init__(self, variables):
+        self.variables = variables
+
+    def dump_data(self):
+        serializable = list(iter_serialize_variables(self.variables))
+        return json.dumps(serializable).encode('ascii')
+
+    @classmethod
+    def loads_data(self, data):
+        return iter_deserialize_variables(json.loads(data))
 
 
 class FileView(io.RawIOBase):
@@ -199,7 +281,10 @@ class FileView(io.RawIOBase):
         version = bytes(self.version)
 
         index_labeled = all(i == v for i, v in enumerate(bqm.variables))
-        self._index_labeled = index_labeled
+        if index_labeled:
+            # if we're index labelled, then the variables section should be
+            # empty
+            self._variables_section = bytes()
 
         data = dict(shape=bqm.shape,
                     dtype=bqm.dtype.name,
@@ -232,29 +317,18 @@ class FileView(io.RawIOBase):
         return self.header
 
     @property
-    def variables_footer(self):
+    def variables_section(self):
+        """The variables section as bytes."""
         try:
-            return self._variables_footer
+            return self._variables_section
         except AttributeError:
             pass
 
-        if self._index_labeled:
-            self._variables_footer = footer = bytes()
-            return footer
+        vs = VariablesSection(self.bqm.variables)
 
-        data = json.dumps(list(iter_serialize_variables(self.bqm.variables)))
+        self._variables_section = section = vs.dumps()
 
-        footer = b'[VARIABLES]'
-        footer += np.dtype('<u4').type(len(data)).tobytes()
-        footer += data.encode('ascii')
-
-        if len(footer) % 16:
-            footer += b' '*(16 - len(footer) % 16)
-        assert not len(footer) % 16
-
-        self._variables_footer = footer
-
-        return footer
+        return section
 
     @property
     def header_end(self):
@@ -299,7 +373,7 @@ class FileView(io.RawIOBase):
         if self._variables_in_header:
             return self.variables_start
         else:
-            return self.variables_start + len(self.variables_footer)
+            return self.variables_start + len(self.variables_section)
 
     def close(self):
         """Close the file view. The BQM will no longer be viewable."""
@@ -395,7 +469,7 @@ class FileView(io.RawIOBase):
         elif pos < self.variables_end:
             # variables
             vpos = pos - self.variables_start
-            data = memoryview(self.variables_footer)[vpos:]
+            data = memoryview(self.variables_section)[vpos:]
 
         else:
             data = bytes()
@@ -592,12 +666,7 @@ def load(fp, cls=None):
         labels = list(iter_deserialize_variables(data['variables']))
         bqm.relabel_variables(dict(enumerate(labels)))
     elif data['variables']:
-        subheader = fp.read(11)
-        if subheader != b'[VARIABLES]':
-            raise ValueError("unknown subheader for variable labels")
-        variables_length = np.frombuffer(fp.read(4), '<u4')[0]
-        variables = json.loads(fp.read(variables_length).decode('ascii'))
-        variables = iter_deserialize_variables(variables)
+        variables = VariablesSection.load(fp)
         bqm.relabel_variables(dict(enumerate(variables)))
 
     return bqm
