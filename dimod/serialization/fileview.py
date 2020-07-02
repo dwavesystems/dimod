@@ -81,7 +81,7 @@ now has a boolean value, making the dictionary:
          ntype=bqm.ntype.name,
          vartype=bqm.vartype.name,
          type=type(bqm).__name__,
-         variables=all(v == i for i, v in enumerate(bqm.variables)),
+         variables=any(v != i for i, v in enumerate(bqm.variables)),
          )
 
 If the BQM is index-labeled, then no additional data is added. Otherwise,
