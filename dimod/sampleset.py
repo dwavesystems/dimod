@@ -1395,7 +1395,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        schema_version = "3.1.0"
+        schema_version = "3.2.0"
 
         # developer note: numpy's record array stores the samples, energies,
         # num_occ. etc as a struct array. If we dumped that array directly to
@@ -1426,6 +1426,13 @@ class SampleSet(abc.Iterable, abc.Sized):
                                             use_bytes=use_bytes,
                                             bytes_type=bytes_type)
 
+        # in the case of index-labeled sampleset, we don't want to bother
+        # saving them. The ability to handle None was added in 3.2.0
+        if all(i == v for i, v in enumerate(self.variables)):
+            variable_labels = None
+        else:
+            variable_labels = self.variables.to_serializable()
+
         return {
             # metadata
             "type": type(self).__name__,
@@ -1442,7 +1449,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             "vectors": vectors,
 
             # other
-            "variable_labels": self.variables.to_serializable(),
+            "variable_labels": variable_labels,
             "variable_type": self.vartype.name,
             "info": serialize_ndarrays(self.info, use_bytes=use_bytes,
                                        bytes_type=bytes_type),
@@ -1481,13 +1488,22 @@ class SampleSet(abc.Iterable, abc.Sized):
         if version < "3.0.0":
             raise ValueError("No longer supported serialization format")
 
+        if not version <= "3.2.0":
+            raise ValueError("Unsupported serialization format")
+
         # assume we're working with v3
 
         # other data
         vartype = str(obj['variable_type'])  # cast to str for python2
         num_variables = obj['num_variables']
-        variables = list(iter_deserialize_variables(obj['variable_labels']))
         info = deserialize_ndarrays(obj['info'])
+
+        # handle sparse variables representation
+        variables = obj['variable_labels']
+        if variables is None:
+            variables = range(num_variables)
+        else:
+            variables = list(iter_deserialize_variables(variables))
 
         # vectors
         vectors = {name: deserialize_ndarray(data)
