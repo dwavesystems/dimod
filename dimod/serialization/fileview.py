@@ -201,7 +201,7 @@ class VariablesSection(Section):
 
     @classmethod
     def loads_data(self, data):
-        return iter_deserialize_variables(json.loads(data))
+        return iter_deserialize_variables(json.loads(data.decode('ascii')))
 
 
 class FileView(io.RawIOBase):
