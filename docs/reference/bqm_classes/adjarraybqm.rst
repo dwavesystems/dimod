@@ -15,6 +15,7 @@ Attributes
 .. autosummary::
    :toctree: ../generated/
 
+   ~AdjArrayBQM.data
    ~AdjArrayBQM.dtype
    ~AdjArrayBQM.itype
    ~AdjArrayBQM.ntype
@@ -53,6 +54,7 @@ Methods
    ~AdjArrayBQM.energy
    ~AdjArrayBQM.flip_variable
    ~AdjArrayBQM.from_coo
+   ~AdjArrayBQM.from_data
    ~AdjArrayBQM.from_ising
    ~AdjArrayBQM.from_networkx_graph
    ~AdjArrayBQM.from_numpy_matrix

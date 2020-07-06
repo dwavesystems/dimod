@@ -19,12 +19,12 @@
 from collections.abc import Iterator, Mapping
 from numbers import Integral
 
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
-
 cimport cython
 
+from cpython cimport Py_buffer
+from cpython cimport PyBUF_WRITABLE, PyBUF_FORMAT, PyBUF_ND, PyBUF_STRIDES
 from cython.operator cimport postincrement as inc, dereference as deref
+from libcpp.pair cimport pair
 
 import numpy as np
 
@@ -37,6 +37,226 @@ from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
 from dimod.bqm.utils import cyrelabel_variables_as_integers
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
+
+
+cdef class _LinearBiases:
+    cdef object bqm  # must be a python object for proper reference counting
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getbuffer__(self, Py_buffer *buff, int flags):
+
+        if flags & PyBUF_WRITABLE:
+            raise BufferError("data is readonly")
+        if not (flags & PyBUF_FORMAT):
+            raise BufferError("data is formatted")
+        if flags & PyBUF_ND and not (flags & PyBUF_STRIDES):
+            raise BufferError("data is strided")
+        # one dimensional so don't have to worry about contiguity
+
+        cdef Py_ssize_t itemsize = sizeof(cppAdjArrayBQM[VarIndex, Bias].bias_type)
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+
+        cdef char *start
+        if bqm.bqm_.num_variables() == 0:
+            start = <char *>bqm.bqm_.invars.data()
+        else:
+            start = <char *>&(bqm.bqm_.invars[0].second)
+
+        cdef Py_ssize_t shape[1]
+        shape[0] = bqm.bqm_.num_variables()
+
+        cdef Py_ssize_t strides[1]
+        if shape[0] >= 1:
+            strides[0] = <char *>&(bqm.bqm_.invars[1].second)  - start
+        else:
+            strides[0] = 0
+
+        assert bqm.dtype == np.double
+
+        buff.buf = start
+        buff.format = b'd'  # double
+        buff.internal = NULL
+        buff.itemsize = itemsize
+        buff.len = shape[0] * itemsize
+        buff.ndim = 1
+        buff.obj = self
+        buff.readonly = 1
+        buff.shape = shape
+        buff.strides = strides
+        buff.suboffsets = NULL
+
+
+cdef class _NeighborhoodStarts:
+    cdef object bqm  # must be a python object for proper reference counting
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getbuffer__(self, Py_buffer *buff, int flags):
+
+        if flags & PyBUF_WRITABLE:
+            raise BufferError("data is readonly")
+        if not (flags & PyBUF_FORMAT):
+            raise BufferError("data is formatted")
+        if flags & PyBUF_ND and not (flags & PyBUF_STRIDES):
+            raise BufferError("data is strided")
+        # one dimensional so don't have to worry about contiguity
+
+        cdef Py_ssize_t itemsize = sizeof(cppAdjArrayBQM[VarIndex, Bias].neighborhood_type)
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+
+        cdef char *start
+        if bqm.bqm_.num_variables() == 0:
+            start = <char *>bqm.bqm_.invars.data()
+        else:
+            start = <char *>&(bqm.bqm_.invars[0].first)
+
+        cdef Py_ssize_t shape[1]
+        shape[0] = bqm.bqm_.num_variables()
+
+        cdef Py_ssize_t strides[1]
+        if shape[0] >= 1:
+            strides[0] = <char *>&(bqm.bqm_.invars[1].first)  - start
+        else:
+            strides[0] = 0
+
+        if bqm.ntype == np.intc:
+            fmt = b'i'
+        elif bqm.ntype == np.uintc:
+            fmt = b'I'
+        elif bqm.ntype == np.int_:
+            fmt = b'l'
+        elif bqm.ntype == np.uint:
+            fmt = b'L'
+        else:
+            raise RuntimeError("unsupported neighborhood index type")
+
+        assert bqm.ntype.itemsize == itemsize
+
+        buff.buf = start
+        buff.format = fmt
+        buff.internal = NULL
+        buff.itemsize = itemsize
+        buff.len = shape[0] * itemsize
+        buff.ndim = 1
+        buff.obj = self
+        buff.readonly = 1
+        buff.shape = shape
+        buff.strides = strides
+        buff.suboffsets = NULL
+
+
+cdef class _QuadraticBiases:
+    cdef object bqm  # must be a python object for proper reference counting
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getbuffer__(self, Py_buffer *buff, int flags):
+
+        if flags & PyBUF_WRITABLE:
+            raise BufferError("data is readonly")
+        if not (flags & PyBUF_FORMAT):
+            raise BufferError("data is formatted")
+        if flags & PyBUF_ND and not (flags & PyBUF_STRIDES):
+            raise BufferError("data is strided")
+        # one dimensional so don't have to worry about contiguity
+
+        cdef Py_ssize_t itemsize = sizeof(cppAdjArrayBQM[VarIndex, Bias].bias_type)
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+
+        cdef char *start
+        if bqm.bqm_.num_interactions() == 0:
+            start = <char *>bqm.bqm_.outvars.data()
+        else:
+            start = <char *>&(bqm.bqm_.outvars[0].second)
+
+        cdef Py_ssize_t shape[1]
+        shape[0] = bqm.bqm_.outvars.size()
+
+        cdef Py_ssize_t strides[1]
+        if shape[0] >= 1:
+            strides[0] = <char *>&(bqm.bqm_.outvars[1].second)  - start
+        else:
+            strides[0] = 0
+
+        assert bqm.dtype == np.double
+
+        buff.buf = start
+        buff.format = b'd'  # double
+        buff.internal = NULL
+        buff.itemsize = itemsize
+        buff.len = shape[0] * itemsize
+        buff.ndim = 1
+        buff.obj = self
+        buff.readonly = 1
+        buff.shape = shape
+        buff.strides = strides
+        buff.suboffsets = NULL
+
+
+cdef class _Neighbors:
+    cdef object bqm  # must be a python object for proper reference counting
+
+    def __init__(self, bqm):
+        self.bqm = bqm
+
+    def __getbuffer__(self, Py_buffer *buff, int flags):
+
+        if flags & PyBUF_WRITABLE:
+            raise BufferError("data is readonly")
+        if not (flags & PyBUF_FORMAT):
+            raise BufferError("data is formatted")
+        if flags & PyBUF_ND and not (flags & PyBUF_STRIDES):
+            raise BufferError("data is strided")
+        # one dimensional so don't have to worry about contiguity
+
+        cdef Py_ssize_t itemsize = sizeof(cppAdjArrayBQM[VarIndex, Bias].variable_type)
+
+        cdef cyAdjArrayBQM bqm = self.bqm
+
+        cdef char *start
+        if bqm.bqm_.num_interactions() == 0:
+            start = <char *>bqm.bqm_.outvars.data()
+        else:
+            start = <char *>&(bqm.bqm_.outvars[0].first)
+
+        cdef Py_ssize_t shape[1]
+        shape[0] = bqm.bqm_.outvars.size()
+
+        cdef Py_ssize_t strides[1]
+        if shape[0] >= 1:
+            strides[0] = <char *>&(bqm.bqm_.outvars[1].first)  - start
+        else:
+            strides[0] = 0
+
+        if bqm.itype == np.intc:
+            fmt = b'i'
+        elif bqm.itype == np.uintc:
+            fmt = b'I'
+        elif bqm.itype == np.int_:
+            fmt = b'l'
+        elif bqm.itype == np.uint:
+            fmt = b'L'
+        else:
+            raise RuntimeError("unsupported neighborhood index type")
+
+        buff.buf = start
+        buff.format = fmt
+        buff.internal = NULL
+        buff.itemsize = itemsize
+        buff.len = shape[0] * itemsize
+        buff.ndim = 1
+        buff.obj = self
+        buff.readonly = 1
+        buff.shape = shape
+        buff.strides = strides
+        buff.suboffsets = NULL
 
 
 @cython.embedsignature(True)
@@ -212,6 +432,20 @@ cdef class cyAdjArrayBQM:
     def __reduce__(self):
         from dimod.serialization.fileview import FileView, load
         return (load, (FileView(self).readall(),))
+
+    @property
+    def data(self):
+        """A tuple of memoryviews pointing to the underlying data in-memory.
+
+        Note that the exact contents should be treated as an implementation
+        detail and the format might change at any time.
+        """
+        return (memoryview(_NeighborhoodStarts(self)),
+                memoryview(_LinearBiases(self)),
+                memoryview(_Neighbors(self)),
+                memoryview(_QuadraticBiases(self)),
+                self.offset.data,
+                )
 
     @property
     def num_variables(self):
@@ -436,6 +670,59 @@ cdef class cyAdjArrayBQM:
 
         """
         return np.asarray(cyenergies(self, samples), dtype=dtype)
+
+
+    @classmethod
+    def from_data(cls, data, vartype):
+        """Construct from memoryviews as returned by .data.
+
+        Note that this creates a copy.
+
+        Examples:
+
+            >>> bqm = dimod.AdjArrayBQM(10, dimod.SPIN)
+            >>> data = bqm.data
+            >>> new = dimod.AdjArrayBQM.from_data(data, dimod.SPIN)
+            >>> bqm == new
+            True
+
+        """
+
+        # developer note: In the future we'd like to use the AdjArrayBQM
+        # constructors more abstractly rather than accessing the underlying
+        # vectors
+        
+        cdef cyAdjArrayBQM bqm = cls(vartype)
+
+        cdef const NeighborhoodIndex[:] neighborhood_starts = data[0]
+        cdef const Bias[:] linear_biases = data[1]
+        cdef const VarIndex[:] neighborhoods = data[2]
+        cdef const Bias[:] quadratic_biases = data[3]
+
+        cdef Py_ssize_t i
+
+        cdef pair[cppAdjArrayBQM[VarIndex, Bias].neighborhood_type,
+                  cppAdjArrayBQM[VarIndex, Bias].bias_type] invar
+
+        for i in range(linear_biases.shape[0]):
+            invar.first = neighborhood_starts[i]
+            invar.second = linear_biases[i]
+
+            bqm.bqm_.invars.push_back(invar)
+
+        cdef pair[cppAdjArrayBQM[VarIndex, Bias].variable_type,
+                  cppAdjArrayBQM[VarIndex, Bias].bias_type] outvar
+
+        for i in range(quadratic_biases.shape[0]):
+            outvar.first = neighborhoods[i]
+            outvar.second = quadratic_biases[i]
+
+            bqm.bqm_.outvars.push_back(outvar)
+
+        bqm.offset = bqm.dtype.type(data[4])
+
+        return bqm
+
 
     @classmethod
     def _load(cls, fp, data, offset=0):
