@@ -82,7 +82,7 @@ cdef class _LinearBiases:
         buff.itemsize = itemsize
         buff.len = shape[0] * itemsize
         buff.ndim = 1
-        buff.obj = self
+        buff.obj = self.bqm
         buff.readonly = 1
         buff.shape = shape
         buff.strides = strides
@@ -143,7 +143,7 @@ cdef class _NeighborhoodStarts:
         buff.itemsize = itemsize
         buff.len = shape[0] * itemsize
         buff.ndim = 1
-        buff.obj = self
+        buff.obj = self.bqm
         buff.readonly = 1
         buff.shape = shape
         buff.strides = strides
@@ -193,7 +193,7 @@ cdef class _QuadraticBiases:
         buff.itemsize = itemsize
         buff.len = shape[0] * itemsize
         buff.ndim = 1
-        buff.obj = self
+        buff.obj = self.bqm
         buff.readonly = 1
         buff.shape = shape
         buff.strides = strides
@@ -252,7 +252,7 @@ cdef class _Neighbors:
         buff.itemsize = itemsize
         buff.len = shape[0] * itemsize
         buff.ndim = 1
-        buff.obj = self
+        buff.obj = self.bqm
         buff.readonly = 1
         buff.shape = shape
         buff.strides = strides
