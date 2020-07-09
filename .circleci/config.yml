@@ -348,7 +348,7 @@ jobs:
           name: build wheels
           command: |
             for PYBIN in /opt/python/*/bin; do
-              if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info>=(3, 5) and sys.version_info<(3, 9))"; then continue; fi;
+              if "${PYBIN}/python" -c "import sys; sys.exit((3, 5) <= sys.version_info < (3, 9))"; then continue; fi;
               "${PYBIN}/pip" install -r requirements.txt
               "${PYBIN}/pip" wheel . -w ./wheelhouse
               "${PYBIN}/python" setup.py sdist -d ./dist
