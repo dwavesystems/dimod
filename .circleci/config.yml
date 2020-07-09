@@ -21,7 +21,7 @@ jobs:
 
       - restore_cache: &restore-cache-template
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "tests/requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: &create-virtualenv-template
           name: create virtualenv
@@ -33,12 +33,12 @@ jobs:
           command: |
             . env/bin/activate
             python --version
-            pip install -r requirements.txt
+            pip install -r tests/requirements.txt
 
       - save_cache: &save-cache-template
           paths:
             - ./env
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "tests/requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: &build-ext-template
           name: build extension
@@ -180,7 +180,7 @@ jobs:
           command: |
             env\Scripts\activate.ps1
             python --version
-            pip install -r requirements.txt
+            pip install -r tests\requirements.txt
 
       - run:  &win-install-boost-template
           name: install boost
@@ -299,10 +299,8 @@ jobs:
 
       - run: *create-virtualenv-template
 
-      - run: *install-dependencies-template
-
       - run:
-          name: install sphinx
+          name: install dependencies
           command: |
             . env/bin/activate
             pip install -r docs/requirements.txt

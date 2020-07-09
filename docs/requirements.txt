@@ -1,2 +1,6 @@
+-r ../requirements.txt
+
 sphinx
 sphinx_rtd_theme
+
+networkx==2.0
