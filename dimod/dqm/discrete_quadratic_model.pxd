@@ -1,4 +1,7 @@
-# Copyright 2019 D-Wave Systems Inc.
+# distutils: language = c++
+# cython: language_level=3
+#
+# Copyright 2020 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,6 +15,22 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# =============================================================================
-from dimod.bqm cimport *
-from dimod.dqm cimport *
+
+from libcpp.vector cimport vector
+
+from dimod.bqm.common cimport Bias, VarIndex
+from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
+
+
+cdef packed struct Range:
+    Py_ssize_t start
+    Py_ssize_t stop
+
+
+cdef class cyDiscreteQuadraticModel:
+
+    # we use a BQM to store the biases. Each case of the DQM is a variable in
+    # the BQM
+    cdef cppAdjVectorBQM[VarIndex, Bias] bqm_
+
+    cdef vector[Range] variables_

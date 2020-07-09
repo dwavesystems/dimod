@@ -107,6 +107,8 @@ dimod/roof_duality/_fix_variables.cpp
 dimod/roof_duality/*.html
 dimod/bqm/*.cpp
 dimod/bqm/*.html
+dimod/dqm/*.cpp
+dimod/dqm/*.html
 tests/*.cpp
 tests/*.html
 # generated files:

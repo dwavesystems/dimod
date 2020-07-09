@@ -35,6 +35,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 packages = ['dimod',
             'dimod.bqm',
             'dimod.core',
+            'dimod.dqm',
             'dimod.generators',
             'dimod.higherorder',
             'dimod.reference',
@@ -140,6 +141,8 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/bqm/utils'+ext]),
               Extension("dimod.bqm.common",
                         ['dimod/bqm/common'+ext]),
+              Extension("dimod.dqm.discrete_quadratic_model",
+                        ['dimod/dqm/discrete_quadratic_model'+ext]),
               ]
 
 
