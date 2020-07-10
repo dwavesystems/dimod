@@ -1460,6 +1460,12 @@ class TestNormalize(unittest.TestCase):
         self.assertAlmostEqual(bqm.offset, 0.25)
         assert_consistent_bqm(bqm)
 
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_return_value(self, name, BQM):
+        bqm = BQM({0: 2}, {(0, 1): 2}, 'SPIN')
+
+        self.assertEqual(bqm.normalize([-1, 1]), .5)
+
 
 class TestOffset(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
