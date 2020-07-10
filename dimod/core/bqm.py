@@ -667,11 +667,13 @@ class BQM(metaclass=abc.ABCMeta):
 
         Args:
             bias_range (number/pair):
-                Value/range by which to normalize the all the biases, or if
-                `quadratic_range` is provided, just the linear biases.
+                Value/range that the biases of the BQM will be scaled to fit
+                within. If `quadratic_range` is provided, this range is
+                used to fit the linear biases.
 
             quadratic_range (number/pair):
-                Value/range by which to normalize the quadratic biases.
+                The BQM will be scaled so that the quadratic biases fit within
+                this range.
 
             ignored_variables (iterable, optional):
                 Biases associated with these variables are not scaled.
@@ -727,6 +729,10 @@ class BQM(metaclass=abc.ABCMeta):
             self.scale(1 / inv_scalar, ignored_variables=ignored_variables,
                        ignored_interactions=ignored_interactions,
                        ignore_offset=ignore_offset)
+
+            return 1.0 / inv_scalar
+        else:
+            return 1.0
 
     def relabel_variables_as_integers(self, inplace=True):
         """Relabel the variables of the BQM to integers.
