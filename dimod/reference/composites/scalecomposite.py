@@ -128,10 +128,7 @@ class ScaleComposite(ComposedSampler):
                                     ignored_variables, ignored_interactions,
                                     ignore_offset)
 
-    def sample_ising(self, h, J, offset=0, scalar=None,
-                     bias_range=1, quadratic_range=None,
-                     ignored_variables=None, ignored_interactions=None,
-                     ignore_offset=False, **parameters):
+    def sample_ising(self, h, J, offset=0, **parameters):
         """ Scale and sample from the problem provided by h, J, offset
 
         if scalar is not given, problem is scaled based on bias and quadratic
@@ -170,41 +167,8 @@ class ScaleComposite(ComposedSampler):
             :obj:`dimod.SampleSet`
 
         """
-
-        if any(len(inter) > 2 for inter in J):
-            # handle HUBO
-            import warnings
-            msg = ("Support for higher order Ising models in ScaleComposite is "
-                   "deprecated and will be removed in dimod 0.9.0. Please use "
-                   "PolyScaleComposite.sample_hising instead.")
-            warnings.warn(msg, DeprecationWarning)
-
-            from dimod.reference.composites.higherordercomposites import PolyScaleComposite
-            from dimod.higherorder.polynomial import BinaryPolynomial
-
-            poly = BinaryPolynomial.from_hising(h, J, offset=offset)
-
-            ignored_terms = set()
-            if ignored_variables is not None:
-                ignored_terms.update(frozenset(v) for v in ignored_variables)
-            if ignored_interactions is not None:
-                ignored_terms.update(frozenset(inter) for inter in ignored_interactions)
-            if ignore_offset:
-                ignored_terms.add(frozenset())
-
-            return PolyScaleComposite(self.child).sample_poly(poly, scalar=scalar,
-                                                              bias_range=bias_range,
-                                                              poly_range=quadratic_range,
-                                                              ignored_terms=ignored_terms,
-                                                              **parameters)
-
         bqm = BinaryQuadraticModel.from_ising(h, J, offset=offset)
-        return self.sample(bqm, scalar=scalar,
-                           bias_range=bias_range,
-                           quadratic_range=quadratic_range,
-                           ignored_variables=ignored_variables,
-                           ignored_interactions=ignored_interactions,
-                           ignore_offset=ignore_offset, **parameters)
+        return self.sample(bqm, **parameters)
 
 
 def _scale_back_response(bqm, response, scalar, ignored_interactions,
