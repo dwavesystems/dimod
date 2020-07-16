@@ -1005,6 +1005,10 @@ class SampleSet(abc.Iterable, abc.Sized):
             :class:`.SampleSet`: SampleSet with relabeled variables. If `inplace` is True, returns
             itself.
 
+        Notes:
+            This function is non-blocking unless `inplace==True`, in which case
+            the sample set is resolved.
+
         Examples:
             This example creates a relabeled copy of a :class:`SampleSet`.
 
@@ -1016,6 +1020,12 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
+
+        if not self.done():
+            def hook(sampleset):
+                sampleset.resolve()
+                return sampleset.relabel_variables(mapping, inplace=True)
+            return self.from_future(self, hook)
 
         self.variables.relabel(mapping)
         return self
