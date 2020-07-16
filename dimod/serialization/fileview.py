@@ -377,6 +377,10 @@ class FileView(io.RawIOBase):
         else:
             return self.variables_start + len(self.variables_section)
 
+    @property
+    def end(self):
+        return self.variables_end
+
     def close(self):
         """Close the file view. The BQM will no longer be viewable."""
         # todo: decrement viewcount
@@ -510,7 +514,7 @@ class FileView(io.RawIOBase):
         elif whence == io.SEEK_CUR:
             self.pos += offset
         elif whence == io.SEEK_END:
-            self.pos = self.quadratic_end + offset
+            self.pos = self.end + offset
         elif whence == SEEK_OFFSET:
             self.pos = self.offset_start + offset
         elif whence == SEEK_LINEAR:
