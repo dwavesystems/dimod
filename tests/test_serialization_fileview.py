@@ -195,6 +195,15 @@ class TestFileView(unittest.TestCase):
         new = load(buff)
         self.assertEqual(new, bqm)
 
+    @parameterized.expand(BQM_x_VERSION)
+    def test_seek_end(self, name, BQM, version):
+        bqm = BQM.from_qubo({'ab': 1, 'aa': 2})
+
+        with FileView(bqm, version=version) as fv:
+            buff = fv.readall()
+
+            self.assertEqual(len(buff), fv.seek(0, io.SEEK_END))
+
 
 class TestFunctional(unittest.TestCase):
     @parameterized.expand(BQM_x_VERSION)
@@ -202,6 +211,15 @@ class TestFunctional(unittest.TestCase):
         bqm = BQM('SPIN')
         with FileView(bqm, version=version) as fp:
             new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_empty_bytes(self, name, BQM, version):
+        bqm = BQM('SPIN')
+        with FileView(bqm, version=version) as fp:
+            new = load(fp.readall())
 
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
@@ -218,6 +236,17 @@ class TestFunctional(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     @parameterized.expand(BQM_x_VERSION)
+    def test_labelled_bytes(self, name, BQM, version):
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+
+        with FileView(bqm, version=version) as fp:
+            new = load(fp.readall())
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
     def test_labelled_shapeable(self, name, BQM, version):
         if not BQM.shapeable():
             raise unittest.SkipTest("test only applies to shapeable bqms")
@@ -227,6 +256,20 @@ class TestFunctional(unittest.TestCase):
 
         with FileView(bqm, version=version) as fp:
             new = load(fp)
+
+        self.assertIs(type(new), type(bqm))
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(BQM_x_VERSION)
+    def test_labelled_shapeable_bytes(self, name, BQM, version):
+        if not BQM.shapeable():
+            raise unittest.SkipTest("test only applies to shapeable bqms")
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        bqm.add_variable()
+
+        with FileView(bqm, version=version) as fp:
+            new = load(fp.readall())
 
         self.assertIs(type(new), type(bqm))
         self.assertEqual(bqm, new)
