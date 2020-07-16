@@ -183,8 +183,10 @@ class Section(abc.ABC):
     @classmethod
     def load(cls, fp):
         """Wraps .loads_data and checks the identifier and length."""
-        if fp.read(len(cls.magic)) != cls.magic:
-            raise ValueError("unknown subheader")
+        magic = fp.read(len(cls.magic))
+        if magic != cls.magic:
+            raise ValueError("unknown subheader, expected {} but recieved "
+                             "{}".format(cls.magic, magic))
         length = np.frombuffer(fp.read(4), '<u4')[0]
         return cls.loads_data(fp.read(length))
 
@@ -426,7 +428,7 @@ class FileView(io.RawIOBase):
         bqm = self.bqm
 
         if pos < 0:
-            raise RuntimeError("invalid position")
+            raise RuntimeError("invalid position ({})".format(pos))
 
         elif pos < self.header_end:
             # header
@@ -638,7 +640,8 @@ def load(fp, cls=None):
 
     if magic != BQM_MAGIC_PREFIX:
         # todo: expand on error message (print actual magic prefix)
-        raise ValueError("unknown file type")
+        raise ValueError("unknown file type, expected magic string {} but "
+                         "got {}".format(BQM_MAGIC_PREFIX, magic))
 
     version = tuple(fp.read(2))
     if version not in SUPPORTED_VERSIONS:
