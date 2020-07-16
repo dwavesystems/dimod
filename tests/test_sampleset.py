@@ -670,6 +670,22 @@ class TestRelabelVariables(unittest.TestCase):
 
             self.assertEqual(len(sample), len(new_sample))
 
+    def test_non_blocking(self):
+
+        future = concurrent.futures.Future()
+
+        sampleset = dimod.SampleSet.from_future(future)
+
+        new = sampleset.relabel_variables({0: 'a'})  # should not block or raise
+
+        future.set_result(dimod.SampleSet.from_samples({0: -1},
+                                                       dimod.SPIN,
+                                                       energy=1))
+
+        self.assertEqual(new.variables, ['a'])
+
+        # np.testing.assert_array_equal(new.record.sample, [[0]])
+
 
 class TestSerialization(unittest.TestCase):
     def test_empty_with_bytes(self):
