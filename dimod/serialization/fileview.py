@@ -213,6 +213,15 @@ class FileView(io.RawIOBase):
         bqm (:class:`~dimod.core.bqm.BQM`):
             The binary quadratic model.
 
+        version (int/tuple, default=1):
+            The serialization version to use. Either as an integer defining
+            the major version, or as a tuple, `(major, minor)`.
+
+        ignore_labels (bool, default=False):
+            Treat the BQM as unlabelled. This is useful for large BQMs to
+            save on space. `ignore_labels=True` is only supported in version
+            2.0+, trying to set it with version 1.x will raise a `ValueError`.
+
     Note:
         Currently the BQM is not locked while the file view is open, in the
         future this will change.
@@ -222,7 +231,7 @@ class FileView(io.RawIOBase):
     SEEK_LINEAR = SEEK_LINEAR
     SEEK_QUADRATIC = SEEK_QUADRATIC
 
-    def __init__(self, bqm, version=DEFAULT_VERSION):
+    def __init__(self, bqm, version=DEFAULT_VERSION, ignore_labels=False):
         super(FileView, self).__init__()
 
         # determine if we support the version
@@ -246,6 +255,11 @@ class FileView(io.RawIOBase):
         self.offset_length = bqm.dtype.itemsize  # one bias
         self.linear_length = num_var*(bqm.ntype.itemsize + bqm.dtype.itemsize)
         self.quadratic_length = 2*num_int*(bqm.itype.itemsize + bqm.dtype.itemsize)
+
+        if ignore_labels and version < (2, 0):
+            raise ValueError("ignore_labels is only supported for version 2.0+")
+
+        self.ignore_labels = bool(ignore_labels)
 
     @property
     def neighborhood_starts(self):
@@ -282,7 +296,11 @@ class FileView(io.RawIOBase):
         prefix = BQM_MAGIC_PREFIX
         version = bytes(self.version)
 
-        index_labeled = all(i == v for i, v in enumerate(bqm.variables))
+        if self.ignore_labels:
+            index_labeled = True
+        else:
+            index_labeled = all(i == v for i, v in enumerate(bqm.variables))
+
         if index_labeled:
             # if we're index labelled, then the variables section should be
             # empty
