@@ -225,6 +225,23 @@ class TestFunctional(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     @parameterized.expand(BQM_x_VERSION)
+    def test_ignore_labels(self, name, BQM, version):
+        bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
+
+        labeled_bqm = bqm.relabel_variables(dict(enumerate('abcde')),
+                                            inplace=False)
+
+        if version < (2, 0):
+            with self.assertRaises(ValueError):
+                FileView(labeled_bqm, version=version, ignore_labels=True)
+            return
+
+        with FileView(labeled_bqm, version=version, ignore_labels=True) as fv:
+            new = load(fv)
+
+        self.assertEqual(new, bqm)
+
+    @parameterized.expand(BQM_x_VERSION)
     def test_labelled(self, name, BQM, version):
 
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
