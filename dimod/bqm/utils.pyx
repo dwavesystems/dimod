@@ -42,7 +42,7 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
-def l_cymin(cyBQM bqm):
+def cylmin(cyBQM bqm):
     cdef double min_ = sys.maxsize
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
@@ -52,7 +52,7 @@ def l_cymin(cyBQM bqm):
     
     return min_
 
-def l_cymax(cyBQM bqm):
+def cylmax(cyBQM bqm):
     cdef double max_ = 0
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
@@ -62,7 +62,7 @@ def l_cymax(cyBQM bqm):
     
     return max_
 
-def q_cymin(cyBQM bqm):
+def cyqmin(cyBQM bqm):
     cdef double min_ = sys.maxsize
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
@@ -76,7 +76,7 @@ def q_cymin(cyBQM bqm):
 
     return min_
 
-def q_cymax(cyBQM bqm):
+def cyqmax(cyBQM bqm):
     cdef double max_ = 0
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
