@@ -21,6 +21,8 @@ import numpy as np
 
 import dimod
 
+import sys
+
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common import itype, dtype
 from dimod.bqm.common cimport Bias, VarIndex
@@ -40,6 +42,53 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
+def l_cymin(cyBQM bqm):
+    cdef double min_ = sys.maxsize
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        val = bqm.bqm_.get_linear(vi)
+        if (val < min_):
+            min_ = val
+    
+    return min_
+
+def l_cymax(cyBQM bqm):
+    cdef double max_ = 0
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        val = bqm.bqm_.get_linear(vi)
+        if (val > max_):
+            max_ = val
+    
+    return max_
+
+def q_cymin(cyBQM bqm):
+    cdef double min_ = sys.maxsize
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+
+        while span.first != span.second:
+            if deref(span.first).second < min_:
+                min_ = deref(span.first).second
+
+            inc(span.first)
+
+    return min_
+
+def q_cymax(cyBQM bqm):
+    cdef double max_ = 0
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+
+        while span.first != span.second:
+            if deref(span.first).second > max_:
+                max_ = deref(span.first).second
+
+            inc(span.first)
+
+    return max_
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -71,7 +120,6 @@ cdef void quicksort_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
         p = partition_coo(irow, icol, qdata, low, high)
         quicksort_coo(irow, icol, qdata, low, p - 1)
         quicksort_coo(irow, icol, qdata, p + 1, high)
-
 
 cdef Py_ssize_t partition_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
                               Py_ssize_t low, Py_ssize_t high):
@@ -116,7 +164,6 @@ cdef inline void swap(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
     irow[a], irow[b] = irow[b], irow[a]
     icol[a], icol[b] = icol[b], icol[a]
     qdata[a], qdata[b] = qdata[b], qdata[a]
-
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

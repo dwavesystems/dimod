@@ -27,6 +27,8 @@ import numpy as np
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
+from dimod.bqm.utils import q_cymin, q_cymax, l_cymin, l_cymax
+
 __all__ = ['BQM', 'ShapeableBQM']
 
 
@@ -141,6 +143,38 @@ class Linear(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         self._bqm.set_linear(v, bias)
 
+    def min(self):
+        return min(self._bqm.linear.values())
+    
+    def max(self):
+        return max(self._bqm.linear.values())
+
+    def npmin(self):
+        lin_biases, (r,c,quad_biases), offset = self._bqm.to_numpy_vectors()
+        return lin_biases.min()
+
+    def npmax(self):
+        lin_biases, (r,c,quad_biases), offset = self._bqm.to_numpy_vectors()
+        return lin_biases.max()
+
+    def cymin(self):
+        try:
+            return l_cymin(self._bqm)
+        except TypeError:
+            pass
+
+        print("l_cymin did not work")
+        return self.min()
+
+    def cymax(self):
+        try:
+            return l_cymax(self._bqm)
+        except TypeError:
+            pass
+
+        print("l_cymax did not work")
+        return self.max()
+
 
 class ShapeableLinear(Linear, MutableMapping):
     def __delitem__(self, v):
@@ -172,6 +206,38 @@ class Quadratic(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         u, v = uv
         self._bqm.set_quadratic(u, v, bias)
+
+    def min(self):
+        return min(self._bqm.quadratic.values())
+
+    def max(self):
+        return max(self._bqm.quadratic.values())
+
+    def npmin(self):
+        lin_biases, (r,c,quad_biases), offset = self._bqm.to_numpy_vectors()
+        return quad_biases.min()
+
+    def npmax(self):
+        lin_biases, (r,c,quad_biases), offset = self._bqm.to_numpy_vectors()
+        return quad_biases.max()
+
+    def cymin(self):
+        try:
+            return q_cymin(self._bqm)
+        except TypeError:
+            pass
+
+        print("q_cymin didn't work!")
+        return self.min()
+
+    def cymax(self):
+        try:
+            return q_cymax(self._bqm)
+        except TypeError:
+            pass
+
+        print("q_cymax didn't work!")
+        return self.max()
 
 
 class ShapeableQuadratic(Quadratic, MutableMapping):

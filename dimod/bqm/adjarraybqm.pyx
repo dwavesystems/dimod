@@ -35,6 +35,7 @@ from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
 from dimod.bqm.utils import cyrelabel_variables_as_integers
+from dimod.bqm.utils import q_cymin, q_cymax
 from dimod.core.bqm import BQM
 from dimod.vartypes import as_vartype, Vartype
 
@@ -212,6 +213,14 @@ cdef class cyAdjArrayBQM:
     def __reduce__(self):
         from dimod.serialization.fileview import FileView, load
         return (load, (FileView(self).readall(),))
+
+    @property
+    def q_cymin(self):
+        return q_cymin(self)
+
+    @property
+    def q_cymax(self):
+        return q_cymax(self)
 
     @property
     def num_variables(self):
