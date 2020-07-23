@@ -14,13 +14,9 @@
 #
 # ================================================================================================
 
-from __future__ import division
-
 import unittest
-
 import dimod
 import numpy as np
-import time
 
 num_vars = 1000
 

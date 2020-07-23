@@ -121,6 +121,7 @@ cdef void quicksort_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
         quicksort_coo(irow, icol, qdata, low, p - 1)
         quicksort_coo(irow, icol, qdata, p + 1, high)
 
+
 cdef Py_ssize_t partition_coo(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
                               Py_ssize_t low, Py_ssize_t high):
 
@@ -164,6 +165,7 @@ cdef inline void swap(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata,
     irow[a], irow[b] = irow[b], irow[a]
     icol[a], icol[b] = icol[b], icol[a]
     qdata[a], qdata[b] = qdata[b], qdata[a]
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
