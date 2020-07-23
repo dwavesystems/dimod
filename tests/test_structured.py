@@ -64,10 +64,12 @@ class TestStructuredClass(unittest.TestCase):
         self.assertEqual(sampler.structure.adjacency, {0: {1}, 1: {0}})
 
     def test_networkx_graph(self):
+        try:
+            import networkx as nx
+        except ImportError:
+            raise self.skipTest("No NetworkX installed.")
 
-        # Create simple NetworkX graph to compare to
-        import networkx as nx
-        
+        # Create simple NetworkX graph to compare to        
         nxG = nx.Graph()
 
         for i in range(5):
