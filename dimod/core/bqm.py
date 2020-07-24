@@ -143,21 +143,21 @@ class Linear(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         self._bqm.set_linear(v, bias)
 
-    def min(self):
+    def min(self, **kwargs):
         try:
-            return cylmin(self._bqm)
+            return cylmin(self._bqm, **kwargs)
         except TypeError:
             pass
 
-        return min(self._bqm.linear.values())
+        return min(self._bqm.linear.values(), **kwargs)
 
-    def max(self):
+    def max(self, **kwargs):
         try:
-            return cylmax(self._bqm)
+            return cylmax(self._bqm, **kwargs)
         except TypeError:
             pass
 
-        return max(self._bqm.linear.values())
+        return max(self._bqm.linear.values(), **kwargs)
 
 
 class ShapeableLinear(Linear, MutableMapping):
@@ -191,21 +191,21 @@ class Quadratic(BQMView):
         u, v = uv
         self._bqm.set_quadratic(u, v, bias)
 
-    def min(self):
+    def min(self, **kwargs):
         try:
-            return cyqmin(self._bqm)
+            return cyqmin(self._bqm, **kwargs)
         except TypeError:
             pass
 
-        return min(self._bqm.quadratic.values())
+        return min(self._bqm.quadratic.values(), **kwargs)
 
-    def max(self):
+    def max(self, **kwargs):
         try:
-            return cyqmax(self._bqm)
+            return cyqmax(self._bqm, **kwargs)
         except TypeError:
             pass
 
-        return max(self._bqm.quadratic.values())
+        return max(self._bqm.quadratic.values(), **kwargs)
 
 
 class ShapeableQuadratic(Quadratic, MutableMapping):

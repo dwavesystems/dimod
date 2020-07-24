@@ -2312,3 +2312,49 @@ class TestViews(unittest.TestCase):
         bqm.quadratic[('a', 'b')] = 5
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
+
+class TestViewsMinMax(unittest.TestCase):
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_lin_minmax(self, name, BQM):
+        num_vars = 1000
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN') 
+
+        lmin = min(bqm.linear.values())
+        self.assertEqual(lmin, bqm.linear.min())
+
+        lmax = max(bqm.linear.values())
+        self.assertEqual(lmax, bqm.linear.max())
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_quad_minmax(self, name, BQM):
+        num_vars = 1000
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN') 
+
+        qmin = min(bqm.quadratic.values())
+        self.assertEqual(qmin, bqm.quadratic.min())
+       
+        qmax = max(bqm.quadratic.values())
+        self.assertEqual(qmax, bqm.quadratic.max())
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_lin_minmax_empty(self, name, BQM):
+        bqm = BQM(500, 'SPIN') 
+
+        lmin = min(bqm.linear.values(), default=None)
+        self.assertEqual(lmin, bqm.linear.min(default=None))
+
+        lmax = max(bqm.linear.values(), default=-1)
+        self.assertEqual(lmax, bqm.linear.max(default=-1))
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_quad_minmax_empty(self, name, BQM):
+        bqm = BQM(500, 'SPIN') 
+
+        qmin = min(bqm.quadratic.values(), default=None)
+        self.assertEqual(qmin, bqm.quadratic.min(default=None))
+
+        qmax = max(bqm.quadratic.values(), default=-1)
+        self.assertEqual(qmax, bqm.quadratic.max(default=-1))
+        
