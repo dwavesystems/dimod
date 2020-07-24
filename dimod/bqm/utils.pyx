@@ -65,9 +65,9 @@ def cylmax(cyBQM bqm, **kwargs):
         else:
             raise ValueError("Argument is an empty sequence")
 
-    cdef double max_ = bqm.bqm_.get_linear(0)   
+    cdef double max_ = -sys.float_info.max
     cdef Py_ssize_t vi
-    for vi in range(1, bqm.bqm_.num_variables()):
+    for vi in range(bqm.bqm_.num_variables()):
         val = bqm.bqm_.get_linear(vi)
         if val > max_:
             max_ = val
@@ -83,7 +83,7 @@ def cyqmin(cyBQM bqm, **kwargs):
 
     cdef double min_ = sys.float_info.max
     cdef Py_ssize_t vi
-    for vi in range(1, bqm.bqm_.num_variables()):
+    for vi in range(bqm.bqm_.num_variables()):
         span = bqm.bqm_.neighborhood(vi)
 
         while span.first != span.second:
@@ -101,8 +101,7 @@ def cyqmax(cyBQM bqm, **kwargs):
         else:
             raise ValueError("Argument is an empty sequence")
 
-    first_span = bqm.bqm_.neighborhood(0)
-    cdef double max_ = deref(first_span.first).second
+    cdef double max_ = -sys.float_info.max
 
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
