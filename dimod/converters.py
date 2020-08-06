@@ -27,6 +27,8 @@ def to_networkx_graph(bqm,
                       edge_attribute_name='bias'):
     """Convert a binary quadratic model to NetworkX graph format.
 
+    Note that NetworkX must be installed for this method to work.
+
     Args:
         node_attribute_name (hashable, optional, default='bias'):
             Attribute name for linear biases.

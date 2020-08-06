@@ -32,7 +32,7 @@ ABCs.
         -
         - :attr:`~.Structured.nodelist`, :attr:`~.Structured.edgelist`
         -
-        - :attr:`~.Structured.structure`, :attr:`~.Structured.adjacency`
+        - :attr:`~.Structured.structure`, :attr:`~.Structured.adjacency`, :meth:`~.Structured.to_networkx_graph`
     *   - :class:`.Composite`
         -
         - :attr:`~.Composite.children`
@@ -156,6 +156,14 @@ Mixin Properties
 
    Structured.adjacency
    Structured.structure
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Structured.to_networkx_graph
 
 
 Creating a Initialized Sampler
