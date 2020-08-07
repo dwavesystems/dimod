@@ -12,13 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# =============================================================================
-"""Decorators can be imported from the :mod:`dimod.decorators` namespace. For
-example:
-
->>> from dimod.decorators import vartype_argument
-
-"""
 
 import inspect
 import itertools
@@ -31,6 +24,65 @@ from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
 from dimod.vartypes import as_vartype
+
+__all__ = ['nonblocking_sample_method',
+           'bqm_index_labels',
+           'bqm_index_labelled_input'
+           'bqm_structured',
+           'vartype_argument',
+           'graph_argument',
+           'lockable_method',
+           ]
+
+
+def nonblocking_sample_method(f):
+    """Decorator to create non-blocking sample methods.
+
+    Some samplers work asynchronously, and it is useful for composites to
+    handle that case. This decorator can be used to easily construct a
+    non-blocking :class:`.Sampler` or :class:`.Composite`.
+
+    The function being decorated must return an iterator when called. This
+    iterator must yield exactly two values. The first value is discarded, the
+    second must be a :class:`.SampleSet`.
+
+    The generator is executed until the first yield. The generator is then
+    resumed when the returned sample set is resolved.
+
+    >>> from dimod.decorators import nonblocking_sample_method
+    ...
+    >>> class Sampler:
+    ...     @nonblocking_sample_method
+    ...     def sample(self, bqm):
+    ...         print("First part!")
+    ...         yield
+    ...         print("Second part!")
+    ...         sample = {v: 1 for v in bqm.variables}
+    ...         yield dimod.SampleSet.from_samples_bqm(sample, bqm)
+    ...
+    >>> bqm = dimod.BinaryQuadraticModel.from_ising({'a': -1}, {('a', 'b'): 1})
+    >>> ss = Sampler().sample(bqm)
+    First part!
+    >>> ss.resolve()
+    Second part!
+    >>> print(ss)
+       a  b energy num_oc.
+    0 +1 +1    0.0       1
+    ['SPIN', 1 rows, 1 samples, 2 variables]
+
+    """
+    @wraps(f)
+    def _sample(*args, **kwargs):
+        # avoid circular import
+        from dimod.sampleset import SampleSet
+
+        iterator = f(*args, **kwargs)
+
+        # do the blocking part
+        next(iterator)
+
+        return SampleSet.from_future(None, lambda _: next(iterator))
+    return _sample
 
 
 def bqm_index_labels(f):

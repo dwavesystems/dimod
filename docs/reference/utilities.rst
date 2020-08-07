@@ -21,6 +21,7 @@ Decorators
    bqm_index_labelled_input
    bqm_structured
    graph_argument
+   nonblocking_sample_method
    vartype_argument
 
 
