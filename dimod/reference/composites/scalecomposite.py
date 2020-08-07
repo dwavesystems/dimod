@@ -19,6 +19,7 @@ not specified, calculates it based on quadratic and bias ranges.
 """
 
 from dimod.core.composite import ComposedSampler
+from dimod.decorators import nonblocking_sample_method
 from dimod.sampleset import SampleSet
 
 __all__ = ['ScaleComposite']
@@ -70,6 +71,7 @@ class ScaleComposite(ComposedSampler):
     def properties(self):
         return {'child_properties': self.child.properties.copy()}
 
+    @nonblocking_sample_method
     def sample(self, bqm, scalar=None, bias_range=1, quadratic_range=None,
                ignored_variables=None, ignored_interactions=None,
                ignore_offset=False, **parameters):
@@ -131,17 +133,17 @@ class ScaleComposite(ComposedSampler):
         if scalar == 0:
             raise ValueError('scalar must be non-zero')
 
-        def scale_back(sampleset):
-            if not (ignored_variables or ignored_interactions or ignore_offset):
-                # we just need to scale back and don't need to worry about
-                # the stuff we ignored
-                sampleset.record.energy *= 1 / scalar
-            else:
-                sampleset.record.energy = original_bqm.energies(sampleset)
+        sampleset = self.child.sample(bqm, **parameters)
 
-            sampleset.info.update(scalar=scalar)
+        yield  # wait until sampleset is read for the remaining part
 
-            return sampleset
+        if not (ignored_variables or ignored_interactions or ignore_offset):
+            # we just need to scale back and don't need to worry about
+            # the stuff we ignored
+            sampleset.record.energy *= 1 / scalar
+        else:
+            sampleset.record.energy = original_bqm.energies(sampleset)
 
-        return SampleSet.from_future(self.child.sample(bqm, **parameters),
-                                     scale_back)
+        sampleset.info.update(scalar=scalar)
+
+        yield sampleset
