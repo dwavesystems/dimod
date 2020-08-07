@@ -12,7 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-# ================================================================================================
 
 import unittest
 import itertools
@@ -26,8 +25,41 @@ except ImportError:
 else:
     _networkx = True
 
+import dimod
+
 from dimod.vartypes import SPIN, BINARY
 from dimod.decorators import vartype_argument, graph_argument
+
+
+class TestNonblockingSampleMethod(unittest.TestCase):
+    def test_simple(self):
+
+        class Sampler:
+            def __init__(self):
+                self.first = False
+                self.second = False
+
+            @dimod.decorators.nonblocking_sample_method
+            def sample(self, bqm):
+                self.first = True
+                yield
+                self.second = True
+                sample = {v: 1 for v in bqm.variables}
+                yield dimod.SampleSet.from_samples_bqm(sample, bqm)
+
+        sampler = Sampler()
+
+        bqm = dimod.BQM.from_ising({'a': 1}, {('a', 'b'): -2})
+        ss = sampler.sample(bqm)
+
+        self.assertIsInstance(ss, dimod.SampleSet)
+        self.assertTrue(sampler.first)
+        self.assertFalse(sampler.second)
+
+        ss.resolve()
+
+        self.assertTrue(sampler.first)
+        self.assertTrue(sampler.second)
 
 
 class TestVartypeArgument(unittest.TestCase):
