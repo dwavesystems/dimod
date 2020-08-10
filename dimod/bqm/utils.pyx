@@ -42,12 +42,12 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
-def cylmin(cyBQM bqm, **kwargs):
+def cylmin(cyBQM bqm, default=None):
     if bqm.num_variables == 0:
-        if 'default' in kwargs:
-            return kwargs['default']
-        else:
+        if default is None:
             raise ValueError("Argument is an empty sequence")
+        else:
+            return default
 
     cdef double min_ = sys.float_info.max
     cdef Py_ssize_t vi
@@ -58,12 +58,12 @@ def cylmin(cyBQM bqm, **kwargs):
     
     return min_
 
-def cylmax(cyBQM bqm, **kwargs):
+def cylmax(cyBQM bqm, default=None):
     if bqm.num_variables == 0:
-        if 'default' in kwargs:
-            return kwargs['default']
-        else:
+        if default is None:
             raise ValueError("Argument is an empty sequence")
+        else:
+            return default
 
     cdef double max_ = -sys.float_info.max
     cdef Py_ssize_t vi
@@ -74,19 +74,19 @@ def cylmax(cyBQM bqm, **kwargs):
     
     return max_
 
-def cyqmin(cyBQM bqm, **kwargs):
+def cyqmin(cyBQM bqm, default=None):
     if bqm.num_interactions == 0:
-        if 'default' in kwargs:
-            return kwargs['default']
-        else:
+        if default is None:
             raise ValueError("Argument is an empty sequence")
+        else:
+            return default
 
     cdef double min_ = sys.float_info.max
     cdef Py_ssize_t vi
     for vi in range(bqm.bqm_.num_variables()):
         span = bqm.bqm_.neighborhood(vi)
 
-        while span.first != span.second:
+        while span.first != span.second and deref(span.first).first < vi:
             if deref(span.first).second < min_:
                 min_ = deref(span.first).second
 
@@ -94,12 +94,12 @@ def cyqmin(cyBQM bqm, **kwargs):
 
     return min_
 
-def cyqmax(cyBQM bqm, **kwargs):
+def cyqmax(cyBQM bqm, default=None):
     if bqm.num_interactions == 0:
-        if 'default' in kwargs:
-            return kwargs['default']
-        else:
+        if default is None:
             raise ValueError("Argument is an empty sequence")
+        else:
+            return default
 
     cdef double max_ = -sys.float_info.max
 
@@ -107,7 +107,7 @@ def cyqmax(cyBQM bqm, **kwargs):
     for vi in range(bqm.bqm_.num_variables()):
         span = bqm.bqm_.neighborhood(vi)
         
-        while span.first != span.second:
+        while span.first != span.second and deref(span.first).first < vi:
             if deref(span.first).second > max_:
                 max_ = deref(span.first).second
 

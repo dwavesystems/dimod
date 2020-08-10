@@ -143,22 +143,31 @@ class Linear(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         self._bqm.set_linear(v, bias)
 
-    def min(self, **kwargs):
+    def min(self, default=None):
+        """Returns the minimum linear bias."""
         try:
-            return cylmin(self._bqm, **kwargs)
+            return cylmin(self._bqm, default=default)
         except TypeError:
             pass
 
-        return min(self._bqm.linear.values(), **kwargs)
+        if default is None:
+            return min(self._bqm.linear.values())
+        else:
+            return min(self._bqm.linear.values(), default=default)
+            
 
-    def max(self, **kwargs):
+    def max(self, default=None):
+        """Returns the maximum linear bias."""
         try:
-            return cylmax(self._bqm, **kwargs)
+            return cylmax(self._bqm, default=default)
         except TypeError:
             pass
 
-        return max(self._bqm.linear.values(), **kwargs)
-
+        if default is None:
+            return max(self._bqm.linear.values())
+        else:
+            return max(self._bqm.linear.values(), default=default)
+            
 
 class ShapeableLinear(Linear, MutableMapping):
     def __delitem__(self, v):
@@ -191,22 +200,31 @@ class Quadratic(BQMView):
         u, v = uv
         self._bqm.set_quadratic(u, v, bias)
 
-    def min(self, **kwargs):
+    def min(self, default=None):
+        """Returns the minimum quadratic bias."""
         try:
-            return cyqmin(self._bqm, **kwargs)
+            return cyqmin(self._bqm, default=default)
         except TypeError:
             pass
 
-        return min(self._bqm.quadratic.values(), **kwargs)
+        if default is None:
+            return min(self._bqm.quadratic.values())
+        else:
+            return min(self._bqm.quadratic.values(), default=default)
+            
 
-    def max(self, **kwargs):
+    def max(self, default=None):
+        """Returns the maximum quadratic bias."""
         try:
-            return cyqmax(self._bqm, **kwargs)
+            return cyqmax(self._bqm, default=default)
         except TypeError:
             pass
 
-        return max(self._bqm.quadratic.values(), **kwargs)
-
+        if default is None:
+            return max(self._bqm.quadratic.values())
+        else:
+            return max(self._bqm.quadratic.values(), default=default)
+            
 
 class ShapeableQuadratic(Quadratic, MutableMapping):
     def __delitem__(self, uv):
