@@ -2312,3 +2312,59 @@ class TestViews(unittest.TestCase):
         bqm.quadratic[('a', 'b')] = 5
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
+
+class TestViewsMinMax(unittest.TestCase):
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_lin_minmax(self, name, BQM):
+        num_vars = 1000
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN') 
+
+        lmin = min(bqm.linear.values())
+        self.assertEqual(lmin, bqm.linear.min())
+
+        lmax = max(bqm.linear.values())
+        self.assertEqual(lmax, bqm.linear.max())
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_quad_minmax(self, name, BQM):
+        num_vars = 1000
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN') 
+
+        qmin = min(bqm.quadratic.values())
+        self.assertEqual(qmin, bqm.quadratic.min())
+       
+        qmax = max(bqm.quadratic.values())
+        self.assertEqual(qmax, bqm.quadratic.max())
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_lin_minmax_empty(self, name, BQM):
+        bqm = BQM('SPIN') 
+
+        # Test when default is not set
+        with self.assertRaises(ValueError):
+            bqm.linear.min()
+
+        with self.assertRaises(ValueError):
+            bqm.linear.max()
+        
+        # Test when default is set
+        self.assertEqual(bqm.linear.min(default=1), 1)
+        self.assertEqual(bqm.linear.max(default=2), 2)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_quad_minmax_empty(self, name, BQM):
+        bqm = BQM(500, 'SPIN') 
+
+        # Test when default is not set
+        with self.assertRaises(ValueError):
+            bqm.quadratic.min()
+
+        with self.assertRaises(ValueError):
+            bqm.quadratic.max()
+
+        # Test when default is set
+        self.assertEqual(bqm.quadratic.min(default=1), 1)
+        self.assertEqual(bqm.quadratic.max(default=2), 2)
+        
