@@ -20,10 +20,10 @@
 namespace dimod {
 namespace utils {
 
-template<class V, class B>
-bool comp_v(std::pair<V, B> ub, V v) {
-    return ub.first < v;
-}
+    template <class V, class B>
+    bool comp_v(std::pair<V, B> ub, V v) {
+        return ub.first < v;
+    }
 
 }  // namespace utils
 }  // namespace dimod

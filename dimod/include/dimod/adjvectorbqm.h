@@ -23,9 +23,9 @@
 
 namespace dimod {
 
-template<class V, class B>
+template <class V, class B>
 class AdjVectorBQM {
- public:
+  public:
     using bias_type = B;
     using variable_type = V;
     using size_type = std::size_t;
@@ -38,7 +38,7 @@ class AdjVectorBQM {
 
     AdjVectorBQM() {}
 
-    template<class BQM>
+    template <class BQM>
     explicit AdjVectorBQM(const BQM &bqm) {
         adj.resize(bqm.num_variables());
 
@@ -55,11 +55,10 @@ class AdjVectorBQM {
      *
      * @param dense An array containing the biases. Assumed to contain
      *     `num_variables`^2 elements. The upper and lower triangle are summed.
-     * @param num_variables The number of variables. 
+     * @param num_variables The number of variables.
      */
-    template<class B2>
-    AdjVectorBQM(const B2 dense[], size_type num_variables,
-                 bool ignore_diagonal = false) {
+    template <class B2>
+    AdjVectorBQM(const B2 dense[], size_type num_variables, bool ignore_diagonal = false) {
         // we know how big our linear is going to be
         adj.resize(num_variables);
 
@@ -67,13 +66,13 @@ class AdjVectorBQM {
 
         if (!ignore_diagonal) {
             for (size_type v = 0; v < num_variables; ++v) {
-                adj[v].second = dense[v*(num_variables+1)];
+                adj[v].second = dense[v * (num_variables + 1)];
             }
         }
 
         for (size_type u = 0; u < num_variables; ++u) {
             for (size_type v = u + 1; v < num_variables; ++v) {
-                qbias = dense[u*num_variables+v] + dense[v*num_variables+u];
+                qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
 
                 if (qbias != 0) {
                     adj[u].first.emplace_back(v, qbias);
@@ -85,54 +84,42 @@ class AdjVectorBQM {
 
     /// Add one (disconnected) variable to the BQM and return its index.
     variable_type add_variable() {
-        adj.resize(adj.size()+1);
-        return adj.size()-1;
+        adj.resize(adj.size() + 1);
+        return adj.size() - 1;
     }
 
     /// Get the degree of variable `v`.
-    size_type degree(variable_type v) const {
-        return adj[v].first.size();
-    }
+    size_type degree(variable_type v) const { return adj[v].first.size(); }
 
-    bias_type get_linear(variable_type v) const {
-        return adj[v].second;
-    }
+    bias_type get_linear(variable_type v) const { return adj[v].second; }
 
-    std::pair<bias_type, bool>
-    get_quadratic(variable_type u, variable_type v) const {
+    std::pair<bias_type, bool> get_quadratic(variable_type u, variable_type v) const {
         assert(u >= 0 && u < adj.size());
         assert(v >= 0 && v < adj.size());
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
-        if (low == span.second || low->first != v)
-            return std::make_pair(0, false);
+        if (low == span.second || low->first != v) return std::make_pair(0, false);
         return std::make_pair(low->second, true);
     }
 
-    std::pair<outvars_iterator, outvars_iterator>
-    neighborhood(variable_type u) {
+    std::pair<outvars_iterator, outvars_iterator> neighborhood(variable_type u) {
         assert(u >= 0 && u < invars.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
-    std::pair<const_outvars_iterator, const_outvars_iterator>
-    neighborhood(variable_type u) const {
+    std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(variable_type u) const {
         assert(u >= 0 && u < invars.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
 
-    size_type num_variables() const {
-        return adj.size();
-    }
+    size_type num_variables() const { return adj.size(); }
 
     size_type num_interactions() const {
         size_type count = 0;
-        for (auto it = adj.begin(); it != adj.end(); ++it)
-            count += it->first.size();
+        for (auto it = adj.begin(); it != adj.end(); ++it) count += it->first.size();
         return count / 2;
     }
 
@@ -144,8 +131,7 @@ class AdjVectorBQM {
         // remove v from all of its neighbor's neighborhoods
         for (auto it = adj[v].first.cbegin(); it != adj[v].first.cend(); ++it) {
             auto span = neighborhood(it->first);
-            auto low = std::lower_bound(span.first, span.second, v,
-                                        utils::comp_v<V, B>);
+            auto low = std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
             adj[it->first].first.erase(low);
         }
 
@@ -159,8 +145,7 @@ class AdjVectorBQM {
         assert(v >= 0 && v < adj.size());
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 
@@ -168,8 +153,7 @@ class AdjVectorBQM {
             adj[u].first.erase(low);
 
             span = neighborhood(v);
-            low = std::lower_bound(span.first, span.second, u,
-                                   utils::comp_v<V, B>);
+            low = std::lower_bound(span.first, span.second, u, utils::comp_v<V, B>);
 
             assert(!(low == span.second || low->first != u) == exists);
 
@@ -190,8 +174,7 @@ class AdjVectorBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 
