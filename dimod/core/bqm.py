@@ -395,7 +395,7 @@ class BQM(metaclass=abc.ABCMeta):
         """The binary-valued version of the binary quadratic model.
 
         If the binary quadratic model is binary-valued, this references itself,
-        otherwise it is a :class:`.BinaryView`.
+        otherwise it is a :class:`.VartypeView`.
         """
         if self.vartype is Vartype.BINARY:
             return self
@@ -407,7 +407,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         # this may be kept around even if self.vartype is changed, but that's
         # covered by the above check
-        self._binary = binary = BinaryView(self)
+        self._binary = binary = VartypeView(self, Vartype.BINARY)
         return binary
 
     @property
@@ -430,7 +430,7 @@ class BQM(metaclass=abc.ABCMeta):
         """The spin-valued version of the binary quadratic model.
 
         If the binary quadratic model is spin-valued, this references itself,
-        otherwise it is a :class:`.SpinView`.
+        otherwise it is a :class:`.VartypeView`.
         """
         if self.vartype is Vartype.SPIN:
             return self
@@ -442,7 +442,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         # this may be kept around even if self.vartype is changed, but that's
         # covered by the above check
-        self._spin = spin = SpinView(self)
+        self._spin = spin = VartypeView(self, Vartype.SPIN)
         return spin
 
     @property
@@ -1330,12 +1330,45 @@ class ShapeableBQM(BQM):
 
 class VartypeView(BQM):
 
-    def __init__(self, bqm):
+    vartype = None  # overwritten by __init__
+
+    def __init__(self, bqm, vartype=None):
         self._bqm = bqm
+
+        if vartype is None:
+            self.vartype = bqm.vartype
+        else:
+            self.vartype = as_vartype(vartype)
 
     @property
     def base(self):
         return self._bqm
+
+    @property
+    def binary(self):
+        if self.vartype is Vartype.BINARY:
+            return self
+        else:
+            return self._bqm.binary
+
+    @property
+    def offset(self):
+        bqm = self._bqm
+
+        if self.vartype is bqm.vartype:
+            return bqm.offset
+
+        elif self.vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            return bqm.offset + bqm.linear.sum() / 2 + bqm.quadratic.sum() / 4
+        elif self.vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            return bqm.offset - bqm.linear.sum() + bqm.quadratic.sum()
+        else:
+            raise RuntimeError("unknown vartype combination")
+
+    @offset.setter
+    def offset(self, bias):
+        # just add the difference
+        self._bqm.offset += bias - self.offset
 
     @property
     def num_interactions(self):
@@ -1345,13 +1378,46 @@ class VartypeView(BQM):
     def num_variables(self):
         return self._bqm.num_variables
 
+    @property
+    def spin(self):
+        if self.vartype is Vartype.SPIN:
+            return self
+        else:
+            return self._bqm.spin
+
     def change_vartype(self, *args, **kwargs):
+        # todo
         msg = '{} can only be {}-valued'.format(type(self).__name__,
                                                 self.vartype.name)
         raise NotImplementedError(msg)
 
+    def copy(self):
+        return self._bqm.change_vartype(self.vartype, inplace=False)
+
     def degree(self, *args, **kwargs):
         return self._bqm.degree(*args, **kwargs)
+
+    def get_linear(self, v):
+        bqm = self._bqm
+        if self.vartype is bqm.vartype:
+            return bqm.get_linear(v)
+        elif self.vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            return bqm.get_linear(v) / 2 + bqm.adj[v].sum() / 4
+        elif self.vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            return 2 * bqm.get_linear(v) - 2 * bqm.adj[v].sum()
+        else:
+            raise RuntimeError("unknown vartype combination")
+
+    def get_quadratic(self, u, v, default=None):
+        bqm = self._bqm
+        if self.vartype is bqm.vartype:
+            return bqm.get_quadratic(u, v, default=default)
+        elif self.vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            return bqm.get_quadratic(u, v) / 4
+        elif self.vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            return 4 * self._bqm.get_quadratic(u, v)
+        else:
+            raise RuntimeError("unknown vartype combination")
 
     def iter_linear(self):
         for v, _ in self._bqm.iter_linear():
@@ -1364,197 +1430,59 @@ class VartypeView(BQM):
     def relabel_variables(self, *args, **kwargs):
         return self._bqm.relabel_variables(*args, **kwargs)
 
-
-class EitherView(VartypeView):
-    def __init__(self, bqm, vartype=None):
-        self._base_bqm = bqm
-
-        if bqm.vartype is SPIN:
-            self._which = {dimod.SPIN: bqm,
-                           dimod.BINARY: BinaryView(bqm)}
-        else:
-            self._which = {dimod.SPIN: SpinView(bqm),
-                           dimod.BINARY: bqm}
-
-        if vartype is None:
-            self.vartype = bqm.vartype
-        else:
-            self.vartype = vartype
-
-    @property
-    def _bqm(self):
-        return self._which[self._vartype]
-
-    def change_vartype(self, vartype, inplace=True):
-        if inplace:
-            self._vartype = vartype
-        else:
-            return EitherView(self._base_bqm, vartype)
-
-    @property
-    def binary(self):
-        return EitherView(self._base_bqm, BINARY)
-
-    @property
-    def spin(self):
-        return EitherView(self._base_bqm, SPIN)
-
-    @property
-    def offset(self):
-        return self._bqm.offset
-
-    @offset.setter(self, bias)
-    def offset(self):
-        self._bqm.offset = bias
-
-    def copy(self):
-        if self._vartype is self._base_bqm.vartype:
-            return self._base_bqm.copy()
-        else:
-            return self._base_bqm.change_vartype(self._vartype, inplace=False)
-
-    def get_linear(self, v):
-        return self._bqm.get_linear(v)
-
-    def get_quadratic(self, u, v, default=None):
-        return self._bqm.get_quadratic(u, v, default=default)
-
-    def set_linear(self, v, bias):
-        self._bqm.set_linear(self, v, bias)
-
-    def set_quadratic(self, u, v, bias):
-        self._bqm.set_quadratic(self, u, v, bias)
-
-
-class BinaryView(VartypeView):
-    @property
-    def binary(self):
-        return self
-
-    @property
-    def offset(self):
-        bqm = self._bqm
-        return (bqm.offset
-                - sum(b for _, b in bqm.iter_linear())
-                + sum(b for _, _, b in bqm.iter_quadratic()))
-
-    @offset.setter
-    def offset(self, bias):
-        # just add the difference
-        self._bqm.offset += bias - self.offset
-
-    @property
-    def spin(self):
-        return self._bqm.spin
-
-    @property
-    def vartype(self):
-        return Vartype.BINARY
-
-    def copy(self):
-        return self._bqm.change_vartype(Vartype.BINARY, inplace=False)
-
-    def get_linear(self, v):
-        bqm = self._bqm
-        return 2 * bqm.get_linear(v) - 2 * sum(b for _, _, b in bqm.iter_quadratic(v))
-
-    def get_quadratic(self, u, v, default=None):
-        try:
-            return 4 * self._bqm.get_quadratic(u, v)
-        except ValueError as err:
-            if default is None:
-                raise err
-        return default
-
     def set_linear(self, v, bias):
         bqm = self._bqm
+        if self.vartype is bqm.vartype:
+            bqm.set_linear(v, bias)
 
-        # need the difference
-        delta = bias - self.get_linear(v)
+        elif self.vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            delta = bias - self.get_linear(v)
 
-        bqm.set_linear(v, bqm.get_linear(v) + delta / 2)
-        bqm.offset += delta / 2
+            bqm.set_linear(v, bqm.get_linear(v) + 2 * delta)
+            bqm.offset -= delta
+
+        elif self.vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            delta = bias - self.get_linear(v)
+
+            bqm.set_linear(v, bqm.get_linear(v) + delta / 2)
+            bqm.offset += delta / 2
+
+        else:
+            raise RuntimeError("unknown vartype combination")
 
     def set_quadratic(self, u, v, bias):
         bqm = self._bqm
+        if self.vartype is bqm.vartype:
+            bqm.set_quadratic(u, v, bias)
 
-        # need the difference
-        delta = bias - self.get_quadratic(u, v, default=0)
+        elif self.vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+            # need the difference
+            delta = bias - self.get_quadratic(u, v, default=0)
 
-        # if it doesn't exist and BQM is not shapeable, this will fail
-        bqm.set_quadratic(u, v, bias / 4)  # this one is easy
+            # if it doesn't exist and BQM is not shapeable, this will fail
+            bqm.set_quadratic(u, v, 4 * bias)  # this one is easy
 
-        # the other values get the delta
-        bqm.set_linear(u, bqm.get_linear(u) + delta / 4)
-        bqm.set_linear(v, bqm.get_linear(v) + delta / 4)
+            # the other values get the delta
+            bqm.set_linear(u, bqm.get_linear(u) - 2 * delta)
+            bqm.set_linear(v, bqm.get_linear(v) - 2 * delta)
 
-        bqm.offset += delta / 4
+            bqm.offset += delta
 
+        elif self.vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+            # need the difference
+            delta = bias - self.get_quadratic(u, v, default=0)
 
-class SpinView(VartypeView):
-    @property
-    def binary(self):
-        return self._bqm.binary
+            # if it doesn't exist and BQM is not shapeable, this will fail
+            bqm.set_quadratic(u, v, bias / 4)  # this one is easy
 
-    @property
-    def offset(self):
-        bqm = self._bqm
-        return (bqm.offset
-                + sum(b for _, b in bqm.iter_linear()) / 2
-                + sum(b for _, _, b in bqm.iter_quadratic()) / 4)
+            # the other values get the delta
+            bqm.set_linear(u, bqm.get_linear(u) + delta / 4)
+            bqm.set_linear(v, bqm.get_linear(v) + delta / 4)
 
-    @offset.setter
-    def offset(self, bias):
-        # just add the difference
-        self._bqm.offset += bias - self.offset
+            bqm.offset += delta / 4
 
-    @property
-    def spin(self):
-        return self
-
-    @property
-    def vartype(self):
-        return Vartype.SPIN
-
-    def copy(self):
-        return self._bqm.change_vartype(Vartype.SPIN, inplace=False)
-
-    def get_linear(self, v):
-        bqm = self._bqm
-        return (bqm.get_linear(v) / 2
-                + sum(b for _, _, b in bqm.iter_quadratic(v)) / 4)
-
-    def get_quadratic(self, u, v, default=None):
-        try:
-            return self._bqm.get_quadratic(u, v) / 4
-        except ValueError as err:
-            if default is None:
-                raise err
-        return default
-
-    def set_linear(self, v, bias):
-        bqm = self._bqm
-
-        # need the difference
-        delta = bias - self.get_linear(v)
-
-        bqm.set_linear(v, bqm.get_linear(v) + 2 * delta)
-        bqm.offset -= delta
-
-    def set_quadratic(self, u, v, bias):
-        bqm = self._bqm
-
-        # need the difference
-        delta = bias - self.get_quadratic(u, v, default=0)
-
-        # if it doesn't exist and BQM is not shapeable, this will fail
-        bqm.set_quadratic(u, v, 4 * bias)  # this one is easy
-
-        # the other values get the delta
-        bqm.set_linear(u, bqm.get_linear(u) - 2 * delta)
-        bqm.set_linear(v, bqm.get_linear(v) - 2 * delta)
-
-        bqm.offset += delta
+        else:
+            raise RuntimeError("unknown vartype combination")
 
 
 # register the various objects with prettyprint
