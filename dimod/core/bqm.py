@@ -27,7 +27,7 @@ import numpy as np
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-from dimod.bqm.utils import cylmin, cylmax, cyqmin, cyqmax
+from dimod.bqm.utils import cylmin, cylmax, cyqmin, cyqmax, cylsum, cyqsum
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -169,6 +169,11 @@ class Linear(BQMView):
 
     def sum(self, start=0):
         """Return the sum of the linear biases."""
+        try:
+            return cylsum(self._bqm, start=start)
+        except TypeError:
+            pass
+
         return sum(self.values(), start=start)
 
 
@@ -229,6 +234,11 @@ class Quadratic(BQMView):
 
     def sum(self, start=0):
         """Return the sum of the quadratic biases."""
+        try:
+            return cyqsum(self._bqm, start=start)
+        except TypeError:
+            pass
+
         return sum(self.values(), start=start)
 
 

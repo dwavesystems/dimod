@@ -19,6 +19,7 @@ import os.path as path
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 
 from collections import OrderedDict
 from functools import wraps
@@ -30,6 +31,11 @@ from parameterized import parameterized
 import dimod
 
 from dimod.testing import assert_consistent_bqm
+
+BQM_CYTHON_SUBCLASSES = [dimod.AdjArrayBQM,
+                         dimod.AdjMapBQM,
+                         dimod.AdjVectorBQM,
+                         ]
 
 BQM_SUBCLASSES = [dimod.AdjArrayBQM,
                   dimod.AdjDictBQM,
@@ -2296,6 +2302,17 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.linear.sum(), 1)
         self.assertEqual(bqm.linear.sum(start=5), 6)
 
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    def test_quadratic_sum_cybqm(self, name, BQM):
+        # make sure it doesn't use python's sum
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+
+        def _sum(*args, **kwargs):
+            raise Exception('boom')
+
+        with unittest.mock.patch('builtins.sum', _sum):
+            bqm.linear.sum()
+
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_quadratic_delitem(self, name, BQM):
         if not BQM.shapeable():
@@ -2324,6 +2341,17 @@ class TestViews(unittest.TestCase):
         bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
         self.assertEqual(bqm.quadratic.sum(), 5)
         self.assertEqual(bqm.quadratic.sum(start=5), 10)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    def test_quadratic_sum_cybqm(self, name, BQM):
+        # make sure it doesn't use python's sum
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+
+        def _sum(*args, **kwargs):
+            raise Exception('boom')
+
+        with unittest.mock.patch('builtins.sum', _sum):
+            bqm.quadratic.sum()
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_lin_minmax(self, name, BQM):
