@@ -2313,10 +2313,9 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
 
-class TestViewsMinMax(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_lin_minmax(self, name, BQM):
-        num_vars = 1000
+        num_vars = 10
         D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
         bqm = BQM(D, 'SPIN') 
 
@@ -2328,7 +2327,7 @@ class TestViewsMinMax(unittest.TestCase):
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_quad_minmax(self, name, BQM):
-        num_vars = 1000
+        num_vars = 10
         D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
         bqm = BQM(D, 'SPIN') 
 
