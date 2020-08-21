@@ -42,7 +42,7 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
-def cylmin(cyBQM bqm, default=None):
+def cylinear_min(cyBQM bqm, default=None):
     if bqm.num_variables == 0:
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -58,7 +58,7 @@ def cylmin(cyBQM bqm, default=None):
     
     return min_
 
-def cylmax(cyBQM bqm, default=None):
+def cylinear_max(cyBQM bqm, default=None):
     if bqm.num_variables == 0:
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -74,7 +74,15 @@ def cylmax(cyBQM bqm, default=None):
     
     return max_
 
-def cyqmin(cyBQM bqm, default=None):
+def cylinear_sum(cyBQM bqm, Bias start=0):
+    """Return the sum of the linear biases."""
+    cdef VarIndex vi
+    for vi in range(bqm.bqm_.num_variables()):
+        start += bqm.bqm_.get_linear(vi)
+
+    return start
+
+def cyquadratic_min(cyBQM bqm, default=None):
     if bqm.num_interactions == 0:
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -94,7 +102,7 @@ def cyqmin(cyBQM bqm, default=None):
 
     return min_
 
-def cyqmax(cyBQM bqm, default=None):
+def cyquadratic_max(cyBQM bqm, default=None):
     if bqm.num_interactions == 0:
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -115,15 +123,7 @@ def cyqmax(cyBQM bqm, default=None):
 
     return max_
 
-def cylsum(cyBQM bqm, Bias start=0):
-    """Return the sum of the linear biases."""
-    cdef VarIndex vi
-    for vi in range(bqm.bqm_.num_variables()):
-        start += bqm.bqm_.get_linear(vi)
-
-    return start
-
-def cyqsum(cyBQM bqm, Bias start=0):
+def cyquadratic_sum(cyBQM bqm, Bias start=0):
     """Return the sum of the quadratic biases."""
     cdef VarIndex vi
     for vi in range(bqm.bqm_.num_variables()):
