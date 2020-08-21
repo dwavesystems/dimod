@@ -174,7 +174,7 @@ class Linear(BQMView):
         except TypeError:
             pass
 
-        return sum(self.values(), start=start)
+        return sum(self.values(), start)
 
 
 class ShapeableLinear(Linear, MutableMapping):
@@ -239,7 +239,7 @@ class Quadratic(BQMView):
         except TypeError:
             pass
 
-        return sum(self.values(), start=start)
+        return sum(self.values(), start)
 
 
 class ShapeableQuadratic(Quadratic, MutableMapping):
