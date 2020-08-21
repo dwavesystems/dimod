@@ -29,7 +29,7 @@ from dimod.vartypes import as_vartype, Vartype
 
 from dimod.bqm.utils import cylinear_min, cylinear_max, cylinear_sum
 from dimod.bqm.utils import cyquadratic_min, cyquadratic_max, cyquadratic_sum
-from dimod.bqm.utils import cynieghborhood_max, cynieghborhood_min, cynieghborhood_sum
+from dimod.bqm.utils import cyneighborhood_max, cyneighborhood_min, cyneighborhood_sum
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -115,7 +115,7 @@ class Neighborhood(BQMView):
     def max(self, default=None):
         """The maximum quadratic bias in the neighborhood."""
         try:
-            return cynieghborhood_max(self._bqm, self._var, default)
+            return cyneighborhood_max(self._bqm, self._var, default)
         except TypeError:
             pass
 
@@ -129,7 +129,7 @@ class Neighborhood(BQMView):
     def min(self, default=None):
         """The minimum quadratic bias in the neighborhood."""
         try:
-            return cynieghborhood_min(self._bqm, self._var, default)
+            return cyneighborhood_min(self._bqm, self._var, default)
         except TypeError:
             pass
 
@@ -143,7 +143,7 @@ class Neighborhood(BQMView):
     def sum(self, start=0):
         """The sum of the quadratic biases in the neighborhood."""
         try:
-            return cynieghborhood_sum(self._bqm, self._var, start)
+            return cyneighborhood_sum(self._bqm, self._var, start)
         except TypeError:
             pass
 
