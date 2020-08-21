@@ -115,6 +115,25 @@ def cyqmax(cyBQM bqm, default=None):
 
     return max_
 
+def cylsum(cyBQM bqm, Bias start=0):
+    """Return the sum of the linear biases."""
+    cdef VarIndex vi
+    for vi in range(bqm.bqm_.num_variables()):
+        start += bqm.bqm_.get_linear(vi)
+
+    return start
+
+def cyqsum(cyBQM bqm, Bias start=0):
+    """Return the sum of the quadratic biases."""
+    cdef VarIndex vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+        while span.first != span.second and deref(span.first).first < vi:
+            start += deref(span.first).second
+            inc(span.first)
+    
+    return start
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def coo_sort(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata):
