@@ -134,7 +134,7 @@ def cyquadratic_sum(cyBQM bqm, Bias start=0):
     
     return start
 
-def cynieghborhood_max(cyBQM bqm, object v, object default=None):
+def cyneighborhood_max(cyBQM bqm, object v, object default=None):
     if not bqm.degree(v):
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -154,7 +154,7 @@ def cynieghborhood_max(cyBQM bqm, object v, object default=None):
 
     return max_
 
-def cynieghborhood_min(cyBQM bqm, object v, object default=None):
+def cyneighborhood_min(cyBQM bqm, object v, object default=None):
     if not bqm.degree(v):
         if default is None:
             raise ValueError("Argument is an empty sequence")
@@ -174,7 +174,7 @@ def cynieghborhood_min(cyBQM bqm, object v, object default=None):
 
     return min_
 
-def cynieghborhood_sum(cyBQM bqm, object v, Bias start=0):
+def cyneighborhood_sum(cyBQM bqm, object v, Bias start=0):
     cdef VarIndex vi = bqm.label_to_idx(v)
 
     span = bqm.bqm_.neighborhood(vi)
