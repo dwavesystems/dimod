@@ -151,10 +151,9 @@ class Linear(BQMView):
             pass
 
         if default is None:
-            return min(self._bqm.linear.values())
+            return min(self.values())
         else:
-            return min(self._bqm.linear.values(), default=default)
-            
+            return min(self.values(), default=default)
 
     def max(self, default=None):
         """Returns the maximum linear bias."""
@@ -164,9 +163,9 @@ class Linear(BQMView):
             pass
 
         if default is None:
-            return max(self._bqm.linear.values())
+            return max(self.values())
         else:
-            return max(self._bqm.linear.values(), default=default)
+            return max(self.values(), default=default)
 
     def sum(self, start=0):
         """Return the sum of the linear biases."""
@@ -212,10 +211,9 @@ class Quadratic(BQMView):
             pass
 
         if default is None:
-            return min(self._bqm.quadratic.values())
+            return min(self.values())
         else:
-            return min(self._bqm.quadratic.values(), default=default)
-            
+            return min(self.values(), default=default)
 
     def max(self, default=None):
         """Returns the maximum quadratic bias."""
@@ -225,9 +223,9 @@ class Quadratic(BQMView):
             pass
 
         if default is None:
-            return max(self._bqm.quadratic.values())
+            return max(self.values())
         else:
-            return max(self._bqm.quadratic.values(), default=default)
+            return max(self.values(), default=default)
 
     def sum(self, start=0):
         """Return the sum of the quadratic biases."""
