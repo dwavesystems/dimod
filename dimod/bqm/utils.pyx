@@ -134,6 +134,56 @@ def cyqsum(cyBQM bqm, Bias start=0):
     
     return start
 
+def cynieghborhood_max(cyBQM bqm, object v, object default=None):
+    if not bqm.degree(v):
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    cdef double max_ = -sys.float_info.max
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        if deref(span.first).second > max_:
+            max_ = deref(span.first).second
+
+        inc(span.first)
+
+    return max_
+
+def cynieghborhood_min(cyBQM bqm, object v, object default=None):
+    if not bqm.degree(v):
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    cdef double min_ = sys.float_info.max
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        if deref(span.first).second < min_:
+            min_ = deref(span.first).second
+
+        inc(span.first)
+
+    return min_
+
+def cynieghborhood_sum(cyBQM bqm, object v, Bias start=0):
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        start += deref(span.first).second
+        inc(span.first)
+
+    return start
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def coo_sort(VarIndex[:] irow, VarIndex[:] icol, Bias[:] qdata):
