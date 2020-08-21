@@ -27,7 +27,8 @@ import numpy as np
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-from dimod.bqm.utils import cylmin, cylmax, cyqmin, cyqmax, cylsum, cyqsum
+from dimod.bqm.utils import cylinear_min, cylinear_max, cylinear_sum
+from dimod.bqm.utils import cyquadratic_min, cyquadratic_max, cyquadratic_sum
 from dimod.bqm.utils import cynieghborhood_max, cynieghborhood_min, cynieghborhood_sum
 
 __all__ = ['BQM', 'ShapeableBQM']
@@ -185,7 +186,7 @@ class Linear(BQMView):
     def min(self, default=None):
         """Returns the minimum linear bias."""
         try:
-            return cylmin(self._bqm, default=default)
+            return cylinear_min(self._bqm, default=default)
         except TypeError:
             pass
 
@@ -197,7 +198,7 @@ class Linear(BQMView):
     def max(self, default=None):
         """Returns the maximum linear bias."""
         try:
-            return cylmax(self._bqm, default=default)
+            return cylinear_max(self._bqm, default=default)
         except TypeError:
             pass
 
@@ -209,7 +210,7 @@ class Linear(BQMView):
     def sum(self, start=0):
         """Return the sum of the linear biases."""
         try:
-            return cylsum(self._bqm, start=start)
+            return cylinear_sum(self._bqm, start=start)
         except TypeError:
             pass
 
@@ -250,7 +251,7 @@ class Quadratic(BQMView):
     def min(self, default=None):
         """Returns the minimum quadratic bias."""
         try:
-            return cyqmin(self._bqm, default=default)
+            return cyquadratic_min(self._bqm, default=default)
         except TypeError:
             pass
 
@@ -262,7 +263,7 @@ class Quadratic(BQMView):
     def max(self, default=None):
         """Returns the maximum quadratic bias."""
         try:
-            return cyqmax(self._bqm, default=default)
+            return cyquadratic_max(self._bqm, default=default)
         except TypeError:
             pass
 
@@ -274,7 +275,7 @@ class Quadratic(BQMView):
     def sum(self, start=0):
         """Return the sum of the quadratic biases."""
         try:
-            return cyqsum(self._bqm, start=start)
+            return cyquadratic_sum(self._bqm, start=start)
         except TypeError:
             pass
 
