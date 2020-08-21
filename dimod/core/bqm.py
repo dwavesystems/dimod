@@ -167,7 +167,11 @@ class Linear(BQMView):
             return max(self._bqm.linear.values())
         else:
             return max(self._bqm.linear.values(), default=default)
-            
+
+    def sum(self, start=0):
+        """Return the sum of the linear biases."""
+        return sum(self.values(), start=start)
+
 
 class ShapeableLinear(Linear, MutableMapping):
     def __delitem__(self, v):
@@ -224,7 +228,11 @@ class Quadratic(BQMView):
             return max(self._bqm.quadratic.values())
         else:
             return max(self._bqm.quadratic.values(), default=default)
-            
+
+    def sum(self, start=0):
+        """Return the sum of the quadratic biases."""
+        return sum(self.values(), start=start)
+
 
 class ShapeableQuadratic(Quadratic, MutableMapping):
     def __delitem__(self, uv):

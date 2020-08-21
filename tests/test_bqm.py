@@ -2291,6 +2291,12 @@ class TestViews(unittest.TestCase):
         assert_consistent_bqm(bqm)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_linear_sum(self, name, BQM):
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': 1, 'bc': 1})
+        self.assertEqual(bqm.linear.sum(), 1)
+        self.assertEqual(bqm.linear.sum(start=5), 6)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_quadratic_delitem(self, name, BQM):
         if not BQM.shapeable():
             raise unittest.SkipTest
@@ -2312,6 +2318,12 @@ class TestViews(unittest.TestCase):
         bqm.quadratic[('a', 'b')] = 5
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_quadratic_sum(self, name, BQM):
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+        self.assertEqual(bqm.quadratic.sum(), 5)
+        self.assertEqual(bqm.quadratic.sum(start=5), 10)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_lin_minmax(self, name, BQM):
