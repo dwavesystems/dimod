@@ -15,6 +15,7 @@
 #ifndef DIMOD_ADJMAPBQM_H_
 #define DIMOD_ADJMAPBQM_H_
 
+#include <cassert>
 #include <map>
 #include <utility>
 #include <vector>
@@ -32,6 +33,9 @@ class AdjMapBQM {
 
     using outvars_iterator = typename std::map<V, B>::iterator;
     using const_outvars_iterator = typename std::map<V, B>::const_iterator;
+
+    using invars_iterator = typename std::vector<std::pair<std::map<V, B>, B>>::iterator;
+    using const_invars_iterator = typename std::vector<std::pair<std::map<V, B>, B>>::const_iterator;
 
     // in the future we'd probably like to make this protected
     std::vector<std::pair<std::map<V, B>, B>> adj;
@@ -164,6 +168,19 @@ class AdjMapBQM {
         // to be consistent with AdjArrayBQM, we return whether the value was
         // set
         return true;
+    }
+
+    utils::QuadraticIterator<const_invars_iterator, const_outvars_iterator> quadratic_begin() const {
+        return {adj.begin(), adj.end()};
+    }
+    utils::QuadraticIterator<const_invars_iterator, const_outvars_iterator> quadratic_cbegin() const {
+        return {adj.cbegin(), adj.cend()};
+    }
+    utils::QuadraticIterator<const_invars_iterator, const_outvars_iterator> quadratic_end() const {
+        return {adj.end(), adj.end(), static_cast<variable_type>(num_variables() - 1)};
+    }
+    utils::QuadraticIterator<const_invars_iterator, const_outvars_iterator> quadratic_cend() const {
+        return {adj.cend(), adj.cend(), static_cast<variable_type>(num_variables() - 1)};
     }
 };
 

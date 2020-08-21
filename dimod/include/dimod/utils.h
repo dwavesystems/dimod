@@ -17,6 +17,8 @@
 
 #include <utility>
 
+#include "dimod/quadraticiterator.h"
+
 namespace dimod {
 namespace utils {
 

@@ -34,6 +34,9 @@ class AdjArrayBQM {
     using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
     using const_outvars_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
 
+    using invars_iterator = typename std::vector<std::pair<N, B>>::iterator;
+    using const_invars_iterator = typename std::vector<std::pair<N, B>>::const_iterator;
+
     // in the future we'd probably like to make this protected
     std::vector<std::pair<N, B>> invars;
     std::vector<std::pair<V, B>> outvars;
@@ -166,6 +169,21 @@ class AdjArrayBQM {
         low->second = b;
 
         return true;
+    }
+
+    utils::QuadraticArrayIterator<V, B, N> quadratic_begin() const {
+        return {invars.begin(), invars.end(), outvars.begin(), outvars.end()};
+    }
+    utils::QuadraticArrayIterator<V, B, N> quadratic_cbegin() const {
+        return {invars.cbegin(), invars.cend(), outvars.cbegin(), outvars.cend()};
+    }
+    utils::QuadraticArrayIterator<V, B, N> quadratic_end() const {
+        return {invars.end(), invars.end(), outvars.begin(), outvars.end(),
+                static_cast<variable_type>(num_variables() - 1)};
+    }
+    utils::QuadraticArrayIterator<V, B, N> quadratic_cend() const {
+        return {invars.cend(), invars.cend(), outvars.cbegin(), outvars.cend(),
+                static_cast<variable_type>(num_variables() - 1)};
     }
 };
 }  // namespace dimod
