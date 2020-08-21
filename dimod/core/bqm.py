@@ -1365,6 +1365,67 @@ class VartypeView(BQM):
         return self._bqm.relabel_variables(*args, **kwargs)
 
 
+class EitherView(VartypeView):
+    def __init__(self, bqm, vartype=None):
+        self._base_bqm = bqm
+
+        if bqm.vartype is SPIN:
+            self._which = {dimod.SPIN: bqm,
+                           dimod.BINARY: BinaryView(bqm)}
+        else:
+            self._which = {dimod.SPIN: SpinView(bqm),
+                           dimod.BINARY: bqm}
+
+        if vartype is None:
+            self.vartype = bqm.vartype
+        else:
+            self.vartype = vartype
+
+    @property
+    def _bqm(self):
+        return self._which[self._vartype]
+
+    def change_vartype(self, vartype, inplace=True):
+        if inplace:
+            self._vartype = vartype
+        else:
+            return EitherView(self._base_bqm, vartype)
+
+    @property
+    def binary(self):
+        return EitherView(self._base_bqm, BINARY)
+
+    @property
+    def spin(self):
+        return EitherView(self._base_bqm, SPIN)
+
+    @property
+    def offset(self):
+        return self._bqm.offset
+
+    @offset.setter(self, bias)
+    def offset(self):
+        self._bqm.offset = bias
+
+    def copy(self):
+        if self._vartype is self._base_bqm.vartype:
+            return self._base_bqm.copy()
+        else:
+            return self._base_bqm.change_vartype(self._vartype, inplace=False)
+
+    def get_linear(self, v):
+        return self._bqm.get_linear(v)
+
+    def get_quadratic(self, u, v, default=None):
+        return self._bqm.get_quadratic(u, v, default=default)
+
+    def set_linear(self, v, bias):
+        self._bqm.set_linear(self, v, bias)
+
+    def set_quadratic(self, u, v, bias):
+        self._bqm.set_quadratic(self, u, v, bias)
+
+
 class BinaryView(VartypeView):
     @property
     def binary(self):
