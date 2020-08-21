@@ -28,6 +28,7 @@ from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
 from dimod.bqm.utils import cylmin, cylmax, cyqmin, cyqmax, cylsum, cyqsum
+from dimod.bqm.utils import cynieghborhood_max, cynieghborhood_min, cynieghborhood_sum
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -109,6 +110,44 @@ class Neighborhood(BQMView):
 
     def __setitem__(self, v, bias):
         self._bqm.set_quadratic(self._var, v, bias)
+
+    def max(self, default=None):
+        """The maximum quadratic bias in the neighborhood."""
+        try:
+            return cynieghborhood_max(self._bqm, self._var, default)
+        except TypeError:
+            pass
+
+        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
+
+        if default is None:
+            return max(generator)
+        else:
+            return max(generator, default=default)
+
+    def min(self, default=None):
+        """The minimum quadratic bias in the neighborhood."""
+        try:
+            return cynieghborhood_min(self._bqm, self._var, default)
+        except TypeError:
+            pass
+
+        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
+
+        if default is None:
+            return min(generator)
+        else:
+            return min(generator, default=default)
+
+    def sum(self, start=0):
+        """The sum of the quadratic biases in the neighborhood."""
+        try:
+            return cynieghborhood_sum(self._bqm, self._var, start)
+        except TypeError:
+            pass
+
+        return sum((b for _, _, b in self._bqm.iter_quadratic(self._var)),
+                   start)
 
 
 class ShapeableNeighborhood(Neighborhood, MutableMapping):
