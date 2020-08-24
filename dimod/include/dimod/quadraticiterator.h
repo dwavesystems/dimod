@@ -36,8 +36,8 @@ namespace utils {
         using in_iterator = InIT;
         using out_iterator = OutIT;
 
-        using bias_type = std::remove_cv_t<typename out_iterator::value_type::second_type>;
-        using variable_type = std::remove_cv_t<typename out_iterator::value_type::first_type>;
+        using bias_type = typename std::remove_cv<typename out_iterator::value_type::second_type>::type;
+        using variable_type = typename std::remove_cv<typename out_iterator::value_type::first_type>::type;
 
         using difference_type = typename out_iterator::difference_type;
         using value_type = QuadraticTerm<variable_type, bias_type>;
@@ -123,8 +123,8 @@ namespace utils {
         using in_iterator = typename std::vector<std::pair<N, B>>::const_iterator;
         using out_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
 
-        using bias_type = std::remove_cv_t<typename out_iterator::value_type::second_type>;
-        using variable_type = std::remove_cv_t<typename out_iterator::value_type::first_type>;
+        using bias_type = typename std::remove_cv<typename out_iterator::value_type::second_type>::type;
+        using variable_type = typename std::remove_cv<typename out_iterator::value_type::first_type>::type;
 
         using difference_type = typename out_iterator::difference_type;
         using value_type = QuadraticTerm<variable_type, bias_type>;
