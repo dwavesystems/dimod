@@ -2261,6 +2261,56 @@ class TestViews(unittest.TestCase):
         self.assertEqual(len(bqm.adj['d']), 1)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_change_vartype_binary(self, name, BQM):
+        bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'BINARY')
+        bqm.offset = 1
+
+        spin = bqm.spin
+
+        spin.change_vartype('SPIN')  # should do nothing
+        self.assertIs(spin.vartype, dimod.SPIN)
+        self.assertIs(bqm.spin, spin)
+
+        new = spin.change_vartype('SPIN', inplace=False)
+        self.assertIs(new.vartype, dimod.SPIN)
+        self.assertIsNot(new, spin)
+        self.assertIsInstance(new, BQM)
+
+        new = spin.change_vartype('BINARY', inplace=False)
+        self.assertIs(new.vartype, dimod.BINARY)
+        self.assertIsNot(new, spin)
+        self.assertIsInstance(new, BQM)
+
+        spin.change_vartype('BINARY')
+        self.assertIs(spin.vartype, dimod.BINARY)
+        self.assertIsNot(bqm.spin, spin)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_change_vartype_spin(self, name, BQM):
+        bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'SPIN')
+        bqm.offset = 1
+
+        binary = bqm.binary
+
+        binary.change_vartype('BINARY')  # should do nothing
+        self.assertIs(binary.vartype, dimod.BINARY)
+        self.assertIs(bqm.binary, binary)
+
+        new = binary.change_vartype('BINARY', inplace=False)
+        self.assertIs(new.vartype, dimod.BINARY)
+        self.assertIsNot(new, binary)
+        self.assertIsInstance(new, BQM)
+
+        new = binary.change_vartype('SPIN', inplace=False)
+        self.assertIs(new.vartype, dimod.SPIN)
+        self.assertIsNot(new, binary)
+        self.assertIsInstance(new, BQM)
+
+        binary.change_vartype('SPIN')
+        self.assertIs(binary.vartype, dimod.SPIN)
+        self.assertIsNot(bqm.binary, binary)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_linear_delitem(self, name, BQM):
         if not BQM.shapeable():
             raise unittest.SkipTest

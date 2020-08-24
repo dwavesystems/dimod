@@ -401,7 +401,10 @@ class BQM(metaclass=abc.ABCMeta):
             return self
 
         try:
-            return self._binary
+            # it may have changed vartype in the mean time
+            if self._binary.vartype is Vartype.BINARY:
+                return self._binary
+            view = self._binary
         except AttributeError:
             pass
 
@@ -436,7 +439,9 @@ class BQM(metaclass=abc.ABCMeta):
             return self
 
         try:
-            return self._spin
+            # it may have changed vartype in the mean time
+            if self._spin.vartype is Vartype.SPIN:
+                return self._spin
         except AttributeError:
             pass
 
@@ -1385,11 +1390,13 @@ class VartypeView(BQM):
         else:
             return self._bqm.spin
 
-    def change_vartype(self, *args, **kwargs):
-        # todo
-        msg = '{} can only be {}-valued'.format(type(self).__name__,
-                                                self.vartype.name)
-        raise NotImplementedError(msg)
+    def change_vartype(self, vartype, inplace=True):
+        if not inplace:
+            return self.copy().change_vartype(vartype, inplace=True)
+
+        self.vartype = as_vartype(vartype)
+
+        return self
 
     def copy(self):
         return self._bqm.change_vartype(self.vartype, inplace=False)
