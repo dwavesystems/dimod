@@ -1351,10 +1351,9 @@ class VartypeView(BQM):
 
     @property
     def binary(self):
-        if self.vartype is Vartype.BINARY:
-            return self
-        else:
-            return self._bqm.binary
+        # let the parent BQM decide what to do, this will return self in the
+        # expected cases
+        return self._bqm.binary
 
     @property
     def offset(self):
@@ -1385,10 +1384,9 @@ class VartypeView(BQM):
 
     @property
     def spin(self):
-        if self.vartype is Vartype.SPIN:
-            return self
-        else:
-            return self._bqm.spin
+        # let the parent BQM decide what to do, this will return self in the
+        # expected cases
+        return self._bqm.spin
 
     def change_vartype(self, vartype, inplace=True):
         if not inplace:

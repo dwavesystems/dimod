@@ -2244,6 +2244,11 @@ class TestUpdate(unittest.TestCase):
 
 
 class TestViews(unittest.TestCase):
+    # todo: Really it would be nice if we could test the views as full-fledged
+    # BQMs by adding them to BQM_SUBCLASSES, but there is a lot of type
+    # checking and some other details that make this complicated. For now
+    # we'll have to stick with seperate tests.
+
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_adj_setitem(self, name, BQM):
         bqm = BQM({'ab': -1}, 'SPIN')
@@ -2309,6 +2314,59 @@ class TestViews(unittest.TestCase):
         binary.change_vartype('SPIN')
         self.assertIs(binary.vartype, dimod.SPIN)
         self.assertIsNot(bqm.binary, binary)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_consistency_binary_to_spin(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -2}, {'ab': 3, 'bc': 4}, 1.5, 'BINARY')
+
+        spin = bqm.change_vartype('SPIN', inplace=False)
+        view = bqm.spin
+
+        self.assertEqual(spin, view)
+        self.assertEqual(bqm, spin.binary)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_consistency_spin_to_binary(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -2}, {'ab': 3, 'bc': 4}, 1.5, 'SPIN')
+
+        binary = bqm.change_vartype('BINARY', inplace=False)
+        view = bqm.binary
+
+        self.assertEqual(binary, view)
+        self.assertEqual(bqm, binary.spin)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_consistent_energies_binary(self, name, BQM):
+        bqm = BQM({'a': -7, 'b': -32.2}, {'ab': -5, 'bc': 1.5}, 20.6, 'BINARY')
+
+        bin_sampleset = dimod.ExactSolver().sample(bqm)
+        spin_sampleset = dimod.ExactSolver().sample(bqm.spin)
+
+        self.assertEqual(bin_sampleset.change_vartype('SPIN', inplace=False),
+                         spin_sampleset)
+        self.assertEqual(spin_sampleset.change_vartype('BINARY', inplace=False),
+                         bin_sampleset)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_consistent_energies_spin(self, name, BQM):
+        bqm = BQM({'a': -7, 'b': -32.2}, {'ab': -5, 'bc': 1.5}, 20.6, 'SPIN')
+
+        bin_sampleset = dimod.ExactSolver().sample(bqm.binary)
+        spin_sampleset = dimod.ExactSolver().sample(bqm)
+
+        self.assertEqual(bin_sampleset.change_vartype('SPIN', inplace=False),
+                         spin_sampleset)
+        self.assertEqual(spin_sampleset.change_vartype('BINARY', inplace=False),
+                         bin_sampleset)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_detatch(self, name, BQM):
+        bqm = BQM({'a': -7, 'b': -32.2}, {'ab': -5, 'bc': 1.5}, 20.6, 'SPIN')
+
+        binary = bqm.binary
+        binary2 = binary.binary
+        binary2.change_vartype('SPIN')
+        self.assertIs(binary.vartype, dimod.BINARY)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_linear_delitem(self, name, BQM):
