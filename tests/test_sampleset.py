@@ -135,6 +135,23 @@ class Test_as_samples(unittest.TestCase):
         self.assertEqual(arr.dtype, np.int32)
 
 
+class TestChangeVartype(unittest.TestCase):
+    def test_non_blocking(self):
+
+        future = concurrent.futures.Future()
+
+        sampleset = dimod.SampleSet.from_future(future)
+
+        # shouldn't block or raise
+        new = sampleset.change_vartype(dimod.BINARY)
+
+        future.set_result(dimod.SampleSet.from_samples({'a': -1},
+                                                       dimod.SPIN,
+                                                       energy=1))
+
+        np.testing.assert_array_equal(new.record.sample, [[0]])
+
+
 class TestConstruction(unittest.TestCase):
     def test_from_samples(self):
 
@@ -653,6 +670,22 @@ class TestRelabelVariables(unittest.TestCase):
 
             self.assertEqual(len(sample), len(new_sample))
 
+    def test_non_blocking(self):
+
+        future = concurrent.futures.Future()
+
+        sampleset = dimod.SampleSet.from_future(future)
+
+        new = sampleset.relabel_variables({0: 'a'})  # should not block or raise
+
+        future.set_result(dimod.SampleSet.from_samples({0: -1},
+                                                       dimod.SPIN,
+                                                       energy=1))
+
+        self.assertEqual(new.variables, ['a'])
+
+        # np.testing.assert_array_equal(new.record.sample, [[0]])
+
 
 class TestSerialization(unittest.TestCase):
     def test_empty_with_bytes(self):
@@ -782,6 +815,30 @@ class TestSerialization(unittest.TestCase):
 
         self.assertEqual(sampleset, new)
 
+    def test_unpacked(self):
+        # dev note: we are using an unsupported back door that allows
+        # samplesets to handle integer variables. This support could
+        # disappear at any time
+        samples = np.arange(25).reshape((5, 5))
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        s = sampleset.to_serializable(use_bytes=False, pack_samples=False)
+        new = dimod.SampleSet.from_serializable(s)
+
+        np.testing.assert_array_equal(sampleset.record, new.record)
+
+    def test_unpacked_bytes(self):
+        # dev note: we are using an unsupported back door that allows
+        # samplesets to handle integer variables. This support could
+        # disappear at any time
+        samples = np.arange(25).reshape((5, 5))
+        sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
+
+        s = sampleset.to_serializable(use_bytes=True, pack_samples=False)
+        new = dimod.SampleSet.from_serializable(s)
+
+        np.testing.assert_array_equal(sampleset.record, new.record)
+
 
 @unittest.skipUnless(_pandas, "no pandas present")
 class TestPandas(unittest.TestCase):
@@ -887,6 +944,39 @@ class Test_concatenate(unittest.TestCase):
     def test_empty(self):
         with self.assertRaises(ValueError):
             dimod.concatenate([])
+
+
+class TestInferVartype(unittest.TestCase):
+    def test_array_ambiguous_all_1s(self):
+        arr = np.ones((5, 5))
+        self.assertIs(dimod.sampleset.infer_vartype(arr), None)
+
+    def test_array_ambiguous_empty(self):
+        arr = []
+        self.assertIs(dimod.sampleset.infer_vartype(arr), None)
+
+    def test_array_binary(self):
+        arr = np.triu(np.ones((5, 5)))
+        self.assertIs(dimod.sampleset.infer_vartype(arr), dimod.BINARY)
+
+    def test_array_invalid(self):
+        arr = [1, 2, 1]
+        with self.assertRaises(ValueError):
+            dimod.sampleset.infer_vartype(arr)
+
+    def test_array_spin(self):
+        arr = 2*np.triu(np.ones((5, 5)))-1
+        self.assertIs(dimod.sampleset.infer_vartype(arr), dimod.SPIN)
+
+    def test_sampleset_binary(self):
+        ss = dimod.SampleSet.from_samples(([[1, 1], [0, 0]], 'ab'),
+                                          dimod.BINARY, energy=[1, 1])
+        self.assertIs(dimod.sampleset.infer_vartype(ss), dimod.BINARY)
+
+    def test_sampleset_spin(self):
+        ss = dimod.SampleSet.from_samples(([[1, 1], [-1, -1]], 'ab'),
+                                          dimod.SPIN, energy=[1, 1])
+        self.assertIs(dimod.sampleset.infer_vartype(ss), dimod.SPIN)
 
 
 class TestWriteable(unittest.TestCase):

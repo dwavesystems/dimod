@@ -14,12 +14,11 @@
 #
 # ================================================================================================
 """
-A solver that calculates the energy of all possible samples.
+Solvers that calculate the energy of all possible samples.
 
 Note:
-    This sampler is designed for use in testing. Because it calculates the
-    energy for every possible sample, it is very slow.
-
+    These samplers are designed for use in testing. Because they calculate
+    energy for every possible sample, they are very slow.
 """
 
 import numpy as np
@@ -45,7 +44,7 @@ class ExactSolver(Sampler):
         >>> h = {'a': -0.5, 'b': 1.0}
         >>> J = {('a', 'b'): -1.5}
         >>> sampleset = dimod.ExactSolver().sample_ising(h, J)
-        >>> print(sampleset)
+        >>> print(sampleset)   # doctest: +SKIP
            a  b energy num_oc.
         0 -1 -1   -2.0       1
         2 +1 +1   -1.0       1
@@ -57,12 +56,15 @@ class ExactSolver(Sampler):
 
         >>> Q = {('a', 'b'): 2.0, ('a', 'a'): 1.0, ('b', 'b'): -0.5}
         >>> sampleset = dimod.ExactSolver().sample_qubo(Q)
+        >>> sampleset.first.sample
+        {'a': 0, 'b': 1}
 
-
-        This example solves a two-variable binary quadratic model
+        This example solves a two-variable binary quadratic model.
 
         >>> bqm = dimod.BinaryQuadraticModel({'a': 1.5}, {('a', 'b'): -1}, 0.0, 'SPIN')
         >>> sampleset = dimod.ExactSolver().sample(bqm)
+        >>> sampleset.first.energy
+        -2.5
 
     """
     properties = None
@@ -97,7 +99,7 @@ class ExactSolver(Sampler):
 
 
 class ExactPolySolver(PolySampler):
-    """A simple exact polynomial solver for testing and debugging code using your local CPU.
+    """A simple exact polynomial solver for testing/debugging code on your CPU.
 
     Notes:
         This solver becomes slow for problems with 18 or more
@@ -109,24 +111,31 @@ class ExactPolySolver(PolySampler):
         >>> h = {'a': -0.5, 'b': 1.0, 'c': 0.}
         >>> J = {('a', 'b'): -1.5, ('a', 'b', 'c'): -1.0}
         >>> sampleset = dimod.ExactPolySolver().sample_hising(h, J)
-        >>> print(sampleset)
-           a  b energy num_oc.
-        0 -1 -1   -2.0       1
-        2 +1 +1   -1.0       1
-        1 +1 -1    0.0       1
-        3 -1 +1    3.0       1
-        ['SPIN', 4 rows, 4 samples, 2 variables]
+        >>> print(sampleset)      # doctest: +SKIP
+           a  b  c energy num_oc.
+        1 -1 -1 +1   -3.0       1
+        5 +1 +1 +1   -2.0       1
+        0 -1 -1 -1   -1.0       1
+        3 +1 -1 -1   -1.0       1
+        4 +1 +1 -1    0.0       1
+        2 +1 -1 +1    1.0       1
+        7 -1 +1 -1    2.0       1
+        6 -1 +1 +1    4.0       1
+        ['SPIN', 8 rows, 8 samples, 3 variables]
 
         This example solves a three-variable HUBO.
 
         >>> Q = {('a', 'b'): 2.0, ('c',): 1.0, ('a', 'b', 'c'): -0.5}
         >>> sampleset = dimod.ExactPolySolver().sample_hubo(Q)
-
+        >>> sampleset.first.energy
+        0.0
 
         This example solves a three-variable binary polynomial
 
         >>> poly = dimod.BinaryPolynomial({('a',): 1.5, ('a', 'b'): -1, ('a', 'b', 'c'): 0.5}, 'SPIN')
         >>> sampleset = dimod.ExactPolySolver().sample_poly(poly)
+        >>> sampleset.first.sample
+        {'a': -1, 'b': -1, 'c': -1}
 
     """
     properties = None

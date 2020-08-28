@@ -18,9 +18,6 @@ import unittest
 import numpy as np
 
 from dimod.bqm.adjdictbqm import AdjDictBQM
-from tests.test_bqm import BQMTestCase
-
-BQMTestCase.register(AdjDictBQM)
 
 
 class TestObjectDtype(unittest.TestCase):

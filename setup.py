@@ -17,14 +17,12 @@ import os
 
 from setuptools import setup
 from distutils.extension import Extension
-from distutils.command.build_ext import build_ext
+from distutils.command.build_ext import build_ext as _build_ext
 
 # add __version__, __author__, __authoremail__, __description__ to this namespace
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-exec(open(os.path.join(".", "dimod", "package_info.py")).read())
+exec(open(os.path.join(os.path.dirname(__file__), "dimod", "package_info.py")).read())
 
 install_requires = ['numpy>=1.16.0,<2.0.0',
-                    'six>=1.10.0,<2.0.0',
                     ]
 
 setup_requires = ['numpy>=1.16.0,<2.0.0']
@@ -80,13 +78,30 @@ extra_link_args = {
 }
 
 
-class build_ext_compiler_check(build_ext):
-    def run(self):
-        import numpy
+class build_ext(_build_ext):
 
+    user_options = _build_ext.user_options + [('build-tests', None,
+                                               "Build dimod's cython tests")]
+
+    def run(self):
+        # add numpy headers
+        import numpy
         self.include_dirs.append(numpy.get_include())
 
-        build_ext.run(self)
+        # add dimod headers
+        include = os.path.join(os.path.dirname(__file__), 'dimod', 'include')
+        self.include_dirs.append(include)
+
+        if self.build_tests:
+
+            test_extensions = [Extension('*', ['tests/test_*'+ext])]
+            if USE_CYTHON:
+                test_extensions = cythonize(test_extensions,
+                                            # annotate=True
+                                            )
+            self.extensions.extend(test_extensions)
+
+        super().run()
 
     def build_extensions(self):
         compiler = self.compiler.compiler_type
@@ -99,7 +114,11 @@ class build_ext_compiler_check(build_ext):
         for ext in self.extensions:
             ext.extra_compile_args.extend(link_args)
 
-        build_ext.build_extensions(self)
+        super().build_extensions()
+
+    def initialize_options(self):
+        super().initialize_options()
+        self.build_tests = None
 
 
 bqmdir = os.path.join(".", "dimod", "bqm")
@@ -112,17 +131,11 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
               Extension("dimod.bqm.adjmapbqm",
-                        ['dimod/bqm/adjmapbqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjmapbqm'+ext]),
               Extension("dimod.bqm.adjarraybqm",
-                        ['dimod/bqm/adjarraybqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjarraybqm'+ext]),
               Extension("dimod.bqm.adjvectorbqm",
-                        ['dimod/bqm/adjvectorbqm'+ext],
-                        include_dirs=['dimod/bqm/src/'],
-                        library_dirs=['dimod/bqm/src/']),
+                        ['dimod/bqm/adjvectorbqm'+ext]),
               Extension("dimod.bqm.utils",
                         ['dimod/bqm/utils'+ext]),
               Extension("dimod.bqm.common",
@@ -154,6 +167,6 @@ setup(
     classifiers=classifiers,
     zip_safe=False,
     python_requires=python_requires,
-    cmdclass=dict(build_ext=build_ext_compiler_check),
+    cmdclass=dict(build_ext=build_ext),
     ext_modules=extensions,
 )

@@ -61,14 +61,14 @@ def connected_components(bqm):
 
     Args:
         bqm (:obj:`dimod.BinaryQuadraticModel`):
-            A binary quadratic model.
+            A binary quadratic model (BQM).
 
     Yields:
-        set: A set of variables in the bqm that form a connected component.
+        set: A set of variables in the BQM that form a connected component.
 
     """
     seen = set()
-    for v in bqm:
+    for v in bqm.variables:
         if v not in seen:
             c = set(bfs_variables(bqm, v))
             yield c
@@ -83,10 +83,10 @@ def bfs_variables(bqm, source):
             A binary quadratic model.
 
         source (variable):
-            A variable in the binary quadratic model.
+            A variable in the binary quadratic model (BQM).
 
     Yields:
-        variable: variables in the bqm, yielded in breadth-first search order
+        variable: variables in the BQM, yielded in breadth-first search order
         starting at source.
 
     """

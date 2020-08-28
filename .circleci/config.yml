@@ -21,7 +21,7 @@ jobs:
 
       - restore_cache: &restore-cache-template
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "tests/requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: &create-virtualenv-template
           name: create virtualenv
@@ -34,17 +34,18 @@ jobs:
             . env/bin/activate
             python --version
             pip install -r requirements.txt
+            pip install -r tests/requirements.txt
 
       - save_cache: &save-cache-template
           paths:
             - ./env
-          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "tests/requirements.txt" }}-{{ .Environment.CIRCLE_JOB }}
 
       - run: &build-ext-template
           name: build extension
           command: |
             . env/bin/activate
-            python setup.py build_ext --inplace
+            python setup.py build_ext --inplace --build-tests
 
       - run: &run-tests-template
           name: run unittests
@@ -181,6 +182,7 @@ jobs:
             env\Scripts\activate.ps1
             python --version
             pip install -r requirements.txt
+            pip install -r tests\requirements.txt
 
       - run:  &win-install-boost-template
           name: install boost
@@ -191,7 +193,7 @@ jobs:
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
+            python setup.py build_ext --inplace --build-tests --include-dirs boost\lib\native\include\
 
       - run: &win-run-unittests-template
           name: run unittests
@@ -299,24 +301,31 @@ jobs:
 
       - run: *create-virtualenv-template
 
-      - run: *install-dependencies-template
-
       - run:
-          name: install sphinx
+          name: install dependencies
           command: |
             . env/bin/activate
-            pip install sphinx
-            pip install sphinx_rtd_theme
+            pip install -r requirements.txt
+            pip install -r docs/requirements.txt
 
       - save_cache: *save-cache-template
 
       - run: *build-ext-template
 
       - run:
+          name: build docs
+          command: |
+            . env/bin/activate
+            make -C docs/ html
+
+      - store_artifacts:
+          path: ./docs/build/html
+
+      - run:
           name: doctest
           command: |
             . env/bin/activate
-            make -C docs/ html doctest
+            make -C docs/ doctest
 
 ##################################################################################################
 # Deploy
@@ -340,7 +349,7 @@ jobs:
           name: build wheels
           command: |
             for PYBIN in /opt/python/*/bin; do
-              if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info>=(3, 5))"; then continue; fi;
+              if "${PYBIN}/python" -c "import sys; sys.exit((3, 5) <= sys.version_info < (3, 9))"; then continue; fi;
               "${PYBIN}/pip" install -r requirements.txt
               "${PYBIN}/pip" wheel . -w ./wheelhouse
               "${PYBIN}/python" setup.py sdist -d ./dist

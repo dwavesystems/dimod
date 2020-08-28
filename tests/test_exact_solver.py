@@ -20,14 +20,15 @@ import numpy as np
 import numpy.testing as npt
 
 import dimod
-import dimod.testing as dtest
+import dimod.testing
 
 
+@dimod.testing.load_sampler_bqm_tests(dimod.ExactSolver)
 class TestExactSolver(unittest.TestCase):
     def test_instantiation(self):
         sampler = dimod.ExactSolver()
 
-        dtest.assert_sampler_api(sampler)
+        dimod.testing.assert_sampler_api(sampler)
 
         # this sampler has no properties and has no accepted parameters
         self.assertEqual(sampler.properties, {})
@@ -62,7 +63,7 @@ class TestExactSolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
 
-        dtest.assert_response_energies(response, bqm)
+        dimod.testing.assert_response_energies(response, bqm)
 
     def test_sample_BINARY(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
@@ -79,7 +80,7 @@ class TestExactSolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, bqm.vartype)
 
-        dtest.assert_response_energies(response, bqm)
+        dimod.testing.assert_response_energies(response, bqm)
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}
@@ -178,7 +179,7 @@ class TestExactPolySolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, poly.vartype)
 
-        dtest.assert_response_energies(response, poly)
+        dimod.testing.assert_response_energies(response, poly)
 
     def test_sample_BINARY(self):
         poly = dimod.BinaryPolynomial({(): 1.0, (0,): 0.0, (1,): 0.0, (0, 1): -1.0, (1, 2): 1.0, (0, 1, 2): 1.0},
@@ -193,7 +194,7 @@ class TestExactPolySolver(unittest.TestCase):
         # confirm vartype
         self.assertIs(response.vartype, poly.vartype)
 
-        dtest.assert_response_energies(response, poly)
+        dimod.testing.assert_response_energies(response, poly)
 
     def test_sample_hising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}

@@ -7,17 +7,6 @@ Utilities
 .. contents::
     :depth: 3
 
-Energy Calculations
-===================
-
-.. currentmodule:: dimod.utilities
-
-.. autosummary::
-   :toctree: generated/
-
-   ising_energy
-   qubo_energy
-
 Decorators
 ==========
 
@@ -35,6 +24,18 @@ Decorators
    vartype_argument
 
 
+Energy Calculations
+===================
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   ising_energy
+   qubo_energy
+
+
 Graph-like
 ==========
 
@@ -46,24 +47,47 @@ Graph-like
    child_structure_dfs
 
 
+.. _serialization_dimod:
+
 Serialization
 =============
 
-JSON
-----
-.. currentmodule:: dimod.serialization.json
-.. automodule:: dimod.serialization.json
-
-.. autoclass:: DimodEncoder
-
-.. autoclass:: DimodDecoder
-
-Functions
-~~~~~~~~~
+COOrdinate
+----------
+.. currentmodule:: dimod.serialization.coo
+.. automodule:: dimod.serialization.coo
 
 .. autosummary::
    :toctree: generated/
 
+   dump
+   dumps
+   load
+   loads
+
+FileView
+--------
+
+.. currentmodule:: dimod.serialization.fileview
+.. automodule:: dimod.serialization.fileview
+
+.. autosummary::
+   :toctree: generated/
+
+   FileView
+   load
+
+JSON
+----
+
+.. currentmodule:: dimod.serialization.json
+.. automodule:: dimod.serialization.json
+
+.. autosummary::
+   :toctree: generated/
+
+   DimodEncoder
+   DimodDecoder
    dimod_object_hook
 
 
@@ -94,7 +118,15 @@ Correctness Asserts
    assert_response_energies
    assert_sampleset_energies
 
+Test Case Loader
+----------------
 
+.. currentmodule:: dimod.testing.sampler
+
+.. autosummary::
+   :toctree: generated/
+
+   load_sampler_bqm_tests
 
 
 Vartype Conversion

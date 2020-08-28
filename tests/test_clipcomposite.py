@@ -17,16 +17,18 @@
 import unittest
 
 import dimod
-import dimod.testing as dtest
+
 from dimod import ClipComposite
 from dimod import BinaryQuadraticModel
-from dimod import ExactSolver
+from dimod import ExactSolver, NullSampler
 
 
+@dimod.testing.load_sampler_bqm_tests(ClipComposite(dimod.ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(ClipComposite(dimod.NullSampler()))
 class TestClipCompositeClass(unittest.TestCase):
     def test_instantiation_smoketest(self):
-        sampler = ClipComposite(ExactSolver())
-        dtest.assert_sampler_api(sampler)
+        sampler = ClipComposite(NullSampler())
+        dimod.testing.assert_sampler_api(sampler)
 
     def test_no_bounds(self):
         bqm = BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0},
@@ -92,3 +94,14 @@ class TestClipCompositeClass(unittest.TestCase):
         bqm = BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
         sampler = ClipComposite(ExactSolver())
         sampler.sample(bqm, lower_bound=-1, upper_bound=1)
+
+    def test_info_propagation(self):
+        bqm = BinaryQuadraticModel.from_ising({}, {})
+
+        class MySampler:
+            @staticmethod
+            def sample(bqm):
+                return dimod.SampleSet.from_samples_bqm([], bqm, info=dict(a=1))
+
+        sampleset = ClipComposite(MySampler).sample(bqm)
+        self.assertEqual(sampleset.info, {'a': 1})

@@ -57,8 +57,6 @@ from functools import reduce
 
 import numpy as np
 
-from six import iteritems
-
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.package_info import __version__
 from dimod.sampleset import SampleSet

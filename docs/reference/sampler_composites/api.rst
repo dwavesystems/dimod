@@ -32,7 +32,7 @@ ABCs.
         -
         - :attr:`~.Structured.nodelist`, :attr:`~.Structured.edgelist`
         -
-        - :attr:`~.Structured.structure`, :attr:`~.Structured.adjacency`
+        - :attr:`~.Structured.structure`, :attr:`~.Structured.adjacency`, :meth:`~.Structured.to_networkx_graph`
     *   - :class:`.Composite`
         -
         - :attr:`~.Composite.children`
@@ -45,6 +45,11 @@ ABCs.
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
           :attr:`~.Composite.child`
+    *   - :class:`.Initialized`
+        -
+        -
+        -
+        - :attr:`~.Initialized.parse_initial_states`
     *   - :class:`.PolySampler`
         -
         - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`
@@ -151,6 +156,31 @@ Mixin Properties
 
    Structured.adjacency
    Structured.structure
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Structured.to_networkx_graph
+
+
+Creating a Initialized Sampler
+==============================
+
+.. automodule:: dimod.core.initialized
+
+.. currentmodule:: dimod
+.. autoclass:: Initialized
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Initialized.parse_initial_states
 
 
 Creating a Binary Polynomial Sampler

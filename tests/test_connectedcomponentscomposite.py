@@ -16,7 +16,7 @@
 
 import unittest
 
-import dimod.testing as dtest
+import dimod.testing
 from dimod.vartypes import Vartype
 
 from dimod import BinaryQuadraticModel
@@ -24,12 +24,14 @@ from dimod import ConnectedComponentsComposite, ExactSolver, FixedVariableCompos
 from dimod import SampleSet
 
 
+@dimod.testing.load_sampler_bqm_tests(ConnectedComponentsComposite(dimod.ExactSolver()))
+@dimod.testing.load_sampler_bqm_tests(ConnectedComponentsComposite(dimod.NullSampler()))
 class TestConnectedComponentsComposite(unittest.TestCase):
 
     def test_instantiation_smoketest(self):
         sampler = ConnectedComponentsComposite(ExactSolver())
 
-        dtest.assert_sampler_api(sampler)
+        dimod.testing.assert_sampler_api(sampler)
 
     def test_sample(self):
         bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},

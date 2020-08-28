@@ -13,7 +13,7 @@
 #    limitations under the License.
 #
 # ================================================================================================
-
+import concurrent.futures
 import unittest
 
 import numpy as np
@@ -312,3 +312,31 @@ class TestSamplerClass(unittest.TestCase):
         cbqm = CountBQM.from_qubo({(0, 0): -3, (1, 0): 1.5}, offset=.5)
         sampleset = sampler.sample(cbqm)
         dimod.testing.assert_response_energies(sampleset, cbqm)
+
+    def test_nonblocking_sample_ising(self):
+
+        class SignalException(Exception):
+            pass
+
+        class Mock(dimod.Sampler):
+            properties = {}
+            parameters = {}
+
+            def sample_ising(self, h, J):
+                future = concurrent.futures.Future()
+                future.set_exception(SignalException)
+                future.done = lambda: False  # pretend to be running
+                return dimod.SampleSet.from_future(future)
+
+        # should not block
+        ss = Mock().sample_ising({}, {})
+        with self.assertRaises(SignalException):
+            ss.resolve()
+
+        ss = Mock().sample_qubo({})
+        with self.assertRaises(SignalException):
+            ss.resolve()
+
+        ss = Mock().sample(dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))
+        with self.assertRaises(SignalException):
+            ss.resolve()

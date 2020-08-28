@@ -14,6 +14,7 @@
 #
 # =============================================================================
 import abc
+import copy
 import io
 import functools
 
@@ -25,6 +26,10 @@ import numpy as np
 
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
+
+from dimod.bqm.utils import cylinear_min, cylinear_max, cylinear_sum
+from dimod.bqm.utils import cyquadratic_min, cyquadratic_max, cyquadratic_sum
+from dimod.bqm.utils import cyneighborhood_max, cyneighborhood_min, cyneighborhood_sum
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -44,10 +49,6 @@ class BQMView(Mapping):
         self._bqm = state['_bqm']
 
     def __repr__(self):
-        # want the repr to make clear that it's not the correct item
-        return "<{!s}: {!s}>".format(type(self).__name__, self)
-
-    def __str__(self):
         # let's just print the whole (potentially massive) thing for now, in
         # the future we'd like to do something a bit more clever (like hook into
         # dimod's Formatter)
@@ -63,10 +64,17 @@ class BQMView(Mapping):
 
 
 class Adjacency(BQMView):
+    """Quadratic biases as a nested dict of dicts.
+
+    Accessed like a dict of dicts, where the keys of the outer dict are all
+    of the model's variables (e.g. `v`) and the values are the neighborhood of
+    `v`. Each neighborhood if a dict where the keys are the neighbors of `v`
+    and the values are their associated quadratic biases.
+    """
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return Neighbour(self._bqm, v)
+        return Neighborhood(self._bqm, v)
 
     def __iter__(self):
         return self._bqm.iter_variables()
@@ -79,10 +87,10 @@ class ShapeableAdjacency(Adjacency):
     def __getitem__(self, v):
         if not self._bqm.has_variable(v):
             raise KeyError('{} is not a variable'.format(v))
-        return ShapeableNeighbour(self._bqm, v)
+        return ShapeableNeighborhood(self._bqm, v)
 
 
-class Neighbour(BQMView):
+class Neighborhood(BQMView):
     __slots__ = ['_var']
 
     def __init__(self, bqm, v):
@@ -104,13 +112,56 @@ class Neighbour(BQMView):
     def __setitem__(self, v, bias):
         self._bqm.set_quadratic(self._var, v, bias)
 
+    def max(self, default=None):
+        """The maximum quadratic bias in the neighborhood."""
+        try:
+            return cyneighborhood_max(self._bqm, self._var, default)
+        except TypeError:
+            pass
 
-class ShapeableNeighbour(Neighbour, MutableMapping):
+        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
+
+        if default is None:
+            return max(generator)
+        else:
+            return max(generator, default=default)
+
+    def min(self, default=None):
+        """The minimum quadratic bias in the neighborhood."""
+        try:
+            return cyneighborhood_min(self._bqm, self._var, default)
+        except TypeError:
+            pass
+
+        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
+
+        if default is None:
+            return min(generator)
+        else:
+            return min(generator, default=default)
+
+    def sum(self, start=0):
+        """The sum of the quadratic biases in the neighborhood."""
+        try:
+            return cyneighborhood_sum(self._bqm, self._var, start)
+        except TypeError:
+            pass
+
+        return sum((b for _, _, b in self._bqm.iter_quadratic(self._var)),
+                   start)
+
+
+class ShapeableNeighborhood(Neighborhood, MutableMapping):
     def __delitem__(self, v):
         self._bqm.remove_interaction(self._var, v)
 
 
 class Linear(BQMView):
+    """Linear biases as a mapping.
+
+    Accessed like a dict, where keys are the variables of the binary quadratic
+    model and values are the linear biases.
+    """
     __slots__ = ['_bqm']
 
     def __init__(self, bqm):
@@ -132,6 +183,39 @@ class Linear(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         self._bqm.set_linear(v, bias)
 
+    def min(self, default=None):
+        """Returns the minimum linear bias."""
+        try:
+            return cylinear_min(self._bqm, default=default)
+        except TypeError:
+            pass
+
+        if default is None:
+            return min(self.values())
+        else:
+            return min(self.values(), default=default)
+
+    def max(self, default=None):
+        """Returns the maximum linear bias."""
+        try:
+            return cylinear_max(self._bqm, default=default)
+        except TypeError:
+            pass
+
+        if default is None:
+            return max(self.values())
+        else:
+            return max(self.values(), default=default)
+
+    def sum(self, start=0):
+        """Return the sum of the linear biases."""
+        try:
+            return cylinear_sum(self._bqm, start=start)
+        except TypeError:
+            pass
+
+        return sum(self.values(), start)
+
 
 class ShapeableLinear(Linear, MutableMapping):
     def __delitem__(self, v):
@@ -142,6 +226,11 @@ class ShapeableLinear(Linear, MutableMapping):
 
 
 class Quadratic(BQMView):
+    """Quadratic biases as a flat mapping.
+
+    Accessed like a dict, where keys are 2-tuples of varables, which represent
+    an interaction and values are the quadratic biases.
+    """
     def __getitem__(self, uv):
         try:
             return self._bqm.get_quadratic(*uv)
@@ -158,6 +247,39 @@ class Quadratic(BQMView):
         # inherits its ability to reshape the bqm from the `.set_linear` method
         u, v = uv
         self._bqm.set_quadratic(u, v, bias)
+
+    def min(self, default=None):
+        """Returns the minimum quadratic bias."""
+        try:
+            return cyquadratic_min(self._bqm, default=default)
+        except TypeError:
+            pass
+
+        if default is None:
+            return min(self.values())
+        else:
+            return min(self.values(), default=default)
+
+    def max(self, default=None):
+        """Returns the maximum quadratic bias."""
+        try:
+            return cyquadratic_max(self._bqm, default=default)
+        except TypeError:
+            pass
+
+        if default is None:
+            return max(self.values())
+        else:
+            return max(self.values(), default=default)
+
+    def sum(self, start=0):
+        """Return the sum of the quadratic biases."""
+        try:
+            return cyquadratic_sum(self._bqm, start=start)
+        except TypeError:
+            pass
+
+        return sum(self.values(), start)
 
 
 class ShapeableQuadratic(Quadratic, MutableMapping):
@@ -197,17 +319,20 @@ class BQM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractproperty
+    def offset(self):
+        """The constant energy offset associated with the model."""
+        pass
+
+    @abc.abstractproperty
     def vartype(self):
+        """The variable type, :class:`.Vartype.SPIN` or
+        :class:`.Vartype.BINARY`.
+        """
         pass
 
     @abc.abstractmethod
     def change_vartype(self, vartype, inplace=True):
         """Return a binary quadratic model with the specified vartype."""
-        pass
-
-    @abc.abstractmethod
-    def copy(self):
-        """Return a copy."""
         pass
 
     @abc.abstractmethod
@@ -258,14 +383,20 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def adj(self):
         return Adjacency(self)
+    adj.__doc__ = Adjacency.__doc__
 
     @property
     def base(self):
-        """The base bqm, itself if not a view."""
+        """The base binary quadratic model, itself if not a view."""
         return self
 
     @property
     def binary(self):
+        """The binary-valued version of the binary quadratic model.
+
+        If the binary quadratic model is binary-valued, this references itself,
+        otherwise it is a :class:`.BinaryView`.
+        """
         if self.vartype is Vartype.BINARY:
             return self
 
@@ -282,18 +413,25 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def linear(self):
         return Linear(self)
+    linear.__doc__ = Linear.__doc__
 
     @property
     def quadratic(self):
         return Quadratic(self)
+    quadratic.__doc__ = Quadratic.__doc__
 
     @property
     def shape(self):
-        """2-tuple: (num_variables, num_interactions)."""
+        """A 2-tuple, the :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self):
+        """The spin-valued version of the binary quadratic model.
+
+        If the binary quadratic model is spin-valued, this references itself,
+        otherwise it is a :class:`.SpinView`.
+        """
         if self.vartype is Vartype.SPIN:
             return self
 
@@ -309,6 +447,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def variables(self):
+        """The variables of the binary quadratic model."""
         return KeysView(self.linear)
 
     def add_offset(self, offset):
@@ -319,6 +458,11 @@ class BQM(metaclass=abc.ABCMeta):
         """Set the binary quadratic model's offset to zero."""
         # maintain type
         self.offset -= self.offset
+
+    # This may be overwritten for speed
+    def copy(self, deep=False):
+        """Return a copy."""
+        return copy.deepcopy(self) if deep else copy.copy(self)
 
     def degrees(self, array=False, dtype=np.int):
         if array:
@@ -372,7 +516,9 @@ class BQM(metaclass=abc.ABCMeta):
 
     @classmethod
     def from_coo(cls, obj, vartype=None):
-        """Deserialize a binary quadratic model from a COOrdinate_ format encoding.
+        """Deserialize a binary quadratic model from a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
 
@@ -608,7 +754,7 @@ class BQM(metaclass=abc.ABCMeta):
             yield u, v
 
     def iter_neighbors(self, u):
-        """Iterate over the neighbors of a variable in the bqm.
+        """Iterate over neighbors of a variable in the binary quadratic model.
 
         Yields:
             variable: The neighbors of `v`.
@@ -629,11 +775,13 @@ class BQM(metaclass=abc.ABCMeta):
 
         Args:
             bias_range (number/pair):
-                Value/range by which to normalize the all the biases, or if
-                `quadratic_range` is provided, just the linear biases.
+                Value/range that the biases of the BQM will be scaled to fit
+                within. If `quadratic_range` is provided, this range is
+                used to fit the linear biases.
 
             quadratic_range (number/pair):
-                Value/range by which to normalize the quadratic biases.
+                The BQM will be scaled so that the quadratic biases fit within
+                this range.
 
             ignored_variables (iterable, optional):
                 Biases associated with these variables are not scaled.
@@ -690,6 +838,34 @@ class BQM(metaclass=abc.ABCMeta):
                        ignored_interactions=ignored_interactions,
                        ignore_offset=ignore_offset)
 
+            return 1.0 / inv_scalar
+        else:
+            return 1.0
+
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel the variables of the BQM to integers.
+
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            tuple: A 2-tuple containing:
+
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
+
+                dict: The mapping that will restore the original labels.
+
+        """
+        if not inplace:
+            return self.copy().relabel_variables(inplace=True)
+
+        mapping = dict((v, i) for i, v in enumerate(self.variables) if i != v)
+        return (self.relabel_variables(mapping, inplace=True),
+                dict((i, v) for v, i in mapping.items()))
+
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
         """Multiply all the biases by the specified scalar.
@@ -741,7 +917,9 @@ class BQM(metaclass=abc.ABCMeta):
         return issubclass(cls, ShapeableBQM)
 
     def to_coo(self, fp=None, vartype_header=False):
-        """Serialize the binary quadratic model to a COOrdinate_ format encoding.
+        """Serialize the binary quadratic model to a COOrdinate format encoding.
+
+        COOrdinate_ is a sparse encoding for binary quadratic models.
 
         .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
 
@@ -874,6 +1052,10 @@ class BQM(metaclass=abc.ABCMeta):
                 except TypeError:
                     # can't sort unlike types in py3
                     pass
+
+        if len(variable_order) != num_variables:
+            raise ValueError("variable_order does not match the number of "
+                             "variables")
 
         try:
             ldata = np.fromiter((self.linear[v] for v in variable_order),

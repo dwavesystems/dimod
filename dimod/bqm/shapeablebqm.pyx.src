@@ -27,34 +27,22 @@ cimport cython
 from libcpp.algorithm cimport copy
 from libcpp.iterator cimport inserter
 from cython.operator cimport postincrement as inc, dereference as deref
+from libcpp.pair cimport pair
 
 import numpy as np
 
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common cimport NeighborhoodIndex
 from dimod.bqm.common import dtype, itype, ntype
-from dimod.bqm.cppbqm cimport (add_variable,
-                               copy_bqm,
-                               degree,
-                               get_linear,
-                               get_quadratic,
-                               neighborhood,
-                               num_variables,
-                               num_interactions,
-                               pop_variable,
-                               remove_interaction,
-                               set_linear,
-                               set_quadratic,
-                               )
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
+from dimod.bqm.utils import cyrelabel_variables_as_integers
 from dimod.core.bqm import BQM, ShapeableBQM
 from dimod.vartypes import as_vartype, Vartype
 
 
+@cython.embedsignature(True)
 cdef class cyAdj@name@BQM:
-    """
-    """
 
     def __cinit__(self, *args, **kwargs):
         self.dtype = dtype
@@ -120,7 +108,7 @@ cdef class cyAdj@name@BQM:
 
     def _init_cybqm(self, cyBQM bqm):
         """Construct self from another cybqm."""
-        copy_bqm(bqm.adj_, self.adj_)
+        self.bqm_ = cppAdj@name@BQM[VarIndex, Bias](bqm.bqm_)
 
         self.offset_ = bqm.offset_
         self.vartype = bqm.vartype
@@ -133,7 +121,7 @@ cdef class cyAdj@name@BQM:
     @cython.wraparound(False)
     def _init_components(self, linear, quadratic, offset, vartype):
         self.vartype = as_vartype(vartype)
-        cdef bool is_spin = self.vartype is Vartype.SPIN
+        cdef bint is_spin = self.vartype is Vartype.SPIN
 
         self.offset_ = offset
 
@@ -161,7 +149,7 @@ cdef class cyAdj@name@BQM:
                     ui = self.label_to_idx(self.add_variable(u))
                     vi = self.label_to_idx(self.add_variable(v))
                     # this does two binary searches
-                    set_quadratic(self.adj_, ui, vi, get_quadratic(self.adj_, ui, vi).first + b)
+                    self.bqm_.set_quadratic(ui, vi, self.bqm_.get_quadratic(ui, vi).first + b)
         elif isinstance(quadratic, abc.Iterator):
             for u, v, b in quadratic:
                 if u == v:
@@ -175,7 +163,7 @@ cdef class cyAdj@name@BQM:
                     ui = self.label_to_idx(self.add_variable(u))
                     vi = self.label_to_idx(self.add_variable(v))
                     # this does two binary searches
-                    set_quadratic(self.adj_, ui, vi, get_quadratic(self.adj_, ui, vi).first + b)
+                    self.bqm_.set_quadratic(ui, vi, self.bqm_.get_quadratic(ui, vi).first + b)
         else:
             qmatrix = np.atleast_2d(np.asarray(quadratic, dtype=self.dtype))
 
@@ -184,13 +172,13 @@ cdef class cyAdj@name@BQM:
             if qmatrix.ndim != 2 or nvar != qmatrix.shape[1]:
                 raise ValueError("expected dense to be a 2 dim square array")
 
-            self.adj_.resize(nvar) 
+            self.bqm_.adj.resize(nvar) 
 
             for ui in range(nvar):
                 if is_spin:
                     self.offset_ += qmatrix[ui, ui]
                 else:
-                    set_linear(self.adj_, ui, qmatrix[ui, ui])
+                    self.bqm_.set_linear(ui, qmatrix[ui, ui])
 
                 for vi in range(ui + 1, nvar):
                     b = qmatrix[ui, vi] + qmatrix[vi, ui]  # add upper and lower
@@ -198,16 +186,16 @@ cdef class cyAdj@name@BQM:
                     if b == 0:  # ignore 0 off-diagonal
                         continue
 
-                    # we'd like to use set_quadratic(self.adj_, ui, vi, b) but
+                    # we'd like to use self.bqm_.set_quadratic(ui, vi, b) but
                     # because we know that we're always adding to the end
                     # of the neighborhood, we can provide a location hint to
                     # insert. We should really do this with an iterator from c++
                     # space, but those are not implemented yet
                     # we use insert because it is the same for map and vector
-                    self.adj_[ui].first.insert(self.adj_[ui].first.end(),
-                                               pair[VarIndex, Bias](vi, b))
-                    self.adj_[vi].first.insert(self.adj_[vi].first.end(),
-                                               pair[VarIndex, Bias](ui, b))
+                    self.bqm_.adj[ui].first.insert(self.bqm_.adj[ui].first.end(),
+                                               (vi, b))  # todo: cythonize
+                    self.bqm_.adj[vi].first.insert(self.bqm_.adj[vi].first.end(),
+                                               (ui, b))  # todo: cythonize
 
         cdef Bias[:] ldata
 
@@ -218,12 +206,12 @@ cdef class cyAdj@name@BQM:
             for v, b in linear.items():
                 # get the index of the variable, ensuring that it exists
                 vi = self.label_to_idx(self.add_variable(v))
-                set_linear(self.adj_, vi, get_linear(self.adj_, vi) + b)
+                self.bqm_.set_linear(vi, self.bqm_.get_linear(vi) + b)
         elif isinstance(linear, abc.Iterator):
             for v, b in linear:
                 # get the index of the variable, ensuring that it exists
                 vi = self.label_to_idx(self.add_variable(v))
-                set_linear(self.adj_, vi, get_linear(self.adj_, vi) + b)
+                self.bqm_.set_linear(vi, self.bqm_.get_linear(vi) + b)
         else:
             ldata = np.asarray(linear, dtype=self.dtype)
 
@@ -239,28 +227,53 @@ cdef class cyAdj@name@BQM:
                     else:
                         self.set_linear(vi, ldata[vi])
             else:
-                if ldata.shape[0] > num_variables(self.adj_):
-                    self.adj_.resize(ldata.shape[0])  # append
+                if ldata.shape[0] > self.bqm_.num_variables():
+                    self.bqm_.adj.resize(ldata.shape[0])  # append
 
                 for vi in range(ldata.shape[0]):
-                    set_linear(self.adj_, vi, ldata[vi] + get_linear(self.adj_, vi))
+                    self.bqm_.set_linear(vi, ldata[vi] + self.bqm_.get_linear(vi))
 
 
     def _init_number(self, int n, vartype):
         # Make a new BQM with n variables all with 0 bias
-        self.adj_.resize(n)
+        self.bqm_.adj.resize(n)
         self.vartype = as_vartype(vartype)
+
+    def __copy__(self):
+        cdef cyAdj@name@BQM bqm = type(self)(self.vartype)
+
+        bqm.bqm_ = self.bqm_
+        bqm.offset_ = self.offset_
+
+        # everything is immutable, so this is a deep copy
+        bqm._label_to_idx = self._label_to_idx.copy()
+        bqm._idx_to_label = self._idx_to_label.copy()
+
+        return bqm
+
+    def __deepcopy__(self, memo):
+        # all copies are deep
+        memo[id(self)] = new = self.__copy__()
+        return new
+
+    # todo: support protocol 5, if possible
+    def __reduce__(self):
+        from dimod.serialization.fileview import FileView, load
+        return (load, (FileView(self).readall(),))
 
     @property
     def num_variables(self):
-        return num_variables(self.adj_)
+        """int: The number of variables in the model."""
+        return self.bqm_.num_variables()
 
     @property
     def num_interactions(self):
-        return num_interactions(self.adj_)
+        """int: The number of interactions in the model."""
+        return self.bqm_.num_interactions()
 
     @property
     def offset(self):
+        """The constant energy offset associated with the model."""
         return as_numpy_scalar(self.offset_, self.dtype)
 
     @offset.setter
@@ -283,7 +296,7 @@ cdef class cyAdj@name@BQM:
         except (OverflowError, TypeError, KeyError) as ex:
             raise ValueError("{} is not a variable".format(v)) from ex
 
-        if vi < 0 or vi >= num_variables(self.adj_):
+        if vi < 0 or vi >= self.bqm_.num_variables():
             raise ValueError("{} is not a variable".format(v))
 
         return vi
@@ -313,7 +326,7 @@ cdef class cyAdj@name@BQM:
 
         if v is None:
             # we're definitely adding a new variable
-            vi = add_variable(self.adj_)
+            vi = self.bqm_.add_variable()
             v = vi  # python version
 
             if v in self._label_to_idx:
@@ -327,12 +340,12 @@ cdef class cyAdj@name@BQM:
                 vi = self.label_to_idx(v)
             except ValueError:
                 # doesn't exist to make a new one and track it
-                vi = add_variable(self.adj_)
+                vi = self.bqm_.add_variable()
                 if vi != v:
                     self._label_to_idx[v] = vi
                     self._idx_to_label[vi] = v
 
-        set_linear(self.adj_, vi, bias + get_linear(self.adj_, vi))
+        self.bqm_.set_linear(vi, bias + self.bqm_.get_linear(vi))
         return v
 
     def iter_linear(self):
@@ -342,8 +355,8 @@ cdef class cyAdj@name@BQM:
         cdef object v
         cdef Bias b
 
-        for vi in range(num_variables(self.adj_)):
-            b = self.adj_[vi].second
+        for vi in range(self.bqm_.num_variables()):
+            b = self.bqm_.adj[vi].second
             v = self._idx_to_label.get(vi, vi)
             yield v, as_numpy_scalar(b, self.dtype)
 
@@ -354,18 +367,18 @@ cdef class cyAdj@name@BQM:
         cdef object u, v  # python labels
         cdef Bias b
 
-        cdef pair[VarIndex, Bias] vi_b
+        # cdef pair[VarIndex, Bias] vi_b  # todo: cythonize
 
         if variables is None:
             # in the case that variables is unlabelled we can speed things up
             # by just walking through the range
-            for ui in range(num_variables(self.adj_)):
+            for ui in range(self.bqm_.num_variables()):
                 u = self._idx_to_label.get(ui, ui)
 
                 # we could find the index of the first vi > ui, but this is
                 # simpler for now and make for more generic code between
                 # vector/map implementations
-                for vi_b in self.adj_[ui].first:
+                for vi_b in self.bqm_.adj[ui].first:
                     vi = vi_b.first
                     b = vi_b.second
 
@@ -383,7 +396,7 @@ cdef class cyAdj@name@BQM:
                 ui = self.label_to_idx(u)
                 seen.add(u)
 
-                for vi_b in self.adj_[ui].first:
+                for vi_b in self.bqm_.adj[ui].first:
                     vi = vi_b.first
                     b = vi_b.second
 
@@ -408,7 +421,7 @@ cdef class cyAdj@name@BQM:
             ValueError: If v is not a variable in the binary quadratic model.
 
         """
-        return as_numpy_scalar(get_linear(self.adj_, self.label_to_idx(v)),
+        return as_numpy_scalar(self.bqm_.get_linear(self.label_to_idx(v)),
                                self.dtype)
 
     def get_quadratic(self, u, v, default=None):
@@ -446,7 +459,7 @@ cdef class cyAdj@name@BQM:
 
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
-        cdef pair[Bias, bool] out = get_quadratic(self.adj_, ui, vi)
+        out = self.bqm_.get_quadratic(ui, vi)  # todo: cythonize
 
         if not out.second:
             msg = 'No interaction between {!r} and {!r}'
@@ -496,18 +509,18 @@ cdef class cyAdj@name@BQM:
         cdef Bias bias
         cdef NeighborhoodIndex ni
 
-        for ui in range(num_variables(self.adj_)):
-            bias = self.adj_[ui].second
+        for ui in range(self.bqm_.num_variables()):
+            bias = self.bqm_.adj[ui].second
 
-            self.adj_[ui].second = lin_mp * bias
+            self.bqm_.adj[ui].second = lin_mp * bias
             self.offset_ += lin_offset_mp * bias
 
-            span = neighborhood(self.adj_, ui)
+            span = self.bqm_.neighborhood(ui)
             while span.first != span.second:
                 bias = deref(span.first).second
 
                 deref(span.first).second = quad_mp * bias
-                self.adj_[ui].second += lin_quad_mp * bias
+                self.bqm_.adj[ui].second += lin_quad_mp * bias
                 self.offset_ += quad_offset_mp * bias
 
                 inc(span.first)
@@ -516,21 +529,9 @@ cdef class cyAdj@name@BQM:
 
         return self
 
-    def copy(self):
-        """Return a copy."""
-        cdef cyAdj@name@BQM bqm = type(self)(self.vartype)
-
-        bqm.adj_ = self.adj_
-        bqm.offset_ = self.offset_
-
-        bqm._label_to_idx = self._label_to_idx.copy()
-        bqm._idx_to_label = self._idx_to_label.copy()
-
-        return bqm
-
     def degree(self, object v):
         cdef VarIndex vi = self.label_to_idx(v)
-        return degree(self.adj_, vi)
+        return self.bqm_.degree(vi)
 
     def energies(self, samples, dtype=None):
         """Determine the energies of the given samples.
@@ -574,12 +575,6 @@ cdef class cyAdj@name@BQM:
         # make the bqm with the right number of variables and outvars
         cdef cyAdj@name@BQM bqm = cls(num_var, data['vartype'])
 
-        # set the labels, skipping over the redundant ones
-        for vi, v in enumerate(data['variables']):
-            if vi != v:
-                bqm._label_to_idx[v] = vi
-                bqm._idx_to_label[vi] = v
-
         # offset, using the vartype it was encoded with
         bqm.offset_ = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
 
@@ -603,7 +598,7 @@ cdef class cyAdj@name@BQM:
         cdef const Bias[:] qbiases
         cdef const VarIndex[:] outvars
         for ui in range(num_var):
-            set_linear(bqm.adj_, ui, <Bias>lbiases[ui])
+            bqm.bqm_.set_linear(ui, <Bias>lbiases[ui])
 
             nstart = nidxs[ui]
             nend = nidxs[ui+1] if ui < num_var-1 else 2*num_int
@@ -619,8 +614,8 @@ cdef class cyAdj@name@BQM:
             qbiases = np.asarray(qdata['bias'], dtype=bqm.dtype)
 
             for i in range(outvars.shape[0]):
-                bqm.adj_[ui].first.insert(bqm.adj_[ui].first.end(),
-                                          pair[VarIndex, Bias](outvars[i], qbiases[i]))
+                bqm.bqm_.adj[ui].first.insert(bqm.bqm_.adj[ui].first.end(),
+                                          (outvars[i], qbiases[i]))  # todo: cythonize
 
         return bqm
 
@@ -648,7 +643,7 @@ cdef class cyAdj@name@BQM:
 
         cdef VarIndex ui = self.label_to_idx(u)
         cdef VarIndex vi = self.label_to_idx(v)
-        cdef bool removed = remove_interaction(self.adj_, ui, vi)
+        cdef bint removed = self.bqm_.remove_interaction(ui, vi)
 
         if not removed:
             raise ValueError('No interaction between {} and {}'.format(u, v))
@@ -669,14 +664,14 @@ cdef class cyAdj@name@BQM:
             a variable.
 
         """
-        if num_variables(self.adj_) == 0:
+        if self.bqm_.num_variables() == 0:
             raise ValueError("pop from empty binary quadratic model")
 
         cdef VarIndex vi  # index of v in the underlying adjacency
 
         if v is None:
             # just remove the last variable
-            vi = pop_variable(self.adj_)
+            vi = self.bqm_.pop_variable()
 
             # remove the relabels, if any
             v = self._idx_to_label.pop(vi, vi)
@@ -693,7 +688,7 @@ cdef class cyAdj@name@BQM:
 
         vi = self.label_to_idx(v)
 
-        lasti = num_variables(self.adj_) - 1
+        lasti = self.bqm_.num_variables() - 1
         last = self._idx_to_label.get(lasti, lasti)
 
         if lasti == vi:
@@ -705,7 +700,7 @@ cdef class cyAdj@name@BQM:
             self.remove_interaction(u, v)
 
         # copy last's to v
-        set_linear(self.adj_, vi, get_linear(self.adj_, lasti))
+        self.bqm_.set_linear(vi, self.bqm_.get_linear(lasti))
         for _, u, b in self.iter_quadratic(last):
             self.set_quadratic(u, v, b)
 
@@ -739,6 +734,26 @@ cdef class cyAdj@name@BQM:
 
     """
 
+    relabel_variables_as_integers = cyrelabel_variables_as_integers
+    """Relabel the variables of the BQM to integers.
+
+    Note that this method uses the natural labelling of the underlying c++
+    objects.
+
+    Args:
+        inplace (bool, optional, default=True):
+            If True, the binary quadratic model is updated in-place;
+            otherwise, a new binary quadratic model is returned.
+
+    Returns:
+        tuple: A 2-tuple containing:
+
+            A binary quadratic model with the variables relabeled. If
+            `inplace` is set to True, returns itself.
+
+            dict: The mapping that will restore the original labels.
+    """
+
     def set_linear(self, object v, Bias b):
         """Set the linear biase of a variable v.
 
@@ -762,7 +777,7 @@ cdef class cyAdj@name@BQM:
         except ValueError:
             vi = self.label_to_idx(self.add_variable(v))
 
-        set_linear(self.adj_, vi, b)
+        self.bqm_.set_linear(vi, b)
 
     def set_quadratic(self, object u, object v, Bias b):
         """Set the quadratic bias of (u, v).
@@ -794,7 +809,7 @@ cdef class cyAdj@name@BQM:
         except ValueError:
             vi = self.label_to_idx(self.add_variable(v))
 
-        set_quadratic(self.adj_, ui, vi, b)
+        self.bqm_.set_quadratic(ui, vi, b)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -803,8 +818,8 @@ cdef class cyAdj@name@BQM:
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
         """Convert to numpy vectors."""
-        cdef Py_ssize_t nv = num_variables(self.adj_)
-        cdef Py_ssize_t ni = num_interactions(self.adj_)
+        cdef Py_ssize_t nv = self.bqm_.num_variables()
+        cdef Py_ssize_t ni = self.bqm_.num_interactions()
 
         # numpy arrays, we will return these
         ldata = np.empty(nv, dtype=self.dtype)
@@ -823,7 +838,7 @@ cdef class cyAdj@name@BQM:
         cdef Py_ssize_t qi = 0  # index in the quadratic arrays
 
         for vi in range(nv):
-            span = neighborhood(self.adj_, vi)
+            span = self.bqm_.neighborhood(vi)
 
             while span.first != span.second and deref(span.first).first < vi:
                 irow_view[qi] = vi
@@ -853,7 +868,7 @@ cdef class cyAdj@name@BQM:
                 vi = self.label_to_idx(v)
                 reindex[vi] = ri
 
-                ldata_view[ri] = get_linear(self.adj_, vi)
+                ldata_view[ri] = self.bqm_.get_linear(vi)
 
             for qi in range(ni):
                 irow_view[qi] = reindex[irow_view[qi]]
@@ -865,7 +880,7 @@ cdef class cyAdj@name@BQM:
             # the fast case! We don't need to do anything except construct the
             # linear
             for vi in range(nv):
-                ldata_view[vi] = get_linear(self.adj_, vi)
+                ldata_view[vi] = self.bqm_.get_linear(vi)
 
             if return_labels:
                 labels = [self._idx_to_label.get(v, v) for v in range(nv)]

@@ -21,10 +21,11 @@ import numpy as np
 
 import dimod
 
+import sys
+
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common import itype, dtype
 from dimod.bqm.common cimport Bias, VarIndex
-from dimod.bqm.cppbqm cimport degree, get_linear, neighborhood, num_variables
 
 cdef extern from "numpy/arrayobject.h":
     # The comment in
@@ -41,6 +42,147 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
+def cylinear_min(cyBQM bqm, default=None):
+    if bqm.num_variables == 0:
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef double min_ = sys.float_info.max
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        val = bqm.bqm_.get_linear(vi)
+        if val < min_:
+            min_ = val
+    
+    return min_
+
+def cylinear_max(cyBQM bqm, default=None):
+    if bqm.num_variables == 0:
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef double max_ = -sys.float_info.max
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        val = bqm.bqm_.get_linear(vi)
+        if val > max_:
+            max_ = val
+    
+    return max_
+
+def cylinear_sum(cyBQM bqm, Bias start=0):
+    """Return the sum of the linear biases."""
+    cdef VarIndex vi
+    for vi in range(bqm.bqm_.num_variables()):
+        start += bqm.bqm_.get_linear(vi)
+
+    return start
+
+def cyquadratic_min(cyBQM bqm, default=None):
+    if bqm.num_interactions == 0:
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef double min_ = sys.float_info.max
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+
+        while span.first != span.second and deref(span.first).first < vi:
+            if deref(span.first).second < min_:
+                min_ = deref(span.first).second
+
+            inc(span.first)
+
+    return min_
+
+def cyquadratic_max(cyBQM bqm, default=None):
+    if bqm.num_interactions == 0:
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef double max_ = -sys.float_info.max
+
+    cdef Py_ssize_t vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+        
+        while span.first != span.second and deref(span.first).first < vi:
+            if deref(span.first).second > max_:
+                max_ = deref(span.first).second
+
+            inc(span.first)
+
+    return max_
+
+def cyquadratic_sum(cyBQM bqm, Bias start=0):
+    """Return the sum of the quadratic biases."""
+    cdef VarIndex vi
+    for vi in range(bqm.bqm_.num_variables()):
+        span = bqm.bqm_.neighborhood(vi)
+        while span.first != span.second and deref(span.first).first < vi:
+            start += deref(span.first).second
+            inc(span.first)
+    
+    return start
+
+def cyneighborhood_max(cyBQM bqm, object v, object default=None):
+    if not bqm.degree(v):
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    cdef double max_ = -sys.float_info.max
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        if deref(span.first).second > max_:
+            max_ = deref(span.first).second
+
+        inc(span.first)
+
+    return max_
+
+def cyneighborhood_min(cyBQM bqm, object v, object default=None):
+    if not bqm.degree(v):
+        if default is None:
+            raise ValueError("Argument is an empty sequence")
+        else:
+            return default
+
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    cdef double min_ = sys.float_info.max
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        if deref(span.first).second < min_:
+            min_ = deref(span.first).second
+
+        inc(span.first)
+
+    return min_
+
+def cyneighborhood_sum(cyBQM bqm, object v, Bias start=0):
+    cdef VarIndex vi = bqm.label_to_idx(v)
+
+    span = bqm.bqm_.neighborhood(vi)
+    while span.first != span.second:
+        start += deref(span.first).second
+        inc(span.first)
+
+    return start
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -143,7 +285,7 @@ def cyenergies(cyBQM bqm, samples_like):
     cdef Py_ssize_t num_samples = samples_view.shape[0]
     cdef Py_ssize_t num_variables = samples_view.shape[1]
 
-    if num_variables != bqm.num_variables:
+    if num_variables != bqm.bqm_.num_variables():
         raise ValueError("inconsistent number of variables")
     if num_variables != len(labels):
         # an internal error to as_samples. We do this check because
@@ -170,9 +312,9 @@ def cyenergies(cyBQM bqm, samples_like):
         for ui in range(num_variables):
             uspin = samples_view[si, bqm_to_sample[ui]]
 
-            energies_view[si] += get_linear(bqm.adj_, ui) * uspin
+            energies_view[si] += bqm.bqm_.get_linear(ui) * uspin
 
-            span = neighborhood(bqm.adj_, ui)
+            span = bqm.bqm_.neighborhood(ui)
             while span.first != span.second and deref(span.first).first < ui:
                 vi = deref(span.first).first
 
@@ -209,12 +351,29 @@ def cyrelabel(cyBQM bqm, mapping, inplace=True):
     return bqm
 
 
+def cyrelabel_variables_as_integers(cyBQM bqm, inplace=True):
+    """Relabel the variables in the BQM to integers.
+
+    Note that this fuction uses the natural labelling of the underlying c++
+    objects.
+    """
+    if not inplace:
+        return cyrelabel_variables_as_integers(bqm.copy(), inplace=True)
+
+    inverse = bqm._idx_to_label.copy()  # everything is hashable so no deep copy
+    
+    bqm._label_to_idx.clear()
+    bqm._idx_to_label.clear()
+
+    return bqm, inverse
+
+
 @cython.boundscheck
 @cython.wraparound
 def ilinear_biases(cyBQM bqm):
     """Get the linear biases as well as the neighborhood indices."""
 
-    cdef Py_ssize_t numvar = num_variables(bqm.adj_)
+    cdef Py_ssize_t numvar = bqm.bqm_.num_variables()
 
     dtype = np.dtype([('ni', bqm.ntype), ('b', bqm.dtype)], align=False)
     ldata = np.empty(numvar, dtype=dtype)
@@ -231,9 +390,9 @@ def ilinear_biases(cyBQM bqm):
     cdef VarIndex vi
     for vi in range(numvar):
         if vi + 1 < numvar:
-            neighbors_view[vi + 1] = neighbors_view[vi] + degree(bqm.adj_, vi)
+            neighbors_view[vi + 1] = neighbors_view[vi] + bqm.bqm_.degree(vi)
 
-        bias_view[vi] = get_linear(bqm.adj_, vi)
+        bias_view[vi] = bqm.bqm_.get_linear(vi)
 
     return ldata
 
@@ -253,10 +412,10 @@ def ineighborhood(cyBQM bqm, VarIndex ui):
 
     """
 
-    if ui >= num_variables(bqm.adj_):
+    if ui >= bqm.bqm_.num_variables():
         raise ValueError("out of range variable, {!r}".format(ui))
 
-    cdef Py_ssize_t d = degree(bqm.adj_, ui)
+    cdef Py_ssize_t d = bqm.bqm_.degree(ui)
 
     dtype = np.dtype([('ui', bqm.itype), ('b', bqm.dtype)], align=False)
     neighbors = np.empty(d, dtype=dtype)
@@ -265,7 +424,7 @@ def ineighborhood(cyBQM bqm, VarIndex ui):
     cdef VarIndex[:] index_view = neighbors['ui']
     cdef Bias[:] bias_view = neighbors['b']
 
-    span = neighborhood(bqm.adj_, ui)
+    span = bqm.bqm_.neighborhood(ui)
 
     cdef Py_ssize_t i = 0
     while span.first != span.second:

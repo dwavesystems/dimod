@@ -17,18 +17,20 @@
 
 A structured sampler can only sample from binary quadratic models with a specific graph.
 
-For structured samplers you must implement the :attr:`~.Structured.nodelist`
-and :attr:`~.Structured.edgelist` properties. The :class:`.Structured` abstract base class
-provides access to the :attr:`~.Structured.structure` and :attr:`~.Structured.adjacency`
-properties as well as any method or properties required by the :class:`.Sampler` abstract
-base class. The :obj:`~.bqm_structured` decorator verifies that any given binary quadratic
-model conforms to the supported structure.
+For structured samplers you must implement the :attr:`~.Structured.nodelist` and
+:attr:`~.Structured.edgelist` properties. The :class:`.Structured` abstract base
+class provides access to the :attr:`~.Structured.structure` and
+:attr:`~.Structured.adjacency` properties, the
+:meth:`~.Structured.to_networkx_graph` method, as well as any method or
+properties required by the :class:`.Sampler` abstract base class. The
+:obj:`~.bqm_structured` decorator verifies that any given binary quadratic model
+conforms to the supported structure.
 
 Examples:
-    This simple example shows a structured sampler that can only sample from a binary quadratic model
-    with two variables and one interaction.
+    This simple example shows a structured sampler that can only sample from a binary
+    quadratic model with two variables and one interaction.
 
-    .. code-block:: python
+    .. testcode::
 
         class TwoVariablesSampler(dimod.Sampler, dimod.Structured):
             @property
@@ -58,27 +60,31 @@ Examples:
                     samples.append(sample)
                     energies.append(bqm.energy(sample))
 
-                return dimod.SampleSet.from_samples(samples, bqm.Vartype, energies)
+                return dimod.SampleSet.from_samples(samples, bqm.vartype, energies)
 
                 return response
+
+    >>> import itertools
+    >>> sampler = TwoVariablesSampler()
+    >>> solutions = sampler.sample_ising({}, {(0, 1): -1})
+    >>> solutions.first.energy
+    -1.0
 
 """
 import abc
 
 from collections import namedtuple
 
-from six import add_metaclass
-
 __all__ = ['Structured']
 
 _Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
 
 
-@add_metaclass(abc.ABCMeta)
-class Structured:
+class Structured(abc.ABC):
     """The abstract base class for dimod structured samplers.
 
-    Provides the :attr:`.Structured.adjacency` and :attr:`.Structured.structure` properties.
+    Provides the :attr:`.Structured.adjacency` and :attr:`.Structured.structure`
+    properties, and the :meth:`.Structured.to_networkx_graph` method.
 
     Abstract properties :attr:`~.Structured.nodelist` and :attr:`~.Structured.edgelist`
     must be implemented.
@@ -121,3 +127,20 @@ class Structured:
         and :attr:`.adjacency` attributes.
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
+
+    def to_networkx_graph(self):
+        """Convert structure to NetworkX graph format.
+        
+        Note that NetworkX must be installed for this method to work.
+
+        Returns:
+            :class:`networkx.Graph`: A NetworkX graph containing the nodes and
+            edges from the sampler's structure.
+
+        """
+        import networkx as nx
+
+        G = nx.Graph(self.edgelist)
+        G.add_nodes_from(self.nodelist)
+
+        return G

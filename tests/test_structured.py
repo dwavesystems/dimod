@@ -62,3 +62,38 @@ class TestStructuredClass(unittest.TestCase):
         self.assertEqual(sampler.structure.nodelist, [0, 1])
         self.assertEqual(sampler.structure.edgelist, [(0, 1)])
         self.assertEqual(sampler.structure.adjacency, {0: {1}, 1: {0}})
+
+    def test_networkx_graph(self):
+        try:
+            import networkx as nx
+        except ImportError:
+            raise self.skipTest("No NetworkX installed.")
+
+        # Create simple NetworkX graph to compare to        
+        nxG = nx.Graph()
+
+        for i in range(5):
+            nxG.add_node(i)
+
+        nxG.add_edge(0,1)
+        nxG.add_edge(1,2)
+        nxG.add_edge(2,3)
+
+        # Create NetworkX graph from structured sampler
+        class Dummy(dimod.Structured):
+            @property
+            def nodelist(self):
+                return list(range(5))
+
+            @property
+            def edgelist(self):
+                return [(0,1),(1,2),(2,3)]
+
+        sampler = Dummy()
+        G = sampler.to_networkx_graph()
+   
+        self.assertEqual(set(nxG), set(G))
+    
+        for u, v in nxG.edges:
+            self.assertIn(u, G[v])
+        
