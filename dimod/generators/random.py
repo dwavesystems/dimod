@@ -211,11 +211,15 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
 @graph_argument('graph')
 def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
-    """Generate bqm with weighted couplings parametrized by the doping variable p
+    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem. 
+
+    In a doped FM problem, `p`, the doping parameter, determines the probability of 
+    couplers set to AFM (flipped to 1). The remaining couplers remain FM (-1). In a doped
+    AFM problem, the opposite is true.
 
     Args:
         p (float):
-            Doping parameter [0,1].
+            Doping parameter [0,1] determines the probability of couplers flipped.
 
         graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
             The graph to build the bqm on. Either an integer n,
@@ -228,8 +232,8 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
         seed (int, optional, default=None):
             Random seed.
 
-                fm (bool):
-            toggle to change the default undoped graph.
+        fm (bool):
+            If True, the default undoped graph is FM. If False, it is AFM.
 
     Returns:
         :obj:`.BinaryQuadraticModel`
@@ -245,20 +249,16 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
 
     variables, edges = graph
 
-    index = {v: idx for idx, v in enumerate(variables)}
-
-    if edges:
-        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
-    else:
-        irow = icol = tuple()
-
-    ldata = np.zeros(len(variables))
-
     if not fm:
         p = 1 - p
-    qdata = rnd.choice([1,-1], size=len(irow), p=[p, 1 - p])
 
-    offset = 0
+    bqm = cls({},{},0, 'SPIN')
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
-                                  variable_order=variables)
+    for u, v in edges:
+        bqm.set_linear(u, 0)
+        bqm.set_linear(v, 0)
+
+        J = rnd.choice([1,-1], p=[p, 1 - p])
+        bqm.add_interaction(u, v, J)
+
+    return bqm

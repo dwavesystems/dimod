@@ -15,76 +15,88 @@
 # =============================================================================
 
 from dimod import BinaryQuadraticModel
+
 __all__ = ['anti_crossing_clique', 'anti_crossing_loops']
 
 
-
-def anti_crossing_clique(num_qubits):
+def anti_crossing_clique(num_variables):
     """Anti crossing problems with a single clique.
 
-    Given the number of qubits, the code will generate a clique of
-    size num_qubits/2 each qubit ferromagnetically coupled to a partner qubit with opposite bias. Single qubit in
-    the cluster will have no bias applied
+    Given the number of variables, the code will generate a clique of size
+    num_variables/2, each variable ferromagnetically interacting with a partner 
+    variable with opposite bias. A single variable in the cluster will have 
+    no bias applied.
 
     Args:
-        num_qubits (int):
-            number of qubits to use to generate the problem
+        num_variables (int):
+            Number of variables used to generate the problem. Must be an even number
+            greater than 6.
 
     Returns:
         :obj:`.BinaryQuadraticModel`.
 
     """
 
-    if num_qubits % 2 != 0 or num_qubits < 6:
-        raise ValueError('num_qubits  must be an even number > 6')
-    J = {}
-    h = {}
-    hf = int(num_qubits / 2)
+    if num_variables % 2 != 0 or num_variables < 6:
+        raise ValueError('num_variables must be an even number > 6')
+
+    bqm = BinaryQuadraticModel({}, {}, 0, 'SPIN')
+
+    hf = int(num_variables / 2)
     for n in range(hf):
         for m in range(n + 1, hf):
-            J[(n, m)] = -1
-        J[(n, n + hf)] = -1
-        h[n] = 1
-        h[n + hf] = -1
-    h[1] = 0
-    return BinaryQuadraticModel.from_ising(h, J)
+            bqm.add_interaction(n, m, -1)
 
+        bqm.add_interaction(n, n + hf, -1)
 
-def anti_crossing_loops(num_qubits):
-    """ Anti crossing problems with two loops. These instances are copies of the instance studied in
-    [Nature Comms. 4, 1903 (2013)]
+        bqm.add_variable(n, 1)
+        bqm.add_variable(n + hf, -1)
+
+    bqm.set_linear(1, 0)
+    
+    return bqm
+
+def anti_crossing_loops(num_variables):
+    """Anti crossing problems with two loops. These instances are copies of the
+    instance studied in [DJA]_.
 
     Args:
-        num_qubits (int): number of qubits to use to generate the problem
+        num_variables (int): 
+            Number of variables used to generate the problem. Must be an even number
+            greater than 8.
 
     Returns:
         :obj:`.BinaryQuadraticModel`.
 
+    .. [DJA] Dickson, N., Johnson, M., Amin, M. et al. Thermally assisted
+        quantum annealing of a 16-qubit problem. Nat Commun 4, 1903 (2013).
+        https://doi.org/10.1038/ncomms2920 
+
     """
 
-    if num_qubits % 2 != 0 or num_qubits < 8:
-        raise ValueError('num_qubits  must be an even number > 8')
-    J = {}
-    h = {}
-    hf = int(num_qubits / 4)
+    bqm = BinaryQuadraticModel({}, {}, 0, 'SPIN')
 
-    for n in range(hf):
+    if num_variables % 2 != 0 or num_variables < 8:
+        raise ValueError('num_variables must be an even number > 8')
+
+    hf = int(num_variables / 4)
+
+    for n in range(hf):   
         if n % 2 == 1:
-            J[(n, n + hf)] = -1
+            bqm.set_quadratic(n, n + hf, -1)
 
-        J[(n, (n + 1) % hf)] = -1
-        J[(n + hf, (n + 1) % hf + hf)] = -1
+        bqm.set_quadratic(n, (n + 1) % hf, -1)
+        bqm.set_quadratic(n + hf, (n + 1) % hf + hf, -1)
 
-        J[(n, n + 2 * hf)] = -1
-        J[(n + hf, n + 3 * hf)] = -1
+        bqm.set_quadratic(n, n + 2 * hf, -1)
+        bqm.set_quadratic(n + hf, n + 3 * hf, -1)  
 
-        h[n] = 1
-        h[n + hf] = 1
-        h[n + 2 * hf] = -1
-        h[n + 3 * hf] = -1
-    h[0] = 0
-    h[hf] = 0
+        bqm.add_variable(n, 1)
+        bqm.add_variable(n + hf, 1)
+        bqm.add_variable(n + 2 * hf, -1)
+        bqm.add_variable(n + 3 * hf, -1)
 
-    J = {tuple(sorted(k)): v for k, v in J.items()}
-    return BinaryQuadraticModel.from_ising(h, J)
+    bqm.set_linear(0, 0) 
+    bqm.set_linear(hf, 0)
 
+    return bqm
