@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "dimod/utils.h"
+#include "utils.h"
 
 namespace dimod {
 
@@ -127,13 +127,13 @@ class AdjVectorBQM {
 
     std::pair<outvars_iterator, outvars_iterator>
     neighborhood(variable_type u) {
-        assert(u >= 0 && u < invars.size());
+        assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
     std::pair<const_outvars_iterator, const_outvars_iterator>
     neighborhood(variable_type u) const {
-        assert(u >= 0 && u < invars.size());
+        assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
 

@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "dimod/utils.h"
+#include "utils.h"
 
 namespace dimod {
 
