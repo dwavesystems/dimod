@@ -54,6 +54,12 @@ jobs:
             python --version
             coverage run -m unittest discover
 
+      - run: &run-cpp-tests
+          name: run cpp tests
+          command: |
+            . env/bin/activate
+            make -C tests/cpp/ --always-make
+
       - run:
           name: codecov
           command: |
@@ -133,6 +139,8 @@ jobs:
       - run: *build-ext-template
         
       - run: *run-tests-template
+
+      - run: *run-cpp-tests
 
   test-osx-py37:
     <<: *osx-tests-template
