@@ -14,8 +14,7 @@
 //
 // =============================================================================
 
-#include "../catch.hpp"
-
+#include "../Catch2/single_include/catch2/catch.hpp"
 #include "../../../dimod/include/dimod/adjvectorbqm.h"
 #include "../../../dimod/include/dimod/adjmapbqm.h"
 #include "../../../dimod/include/dimod/adjarraybqm.h"

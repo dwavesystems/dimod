@@ -14,7 +14,7 @@
 //
 // =============================================================================
 
-#include "../catch.hpp"
+#include "../Catch2/single_include/catch2/catch.hpp"
 #include "../../../dimod/roof_duality/src/fix_variables.hpp"
 
 using namespace std;
