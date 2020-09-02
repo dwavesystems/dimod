@@ -1361,9 +1361,6 @@ class VartypeView(BQM):
         for u, v, _ in self._bqm.iter_quadratic(variables):
             yield u, v, self.get_quadratic(u, v)
 
-    def relabel_variables(self, *args, **kwargs):
-        return self._bqm.relabel_variables(*args, **kwargs)
-
 
 class BinaryView(VartypeView):
     @property
@@ -1392,6 +1389,9 @@ class BinaryView(VartypeView):
 
     def copy(self):
         return self._bqm.change_vartype(Vartype.BINARY, inplace=False)
+
+    def relabel_variables(self, *args, **kwargs):
+        return self._bqm.relabel_variables(*args, **kwargs).binary
 
     def get_linear(self, v):
         bqm = self._bqm
@@ -1457,6 +1457,9 @@ class SpinView(VartypeView):
 
     def copy(self):
         return self._bqm.change_vartype(Vartype.SPIN, inplace=False)
+
+    def relabel_variables(self, *args, **kwargs):
+        return self._bqm.relabel_variables(*args, **kwargs).spin
 
     def get_linear(self, v):
         bqm = self._bqm
