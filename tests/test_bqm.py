@@ -2041,6 +2041,62 @@ class TestVartypeViews(unittest.TestCase):
         self.assertEqual(view.spin, copy.spin)
         self.assertEqual(view.binary, copy.binary)
 
+    @parameterized.expand([(cls.__name__, cls, inplace)
+                           for (cls, inplace)
+                           in itertools.product(BQM_SUBCLASSES, [False, True])])
+    def test_relabel_variables_binary(self, name, BQM, inplace):
+        # to get a BinaryView, construct in SPIN, and ask for binary
+        linear = {0: 1, 1: -3, 2: 2}
+        quadratic = {(0, 1): -5, (1, 2): 6}
+        offset = 16
+        vartype = dimod.SPIN
+        view = BQM(linear, quadratic, offset, vartype).binary
+
+        # relabel view
+        mapping = {0: 'a', 1: 'b', 2: 'c'}
+        new = view.relabel_variables(mapping, inplace=inplace)
+        assert_consistent_bqm(new)
+        if inplace:
+            self.assertIs(view, new)
+        else:
+            self.assertIsNot(view, new)
+
+        # check that new model is correct
+        linear = {'a': 1, 'b': -3, 'c': 2}
+        quadratic = {'ab': -5, 'bc': 6}
+        offset = 16
+        vartype = dimod.SPIN
+        test = BQM(linear, quadratic, offset, vartype).binary
+        self.assertEqual(new, test)
+
+    @parameterized.expand([(cls.__name__, cls, inplace)
+                           for (cls, inplace)
+                           in itertools.product(BQM_SUBCLASSES, [False, True])])
+    def test_relabel_variables_spin(self, name, BQM, inplace):
+        # to get a SpinView, construct in BINARY, and ask for spin
+        linear = {0: 1, 1: -3, 2: 2}
+        quadratic = {(0, 1): -5, (1, 2): 6}
+        offset = 16
+        vartype = dimod.BINARY
+        view = BQM(linear, quadratic, offset, vartype).spin
+
+        # relabel view
+        mapping = {0: 'a', 1: 'b', 2: 'c'}
+        new = view.relabel_variables(mapping, inplace=inplace)
+        assert_consistent_bqm(new)
+        if inplace:
+            self.assertIs(view, new)
+        else:
+            self.assertIsNot(view, new)
+
+        # check that new model is correct
+        linear = {'a': 1, 'b': -3, 'c': 2}
+        quadratic = {'ab': -5, 'bc': 6}
+        offset = 16
+        vartype = dimod.BINARY
+        test = BQM(linear, quadratic, offset, vartype).spin
+        self.assertEqual(new, test)
+
 
 class TestToNumpyVectors(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
