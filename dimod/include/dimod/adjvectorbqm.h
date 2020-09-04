@@ -43,7 +43,7 @@ class AdjVectorBQM {
         adj.resize(bqm.num_variables());
 
         for (variable_type v = 0; v < bqm.num_variables(); ++v) {
-            set_linear(v, bqm.get_linear(v));
+            linear(v) = bqm.linear(v);
 
             auto span = bqm.neighborhood(v);
             adj[v].first.insert(adj[v].first.begin(), span.first, span.second);
@@ -94,8 +94,9 @@ class AdjVectorBQM {
         return adj[v].first.size();
     }
 
+    [[deprecated("Use AdjVectorBQM::linear(v)")]]
     bias_type get_linear(variable_type v) const {
-        return adj[v].second;
+        return linear(v);
     }
 
     std::pair<bias_type, bool>
@@ -111,6 +112,17 @@ class AdjVectorBQM {
         if (low == span.second || low->first != v)
             return std::make_pair(0, false);
         return std::make_pair(low->second, true);
+    }
+
+
+    bias_type& linear(variable_type v) {
+        assert(v >= 0 && v < adj.size());
+        return adj[v].second;
+    }
+
+    const bias_type& linear(variable_type v) const {
+        assert(v >= 0 && v < adj.size());
+        return adj[v].second;
     }
 
     std::pair<outvars_iterator, outvars_iterator>
@@ -179,9 +191,10 @@ class AdjVectorBQM {
         return exists;
     }
 
+    [[deprecated("Use AdjVectorBQM::linear(v)")]]
     void set_linear(variable_type v, bias_type b) {
-        assert(v >= 0 && v < invars.size());
-        adj[v].second = b;
+        assert(v >= 0 && v < adj.size());
+        linear(v) = b;
     }
 
     bool set_quadratic(variable_type u, variable_type v, bias_type b) {
