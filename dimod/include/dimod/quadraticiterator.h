@@ -59,7 +59,7 @@ namespace utils {
         }
 
         reference operator*() const { return {u_, out_it_->first, out_it_->second}; }
-        reference operator->() const { return operator*(); }
+        reference operator->() const { return **this; }
 
         // Incrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticIterator& operator++() {
@@ -158,14 +158,14 @@ namespace utils {
         }
 
         reference operator*() const { return {u_, out_it_->first, out_it_->second}; }
-        reference operator->() const { return operator*(); }
+        reference operator->() const { return **this; }
 
         // Incrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticArrayIterator& operator++() {
             ++out_it_;
 
             // If this is the end of the lower triangle in this row, go to the next nonempty row if one exsits.
-            while (out_it_ == out_row_end() || u_ < operator*().v) {
+            while (out_it_ == out_row_end() || u_ < (*this)->v) {
                 if (++in_it_ == in_end_) {
                     return *this;
                 }
@@ -191,7 +191,7 @@ namespace utils {
                     out_it_ = out_row_end();
                 }
                 --out_it_;
-            } while (u_ < operator*().v);
+            } while (u_ < (*this)->v);
             return *this;
         }
 
