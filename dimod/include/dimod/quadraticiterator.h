@@ -47,41 +47,51 @@ namespace utils {
 
         QuadraticIterator() = default;
         QuadraticIterator(in_iterator in_it, in_iterator in_end, variable_type u = 0)
-            : u_(u), in_it_(in_it), in_end_(in_end) {
+                : u_(u), in_it_(in_it), in_end_(in_end) {
             if (in_it_ != in_end) {
-                out_it_ = out_begin();
-                operator++();
+                out_it_ = out_row_begin();
+
+                // Find the first outvar after in_it in the lower triangle
+                if (out_it_ == out_row_end() || u_ < (*this)->v) {
+                    ++*this;
+                }
             }
         }
 
         reference operator*() const { return {u_, out_it_->first, out_it_->second}; }
         reference operator->() const { return operator*(); }
 
+        // Incrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticIterator& operator++() {
             ++out_it_;
-            while (out_it_ == out_end() || u_ < operator*().v) {
+
+            // If this is the end of the lower triangle in this row, go to the next nonempty row if one exsits.
+            while (out_it_ == out_row_end() || u_ < (*this)->v) {
                 if (++in_it_ == in_end_) {
                     return *this;
                 }
                 ++u_;
-                out_it_ = out_begin();
+                out_it_ = out_row_begin();
             }
             return *this;
         }
 
+        // Decrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticIterator& operator--() {
+            // If this is past the last row, go to the end of the last row.
             if (in_it_ == in_end_) {
                 --in_it_;
-                out_it_ = out_end();
+                out_it_ = out_row_end();
             }
+            // If this is at the beginning of the row, go to the previous nonempty row in the lower triangle.
             do {
-                while (out_it_ == out_begin()) {
+                while (out_it_ == out_row_begin()) {
                     --in_it_;
                     --u_;
-                    out_it_ = out_end();
+                    out_it_ = out_row_end();
                 }
                 --out_it_;
-            } while (u_ < operator*().v);
+            } while (u_ < (*this)->v);
             return *this;
         }
 
@@ -108,8 +118,8 @@ namespace utils {
         }
 
       private:
-        out_iterator out_begin() const { return in_it_->first.begin(); }
-        out_iterator out_end() const { return in_it_->first.end(); }
+        out_iterator out_row_begin() const { return in_it_->first.begin(); }
+        out_iterator out_row_end() const { return in_it_->first.end(); }
 
         variable_type u_;
         out_iterator out_it_;
@@ -117,14 +127,15 @@ namespace utils {
         in_iterator in_end_;
     };
 
+    // Since AdjArrayBQM stores indices into the adjacency lists, a different class is needed.
     template <class V, class B, class N>
     class QuadraticArrayIterator {
       public:
         using in_iterator = typename std::vector<std::pair<N, B>>::const_iterator;
         using out_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
 
-        using bias_type = typename std::remove_cv<typename out_iterator::value_type::second_type>::type;
-        using variable_type = typename std::remove_cv<typename out_iterator::value_type::first_type>::type;
+        using bias_type = B;
+        using variable_type = V;
 
         using difference_type = typename out_iterator::difference_type;
         using value_type = QuadraticTerm<variable_type, bias_type>;
@@ -133,40 +144,51 @@ namespace utils {
         using iterator_category = std::input_iterator_tag;
 
         QuadraticArrayIterator() = default;
-        QuadraticArrayIterator(in_iterator in_it, in_iterator in_end, out_iterator out_begin1, out_iterator out_end1,
+        QuadraticArrayIterator(in_iterator in_it, in_iterator in_end, out_iterator out_begin, out_iterator out_end,
                                variable_type u = 0)
-            : u_(u), out_begin_(out_begin1), out_end_(out_end1), in_it_(in_it), in_end_(in_end) {
+                : u_(u), out_begin_(out_begin), out_end_(out_end), in_it_(in_it), in_end_(in_end) {
             if (in_it_ != in_end) {
-                out_it_ = out_begin();
-                operator++();
+                out_it_ = out_row_begin();
+
+                // Find the first outvar after in_it in the lower triangle
+                if (out_it_ == out_row_end() || u_ < (*this)->v) {
+                    ++*this;
+                }
             }
         }
 
         reference operator*() const { return {u_, out_it_->first, out_it_->second}; }
         reference operator->() const { return operator*(); }
 
+        // Incrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticArrayIterator& operator++() {
             ++out_it_;
-            while (out_it_ == out_end() || u_ < operator*().v) {
+
+            // If this is the end of the lower triangle in this row, go to the next nonempty row if one exsits.
+            while (out_it_ == out_row_end() || u_ < operator*().v) {
                 if (++in_it_ == in_end_) {
                     return *this;
                 }
                 ++u_;
-                out_it_ = out_begin();
+                out_it_ = out_row_begin();
             }
             return *this;
         }
 
+        // Decrementing this iterates over the lower triangle of the adjacency lists.
         QuadraticArrayIterator& operator--() {
+            // If this is past the last row, go to the end of the last row.
             if (in_it_ == in_end_) {
                 --in_it_;
-                out_it_ = out_end();
+                out_it_ = out_row_end();
             }
+
+            // If this is at the beginning of the row, go to the previous nonempty row in the lower triangle.
             do {
-                while (out_it_ == out_begin()) {
+                while (out_it_ == out_row_begin()) {
                     --in_it_;
                     --u_;
-                    out_it_ = out_end();
+                    out_it_ = out_row_end();
                 }
                 --out_it_;
             } while (u_ < operator*().v);
@@ -196,8 +218,8 @@ namespace utils {
         }
 
       private:
-        out_iterator out_begin() const { return in_it_->first + out_begin_; }
-        out_iterator out_end() const {
+        out_iterator out_row_begin() const { return in_it_->first + out_begin_; }
+        out_iterator out_row_end() const {
             if (next(in_it_) == in_end_) {
                 return out_end_;
             } else {
