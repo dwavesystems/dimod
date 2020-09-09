@@ -860,7 +860,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         """
         if not inplace:
-            return self.copy().relabel_variables(inplace=True)
+            return self.copy().relabel_variables_as_integers(inplace=True)
 
         mapping = dict((v, i) for i, v in enumerate(self.variables) if i != v)
         return (self.relabel_variables(mapping, inplace=True),
