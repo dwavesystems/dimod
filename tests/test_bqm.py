@@ -1614,7 +1614,7 @@ class TestRelabel(unittest.TestCase):
         bqm = BQM(np.arange(25).reshape((5, 5)), 'SPIN')
         bqm.relabel_variables({0: 'a', 1: 'b', 3: 'c', 4: 'd'})
 
-        new, inverse = bqm.relabel_variables_as_integers()
+        new, inverse = bqm.relabel_variables_as_integers(inplace=False)
 
         self.assertEqual(set(new.variables), set(range(5)))
 
