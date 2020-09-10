@@ -1612,13 +1612,27 @@ class TestRelabel(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_integer(self, name, BQM):
         bqm = BQM(np.arange(25).reshape((5, 5)), 'SPIN')
-        bqm.relabel_variables({0: 'a', 1: 'b', 3: 'c', 4: 'd'})
 
-        new, inverse = bqm.relabel_variables_as_integers(inplace=False)
+        # relabel variables with alphabet letter
+        bqm.relabel_variables({0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e'})
 
+        # create a copy
+        bqm_copy = bqm.copy()
+
+        # this relabel is inplace
+        _, inverse = bqm.relabel_variables_as_integers()
+
+        self.assertEqual(set(bqm.variables), set(range(5)))
+
+        # relabel the variables as alphabet letters again
+        bqm.relabel_variables(inverse, inplace=True)
+        self.assertEqual(bqm, bqm_copy)
+
+        # check the inplace False case
+        new, mapping = bqm.relabel_variables_as_integers(inplace=False)
         self.assertEqual(set(new.variables), set(range(5)))
 
-        new.relabel_variables(inverse, inplace=True)
+        new.relabel_variables(mapping)
         self.assertEqual(new, bqm)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
