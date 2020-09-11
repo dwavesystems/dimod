@@ -14,15 +14,14 @@
 //
 // =============================================================================
 
-#include "../Catch2/single_include/catch2/catch.hpp"
-#include "../../../dimod/include/dimod/adjvectorbqm.h"
-#include "../../../dimod/include/dimod/adjmapbqm.h"
-#include "../../../dimod/include/dimod/adjarraybqm.h"
-
 #include <iostream>
 
-using namespace dimod;
-using namespace std;
+#include "../Catch2/single_include/catch2/catch.hpp"
+#include "dimod/adjvectorbqm.h"
+#include "dimod/adjmapbqm.h"
+#include "dimod/adjarraybqm.h"
+
+namespace dimod {
 
 TEMPLATE_TEST_CASE("Tests for BQM Classes", 
                    "[bqm]", 
@@ -53,7 +52,7 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes",
 TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes", 
                    "[shapeablebqm][bqm]", 
                    (AdjVectorBQM<int, float>), (AdjMapBQM<int, float>)) {
-  
+
     auto bqm = TestType();  
     bqm.add_variable();
 
@@ -67,3 +66,5 @@ TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes",
         REQUIRE(bqm.num_variables() == 0); 
     }
 }
+
+}   // namespace dimod

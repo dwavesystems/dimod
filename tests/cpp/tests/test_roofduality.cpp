@@ -17,8 +17,7 @@
 #include "../Catch2/single_include/catch2/catch.hpp"
 #include "../../../dimod/roof_duality/src/fix_variables.hpp"
 
-using namespace std;
-using namespace fix_variables_;
+namespace fix_variables_ {
 
 TEST_CASE("Test roof_duality's fixQuboVariables()", "[roofduality]") {
     SECTION("Test invalid cases") {
@@ -45,3 +44,5 @@ TEST_CASE("Test roof_duality's fixQuboVariables()", "[roofduality]") {
         REQUIRE(result.newQ.numRows() == 0);
     }
 }
+    
+}   // namespace fix_variables_
