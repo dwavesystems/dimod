@@ -13,7 +13,6 @@
 #    limitations under the License.
 #
 # =============================================================================
-import itertools
 import unittest
 
 import dimod
@@ -277,3 +276,61 @@ class TestCombinations(unittest.TestCase):
 
         self.assertIs(bqm.vartype, dimod.BINARY)
         self.check_combinations(range(3), 0, bqm, 1)
+
+
+class TestAntiCrossing(unittest.TestCase):
+
+    def test_wrong_size(self):
+        with self.assertRaises(ValueError):
+            bqm = dimod.generators.anti_crossing_clique(4)
+
+        with self.assertRaises(ValueError):
+            bqm = dimod.generators.anti_crossing_clique(7)
+
+        with self.assertRaises(ValueError):
+            bqm = dimod.generators.anti_crossing_loops(6)
+
+        with self.assertRaises(ValueError):
+            bqm = dimod.generators.anti_crossing_loops(9)
+
+    def test_fixed_size(self):
+        bqm = dimod.generators.anti_crossing_loops(8)
+        bqm_fixed = dimod.BinaryQuadraticModel.from_ising({0: 0, 2: 0, 4: -1, 6: -1, 1: 1, 3: 1, 5: -1, 7: -1},
+                                               {(0, 1): -1, (2, 3): -1, (0, 4): -1,
+                                                (2, 6): -1, (1, 3): -1, (1, 5): -1, (3, 7): -1})
+        self.assertEqual(bqm, bqm_fixed)
+
+        bqm = dimod.generators.anti_crossing_clique(8)
+        bqm_fixed = dimod.BinaryQuadraticModel.from_ising({0: 1, 4: -1, 1: 0, 5: -1, 2: 1, 6: -1, 3: 1, 7: -1},
+                                               {(0, 1): -1, (0, 2): -1, (0, 3): -1, (0, 4): -1, (1, 2): -1, (1, 3): -1,
+                                                (1, 5): -1, (2, 3): -1, (2, 6): -1, (3, 7): -1})
+        self.assertEqual(bqm, bqm_fixed)
+
+
+class TestDoped(unittest.TestCase):
+
+    def test_wrong_doping(self):
+        with self.assertRaises(ValueError):
+            bqm0 = dimod.generators.random.doped(3, 100)
+
+    def test_correct_seed(self):
+        bqm0 = dimod.generators.random.doped(0.5, 100, seed=506)
+        bqm1 = dimod.generators.random.doped(0.5, 100, seed=506)
+
+        self.assertEqual(bqm0, bqm1)
+
+        bqm2 = dimod.generators.random.doped(0.5, 100, seed=123)
+
+        self.assertNotEqual(bqm2, bqm1)
+
+    def test_correct_ratio(self):
+        bqm = dimod.generators.random.doped(0.3, 100, seed=506)
+        total = len(bqm.quadratic)
+        afm = sum([val == 1 for val in bqm.quadratic.values()])
+        self.assertAlmostEqual(afm / total, 0.3, places=2)
+
+    def test_correct_ratio_fm(self):
+        bqm = dimod.generators.random.doped(0.3, 100, seed=506, fm=False)
+        total = len(bqm.quadratic)
+        fm = sum([val == -1 for val in bqm.quadratic.values()])
+        self.assertAlmostEqual(fm / total, 0.3, places=2)

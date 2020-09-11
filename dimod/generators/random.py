@@ -207,3 +207,58 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
     return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
                                   variable_order=variables)
+
+
+@graph_argument('graph')
+def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
+    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem. 
+
+    In a doped FM problem, `p`, the doping parameter, determines the probability of 
+    couplers set to AFM (flipped to 1). The remaining couplers remain FM (-1). In a doped
+    AFM problem, the opposite is true.
+
+    Args:
+        p (float):
+            Doping parameter [0,1] determines the probability of couplers flipped.
+
+        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+            The graph to build the bqm on. Either an integer n,
+            interpreted as a complete graph of size n, a nodes/edges pair, a
+            list of edges or a NetworkX graph.
+
+        cls (:class:`.BinaryQuadraticModel`):
+            Binary quadratic model class to build from.
+
+        seed (int, optional, default=None):
+            Random seed.
+
+        fm (bool):
+            If True, the default undoped graph is FM. If False, it is AFM.
+
+    Returns:
+        :obj:`.BinaryQuadraticModel`
+
+    """
+
+    if seed is None:
+        seed = numpy.random.randint(2**32, dtype=np.uint32)
+    rnd = numpy.random.RandomState(seed)
+
+    if p>1 or p<0:
+        raise ValueError('Doping must be in the range [0,1]')
+
+    variables, edges = graph
+
+    if not fm:
+        p = 1 - p
+
+    bqm = cls({},{},0, 'SPIN')
+
+    for u, v in edges:
+        bqm.set_linear(u, 0)
+        bqm.set_linear(v, 0)
+
+        J = rnd.choice([1,-1], p=[p, 1 - p])
+        bqm.add_interaction(u, v, J)
+
+    return bqm
