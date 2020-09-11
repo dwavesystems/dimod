@@ -294,6 +294,21 @@ jobs:
     environment:
       PYTHON: 3.5.4
 
+  test-linux-cpp11:
+    docker:
+      # just use a python image, all we really want is debian
+      - image: circleci/python:3.6-jessie
+    
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run: *install-boost-linux-template
+      - run: &run-cpp-template
+          name: run cpp tests
+          command: |
+            make -C tests/cpp/ --always-make
+
   test-doctest:
     docker:
       - image: circleci/python:3.7-stretch # as of march 2019 RTD uses 3.7
@@ -587,6 +602,7 @@ workflows:
       - test-win-py36x86
       - test-win-py35x86
       - test-doctest
+      - test-linux-cpp11
   deploy:
     jobs:
       - deploy-manylinux-64:
