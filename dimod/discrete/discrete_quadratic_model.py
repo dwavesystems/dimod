@@ -18,6 +18,7 @@ from operator import eq
 
 import numpy as np
 
+from dimod.sampleset import as_samples
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 
 
@@ -214,6 +215,25 @@ class DiscreteQuadraticModel:
         variable_index = self._cydqm.add_variable(num_cases)
         assert variable_index + 1 == len(self.variables)
         return self.variables[-1]
+
+    def energy(self, sample):
+        self.energies(sample)
+        return 0
+        # energy, = self.energies(sample)
+        # return energy
+
+    def energies(self, samples):
+        samples, labels = as_samples(samples, dtype=self._cydqm.case_dtype)
+
+        # reorder as needed
+        if len(labels) != self.num_variables():
+            raise ValueError(
+                "Given sample(s) have incorrect number of variables")
+        if self.variables != labels:
+            # todo as part of discrete sampleset work
+            raise NotImplementedError
+
+        return np.asarray(self._cydqm.energies(samples))
 
     def get_linear(self, v):
         """The linear biases associated with variable `v`.
