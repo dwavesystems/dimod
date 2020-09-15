@@ -69,6 +69,34 @@ class TestConstruction(unittest.TestCase):
             dqm.num_cases(2)
 
 
+class TestEnergy(unittest.TestCase):
+    def test_one_variable(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(4)
+
+        for s in range(4):
+            sample = [s]
+            self.assertEqual(dqm.energy(sample), 0.0)
+
+        np.testing.assert_array_equal(dqm.energies([[s] for s in range(4)]),
+                                      np.zeros(4))
+
+    def test_two_variable(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(3)
+        v = dqm.add_variable(4, label='hello')
+
+        dqm.set_linear_case(v, 3, 1.5)
+        dqm.set_quadratic(u, v, {(0, 1): 5, (2, 0): 107})
+
+        samples = list(itertools.product(range(3), range(4)))
+
+        energies = dqm.energies((samples, [0, 'hello']))
+
+        np.testing.assert_array_equal([0.0, 5.0, 0.0, 1.5, 0.0, 0.0, 0.0, 1.5,
+                                       107.0, 0.0, 0.0, 1.5], energies)
+
+
 class TestLinear(unittest.TestCase):
     def test_set_linear_case(self):
         dqm = dimod.DQM()
