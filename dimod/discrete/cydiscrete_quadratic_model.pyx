@@ -153,6 +153,8 @@ cdef class cyDiscreteQuadraticModel:
 
         return quadratic
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Bias get_quadratic_case(self,
                                   VarIndex u, CaseIndex case_u,
                                   VarIndex v, CaseIndex case_v)  except? -45.3:
