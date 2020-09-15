@@ -12,6 +12,7 @@ Reference Documentation
    bqm
    sampler_composites/index
    sampleset
+   dqm
    higherorder
    utilities
    vartypes
