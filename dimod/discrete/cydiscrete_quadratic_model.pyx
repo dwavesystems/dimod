@@ -33,6 +33,7 @@ cdef class cyDiscreteQuadraticModel:
         self.case_starts_.push_back(0)
 
         self.dtype = np.float64
+        self.case_dtype = np.int64
 
     @property
     def adj(self):
@@ -63,6 +64,50 @@ cdef class cyDiscreteQuadraticModel:
         self.case_starts_.push_back(self.bqm_.num_variables())
 
         return v
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Bias[:] energies(self, CaseIndex[:, :] samples):
+        
+        if samples.shape[1] != self.num_variables():
+            raise ValueError("Given sample(s) have incorrect number of variables")
+
+        cdef Py_ssize_t num_samples = samples.shape[0]
+        cdef VarIndex num_variables = samples.shape[1]
+
+        cdef Bias[:] energies = np.zeros(num_samples, dtype=self.dtype)
+
+        cdef Py_ssize_t si, vi
+        cdef CaseIndex cu, case_u, cv, case_v
+        cdef VarIndex u, v
+        for si in range(num_samples):  # this could be parallelized
+            for u in range(num_variables):
+                case_u = samples[si, u]
+
+                if case_u >= self.num_cases(u):
+                    raise ValueError("invalid case")
+
+                cu = self.case_starts_[u] + case_u
+
+                energies[si] += self.bqm_.get_linear(cu)
+
+                for vi in range(self.adj_[u].size()):
+                    v = self.adj_[u][vi]
+
+                    # we only care about the lower triangle
+                    if v > u:
+                        break
+
+                    case_v = samples[si, v]
+
+                    cv = self.case_starts_[v] + case_v
+
+                    out = self.bqm_.get_quadratic(cu, cv)
+
+                    if out.second:
+                        energies[si] += out.first
+
+        return energies
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
