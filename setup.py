@@ -35,6 +35,7 @@ extras_require = {'all': ['networkx>=2.0,<3.0',
 packages = ['dimod',
             'dimod.bqm',
             'dimod.core',
+            'dimod.discrete',
             'dimod.generators',
             'dimod.higherorder',
             'dimod.reference',
@@ -140,13 +141,15 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/bqm/utils'+ext]),
               Extension("dimod.bqm.common",
                         ['dimod/bqm/common'+ext]),
+              Extension("dimod.discrete.cydiscrete_quadratic_model",
+                        ["dimod/discrete/cydiscrete_quadratic_model"+ext])
               ]
 
 
 if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions,
-                           # annotate=True,
+                           annotate=True,
                            )
 
 setup(
