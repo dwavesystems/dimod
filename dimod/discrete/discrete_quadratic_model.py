@@ -106,7 +106,9 @@ class _Variables(abc.Sequence, abc.Set):
 
 
 class DiscreteQuadraticModel:
-    """A discrete quadratic model is a polynomial over discrete variables with
+    """Encodes a discrete quadratic model.
+
+    A discrete quadratic model is a polynomial over discrete variables with
     terms all of degree two or less.
 
     Examples:
@@ -267,15 +269,15 @@ class DiscreteQuadraticModel:
 
             v: A variable in the discrete quadratic model.
 
-            array (bool, optional, default=False): If True a dense array is
+            array (bool, optional, default=False): If True, a dense array is
             returned rather than a dict.
 
         Returns:
-            The quadratic biases. If `array=False`, then a dictionary of the
-            form `{case_u, case_v: bias, ...}` is returned. If `array=True`,
-            then a :meth:`~DiscreteQuadraticModel.num_cases(u)` by
-            :meth:`~DiscreteQuadraticModel.num_cases(v)` numpy array is
-            returned.
+            The quadratic biases. If `array=False`, returns a dictionary of the
+            form `{case_u, case_v: bias, ...}`
+            If `array=True`, returns a
+            :meth:`~DiscreteQuadraticModel.num_cases(u)` by
+            :meth:`~DiscreteQuadraticModel.num_cases(v)` numpy array.
 
         """
         return self._cydqm.get_quadratic(
