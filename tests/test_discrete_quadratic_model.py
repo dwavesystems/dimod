@@ -96,6 +96,16 @@ class TestEnergy(unittest.TestCase):
         np.testing.assert_array_equal([0.0, 5.0, 0.0, 1.5, 0.0, 0.0, 0.0, 1.5,
                                        107.0, 0.0, 0.0, 1.5], energies)
 
+    def test_two_variable_labelled(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(10)
+        v = dqm.add_variable(5, label='v')
+
+        dqm.set_quadratic(u, v, {(0, 1): 1})
+        dqm.set_linear_case(u, 0, 1.5)
+
+        self.assertEqual(dqm.energy({u: 0, v: 1}), 2.5)
+
 
 class TestLinear(unittest.TestCase):
     def test_set_linear_case(self):

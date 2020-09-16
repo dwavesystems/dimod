@@ -217,10 +217,8 @@ class DiscreteQuadraticModel:
         return self.variables[-1]
 
     def energy(self, sample):
-        self.energies(sample)
-        return 0
-        # energy, = self.energies(sample)
-        # return energy
+        energy, = self.energies(sample)
+        return energy
 
     def energies(self, samples):
         samples, labels = as_samples(samples, dtype=self._cydqm.case_dtype)
