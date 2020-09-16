@@ -299,7 +299,7 @@ jobs:
       - run: &run-cpp-template
           name: run cpp tests
           command: |
-            make -C tests/cpp/ --always-make
+            make -C testscpp/ --always-make
 
   test-doctest:
     docker:

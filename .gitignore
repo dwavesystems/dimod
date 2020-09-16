@@ -116,3 +116,8 @@ dimod/bqm/adjvectorbqm.pyx
 # benchmarking stuff
 benchmarks/html/
 benchmarks/results/
+
+# testing stuff
+testscpp/test_main
+testscpp/test_main.o
+testscpp/test_main.out

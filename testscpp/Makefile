@@ -1,4 +1,4 @@
-ROOT := ../../
+ROOT := ../
 SRC := $(ROOT)/dimod/include/
 
 all: catch2 test_main tests
