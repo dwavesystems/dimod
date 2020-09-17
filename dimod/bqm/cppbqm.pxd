@@ -49,6 +49,20 @@ cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
             bint operator<=(outvars_iterator)
             bint operator>=(outvars_iterator)
 
+        cppclass const_outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            const_outvars_iterator operator++()
+            const_outvars_iterator operator--()
+            const_outvars_iterator operator+(size_type)
+            const_outvars_iterator operator-(size_type)
+            size_t operator-(const_outvars_iterator)
+            bint operator==(const_outvars_iterator)
+            bint operator!=(const_outvars_iterator)
+            bint operator<(const_outvars_iterator)
+            bint operator>(const_outvars_iterator)
+            bint operator<=(const_outvars_iterator)
+            bint operator>=(const_outvars_iterator)
+
         # constructors
         # cython cannot handle templated constructors, so we call out the types
         # explicitly
@@ -68,6 +82,7 @@ cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
         size_type num_variables() except +
         void set_linear(variable_type, bias_type) except +
@@ -96,6 +111,20 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
             bint operator<=(outvars_iterator)
             bint operator>=(outvars_iterator)
 
+        cppclass const_outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            const_outvars_iterator operator++()
+            const_outvars_iterator operator--()
+            const_outvars_iterator operator+(size_type)
+            const_outvars_iterator operator-(size_type)
+            size_t operator-(const_outvars_iterator)
+            bint operator==(const_outvars_iterator)
+            bint operator!=(const_outvars_iterator)
+            bint operator<(const_outvars_iterator)
+            bint operator>(const_outvars_iterator)
+            bint operator<=(const_outvars_iterator)
+            bint operator>=(const_outvars_iterator)
+
         # constructors
         # cython cannot handle templated constructors, so we call out the types
         # explicitly
@@ -115,6 +144,7 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
         size_type num_variables() except +
         void set_linear(variable_type, bias_type) except +
@@ -149,6 +179,20 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
             bint operator<=(outvars_iterator)
             bint operator>=(outvars_iterator)
 
+        cppclass const_outvars_iterator:
+            pair[variable_type, bias_type]& operator*()
+            const_outvars_iterator operator++()
+            const_outvars_iterator operator--()
+            const_outvars_iterator operator+(size_type)
+            const_outvars_iterator operator-(size_type)
+            size_t operator-(const_outvars_iterator)
+            bint operator==(const_outvars_iterator)
+            bint operator!=(const_outvars_iterator)
+            bint operator<(const_outvars_iterator)
+            bint operator>(const_outvars_iterator)
+            bint operator<=(const_outvars_iterator)
+            bint operator>=(const_outvars_iterator)
+
         # constructors
         # cython cannot handle templated constructors, so we call out the types
         # explicitly
@@ -168,6 +212,7 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
+        pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
         size_type num_variables() except +
         void set_linear(variable_type, bias_type) except +

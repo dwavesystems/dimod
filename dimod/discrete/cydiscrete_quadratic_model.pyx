@@ -160,19 +160,14 @@ cdef class cyDiscreteQuadraticModel:
 
             for ci in range(self.case_starts_[u], self.case_starts_[u+1]):
 
-                span = self.bqm_.neighborhood(ci)
+                span = self.bqm_.neighborhood(ci, self.case_starts_[v])
 
-                # binary search to find the start of the neighborhood we care
-                # about
-                low = lower_bound(span.first, span.second,
-                                  self.case_starts_[v], comp_v)
-
-                while (low != span.second and deref(low).first < self.case_starts_[v+1]):
+                while (span.first != span.second and deref(span.first).first < self.case_starts_[v+1]):
                     case_u = ci - self.case_starts_[u]
-                    case_v = deref(low).first - self.case_starts_[v]
-                    quadratic_view[case_u, case_v] = deref(low).second
+                    case_v = deref(span.first).first - self.case_starts_[v]
+                    quadratic_view[case_u, case_v] = deref(span.first).second
 
-                    inc(low)
+                    inc(span.first)
 
         else:
             # store in a dict
@@ -180,19 +175,14 @@ cdef class cyDiscreteQuadraticModel:
 
             for ci in range(self.case_starts_[u], self.case_starts_[u+1]):
 
-                span = self.bqm_.neighborhood(ci)
+                span = self.bqm_.neighborhood(ci, self.case_starts_[v])
 
-                # binary search to find the start of the neighborhood we care
-                # about
-                low = lower_bound(span.first, span.second,
-                                  self.case_starts_[v], comp_v)
-
-                while (low != span.second and deref(low).first < self.case_starts_[v+1]):
+                while (span.first != span.second and deref(span.first).first < self.case_starts_[v+1]):
                     case_u = ci - self.case_starts_[u]
-                    case_v = deref(low).first - self.case_starts_[v]
-                    quadratic[case_u, case_v] = deref(low).second
+                    case_v = deref(span.first).first - self.case_starts_[v]
+                    quadratic[case_u, case_v] = deref(span.first).second
 
-                    inc(low)
+                    inc(span.first)
 
         # todo: support scipy sparse matrices?
 
