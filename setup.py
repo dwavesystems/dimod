@@ -149,7 +149,7 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
 if USE_CYTHON:
     from Cython.Build import cythonize
     extensions = cythonize(extensions,
-                           annotate=True,
+                           # annotate=True,
                            )
 
 setup(
