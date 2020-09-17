@@ -11,10 +11,8 @@
 //    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
-//
-// =============================================================================
 
-#include <iostream>
+#include <vector>
 
 #include "../Catch2/single_include/catch2/catch.hpp"
 #include "dimod/adjvectorbqm.h"
@@ -27,22 +25,129 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes",
                    "[bqm]", 
                    (AdjVectorBQM<int, float>), (AdjMapBQM<int, float>), (AdjArrayBQM<int, float>)) {
 
-    float Q[4] = {1,0,-1,2};
-    auto bqm = TestType(Q, 2);
+    SECTION("Test neighborhood()") {
+        float Q[9] = {1.0, 0.0, 3.0,
+                      2.0, 1.5, 6.0,
+                      1.0, 0.0, 0.0};
+        auto bqm = TestType(Q, 3);
+
+        std::vector<typename TestType::variable_type> neighbors;
+        std::vector<typename TestType::bias_type> biases;
+
+        auto span = bqm.neighborhood(0);
+        while (span.first != span.second) {
+            neighbors.push_back(span.first->first);
+            biases.push_back(span.first->second);
+            ++span.first;
+        }
+
+        REQUIRE(neighbors.size() == 2);
+        REQUIRE(neighbors[0] == 1);
+        REQUIRE(neighbors[1] == 2);
+        REQUIRE(biases[0] == 2.0);
+        REQUIRE(biases[1] == 4.0);
+
+        neighbors.clear();
+        biases.clear();
+
+        span = bqm.neighborhood(1);
+        while (span.first != span.second) {
+            neighbors.push_back(span.first->first);
+            biases.push_back(span.first->second);
+            ++span.first;
+        }
+
+        REQUIRE(neighbors.size() == 2);
+        REQUIRE(neighbors[0] == 0);
+        REQUIRE(neighbors[1] == 2);
+        REQUIRE(biases[0] == 2.0);
+        REQUIRE(biases[1] == 6.0);
+
+        neighbors.clear();
+        biases.clear();
+
+        span = bqm.neighborhood(2);
+        while (span.first != span.second) {
+            neighbors.push_back(span.first->first);
+            biases.push_back(span.first->second);
+            ++span.first;
+        }
+
+        REQUIRE(neighbors.size() == 2);
+        REQUIRE(neighbors[0] == 0);
+        REQUIRE(neighbors[1] == 1);
+        REQUIRE(biases[0] == 4.0);
+        REQUIRE(biases[1] == 6.0);
+    }
+
+    SECTION("Test neighborhood() start") {
+        float Q[25] = {0.0, 0.0, 1.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 1.0, 0.0, 0.0,
+                       0.0, 0.0, 1.0, 0.0, 0.0};
+        auto bqm = TestType(Q, 5);
+
+        std::vector<typename TestType::variable_type> neighbors;
+        std::vector<typename TestType::bias_type> biases;
+
+        auto span = bqm.neighborhood(2, 0);
+        while (span.first != span.second) {
+            neighbors.push_back(span.first->first);
+            biases.push_back(span.first->second);
+            ++span.first;
+        }
+
+        REQUIRE(neighbors.size() == 3);
+        REQUIRE(neighbors[0] == 0);
+        REQUIRE(neighbors[1] == 3);
+        REQUIRE(neighbors[2] == 4);
+        REQUIRE(biases[0] == 1.0);
+        REQUIRE(biases[1] == 1.0);
+        REQUIRE(biases[2] == 1.0);
+
+        neighbors.clear();
+        biases.clear();
+
+        span = bqm.neighborhood(2, 1);
+        while (span.first != span.second) {
+            neighbors.push_back(span.first->first);
+            biases.push_back(span.first->second);
+            ++span.first;
+        }
+
+        REQUIRE(neighbors.size() == 2);
+        REQUIRE(neighbors[0] == 3);
+        REQUIRE(neighbors[1] == 4);
+        REQUIRE(biases[0] == 1.0);
+        REQUIRE(biases[1] == 1.0);
+    }
 
     SECTION("Test num_variable()") {
+        float Q[4] = {1, 0, -1, 2};
+        auto bqm = TestType(Q, 2);
+
         REQUIRE(bqm.num_variables() == 2);
     }
 
     SECTION("Test num_interactions()") {
+        float Q[4] = {1, 0, -1, 2};
+        auto bqm = TestType(Q, 2);
+
         REQUIRE(bqm.num_interactions() == 1);
     }
 
     SECTION("Test get_linear()") {
+        float Q[4] = {1, 0, -1, 2};
+        auto bqm = TestType(Q, 2);
+
         REQUIRE(bqm.get_linear(1) == 2);   
     }
 
     SECTION("Test get_quadratic()") {
+        float Q[4] = {1, 0, -1, 2};
+        auto bqm = TestType(Q, 2);
+
         auto q = bqm.get_quadratic(0,1);
         REQUIRE(q.first == -1);
         REQUIRE(q.second);

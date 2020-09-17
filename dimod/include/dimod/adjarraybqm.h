@@ -165,6 +165,24 @@ class AdjArrayBQM {
         return std::make_pair(outvars.cbegin() + invars[u].first, end);
     }
 
+    /**
+     * The neighborhood of variable `v`.
+     * 
+     * @param A variable `v`.
+     * @param The neighborhood will start with the first out variable that
+     * does not compare less than `start`.
+     *
+     * @returns A pair of iterators pointing to the start and end of the
+     *     neighborhood.
+     */
+    std::pair<const_outvars_iterator, const_outvars_iterator>
+    neighborhood(variable_type v, variable_type start) const {
+        auto span = neighborhood(v);
+        auto low = std::lower_bound(span.first, span.second,
+                                    start, utils::comp_v<V, B>);
+        return std::make_pair(low, span.second);
+    } 
+
     [[deprecated("Use AdjArrayBQM::linear(v)")]]
     void set_linear(variable_type v, bias_type b) {
         assert(v >= 0 && v < invars.size());
