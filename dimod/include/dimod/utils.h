@@ -17,6 +17,8 @@
 
 #include <utility>
 
+#define BLOCK_SIZE 64 // Block size for cache blocking.
+
 namespace dimod {
 namespace utils {
 
