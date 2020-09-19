@@ -354,6 +354,20 @@ cdef class cyDiscreteQuadraticModel:
 
         return self.case_starts_[v+1] - self.case_starts_[v]
 
+    cpdef Py_ssize_t num_case_interactions(self):
+        """The total number of case interactions."""
+        return self.bqm_.num_interactions()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Py_ssize_t num_variable_interactions(self) except -1:
+        """The total number of case interactions."""
+        cdef Py_ssize_t num = 0
+        cdef Py_ssize_t v
+        for v in range(self.num_variables()):
+            num += self.adj_[v].size()
+        return num // 2
+
     cpdef Py_ssize_t num_variables(self):
         """The number of discrete variables in the DQM."""
         return self.adj_.size()
