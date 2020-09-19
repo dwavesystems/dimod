@@ -53,6 +53,8 @@ cdef class cyDiscreteQuadraticModel:
     cpdef Bias[:] energies(self, CaseIndex[:, :])
     cpdef Bias get_linear_case(self, VarIndex, CaseIndex) except? -45.3
     cpdef Py_ssize_t num_cases(self, Py_ssize_t v=*) except -1
+    cpdef Py_ssize_t num_case_interactions(self)
+    cpdef Py_ssize_t num_variable_interactions(self) except -1
     cpdef Py_ssize_t num_variables(self)
     cpdef Py_ssize_t set_linear(self, VarIndex, Bias[:]) except -1
     cpdef Py_ssize_t set_linear_case(self, VarIndex, CaseIndex, Bias) except -1
