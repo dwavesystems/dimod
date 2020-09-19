@@ -13,10 +13,40 @@
 #    limitations under the License.
 
 import itertools
+import numbers
 import unittest
 
 import dimod
 import numpy as np
+
+
+# will want to migrate this to generators at some point
+def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
+    np.random.seed(seed)
+
+    dqm = dimod.DiscreteQuadraticModel()
+
+    if isinstance(num_cases, numbers.Integral):
+        num_cases = np.full(num_variables, fill_value=num_cases)
+    else:
+        num_cases = np.asarray(num_cases)
+        if num_cases.shape[0] != num_variables:
+            raise ValueError
+
+    for nc in num_cases:
+        v = dqm.add_variable(nc)
+        dqm.set_linear(v, np.random.uniform(size=dqm.num_cases(v)))
+
+    for u, v in itertools.combinations(range(num_variables), 2):
+        if np.random.uniform() < p:
+            size = (dqm.num_cases(u), dqm.num_cases(v))
+
+            r = np.random.uniform(size=size)
+            r[np.random.binomial(1, 1-p_case, size=size) == 1] = 0
+
+            dqm.set_quadratic(u, v, r)
+
+    return dqm
 
 
 class TestConstruction(unittest.TestCase):
@@ -194,3 +224,125 @@ class TestQuadratic(unittest.TestCase):
 
         self.assertEqual(dqm.get_quadratic(u, v),
                          {(0, 1): 1, (1, 0): 1.5, (1, 1): 6, (2, 0): 2})
+
+
+class TestNumpyVectors(unittest.TestCase):
+
+    def test_empty_functional(self):
+        dqm = dimod.DQM()
+        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+        self.assertEqual(new.num_variables(), 0)
+
+    def test_two_var_functional(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7)
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
+        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+
+    def test_two_var_functional_labelled(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7, 'b')
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 'b', {(0, 1): 1.5, (3, 4): 1})
+
+        vectors = dqm.to_numpy_vectors(return_labels=True)
+
+        new = dimod.DQM.from_numpy_vectors(*vectors)
+
+        new_vectors = new.to_numpy_vectors()
+        np.testing.assert_array_equal(vectors[0], new_vectors[0])
+        np.testing.assert_array_equal(vectors[1], new_vectors[1])
+        np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
+        np.testing.assert_array_equal(vectors[2][1], new_vectors[2][1])
+        np.testing.assert_array_equal(vectors[2][2], new_vectors[2][2])
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+        self.assertEqual(new._cydqm.adj,
+                         dqm._cydqm.adj)  # implementation detail
+        for u in dqm.adj:
+            for v in dqm.adj[u]:
+                self.assertEqual(dqm.get_quadratic(u, v),
+                                 new.get_quadratic(u, v))
+
+    def test_random(self):
+
+        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
+
+        vectors = dqm.to_numpy_vectors()
+
+        new = dimod.DQM.from_numpy_vectors(*vectors)
+
+        new_vectors = new.to_numpy_vectors()
+        np.testing.assert_array_equal(vectors[0], new_vectors[0])
+        np.testing.assert_array_equal(vectors[1], new_vectors[1])
+        np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
+        np.testing.assert_array_equal(vectors[2][1], new_vectors[2][1])
+        np.testing.assert_array_equal(vectors[2][2], new_vectors[2][2])
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+        self.assertEqual(new._cydqm.adj,
+                         dqm._cydqm.adj)  # implementation detail
+        for u in dqm.adj:
+            for v in dqm.adj[u]:
+                self.assertEqual(dqm.get_quadratic(u, v),
+                                 new.get_quadratic(u, v))
+
+    def test_random_shuffled_quadratic(self):
+
+        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
+
+        vectors = dqm.to_numpy_vectors()
+
+        # suffle the quadratic vectors so they are not ordered anymore
+        starts, ldata, (irow, icol, qdata) = vectors
+
+        shuffled = (starts, ldata,
+                    (np.array(np.flip(icol), copy=True),
+                     np.array(np.flip(irow), copy=True),
+                     np.array(np.flip(qdata), copy=True)))
+
+        new = dimod.DQM.from_numpy_vectors(*shuffled)
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+        self.assertEqual(new._cydqm.adj,
+                         dqm._cydqm.adj)  # implementation detail
+        for u in dqm.adj:
+            for v in dqm.adj[u]:
+                self.assertEqual(dqm.get_quadratic(u, v),
+                                 new.get_quadratic(u, v))
