@@ -27,6 +27,19 @@ ctypedef np.float64_t Bias
 ctypedef np.int64_t CaseIndex
 ctypedef np.int64_t VarIndex
 
+ctypedef fused Unsigned:
+    np.uint8_t
+    np.uint16_t
+    np.uint32_t
+    np.uint64_t
+
+ctypedef fused Integral:
+    Unsigned
+    np.int8_t
+    np.int16_t
+    np.int32_t
+    np.int64_t
+
 
 cdef class cyDiscreteQuadraticModel:
     cdef cppAdjVectorBQM[CaseIndex, Bias] bqm_
@@ -47,3 +60,8 @@ cdef class cyDiscreteQuadraticModel:
         self, VarIndex, CaseIndex, VarIndex, CaseIndex, Bias) except -1
     cpdef Bias get_quadratic_case(
         self, VarIndex, CaseIndex, VarIndex, CaseIndex)  except? -45.3
+
+    cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
+        Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
+    cdef void _from_numpy_vectors(self, Integral[:] starts, Bias[:] ldata,
+        Integral[:] irow, Integral[:] icol, Bias[:] qdata) except *
