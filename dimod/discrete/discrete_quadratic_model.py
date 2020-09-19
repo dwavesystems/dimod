@@ -235,6 +235,63 @@ class DiscreteQuadraticModel:
 
         return np.asarray(self._cydqm.energies(samples))
 
+    @classmethod
+    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic,
+                           labels=None):
+        """Construct a DQM from five numpy vectors.
+
+        Args:
+            case_starts (array-like): A length
+                :meth:`~DiscreteQuadraticModel.num_variables` array. The cases
+                associated with variable `v` are in the range `[case_starts[v],
+                cases_starts[v+1])`.
+
+            linear_biases (array-like): A length
+              :meth:`~DiscreteQuadraticModel.num_cases` array. The linear
+              biases.
+
+            quadratic (tuple): A three tuple containing:
+
+                - `irow`: A length
+                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  the case interactions were defined in a sparse matrix, these
+                  would be the row indices.
+                - `icol`: A length
+                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  the case interactions were defined in a sparse matrix, these
+                  would be the column indices.
+                - `qdata`: A length
+                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  the case interactions were defined in a sparse matrix, these
+                  would be the values.
+
+            labels (list, optional):
+                The variable labels. Defaults to index-labeled.
+
+        See Also:
+            :meth:`~DiscreteQuadraticModel.to_numpy_vectors`
+
+        """
+
+        obj = cls()
+
+        obj._cydqm = cyDiscreteQuadraticModel.from_numpy_vectors(
+            case_starts, linear_biases, quadratic)
+
+        if labels is not None:
+            if len(labels) != obj._cydqm.num_variables():
+                raise ValueError(
+                    "labels does not match the length of the DQM"
+                    )
+
+            for v in labels:
+                obj.variables._append(v)
+        else:
+            for v in range(obj._cydqm.num_variables()):
+                obj.variables._append()
+
+        return obj
+
     def get_linear(self, v):
         """The linear biases associated with variable `v`.
 
@@ -382,6 +439,53 @@ class DiscreteQuadraticModel:
             self.variables.index(u), u_case,
             self.variables.index(v), v_case,
             bias)
+
+    def to_numpy_vectors(self, return_labels=False):
+        """Convert the DQM to five numpy vectors.
+
+        Args:
+            return_labels (bool, optional, default=False):
+                If True, the variable labels are returned.
+
+        Returns:
+            A tuple `(case_starts, linear_biases, (irow, icol, qdata))` of
+            :class:`~numpy.ndarray`
+
+            - `case_starts`: A length
+              :meth:`~DiscreteQuadraticModel.num_variables` array. The cases
+              associated with variable `v` are in the range `[case_starts[v],
+              cases_starts[v+1])`.
+            - `linear_biases`: A length
+              :meth:`~DiscreteQuadraticModel.num_cases` array. The linear
+              biases.
+            - `irow`: A length
+              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
+              case interactions were defined in a sparse matrix, these would
+              be the row indices.
+            - `icol`: A length
+              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
+              case interactions were defined in a sparse matrix, these would
+              be the column indices.
+            - `qdata`: A length
+              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
+              case interactions were defined in a sparse matrix, these would
+              be the values.
+
+            If `return_labels=True`, this method will instead return a tuple
+            `(case_starts, linear_biases, (irow, icol, qdata), labels)` where
+            `labels` is a list of the variable labels.
+
+        See Also:
+            :meth:`~DiscreteQuadraticModel.from_numpy_vectors`
+
+        """
+        arrays = self._cydqm.to_numpy_vectors()
+
+        if return_labels:
+            arrays = list(arrays)
+            arrays.append(list(self.variables))
+
+        return arrays
 
 
 DQM = DiscreteQuadraticModel  # alias

@@ -81,6 +81,7 @@ cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
         size_type degree(variable_type) except +
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        bias_type& linear(variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
         pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
@@ -143,6 +144,7 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
         size_type degree(variable_type) except +
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        bias_type& linear(variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
         pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
@@ -211,6 +213,7 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         size_type degree(variable_type) except +
         bias_type get_linear(variable_type) except +
         pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
+        bias_type& linear(variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
         pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
         size_type num_interactions() except +
