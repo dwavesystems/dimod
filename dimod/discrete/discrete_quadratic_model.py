@@ -13,16 +13,26 @@
 #    limitations under the License.
 
 import collections.abc as abc
+import io
+import json
+import tempfile
 
 from operator import eq
 
 import numpy as np
 
-from dimod.sampleset import as_samples
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
+from dimod.sampleset import as_samples
+from dimod.serialization.fileview import VariablesSection, _BytesIO
 
 
 __all__ = ['DiscreteQuadraticModel', 'DQM']
+
+
+# constants for serialization
+DQM_MAGIC_PREFIX = b'DIMODDQM'
+DATA_MAGIC_PREFIX = b'BIAS'
+VERSION = bytes([1, 0])  # version 1.0
 
 
 # this is the third(!) variables implementation in dimod. It differs from
@@ -236,6 +246,69 @@ class DiscreteQuadraticModel:
         return np.asarray(self._cydqm.energies(samples))
 
     @classmethod
+    def _from_file_numpy(cls, file_like):
+
+        magic = file_like.read(len(DATA_MAGIC_PREFIX))
+        if magic != DATA_MAGIC_PREFIX:
+            raise ValueError("unknown file type, expected magic string {} but "
+                             "got {}".format(DATA_MAGIC_PREFIX, magic))
+
+        length = np.frombuffer(file_like.read(4), '<u4')[0]
+        start = file_like.tell()
+
+        data = np.load(file_like)
+
+        obj = cls.from_numpy_vectors(data['case_starts'],
+                                     data['linear_biases'],
+                                     (data['quadratic_heads'],
+                                      data['quadratic_tails'],
+                                      data['quadratic_biases'],
+                                      )
+                                     )
+
+        # move to the end of the data section
+        file_like.seek(start+length, io.SEEK_SET)
+
+        return obj
+
+    @classmethod
+    def from_file(cls, file_like):
+        """Construct a DQM from a file-like object.
+
+        The inverse of :meth:`~DiscreteQuadraticModel.to_file`.
+        """
+
+        if isinstance(file_like, (bytes, bytearray, memoryview)):
+            fp = _BytesIO(fp)
+
+        magic = file_like.read(len(DQM_MAGIC_PREFIX))
+        if magic != DQM_MAGIC_PREFIX:
+            raise ValueError("unknown file type, expected magic string {} but "
+                             "got {}".format(DQM_MAGIC_PREFIX, magic))
+
+        version = tuple(file_like.read(2))
+        if version[0] != 1:
+            raise ValueError("cannot load a DQM serialized with version {!r}, "
+                             "try upgrading your dimod version"
+                             "".format(version))
+
+        header_len = np.frombuffer(file_like.read(4), '<u4')[0]
+
+        header_data = json.loads(file_like.read(header_len).decode('ascii'))
+
+        obj = cls._from_file_numpy(file_like)
+
+        if header_data['variables']:
+            obj.variables = _Variables()
+            for v in VariablesSection.load(file_like):
+                obj.variables._append(v)
+
+            if len(obj.variables) != obj.num_variables():
+                raise ValueError("mismatched labels to BQM in given file")
+
+        return obj
+
+    @classmethod
     def from_numpy_vectors(cls, case_starts, linear_biases, quadratic,
                            labels=None):
         """Construct a DQM from five numpy vectors.
@@ -260,7 +333,7 @@ class DiscreteQuadraticModel:
                   :meth:`~DiscreteQuadraticModel.num_interactions` array. If
                   the case interactions were defined in a sparse matrix, these
                   would be the column indices.
-                - `qdata`: A length
+                - `quadratic_biases`: A length
                   :meth:`~DiscreteQuadraticModel.num_interactions` array. If
                   the case interactions were defined in a sparse matrix, these
                   would be the values.
@@ -370,6 +443,14 @@ class DiscreteQuadraticModel:
             return self._cydqm.num_cases()
         return self._cydqm.num_cases(self.variables.index(v))
 
+    def num_case_interactions(self):
+        """The total number of case interactions."""
+        return self._cydqm.num_case_interactions()
+
+    def num_variable_interactions(self):
+        """The total number of variable interactions"""
+        return self._cydqm.num_variable_interactions()
+
     def num_variables(self):
         """The number of variables in the discrete quadratic model."""
         return self._cydqm.num_variables()
@@ -440,6 +521,164 @@ class DiscreteQuadraticModel:
             self.variables.index(v), v_case,
             bias)
 
+    def _to_file_numpy(self, file, compressed):
+        # the biases etc, saved using numpy
+
+        # we'd like to just let numpy handle the header etc, but it doesn't
+        # do a good job of cleaning up after itself in np.load, so we record
+        # the section length ourselves
+        file.write(DATA_MAGIC_PREFIX)
+        file.write(b'    ')  # will be replaced by the length
+        start = file.tell()
+
+        case_starts, linear_biases, (irow, icol, quadratic_biases) = \
+            self.to_numpy_vectors()
+
+        if compressed:
+            save = np.savez_compressed
+        else:
+            save = np.savez
+
+        save(file,
+             case_starts=case_starts,
+             linear_biases=linear_biases,
+             quadratic_heads=irow,
+             quadratic_tails=icol,
+             quadratic_biases=quadratic_biases,
+             )
+
+        # record the length
+        end = file.tell()
+        file.seek(start-4)
+        file.write(np.dtype('<u4').type(end - start).tobytes())
+        file.seek(end)
+
+    def to_file(self, max_size=int(1e9), compressed=False, ignore_labels=False):
+        """Convert the DQM to a file-like object.
+
+        Args:
+            max_size (int, optional, default=int(1e9)):
+                Passed to the constructor of the returned
+                :class:`tempfile.SpooledTemporaryFile`. Determines whether
+                the returned file-like's contents will be kept on disk or in
+                memory.
+
+            compressed (bool, optional default=False):
+                If True, most of the data will be compressed.
+
+            ignore_labels (bool, optional, default=False):
+                Treat the DQM as unlabeled. This is useful for large DQMs to
+                save on space.
+
+        Returns:
+            :class:`tempfile.SpooledTemporaryFile`: A file-like object
+            that can be used to construct a copy of the DQM.
+
+        Format Specification (Version 1.0):
+
+            This format is inspired by the `NPY format`_
+
+            **Header**
+
+            The first 8 bytes are a magic string: exactly `"DIMODDQM"`.
+
+            The next 1 byte is an unsigned byte: the major version of the file
+            format.
+
+            The next 1 byte is an unsigned byte: the minor version of the file
+            format.
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the header data `HEADER_LEN`.
+
+            The next `HEADER_LEN` bytes form the header data. This is a
+            json-serialized dictionary. The dictionary is exactly:
+
+            .. code-block:: python
+
+                dict(num_variables=dqm.num_variables(),
+                     num_cases=dqm.num_cases(),
+                     num_case_interactions=dqm.num_case_interactions(),
+                     num_variable_interactions=dqm.num_variable_interactions(),
+                     variables=not (ignore_labels or dqm.variables.is_range),
+                     )
+
+            it is padded with spaces to make the entire length of the header
+            divisible by 64.
+
+            **DQM Data**
+
+            The first 4 bytes are exactly `"BIAS"`
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the DQM data `DATA_LEN`.
+
+            The next `DATA_LEN` bytes are the vectors as returned by
+            :meth:`DiscreteQuadraticModel.to_numpy_vectors` saved using
+            :func:`numpy.save`.
+
+            **Variable Data**
+
+            The first 4 bytes are exactly "VARS".
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the variables array `VARIABLES_LENGTH`.
+
+            The next VARIABLES_LENGTH bytes are a json-serialized array. As
+            constructed by `json.dumps(list(bqm.variables)).
+
+        .. _NPY format: https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+
+        See Also:
+            :meth:`DiscreteQuadraticModel.from_file`
+
+        """
+
+        file = tempfile.SpooledTemporaryFile(max_size=max_size)
+
+        # attach the header
+        header_parts = [DQM_MAGIC_PREFIX,
+                        VERSION,
+                        bytes(4),  # placeholder for HEADER_LEN
+                        ]
+
+        index_labeled = ignore_labels or self.variables.is_range
+
+        header_data = json.dumps(
+            dict(num_variables=self.num_variables(),
+                 num_cases=self.num_cases(),
+                 num_case_interactions=self.num_case_interactions(),
+                 num_variable_interactions=self.num_variable_interactions(),
+                 variables=not index_labeled,
+                 ),
+            sort_keys=True).encode('ascii')
+
+        header_parts.append(header_data)
+
+        # make the entire header length divisible by 64
+        length = sum(len(part) for part in header_parts)
+        if length % 64:
+            padding = b' '*(64 - length % 64)
+        else:
+            padding = b''
+        header_parts.append(padding)
+
+        HEADER_LEN = len(padding) + len(header_data)
+        header_parts[2] = np.dtype('<u4').type(HEADER_LEN).tobytes()
+
+        for part in header_parts:
+            file.write(part)
+
+        # the section containing most of the data, encoded with numpy
+        self._to_file_numpy(file, compressed)
+
+        if not index_labeled:
+            file.write(VariablesSection(self.variables).dumps())
+
+        file.seek(0)
+
+        return file
+
     def to_numpy_vectors(self, return_labels=False):
         """Convert the DQM to five numpy vectors.
 
@@ -466,7 +705,7 @@ class DiscreteQuadraticModel:
               :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
               case interactions were defined in a sparse matrix, these would
               be the column indices.
-            - `qdata`: A length
+            - `quadratic_biases`: A length
               :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
               case interactions were defined in a sparse matrix, these would
               be the values.
