@@ -17,6 +17,7 @@ import io
 import json
 import tempfile
 
+from collections import namedtuple
 from operator import eq
 
 import numpy as np
@@ -33,6 +34,13 @@ __all__ = ['DiscreteQuadraticModel', 'DQM']
 DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
 VERSION = bytes([1, 0])  # version 1.0
+
+
+# todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
+DQMVectors = namedtuple(
+    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
+QuadraticVectors = namedtuple(
+    'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
 
 
 # this is the third(!) variables implementation in dimod. It differs from
@@ -260,8 +268,8 @@ class DiscreteQuadraticModel:
 
         obj = cls.from_numpy_vectors(data['case_starts'],
                                      data['linear_biases'],
-                                     (data['quadratic_heads'],
-                                      data['quadratic_tails'],
+                                     (data['quadratic_row_indices'],
+                                      data['quadratic_col_indices'],
                                       data['quadratic_biases'],
                                       )
                                      )
@@ -340,6 +348,15 @@ class DiscreteQuadraticModel:
 
             labels (list, optional):
                 The variable labels. Defaults to index-labeled.
+
+        Example:
+
+            >>> dqm = dimod.DiscreteQuadraticModel()
+            >>> u = dqm.add_variable(5)
+            >>> v = dqm.add_variable(3, label='3var')
+            >>> dqm.set_quadratic(u, v, {(0, 2): 1})
+            >>> vectors = dqm.to_numpy_vectors()
+            >>> new = dimod.DiscreteQuadraticModel.from_numpy_vectors(*vectors)
 
         See Also:
             :meth:`~DiscreteQuadraticModel.to_numpy_vectors`
@@ -531,8 +548,7 @@ class DiscreteQuadraticModel:
         file.write(b'    ')  # will be replaced by the length
         start = file.tell()
 
-        case_starts, linear_biases, (irow, icol, quadratic_biases) = \
-            self.to_numpy_vectors()
+        vectors = self.to_numpy_vectors()
 
         if compressed:
             save = np.savez_compressed
@@ -540,11 +556,11 @@ class DiscreteQuadraticModel:
             save = np.savez
 
         save(file,
-             case_starts=case_starts,
-             linear_biases=linear_biases,
-             quadratic_heads=irow,
-             quadratic_tails=icol,
-             quadratic_biases=quadratic_biases,
+             case_starts=vectors.case_starts,
+             linear_biases=vectors.linear_biases,
+             quadratic_row_indices=vectors.quadratic.row_indices,
+             quadratic_col_indices=vectors.quadratic.col_indices,
+             quadratic_biases=vectors.quadratic.biases,
              )
 
         # record the length
@@ -680,16 +696,12 @@ class DiscreteQuadraticModel:
 
         return file
 
-    def to_numpy_vectors(self, return_labels=False):
-        """Convert the DQM to five numpy vectors.
-
-        Args:
-            return_labels (bool, optional, default=False):
-                If True, the variable labels are returned.
+    def to_numpy_vectors(self):
+        """Convert the DQM to five numpy vectors and the labels.
 
         Returns:
-            A tuple `(case_starts, linear_biases, (irow, icol, qdata))` of
-            :class:`~numpy.ndarray`
+            :class:`DQMVectors`: A named tuple with fields `['case_starts',
+            'linear_biases', 'quadratic', 'labels'].
 
             - `case_starts`: A length
               :meth:`~DiscreteQuadraticModel.num_variables` array. The cases
@@ -698,18 +710,27 @@ class DiscreteQuadraticModel:
             - `linear_biases`: A length
               :meth:`~DiscreteQuadraticModel.num_cases` array. The linear
               biases.
-            - `irow`: A length
-              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
-              case interactions were defined in a sparse matrix, these would
-              be the row indices.
-            - `icol`: A length
-              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
-              case interactions were defined in a sparse matrix, these would
-              be the column indices.
-            - `quadratic_biases`: A length
-              :meth:`~DiscreteQuadraticModel.num_interactions` array. If the
-              case interactions were defined in a sparse matrix, these would
-              be the values.
+            - `quadratic`: A named tuple with fields `['row_indices',
+              'col_indices', 'biases']`.
+
+              * `row_indices`: A length
+                :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
+                the case interactions were defined in a sparse matrix, these
+                would be the row indices.
+
+              * `col_indices`: A length
+                :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
+                the case interactions were defined in a sparse matrix, these
+                would be the column indices.
+
+              * `biases`: A length
+                :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
+                the case interactions were defined in a sparse matrix, these
+                would be the values.
+
+            - `labels`: The variable labels in a
+              :class:`~collections.abc.Sequence`.
+
 
             If `return_labels=True`, this method will instead return a tuple
             `(case_starts, linear_biases, (irow, icol, qdata), labels)` where
@@ -719,13 +740,13 @@ class DiscreteQuadraticModel:
             :meth:`~DiscreteQuadraticModel.from_numpy_vectors`
 
         """
-        arrays = self._cydqm.to_numpy_vectors()
+        case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
 
-        if return_labels:
-            arrays = list(arrays)
-            arrays.append(list(self.variables))
-
-        return arrays
+        return DQMVectors(case_starts,
+                          linear_biases,
+                          QuadraticVectors(*quadratic),
+                          self.variables,
+                          )
 
 
 DQM = DiscreteQuadraticModel  # alias
