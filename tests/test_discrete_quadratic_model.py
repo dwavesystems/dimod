@@ -352,7 +352,7 @@ class TestNumpyVectors(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 'b', {(0, 1): 1.5, (3, 4): 1})
 
-        vectors = dqm.to_numpy_vectors(return_labels=True)
+        vectors = dqm.to_numpy_vectors()
 
         new = dimod.DQM.from_numpy_vectors(*vectors)
 
@@ -415,7 +415,7 @@ class TestNumpyVectors(unittest.TestCase):
         vectors = dqm.to_numpy_vectors()
 
         # suffle the quadratic vectors so they are not ordered anymore
-        starts, ldata, (irow, icol, qdata) = vectors
+        starts, ldata, (irow, icol, qdata), labels = vectors
 
         shuffled = (starts, ldata,
                     (np.array(np.flip(icol), copy=True),
