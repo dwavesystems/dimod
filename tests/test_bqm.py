@@ -1035,6 +1035,34 @@ class TestEnergies(unittest.TestCase):
             bqm.energies(samples)
 
 
+class TestFileView(unittest.TestCase):
+    @parameterized.expand(
+        [(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    def test_empty(self, name, BQM):
+        bqm = BQM('SPIN')
+
+        with tempfile.TemporaryFile() as tf:
+            with bqm.to_file() as bqmf:
+                shutil.copyfileobj(bqmf, tf)
+            tf.seek(0)
+            new = BQM.from_file(tf)
+
+        self.assertEqual(bqm, new)
+
+    @parameterized.expand(
+        [(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    def test_2path(self, name, BQM):
+        bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
+
+        with tempfile.TemporaryFile() as tf:
+            with bqm.to_file() as bqmf:
+                shutil.copyfileobj(bqmf, tf)
+            tf.seek(0)
+            new = BQM.from_file(tf)
+
+        self.assertEqual(bqm, new)
+
+
 class TestFixVariable(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_spin(self, name, BQM):

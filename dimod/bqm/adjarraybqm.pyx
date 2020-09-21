@@ -438,6 +438,19 @@ cdef class cyAdjArrayBQM:
         return np.asarray(cyenergies(self, samples), dtype=dtype)
 
     @classmethod
+    def from_file(cls, file_like):
+        """Construct a BQM from a file-like object.
+
+        See also:
+            :meth:`AdjArrayBQM.to_file`: To construct a file-like object.
+
+            :func:`~dimod.serialization.fileview.load`
+
+        """
+        from dimod.serialization.fileview import load
+        return load(file_like, cls=cls)
+
+    @classmethod
     def _load(cls, fp, data, offset=0):
         """This method is used by :func:`.load` and should not be invoked
         directly.
@@ -566,6 +579,20 @@ cdef class cyAdjArrayBQM:
 
         if not isset:
             raise ValueError('No interaction between {} and {}'.format(u, v))
+
+    def to_file(self):
+        """View the BQM as a file-like object.
+
+        See also:
+
+            :meth:`Adj@name@BQM.from_file`: To construct a bqm from a file-like
+            object.
+
+            :func:`~dimod.serialization.fileview.FileView`
+
+        """
+        from dimod.serialization.fileview import FileView
+        return FileView(self)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
