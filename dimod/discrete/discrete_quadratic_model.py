@@ -553,22 +553,23 @@ class DiscreteQuadraticModel:
         file.write(np.dtype('<u4').type(end - start).tobytes())
         file.seek(end)
 
-    def to_file(self, max_size=int(1e9), compressed=False, ignore_labels=False):
+    def to_file(self, compressed=False, ignore_labels=False,
+                spool_size=int(1e9)):
         """Convert the DQM to a file-like object.
 
         Args:
-            max_size (int, optional, default=int(1e9)):
-                Passed to the constructor of the returned
-                :class:`tempfile.SpooledTemporaryFile`. Determines whether
-                the returned file-like's contents will be kept on disk or in
-                memory.
-
             compressed (bool, optional default=False):
                 If True, most of the data will be compressed.
 
             ignore_labels (bool, optional, default=False):
                 Treat the DQM as unlabeled. This is useful for large DQMs to
                 save on space.
+
+            spool_size (int, optional, default=int(1e9)):
+                Defines the `max_size` passed to the constructor of
+                :class:`tempfile.SpooledTemporaryFile`. Determines whether
+                the returned file-like's contents will be kept on disk or in
+                memory.
 
         Returns:
             :class:`tempfile.SpooledTemporaryFile`: A file-like object
@@ -634,7 +635,7 @@ class DiscreteQuadraticModel:
 
         """
 
-        file = tempfile.SpooledTemporaryFile(max_size=max_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         # attach the header
         header_parts = [DQM_MAGIC_PREFIX,
