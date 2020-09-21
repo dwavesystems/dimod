@@ -24,7 +24,7 @@ import numpy as np
 
 # will want to migrate this to generators at some point
 def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     dqm = dimod.DiscreteQuadraticModel()
 
@@ -37,14 +37,14 @@ def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
 
     for nc in num_cases:
         v = dqm.add_variable(nc)
-        dqm.set_linear(v, np.random.uniform(size=dqm.num_cases(v)))
+        dqm.set_linear(v, rng.uniform(size=dqm.num_cases(v)))
 
     for u, v in itertools.combinations(range(num_variables), 2):
-        if np.random.uniform() < p:
+        if rng.uniform() < p:
             size = (dqm.num_cases(u), dqm.num_cases(v))
 
-            r = np.random.uniform(size=size)
-            r[np.random.binomial(1, 1-p_case, size=size) == 1] = 0
+            r = rng.uniform(size=size)
+            r[rng.binomial(1, 1-p_case, size=size) == 1] = 0
 
             dqm.set_quadratic(u, v, r)
 
