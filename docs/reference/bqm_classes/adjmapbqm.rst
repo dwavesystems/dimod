@@ -57,6 +57,7 @@ Methods
    ~AdjMapBQM.fix_variables
    ~AdjMapBQM.flip_variable
    ~AdjMapBQM.from_coo
+   ~AdjMapBQM.from_file
    ~AdjMapBQM.from_ising
    ~AdjMapBQM.from_networkx_graph
    ~AdjMapBQM.from_numpy_matrix
@@ -78,6 +79,7 @@ Methods
    ~AdjMapBQM.set_quadratic
    ~AdjMapBQM.shapeable
    ~AdjMapBQM.to_coo
+   ~AdjMapBQM.to_file
    ~AdjMapBQM.to_ising
    ~AdjMapBQM.to_networkx_graph
    ~AdjMapBQM.to_numpy_matrix

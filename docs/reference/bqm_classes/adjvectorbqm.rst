@@ -57,6 +57,7 @@ Methods
    ~AdjVectorBQM.fix_variables
    ~AdjVectorBQM.flip_variable
    ~AdjVectorBQM.from_coo
+   ~AdjVectorBQM.from_file
    ~AdjVectorBQM.from_ising
    ~AdjVectorBQM.from_networkx_graph
    ~AdjVectorBQM.from_numpy_matrix
@@ -78,6 +79,7 @@ Methods
    ~AdjVectorBQM.set_quadratic
    ~AdjVectorBQM.shapeable
    ~AdjVectorBQM.to_coo
+   ~AdjVectorBQM.to_file
    ~AdjVectorBQM.to_ising
    ~AdjVectorBQM.to_networkx_graph
    ~AdjVectorBQM.to_numpy_matrix

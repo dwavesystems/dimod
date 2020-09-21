@@ -53,6 +53,7 @@ Methods
    ~AdjArrayBQM.energy
    ~AdjArrayBQM.flip_variable
    ~AdjArrayBQM.from_coo
+   ~AdjArrayBQM.from_file
    ~AdjArrayBQM.from_ising
    ~AdjArrayBQM.from_networkx_graph
    ~AdjArrayBQM.from_numpy_matrix
@@ -74,6 +75,7 @@ Methods
    ~AdjArrayBQM.set_quadratic
    ~AdjArrayBQM.shapeable
    ~AdjArrayBQM.to_coo
+   ~AdjArrayBQM.to_file
    ~AdjArrayBQM.to_ising
    ~AdjArrayBQM.to_networkx_graph
    ~AdjArrayBQM.to_numpy_matrix
