@@ -258,6 +258,48 @@ class TestConstruction(unittest.TestCase):
         np.testing.assert_array_equal(np.flip(raw, 1), samples.record.sample)
 
 
+class TestDiscreteSampleSet(unittest.TestCase):
+    def test_aggregate(self):
+        samples = [{'a': 1, 'b': 56}, {'a': 1, 'b': 56}, {'a': 1, 'b': 3}]
+        ss = dimod.SampleSet.from_samples(samples, 'DISCRETE',
+                                          energy=[2, 2, 3])
+
+        new = ss.aggregate()
+
+        np.testing.assert_array_equal(new.record.sample, [[1, 56], [1, 3]])
+
+    def test_data(self):
+        ss = dimod.SampleSet.from_samples(([[0, 107, 236], [3, 21, 1]], 'abc'),
+                                          'DISCRETE', energy=[2, 1])
+
+        self.assertEqual(list(ss.data(['sample', 'energy'])),
+                         [({'a': 3, 'b': 21, 'c': 1}, 1),
+                          ({'a': 0, 'b': 107, 'c': 236}, 2)])
+
+    def test_from_samples_list(self):
+        ss = dimod.SampleSet.from_samples([[0, 107, 236], [3, 321, 1]],
+                                          'DISCRETE', energy=[2, 1])
+
+        self.assertIs(ss.vartype, dimod.DISCRETE)
+        np.testing.assert_array_equal(ss.record.sample,
+                                      [[0, 107, 236], [3, 321, 1]])
+        np.testing.assert_array_equal(ss.record.energy, [2, 1])
+
+    def test_samples(self):
+        ss = dimod.SampleSet.from_samples([[0, 107, 236], [3, 321, 1]],
+                                          'DISCRETE', energy=[1, 2])
+
+        np.testing.assert_array_equal(ss.samples()[:, [0, 1, 2]],
+                                      [[0, 107, 236], [3, 321, 1]])
+
+    def test_serializable(self):
+        samples = [{'a': 1, 'b': 56}, {'a': 1, 'b': 56}, {'a': 1, 'b': 3}]
+        ss = dimod.SampleSet.from_samples(samples, 'DISCRETE',
+                                          energy=[2, 2, 3])
+
+        new = dimod.SampleSet.from_serializable(ss.to_serializable())
+
+
 class TestEq(unittest.TestCase):
     def test_ordered(self):
         # samplesets should be equal regardless of variable order
