@@ -63,4 +63,4 @@ from dimod.serialization.format import set_printoptions
 from dimod.utilities import *
 import dimod.utilities
 
-from dimod.vartypes import as_vartype, Vartype, SPIN, BINARY
+from dimod.vartypes import *
