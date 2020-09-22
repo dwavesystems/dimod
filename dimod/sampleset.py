@@ -26,7 +26,6 @@ import numpy as np
 
 from numpy.lib import recfunctions
 
-from dimod.decorators import vartype_argument
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
 from dimod.serialization.utils import (pack_samples as _pack_samples,
@@ -348,8 +347,9 @@ class SampleSet(abc.Iterable, abc.Sized):
     # Construction
     ###############################################################################################
 
-    @vartype_argument('vartype')
     def __init__(self, record, variables, info, vartype):
+
+        vartype = as_vartype(vartype)
 
         # make sure that record is a numpy recarray and that it has the expected fields
         if not isinstance(record, np.recarray):
@@ -944,7 +944,6 @@ class SampleSet(abc.Iterable, abc.Sized):
                               self.info.copy(),
                               self.vartype)
 
-    @vartype_argument('vartype')
     def change_vartype(self, vartype, energy_offset=0.0, inplace=True):
         """Return the :class:`SampleSet` with the given vartype.
 
@@ -991,6 +990,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         if not self.is_writeable:
             raise WriteableError("SampleSet is not writeable")
+
+        vartype = as_vartype(vartype)  # cast to correct vartype
 
         if energy_offset:
             self.record.energy = self.record.energy + energy_offset
