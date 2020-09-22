@@ -11,18 +11,13 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
+import collections.abc as abc
 import concurrent.futures
-import unittest
 import fractions
 import json
 import pickle
-
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+import unittest
 
 from collections import OrderedDict
 
@@ -112,6 +107,12 @@ class Test_as_samples(unittest.TestCase):
         arr, labels = dimod.as_samples(np.empty((3, 0)))
         np.testing.assert_array_equal(arr, np.empty((3, 0)))
         self.assertEqual(labels, [])
+
+    def test_list_discrete(self):
+        arr, labels = dimod.as_samples([int(1 << 8)])
+
+        self.assertEqual(arr.dtype, np.int16)
+        np.testing.assert_array_equal(arr, [[int(1 << 8)]])
 
     def test_mixed_sampletype(self):
         s1 = [0, 1]
