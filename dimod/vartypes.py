@@ -55,7 +55,10 @@ Examples:
 """
 import enum
 
-__all__ = ['as_vartype', 'Vartype', 'SPIN', 'BINARY']
+__all__ = ['as_vartype',
+           'Vartype', 'ExtendedVartype',
+           'SPIN', 'BINARY', 'DISCRETE',
+           ]
 
 
 class Vartype(enum.Enum):
@@ -73,11 +76,18 @@ class Vartype(enum.Enum):
     BINARY = frozenset({0, 1})
 
 
+# unfortunately one cannot subclass/extend Enum and the assumption that there
+# are only two is baked into too many places to just add DISCRETE to Vartype
+class ExtendedVartype(enum.Enum):
+    DISCRETE = int
+
+
 SPIN = Vartype.SPIN
 BINARY = Vartype.BINARY
+DISCRETE = ExtendedVartype.DISCRETE
 
 
-def as_vartype(vartype):
+def as_vartype(vartype, allow_discrete=False):
     """Cast various inputs to a valid vartype object.
 
     Args:
@@ -87,9 +97,15 @@ def as_vartype(vartype):
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
+        allow_discrete (bool, optional, default=False):
+            If `True`, vartype can also be:
+
+            * :class:`.ExtendedVartype.DISCRETE`, ``'DISCRETE'``
+
     Returns:
         :class:`.Vartype`: Either :class:`.Vartype.SPIN` or
-        :class:`.Vartype.BINARY`.
+        :class:`.Vartype.BINARY`. If `allow_discrete` is True, can also
+        be :class:`.ExtendedVartype.DISCRETE`.
 
     See also:
         :func:`~dimod.decorators.vartype_argument`
@@ -114,6 +130,27 @@ def as_vartype(vartype):
     else:
         return vartype
 
+    if not allow_discrete:
+        raise TypeError(("expected input vartype to be one of: "
+                         "Vartype.SPIN, 'SPIN', {-1, 1}, "
+                         "Vartype.BINARY, 'BINARY', or {0, 1}."))
+
+    if isinstance(vartype, ExtendedVartype):
+        return vartype
+
+    try:
+        if isinstance(vartype, str):
+            vartype = ExtendedVartype[vartype]
+        else:
+            vartype = ExtendedVartype(vartype)
+    except (ValueError, KeyError, TypeError):
+        # avoid the "During handling of the above exception..." message
+        # that removes the full traceback
+        pass
+    else:
+        return vartype
+
     raise TypeError(("expected input vartype to be one of: "
                      "Vartype.SPIN, 'SPIN', {-1, 1}, "
-                     "Vartype.BINARY, 'BINARY', or {0, 1}."))
+                     "Vartype.BINARY, 'BINARY', {0, 1}, "
+                     "ExtendedVartype.DISCRETE, or 'DISCRETE'."))
