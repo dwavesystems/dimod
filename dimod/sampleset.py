@@ -36,7 +36,7 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        deserialize_ndarrays)
 from dimod.utilities import LockableDict
 from dimod.variables import Variables, iter_deserialize_variables
-from dimod.vartypes import as_vartype, Vartype
+from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
@@ -328,6 +328,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`.ExtendedVartype.DISCRETE`, ``'DISCRETE'``
 
     Examples:
         This example creates a SampleSet out of a samples_like object (a NumPy array).
@@ -349,7 +350,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     def __init__(self, record, variables, info, vartype):
 
-        vartype = as_vartype(vartype)
+        vartype = as_vartype(vartype, allow_discrete=True)
 
         # make sure that record is a numpy recarray and that it has the expected fields
         if not isinstance(record, np.recarray):
@@ -387,6 +388,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`.ExtendedVartype.DISCRETE`, ``'DISCRETE'``
 
             energy (array_like):
                 Vector of energies.
@@ -476,6 +478,8 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return cls(record, variables, info, vartype)
 
+    # todo: this works with DQM/BinaryPolynomial, should change the name and/or
+    # update the docs.
     @classmethod
     def from_samples_bqm(cls, samples_like, bqm, **kwargs):
         """Build a sample set from raw samples and a binary quadratic model.
@@ -991,7 +995,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         if not self.is_writeable:
             raise WriteableError("SampleSet is not writeable")
 
-        vartype = as_vartype(vartype)  # cast to correct vartype
+        vartype = as_vartype(vartype, allow_discrete=True)  # cast to correct vartype
 
         if energy_offset:
             self.record.energy = self.record.energy + energy_offset
@@ -1409,7 +1413,9 @@ class SampleSet(abc.Iterable, abc.Sized):
                 `bson.Binary` can be used instead.
 
             pack_samples (bool, optional, default=True):
-                Pack the samples using 1 bit per sample.
+                Pack the samples using 1 bit per sample. Samples are never
+                packed when :attr:`SampleSet.vartype` is
+                `~ExtendedVartype.DISCRETE`.
 
         Returns:
             dict: Object that can be serialized.
@@ -1436,6 +1442,9 @@ class SampleSet(abc.Iterable, abc.Sized):
         vectors = {name: serialize_ndarray(data, use_bytes=use_bytes,
                                            bytes_type=bytes_type)
                    for name, data in self.data_vectors.items()}
+
+        # we never pack DISCRETE samplesets
+        pack_samples = pack_samples and self.vartype is not DISCRETE
 
         if pack_samples:
             # we could just do self.record.sample > 0 for all of these, but to
