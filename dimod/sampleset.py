@@ -37,7 +37,7 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        deserialize_ndarrays)
 from dimod.utilities import LockableDict
 from dimod.variables import Variables, iter_deserialize_variables
-from dimod.vartypes import Vartype
+from dimod.vartypes import as_vartype, Vartype
 from dimod.views.samples import SampleView, SamplesArray
 
 __all__ = 'as_samples', 'concatenate', 'SampleSet'
@@ -54,7 +54,7 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         dtype (data-type, optional):
             dtype for the returned samples array. If not provided, it is either
             derived from `samples_like`, if that object has a dtype, or set to
-            :class:`numpy.int8`.
+            the smallest dtype that can hold the given values.
 
         copy (bool, optional, default=False):
             If true, then samples_like is guaranteed to be copied, otherwise
@@ -167,8 +167,28 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
                     except KeyError:
                         raise ValueError("samples_like and labels do not match")
 
-    if dtype is None and not hasattr(samples_like, 'dtype'):
-        dtype = np.int8
+    if dtype is None:
+        if not hasattr(samples_like, 'dtype'):
+            # we want to use the smallest dtype available, not yet doing any
+            # copying or whatever, although we do make a new array to speed
+            # this up
+            samples_like = np.asarray(samples_like)
+
+            max_ = max(-samples_like.min(initial=0),
+                       +samples_like.max(initial=0))
+
+            if max_ <= np.iinfo(np.int8).max:
+                dtype = np.int8
+            elif max_ <= np.iinfo(np.int16).max:
+                dtype = np.int16
+            elif max_ < np.iinfo(np.int32).max:
+                dtype = np.int32
+            elif max_ < np.iinfo(np.int64).max:
+                dtype = np.int64
+            else:
+                raise RuntimeError
+        else:
+            dtype = samples_like.dtype
 
     # samples-like should now be array-like
     arr = np.array(samples_like, dtype=dtype, copy=copy, order=order)
