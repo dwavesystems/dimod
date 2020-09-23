@@ -87,7 +87,7 @@ BINARY = Vartype.BINARY
 DISCRETE = ExtendedVartype.DISCRETE
 
 
-def as_vartype(vartype, allow_discrete=False):
+def as_vartype(vartype, extended=False):
     """Cast various inputs to a valid vartype object.
 
     Args:
@@ -97,14 +97,14 @@ def as_vartype(vartype, allow_discrete=False):
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        allow_discrete (bool, optional, default=False):
+        extended (bool, optional, default=False):
             If `True`, vartype can also be:
 
             * :class:`.ExtendedVartype.DISCRETE`, ``'DISCRETE'``
 
     Returns:
         :class:`.Vartype`: Either :class:`.Vartype.SPIN` or
-        :class:`.Vartype.BINARY`. If `allow_discrete` is True, can also
+        :class:`.Vartype.BINARY`. If `extended` is True, can also
         be :class:`.ExtendedVartype.DISCRETE`.
 
     See also:
@@ -130,7 +130,7 @@ def as_vartype(vartype, allow_discrete=False):
     else:
         return vartype
 
-    if not allow_discrete:
+    if not extended:
         raise TypeError(("expected input vartype to be one of: "
                          "Vartype.SPIN, 'SPIN', {-1, 1}, "
                          "Vartype.BINARY, 'BINARY', or {0, 1}."))

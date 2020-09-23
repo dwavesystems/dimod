@@ -350,7 +350,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     def __init__(self, record, variables, info, vartype):
 
-        vartype = as_vartype(vartype, allow_discrete=True)
+        vartype = as_vartype(vartype, extended=True)
 
         # make sure that record is a numpy recarray and that it has the expected fields
         if not isinstance(record, np.recarray):
@@ -995,7 +995,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         if not self.is_writeable:
             raise WriteableError("SampleSet is not writeable")
 
-        vartype = as_vartype(vartype, allow_discrete=True)  # cast to correct vartype
+        vartype = as_vartype(vartype, extended=True)  # cast to correct vartype
 
         if energy_offset:
             self.record.energy = self.record.energy + energy_offset
