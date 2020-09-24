@@ -157,6 +157,21 @@ class TestEnergy(unittest.TestCase):
 
         self.assertEqual(dqm.energy({u: 0, v: 1}), 2.5)
 
+    def test_two_variable_labeled_permutations(self):
+
+        dqm = gnp_random_dqm(4, [2, 4, 1, 4], .5, .5, seed=7)
+        dqm.relabel_variables({0: 'a', 2: (3, 4)})
+
+        sample = {'a': 1, 1: 3, (3, 4): 0, 3: 3}
+
+        energies = set()
+        for order in itertools.permutations(dqm.variables):
+            s = ([sample[v] for v in order], order)
+            en = dqm.energy(s)
+            energies.add(en)
+
+        self.assertEqual(len(energies), 1)
+
 
 class TestFile(unittest.TestCase):
     def test_empty_functional(self):
