@@ -102,6 +102,23 @@ class TestConstruction(unittest.TestCase):
         with self.assertRaises(ValueError):
             dqm.num_cases(2)
 
+    def test_second_unlabelled(self):
+        dqm = dimod.DQM()
+
+        u = dqm.add_variable(4, label='a')
+        v = dqm.add_variable(3)
+
+        self.assertEqual(dqm.variables, ['a', 1])
+
+    def test_second_unlabelled_conflict(self):
+        dqm = dimod.DQM()
+
+        u = dqm.add_variable(4, label=1)
+        v = dqm.add_variable(3)
+        v = dqm.add_variable(3)
+
+        self.assertEqual(dqm.variables, [1, 0, 2])
+
 
 class TestEnergy(unittest.TestCase):
     def test_one_variable(self):

@@ -102,7 +102,18 @@ class _Variables(abc.Sequence, abc.Set):
                 self.stop += 1
                 return
 
-            raise NotImplementedError
+            # we need to pick a new label
+            v = self.stop
+
+            if v not in self:
+                # it's free, so we can stop
+                self.stop += 1
+                return
+
+            # there must be a free integer available
+            v = 0
+            while v in self:
+                v += 1
 
         elif v in self:
             raise ValueError('{!r} is already a variable'.format(v))
