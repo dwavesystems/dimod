@@ -25,6 +25,7 @@ import numpy as np
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO
+from dimod.utilities import iter_safe_relabels
 
 
 __all__ = ['DiscreteQuadraticModel', 'DQM']
@@ -121,6 +122,26 @@ class _Variables(abc.Sequence, abc.Set):
         if v not in self:
             raise ValueError('unknown variable {!r}'.format(v))
         return self._label_to_idx.get(v, v)
+
+    def _relabel(self, mapping):
+        for submap in iter_safe_relabels(mapping, self):
+            for old, new in submap.items():
+                if old == new:
+                    continue
+
+                idx = self._label_to_idx.pop(old, old)
+
+                if new != idx:
+                    self._label_to_idx[new] = idx
+                    self._idx_to_label[idx] = new  # overwrites old idx
+                else:
+                    self._idx_to_label.pop(idx, None)
+
+    def _relabel_as_integers(self):
+        mapping = self._idx_to_label.copy()
+        self._idx_to_label.clear()
+        self._label_to_idx.clear()
+        return mapping
 
 
 class DiscreteQuadraticModel:
@@ -235,6 +256,15 @@ class DiscreteQuadraticModel:
         variable_index = self._cydqm.add_variable(num_cases)
         assert variable_index + 1 == len(self.variables)
         return self.variables[-1]
+
+    # todo: support __copy__ and __deepcopy__
+    def copy(self):
+        """Return a copy of the discrete quadratic model."""
+        new = type(self)()
+        new._cydqm = self._cydqm.copy()
+        for v in self.variables:
+            new.variables._append(v)
+        return new
 
     def energy(self, sample):
         energy, = self.energies(sample)
@@ -471,6 +501,33 @@ class DiscreteQuadraticModel:
     def num_variables(self):
         """The number of variables in the discrete quadratic model."""
         return self._cydqm.num_variables()
+
+    def relabel_variables(self, mapping, inplace=True):
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
+        self.variables._relabel(mapping)
+        return self
+
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel the variables of the DQM to integers.
+
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the discrete quadratic model is updated in-place;
+                otherwise, a new discrete quadratic model is returned.
+
+        Returns:
+            tuple: A 2-tuple containing:
+
+                A discrete quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
+
+                dict: The mapping that will restore the original labels.
+
+        """
+        if not inplace:
+            return self.copy().relabel_variables_as_integers(inplace=True)
+        return self, self.variables._relabel_as_integers()
 
     def set_linear(self, v, biases):
         """Set the linear biases associated with `v`.

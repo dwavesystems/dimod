@@ -61,6 +61,16 @@ cdef class cyDiscreteQuadraticModel:
 
         return v
 
+    def copy(self):
+        cdef cyDiscreteQuadraticModel dqm = type(self)()
+
+        dqm.bqm_ = self.bqm_
+        dqm.case_starts_ = self.case_starts_
+        dqm.adj_ = self.adj_
+
+        dqm.dtype = self.dtype
+        dqm.case_dtype = self.dtype
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef Bias[:] energies(self, CaseIndex[:, :] samples):
