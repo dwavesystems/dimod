@@ -29,6 +29,7 @@ Methods
    :toctree: generated/
 
    ~DiscreteQuadraticModel.add_variable
+   ~DiscreteQuadraticModel.copy
    ~DiscreteQuadraticModel.from_file
    ~DiscreteQuadraticModel.from_numpy_vectors
    ~DiscreteQuadraticModel.get_linear
@@ -39,6 +40,8 @@ Methods
    ~DiscreteQuadraticModel.num_case_interactions
    ~DiscreteQuadraticModel.num_variable_interactions
    ~DiscreteQuadraticModel.num_variables
+   ~DiscreteQuadraticModel.relabel_variables
+   ~DiscreteQuadraticModel.relabel_variables_as_integers
    ~DiscreteQuadraticModel.set_linear
    ~DiscreteQuadraticModel.set_linear_case
    ~DiscreteQuadraticModel.set_quadratic
