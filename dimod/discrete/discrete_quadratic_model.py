@@ -538,8 +538,7 @@ class DiscreteQuadraticModel:
             biases (array-like): The linear biases in an array.
 
         """
-        biases = np.asarray(biases, dtype=self._cydqm.dtype)
-        self._cydqm.set_linear(self.variables.index(v), biases)
+        self._cydqm.set_linear(self.variables.index(v), np.asarray(biases))
 
     def set_linear_case(self, v, case, bias):
         """The linear bias associated with case `case` of variable `v`.

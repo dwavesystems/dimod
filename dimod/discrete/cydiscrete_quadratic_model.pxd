@@ -40,6 +40,11 @@ ctypedef fused Integral:
     np.int32_t
     np.int64_t
 
+ctypedef fused Numeric:
+    Integral
+    np.float32_t
+    np.float64_t
+
 
 cdef class cyDiscreteQuadraticModel:
     cdef cppAdjVectorBQM[CaseIndex, Bias] bqm_
@@ -56,7 +61,7 @@ cdef class cyDiscreteQuadraticModel:
     cpdef Py_ssize_t num_case_interactions(self)
     cpdef Py_ssize_t num_variable_interactions(self) except -1
     cpdef Py_ssize_t num_variables(self)
-    cpdef Py_ssize_t set_linear(self, VarIndex, Bias[:]) except -1
+    cpdef Py_ssize_t set_linear(self, VarIndex v, Numeric[:] biases) except -1
     cpdef Py_ssize_t set_linear_case(self, VarIndex, CaseIndex, Bias) except -1
     cpdef Py_ssize_t set_quadratic_case(
         self, VarIndex, CaseIndex, VarIndex, CaseIndex, Bias) except -1
