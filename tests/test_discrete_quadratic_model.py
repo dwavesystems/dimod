@@ -438,3 +438,23 @@ class TestNumpyVectors(unittest.TestCase):
             for v in dqm.adj[u]:
                 self.assertEqual(dqm.get_quadratic(u, v),
                                  new.get_quadratic(u, v))
+
+
+class TestRelabel(unittest.TestCase):
+    def test_index(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5, 'a')
+        dqm.add_variable(3, 'b')
+
+        dqm, mapping = dqm.relabel_variables_as_integers()
+
+        self.assertEqual(mapping, {0: 'a', 1: 'b'})
+
+    def test_typical(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5, 'a')
+        dqm.add_variable(3, 'b')
+
+        new = dqm.relabel_variables({'a': 'b', 'b': 'a'}, inplace=False)
+
+        self.assertEqual(new.variables, ['b', 'a'])
