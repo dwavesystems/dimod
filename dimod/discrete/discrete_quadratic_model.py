@@ -289,8 +289,15 @@ class DiscreteQuadraticModel:
             raise ValueError(
                 "Given sample(s) have incorrect number of variables")
         if self.variables != labels:
-            # todo as part of discrete sampleset work
-            raise NotImplementedError
+            # need to reorder the samples
+            label_to_idx = dict((v, i) for i, v in enumerate(labels))
+
+            try:
+                order = [label_to_idx[v] for v in self.variables]
+            except KeyError:
+                raise ValueError("given samples-like does not match labels")
+
+            samples = samples[:, order]
 
         return np.asarray(self._cydqm.energies(samples))
 
