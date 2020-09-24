@@ -21,6 +21,8 @@ import unittest
 import dimod
 import numpy as np
 
+from parameterized import parameterized
+
 
 # will want to migrate this to generators at some point
 def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
@@ -260,6 +262,16 @@ class TestLinear(unittest.TestCase):
         self.assertEqual(dqm.get_linear_case('a', 2), 4)
         np.testing.assert_array_equal(dqm.get_linear('a'), [0, 1.5, 4, 0, 0])
 
+    @parameterized.expand(
+        [(np.dtype(dt).name, dt)
+         for dt in [np.int8, np.int16, np.int32, np.int64,
+                    np.uint8, np.uint16, np.uint32, np.uint64,
+                    np.float, np.double]])
+    def test_set_linear_offdtype(self, name, dtype):
+        dqm = dimod.DQM()
+        v = dqm.add_variable(5)
+        dqm.set_linear(v, np.zeros(5, dtype=dtype))
+
 
 class TestQuadratic(unittest.TestCase):
     def test_set_quadratic_case(self):
@@ -316,6 +328,20 @@ class TestQuadratic(unittest.TestCase):
 
         self.assertEqual(dqm.get_quadratic(u, v),
                          {(0, 1): 1, (1, 0): 1.5, (1, 1): 6, (2, 0): 2})
+
+    @parameterized.expand(
+        [(np.dtype(dt).name, dt)
+         for dt in [np.int8, np.int16, np.int32, np.int64,
+                    np.uint8, np.uint16, np.uint32, np.uint64,
+                    np.float, np.double]])
+    def test_set_quadratic_offdtype(self, name, dtype):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(3)
+        v = dqm.add_variable(2)
+
+        biases = np.zeros((3, 2), dtype=dtype)
+
+        dqm.set_quadratic(u, v, biases)
 
 
 class TestNumpyVectors(unittest.TestCase):

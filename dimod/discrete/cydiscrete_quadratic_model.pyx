@@ -384,7 +384,7 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Py_ssize_t set_linear(self, VarIndex v, Bias[:] biases) except -1:
+    cpdef Py_ssize_t set_linear(self, VarIndex v, Numeric[:] biases) except -1:
 
         # self.num_cases checks that the variable is valid
 
@@ -443,7 +443,7 @@ cdef class cyDiscreteQuadraticModel:
                 self.bqm_.set_quadratic(cu, cv, bias)
         else:
             
-            biases_view = np.asarray(biases).reshape(num_cases_u, num_cases_v)
+            biases_view = np.asarray(biases, dtype=self.dtype).reshape(num_cases_u, num_cases_v)
 
             for case_u in range(biases_view.shape[0]):
                 cu = self.case_starts_[u] + case_u
