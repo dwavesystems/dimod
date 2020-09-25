@@ -122,17 +122,20 @@ class _SampleTable(object):
 
         self.append(header, f)
 
-    def append_sample(self, v, vartype, _left=False):
+    def append_sample(self, v, vartype, _left=False, width=2):
         """Add a sample column"""
-        vstr = str(v).rjust(2)  # the variable will be len 0, or 1
+        vstr = str(v).rjust(width)
         length = len(vstr)
 
         if vartype is dimod.SPIN:
             def f(datum):
                 return _spinstr(datum.sample[v], rjust=length)
-        else:
+        elif vartype is dimod.BINARY:
             def f(datum):
                 return _binarystr(datum.sample[v], rjust=length)
+        else:
+            def f(datum):
+                return str(datum.sample[v]).rjust(length)
 
         self.append(vstr, f, _left=_left)
 
@@ -315,7 +318,17 @@ class Formatter(object):
         table.rotate(-1)  # move the index to the end
         num_added = 0
         for v in sampleset.variables:
-            table.append_sample(v, sampleset.vartype)
+            if sampleset.vartype is dimod.DISCRETE:
+                # in the discrete case we also need the width. There are faster
+                # ways to get it
+                valwidth = max(
+                    (len(str(c)) for c in sampleset.samples()[:depth, v]),
+                    default=0)
+                valwidth = max(len(str(v)), valwidth)
+
+                table.append_sample(v, sampleset.vartype, width=valwidth)
+            else:
+                table.append_sample(v, sampleset.vartype)
             num_added += 1
 
             if table.width > width:
