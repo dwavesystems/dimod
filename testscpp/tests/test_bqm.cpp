@@ -152,6 +152,19 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes",
         REQUIRE(q.first == -1);
         REQUIRE(q.second);
     }
+
+    SECTION("Test quadratic()") {
+        float Q[4] = {1, 0, -1, 2};
+        auto bqm = TestType(Q, 2);
+
+        auto q = bqm.quadratic(0, 1);
+        REQUIRE(q == -1);
+        bqm.quadratic(1, 0) = 2;
+        REQUIRE(bqm.quadratic(0, 1) == 2);
+        auto&& x = bqm.quadratic(0, 1);
+        x += x;
+        REQUIRE(bqm.quadratic(0, 1) == 4);
+    }
 }
 
 TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes", 
@@ -169,6 +182,12 @@ TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes",
     SECTION("Test pop_variable()") {
         bqm.pop_variable();
         REQUIRE(bqm.num_variables() == 0); 
+    }
+
+    SECTION("Test quadratic()") {
+        bqm.add_variable();
+        bqm.quadratic(0, 1) = 1;
+        REQUIRE(bqm.num_interactions() == 1);
     }
 }
 

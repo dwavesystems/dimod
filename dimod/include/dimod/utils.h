@@ -27,6 +27,48 @@ bool comp_v(std::pair<V, B> ub, V v) {
     return ub.first < v;
 }
 
+template <class BQM>
+class QuadraticProxy {
+  public:
+    using bias_type = typename BQM::bias_type;
+    using variable_type = typename BQM::variable_type;
+
+    QuadraticProxy(BQM& bqm, variable_type u, variable_type v) : bqm_(bqm), u_(u), v_(v) {}
+
+    QuadraticProxy& operator=(const QuadraticProxy& other) { return *this = bias_type(other); }
+    QuadraticProxy& operator=(const bias_type& b) {
+        bqm_.set_quadratic(u_, v_, b);
+        return *this;
+    }
+    operator bias_type() const { return bqm_.get_quadratic(u_, v_).first; }
+
+    // The following compound assignments could later be improved to do fewer lookups into bqm.
+    template <class T>
+    QuadraticProxy& operator+=(const T& x) {
+        return *this = *this + x;
+    }
+
+    template <class T>
+    QuadraticProxy& operator-=(const T& x) {
+        return *this = *this - x;
+    }
+
+    template <class T>
+    QuadraticProxy& operator*=(const T& x) {
+        return *this = *this * x;
+    }
+
+    template <class T>
+    QuadraticProxy& operator/=(const T& x) {
+        return *this = *this / x;
+    }
+
+  private:
+    BQM& bqm_;
+    variable_type u_;
+    variable_type v_;
+};
+
 }  // namespace utils
 }  // namespace dimod
 

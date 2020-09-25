@@ -137,6 +137,13 @@ class AdjArrayBQM {
         return invars[v].second;
     }
 
+    utils::QuadraticProxy<AdjArrayBQM> quadratic(variable_type u, variable_type v) {
+        return {*this, u, v};
+    }
+    utils::QuadraticProxy<const AdjArrayBQM> quadratic(variable_type u, variable_type v) const {
+        return {*this, u, v};
+    }
+
     std::pair<outvars_iterator, outvars_iterator>
     neighborhood(variable_type u) {
         assert(u >= 0 && u < invars.size());

@@ -123,6 +123,13 @@ class AdjMapBQM {
         return adj[v].second;
     }
 
+    utils::QuadraticProxy<AdjMapBQM> quadratic(variable_type u, variable_type v) {
+        return {*this, u, v};
+    }
+    utils::QuadraticProxy<const AdjMapBQM> quadratic(variable_type u, variable_type v) const {
+        return {*this, u, v};
+    }
+
     std::pair<outvars_iterator, outvars_iterator>
     neighborhood(variable_type u) {
         assert(u >= 0 && u < adj.size());
