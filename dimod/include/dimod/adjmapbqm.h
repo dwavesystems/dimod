@@ -83,6 +83,102 @@ class AdjMapBQM {
         }
     }
 
+    /**
+     * Construct a BQM from a dense array. This constructor is parallelized
+     * and temporarily zeroes out the diagonal of the dense array but restores
+     * it back.
+     *
+     * @param dense An array containing the biases. Assumed to contain
+     *     `num_variables`^2 elements. The upper and lower triangle are summed.
+     * @param num_variables The number of variables.
+     */
+    template <class B2>
+    AdjMapBQM(B2 dense[], size_type num_variables,
+              bool ignore_diagonal = false) {
+      // we know how big our linear is going to be
+      adj.resize(num_variables);
+
+      // Backup copy of the diagonal of the dense matrix.
+      std::vector<B2> dense_diagonal(num_variables);
+
+      if (!ignore_diagonal) {
+        #pragma omp parallel for
+        for (size_type v = 0; v < num_variables; ++v) {
+          adj[v].second = dense[v * (num_variables + 1)];
+        }
+      }
+
+      #pragma omp parallel
+      {
+        // Zero out the diagonal to avoid expensive checks inside innermost
+        // loop in the code for reading the matrix. The diagonal will be
+        // restored so a backup copy is saved.
+        #pragma omp for schedule(static)
+        for (size_type v = 0; v < num_variables; ++v) {
+          dense_diagonal[v] = dense[v * (num_variables + 1)];
+          dense[v * (num_variables + 1)] = 0;
+        }
+
+        size_type counters[BLOCK_SIZE] = {0};
+        size_type buffer_size = num_variables * BLOCK_SIZE *
+                                sizeof(std::pair<variable_type, bias_type>);
+        std::pair<variable_type, bias_type> *temp_buffer =
+            (std::pair<variable_type, bias_type> *)malloc(buffer_size);
+
+        if (temp_buffer == NULL) {
+          printf("Memory allocation failure.\n");
+          exit(0);
+        }
+
+        // We process the matrix in blocks of size BLOCK_SIZE*BLOCK_SIZE to take
+        // advantage of cache locality. Dynamic scheduling is used as  we know some
+        // blocks may be more sparse than others and processing them may finish earlier.
+        #pragma omp for schedule(dynamic)
+        for (size_type u_st = 0; u_st < num_variables; u_st += BLOCK_SIZE) {
+          size_type u_end = std::min(u_st + BLOCK_SIZE, num_variables);
+          for (size_type v_st = 0; v_st < num_variables; v_st += BLOCK_SIZE) {
+            size_type v_end = std::min(v_st + BLOCK_SIZE, num_variables);
+            for (size_type u = u_st, n = 0; u < u_end; u++, n++) {
+              size_type counter_u = counters[n];
+              size_type counter_u_old = counter_u;
+              for (size_type v = v_st; v < v_end; v++) {
+                bias_type qbias =
+                    dense[u * num_variables + v] + dense[v * num_variables + u];
+                if (qbias != 0) {
+                  // Even though an intermediate buffer is not needed in case of this
+                  // model of bqm, since we cannot preallocate a map using the number
+                  // of elements in the buffer, inserting into the map directly here
+                  // nullifies the benefits of cache blocking due to reallocation of
+                  // the map causing cache pollution.
+                  temp_buffer[n * num_variables + counter_u++] = {v, qbias};
+                }
+              }
+              if (counter_u != counter_u_old) {
+                counters[n] = counter_u;
+              }
+            }
+          }
+
+          for (size_type n = 0; n < BLOCK_SIZE; n++) {
+            if (counters[n]) {
+		    std::copy(temp_buffer + n * num_variables,
+			      temp_buffer + n * num_variables + counters[n],
+			      std::inserter(adj[u_st + n].first, adj[u_st +n].first.begin()));
+              counters[n] = 0;
+            }
+          }
+        }
+
+        free(temp_buffer);
+
+        // Restore the diagonal of the original dense matrix
+        #pragma omp for schedule(static)
+        for (size_type v = 0; v < num_variables; ++v) {
+          dense[v * (num_variables + 1)] = dense_diagonal[v];
+        }
+      }
+    }
+
     /// Add one (disconnected) variable to the BQM and return its index.
     variable_type add_variable() {
         adj.resize(adj.size()+1);
