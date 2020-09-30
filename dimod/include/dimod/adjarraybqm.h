@@ -89,6 +89,131 @@ class AdjArrayBQM {
         }
     }
 
+    /**
+     * Construct a BQM from a dense array. This constructor is parallelized
+     * and temporarily zeroes out the diagonal of the dense array but restores
+     * it back.
+     *
+     * @param dense An array containing the biases. Assumed to contain
+     *     `num_variables`^2 elements. The upper and lower triangle are summed.
+     * @param num_variables The number of variables.
+     */
+    template <class B2>
+    AdjArrayBQM(B2 dense[], size_type num_variables, bool ignore_diagonal = false) {
+        // we know how big our linear is going to be.
+        invars.resize(num_variables);
+
+        // Aligned memory is to avoid false sharing between threads.
+        size_type* counters_cumsum = (size_type*)utils::aligned_calloc(num_variables, sizeof(size_type));
+
+        // Backup copy of the diagonal of the dense matrix.
+        std::vector<B2> dense_diagonal(num_variables);
+
+        #pragma omp parallel
+        {
+            // Zero out the diagonal to avoid expensive checks inside innermost
+            // loop in the code for reading the matrix. The diagonal will be
+            // restored so a backup copy is saved.
+            #pragma omp for schedule(static)
+            for (size_type u = 0; u < num_variables; ++u) {
+                dense_diagonal[u] = dense[u * (num_variables + 1)];
+                dense[u * (num_variables + 1)] = 0;
+            }
+
+            // We process the matrix in two passes, in the first pass we take note of
+            // the number of total elements and elements in each row for proper memory
+            // allocation. In the second pass we fill up our desired bqm. We process
+            // the matrix in blocks of size BLOCK_SIZE*BLOCK_SIZE to take advantage of
+            // cache locality. Dynamic scheduling is used as we know some blocks may
+            // be more sparse than others and processing them may finish earlier.
+            #pragma omp for schedule(dynamic)
+            for (size_type u_st = 0; u_st < num_variables; u_st += BLOCK_SIZE) {
+                size_type u_end = std::min(u_st + BLOCK_SIZE, num_variables);
+                for (size_type v_st = 0; v_st < num_variables; v_st += BLOCK_SIZE) {
+                    size_type v_end = std::min(v_st + BLOCK_SIZE, num_variables);
+                    for (size_type u = u_st; u < u_end; ++u) {
+                        size_type counter_u = counters_cumsum[u];
+                        size_type counter_u_old = counter_u;
+                        for (size_type v = v_st; v < v_end; ++v) {
+                            bias_type qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
+                            if (qbias != 0) {
+                                counter_u++;
+                            }
+                        }
+                        if (counter_u != counter_u_old) {
+                            counters_cumsum[u] = counter_u;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Calculate the exclusive scan of the counters. Thus it will contain the starting
+        // indices in the bqm for inserting elements for each row of the dense matrix. This
+        // could be parallelized but has diminishing returns.
+        size_type sum_counters = 0;
+        for (size_type u = 0; u < num_variables; ++u) {
+            size_type prev_counter = counters_cumsum[u];
+            counters_cumsum[u] = sum_counters;
+            sum_counters += prev_counter;
+        }
+
+        // TODO : This is the bottleneck for moderately dense input arrays.
+        // stl vector initializes the values during resize. Update it if a resize
+        // function is made available that does not do initialization. Moreover
+        // we need to pass in an initialization value, as otherwise a constructor
+        // for pairs will be called slowing this part by a factor of around two.
+        outvars.resize(sum_counters, {0, 0});
+
+        if (ignore_diagonal) {
+            #pragma omp for schedule(static)
+            for (size_type u = 0; u < num_variables; ++u) {
+                invars[u] = {counters_cumsum[u], 0};
+            }
+        } else {
+            #pragma omp for schedule(static)
+            for (size_type u = 0; u < num_variables; ++u) {
+                invars[u] = {counters_cumsum[u], dense_diagonal[u]};
+            }
+        }
+
+        #pragma omp parallel
+        {
+            // Now that we have allocated proper amounts of memory as calculated
+            // in the previou pass (see above) we cann directly assign the values.
+            // Note the array of counters now contains the starting indices for
+            // insertion in the bqm for each row of the dense matrix.
+            #pragma omp for schedule(dynamic)
+            for (size_type u_st = 0; u_st < num_variables; u_st += BLOCK_SIZE) {
+                size_type u_end = std::min(u_st + BLOCK_SIZE, num_variables);
+                for (size_type v_st = 0; v_st < num_variables; v_st += BLOCK_SIZE) {
+                    size_type v_end = std::min(v_st + BLOCK_SIZE, num_variables);
+                    for (size_type u = u_st; u < u_end; ++u) {
+                        size_type counter_u = counters_cumsum[u];
+                        size_type counter_u_old = counter_u;
+                        for (size_type v = v_st; v < v_end; ++v) {
+                            bias_type qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
+                            if (qbias != 0) {
+                                outvars[counter_u++] = {v, qbias};
+                            }
+                        }
+                        if (counter_u != counter_u_old) {
+                            counters_cumsum[u] = counter_u;
+                        }
+                    }
+                }
+            }
+
+            // Restore the diagonal of the original dense matrix
+            #pragma omp for schedule(static)
+            for (size_type u = 0; u < num_variables; ++u) {
+                dense[u * (num_variables + 1)] = dense_diagonal[u];
+            }
+        }
+
+        utils::aligned_free(counters_cumsum);
+    }
+
     size_type num_interactions() const {
         return outvars.size() / 2;
     }
