@@ -368,7 +368,7 @@ class DiscreteQuadraticModel:
                              "try upgrading your dimod version"
                              "".format(version))
 
-        header_len = np.frombuffer(file_like.read(4), '<u4')[0]
+        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
 
         header_data = json.loads(file_like.read(header_len).decode('ascii'))
 
