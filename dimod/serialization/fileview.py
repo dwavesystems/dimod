@@ -633,7 +633,7 @@ class _BytesIO(io.RawIOBase):
             raise ValueError("unsupported whence value")
         return self._pos
 
-    def seekable():
+    def seekable(self):
         return True
 
 

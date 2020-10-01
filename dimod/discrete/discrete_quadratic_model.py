@@ -335,7 +335,7 @@ class DiscreteQuadraticModel:
         """
 
         if isinstance(file_like, (bytes, bytearray, memoryview)):
-            fp = _BytesIO(fp)
+            file_like = _BytesIO(file_like)
 
         magic = file_like.read(len(DQM_MAGIC_PREFIX))
         if magic != DQM_MAGIC_PREFIX:
