@@ -185,6 +185,23 @@ class TestFile(unittest.TestCase):
 
         self.assertEqual(new.num_variables(), 0)
 
+    def test_readinto(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7)
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
+        with dqm.to_file() as f:
+            buff = f.read()
+
+        with dqm.to_file() as f:
+            buff2 = bytearray(len(buff))
+            f.readinto(buff2)
+
+        self.assertEqual(buff, buff2)
+
     def test_two_var_functional(self):
         dqm = dimod.DQM()
         dqm.add_variable(5)
