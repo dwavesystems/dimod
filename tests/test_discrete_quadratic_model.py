@@ -193,6 +193,46 @@ class TestFile(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
 
+        with dqm.to_file() as df:
+            new = dimod.DQM.from_file(df)
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+
+    def test_two_var_functional_buffer(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7)
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
+        with dqm.to_file() as df:
+            new = dimod.DQM.from_file(df.read())
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+
+    def test_two_var_functional_tempfile(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7)
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
         with tempfile.TemporaryFile() as tf:
             with dqm.to_file() as df:
                 shutil.copyfileobj(df, tf)
@@ -208,7 +248,7 @@ class TestFile(unittest.TestCase):
                                           dqm.get_linear(v))
         self.assertEqual(new.adj, dqm.adj)
 
-    def test_two_var_functional_labelled(self):
+    def test_two_var_functional_labelled_tempfile(self):
         dqm = dimod.DQM()
         dqm.add_variable(5)
         dqm.add_variable(7, 'b')
@@ -261,6 +301,7 @@ class TestFile(unittest.TestCase):
             for v in dqm.adj[u]:
                 self.assertEqual(dqm.get_quadratic(u, v),
                                  new.get_quadratic(u, v))
+
 
 
 class TestLinear(unittest.TestCase):
