@@ -16,6 +16,7 @@ import collections.abc as abc
 import io
 import json
 import tempfile
+import warnings
 
 from collections import namedtuple
 from operator import eq
@@ -42,6 +43,25 @@ DQMVectors = namedtuple(
     'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
+
+
+# we want to use SpooledTemporaryFile but have it also include the methods
+# from io.IOBase. This is (probably) forthcoming in future python, see
+# https://bugs.python.org/issue35112
+if issubclass(tempfile.SpooledTemporaryFile, io.IOBase):
+    warnings.warn("Using deprecated SpooledTemporaryFile wrapper, "
+                  "functionality is now included in SpooledTemporaryFile",
+                  DeprecationWarning)
+
+
+class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile, io.IOBase):
+    def seekable(self):
+        return self._file.seekable()
+
+    # This is not part of io.IOBase, but it is implemented in io.BytesIO
+    # and io.TextIOWrapper
+    def readinto(self, *args, **kwargs):
+        return self._file.readinto(*args, **kwargs)
 
 
 # this is the third(!) variables implementation in dimod. It differs from
@@ -662,8 +682,10 @@ class DiscreteQuadraticModel:
                 memory.
 
         Returns:
-            :class:`tempfile.SpooledTemporaryFile`: A file-like object
-            that can be used to construct a copy of the DQM.
+            A file-like object that can be used to construct a copy of the DQM.
+            The class is a thin wrapper of
+            :class:`tempfile.SpooledTemporaryFile` that also inherits from
+            `io.IOBase`.
 
         Format Specification (Version 1.0):
 
@@ -725,7 +747,7 @@ class DiscreteQuadraticModel:
 
         """
 
-        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
+        file = _SpooledTemporaryFile(max_size=spool_size)
 
         # attach the header
         header_parts = [DQM_MAGIC_PREFIX,
