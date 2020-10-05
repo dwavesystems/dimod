@@ -632,7 +632,7 @@ class DiscreteQuadraticModel:
             self.variables.index(v), v_case,
             bias)
 
-    def _to_file_numpy(self, file, compressed):
+    def _to_file_numpy(self, file, compress):
         # the biases etc, saved using numpy
 
         # we'd like to just let numpy handle the header etc, but it doesn't
@@ -644,7 +644,7 @@ class DiscreteQuadraticModel:
 
         vectors = self.to_numpy_vectors()
 
-        if compressed:
+        if compress:
             save = np.savez_compressed
         else:
             save = np.savez
@@ -663,13 +663,16 @@ class DiscreteQuadraticModel:
         file.write(np.dtype('<u4').type(end - start).tobytes())
         file.seek(end)
 
-    def to_file(self, compressed=False, ignore_labels=False,
+    def to_file(self, compress=False, compressed=None, ignore_labels=False,
                 spool_size=int(1e9)):
         """Convert the DQM to a file-like object.
 
         Args:
-            compressed (bool, optional default=False):
+            compress (bool, optional default=False):
                 If True, most of the data will be compressed.
+
+            compressed (bool, optional default=None):
+                Deprecated; please use ``compress`` instead.
 
             ignore_labels (bool, optional, default=False):
                 Treat the DQM as unlabeled. This is useful for large DQMs to
@@ -783,7 +786,17 @@ class DiscreteQuadraticModel:
             file.write(part)
 
         # the section containing most of the data, encoded with numpy
-        self._to_file_numpy(file, compressed)
+
+        if compressed is not None:
+            warning.warn(
+                "Argument 'compressed' is deprecated and in future will raise an "
+                "exception; please use 'compress' instead.",
+                DeprecationWarning, stacklevel=2
+                )
+            compress = compressed or compress
+
+
+        self._to_file_numpy(file, compress)
 
         if not index_labeled:
             file.write(VariablesSection(self.variables).dumps())
