@@ -162,6 +162,19 @@ cdef class cyDiscreteQuadraticModel:
                 is_sorted = False
                 break
 
+
+        # reserve the memory for the vectors, this helps use less memory
+        # and speeds things up
+        cdef np.uint64_t[:] degrees = np.zeros(num_cases, dtype=np.uint64)
+
+        for qi in range(num_interactions):
+            degrees[irow[qi]] += 1
+            degrees[icol[qi]] += 1
+
+        for ci in range(num_cases):
+            self.bqm_.adj[ci].first.reserve(degrees[ci])
+
+        # set the quadratic
         if is_sorted:
             for qi in range(num_interactions):
                 # cython really has a hard time with push_back so we do this
