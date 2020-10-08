@@ -173,7 +173,49 @@ class TestEnergy(unittest.TestCase):
         self.assertEqual(len(energies), 1)
 
 
+# we use these for paramaterized testing of to_file and from_file
+_empty = dimod.DQM()
+
+_twovar = dimod.DQM()
+_twovar.add_variable(5)
+_twovar.add_variable(7)
+_twovar.set_linear_case(0, 3, 1.5)
+_twovar.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
+_random = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
+
+_kwargs = [('default', dict()),
+           ('spool_size=0', dict(spool_size=0)),
+           ('spool_size=10', dict(spool_size=10)),
+           ('compress=True', dict(compress=True)),
+           ('compress=False', dict(compress=False)),
+           ('spool_size=0,compress=True', dict(spool_size=0, compress=True))
+           ]
+
+file_parameterized = [('_'.join([dname, kname]), dqm, kwargs)
+                      for dname, dqm in [('empty', _empty),
+                                         ('twovar', _twovar),
+                                         ('random', _random)]
+                      for kname, kwargs in _kwargs]
+
+
 class TestFile(unittest.TestCase):
+
+    def assertDQMEqual(self, dqm0, dqm1):
+        self.assertEqual(dqm1.num_variables(), dqm0.num_variables())
+        self.assertEqual(dqm1.num_cases(), dqm0.num_cases())
+        self.assertEqual(dqm1.variables, dqm0.variables)
+        for v in dqm0.variables:
+            self.assertEqual(dqm1.num_cases(v), dqm0.num_cases(v))
+            np.testing.assert_array_equal(dqm1.get_linear(v),
+                                          dqm0.get_linear(v))
+        self.assertEqual(dqm1.adj, dqm0.adj)
+        self.assertEqual(dqm1._cydqm.adj,
+                         dqm0._cydqm.adj)  # implementation detail
+        for u in dqm0.adj:
+            for v in dqm0.adj[u]:
+                self.assertEqual(dqm0.get_quadratic(u, v),
+                                 dqm1.get_quadratic(u, v))
 
     def test_bug(self):
         # https://github.com/dwavesystems/dimod/issues/730
@@ -182,41 +224,39 @@ class TestFile(unittest.TestCase):
         dqm = dimod.DiscreteQuadraticModel()
         dqm.to_file()._file.read()
 
-    def test_empty_functional(self):
-        dqm = dimod.DQM()
+    def test_compress(self):
+        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
 
+        self.assertLess(len(dqm.to_file(compress=True).read()),
+                        len(dqm.to_file().read()))
+
+    def test_compressed(self):
+        # deprecated
+        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
+
+        self.assertLess(len(dqm.to_file(compressed=True).read()),
+                        len(dqm.to_file().read()))
+
+    @parameterized.expand(file_parameterized)
+    def test_functional(self, name, dqm, kwargs):
+        with dqm.to_file(**kwargs) as f:
+            new = dimod.DQM.from_file(f)
+        self.assertDQMEqual(dqm, new)
+
+    @parameterized.expand(file_parameterized)
+    def test_functional_buffer(self, name, dqm, kwargs):
+        with dqm.to_file(**kwargs) as f:
+            new = dimod.DQM.from_file(f.read())
+        self.assertDQMEqual(dqm, new)
+
+    @parameterized.expand(file_parameterized)
+    def test_functional_tempfile(self, name, dqm, kwargs):
         with tempfile.TemporaryFile() as tf:
             with dqm.to_file() as df:
                 shutil.copyfileobj(df, tf)
             tf.seek(0)
             new = dimod.DQM.from_file(tf)
-
-        self.assertEqual(new.num_variables(), 0)
-
-    def test_random(self):
-
-        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
-
-        with tempfile.TemporaryFile() as tf:
-            with dqm.to_file() as df:
-                shutil.copyfileobj(df, tf)
-            tf.seek(0)
-            new = dimod.DQM.from_file(tf)
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-        self.assertEqual(new._cydqm.adj,
-                         dqm._cydqm.adj)  # implementation detail
-        for u in dqm.adj:
-            for v in dqm.adj[u]:
-                self.assertEqual(dqm.get_quadratic(u, v),
-                                 new.get_quadratic(u, v))
+        self.assertDQMEqual(dqm, new)
 
     def test_readable(self):
         self.assertTrue(dimod.DQM().to_file().readable())
@@ -240,98 +280,6 @@ class TestFile(unittest.TestCase):
 
     def test_seekable(self):
         self.assertTrue(dimod.DQM().to_file().seekable())
-
-    def test_two_var_functional(self):
-        dqm = dimod.DQM()
-        dqm.add_variable(5)
-        dqm.add_variable(7)
-
-        dqm.set_linear_case(0, 3, 1.5)
-        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
-
-        with dqm.to_file() as df:
-            new = dimod.DQM.from_file(df)
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-
-    def test_two_var_functional_buffer(self):
-        dqm = dimod.DQM()
-        dqm.add_variable(5)
-        dqm.add_variable(7)
-
-        dqm.set_linear_case(0, 3, 1.5)
-        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
-
-        with dqm.to_file() as df:
-            new = dimod.DQM.from_file(df.read())
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-
-    def test_two_var_functional_tempfile(self):
-        dqm = dimod.DQM()
-        dqm.add_variable(5)
-        dqm.add_variable(7)
-
-        dqm.set_linear_case(0, 3, 1.5)
-        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
-
-        with tempfile.TemporaryFile() as tf:
-            with dqm.to_file() as df:
-                shutil.copyfileobj(df, tf)
-            tf.seek(0)
-            new = dimod.DQM.from_file(tf)
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-
-    def test_two_var_functional_labelled_tempfile(self):
-        dqm = dimod.DQM()
-        dqm.add_variable(5)
-        dqm.add_variable(7, 'b')
-
-        dqm.set_linear_case(0, 3, 1.5)
-        dqm.set_quadratic(0, 'b', {(0, 1): 1.5, (3, 4): 1})
-
-        with tempfile.TemporaryFile() as tf:
-            with dqm.to_file() as df:
-                shutil.copyfileobj(df, tf)
-            tf.seek(0)
-            new = dimod.DQM.from_file(tf)
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-        self.assertEqual(new._cydqm.adj,
-                         dqm._cydqm.adj)  # implementation detail
-        for u in dqm.adj:
-            for v in dqm.adj[u]:
-                self.assertEqual(dqm.get_quadratic(u, v),
-                                 new.get_quadratic(u, v))
 
     def test_writeable(self):
         self.assertTrue(dimod.DQM().to_file().writable())
