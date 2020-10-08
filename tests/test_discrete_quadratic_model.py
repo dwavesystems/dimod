@@ -174,6 +174,14 @@ class TestEnergy(unittest.TestCase):
 
 
 class TestFile(unittest.TestCase):
+
+    def test_bug(self):
+        # https://github.com/dwavesystems/dimod/issues/730
+        # this is technically an internal attribute, but none-the-less has
+        # surprising behavior
+        dqm = dimod.DiscreteQuadraticModel()
+        dqm.to_file()._file.read()
+
     def test_empty_functional(self):
         dqm = dimod.DQM()
 
@@ -184,6 +192,34 @@ class TestFile(unittest.TestCase):
             new = dimod.DQM.from_file(tf)
 
         self.assertEqual(new.num_variables(), 0)
+
+    def test_random(self):
+
+        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
+
+        with tempfile.TemporaryFile() as tf:
+            with dqm.to_file() as df:
+                shutil.copyfileobj(df, tf)
+            tf.seek(0)
+            new = dimod.DQM.from_file(tf)
+
+        self.assertEqual(new.num_variables(), dqm.num_variables())
+        self.assertEqual(new.num_cases(), dqm.num_cases())
+        self.assertEqual(new.variables, dqm.variables)
+        for v in dqm.variables:
+            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
+            np.testing.assert_array_equal(new.get_linear(v),
+                                          dqm.get_linear(v))
+        self.assertEqual(new.adj, dqm.adj)
+        self.assertEqual(new._cydqm.adj,
+                         dqm._cydqm.adj)  # implementation detail
+        for u in dqm.adj:
+            for v in dqm.adj[u]:
+                self.assertEqual(dqm.get_quadratic(u, v),
+                                 new.get_quadratic(u, v))
+
+    def test_readable(self):
+        self.assertTrue(dimod.DQM().to_file().readable())
 
     def test_readinto(self):
         dqm = dimod.DQM()
@@ -201,6 +237,9 @@ class TestFile(unittest.TestCase):
             f.readinto(buff2)
 
         self.assertEqual(buff, buff2)
+
+    def test_seekable(self):
+        self.assertTrue(dimod.DQM().to_file().seekable())
 
     def test_two_var_functional(self):
         dqm = dimod.DQM()
@@ -294,31 +333,8 @@ class TestFile(unittest.TestCase):
                 self.assertEqual(dqm.get_quadratic(u, v),
                                  new.get_quadratic(u, v))
 
-    def test_random(self):
-
-        dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
-
-        with tempfile.TemporaryFile() as tf:
-            with dqm.to_file() as df:
-                shutil.copyfileobj(df, tf)
-            tf.seek(0)
-            new = dimod.DQM.from_file(tf)
-
-        self.assertEqual(new.num_variables(), dqm.num_variables())
-        self.assertEqual(new.num_cases(), dqm.num_cases())
-        self.assertEqual(new.variables, dqm.variables)
-        for v in dqm.variables:
-            self.assertEqual(new.num_cases(v), dqm.num_cases(v))
-            np.testing.assert_array_equal(new.get_linear(v),
-                                          dqm.get_linear(v))
-        self.assertEqual(new.adj, dqm.adj)
-        self.assertEqual(new._cydqm.adj,
-                         dqm._cydqm.adj)  # implementation detail
-        for u in dqm.adj:
-            for v in dqm.adj[u]:
-                self.assertEqual(dqm.get_quadratic(u, v),
-                                 new.get_quadratic(u, v))
-
+    def test_writeable(self):
+        self.assertTrue(dimod.DQM().to_file().writable())
 
 
 class TestLinear(unittest.TestCase):

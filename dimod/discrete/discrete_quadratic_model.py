@@ -54,14 +54,21 @@ if issubclass(tempfile.SpooledTemporaryFile, io.IOBase):
                   DeprecationWarning)
 
 
-class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile, io.IOBase):
-    def seekable(self):
-        return self._file.seekable()
+class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
 
     # This is not part of io.IOBase, but it is implemented in io.BytesIO
     # and io.TextIOWrapper
     def readinto(self, *args, **kwargs):
         return self._file.readinto(*args, **kwargs)
+
+    def readable(self):
+        return self._file.readable()
+
+    def seekable(self):
+        return self._file.seekable()
+
+    def writable(self):
+        return self._file.writable()
 
 
 # this is the third(!) variables implementation in dimod. It differs from
@@ -687,8 +694,8 @@ class DiscreteQuadraticModel:
         Returns:
             A file-like object that can be used to construct a copy of the DQM.
             The class is a thin wrapper of
-            :class:`tempfile.SpooledTemporaryFile` that also inherits from
-            `io.IOBase`.
+            :class:`tempfile.SpooledTemporaryFile` that includes some
+            methods from :class:`io.IOBase`
 
         Format Specification (Version 1.0):
 
