@@ -788,13 +788,12 @@ class DiscreteQuadraticModel:
         # the section containing most of the data, encoded with numpy
 
         if compressed is not None:
-            warning.warn(
-                "Argument 'compressed' is deprecated and in future will raise an "
-                "exception; please use 'compress' instead.",
+            warnings.warn(
+                "Argument 'compressed' is deprecated and in future will raise "
+                "an exception; please use 'compress' instead.",
                 DeprecationWarning, stacklevel=2
                 )
             compress = compressed or compress
-
 
         self._to_file_numpy(file, compress)
 
