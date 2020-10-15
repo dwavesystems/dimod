@@ -82,7 +82,7 @@ jobs:
 
   test-osx-py39: &osx-tests-template
     macos:
-      xcode: "11.2.1"
+      xcode: "12.0.1"
     environment:
       PYTHON: 3.9.0
       HOMEBREW_NO_AUTO_UPDATE: 1
@@ -109,7 +109,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.1
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.0.1
 
       - run:
           name: install python
@@ -119,7 +119,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode11.2.1
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.0.1
 
       - restore_cache: *restore-cache-template
 
