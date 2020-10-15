@@ -85,7 +85,6 @@ jobs:
       xcode: "12.0.1"
     environment:
       PYTHON: 3.9.0
-      HOMEBREW_NO_AUTO_UPDATE: 1
 
       # Force (lie about) macOS 10.9 binary compatibility.
       # Needed for properly versioned wheels.
@@ -429,7 +428,6 @@ jobs:
       xcode: "11.2.0"
     environment:
       PYTHON: 3.9.0
-      HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
     working_directory: ~/repo
