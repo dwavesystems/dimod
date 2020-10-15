@@ -4,9 +4,9 @@ orbs:
   win: circleci/windows@2.2.0
 
 jobs:
-  test-py38: &full-test-template
+  test-py39: &full-test-template
     docker:
-      - image: circleci/python:3.8-buster
+      - image: circleci/python:3.9-buster
 
     working_directory: ~/repo
 
@@ -60,6 +60,11 @@ jobs:
             . env/bin/activate
             codecov
 
+  test-py38:
+    <<: *full-test-template
+    docker:
+      - image: circleci/python:3.8-buster
+
   test-py37:
     <<: *full-test-template
     docker:
@@ -75,11 +80,11 @@ jobs:
     docker:
       - image: circleci/python:3.5-jessie
 
-  test-osx-py38: &osx-tests-template
+  test-osx-py39: &osx-tests-template
     macos:
       xcode: "11.2.1"
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
       HOMEBREW_NO_AUTO_UPDATE: 1
 
       # Force (lie about) macOS 10.9 binary compatibility.
@@ -134,6 +139,13 @@ jobs:
         
       - run: *run-tests-template
 
+  test-osx-py38:
+    <<: *osx-tests-template
+    environment:
+      PYTHON: 3.8.2
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
+
   test-osx-py37:
     <<: *osx-tests-template
     environment:
@@ -155,12 +167,12 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
-  test-win-py38: &win-tests-template
+  test-win-py39: &win-tests-template
     executor:
       name: win/default
 
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
       CL: /d2FH4-
 
     working_directory: ~/repo
@@ -217,12 +229,12 @@ jobs:
             env\Scripts\activate.ps1
             codecov
 
-  test-win-py38x86: &win-tests-template-x86
+  test-win-py39x86: &win-tests-template-x86
     executor:
       name: win/default
 
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
 
     working_directory: ~/repo
 
@@ -251,6 +263,18 @@ jobs:
           path: .\dist
 
       - run: *win-codecov-template
+
+  test-win-py38:
+    <<: *win-tests-template
+    environment:
+      PYTHON: 3.8.0
+      CL: /d2FH4-
+
+  test-win-py38x86:
+    <<: *win-tests-template-x86
+    environment:
+      PYTHON: 3.8.0
+      CL: /d2FH4-
 
   test-win-py37:
     <<: *win-tests-template
@@ -400,11 +424,11 @@ jobs:
     docker:
       - image: quay.io/pypa/manylinux1_i686
 
-  deploy-osx-py38: &osx-deploy-template
+  deploy-osx-py39: &osx-deploy-template
     macos:
       xcode: "11.2.0"
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
@@ -459,6 +483,13 @@ jobs:
 
       - run: *upload-template
 
+  deploy-osx-py38:
+    <<: *osx-deploy-template
+    environment:
+      PYTHON: 3.8.2
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      MACOSX_DEPLOYMENT_TARGET: 10.9
+
   deploy-osx-py37:
     <<: *osx-deploy-template
     environment:
@@ -480,12 +511,12 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: 1
       MACOSX_DEPLOYMENT_TARGET: 10.9
 
-  deploy-win-py38: &win-deploy-template
+  deploy-win-py39: &win-deploy-template
     executor:
       name: win/default
 
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
 
     working_directory: ~/repo
 
@@ -512,12 +543,12 @@ jobs:
             python -m pip install twine
             twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
 
-  deploy-win-py38x86: &win-deploy-template-x86
+  deploy-win-py39x86: &win-deploy-template-x86
     executor:
       name: win/default
 
     environment:
-      PYTHON: 3.8.0
+      PYTHON: 3.9.0
 
     working_directory: ~/repo
 
@@ -538,6 +569,18 @@ jobs:
           path: .\dist
 
       - run: *win-twine-template
+
+  deploy-win-py38:
+    <<: *win-deploy-template
+    environment:
+      PYTHON: 3.8.0
+      CL: /d2FH4-
+
+  deploy-win-py38x86:
+    <<: *win-deploy-template-x86
+    environment:
+      PYTHON: 3.8.0
+      CL: /d2FH4-
 
   deploy-win-py37:
     <<: *win-deploy-template
@@ -577,18 +620,22 @@ workflows:
   version: 2
   tests:
     jobs:
+      - test-py39
       - test-py38
       - test-py37
       - test-py36
       - test-py35
+      - test-osx-py39
       - test-osx-py38
       - test-osx-py37
       - test-osx-py36
       - test-osx-py35
+      - test-win-py39
       - test-win-py38
       - test-win-py37
       - test-win-py36
       - test-win-py35
+      - test-win-py39x86
       - test-win-py38x86
       - test-win-py37x86
       - test-win-py36x86
@@ -604,6 +651,12 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-manylinux-32:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-osx-py39:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
@@ -633,6 +686,12 @@ workflows:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
+      - deploy-win-py39:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
       - deploy-win-py38:
           filters:
             tags:
@@ -652,6 +711,12 @@ workflows:
             branches:
               ignore: /.*/
       - deploy-win-py35:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
+      - deploy-win-py39x86:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
