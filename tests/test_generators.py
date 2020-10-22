@@ -17,12 +17,89 @@ import unittest
 
 import dimod
 
+import numpy as np
+
 try:
     import networkx as nx
 except ImportError:
     _networkx = False
 else:
     _networkx = True
+
+
+class TestRandomGNPRandomBQM(unittest.TestCase):
+    def test_bias_generator(self):
+        def gen(n):
+            return np.full(n, 6)
+
+        bqm = dimod.generators.gnp_random_bqm(10, 1, 'SPIN',
+                                              bias_generator=gen)
+
+        self.assertTrue(all(b == 6 for b in bqm.linear.values()))
+        self.assertTrue(all(b == 6 for b in bqm.quadratic.values()))
+        self.assertEqual(bqm.offset, 6)
+        self.assertEqual(sorted(bqm.variables), list(range(10)))
+
+    def test_disconnected(self):
+        for n in range(10):
+            bqm = dimod.generators.gnp_random_bqm(n, 0, 'BINARY')
+            self.assertEqual(bqm.shape, (n, 0))
+
+        # p < 0 treated as 0
+        for n in range(10):
+            bqm = dimod.generators.gnp_random_bqm(n, -100, 'BINARY')
+            self.assertEqual(bqm.shape, (n, 0))
+
+    def test_empty(self):
+        bqm = dimod.generators.gnp_random_bqm(0, 1, 'SPIN')
+        self.assertEqual(bqm.shape, (0, 0))
+
+    def test_fully_connected(self):
+        for n in range(10):
+            bqm = dimod.generators.gnp_random_bqm(n, 1, 'BINARY')
+            self.assertEqual(bqm.shape, (n, n*(n-1)//2))
+
+        # p > 1 treated as 1
+        for n in range(10):
+            bqm = dimod.generators.gnp_random_bqm(n, 100, 'BINARY')
+            self.assertEqual(bqm.shape, (n, n*(n-1)//2))
+
+    def test_labelled(self):
+        bqm = dimod.generators.gnp_random_bqm('abcdef', 1, 'SPIN')
+        self.assertEqual(bqm.shape, (6, 15))
+        self.assertEqual(list(bqm.variables), list('abcdef'))
+
+    def test_random_state(self):
+        r = np.random.RandomState(16)
+
+        bqm0 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=r)
+        bqm1 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=r)
+
+        # very small probability this returns True
+        self.assertNotEqual(bqm0, bqm1)
+
+        r = np.random.RandomState(16)
+
+        bqm2 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=r)
+        bqm3 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=r)
+
+        self.assertNotEqual(bqm2, bqm3)
+
+        self.assertEqual(bqm0, bqm2)
+        self.assertEqual(bqm1, bqm3)
+
+    def test_seed(self):
+        bqm0 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=5)
+        bqm1 = dimod.generators.gnp_random_bqm(10, .6, 'SPIN', random_state=5)
+
+        self.assertEqual(bqm0, bqm1)
+
+    def test_singleton(self):
+        bqm = dimod.generators.gnp_random_bqm(1, 1, 'SPIN')
+        self.assertEqual(bqm.shape, (1, 0))
+
+        bqm = dimod.generators.gnp_random_bqm(1, 0, 'SPIN')
+        self.assertEqual(bqm.shape, (1, 0))
 
 
 class TestRandomUniform(unittest.TestCase):

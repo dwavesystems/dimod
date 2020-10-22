@@ -11,17 +11,93 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
-from __future__ import absolute_import
+
+import collections.abc as abc
 
 import numpy as np
-import numpy.random
 
+from dimod.bqm import AdjVectorBQM
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
-__all__ = ['uniform', 'ran_r', 'randint']
+__all__ = ['gnp_random_bqm', 'uniform', 'ran_r', 'randint']
+
+
+def gnp_random_bqm(n, p, vartype,
+                   cls=AdjVectorBQM,
+                   random_state=None, bias_generator=None):
+    """Generate a BQM structured as an Erdős-Rényi graph.
+
+    Args:
+        n (int/sequence):
+            The variables. If `n` is an int, the variables are labelled as
+            `[0, n)`.
+
+        p (float): The probability for interaction creation.
+
+        cls (:class:`.BinaryQuadraticModel`): BQM class to build from.
+
+        random_state (:class:`numpy.random.RandomState`/int, optional):
+            A random seed or a random state generator. Used for generating
+            the structure of the BQM and, if `data_rvs` is not given, for
+            the bias generation.
+
+        bias_generator (callable, optional):
+            Bias generating function.
+            Should accept a single argument specifying the length of the
+            ndarray that it will return.
+            Will be called three times, once for the linear biases, once for
+            the quadratic biases and once for the offset.
+            If not provided, will use :meth:`numpy.random.RandomState.uniform`
+            by default.
+
+    Returns:
+        A binary quadratic model of type `cls`.
+
+    Notes:
+        This algorithm runs in O(n^2) time and space.
+
+    """
+    if isinstance(n, abc.Sequence):
+        labels = n
+        n = len(labels)
+    else:
+        labels = None
+
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
+
+    neighbborhoods = []
+    num_interactions = 0
+    for v in range(n):
+        # determine what variables are connected
+        exists = random_state.uniform(size=(n - v - 1)) < p
+        neighbors = np.arange(v+1, n)[exists]
+
+        neighbborhoods.append(neighbors)
+        num_interactions += len(neighbors)
+
+    # construct irow, icol
+    irow = np.empty(num_interactions, dtype=np.int)
+    icol = np.empty(num_interactions, dtype=np.int)
+
+    q = 0
+    for v, neighbors in enumerate(neighbborhoods):
+        irow[q:q+len(neighbors)] = v
+        icol[q:q+len(neighbors)] = neighbors
+        q += len(neighbors)
+
+    # calculate the biases
+    if bias_generator is None:
+        def bias_generator(n):
+            return random_state.uniform(size=n)
+
+    ldata = bias_generator(n)
+    qdata = bias_generator(num_interactions)
+    offset, = bias_generator(1)
+
+    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+                                  variable_order=labels)
 
 
 @graph_argument('graph')
@@ -60,8 +136,8 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
 
     """
     if seed is None:
-        seed = numpy.random.randint(2**32, dtype=np.uint32)
-    r = numpy.random.RandomState(seed)
+        seed = np.random.randint(2**32, dtype=np.uint32)
+    r = np.random.RandomState(seed)
 
     variables, edges = graph
 
@@ -116,8 +192,8 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
     """
     if seed is None:
-        seed = numpy.random.randint(2**32, dtype=np.uint32)
-    r = numpy.random.RandomState(seed)
+        seed = np.random.randint(2**32, dtype=np.uint32)
+    r = np.random.RandomState(seed)
 
     variables, edges = graph
 
@@ -184,8 +260,8 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
         raise ValueError("r should be a positive integer")
 
     if seed is None:
-        seed = numpy.random.randint(2**32, dtype=np.uint32)
-    rnd = numpy.random.RandomState(seed)
+        seed = np.random.randint(2**32, dtype=np.uint32)
+    rnd = np.random.RandomState(seed)
 
     variables, edges = graph
 
@@ -241,8 +317,8 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
     """
 
     if seed is None:
-        seed = numpy.random.randint(2**32, dtype=np.uint32)
-    rnd = numpy.random.RandomState(seed)
+        seed = np.random.randint(2**32, dtype=np.uint32)
+    rnd = np.random.RandomState(seed)
 
     if p>1 or p<0:
         raise ValueError('Doping must be in the range [0,1]')

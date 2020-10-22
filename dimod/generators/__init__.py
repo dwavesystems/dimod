@@ -11,10 +11,9 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
-from dimod.generators.anti_crossing import anti_crossing_loops, anti_crossing_clique
-from dimod.generators.chimera import chimera_anticluster
-from dimod.generators.constraints import combinations
-from dimod.generators.fcl import frustrated_loop
-from dimod.generators.random import uniform, randint, ran_r, doped
+
+from dimod.generators.anti_crossing import *
+from dimod.generators.chimera import *
+from dimod.generators.constraints import *
+from dimod.generators.fcl import *
+from dimod.generators.random import *
