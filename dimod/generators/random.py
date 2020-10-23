@@ -35,21 +35,26 @@ def gnp_random_bqm(n, p, vartype,
 
         p (float): The probability for interaction creation.
 
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the BQM. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
         cls (:class:`.BinaryQuadraticModel`): BQM class to build from.
 
         random_state (:class:`numpy.random.RandomState`/int, optional):
             A random seed or a random state generator. Used for generating
-            the structure of the BQM and, if `data_rvs` is not given, for
+            the structure of the BQM and, if `bias_generator` is not given, for
             the bias generation.
 
         bias_generator (callable, optional):
             Bias generating function.
-            Should accept a single argument specifying the length of the
-            ndarray that it will return.
-            Will be called three times, once for the linear biases, once for
-            the quadratic biases and once for the offset.
-            If not provided, will use :meth:`numpy.random.RandomState.uniform`
-            by default.
+            Should accept a single argument `n` and return an
+            :class:`~numpy.ndarray` of biases of length `n`.
+            May be called multiple times.
+            If not provided, :meth:numpy.random.RandomState.uniform is used by
+            default.
 
     Returns:
         A binary quadratic model of type `cls`.
