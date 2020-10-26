@@ -3,7 +3,6 @@
 Reference Documentation
 ***********************
 
-   :Release: |release|
    :Date: |today|
 
 .. toctree::
