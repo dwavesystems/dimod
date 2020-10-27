@@ -1415,8 +1415,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> import numpy as np
             ...
             >>> sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                                            dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), 
-                                            ('num_occurrences', '<i8')]), [0, 1], {}, 'SPIN')
+            ...                             dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), 
+            ...                             ('num_occurrences', '<i8')]), [0, 1], {}, 'SPIN')
             >>> print(sampleset)
                0  1 energy num_oc.
             0 -1 +1   -1.4       1
