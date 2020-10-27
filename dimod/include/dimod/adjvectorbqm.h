@@ -15,8 +15,8 @@
 #ifndef DIMOD_ADJVECTORBQM_H_
 #define DIMOD_ADJVECTORBQM_H_
 
-#include <algorithm>
 #include <stdio.h>
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -24,7 +24,7 @@
 
 namespace dimod {
 
-template<class V, class B>
+template <class V, class B>
 class AdjVectorBQM {
  public:
     using bias_type = B;
@@ -32,14 +32,15 @@ class AdjVectorBQM {
     using size_type = std::size_t;
 
     using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
-    using const_outvars_iterator = typename std::vector<std::pair<V, B>>::const_iterator;
+    using const_outvars_iterator =
+        typename std::vector<std::pair<V, B>>::const_iterator;
 
     // in the future we'd probably like to make this protected
     std::vector<std::pair<std::vector<std::pair<V, B>>, B>> adj;
 
     AdjVectorBQM() {}
 
-    template<class BQM>
+    template <class BQM>
     explicit AdjVectorBQM(const BQM &bqm) {
         adj.resize(bqm.num_variables());
 
@@ -56,9 +57,9 @@ class AdjVectorBQM {
      *
      * @param dense An array containing the biases. Assumed to contain
      *     `num_variables`^2 elements. The upper and lower triangle are summed.
-     * @param num_variables The number of variables. 
+     * @param num_variables The number of variables.
      */
-    template<class B2>
+    template <class B2>
     AdjVectorBQM(const B2 dense[], size_type num_variables,
                  bool ignore_diagonal = false) {
         // we know how big our linear is going to be
@@ -68,13 +69,14 @@ class AdjVectorBQM {
 
         if (!ignore_diagonal) {
             for (size_type v = 0; v < num_variables; ++v) {
-                adj[v].second = dense[v*(num_variables+1)];
+                adj[v].second = dense[v * (num_variables + 1)];
             }
         }
 
         for (size_type u = 0; u < num_variables; ++u) {
             for (size_type v = u + 1; v < num_variables; ++v) {
-                qbias = dense[u*num_variables+v] + dense[v*num_variables+u];
+                qbias =
+                    dense[u * num_variables + v] + dense[v * num_variables + u];
 
                 if (qbias != 0) {
                     adj[u].first.emplace_back(v, qbias);
@@ -96,141 +98,140 @@ class AdjVectorBQM {
     template <class B2>
     AdjVectorBQM(B2 dense[], size_type num_variables,
                  bool ignore_diagonal = false) {
-      // we know how big our linear is going to be
-      adj.resize(num_variables);
+        // we know how big our linear is going to be
+        adj.resize(num_variables);
 
-      // Backup copy of the diagonal of the dense matrix.
-      std::vector<B2> dense_diagonal(num_variables);
+        // Backup copy of the diagonal of the dense matrix.
+        std::vector<B2> dense_diagonal(num_variables);
 
-      if (!ignore_diagonal) {
-        #pragma omp parallel for
-        for (size_type v = 0; v < num_variables; ++v) {
-          adj[v].second = dense[v * (num_variables + 1)];
-        }
-      }
-
-      #pragma omp parallel
-      {
-        // Zero out the diagonal to avoid expensive checks inside innermost
-        // loop in the code for reading the matrix. The diagonal will be
-        // restored so a backup copy is saved.
-        #pragma omp for schedule(static)
-        for (size_type v = 0; v < num_variables; ++v) {
-          dense_diagonal[v] = dense[v * (num_variables + 1)];
-          dense[v * (num_variables + 1)] = 0;
+        if (!ignore_diagonal) {
+#pragma omp parallel for
+            for (size_type v = 0; v < num_variables; ++v) {
+                adj[v].second = dense[v * (num_variables + 1)];
+            }
         }
 
-        size_type counters[BLOCK_SIZE] = {0};
-        size_type buffer_size = num_variables * BLOCK_SIZE *
-                                sizeof(std::pair<variable_type, bias_type>);
-        std::pair<variable_type, bias_type> *temp_buffer =
-            (std::pair<variable_type, bias_type> *)malloc(buffer_size);
+#pragma omp parallel
+        {
+// Zero out the diagonal to avoid expensive checks inside innermost
+// loop in the code for reading the matrix. The diagonal will be
+// restored so a backup copy is saved.
+#pragma omp for schedule(static)
+            for (size_type v = 0; v < num_variables; ++v) {
+                dense_diagonal[v] = dense[v * (num_variables + 1)];
+                dense[v * (num_variables + 1)] = 0;
+            }
 
-        if (temp_buffer == NULL) {
-          printf("Memory allocation failure.\n");
-          exit(0);
-        }
+            size_type counters[BLOCK_SIZE] = {0};
+            size_type buffer_size = num_variables * BLOCK_SIZE *
+                                    sizeof(std::pair<variable_type, bias_type>);
+            std::pair<variable_type, bias_type> *temp_buffer =
+                (std::pair<variable_type, bias_type> *)malloc(buffer_size);
 
-        // We process the matrix in blocks of size BLOCK_SIZE*BLOCK_SIZE to take
-        // advantage of cache locality. Dynamic scheduling is used as  we know some
-        // blocks may be more sparse than others and processing them may finish earlier.
-        #pragma omp for schedule(dynamic)
-        for (size_type u_st = 0; u_st < num_variables; u_st += BLOCK_SIZE) {
-          size_type u_end = std::min(u_st + BLOCK_SIZE, num_variables);
-          for (size_type v_st = 0; v_st < num_variables; v_st += BLOCK_SIZE) {
-            size_type v_end = std::min(v_st + BLOCK_SIZE, num_variables);
-            for (size_type u = u_st, n = 0; u < u_end; u++, n++) {
-              size_type counter_u = counters[n];
-              size_type counter_u_old = counter_u;
-              for (size_type v = v_st; v < v_end; v++) {
-                bias_type qbias =
-                    dense[u * num_variables + v] + dense[v * num_variables + u];
-                if (qbias != 0) {
-                  temp_buffer[n * num_variables + counter_u++] = {v, qbias};
+            if (temp_buffer == NULL) {
+                printf("Memory allocation failure.\n");
+                exit(0);
+            }
+
+// We process the matrix in blocks of size BLOCK_SIZE*BLOCK_SIZE to take
+// advantage of cache locality. Dynamic scheduling is used as  we know some
+// blocks may be more sparse than others and processing them may finish earlier.
+#pragma omp for schedule(dynamic)
+            for (size_type u_st = 0; u_st < num_variables; u_st += BLOCK_SIZE) {
+                size_type u_end = std::min(u_st + BLOCK_SIZE, num_variables);
+                for (size_type v_st = 0; v_st < num_variables;
+                     v_st += BLOCK_SIZE) {
+                    size_type v_end =
+                        std::min(v_st + BLOCK_SIZE, num_variables);
+                    for (size_type u = u_st, n = 0; u < u_end; u++, n++) {
+                        size_type counter_u = counters[n];
+                        size_type counter_u_old = counter_u;
+                        for (size_type v = v_st; v < v_end; v++) {
+                            bias_type qbias = dense[u * num_variables + v] +
+                                              dense[v * num_variables + u];
+                            if (qbias != 0) {
+                                temp_buffer[n * num_variables + counter_u++] = {
+                                    v, qbias};
+                            }
+                        }
+                        if (counter_u != counter_u_old) {
+                            counters[n] = counter_u;
+                        }
+                    }
                 }
-              }
-              if (counter_u != counter_u_old) {
-                counters[n] = counter_u;
-              }
+
+                for (size_type n = 0; n < BLOCK_SIZE; n++) {
+                    if (counters[n]) {
+                        adj[u_st + n].first.assign(
+                            temp_buffer + n * num_variables,
+                            temp_buffer + n * num_variables + counters[n]);
+                        counters[n] = 0;
+                    }
+                }
             }
-          }
 
-          for (size_type n = 0; n < BLOCK_SIZE; n++) {
-            if (counters[n]) {
-              adj[u_st + n].first.assign(temp_buffer + n * num_variables,
-                                         temp_buffer + n * num_variables + counters[n]);
-              counters[n] = 0;
+            free(temp_buffer);
+
+// Restore the diagonal of the original dense matrix
+#pragma omp for schedule(static)
+            for (size_type v = 0; v < num_variables; ++v) {
+                dense[v * (num_variables + 1)] = dense_diagonal[v];
             }
-          }
         }
-
-        free(temp_buffer);
-
-        // Restore the diagonal of the original dense matrix
-        #pragma omp for schedule(static)
-        for (size_type v = 0; v < num_variables; ++v) {
-          dense[v * (num_variables + 1)] = dense_diagonal[v];
-        }
-      }
     }
 
     /// Add one (disconnected) variable to the BQM and return its index.
     variable_type add_variable() {
-        adj.resize(adj.size()+1);
-        return adj.size()-1;
+        adj.resize(adj.size() + 1);
+        return adj.size() - 1;
     }
 
     /// Get the degree of variable `v`.
-    size_type degree(variable_type v) const {
-        return adj[v].first.size();
-    }
+    size_type degree(variable_type v) const { return adj[v].first.size(); }
 
-    [[deprecated("Use AdjVectorBQM::linear(v)")]]
-    bias_type get_linear(variable_type v) const {
-        return linear(v);
-    }
+    [[deprecated("Use AdjVectorBQM::linear(v)")]] bias_type get_linear(
+        variable_type v) const { return linear(v); }
 
-    std::pair<bias_type, bool>
-    get_quadratic(variable_type u, variable_type v) const {
+    std::pair<bias_type, bool> get_quadratic(variable_type u,
+                                             variable_type v) const {
         assert(u >= 0 && u < adj.size());
         assert(v >= 0 && v < adj.size());
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low =
+            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
         if (low == span.second || low->first != v)
             return std::make_pair(0, false);
         return std::make_pair(low->second, true);
     }
 
-
-    bias_type& linear(variable_type v) {
+    bias_type &linear(variable_type v) {
         assert(v >= 0 && v < adj.size());
         return adj[v].second;
     }
 
-    const bias_type& linear(variable_type v) const {
+    const bias_type &linear(variable_type v) const {
         assert(v >= 0 && v < adj.size());
         return adj[v].second;
     }
 
-    std::pair<outvars_iterator, outvars_iterator>
-    neighborhood(variable_type u) {
+    std::pair<outvars_iterator, outvars_iterator> neighborhood(
+        variable_type u) {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
-    std::pair<const_outvars_iterator, const_outvars_iterator>
-    neighborhood(variable_type u) const {
+    std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
+        variable_type u) const {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
 
     /**
      * The neighborhood of variable `v`.
-     * 
+     *
      * @param A variable `v`.
      * @param The neighborhood will start with the first out variable that
      * does not compare less than `start`.
@@ -238,17 +239,15 @@ class AdjVectorBQM {
      * @returns A pair of iterators pointing to the start and end of the
      *     neighborhood.
      */
-    std::pair<const_outvars_iterator, const_outvars_iterator>
-    neighborhood(variable_type v, variable_type start) const {
+    std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
+        variable_type v, variable_type start) const {
         auto span = neighborhood(v);
-        auto low = std::lower_bound(span.first, span.second,
-                                    start, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, start,
+                                    utils::comp_v<V, B>);
         return std::make_pair(low, span.second);
     }
 
-    size_type num_variables() const {
-        return adj.size();
-    }
+    size_type num_variables() const { return adj.size(); }
 
     size_type num_interactions() const {
         size_type count = 0;
@@ -280,8 +279,8 @@ class AdjVectorBQM {
         assert(v >= 0 && v < adj.size());
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low =
+            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 
@@ -300,8 +299,8 @@ class AdjVectorBQM {
         return exists;
     }
 
-    [[deprecated("Use AdjVectorBQM::linear(v)")]]
-    void set_linear(variable_type v, bias_type b) {
+    [[deprecated("Use AdjVectorBQM::linear(v)")]] void set_linear(
+        variable_type v, bias_type b) {
         assert(v >= 0 && v < adj.size());
         linear(v) = b;
     }
@@ -312,8 +311,8 @@ class AdjVectorBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low = std::lower_bound(span.first, span.second, v,
-                                    utils::comp_v<V, B>);
+        auto low =
+            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 
