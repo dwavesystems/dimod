@@ -1424,7 +1424,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['SPIN', 2 rows, 2 samples, 2 variables]
 
             >>> vector = {'new_col': [[0, 1], [1, 2]]}
-            >>> sampleset.append_data_vectors(vector)
+            >>> sampleset = sampleset.append_data_vectors(vector)
             >>> print(sampleset)
                0  1 energy num_oc. new_col
             0 -1 +1   -1.4       1   [0 1]
@@ -1432,10 +1432,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['SPIN', 2 rows, 2 samples, 2 variables]
 
             >>> print(sampleset.record.dtype)
-            (numpy.record, [('sample', 'i1', (2,)), 
-                            ('energy', '<f8'), 
-                            ('num_occurrences', '<i8'), 
-                            ('new_col', '<i8', (2,))])
+            (numpy.record, [('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8'), ('new_col', '<i8', (2,))])
         
         """
         self.resolve()
@@ -1443,31 +1440,25 @@ class SampleSet(abc.Iterable, abc.Sized):
         record = self._record
 
         for name, vector in vectors.items():
-            if name in record.dtype.names:
-                raise ValueError("Field '{}' occurs more than once".format(name))
-
             if len(vector) is not len(record.energy):
                 raise ValueError("Length of vector {} must be equal to number of samples.".format(name))
 
-            if np.isscalar(vector[0]):
-                record = recfunctions.append_fields(record, name, vector, usemask=False, asrecarray=True)
-            else:
-                # np's append_fields cannot append a vector with a shape that
-                # doesn't match the base array's, so appending non-scalar data
-                # requires a workaround
-                try:
-                    narr = np.asarray(vector)
-                    dtype = np.dtype([(name, narr[0].dtype, narr[0].shape)])
+            try:
+                vector = np.asarray(vector)
 
-                    # creating a new np array to merge
-                    new_arr = np.empty(len(vector), dtype=dtype)
-                    for i, rec in enumerate(new_arr):
-                        rec[0] = vector[i]
+                if vector.ndim == 1:
+                    record = recfunctions.append_fields(record, name, vector, usemask=False, asrecarray=True)
+                else:
+                    # np's append_fields cannot append a vector with a shape that
+                    # doesn't match the base array's, so appending non-scalar data
+                    # requires a workaround
+                    dtype = np.dtype([(name, vector[0].dtype, vector[0].shape)]) 
+                    new_arr = recfunctions.unstructured_to_structured(vector, dtype=dtype)
 
-                    record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)
-                           
-                except:
-                    raise ValueError("Field value type not supported.")
+                    record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)              
+            
+            except (TypeError, AttributeError):
+                raise ValueError("Field value type not supported.")
 
         if inplace:
             self._record = record
