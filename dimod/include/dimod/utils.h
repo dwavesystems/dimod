@@ -17,15 +17,15 @@
 
 #include <utility>
 
-#define BLOCK_SIZE 64 // Block size for cache blocking.
+#define BLOCK_SIZE 64  // Block size for cache blocking.
 
 namespace dimod {
 namespace utils {
 
-template<class V, class B>
-bool comp_v(std::pair<V, B> ub, V v) {
-    return ub.first < v;
-}
+    template <class V, class B>
+    bool comp_v(std::pair<V, B> ub, V v) {
+        return ub.first < v;
+    }
 
 }  // namespace utils
 }  // namespace dimod
