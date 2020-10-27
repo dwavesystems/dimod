@@ -1391,6 +1391,90 @@ class SampleSet(abc.Iterable, abc.Sized):
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)
 
+    def append_data_vectors(self, vectors, inplace=True):
+        """Return the :class:`SampleSet` with additional fields in
+        :attr:`SampleSet.record`.
+
+        Args:
+            vectors (dict):
+                Each key is a new field name and each value is a list of 
+                per-sample data to be appended to :attr:`SampleSet.record`. 
+                Per-sample data should be scalar or numpy arrays (lists 
+                and tuples will be converted to numpy arrays).
+
+            inplace (bool, optional, default=True):
+                If True, the instantiated :class:`SampleSet` is updated; 
+                otherwise, a new :class:`SampleSet` is returned.
+
+        Returns:
+            :obj:`.SampleSet`: SampleSet. If `inplace` is True, returns itself.
+
+        Examples:
+            The following example appends a field of lists to :attr:`SampleSet.record`.
+
+            >>> import numpy as np
+            ...
+            >>> sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
+                                            dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), 
+                                            ('num_occurrences', '<i8')]), [0, 1], {}, 'SPIN')
+            >>> print(sampleset)
+               0  1 energy num_oc.
+            0 -1 +1   -1.4       1
+            1 -1 +1   -1.4       1
+            ['SPIN', 2 rows, 2 samples, 2 variables]
+
+            >>> vector = {'new_col': [[0, 1], [1, 2]]}
+            >>> sampleset.append_data_vectors(vector)
+            >>> print(sampleset)
+               0  1 energy num_oc. new_col
+            0 -1 +1   -1.4       1   [0 1]
+            1 -1 +1   -1.4       1   [1 2]
+            ['SPIN', 2 rows, 2 samples, 2 variables]
+
+            >>> print(sampleset.record.dtype)
+            (numpy.record, [('sample', 'i1', (2,)), 
+                            ('energy', '<f8'), 
+                            ('num_occurrences', '<i8'), 
+                            ('new_col', '<i8', (2,))])
+        
+        """
+        self.resolve()
+
+        record = self._record
+
+        for name, vector in vectors.items():
+            if name in record.dtype.names:
+                raise ValueError("Field '{}' occurs more than once".format(name))
+
+            if len(vector) is not len(record.energy):
+                raise ValueError("Length of vector {} must be equal to number of samples.".format(name))
+
+            if np.isscalar(vector[0]):
+                record = recfunctions.append_fields(record, name, vector, usemask=False, asrecarray=True)
+            else:
+                # np's append_fields cannot append a vector with a shape that
+                # doesn't match the base array's, so appending non-scalar data
+                # requires a workaround
+                try:
+                    narr = np.asarray(vector)
+                    dtype = np.dtype([(name, narr[0].dtype, narr[0].shape)])
+
+                    # creating a new np array to merge
+                    new_arr = np.empty(len(vector), dtype=dtype)
+                    for i, rec in enumerate(new_arr):
+                        rec[0] = vector[i]
+
+                    record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)
+                           
+                except:
+                    raise ValueError("Field value type not supported.")
+
+        if inplace:
+            self._record = record
+            return self
+        else:
+            return SampleSet(record, self.variables, self.info, self.vartype)
+
     ###############################################################################################
     # Serialization
     ###############################################################################################
