@@ -74,8 +74,8 @@ class AdjMapBQM {
 
         for (size_type u = 0; u < num_variables; ++u) {
             for (size_type v = u + 1; v < num_variables; ++v) {
-                qbias =
-                    dense[u * num_variables + v] + dense[v * num_variables + u];
+                qbias = dense[u * num_variables + v] +
+                        dense[v * num_variables + u];
 
                 if (qbias != 0) {
                     adj[u].first.emplace_hint(adj[u].first.end(), v, qbias);
@@ -125,7 +125,7 @@ class AdjMapBQM {
             size_type buffer_size = num_variables * BLOCK_SIZE *
                                     sizeof(std::pair<variable_type, bias_type>);
             std::pair<variable_type, bias_type> *temp_buffer =
-                (std::pair<variable_type, bias_type> *)malloc(buffer_size);
+                    (std::pair<variable_type, bias_type> *)malloc(buffer_size);
 
             if (temp_buffer == NULL) {
                 printf("Memory allocation failure.\n");
@@ -141,7 +141,7 @@ class AdjMapBQM {
                 for (size_type v_st = 0; v_st < num_variables;
                      v_st += BLOCK_SIZE) {
                     size_type v_end =
-                        std::min(v_st + BLOCK_SIZE, num_variables);
+                            std::min(v_st + BLOCK_SIZE, num_variables);
                     for (size_type u = u_st, n = 0; u < u_end; u++, n++) {
                         size_type counter_u = counters[n];
                         size_type counter_u_old = counter_u;
@@ -157,7 +157,7 @@ class AdjMapBQM {
                                 // cache blocking due to reallocation of the map
                                 // causing cache pollution.
                                 temp_buffer[n * num_variables + counter_u++] = {
-                                    v, qbias};
+                                        v, qbias};
                             }
                         }
                         if (counter_u != counter_u_old) {
@@ -197,7 +197,7 @@ class AdjMapBQM {
     size_type degree(variable_type v) const { return adj[v].first.size(); }
 
     [[deprecated("Use AdjMapBQM::linear(v)")]] bias_type get_linear(
-        variable_type v) const { return linear(v); }
+            variable_type v) const { return linear(v); }
 
     std::pair<bias_type, bool> get_quadratic(variable_type u,
                                              variable_type v) const {
@@ -224,13 +224,13 @@ class AdjMapBQM {
     }
 
     std::pair<outvars_iterator, outvars_iterator> neighborhood(
-        variable_type u) {
+            variable_type u) {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type u) const {
+            variable_type u) const {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
@@ -246,7 +246,7 @@ class AdjMapBQM {
      *     neighborhood.
      */
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type v, variable_type start) const {
+            variable_type v, variable_type start) const {
         return std::make_pair(adj[v].first.lower_bound(start),
                               adj[v].first.cend());
     }
