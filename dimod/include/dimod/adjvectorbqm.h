@@ -33,7 +33,7 @@ class AdjVectorBQM {
 
     using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
     using const_outvars_iterator =
-        typename std::vector<std::pair<V, B>>::const_iterator;
+            typename std::vector<std::pair<V, B>>::const_iterator;
 
     // in the future we'd probably like to make this protected
     std::vector<std::pair<std::vector<std::pair<V, B>>, B>> adj;
@@ -75,8 +75,8 @@ class AdjVectorBQM {
 
         for (size_type u = 0; u < num_variables; ++u) {
             for (size_type v = u + 1; v < num_variables; ++v) {
-                qbias =
-                    dense[u * num_variables + v] + dense[v * num_variables + u];
+                qbias = dense[u * num_variables + v] +
+                        dense[v * num_variables + u];
 
                 if (qbias != 0) {
                     adj[u].first.emplace_back(v, qbias);
@@ -126,7 +126,7 @@ class AdjVectorBQM {
             size_type buffer_size = num_variables * BLOCK_SIZE *
                                     sizeof(std::pair<variable_type, bias_type>);
             std::pair<variable_type, bias_type> *temp_buffer =
-                (std::pair<variable_type, bias_type> *)malloc(buffer_size);
+                    (std::pair<variable_type, bias_type> *)malloc(buffer_size);
 
             if (temp_buffer == NULL) {
                 printf("Memory allocation failure.\n");
@@ -142,7 +142,7 @@ class AdjVectorBQM {
                 for (size_type v_st = 0; v_st < num_variables;
                      v_st += BLOCK_SIZE) {
                     size_type v_end =
-                        std::min(v_st + BLOCK_SIZE, num_variables);
+                            std::min(v_st + BLOCK_SIZE, num_variables);
                     for (size_type u = u_st, n = 0; u < u_end; u++, n++) {
                         size_type counter_u = counters[n];
                         size_type counter_u_old = counter_u;
@@ -151,7 +151,7 @@ class AdjVectorBQM {
                                               dense[v * num_variables + u];
                             if (qbias != 0) {
                                 temp_buffer[n * num_variables + counter_u++] = {
-                                    v, qbias};
+                                        v, qbias};
                             }
                         }
                         if (counter_u != counter_u_old) {
@@ -163,8 +163,8 @@ class AdjVectorBQM {
                 for (size_type n = 0; n < BLOCK_SIZE; n++) {
                     if (counters[n]) {
                         adj[u_st + n].first.assign(
-                            temp_buffer + n * num_variables,
-                            temp_buffer + n * num_variables + counters[n]);
+                                temp_buffer + n * num_variables,
+                                temp_buffer + n * num_variables + counters[n]);
                         counters[n] = 0;
                     }
                 }
@@ -190,7 +190,7 @@ class AdjVectorBQM {
     size_type degree(variable_type v) const { return adj[v].first.size(); }
 
     [[deprecated("Use AdjVectorBQM::linear(v)")]] bias_type get_linear(
-        variable_type v) const { return linear(v); }
+            variable_type v) const { return linear(v); }
 
     std::pair<bias_type, bool> get_quadratic(variable_type u,
                                              variable_type v) const {
@@ -199,8 +199,8 @@ class AdjVectorBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low =
-            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         if (low == span.second || low->first != v)
             return std::make_pair(0, false);
@@ -218,13 +218,13 @@ class AdjVectorBQM {
     }
 
     std::pair<outvars_iterator, outvars_iterator> neighborhood(
-        variable_type u) {
+            variable_type u) {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type u) const {
+            variable_type u) const {
         assert(u >= 0 && u < adj.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
@@ -240,7 +240,7 @@ class AdjVectorBQM {
      *     neighborhood.
      */
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type v, variable_type start) const {
+            variable_type v, variable_type start) const {
         auto span = neighborhood(v);
         auto low = std::lower_bound(span.first, span.second, start,
                                     utils::comp_v<V, B>);
@@ -279,8 +279,8 @@ class AdjVectorBQM {
         assert(v >= 0 && v < adj.size());
 
         auto span = neighborhood(u);
-        auto low =
-            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 
@@ -300,7 +300,7 @@ class AdjVectorBQM {
     }
 
     [[deprecated("Use AdjVectorBQM::linear(v)")]] void set_linear(
-        variable_type v, bias_type b) {
+            variable_type v, bias_type b) {
         assert(v >= 0 && v < adj.size());
         linear(v) = b;
     }
@@ -311,8 +311,8 @@ class AdjVectorBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low =
-            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         bool exists = !(low == span.second || low->first != v);
 

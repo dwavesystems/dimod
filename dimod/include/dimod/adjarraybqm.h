@@ -33,7 +33,7 @@ class AdjArrayBQM {
 
     using outvars_iterator = typename std::vector<std::pair<V, B>>::iterator;
     using const_outvars_iterator =
-        typename std::vector<std::pair<V, B>>::const_iterator;
+            typename std::vector<std::pair<V, B>>::const_iterator;
 
     // in the future we'd probably like to make this protected
     std::vector<std::pair<N, B>> invars;
@@ -83,8 +83,8 @@ class AdjArrayBQM {
             for (size_type v = 0; v < num_variables; ++v) {
                 if (u == v) continue;  // already did linear
 
-                qbias =
-                    dense[u * num_variables + v] + dense[v * num_variables + u];
+                qbias = dense[u * num_variables + v] +
+                        dense[v * num_variables + u];
 
                 if (qbias != 0) outvars.emplace_back(v, qbias);
             }
@@ -96,7 +96,7 @@ class AdjArrayBQM {
     size_type num_variables() const { return invars.size(); }
 
     [[deprecated("Use AdjArrayBQM::linear(v)")]] bias_type get_linear(
-        variable_type v) const { return linear(v); }
+            variable_type v) const { return linear(v); }
 
     std::pair<bias_type, bool> get_quadratic(variable_type u,
                                              variable_type v) const {
@@ -105,8 +105,8 @@ class AdjArrayBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low =
-            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         if (low == span.second || low->first != v)
             return std::make_pair(0, false);
@@ -134,7 +134,7 @@ class AdjArrayBQM {
     }
 
     std::pair<outvars_iterator, outvars_iterator> neighborhood(
-        variable_type u) {
+            variable_type u) {
         assert(u >= 0 && u < invars.size());
 
         outvars_iterator end;
@@ -148,7 +148,7 @@ class AdjArrayBQM {
     }
 
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type u) const {
+            variable_type u) const {
         assert(u >= 0 && u < invars.size());
 
         const_outvars_iterator end;
@@ -172,7 +172,7 @@ class AdjArrayBQM {
      *     neighborhood.
      */
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
-        variable_type v, variable_type start) const {
+            variable_type v, variable_type start) const {
         auto span = neighborhood(v);
         auto low = std::lower_bound(span.first, span.second, start,
                                     utils::comp_v<V, B>);
@@ -180,7 +180,7 @@ class AdjArrayBQM {
     }
 
     [[deprecated("Use AdjArrayBQM::linear(v)")]] void set_linear(
-        variable_type v, bias_type b) {
+            variable_type v, bias_type b) {
         assert(v >= 0 && v < invars.size());
         linear(v) = b;
     }
@@ -191,8 +191,8 @@ class AdjArrayBQM {
         assert(u != v);
 
         auto span = neighborhood(u);
-        auto low =
-            std::lower_bound(span.first, span.second, v, utils::comp_v<V, B>);
+        auto low = std::lower_bound(span.first, span.second, v,
+                                    utils::comp_v<V, B>);
 
         // if u, v does not exist when we are done
         if (low == span.second || low->first != v) return false;
