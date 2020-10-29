@@ -15,20 +15,16 @@
 #include <vector>
 
 #include "../Catch2/single_include/catch2/catch.hpp"
-#include "dimod/adjvectorbqm.h"
-#include "dimod/adjmapbqm.h"
 #include "dimod/adjarraybqm.h"
+#include "dimod/adjmapbqm.h"
+#include "dimod/adjvectorbqm.h"
 
 namespace dimod {
 
-TEMPLATE_TEST_CASE("Tests for BQM Classes", 
-                   "[bqm]", 
-                   (AdjVectorBQM<int, float>), (AdjMapBQM<int, float>), (AdjArrayBQM<int, float>)) {
-
+TEMPLATE_TEST_CASE("Tests for BQM Classes", "[bqm]", (AdjVectorBQM<int, float>),
+                   (AdjMapBQM<int, float>), (AdjArrayBQM<int, float>)) {
     SECTION("Test neighborhood()") {
-        float Q[9] = {1.0, 0.0, 3.0,
-                      2.0, 1.5, 6.0,
-                      1.0, 0.0, 0.0};
+        float Q[9] = {1.0, 0.0, 3.0, 2.0, 1.5, 6.0, 1.0, 0.0, 0.0};
         auto bqm = TestType(Q, 3);
 
         std::vector<typename TestType::variable_type> neighbors;
@@ -81,11 +77,9 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes",
     }
 
     SECTION("Test neighborhood() start") {
-        float Q[25] = {0.0, 0.0, 1.0, 0.0, 0.0,
-                       0.0, 0.0, 0.0, 0.0, 0.0,
-                       0.0, 0.0, 0.0, 0.0, 0.0,
-                       0.0, 0.0, 1.0, 0.0, 0.0,
-                       0.0, 0.0, 1.0, 0.0, 0.0};
+        float Q[25] = {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                       0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         auto bqm = TestType(Q, 5);
 
         std::vector<typename TestType::variable_type> neighbors;
@@ -141,35 +135,33 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes",
         float Q[4] = {1, 0, -1, 2};
         auto bqm = TestType(Q, 2);
 
-        REQUIRE(bqm.get_linear(1) == 2);   
+        REQUIRE(bqm.get_linear(1) == 2);
     }
 
     SECTION("Test get_quadratic()") {
         float Q[4] = {1, 0, -1, 2};
         auto bqm = TestType(Q, 2);
 
-        auto q = bqm.get_quadratic(0,1);
+        auto q = bqm.get_quadratic(0, 1);
         REQUIRE(q.first == -1);
         REQUIRE(q.second);
     }
 }
 
-TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes", 
-                   "[shapeablebqm][bqm]", 
+TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes", "[shapeablebqm][bqm]",
                    (AdjVectorBQM<int, float>), (AdjMapBQM<int, float>)) {
-
-    auto bqm = TestType();  
+    auto bqm = TestType();
     bqm.add_variable();
 
     SECTION("Test add_variable()") {
         bqm.add_variable();
-        REQUIRE(bqm.num_variables() == 2);         
+        REQUIRE(bqm.num_variables() == 2);
     }
 
     SECTION("Test pop_variable()") {
         bqm.pop_variable();
-        REQUIRE(bqm.num_variables() == 0); 
+        REQUIRE(bqm.num_variables() == 0);
     }
 }
 
-}   // namespace dimod
+}  // namespace dimod

@@ -14,28 +14,24 @@
 //
 // =============================================================================
 
-#include "../Catch2/single_include/catch2/catch.hpp"
 #include "../../dimod/roof_duality/src/fix_variables.hpp"
+#include "../Catch2/single_include/catch2/catch.hpp"
 
 namespace fix_variables_ {
 
 TEST_CASE("Test roof_duality's fixQuboVariables()", "[roofduality]") {
     SECTION("Test invalid cases") {
-        auto nonsquare_matrix = compressed_matrix::CompressedMatrix<double>(2,3);
-        REQUIRE_THROWS_AS(
-            fixQuboVariables(nonsquare_matrix, 2),
-            std::invalid_argument
-        );
+        auto nonsquare_matrix =
+                compressed_matrix::CompressedMatrix<double>(2, 3);
+        REQUIRE_THROWS_AS(fixQuboVariables(nonsquare_matrix, 2),
+                          std::invalid_argument);
 
-        auto matrix = compressed_matrix::CompressedMatrix<double>(2,2);
-        REQUIRE_THROWS_AS(
-            fixQuboVariables(matrix, 0),
-            std::invalid_argument
-        );
+        auto matrix = compressed_matrix::CompressedMatrix<double>(2, 2);
+        REQUIRE_THROWS_AS(fixQuboVariables(matrix, 0), std::invalid_argument);
     }
 
     SECTION("Test empty case") {
-        auto empty_matrix = compressed_matrix::CompressedMatrix<double>(0,0);
+        auto empty_matrix = compressed_matrix::CompressedMatrix<double>(0, 0);
         FixVariablesResult result = fixQuboVariables(empty_matrix, 2);
 
         REQUIRE(result.offset == 0);
@@ -44,5 +40,5 @@ TEST_CASE("Test roof_duality's fixQuboVariables()", "[roofduality]") {
         REQUIRE(result.newQ.numRows() == 0);
     }
 }
-    
-}   // namespace fix_variables_
+
+}  // namespace fix_variables_
