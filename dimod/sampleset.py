@@ -23,8 +23,8 @@ import collections.abc as abc
 from collections import namedtuple
 
 import numpy as np
-
 from numpy.lib import recfunctions
+from warnings import warn
 
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
@@ -39,7 +39,7 @@ from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
 
-__all__ = ['append_data_vectors', 'as_samples', 'concatenate', 'SampleSet']
+__all__ = ['append_data_vectors', 'append_variables', 'as_samples', 'concatenate', 'SampleSet']
 
 def append_data_vectors(sampleset, **vectors):
     """Create a new :obj:`.SampleSet` with additional fields in
@@ -102,6 +102,90 @@ def append_data_vectors(sampleset, **vectors):
             raise ValueError("Field value type not supported.")
 
     return SampleSet(record, sampleset.variables, sampleset.info, sampleset.vartype)
+
+def append_variables(sampleset, samples_like, sort_labels=True):
+    """Create a new :obj:`.SampleSet` with the given variables and values.
+
+    Not defined for empty sample sets. If `sample_like` is a
+    :obj:`.SampleSet`, its data vectors and info are ignored.
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            :obj:`.SampleSet` to build from.
+
+        samples_like:
+            Samples to add to the sample set. Either a single
+            sample or identical in length to the sample set.
+            'samples_like' is an extension of NumPy's array_like_.
+            See :func:`.as_samples`.
+
+        sort_labels (bool, optional, default=True):
+            Return :attr:`.SampleSet.variables` in sorted order. For mixed
+            (unsortable) types, the given order is maintained.
+
+    Returns:
+        :obj:`.SampleSet`: New sample set with the variables/values added.
+
+    Examples:
+
+        >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
+        ...                                           {'a': +1, 'b': +1}],
+        ...                                          dimod.SPIN,
+        ...                                          energy=[-1.0, 1.0])
+        >>> new = dimod.append_variables(sampleset, {'c': -1})
+        >>> print(new)
+           a  b  c energy num_oc.
+        0 -1 +1 -1   -1.0       1
+        1 +1 +1 -1    1.0       1
+        ['SPIN', 2 rows, 2 samples, 3 variables]
+
+        Add variables from another sample set to the previous example. Note
+        that the energies remain unchanged.
+
+        >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
+        ...                                         {'c': +1, 'd': +1}],
+        ...                                        dimod.SPIN,
+        ...                                        energy=[-2.0, 1.0])
+        >>> new = dimod.append_variables(sampleset, another)
+        >>> print(new)
+           a  b  c  d energy num_oc.
+        0 -1 +1 -1 +1   -1.0       1
+        1 +1 +1 +1 +1    1.0       1
+        ['SPIN', 2 rows, 2 samples, 4 variables]
+
+    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+
+    """
+    samples, labels = as_samples(samples_like)
+
+    num_samples = len(sampleset)
+
+    # we don't handle multiple values
+    if samples.shape[0] == num_samples:
+        # we don't need to do anything, it's already the correct shape
+        pass
+    elif samples.shape[0] == 1 and num_samples:
+        samples = np.repeat(samples, num_samples, axis=0)
+    else:
+        msg = ("mismatched shape. The samples to append should either be "
+                "a single sample or should match the length of the sample "
+                "set. Empty sample sets cannot be appended to.")
+        raise ValueError(msg)
+
+    # append requires the new variables to be unique
+    variables = sampleset.variables
+    if any(v in variables for v in labels):
+        msg = "Appended samples cannot contain variables in sample set"
+        raise ValueError(msg)
+
+    new_variables = list(variables) + labels
+    new_samples = np.hstack((sampleset.record.sample, samples))
+
+    return type(sampleset).from_samples((new_samples, new_variables),
+                                        sampleset.vartype,
+                                        info=copy.deepcopy(sampleset.info),  # make a copy
+                                        sort_labels=sort_labels,
+                                        **sampleset.data_vectors)
 
 def as_samples(samples_like, dtype=None, copy=False, order='C'):
     """Convert a samples_like object to a NumPy array and list of labels.
@@ -1182,85 +1266,12 @@ class SampleSet(abc.Iterable, abc.Sized):
                           self.vartype)
 
     def append_variables(self, samples_like, sort_labels=True):
-        """Create a new sampleset with the given variables and values.
+        """Deprecated in favor of `dimod.append_variables`."""
+        
+        warn("SampleSet.append_variables is deprecated; please use "
+             "`dimod.append_variables` instead.", DeprecationWarning)
 
-        Not defined for empty sample sets. If `sample_like` is
-        a :obj:`.SampleSet`, its data vectors and info are ignored.
-
-        Args:
-            samples_like:
-                Samples to add to the sample set. Either a single
-                sample or identical in length to the sample set.
-                'samples_like' is an extension of NumPy's array_like_.
-                See :func:`.as_samples`.
-
-            sort_labels (bool, optional, default=True):
-                Return :attr:`.SampleSet.variables` in sorted order. For mixed
-                (unsortable) types, the given order is maintained.
-
-        Returns:
-            :obj:`.SampleSet`: New sample set with the variables/values added.
-
-        Examples:
-
-            >>> sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
-            ...                                           {'a': +1, 'b': +1}],
-            ...                                          dimod.SPIN,
-            ...                                          energy=[-1.0, 1.0])
-            >>> new = sampleset.append_variables({'c': -1})
-            >>> print(new)
-               a  b  c energy num_oc.
-            0 -1 +1 -1   -1.0       1
-            1 +1 +1 -1    1.0       1
-            ['SPIN', 2 rows, 2 samples, 3 variables]
-
-            Add variables from another sample set to the previous example. Note
-            that the energies remain unchanged.
-
-            >>> another = dimod.SampleSet.from_samples([{'c': -1, 'd': +1},
-            ...                                         {'c': +1, 'd': +1}],
-            ...                                        dimod.SPIN,
-            ...                                        energy=[-2.0, 1.0])
-            >>> new = sampleset.append_variables(another)
-            >>> print(new)
-               a  b  c  d energy num_oc.
-            0 -1 +1 -1 +1   -1.0       1
-            1 +1 +1 +1 +1    1.0       1
-            ['SPIN', 2 rows, 2 samples, 4 variables]
-
-        .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
-
-        """
-        samples, labels = as_samples(samples_like)
-
-        num_samples = len(self)
-
-        # we don't handle multiple values
-        if samples.shape[0] == num_samples:
-            # we don't need to do anything, it's already the correct shape
-            pass
-        elif samples.shape[0] == 1 and num_samples:
-            samples = np.repeat(samples, num_samples, axis=0)
-        else:
-            msg = ("mismatched shape. The samples to append should either be "
-                   "a single sample or should match the length of the sample "
-                   "set. Empty sample sets cannot be appended to.")
-            raise ValueError(msg)
-
-        # append requires the new variables to be unique
-        variables = self.variables
-        if any(v in variables for v in labels):
-            msg = "Appended samples cannot contain variables in sample set"
-            raise ValueError(msg)
-
-        new_variables = list(variables) + labels
-        new_samples = np.hstack((self.record.sample, samples))
-
-        return type(self).from_samples((new_samples, new_variables),
-                                       self.vartype,
-                                       info=copy.deepcopy(self.info),  # make a copy
-                                       sort_labels=sort_labels,
-                                       **self.data_vectors)
+        return append_variables(self, samples_like, sort_labels)
 
     def lowest(self, rtol=1.e-5, atol=1.e-8):
         """Return a sample set containing the lowest-energy samples.

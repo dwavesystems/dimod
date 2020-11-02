@@ -21,7 +21,7 @@ quadratic model graph before sending to its child sampler.
 
 from dimod.bqm import as_bqm, AdjDictBQM, AdjMapBQM, AdjVectorBQM
 from dimod.core.composite import ComposedSampler
-from dimod.sampleset import SampleSet
+from dimod.sampleset import SampleSet, append_variables
 from dimod.traversal import connected_components
 
 __all__ = ['ConnectedComponentsComposite']
@@ -113,7 +113,7 @@ class ConnectedComponentsComposite(ComposedSampler):
                 # This way you'd get the same behaviour as the ExactSolver
                 sampleset = child.sample(bqm_copy, **parameters).truncate(1)
             else:
-                sampleset = sampleset.truncate(1).append_variables(child.sample(bqm_copy, **parameters).truncate(1))
+                sampleset = append_variables(sampleset.truncate(1), child.sample(bqm_copy, **parameters).truncate(1))
 
         if sampleset is None:
             return SampleSet.from_samples_bqm({}, bqm)

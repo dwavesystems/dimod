@@ -393,7 +393,7 @@ class TestAggregate(unittest.TestCase):
 class TestAppend(unittest.TestCase):
     def test_sampleset1_append1(self):
         sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=0)
-        new = sampleset.append_variables({'c': -1, 'd': -1})
+        new = dimod.append_variables(sampleset, {'c': -1, 'd': -1})
 
         target = dimod.SampleSet.from_samples({'a': -1, 'b': 1, 'c': -1, 'd': -1}, dimod.SPIN, energy=0)
 
@@ -402,7 +402,7 @@ class TestAppend(unittest.TestCase):
     def test_sampleset2_append1(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
-        new = sampleset.append_variables({'c': -1, 'd': -1})
+        new = dimod.append_variables(sampleset, {'c': -1, 'd': -1})
 
         target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
                                                {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
@@ -413,7 +413,7 @@ class TestAppend(unittest.TestCase):
     def test_sampleset2_append2(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
-        new = sampleset.append_variables([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}])
+        new = dimod.append_variables(sampleset, [{'c': -1, 'd': -1}, {'c': 1, 'd': 1}])
 
         target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
                                                {'a': -1, 'b': -1, 'c': 1, 'd': 1}],
@@ -426,14 +426,14 @@ class TestAppend(unittest.TestCase):
                                                  dimod.SPIN, energy=0)
 
         with self.assertRaises(ValueError):
-            sampleset.append_variables([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}, {'c': -1, 'd': -1}])
+            dimod.append_variables(sampleset, [{'c': -1, 'd': -1}, {'c': 1, 'd': 1}, {'c': -1, 'd': -1}])
 
     def test_overlapping_variables(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
 
         with self.assertRaises(ValueError):
-            sampleset.append_variables([{'c': -1, 'd': -1, 'a': -1}])
+            dimod.append_variables(sampleset, [{'c': -1, 'd': -1, 'a': -1}])
 
     def test_two_samplesets(self):
         sampleset0 = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
@@ -445,7 +445,7 @@ class TestAppend(unittest.TestCase):
                                                {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
                                               dimod.SPIN, energy=[-2, 2])
 
-        self.assertEqual(sampleset0.append_variables(sampleset1), target)
+        self.assertEqual(dimod.append_variables(sampleset0, sampleset1), target)
 
 class TestAppendVectors(unittest.TestCase):
     def test_scalar(self):
