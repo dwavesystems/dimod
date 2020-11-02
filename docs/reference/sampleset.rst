@@ -42,7 +42,6 @@ Methods
    :toctree: generated/
 
    SampleSet.aggregate
-   SampleSet.append_data_vectors
    SampleSet.append_variables
    SampleSet.change_vartype
    SampleSet.copy
@@ -67,4 +66,5 @@ Utility Functions
 .. autosummary::
    :toctree: generated/
 
+   append_data_vectors
    concatenate

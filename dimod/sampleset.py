@@ -39,8 +39,69 @@ from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
 
-__all__ = 'as_samples', 'concatenate', 'SampleSet'
+__all__ = ['append_data_vectors', 'as_samples', 'concatenate', 'SampleSet']
 
+def append_data_vectors(sampleset, **vectors):
+    """Create a new :obj:`.SampleSet` with additional fields in
+    :attr:`SampleSet.record`.
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            :obj:`.SampleSet` to build from.
+
+        **vectors (list):
+            Per-sample data to be appended to :attr:`SampleSet.record`. Each
+            keyword is a new field name and each keyword parameter should be a
+            list of scalar values or numpy arrays (lists and tuples will be
+            converted to numpy arrays).
+
+    Returns:
+        :obj:`.SampleSet`: SampleSet
+
+    Examples:
+        The following example appends a field of lists to :attr:`SampleSet.record`.
+
+        >>> sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[-1.4, -1.4], vartype='SPIN')
+        >>> print(sampleset)
+           0  1 energy num_oc.
+        0 -1 +1   -1.4       1
+        1 -1 +1   -1.4       1
+        ['SPIN', 2 rows, 2 samples, 2 variables]
+
+        >>> sampleset = dimod.append_data_vectors(sampleset, new=[[0, 1], [1, 2]])
+        >>> print(sampleset)
+           0  1 energy num_oc. new
+        0 -1 +1   -1.4       1 [0 1]
+        1 -1 +1   -1.4       1 [1 2]
+        ['SPIN', 2 rows, 2 samples, 2 variables]
+
+        >>> print(sampleset.record.dtype)
+        (numpy.record, [('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8'), ('new', '<i8', (2,))])
+    
+    """
+    record = sampleset.record
+
+    for name, vector in vectors.items():
+        if len(vector) != len(record.energy):
+            raise ValueError("Length of vector {} must be equal to number of samples.".format(name))
+
+        try:
+            vector = np.asarray(vector)
+
+            if vector.ndim == 1:
+                record = recfunctions.append_fields(record, name, vector, usemask=False, asrecarray=True)
+            else:
+                # np's append_fields cannot append a vector with a shape that
+                # doesn't match the base array's, so appending non-scalar data
+                # requires a workaround
+                dtype = np.dtype([(name, vector[0].dtype, vector[0].shape)]) 
+                new_arr = recfunctions.unstructured_to_structured(vector, dtype=dtype)
+                record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)              
+        
+        except (TypeError, AttributeError):
+            raise ValueError("Field value type not supported.")
+
+    return SampleSet(record, sampleset.variables, sampleset.info, sampleset.vartype)
 
 def as_samples(samples_like, dtype=None, copy=False, order='C'):
     """Convert a samples_like object to a NumPy array and list of labels.
@@ -1391,80 +1452,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         return type(self)(record, self.variables, copy.deepcopy(self.info),
                           self.vartype)
 
-    def append_data_vectors(self, vectors, inplace=True):
-        """Return the :class:`SampleSet` with additional fields in
-        :attr:`SampleSet.record`.
-
-        Args:
-            vectors (dict):
-                Each key is a new field name and each value is a list of 
-                per-sample data to be appended to :attr:`SampleSet.record`. 
-                Per-sample data should be scalar or numpy arrays (lists 
-                and tuples will be converted to numpy arrays).
-
-            inplace (bool, optional, default=True):
-                If True, the instantiated :class:`SampleSet` is updated; 
-                otherwise, a new :class:`SampleSet` is returned.
-
-        Returns:
-            :obj:`.SampleSet`: SampleSet. If `inplace` is True, returns itself.
-
-        Examples:
-            The following example appends a field of lists to :attr:`SampleSet.record`.
-
-            >>> import numpy as np
-            ...
-            >>> sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-            ...                             dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), 
-            ...                             ('num_occurrences', '<i8')]), [0, 1], {}, 'SPIN')
-            >>> print(sampleset)
-               0  1 energy num_oc.
-            0 -1 +1   -1.4       1
-            1 -1 +1   -1.4       1
-            ['SPIN', 2 rows, 2 samples, 2 variables]
-
-            >>> vector = {'new_col': [[0, 1], [1, 2]]}
-            >>> sampleset = sampleset.append_data_vectors(vector)
-            >>> print(sampleset)
-               0  1 energy num_oc. new_col
-            0 -1 +1   -1.4       1   [0 1]
-            1 -1 +1   -1.4       1   [1 2]
-            ['SPIN', 2 rows, 2 samples, 2 variables]
-
-            >>> print(sampleset.record.dtype)
-            (numpy.record, [('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8'), ('new_col', '<i8', (2,))])
-        
-        """
-        self.resolve()
-
-        record = self._record
-
-        for name, vector in vectors.items():
-            if len(vector) is not len(record.energy):
-                raise ValueError("Length of vector {} must be equal to number of samples.".format(name))
-
-            try:
-                vector = np.asarray(vector)
-
-                if vector.ndim == 1:
-                    record = recfunctions.append_fields(record, name, vector, usemask=False, asrecarray=True)
-                else:
-                    # np's append_fields cannot append a vector with a shape that
-                    # doesn't match the base array's, so appending non-scalar data
-                    # requires a workaround
-                    dtype = np.dtype([(name, vector[0].dtype, vector[0].shape)]) 
-                    new_arr = recfunctions.unstructured_to_structured(vector, dtype=dtype)
-
-                    record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)              
-            
-            except (TypeError, AttributeError):
-                raise ValueError("Field value type not supported.")
-
-        if inplace:
-            self._record = record
-            return self
-        else:
-            return SampleSet(record, self.variables, self.info, self.vartype)
 
     ###############################################################################################
     # Serialization

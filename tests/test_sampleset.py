@@ -449,74 +449,45 @@ class TestAppend(unittest.TestCase):
 
 class TestAppendVectors(unittest.TestCase):
     def test_scalar(self):
-        sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                                    dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
-                                    [0, 1], {}, 'SPIN')
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
 
-        vectors = {'new_col': [2] * len(sampleset.record.energy)}
-        sampleset.append_data_vectors(vectors)
+        vect = [2] * len(sampleset.record.energy)
+        sampleset = dimod.append_data_vectors(sampleset, new=vect)
 
-        for s in sampleset.data_vectors['new_col']:
+        for s in sampleset.data_vectors['new']:
             self.assertEqual(s, 2)
 
     def test_array(self):
-        sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                                    dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
-                                    [0, 1], {}, 'SPIN')
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
 
-        vectors = {'new_col': [np.array([0, 1, 2]), np.array([1, 2, 3])]}
-        sampleset.append_data_vectors(vectors)
+        vect0 = [np.array([0, 1, 2]), np.array([1, 2, 3])]
+        vect1 = [[0, 1, 2], [1, 2, 3]]
+        vect2 = [(0, 1, 2), (1, 2, 3)]
 
-        new_col = sampleset.data_vectors['new_col']
-
-        np.testing.assert_array_equal(new_col, vectors['new_col'])
-
-    def test_list_tuple(self):
-        sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                            dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
-                            [0, 1], {}, 'SPIN')
-
-        vectors = {'lists': [[0, 1], [1, 2]], 'tuples': [(0, 1), (1, 2)]}
-        sampleset.append_data_vectors(vectors)
-
+        sampleset = dimod.append_data_vectors(sampleset, arrs=vect0, lists=vect1, tups=vect2)
+        
+        a = sampleset.data_vectors['arrs']
         l = sampleset.data_vectors['lists']
-        t = sampleset.data_vectors['tuples']
+        t = sampleset.data_vectors['tups']
 
-        # lists and tuples will be converted to nd arrays
-        arr = np.array([[0,1],[1,2]])
-        np.testing.assert_array_equal(arr, l)
-        np.testing.assert_array_equal(arr, t)
+        np.testing.assert_array_equal(a, vect0)
+        np.testing.assert_array_equal(l, vect0)
+        np.testing.assert_array_equal(t, vect0)
 
     def test_invalid(self):
-        sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                            dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
-                            [0, 1], {}, 'SPIN')
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
 
         # incorrect length
-        vectors = {'new_col': [1, 2, 3]}
         with self.assertRaises(ValueError):
-            sampleset.append_data_vectors(vectors)
+            sampleset = dimod.append_data_vectors(sampleset, new=[1, 2, 3])
 
         # appending vector with field name that already exists
-        vectors = {'energy': [1, 2]}
         with self.assertRaises(ValueError):
-            sampleset.append_data_vectors(vectors)
+            sampleset = dimod.append_data_vectors(sampleset, energy=[1, 2])
 
         # invalid type
-        vectors = {'new_col': [{0}, {1}]}
         with self.assertRaises(ValueError):
-            sampleset.append_data_vectors(vectors)
-
-    def test_not_inplace(self):
-        sampleset = dimod.SampleSet(np.rec.array([([-1,  1], -1.4, 1), ([-1,  1], -1.4, 1)],
-                    dtype=[('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8')]),
-                    [0, 1], {}, 'SPIN')
-
-        vectors = {'new_col': [2] * len(sampleset.record.energy)}
-        new_sampleset = sampleset.append_data_vectors(vectors, inplace=False)
-
-        self.assertNotIn('new_col', sampleset.record.dtype.names)
-        self.assertIn('new_col', new_sampleset.record.dtype.names)
+            sampleset = dimod.append_data_vectors(sampleset, sets=[{0}, {1}])
 
 class TestFromFuture(unittest.TestCase):
     def test_default(self):
