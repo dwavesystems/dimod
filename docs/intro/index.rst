@@ -18,22 +18,23 @@ The following sections give an orientation to dimod with usage examples:
 
   bqm
 
-dimod provides a :term:`binary quadratic model` (BQM) class that encodes
-:term:`Ising` and quadratic unconstrained binary optimization (\ :term:`QUBO`\ )
-models used by samplers such as the D-Wave system.
+..
+      dimod provides a :term:`binary quadratic model` (BQM) class that encodes
+      :term:`Ising` and quadratic unconstrained binary optimization (\ :term:`QUBO`\ )
+      models used by samplers such as the D-Wave system.
 
-It provides useful functionality for working with these models and samplers;
-for example :ref:`generators_dimod` to build BQMs and :ref:`utilities_dimod` for calculating the energy of a
-sample or serializing dimod objects.
+      It provides useful functionality for working with these models and samplers;
+      for example :ref:`generators_dimod` to build BQMs and :ref:`utilities_dimod` for calculating the energy of a
+      sample or serializing dimod objects.
 
-It includes reference :term:`sampler`\ s and :term:`composite`\ s for processing binary quadratic programs
-and refining sampling, and useful for testing your code during development.
+      It includes reference :term:`sampler`\ s and :term:`composite`\ s for processing binary quadratic programs
+      and refining sampling, and useful for testing your code during development.
 
-It also provides an :ref:`api` for constructing new samplers and composed samplers
-tailored for your problem.
+      It also provides an :ref:`api` for constructing new samplers and composed samplers
+      tailored for your problem.
 
-Additionally, it provides some :ref:`higher_order_composites` and functionality
-such as reducing higher-order polynomials to BQMs.
+      Additionally, it provides some :ref:`higher_order_composites` and functionality
+      such as reducing higher-order polynomials to BQMs.
 
 * For an introduction to BQMs, see :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 * For an introduction to samplers and composites, see

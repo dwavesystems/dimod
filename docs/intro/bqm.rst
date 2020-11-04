@@ -17,12 +17,82 @@ and later switch to a higher-performing class with a C++ implementation.
 
 For descriptions of all supported BQM representations, see :ref:`bqm`.
 
-Generating BQMs
-===============
+BQM Generation
+==============
 
-For instance, given
-a BQM,
+The small four-node `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
+problem shown in this figure,
+
+.. figure:: ../_images/four_node_star_graph.png
+    :align: center
+    :scale: 40 %
+    :name: four_node_star_graph
+    :alt: Four-node star graph
+
+    Star graph with four nodes.
+
+Can be represented, as shown in the
+`dwave-examples <https://github.com/dwave-examples/maximum-cut>`_ Maximum Cut
+example, by a QUBO:
 
 .. math::
 
-   E(x) = .5 x_0 - 3 x_1 - x_0 x_1 + x_0 x_2 + 2 x_0 x_3 + x_2 x_3
+   Q = \begin{bmatrix} -3 & 2 & 2 & 2\\
+                        0 & -1 & 0 & 0\\
+                        0 & 0 & -1 & 0\\
+                        0 & 0 & 0 & -1
+       \end{bmatrix}
+
+As mentioned above, for learning and testing with small BQMs, dimod's Python dict
+representation of BQMs is convenient:
+
+>>> qubo = dict({(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
+...              (0, 2): 2, (3, 3): -1, (0, 3): 2})
+>>> dict_bqm = dimod.BQM.from_qubo(qubo)
+
+When working with large, unchanging BQMs, you might use
+dimod's :ref:`AdjArrayBQM <adjarraybqm_dimod>` class for performance.
+
+>>> import numpy as np
+>>> q_array = np.array([[-3.0, 2, 2, 2],
+...                     [0, -1.0, 0.0, 0.0],
+...                     [0, 0, -1.0, 0.0],
+...                     [0, 0, 0, -1.0]])
+>>> array_bqm = dimod.AdjArrayBQM(q_array, 'BINARY')
+
+Especially for very large BQMs, you might read the data from a file using methods,
+such as :meth:`~dimod.bqm.adjarraybqm.AdjArrayBQM.from_file` or others,
+described in the documentation of each class.
+
+Additionally, dimod provides a variety of BQM generators :ref:`BQM generators <bqm>`.
+
+>>> import networkx as nx
+>>> K_7 = nx.complete_graph(7)
+>>> map_bqm = dimod.generators.random.ran_r(1, K_7, cls=dimod.AdjVectorBQM)
+
+BQM Attributes
+==============
+
+dimod's BQM objects provide access to a number of attributes and views. See the
+documentation for a particular type of BQM class under :ref:`bqm`.
+
+>>> dict_bqm.num_interactions
+3
+>>> dict_bqm.spin    # doctest:+ELLIPSIS
+SpinView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}, ... -1.5, 'SPIN')   # Output shortened
+
+>>> map_bqm.variables
+KeysView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0, 6: 0.0})
+
+BQM Methods
+===========
+
+BQMs support a large number of methods, many common, some particular to a class,
+described under the documentation for :ref:`each class <bqm>`, to enable you to
+build and manipulate BQMs.
+
+>>> len(map_bqm.quadratic)
+21
+>>> map_bqm.remove_interaction(5, 6)
+>>> len(map_bqm.quadratic)
+20
