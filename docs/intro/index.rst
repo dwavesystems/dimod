@@ -16,8 +16,9 @@ The following sections give an orientation to dimod with usage examples:
 .. toctree::
   :maxdepth: 1
 
-  bqm
-  samplers
+  intro_bqm
+  intro_samplers
+  intro_samples
 
 ..
       It provides useful functionality for working with these models and samplers;
