@@ -14,8 +14,8 @@ dimod
 Example Usage
 -------------
 
-dimod's :class:`~dimod.reference.samplers.exact_solver.ExactSolver` reference
-sampler, a test brute-force solver for small problems, find all solutions
+dimod's :class:`~dimod.reference.samplers.ExactSolver` reference
+sampler, a test brute-force solver for small problems, finds all solutions
 of a two-variable QUBO.
 
 .. include:: README.rst
@@ -40,7 +40,7 @@ Documentation
 .. toctree::
   :maxdepth: 1
 
-  introduction
+  intro/index
   reference/index
 
 .. sdk-end-marker
