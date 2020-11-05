@@ -22,8 +22,9 @@ samplers. It provides:
   unconstrained binary optimization (QUBO) models used by samplers such as the
   D-Wave system.
 * a discrete quadratic model (DQM) class and higher-order (non-quadratic) models.
-* abstract base classes for constructing new samplers and composed samplers.
 * reference examples of samplers and composed samplers.
+* abstract base classes for constructing new samplers and composed samplers.
+
 
 .. index-end-marker1
 

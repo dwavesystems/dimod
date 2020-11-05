@@ -10,7 +10,7 @@ models used by samplers such as the D-Wave system.
 
 For an introduction to BQMs, see :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
-dimod can represent BQMs with a few classes suited to different needs for
+dimod can represent BQMs with classes suited to different needs for
 performance and ease of use. Beginners might start with the simple Python
 :ref:`AdjDictBQM <adjdictbqm_dimod>` class (:class:`dimod.BinaryQuadraticModel`),
 and later switch to a higher-performing class with a C++ implementation.
@@ -64,11 +64,9 @@ Especially for very large BQMs, you might read the data from a file using method
 such as :meth:`~dimod.bqm.adjarraybqm.AdjArrayBQM.from_file` or others,
 described in the documentation of each class.
 
-Additionally, dimod provides a variety of BQM generators :ref:`BQM generators <bqm>`.
+Additionally, dimod provides a variety of :ref:`BQM generators <bqm>`.
 
->>> import networkx as nx
->>> K_7 = nx.complete_graph(7)
->>> map_bqm = dimod.generators.random.ran_r(1, K_7, cls=dimod.AdjVectorBQM)
+>>> map_bqm = dimod.generators.random.ran_r(1, 7, cls=dimod.AdjVectorBQM)
 
 BQM Attributes
 ==============
@@ -78,7 +76,7 @@ documentation for a particular type of BQM class under :ref:`bqm`.
 
 >>> dict_bqm.num_interactions
 3
->>> dict_bqm.spin    # doctest:+ELLIPSIS   
+>>> dict_bqm.spin    # doctest:+ELLIPSIS
 SpinView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}, ... -1.5, 'SPIN')
 
 >>> map_bqm.variables

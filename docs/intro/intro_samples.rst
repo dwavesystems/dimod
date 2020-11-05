@@ -8,19 +8,14 @@ dimod provides a :class:`~dimod.SampleSet` class that contains, and enables you 
 manipulate, samples.
 
 For an introduction to returned solutions and samples, see
-:std:doc:`Binary Quadratic Models <oceandocs:concepts/solutions>`.
+:std:doc:`Solutions <oceandocs:concepts/solutions>`.
 
 For all supported sampleset methods, see :ref:`sampleset`.
 
 This example creates a sampleset then demonstrates some :class:`~dimod.SampleSet`
 properties and methods.
 
->>> import networkx as nx
->>> from dimod import ExactSolver
-... # Build a BQM
->>> K_7 = nx.complete_graph(7)
->>> bqm = dimod.generators.random.ran_r(1, K_7)
-... # Solve the BQM
+>>> bqm = dimod.generators.random.ran_r(1, 7)
 >>> sampler = dimod.ExactSolver()
 >>> sampleset = sampler.sample(bqm)
 
@@ -42,7 +37,7 @@ Print the best solutions.
 Convert to a third-party format
 (`pandas <https://pandas.pydata.org/pandas-docs/stable/index.html>`_).
 
->>> sampleset.to_pandas_dataframe()       # doctest:+SKIP   
+>>> sampleset.to_pandas_dataframe()       # doctest:+SKIP
      0  1  2  3  4  5  6  energy  num_occurrences
 0   -1 -1 -1 -1 -1 -1 -1     3.0                1
 1    1 -1 -1 -1 -1 -1 -1     7.0                1

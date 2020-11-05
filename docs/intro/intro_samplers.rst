@@ -5,23 +5,22 @@ Samplers and Composites
 =======================
 
 dimod includes reference :term:`sampler`\ s and :term:`composite`\ s for processing
-binary quadratic models (and higher order modeals) and refining sampling, and for
+binary quadratic models (and higher order models) and refining sampling, and for
 testing your code during development.
 
 For an introduction to samplers and composites, see
 :std:doc:`Samplers and Composites <oceandocs:concepts/samplers>`.
 
-For descriptions of all supported samplers, see :ref:`bqm`.
+For descriptions of all supported samplers, see :ref:`samplers_index`.
 
 Using Samplers
 ==============
 
 To find solutions to the small four-node
 `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
-BQM, shown in the figure below, generated in :ref:`intro_bqm`,
-you can use one of dimod's reference samplers: its
-:class:`~dimod.reference.samplers.ExactSolver` test sampler
-calculates the energy of all possible samples.
+BQM generated in :ref:`intro_bqm`, shown again in the figure below, you can use
+one of dimod's reference samplers: its :class:`~dimod.reference.samplers.ExactSolver`
+test sampler, for example, calculates the energy of all possible samples.
 
 .. figure:: ../_images/four_node_star_graph.png
     :align: center
@@ -55,9 +54,7 @@ documentation.
 
 The :class:`~dimod.reference.composites.fixedvariable.FixedVariableComposite`
 composite sets the value and removes specified variables from the BQM before
-sending it to the sampler. Fixing variable `x`, the input to the NOT gate, to 1
-results in valid solution :math:`z=0` having lower energy (-1) than solution
-:math:`x=z=1`, which is an invalid state for a NOT gate.
+sending it to the sampler. 
 
 >>> from dimod import FixedVariableComposite, ExactSolver
 >>> Q = {('x', 'x'): -1, ('x', 'z'): 2, ('z', 'x'): 0, ('z', 'z'): -1}
