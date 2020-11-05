@@ -78,7 +78,7 @@ documentation for a particular type of BQM class under :ref:`bqm`.
 
 >>> dict_bqm.num_interactions
 3
->>> dict_bqm.spin    # doctest:+ELLIPSIS   # Output shortened
+>>> dict_bqm.spin    # doctest:+ELLIPSIS   
 SpinView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}, ... -1.5, 'SPIN')
 
 >>> map_bqm.variables

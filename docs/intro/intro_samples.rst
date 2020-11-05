@@ -31,7 +31,7 @@ Print the best solution's energy.
 
 Print the best solutions.
 
->>> print(sampleset.lowest())           # doctest:+SKIP   # Output shortened
+>>> print(sampleset.lowest())           # doctest:+SKIP
    0  1  2  3  4  5  6 energy num_oc.
 0 +1 -1 +1 -1 +1 -1 -1   -9.0       1
 1 +1 +1 +1 -1 +1 -1 -1   -9.0       1
@@ -42,7 +42,7 @@ Print the best solutions.
 Convert to a third-party format
 (`pandas <https://pandas.pydata.org/pandas-docs/stable/index.html>`_).
 
->>> sampleset.to_pandas_dataframe()       # doctest:+SKIP   # Output shortened
+>>> sampleset.to_pandas_dataframe()       # doctest:+SKIP   
      0  1  2  3  4  5  6  energy  num_occurrences
 0   -1 -1 -1 -1 -1 -1 -1     3.0                1
 1    1 -1 -1 -1 -1 -1 -1     7.0                1
