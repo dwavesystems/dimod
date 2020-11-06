@@ -46,11 +46,11 @@ example, by a QUBO:
 As mentioned above, for learning and testing with small BQMs, dimod's Python dict
 representation of BQMs is convenient:
 
->>> qubo = dict({(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
-...              (0, 2): 2, (3, 3): -1, (0, 3): 2})
+>>> qubo = {(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
+...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> dict_bqm = dimod.BQM.from_qubo(qubo)
 
-When working with large, unchanging BQMs, you might use
+When working with large, fixed-structured BQMs, you might use
 dimod's :ref:`AdjArrayBQM <adjarraybqm_dimod>` class for performance.
 
 >>> import numpy as np
@@ -74,13 +74,11 @@ BQM Attributes
 dimod's BQM objects provide access to a number of attributes and views. See the
 documentation for a particular type of BQM class under :ref:`bqm`.
 
->>> dict_bqm.num_interactions
-3
->>> dict_bqm.spin    # doctest:+ELLIPSIS
-SpinView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0}, ... -1.5, 'SPIN')
+>>> dict_bqm.shape
+(4, 3)
 
->>> map_bqm.variables
-KeysView({0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0, 6: 0.0})
+>>> list(map_bqm.variables)
+[0, 1, 2, 3, 4, 5, 6]
 
 BQM Methods
 ===========
@@ -89,8 +87,8 @@ BQMs support a large number of methods, many common, some particular to a class,
 described under the documentation for :ref:`each class <bqm>`, to enable you to
 build and manipulate BQMs.
 
->>> len(map_bqm.quadratic)
+>>> map_bqm.num_interactions
 21
 >>> map_bqm.remove_interaction(5, 6)
->>> len(map_bqm.quadratic)
+>>> map_bqm.num_interactions
 20

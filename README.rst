@@ -15,21 +15,21 @@ dimod
 
 .. index-start-marker1
 
-`dimod` is a shared API for classical, quantum, and hybrid classical-quantum
-samplers. It provides:
+`dimod` is a shared API for samplers. It provides:
 
 * a binary quadratic model (BQM) class that contains Ising and quadratic
   unconstrained binary optimization (QUBO) models used by samplers such as the
   D-Wave system.
 * a discrete quadratic model (DQM) class and higher-order (non-quadratic) models.
 * reference examples of samplers and composed samplers.
-* abstract base classes for constructing new samplers and composed samplers.
+* `abstract base classes <https://docs.python.org/3/library/abc.html>`_ for
+  constructing new samplers and composed samplers.
 
 
 .. index-end-marker1
 
 (For explanations of the terminology, see the
-[Ocean glossary](#https://docs.ocean.dwavesys.com/en/stable/concepts/index.html).)
+`Ocean glossary <https://docs.ocean.dwavesys.com/en/stable/concepts/index.html>`_.)
 
 Example Usage
 -------------

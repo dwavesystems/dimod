@@ -12,7 +12,7 @@ For an introduction to returned solutions and samples, see
 
 For all supported sampleset methods, see :ref:`sampleset`.
 
-This example creates a sampleset then demonstrates some :class:`~dimod.SampleSet`
+This example creates a sample set and then demonstrates some :class:`~dimod.SampleSet`
 properties and methods.
 
 >>> bqm = dimod.generators.random.ran_r(1, 7)

@@ -30,8 +30,8 @@ test sampler, for example, calculates the energy of all possible samples.
 
     Star graph with four nodes.
 
->>> qubo = dict({(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
-...              (0, 2): 2, (3, 3): -1, (0, 3): 2})
+>>> qubo = {(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
+...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> dict_bqm = dimod.BQM.from_qubo(qubo)
 >>> sampler_exact = dimod.ExactSolver()
 >>> sampleset = sampler_exact.sample(dict_bqm)
@@ -54,7 +54,7 @@ documentation.
 
 The :class:`~dimod.reference.composites.fixedvariable.FixedVariableComposite`
 composite sets the value and removes specified variables from the BQM before
-sending it to the sampler. 
+sending it to the sampler.
 
 >>> from dimod import FixedVariableComposite, ExactSolver
 >>> Q = {('x', 'x'): -1, ('x', 'z'): 2, ('z', 'x'): 0, ('z', 'z'): -1}
@@ -82,7 +82,7 @@ example the :meth:`sample_ising` method).
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)  # Defined elsewhere
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.Response.from_samples([sample], {'energy': [energy]})
+            return dimod.SampleSet.from_samples([sample], "SPIN", {'energy': [energy]})
 
         @property
         def properties(self):
