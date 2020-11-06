@@ -82,7 +82,7 @@ example the :meth:`sample_ising` method).
         def sample_ising(self, h, J):
             sample = linear_ising(h, J)  # Defined elsewhere
             energy = dimod.ising_energy(sample, h, J)
-            return dimod.SampleSet.from_samples([sample], "SPIN", {'energy': [energy]})
+            return dimod.SampleSet.from_samples(sample, vartype=dimod.SPIN, energy=energy)
 
         @property
         def properties(self):
