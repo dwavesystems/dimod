@@ -215,12 +215,12 @@ cdef class cyAdjArrayBQM:
 
     @property
     def num_variables(self):
-        """int: The number of variables in the model."""
+        """int: Number of variables in the model."""
         return self.bqm_.num_variables()
 
     @property
     def num_interactions(self):
-        """int: The number of interactions in the model."""
+        """int: Number of interactions in the model."""
         return self.bqm_.num_interactions()
 
     @property
@@ -316,12 +316,33 @@ cdef class cyAdjArrayBQM:
         return self
 
     def degree(self, object v):
+        """Return degree of the specified variable.
+
+        Args:
+            v (hashable):
+                Variable in the binary quadratic model.
+
+        Returns:
+            Degree of `v`.
+
+        Raises:
+            ValueError: If `v` is not a variable in the binary
+            quadratic model.
+
+        """
+
         cdef VarIndex vi = self.label_to_idx(v)
         return self.bqm_.degree(vi)
 
     # todo: overwrite degrees
 
     def iter_linear(self):
+        """Iterate over the linear biases of the binary quadratic model.
+
+        Yields:
+            tuple: A variable in the binary quadratic model and its linear bias.
+        """
+
         cdef VarIndex vi
         cdef object v
         cdef Bias b
@@ -333,6 +354,12 @@ cdef class cyAdjArrayBQM:
             yield v, as_numpy_scalar(b, self.dtype)
 
     def iter_quadratic(self, object variables=None):
+        """Iterate over the quadratic biases of the binary quadratic model.
+
+        Yields:
+            3-tuple: Interaction variables in the binary quadratic model and their
+            bias.
+        """
 
         cdef VarIndex ui, vi  # c indices
         cdef object u, v  # python labels
@@ -374,28 +401,43 @@ cdef class cyAdjArrayBQM:
                     inc(span.first)
 
     def get_linear(self, object v):
+        """Get the linear bias of the specified variable.
+
+        Args:
+            v (hashable):
+                Variable in the binary quadratic model.
+
+        Returns:
+            Linear bias of `v`.
+
+        Raises:
+            ValueError: If `v` is not a variable in the binary
+            quadratic model.
+
+        """
+
         return as_numpy_scalar(self.bqm_.get_linear(self.label_to_idx(v)),
                                self.dtype)
 
     def get_quadratic(self, u, v, default=None):
-        """Get the quadratic bias of (u, v).
+        """Get the quadratic bias of the specified interaction.
 
         Args:
             u (hashable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
 
             v (hashable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
 
             default (number, optional):
                 Value to return if there is no interactions between `u` and `v`.
 
         Returns:
-            The quadratic bias of (u, v).
+            Quadratic bias of `(u, v)``.
 
         Raises:
             ValueError: If either `u` or `v` is not a variable in the binary
-            quadratic model or if `u == v`
+            quadratic model or if `u == v`.
 
             ValueError: If `(u, v)` is not an interaction and `default` is
             `None`.
@@ -424,11 +466,11 @@ cdef class cyAdjArrayBQM:
 
         Args:
             samples_like (samples_like):
-                A collection of raw samples. `samples_like` is an extension of
+                Collection of raw samples. `samples_like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (data-type, optional, default=None):
-                The desired NumPy data type for the energies. Matches
+                Desired NumPy data type for the energies. Matches
                 :attr:`.dtype` by default.
 
         Returns:
@@ -439,7 +481,7 @@ cdef class cyAdjArrayBQM:
 
     @classmethod
     def from_file(cls, file_like):
-        """Construct a BQM from a file-like object.
+        """Construct a binary quadratic model from a file-like object.
 
         See also:
             :meth:`AdjArrayBQM.to_file`: To construct a file-like object.
@@ -547,7 +589,7 @@ cdef class cyAdjArrayBQM:
     relabel_variables_as_integers = cyrelabel_variables_as_integers
     """Relabel the variables of the BQM to integers.
 
-    Note that this method uses the natural labelling of the underlying c++
+    Note that this method uses the natural labelling of the underlying C++
     objects.
 
     Args:
@@ -561,7 +603,7 @@ cdef class cyAdjArrayBQM:
             A binary quadratic model with the variables relabeled. If
             `inplace` is set to True, returns itself.
 
-            dict: The mapping that will restore the original labels.
+            dict: Mapping that will restore the original labels.
 
     """
 

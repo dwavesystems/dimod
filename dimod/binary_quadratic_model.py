@@ -138,8 +138,8 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
             The model's type. One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
 
         variables (keysview):
-            The variables in the binary quadratic model as a dictionary keys
-            view object.
+            The variables in the binary quadratic model as a dictionary KeysView
+            object.
 
         adj (dict):
             The model's interactions as nested dicts.

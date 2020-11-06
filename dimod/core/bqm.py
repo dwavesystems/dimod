@@ -465,6 +465,20 @@ class BQM(metaclass=abc.ABCMeta):
         return copy.deepcopy(self) if deep else copy.copy(self)
 
     def degrees(self, array=False, dtype=np.int):
+        """Return the degrees of a binary quadratic model's variables.
+
+        Args:
+            array (Boolean):
+                If True, returns a :obj:`numpy.ndarray`; otherwise returns a dict.
+
+            dtype (:class:`numpy.dtype`, optional):
+                The data type of the returned degrees. Applies only if
+                `array==True`.
+
+        Returns:
+            :obj:`numpy.ndarray` or dict: Degrees of all variables.
+
+        """
         if array:
             return np.fromiter((self.degree(v) for v in self.iter_variables()),
                                count=len(self), dtype=dtype)
@@ -499,6 +513,22 @@ class BQM(metaclass=abc.ABCMeta):
         return np.asarray(energies, dtype=dtype)  # handle any type promotions
 
     def energy(self, sample, dtype=None):
+        """Determine the energy of the given sample.
+
+        Args:
+            samples_like (samples_like):
+                Raw sample. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the energy. Matches
+                :attr:`.dtype` by default.
+
+        Returns:
+            :obj:`numpy.dtype`: The energy.
+
+        """
+
         energy, = self.energies(sample, dtype=dtype)
         return energy
 
