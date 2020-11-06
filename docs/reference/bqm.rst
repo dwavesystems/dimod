@@ -4,7 +4,7 @@
 Binary Quadratic Models
 =======================
 
-:term:`Binary quadratic model`\ s (BQMs) are described under
+For an introduction to BQMs, see
 :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
 BQM Classes
@@ -93,40 +93,37 @@ See also: :ref:`serialization functions<serialization_dimod>`
 Usage
 =====
 
-In Ocean, there are four objects that represent BQMs, differentiated by the
-data structure used to encode their structure and biases.
+Ocean represents BQMs with four objects that differ in the
+data structures used to encode the BQM.
 
-* :ref:`AdjArrayBQM <adjarraybqm_dimod>`: Uses c++ vectors as arrays
-* :ref:`AdjDictBQM <adjdictbqm_dimod>`: Uses python dictionaries
-* :ref:`AdjMapBQM <adjmapbqm_dimod>`: Uses c++ maps
-* :ref:`AdjVectorBQM <adjvectorbqm_dimod>`: Uses c++ vectors
+* :ref:`AdjArrayBQM <adjarraybqm_dimod>`: Uses C++ vectors as arrays
+* :ref:`AdjDictBQM <adjdictbqm_dimod>`: Uses Python dictionaries
+* :ref:`AdjMapBQM <adjmapbqm_dimod>`: Uses C++ maps
+* :ref:`AdjVectorBQM <adjvectorbqm_dimod>`: Uses C++ vectors
 
 The documentation for each class outlines some of the advantages and
-disadvantages of the different representations.
+disadvantages of the different implementations.
 
 .. todo: we'll probably want a comparative adj/disadv table here but for now
 .. I am not sure how to best represent it succinctly
 
-All of the BQM types use an adjacency structure, in which each variable
-tracks its own linear bias and its neighborhood. For instance, given
-a BQM,
+All these BQM implementations use an adjacency structure in which each variable
+tracks its own linear bias and its neighborhood. The figure below
+shows the graph and adjacency representations for an example BQM,
 
 .. math::
 
    E(x) = .5 x_0 - 3 x_1 - x_0 x_1 + x_0 x_2 + 2 x_0 x_3 + x_2 x_3
-
-its graph and adjacency representations are
 
 .. figure:: ../_images/adj-reference.png
     :align: center
     :name: Adjacency Structure
     :alt: Adjacency Structure
 
-    The adjacency structure of a 4-variable binary quadratic model.
+    Adjacency structure of a 4-variable binary quadratic model.
 
-The performance of various operations will depend on which binary quadratic
-model implementation you are using. Let `v` be the number of variables in the
-BQM
+The performance of various operations depends on your selected BQM implementation;
+the following table compares the complexity for a BQM of `v` variables.
 
 .. csv-table:: Complexity of various operations
    :header: , AdjArrayBQM, AdjDictBQM, AdjMapBQM, AdjVectorBQM
@@ -149,4 +146,4 @@ complexity, in practice it is much slower for large BQMs.
 
 .. todo: maybe we should put some time-comparisons, fixing system etc?
 
-.. todo: some examples showing how to construct them and maybe some comparisons
+.. todo: link to https://github.com/dwavesystems/dimod/pull/746 intro_bqm

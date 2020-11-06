@@ -77,12 +77,13 @@ class BinaryQuadraticModel(AdjDictBQM, Sized, Iterable, Container):
             with the pair of variables (the interaction).
             A variable can be any python object that is valid as a dictionary key.
             Biases are generally numbers but this is not explicitly checked.
-            Interactions that are not unique are added.
+            Interactions that are not unique are added; for example, specifiying
+            ``(0, 1): 2`` and ``(1, 0): 3`` results in ``(0, 1): 5``.
 
         offset (number):
             Constant energy offset associated with the binary quadratic model.
             Any input type is allowed, but many applications assume that offset is a number.
-            See :meth:`.BinaryQuadraticModel.energy`.
+            See :meth:`~dimod.AdjDictBQM.energy`.
 
         vartype (:class:`.Vartype`/str/set):
             Variable type for the binary quadratic model. Accepted input values:
