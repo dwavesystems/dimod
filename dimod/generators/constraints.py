@@ -89,7 +89,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
 
     # (\sum_i x_i - k)^2
     #     = \sum_i x_i \sum_j x_j - 2k\sum_i x_i + k^2
-    #     = \sum_i,j x_ix_j + (1 - 2k)\sim_i x_i + k^2
+    #     = \sum_{i,j} x_ix_j + (1 - 2k)\sum_i x_i + k^2
     lbias = float(strength*(1 - 2*k))
     qbias = float(2*strength)
 
