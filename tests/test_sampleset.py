@@ -393,7 +393,7 @@ class TestAggregate(unittest.TestCase):
 class TestAppend(unittest.TestCase):
     def test_sampleset1_append1(self):
         sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=0)
-        new = sampleset.append_variables({'c': -1, 'd': -1})
+        new = dimod.append_variables(sampleset, {'c': -1, 'd': -1})
 
         target = dimod.SampleSet.from_samples({'a': -1, 'b': 1, 'c': -1, 'd': -1}, dimod.SPIN, energy=0)
 
@@ -402,7 +402,7 @@ class TestAppend(unittest.TestCase):
     def test_sampleset2_append1(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
-        new = sampleset.append_variables({'c': -1, 'd': -1})
+        new = dimod.append_variables(sampleset, {'c': -1, 'd': -1})
 
         target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
                                                {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
@@ -413,7 +413,7 @@ class TestAppend(unittest.TestCase):
     def test_sampleset2_append2(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
-        new = sampleset.append_variables([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}])
+        new = dimod.append_variables(sampleset, [{'c': -1, 'd': -1}, {'c': 1, 'd': 1}])
 
         target = dimod.SampleSet.from_samples([{'a': -1, 'b': 1, 'c': -1, 'd': -1},
                                                {'a': -1, 'b': -1, 'c': 1, 'd': 1}],
@@ -426,14 +426,14 @@ class TestAppend(unittest.TestCase):
                                                  dimod.SPIN, energy=0)
 
         with self.assertRaises(ValueError):
-            sampleset.append_variables([{'c': -1, 'd': -1}, {'c': 1, 'd': 1}, {'c': -1, 'd': -1}])
+            dimod.append_variables(sampleset, [{'c': -1, 'd': -1}, {'c': 1, 'd': 1}, {'c': -1, 'd': -1}])
 
     def test_overlapping_variables(self):
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
                                                  dimod.SPIN, energy=0)
 
         with self.assertRaises(ValueError):
-            sampleset.append_variables([{'c': -1, 'd': -1, 'a': -1}])
+            dimod.append_variables(sampleset, [{'c': -1, 'd': -1, 'a': -1}])
 
     def test_two_samplesets(self):
         sampleset0 = dimod.SampleSet.from_samples([{'a': -1, 'b': 1}, {'a': -1, 'b': -1}],
@@ -445,8 +445,49 @@ class TestAppend(unittest.TestCase):
                                                {'a': -1, 'b': -1, 'c': -1, 'd': -1}],
                                               dimod.SPIN, energy=[-2, 2])
 
-        self.assertEqual(sampleset0.append_variables(sampleset1), target)
+        self.assertEqual(dimod.append_variables(sampleset0, sampleset1), target)
 
+class TestAppendVectors(unittest.TestCase):
+    def test_scalar(self):
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
+
+        vect = [2] * len(sampleset.record.energy)
+        sampleset = dimod.append_data_vectors(sampleset, new=vect)
+
+        for s in sampleset.data_vectors['new']:
+            self.assertEqual(s, 2)
+
+    def test_array(self):
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
+
+        vect0 = [np.array([0, 1, 2]), np.array([1, 2, 3])]
+        vect1 = [[0, 1, 2], [1, 2, 3]]
+        vect2 = [(0, 1, 2), (1, 2, 3)]
+
+        sampleset = dimod.append_data_vectors(sampleset, arrs=vect0, lists=vect1, tups=vect2)
+        
+        a = sampleset.data_vectors['arrs']
+        l = sampleset.data_vectors['lists']
+        t = sampleset.data_vectors['tups']
+
+        np.testing.assert_array_equal(a, vect0)
+        np.testing.assert_array_equal(l, vect0)
+        np.testing.assert_array_equal(t, vect0)
+
+    def test_invalid(self):
+        sampleset = dimod.SampleSet.from_samples([[-1,  1], [-1,  1]], energy=[1, 1], vartype='SPIN') 
+
+        # incorrect length
+        with self.assertRaises(ValueError):
+            sampleset = dimod.append_data_vectors(sampleset, new=[1, 2, 3])
+
+        # appending vector with field name that already exists
+        with self.assertRaises(ValueError):
+            sampleset = dimod.append_data_vectors(sampleset, energy=[1, 2])
+
+        # invalid type
+        with self.assertRaises(ValueError):
+            sampleset = dimod.append_data_vectors(sampleset, sets=[{0}, {1}])
 
 class TestFromFuture(unittest.TestCase):
     def test_default(self):

@@ -66,4 +66,6 @@ Utility Functions
 .. autosummary::
    :toctree: generated/
 
+   append_data_vectors
+   append_variables
    concatenate

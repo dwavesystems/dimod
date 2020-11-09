@@ -32,7 +32,7 @@ import numpy as np
 from dimod.core.polysampler import ComposedPolySampler, PolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
-from dimod.sampleset import SampleSet
+from dimod.sampleset import SampleSet, append_variables
 from collections import defaultdict
 
 
@@ -547,7 +547,7 @@ class PolyFixedVariableComposite(ComposedPolySampler):
             poly_copy = fix_variables(poly, fixed_variables)
             sampleset = child.sample_poly(poly_copy, **parameters)
             if len(sampleset):
-                return sampleset.append_variables(fixed_variables)
+                return append_variables(sampleset, fixed_variables)
             elif fixed_variables:
                 return type(sampleset).from_samples_bqm(fixed_variables, bqm=poly)
             else:

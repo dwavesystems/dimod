@@ -21,7 +21,7 @@ import numpy as np
 
 from dimod.bqm import as_bqm, AdjVectorBQM, AdjDictBQM, AdjMapBQM
 from dimod.core.composite import ComposedSampler
-from dimod.sampleset import SampleSet
+from dimod.sampleset import SampleSet, append_variables
 
 
 __all__ = ['FixedVariableComposite']
@@ -101,7 +101,7 @@ class FixedVariableComposite(ComposedSampler):
 
             if sampleset.variables:
                 if len(sampleset):
-                    return sampleset.append_variables(fixed_variables)
+                    return append_variables(sampleset, fixed_variables)
                 else:
                     return sampleset.from_samples_bqm((np.empty((0, len(bqm))),
                                                        bqm.variables), bqm=bqm)

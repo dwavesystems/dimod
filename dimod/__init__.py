@@ -56,7 +56,7 @@ from dimod.package_info import __version__, __author__, __authoremail__, __descr
 
 from dimod.traversal import *
 
-from dimod.sampleset import as_samples, concatenate, SampleSet
+from dimod.sampleset import *
 
 from dimod.serialization.format import set_printoptions
 
