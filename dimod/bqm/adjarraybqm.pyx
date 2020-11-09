@@ -566,46 +566,46 @@ cdef class cyAdjArrayBQM:
 
         return bqm
 
+    def relabel_variables(self, mapping, inplace=True):
+        """Relabel variables of a binary quadratic model as specified by mapping.
 
-    relabel_variables = cyrelabel
-    """Relabel variables of a binary quadratic model as specified by mapping.
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
 
-    Args:
-        mapping (dict):
-            Dict mapping current variable labels to new ones. If an
-            incomplete mapping is provided, unmapped variables retain their
-            current labels.
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
-        inplace (bool, optional, default=True):
-            If True, the binary quadratic model is updated in-place;
-            otherwise, a new binary quadratic model is returned.
+        Returns:
+            Binary quadratic model with relabeled variables. If `inplace`
+            is set to True, returns itself.
 
-    Returns:
-        A binary quadratic model with the variables relabeled. If `inplace`
-        is set to True, returns itself.
+        """
+        return cyrelabel(self, mapping, inplace)
 
-    """
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel as integers the variables of a binary quadratic model.
 
-    relabel_variables_as_integers = cyrelabel_variables_as_integers
-    """Relabel the variables of the BQM to integers.
+        Uses the natural labelling of the underlying C++ objects.
 
-    Note that this method uses the natural labelling of the underlying C++
-    objects.
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
-    Args:
-        inplace (bool, optional, default=True):
-            If True, the binary quadratic model is updated in-place;
-            otherwise, a new binary quadratic model is returned.
+        Returns:
+            tuple: A 2-tuple containing:
 
-    Returns:
-        tuple: A 2-tuple containing:
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
 
-            A binary quadratic model with the variables relabeled. If
-            `inplace` is set to True, returns itself.
+                dict: Mapping that restores the original labels.
 
-            dict: Mapping that will restore the original labels.
-
-    """
+        """
+        return cyrelabel_variables_as_integers(self, inplace)
 
     def set_linear(self, object v, Bias b):
         self.bqm_.set_linear(self.label_to_idx(v), b)
