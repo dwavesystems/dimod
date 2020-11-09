@@ -539,6 +539,12 @@ class BQM(metaclass=abc.ABCMeta):
             v (variable):
                 Variable in the binary quadratic model.
 
+        Examples:
+            >>> bqm = dimod.BQM.from_ising({'a': 1, 'b': -1}, {('ab'): 0.5})
+            >>> bqm.flip_variable('a')
+            >>> print(bqm)
+            BinaryQuadraticModel({a: -1.0, b: -1.0}, {('a', 'b'): -0.5}, 0, 'SPIN')
+
         """
         for u in self.adj[v]:
             self.spin.adj[v][u] *= -1
@@ -570,7 +576,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
-        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+        .. note:: Variables must use index labels (numeric lables). Binary quadratic
             models created from COOrdinate format encoding have offsets set to
             zero.
 
@@ -787,7 +793,7 @@ class BQM(metaclass=abc.ABCMeta):
         """Iterate over neighbors of a variable in the binary quadratic model.
 
         Yields:
-            variable: The neighbors of `v`.
+            variable: The neighbors of `u`.
 
         """
         for _, v, _ in self.iter_quadratic(u):
@@ -805,20 +811,19 @@ class BQM(metaclass=abc.ABCMeta):
 
         Args:
             bias_range (number/pair):
-                Value/range that the biases of the BQM will be scaled to fit
+                Value/range that the biases of the BQM is scaled to fit
                 within. If `quadratic_range` is provided, this range is
                 used to fit the linear biases.
 
             quadratic_range (number/pair):
-                The BQM will be scaled so that the quadratic biases fit within
+                The BQM is scaled so that the quadratic biases fit within
                 this range.
 
             ignored_variables (iterable, optional):
                 Biases associated with these variables are not scaled.
 
             ignored_interactions (iterable[tuple], optional):
-                As an iterable of 2-tuples. Biases associated with these
-                interactions are not scaled.
+                Biases associated with these interactions, formatted as an iterable of 2-tuples, are not scaled.
 
             ignore_offset (bool, default=False):
                 If True, the offset is not scaled.
@@ -909,8 +914,8 @@ class BQM(metaclass=abc.ABCMeta):
                 Biases associated with these variables are not scaled.
 
             ignored_interactions (iterable[tuple], optional):
-                As an iterable of 2-tuples. Biases associated with these
-                interactions are not scaled.
+                Biases associated with these interactions, formatted as an
+                iterable of 2-tuples, are not scaled.
 
             ignore_offset (bool, default=False):
                 If True, the offset is not scaled.
@@ -967,7 +972,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
-        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+        .. note:: Variables must use index labels (numeric lables). Binary quadratic
             models saved to COOrdinate format encoding do not preserve offsets.
 
         .. note:: This method will be deprecated in the future. The preferred

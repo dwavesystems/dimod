@@ -326,8 +326,7 @@ cdef class cyAdjArrayBQM:
             Degree of `v`.
 
         Raises:
-            ValueError: If `v` is not a variable in the binary
-            quadratic model.
+            ValueError: If `v` is not a variable in the binary quadratic model.
 
         """
 
@@ -355,6 +354,11 @@ cdef class cyAdjArrayBQM:
 
     def iter_quadratic(self, object variables=None):
         """Iterate over the quadratic biases of the binary quadratic model.
+
+        Args:
+            variables (iterable):
+                Variables in the binary quadratic model. Iterates only over
+                interactions of these variables.
 
         Yields:
             3-tuple: Interaction variables in the binary quadratic model and their
@@ -408,11 +412,10 @@ cdef class cyAdjArrayBQM:
                 Variable in the binary quadratic model.
 
         Returns:
-            Linear bias of `v`.
+            Linear bias of ``v``.
 
         Raises:
-            ValueError: If `v` is not a variable in the binary
-            quadratic model.
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
 
         """
 
@@ -430,17 +433,16 @@ cdef class cyAdjArrayBQM:
                 Variable in the binary quadratic model.
 
             default (number, optional):
-                Value to return if there is no interactions between `u` and `v`.
+                Value to return if there is no interactions between ``u`` and ``v``.
 
         Returns:
-            Quadratic bias of `(u, v)``.
+            Quadratic bias of ``(u, v)``.
 
         Raises:
-            ValueError: If either `u` or `v` is not a variable in the binary
-            quadratic model or if `u == v`.
+            ValueError: If either ``u`` or ``v`` is not a variable in the binary
+				quadratic model or if ``u == v``.
 
-            ValueError: If `(u, v)` is not an interaction and `default` is
-            `None`.
+            ValueError: If ``(u, v)`` is not an interaction and `default` is `None`.
 
         """
 
@@ -637,8 +639,8 @@ cdef class cyAdjArrayBQM:
                 The quadratic bias to set for interaction ``(u, v)``.
 
         Raises:
-            ValueError: If no interaction ``(u, v)`` exists in the binary quadratic
-            model.
+            ValueError: If no interaction ``(u, v)`` exists in the binary
+                quadratic model.
 
         """
 
