@@ -8,18 +8,19 @@ dimod
   :start-after: index-start-marker1
   :end-before: index-end-marker1
 
+(For explanations of the terminology, see the
+:std:doc:`Ocean glossary <oceandocs:concepts/glossary>`.)
+
 Example Usage
 -------------
 
-The QUBO form, :math:`\text{E}(a_i, b_{i,j}; q_i) = -q_1 -q_2 + 2q_1 q_2`,
-is related to the Ising form, :math:`\text{E}(h_i, j_{i,j}; s_i) = \frac{1}{2}(s_1s_2-1)`,
-via the simple manipulation :math:`s_i=2q_i-1`.
+dimod's :class:`~dimod.reference.samplers.ExactSolver` reference
+sampler, a test brute-force solver for small problems, finds all solutions
+of a two-variable QUBO.
 
 .. include:: README.rst
   :start-after: index-start-marker2
   :end-before: index-end-marker2
-
-
 
 Documentation
 -------------
@@ -39,7 +40,7 @@ Documentation
 .. toctree::
   :maxdepth: 1
 
-  introduction
+  intro/index
   reference/index
 
 .. sdk-end-marker
