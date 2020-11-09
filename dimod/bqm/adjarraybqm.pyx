@@ -674,7 +674,39 @@ cdef class cyAdjArrayBQM:
                          dtype=None, index_dtype=None,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-        """Convert to numpy vectors."""
+        """Convert binary quadratic model to NumPy vectors.
+
+        Args:
+            variable_order (iterable, optional, default=None):
+                Variable order for the vector output. By default uses
+                the order of the binary quadratic model.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the linear biases.
+
+            sort_indices (Boolean, optional, default=False):
+                If True, sorts index vectors of variables and interactions.
+
+            sort_labels (Boolean, optional, default=True):
+                If True, sorts vectors based on variable labels.
+
+            return_labels (Boolean, optional, default=False):
+                If True, returns a list of variable labels.
+
+        Returns:
+            tuple: A tuple containing:
+
+                Array of linear biases.
+
+                3-tuple of arrays ``u``, ``v``, and ``b``, where the first two
+                are variables that form interactions and the third is the
+                quadratic bias of the interaction.
+
+                Offset.
+
+                Optionally, variable labels.
+
+        """
         cdef Py_ssize_t nv = self.bqm_.num_variables()
         cdef Py_ssize_t ni = self.bqm_.num_interactions()
 
