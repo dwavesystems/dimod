@@ -944,6 +944,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @classmethod
     def shapeable(cls):
+        """Returns True if the binary quadratic model is shapeable."""
         return issubclass(cls, ShapeableBQM)
 
     def to_coo(self, fp=None, vartype_header=False):

@@ -608,9 +608,39 @@ cdef class cyAdjArrayBQM:
         return cyrelabel_variables_as_integers(self, inplace)
 
     def set_linear(self, object v, Bias b):
+        """Set the linear bias of a variable.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The linear bias to set for ``v``.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
+
+        """
         self.bqm_.set_linear(self.label_to_idx(v), b)
 
     def set_quadratic(self, object u, object v, Bias b):
+        """Set the quadratic bias of an interaction specified by its variables.
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The quadratic bias to set for interaction ``(u, v)``.
+
+        Raises:
+            ValueError: If no interaction ``(u, v)`` exists in the binary quadratic
+            model.
+
+        """
 
         if u == v:
             raise ValueError('No interaction between {} and {}'.format(u, v))

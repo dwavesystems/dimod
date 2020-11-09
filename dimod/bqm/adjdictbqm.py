@@ -614,7 +614,7 @@ class AdjDictBQM(ShapeableBQM):
                 A variable in the binary quadratic model.
 
             b (numeric):
-                The linear bias of v.
+                The quadratic bias to set for interaction ``(u, v)``
 
         Raises:
             TypeError: If u or v is not hashable.
