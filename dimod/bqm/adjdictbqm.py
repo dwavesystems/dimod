@@ -41,7 +41,7 @@ class AdjDictBQM(ShapeableBQM):
     Can be created in several ways:
 
         AdjDictBQM(vartype)
-            Creates an empty binary quadratic model.
+            Creates an empty binary quadratic model (BQM).
 
         AdjDictBQM(bqm)
             Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
@@ -399,24 +399,37 @@ class AdjDictBQM(ShapeableBQM):
         return type(self)(self)
 
     def degree(self, v):
-        """The number of variables sharing an interaction with v."""
+        """Return degree of the specified variable.
+
+        The degree is the number of variables sharing an interaction with ``v``.
+
+        Args:
+            v (hashable):
+                Variable in the binary quadratic model.
+
+        Returns:
+            Degree of `v`.
+
+        Raises:
+            ValueError: If `v` is not a variable in the binary quadratic model.
+        """
         try:
             return len(self._adj[v]) - 1
         except KeyError:
             raise ValueError("{} is not a variable".format(v))
 
     def get_linear(self, v):
-        """Get the linear bias of v.
+        """Get the linear bias of the specified variable.
 
         Args:
             v (hashable):
                 A variable in the binary quadratic model.
 
         Returns:
-            float: The linear bias of v.
+            float: The linear bias of ``v``.
 
         Raises:
-            ValueError: If v is not a variable in the binary quadratic model.
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
 
         """
         try:
@@ -426,7 +439,7 @@ class AdjDictBQM(ShapeableBQM):
         raise ValueError("{} is not a variable".format(v))
 
     def get_quadratic(self, u, v, default=None):
-        """Get the quadratic bias of (u, v).
+        """Get the quadratic bias of the specified interaction.
 
         Args:
             u (hashable):
@@ -436,17 +449,17 @@ class AdjDictBQM(ShapeableBQM):
                 A variable in the binary quadratic model.
 
             default (optional):
-                Value to return if there is no interactions between `u` and `v`.
+                Value to return if there is no interactions between ``u`` and ``v``.
 
         Returns:
-            The quadratic bias of (u, v).
+            The quadratic bias of ``(u, v)``.
 
         Raises:
-            ValueError: If either `u` or `v` is not a variable in the binary
-            quadratic model or if `u == v`
+            ValueError: If either ``u`` or ``v`` is not a variable in the binary
+                quadratic model or if ``u == v``
 
-            ValueError: If `(u, v)` is not an interaction and `default` is
-            `None`.
+            ValueError: If ``(u, v)`` is not an interaction and `default` is
+                `None`.
 
         """
         if u == v:
@@ -460,10 +473,27 @@ class AdjDictBQM(ShapeableBQM):
         raise ValueError('No interaction between {} and {}'.format(u, v))
 
     def iter_linear(self):
+        """Iterate over the linear biases of the binary quadratic model.
+
+        Yields:
+            tuple: A variable in the binary quadratic model and its linear bias.
+        """
         for u, neighborhood in self._adj.items():
             yield u, neighborhood[u]  # u and it's bias
 
     def iter_quadratic(self, variables=None):
+        """Iterate over the quadratic biases of the binary quadratic model.
+
+        Args:
+            variables (iterable):
+                Variables in the binary quadratic model. Iterates only over
+                interactions of these variables.
+
+        Yields:
+            3-tuple: Interaction variables in the binary quadratic model and their
+            bias.
+        """
+
         if variables is None:
             variables = self._adj
         elif self.has_variable(variables):
@@ -489,8 +519,8 @@ class AdjDictBQM(ShapeableBQM):
             variable: The removed variable.
 
         Raises:
-            ValueError: If the BQM is empty or if `v` is not
-            a variable.
+            ValueError: If the BQM is empty or if ``v`` is not
+                a variable.
 
         """
         if len(self._adj) == 0:
@@ -511,7 +541,7 @@ class AdjDictBQM(ShapeableBQM):
         return v
 
     def remove_interaction(self, u, v):
-        """Remove the interaction between variables u and v.
+        """Remove the interaction between the specified variables.
 
         Args:
             u (hashable):
@@ -524,8 +554,8 @@ class AdjDictBQM(ShapeableBQM):
             bool: If there was an interaction to remove.
 
         Raises:
-            ValueError: If either u or v is not a variable in the binary
-            quadratic model.
+            ValueError: If either ``u`` or ``v`` is not a variable in the binary
+                quadratic model.
 
         """
         if u == v:
@@ -584,7 +614,7 @@ class AdjDictBQM(ShapeableBQM):
         return self
 
     def set_linear(self, v, bias):
-        """Set the linear biase of a variable v.
+        """Set the linear biase of the specified variable.
 
         Args:
             v (hashable):
@@ -592,10 +622,10 @@ class AdjDictBQM(ShapeableBQM):
                 already in the model.
 
             b (numeric):
-                The linear bias of v.
+                The linear bias of ``v``.
 
         Raises:
-            TypeError: If v is not hashable
+            TypeError: If ``v`` is not hashable
 
         """
         if v in self._adj:
@@ -604,7 +634,7 @@ class AdjDictBQM(ShapeableBQM):
             self._adj[v] = {v: bias}
 
     def set_quadratic(self, u, v, bias):
-        """Set the quadratic bias of (u, v).
+        """Set the quadratic bias of an interaction specified by its variables.
 
         Args:
             u (hashable):
@@ -617,7 +647,7 @@ class AdjDictBQM(ShapeableBQM):
                 The quadratic bias to set for interaction ``(u, v)``
 
         Raises:
-            TypeError: If u or v is not hashable.
+            TypeError: If ``u`` or ``v`` is not hashable.
 
         """
         # make sure the variables exist

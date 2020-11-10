@@ -68,7 +68,7 @@ class Adjacency(BQMView):
 
     Accessed like a dict of dicts, where the keys of the outer dict are all
     of the model's variables (e.g. `v`) and the values are the neighborhood of
-    `v`. Each neighborhood if a dict where the keys are the neighbors of `v`
+    `v`. Each neighborhood is a dict where the keys are the neighbors of `v`
     and the values are their associated quadratic biases.
     """
     def __getitem__(self, v):
@@ -802,17 +802,16 @@ class BQM(metaclass=abc.ABCMeta):
     def normalize(self, bias_range=1, quadratic_range=None,
                   ignored_variables=None, ignored_interactions=None,
                   ignore_offset=False):
-        """Normalizes the biases of the binary quadratic model such that they
-        fall in the provided range(s), and adjusts the offset appropriately.
+        """Normalizes the biases of the binary quadratic model to fall in the
+        provided range(s), and adjusts the offset appropriately.
 
-        If `quadratic_range` is provided, then `bias_range` will be treated as
-        the range for the linear biases and `quadratic_range` will be used for
-        the range of the quadratic biases.
+        If ``quadratic_range`` is provided, ``bias_range`` is used for the linear
+        biases and ``quadratic_range`` for the quadratic biases.
 
         Args:
             bias_range (number/pair):
                 Value/range that the biases of the BQM is scaled to fit
-                within. If `quadratic_range` is provided, this range is
+                within. If ``quadratic_range`` is provided, this range is
                 used to fit the linear biases.
 
             quadratic_range (number/pair):
@@ -878,7 +877,7 @@ class BQM(metaclass=abc.ABCMeta):
             return 1.0
 
     def relabel_variables_as_integers(self, inplace=True):
-        """Relabel the variables of the BQM to integers.
+        """Relabel the variables of the binary quadratic model to integers.
 
         Args:
             inplace (bool, optional, default=True):
@@ -888,10 +887,10 @@ class BQM(metaclass=abc.ABCMeta):
         Returns:
             tuple: A 2-tuple containing:
 
-                A binary quadratic model with the variables relabeled. If
+                Binary quadratic model with the variables relabeled. If
                 `inplace` is set to True, returns itself.
 
-                dict: The mapping that will restore the original labels.
+                dict: Mapping that restores the original labels.
 
         """
         if not inplace:
@@ -1071,7 +1070,42 @@ class BQM(metaclass=abc.ABCMeta):
                          dtype=np.float, index_dtype=np.intc,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-        """The BQM as 4 numpy vectors, the offset and a list of variables."""
+        """Convert binary quadratic model to NumPy vectors.
+
+        Args:
+            variable_order (iterable, optional, default=None):
+                Variable order for the vector output. By default uses
+                the order of the binary quadratic model.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the linear biases.
+
+            index_dtype (data-type, optional, default=None):
+                Desired NumPy data type for the indices.
+
+            sort_indices (Boolean, optional, default=False):
+                If True, sorts index vectors of variables and interactions.
+
+            sort_labels (Boolean, optional, default=True):
+                If True, sorts vectors based on variable labels.
+
+            return_labels (Boolean, optional, default=False):
+                If True, returns a list of variable labels.
+
+        Returns:
+            tuple: A tuple containing:
+
+                Array of linear biases.
+
+                3-tuple of arrays ``u``, ``v``, and ``b``, where the first two
+                are variables that form interactions and the third is the
+                quadratic bias of the interaction.
+
+                Offset.
+
+                Optionally, variable labels.
+
+        """
         num_variables = self.num_variables
         num_interactions = self.num_interactions
 
@@ -1162,7 +1196,7 @@ class ShapeableBQM(BQM):
 
             bias (numeric, optional, default=0):
                 The initial bias value for the added variable. If `v` is already
-                a variable, then `bias` (if any) is adding to its existing
+                a variable, any specified `bias` is added to its existing
                 linear bias.
 
         Returns:
@@ -1242,10 +1276,10 @@ class ShapeableBQM(BQM):
 
         Args:
             quadratic (dict/iterable):
-                A collection of interactions and their associated quadratic
+                Collection of interactions and their associated quadratic
                 bias. If a dict, should be of the form `{(u, v): bias, ...}`
                 where `u` and `v` are variables in the model and `bias` is
-                there associated quadratic bias. Otherwise, whould be an
+                the associated quadratic bias. Otherwise, should be an
                 iterable of `(u, v, bias)` triplets.
 
         """
@@ -1340,12 +1374,23 @@ class ShapeableBQM(BQM):
             self.fix_variable(v, val)
 
     def remove_variables_from(self, variables):
-        """Remove the given variables from the binary quadratic model."""
+        """Remove the given variables from the binary quadratic model.
+
+        Args:
+            variables (iterable):
+                Variables in the binary quadratic model.
+
+        """
         for v in variables:
             self.remove_variable(v)
 
     def remove_interactions_from(self, interactions):
-        """Remove the given interactions from the binary quadratic model."""
+        """Remove the given interactions from the binary quadratic model.
+
+        Args:
+            interactions (iterable):
+                2-tuples of interactions in the binary quadratic model.
+        """
         for u, v in interactions:
             self.remove_interaction(u, v)
 

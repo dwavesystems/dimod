@@ -318,6 +318,8 @@ cdef class cyAdjArrayBQM:
     def degree(self, object v):
         """Return degree of the specified variable.
 
+        The degree is the number of variables sharing an interaction with ``v``.
+
         Args:
             v (hashable):
                 Variable in the binary quadratic model.
@@ -683,6 +685,9 @@ cdef class cyAdjArrayBQM:
 
             dtype (data-type, optional, default=None):
                 Desired NumPy data type for the linear biases.
+
+            index_dtype (data-type, optional, default=None):
+                Desired NumPy data type for the indices.
 
             sort_indices (Boolean, optional, default=False):
                 If True, sorts index vectors of variables and interactions.
