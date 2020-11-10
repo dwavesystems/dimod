@@ -22,10 +22,10 @@ from distutils.command.build_ext import build_ext as _build_ext
 # add __version__, __author__, __authoremail__, __description__ to this namespace
 exec(open(os.path.join(os.path.dirname(__file__), "dimod", "package_info.py")).read())
 
-install_requires = ['numpy>=1.16.0,<2.0.0',
-                    ]
+# if the numpy ranges change here, don't forget to update the circle-ci job
+install_requires = ['numpy>=1.17.3,<2.0.0']
 
-setup_requires = ['numpy>=1.16.0,<2.0.0']
+setup_requires = ['numpy>=1.17.3,<2.0.0']
 
 extras_require = {'all': ['networkx>=2.0,<3.0',
                           'pandas>=0.22.0,<0.23.0',
@@ -55,6 +55,7 @@ classifiers = [
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     ]
 
 python_requires = '>=3.5'
