@@ -27,7 +27,7 @@ __all__ = ['uniform', 'ran_r', 'randint']
 @graph_argument('graph')
 def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
             seed=None):
-    """Generate a binary quadratic model with random biases and offset.
+    """Generate a binary quadratic model with random integer biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
 
@@ -211,9 +211,9 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
 @graph_argument('graph')
 def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
-    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem. 
+    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem.
 
-    In a doped FM problem, `p`, the doping parameter, determines the probability of 
+    In a doped FM problem, `p`, the doping parameter, determines the probability of
     couplers set to AFM (flipped to 1). The remaining couplers remain FM (-1). In a doped
     AFM problem, the opposite is true.
 
