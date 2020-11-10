@@ -49,6 +49,51 @@ jobs:
           root: /dimod/dist/
           paths: .
 
+  build-sdist:
+    docker:
+      - image: circleci/python:3.9-buster
+
+    working_directory: ~/build
+
+    steps:
+      - checkout
+
+      # in the future we'd like to not need boost here
+      - run: &linux-install-boost-template
+          name: install boost
+          command: |
+            sudo apt-get install libboost-dev
+
+      - run:
+          name: build sdist
+          command: |
+            python -m virtualenv build_env
+            . build_env/bin/activate
+            pip install -r requirements.txt
+            python setup.py sdist
+
+      - run:
+          name: test installing from sdist without cython
+          command: |
+            python -m virtualenv env_sdist
+            . env_sdist/bin/activate
+            pip install dist/dimod*.tar.gz
+
+      - run:
+          name: install sdist with cython
+          command: |
+            python -m virtualenv env_cython_sdist
+            . env_cython_sdist/bin/activate
+            pip install cython
+            pip install dist/dimod*.tar.gz
+
+      - store_artifacts:
+          path: ./dist
+
+      - persist_to_workspace:
+          root: ~/build/dist/
+          paths: .
+
   test-linux:
     parameters:
       image:
@@ -93,7 +138,7 @@ jobs:
       - store_artifacts:
           path: ./dist
 
-      - run: &upload-template
+      - run:
           name: deploy
           command: |
             python -m virtualenv env
@@ -217,10 +262,10 @@ jobs:
       - run: *osx-install-template
       
       - run:
-          name: create bdist_wheel and sdist
+          name: create bdist_wheel
           command: |
             . env/bin/activate
-            python setup.py bdist_wheel sdist
+            python setup.py bdist_wheel
 
       - run:
           name: deploy
@@ -333,10 +378,7 @@ jobs:
     steps:
       - checkout
 
-      - run: &linux-install-boost-template
-          name: install boost
-          command: |
-            sudo apt-get install libboost-dev
+      - run: *linux-install-boost-template
 
       - run:
           name: install dependencies
@@ -423,6 +465,7 @@ workflows:
             parameters:
               python-version: ["3.5.4", "3.6.8", "3.7.5", "3.8.6", "3.9.0"]
               architecture: ["", "x86"]
+      - build-sdist
       - test-doctest
       - test-linux-cpp11
 
@@ -439,6 +482,12 @@ workflows:
             parameters:
               python-minor: [5, 6, 7, 8, 9]
               architecture: ["x86_64", "i686"]
+      - build-sdist:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+            branches:
+              ignore: /.*/
       - deploy-linux:
           filters:
             tags:
@@ -447,6 +496,7 @@ workflows:
               ignore: /.*/
           requires:
             - build-manylinux
+            - build-sdist
       - deploy-osx:
           filters:
             tags:
