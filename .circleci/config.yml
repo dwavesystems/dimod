@@ -43,7 +43,7 @@ jobs:
             done
 
       - store_artifacts:
-          path: .\dist
+          path: ./dist
 
       - persist_to_workspace:
           root: /dimod/dist/
@@ -89,6 +89,9 @@ jobs:
     steps:
       - attach_workspace:
           at: dist
+
+      - store_artifacts:
+          path: ./dist
 
       - run: &upload-template
           name: deploy
@@ -195,10 +198,7 @@ jobs:
           command: |
             brew install pyenv
 
-      - run: &install-boost-osx-template
-          name: install boost
-          command: |
-            brew install boost
+      - run: *install-boost-osx-template
 
       - restore_cache:
           keys:
@@ -314,7 +314,7 @@ jobs:
             python setup.py bdist_wheel
 
       - store_artifacts:
-          path: .\dist
+          path: ./dist
 
       - run: &win-twine-template
           name: install twine and deploy
