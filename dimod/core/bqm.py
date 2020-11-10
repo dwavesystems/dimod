@@ -310,22 +310,22 @@ class BQM(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
     def num_interactions(self):
-        """int: The number of interactions in the model."""
+        """int: Number of interactions in the model."""
         pass
 
     @abc.abstractproperty
     def num_variables(self):
-        """int: The number of variables in the model."""
+        """int: Number of variables in the model."""
         pass
 
     @abc.abstractproperty
     def offset(self):
-        """The constant energy offset associated with the model."""
+        """Constant energy offset associated with the model."""
         pass
 
     @abc.abstractproperty
     def vartype(self):
-        """The variable type, :class:`.Vartype.SPIN` or
+        """Variable type, :class:`.Vartype.SPIN` or
         :class:`.Vartype.BINARY`.
         """
         pass
@@ -392,7 +392,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def binary(self):
-        """The binary-valued version of the binary quadratic model.
+        """Binary-valued version of the binary quadratic model.
 
         If the binary quadratic model is binary-valued, this references itself,
         otherwise it is a :class:`.BinaryView`.
@@ -422,12 +422,12 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def shape(self):
-        """A 2-tuple, the :attr:`num_variables` and :attr:`num_interactions`."""
+        """A 2-tuple of :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self):
-        """The spin-valued version of the binary quadratic model.
+        """Spin-valued version of the binary quadratic model.
 
         If the binary quadratic model is spin-valued, this references itself,
         otherwise it is a :class:`.SpinView`.
@@ -447,11 +447,16 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def variables(self):
-        """The variables of the binary quadratic model."""
+        """Variables of the binary quadratic model."""
         return KeysView(self.linear)
 
     def add_offset(self, offset):
-        """Add specified value to the offset of a binary quadratic model."""
+        """Add the specified value to the offset of a binary quadratic model.
+
+        Args:
+            offset (numeric):
+                Offset value to add.
+        """
         self.offset += offset
 
     def remove_offset(self):

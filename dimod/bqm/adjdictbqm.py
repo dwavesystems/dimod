@@ -408,10 +408,10 @@ class AdjDictBQM(ShapeableBQM):
                 Variable in the binary quadratic model.
 
         Returns:
-            Degree of `v`.
+            Degree of ``v``.
 
         Raises:
-            ValueError: If `v` is not a variable in the binary quadratic model.
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
         """
         try:
             return len(self._adj[v]) - 1
