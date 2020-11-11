@@ -147,7 +147,7 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
                                dimod::utils::comp_v<variable_type, bias_type>);
     _quadratic_iterators[i] = {it, span.second};
     if (it != span.second) {
-      for (auto itEnd = span.second; it != itEnd; it++) {
+      for (auto it_end = span.second; it != it_end; it++) {
         auto bqm_quadratic = it->second;
         auto bqm_quadratic_abs = std::fabs(bqm_quadratic);
         if (bqm_quadratic < 0) {
@@ -191,8 +191,8 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
     _linear_integral_biases[i] = convertToPosiformCoefficient(bqm.linear(i));
     int num_nonZero_quadratic_biases_in_row = 0;
     auto it = _quadratic_iterators[i].first;
-    auto itEnd = _quadratic_iterators[i].second;
-    for (; it != itEnd; it++) {
+    auto it_end = _quadratic_iterators[i].second;
+    for (; it != it_end; it++) {
       // Note our checks must be done after conversion since some values may get
       // flushed to zero, we want the linear values and quadratic values adhere
       // to the same conversion protocal and be consistent. Otherwise in the
@@ -276,8 +276,8 @@ void PosiformInfo<BQM, coefficient_t>::print() {
   std::cout << "Quadratic (posiform-posiform, bqm-bqm, value): " << std::endl;
   for (int i = 0; i < _num_bqm_variables; i++) {
     auto it = _quadratic_iterators[i].first;
-    auto itEnd = _quadratic_iterators[i].second;
-    for (; it != itEnd; it++) {
+    auto it_end = _quadratic_iterators[i].second;
+    for (; it != it_end; it++) {
       std::cout << _bqm_to_posiform_variable_map[i] << " "
                 << _bqm_to_posiform_variable_map[it->first] << ", ";
       std::cout << i << " " << it->first << ",  "

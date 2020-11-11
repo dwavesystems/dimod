@@ -171,8 +171,9 @@ ImplicationNetwork<capacity_t>::ImplicationNetwork(PosiformInfo &posiform) {
     int u_complement = complement(u);
     int num_out_edges = posiform.getNumQuadratic(u);
     auto linear = posiform.getLinear(u);
-    if (linear)
+    if (linear) {
       num_out_edges++;
+    }
     _adjacency_list[u].reserve(num_out_edges);
     _adjacency_list[u_complement].reserve(num_out_edges);
   }
@@ -187,8 +188,8 @@ ImplicationNetwork<capacity_t>::ImplicationNetwork(PosiformInfo &posiform) {
     }
     auto quadratic_span = posiform.getQuadratic(u);
     auto it = quadratic_span.first;
-    auto itEnd = quadratic_span.second;
-    for (; it != itEnd; it++) {
+    auto it_end = quadratic_span.second;
+    for (; it != it_end; it++) {
       // The quadratic iterators, in the posiform, belong  to the original
       // bqm, thus the variables, must be mapped to the posiform variables,
       // and the biases should be ideally converted to the same type the
@@ -210,19 +211,21 @@ ImplicationNetwork<capacity_t>::ImplicationNetwork(PosiformInfo &posiform) {
 template <class capacity_t>
 void ImplicationNetwork<capacity_t>::makeResidualSymmetric() {
   for (int i = 0, i_end = _adjacency_list.size(); i < i_end; i++) {
-    for (int j = 0, j_end = _adjacency_list[i].size(); j < j_end; j++) {
+    auto eit = _adjacency_list[i].begin();
+    auto eit_end = _adjacency_list[i].end();
+    for (; eit != eit_end; eit++) {
       int from_vertex = i;
       int from_vertex_complement = complement(from_vertex);
       int from_vertex_base = std::min(from_vertex, from_vertex_complement);
-      int to_vertex = _adjacency_list[i][j].to_vertex;
+      int to_vertex = eit->to_vertex;
       int to_vertex_complement = complement(to_vertex);
       int to_vertex_base = std::min(to_vertex, to_vertex_complement);
       // We don not want to process the symmetric edges twice, we pick the one
       // that starts from the smaller vertex number when complementation is not
       // taken into account.
       if (to_vertex_base > from_vertex_base) {
-        int symmetric_edge_idx = _adjacency_list[i][j].reverse_edge_index;
-        capacity_t edge_residual = _adjacency_list[i][j].residual;
+        int symmetric_edge_idx = eit->reverse_edge_index;
+        capacity_t edge_residual = eit->residual;
         capacity_t symmetric_edge_residual =
             _adjacency_list[to_vertex_complement][symmetric_edge_idx].residual;
         // The paper states that we should average the residuals and assign the
@@ -231,10 +234,10 @@ void ImplicationNetwork<capacity_t>::makeResidualSymmetric() {
         // capacity is not needed for the later steps in the algorithm, but will
         // help us verify if the symmetric flow is a valid flow or not.
         capacity_t residual_sum = edge_residual + symmetric_edge_residual;
-        _adjacency_list[i][j].residual = residual_sum;
+        eit->residual = residual_sum;
         _adjacency_list[to_vertex_complement][symmetric_edge_idx].residual =
             residual_sum;
-        _adjacency_list[i][j].scaleCapacity(2);
+        eit->scaleCapacity(2);
         _adjacency_list[to_vertex_complement][symmetric_edge_idx].scaleCapacity(
             2);
       }
