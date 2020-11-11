@@ -19,21 +19,24 @@
 #ifndef POSIFORM_INFORMATION_HPP_INCLUDED
 #define POSIFORM_INFORMATION_HPP_INCLUDED
 
+#include <algorithm>
+#include <cmath>
 #include <iostream>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 
-// This class should contain all the information needed to recreate  a posiform
+// This class should contain all the information needed to recreate a posiform
 // corresponding to a BQM. The intention is to reduce the memory footprint as
-// much as possible, thus requires some  processing before the stored data can
+// much as possible, thus requires some processing before the stored data can
 // be used.
 //
-// If linear bias for variable X_i is negative with value -L  it means in the
-// posiform we have the term  L * X_0 * X_i' (X_i' being the complement of X_i)
+// If linear bias for variable X_i is negative with value -L it means in the
+// posiform we have the term  L * X_0 * X_i' (X_i' being the complement of X_i).
 //
 // If a quadratic bias between X_i, X_j is negative with value -L with i < j it
 // means in the posiform we have the term L*X_i*X_j' (X_i' being the complement
-// of X_i)
+// of X_i).
 //
 // For each variable X_i the posiform keeps the iterators in the provided bqm
 // for biases starting from X_j, (j>i) to X_n.
@@ -44,7 +47,7 @@
 // before use.
 //
 // Note the number of variables and biases exposed correspond to the integral
-// version of the qubo matrix and may be different to the numbers corresponding
+// version of the qubo matrix and may differ from the numbers corresponding
 // to the floating point based numbers as many biases may be flushed to zeroes.
 //
 // For more details see : Boros, Endre & Hammer, Peter & Tavares, Gabriel.
@@ -94,7 +97,6 @@ public:
 private:
   double _max_absolute_value;
   double _bias_conversion_ratio;
-  double _bias_conversion_ratio_limit;
   coefficient_type _constant_posiform;
   double _posiform_linear_sum_non_integral;
   coefficient_type _posiform_linear_sum_integral;
@@ -164,10 +166,8 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
     _posiform_linear_sum_non_integral += std::fabs(_linear_double_biases[i]);
   }
 
-  // TODO: Uncomment this code, see comment above.
   // Consider the upper limit of max-flow in implication graph for calculating
-  // ratio conversion ratio.
-
+  // conversion ratio.
   if (_max_absolute_value < _posiform_linear_sum_non_integral) {
     _max_absolute_value = _posiform_linear_sum_non_integral;
   }
@@ -177,18 +177,15 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
       static_cast<double>(std::numeric_limits<coefficient_type>::max()) /
       _max_absolute_value;
 
-  // TODO: We should be removing this if we consider the sum of the linear
-  // biases as mentioned above, but should  divide by 2 since we do not divide
-  // by 2 when we make the residual network symmetric to avoid underflow, in
-  // that step the total flow is effectively doubled along with capacities. We
-  // must not clamp the ratio to 1 as it is done now.
-  _bias_conversion_ratio /= 2; // static_cast<double>(1LL << 10);
+  // We should divide the ratio by at least 2 to avoid underflow because we do
+  // not divide by 2 when we make the residual network symmetric. In  that step
+  // the total flow is effectively doubled along with capacities. Divinding just
+  // by 2 introduced overflow.
+  // TODO : Find the theoretical optimal number for division, for now we divide
+  // by 4 to be safe.
+  _bias_conversion_ratio /= 4; // static_cast<double>(1LL << 10);
                                // if (_bias_conversion_ratio < 1)
                                //   _bias_conversion_ratio = 1;
-
-  _bias_conversion_ratio_limit =
-      static_cast<double>(std::numeric_limits<coefficient_type>::max()) /
-      std::fabs(_posiform_linear_sum_non_integral);
 
   for (int i = 0; i < _num_bqm_variables; i++) {
     _linear_integral_biases[i] = convertToPosiformCoefficient(bqm.linear(i));
@@ -196,15 +193,13 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
     auto it = _quadratic_iterators[i].first;
     auto itEnd = _quadratic_iterators[i].second;
     for (; it != itEnd; it++) {
-      // Note our checks must be done after conversion
-      // since some values may get flushed to zero, we
-      // want the linear values and quadratic values adhere
-      // to the same conversion protocal and be consistent.
-      // Otherwise in the implication graph, there may be paths
-      // with flow values of small capacities corresponding
-      // to numerical errors, affecting the final result.
-      // For this same reason we do not use the already computed
-      // linear values for the posiform in double format.
+      // Note our checks must be done after conversion since some values may get
+      // flushed to zero, we want the linear values and quadratic values adhere
+      // to the same conversion protocal and be consistent. Otherwise in the
+      // implication graph, there may be paths with flow values of small
+      // capacities corresponding to numerical errors, affecting the final
+      // result. For this same reason we do not use the already computed linear
+      // values for the posiform in double format.
       auto bias_quadratic_integral = convertToPosiformCoefficient(it->second);
       if (bias_quadratic_integral) {
         _num_quadratic_integral_biases[it->first]++;
@@ -256,12 +251,10 @@ void PosiformInfo<BQM, coefficient_t>::print() {
   std::cout << "Linear Sum After Summing in Integral Type : "
             << _posiform_linear_sum_integral << std::endl;
   std::cout << "Ratio Chosen : " << _bias_conversion_ratio << std::endl;
-  std::cout << "Ratio Upper Limit : " << _bias_conversion_ratio_limit
-            << std::endl;
   std::cout << std::endl;
 
   // Printing out in convoluted manner, to verify the mappings.
-  // Posiform variables should be serially numbered
+  // Posiform variables should be serially numbered, 0,1,2....
   std::cout << "Used Variables (bqm --> posiform) : "
             << _posiform_to_bqm_variable_map.size() << std::endl;
   for (int i = 0; i < _posiform_to_bqm_variable_map.size(); i++) {
