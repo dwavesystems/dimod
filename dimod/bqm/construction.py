@@ -66,9 +66,10 @@ def as_bqm(*args, cls=None, copy=False):
         *args:
             See above.
 
-        cls (type/list, optional, default=\ :class:`.AdjVectorBQM`):
+        cls (type/list, optional):
             Class of the returned BQM. If given as a list,
-            the returned BQM is of one of the types in the list.
+            the returned BQM is of one of the types in the list. Default is
+            :class:`.AdjVectorBQM`.
 
         copy (bool, optional, default=False):
             If False, a new BQM is only constructed when

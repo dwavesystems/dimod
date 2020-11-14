@@ -88,8 +88,9 @@ def from_networkx_graph(G, vartype=None,
             Attribute name for quadratic biases. If the edge does not have a
             matching attribute then the bias defaults to 0.
 
-        cls (type, optional, default=\ :class:`.AdjDictBQM`):
-            The type of binary quadratic model to construct.
+        cls (type, optional):
+            The type of binary quadratic model to construct. Default is
+            :class:`.AdjDictBQM`.
 
     Returns:
         A binary quadratic model of type `cls`.
