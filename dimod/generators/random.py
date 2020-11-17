@@ -27,7 +27,7 @@ __all__ = ['uniform', 'ran_r', 'randint']
 @graph_argument('graph')
 def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
             seed=None):
-    """Generate a binary quadratic model with random integer biases and offset.
+    """Generate a binary quadratic model with random biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
 
