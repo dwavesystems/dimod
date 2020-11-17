@@ -84,7 +84,7 @@ Each line should look like
 
 0 1 2.000000
 
-where 0, 1 are the variable lables and 2.0 is the bias.
+where 0, 1 are the variable labels and 2.0 is the bias.
 """
 
 _VARTYPE_HEADER_REGEX = r'^[ \t\f]*#.*?vartype[:=][ \t]*([-_.a-zA-Z0-9]+)'

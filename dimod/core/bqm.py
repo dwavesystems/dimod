@@ -68,7 +68,7 @@ class Adjacency(BQMView):
 
     Accessed like a dict of dicts, where the keys of the outer dict are all
     of the model's variables (e.g. `v`) and the values are the neighborhood of
-    `v`. Each neighborhood if a dict where the keys are the neighbors of `v`
+    `v`. Each neighborhood is a dict where the keys are the neighbors of `v`
     and the values are their associated quadratic biases.
     """
     def __getitem__(self, v):
@@ -310,22 +310,22 @@ class BQM(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
     def num_interactions(self):
-        """int: The number of interactions in the model."""
+        """int: Number of interactions in the model."""
         pass
 
     @abc.abstractproperty
     def num_variables(self):
-        """int: The number of variables in the model."""
+        """int: Number of variables in the model."""
         pass
 
     @abc.abstractproperty
     def offset(self):
-        """The constant energy offset associated with the model."""
+        """Constant energy offset associated with the model."""
         pass
 
     @abc.abstractproperty
     def vartype(self):
-        """The variable type, :class:`.Vartype.SPIN` or
+        """Variable type, :class:`.Vartype.SPIN` or
         :class:`.Vartype.BINARY`.
         """
         pass
@@ -392,7 +392,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def binary(self):
-        """The binary-valued version of the binary quadratic model.
+        """Binary-valued version of the binary quadratic model.
 
         If the binary quadratic model is binary-valued, this references itself,
         otherwise it is a :class:`.BinaryView`.
@@ -422,12 +422,12 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def shape(self):
-        """A 2-tuple, the :attr:`num_variables` and :attr:`num_interactions`."""
+        """A 2-tuple of :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self):
-        """The spin-valued version of the binary quadratic model.
+        """Spin-valued version of the binary quadratic model.
 
         If the binary quadratic model is spin-valued, this references itself,
         otherwise it is a :class:`.SpinView`.
@@ -447,11 +447,16 @@ class BQM(metaclass=abc.ABCMeta):
 
     @property
     def variables(self):
-        """The variables of the binary quadratic model."""
+        """Variables of the binary quadratic model."""
         return KeysView(self.linear)
 
     def add_offset(self, offset):
-        """Add specified value to the offset of a binary quadratic model."""
+        """Add the specified value to the offset of a binary quadratic model.
+
+        Args:
+            offset (numeric):
+                Offset value to add.
+        """
         self.offset += offset
 
     def remove_offset(self):
@@ -465,6 +470,20 @@ class BQM(metaclass=abc.ABCMeta):
         return copy.deepcopy(self) if deep else copy.copy(self)
 
     def degrees(self, array=False, dtype=np.int):
+        """Return the degrees of a binary quadratic model's variables.
+
+        Args:
+            array (Boolean):
+                If True, returns a :obj:`numpy.ndarray`; otherwise returns a dict.
+
+            dtype (:class:`numpy.dtype`, optional):
+                The data type of the returned degrees. Applies only if
+                `array==True`.
+
+        Returns:
+            :obj:`numpy.ndarray` or dict: Degrees of all variables.
+
+        """
         if array:
             return np.fromiter((self.degree(v) for v in self.iter_variables()),
                                count=len(self), dtype=dtype)
@@ -499,6 +518,22 @@ class BQM(metaclass=abc.ABCMeta):
         return np.asarray(energies, dtype=dtype)  # handle any type promotions
 
     def energy(self, sample, dtype=None):
+        """Determine the energy of the given sample.
+
+        Args:
+            samples_like (samples_like):
+                Raw sample. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the energy. Matches
+                :attr:`.dtype` by default.
+
+        Returns:
+            The energy.
+
+        """
+
         energy, = self.energies(sample, dtype=dtype)
         return energy
 
@@ -508,6 +543,12 @@ class BQM(metaclass=abc.ABCMeta):
         Args:
             v (variable):
                 Variable in the binary quadratic model.
+
+        Examples:
+            >>> bqm = dimod.BQM.from_ising({'a': 1, 'b': -1}, {('ab'): 0.5})
+            >>> bqm.flip_variable('a')
+            >>> print(bqm)
+            BinaryQuadraticModel({a: -1.0, b: -1.0}, {('a', 'b'): -0.5}, 0, 'SPIN')
 
         """
         for u in self.adj[v]:
@@ -540,7 +581,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
-        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+        .. note:: Variables must use index labels (numeric lables). Binary quadratic
             models created from COOrdinate format encoding have offsets set to
             zero.
 
@@ -757,7 +798,7 @@ class BQM(metaclass=abc.ABCMeta):
         """Iterate over neighbors of a variable in the binary quadratic model.
 
         Yields:
-            variable: The neighbors of `v`.
+            variable: The neighbors of `u`.
 
         """
         for _, v, _ in self.iter_quadratic(u):
@@ -766,29 +807,27 @@ class BQM(metaclass=abc.ABCMeta):
     def normalize(self, bias_range=1, quadratic_range=None,
                   ignored_variables=None, ignored_interactions=None,
                   ignore_offset=False):
-        """Normalizes the biases of the binary quadratic model such that they
-        fall in the provided range(s), and adjusts the offset appropriately.
+        """Normalizes the biases of the binary quadratic model to fall in the
+        provided range(s), and adjusts the offset appropriately.
 
-        If `quadratic_range` is provided, then `bias_range` will be treated as
-        the range for the linear biases and `quadratic_range` will be used for
-        the range of the quadratic biases.
+        If ``quadratic_range`` is provided, ``bias_range`` is used for the linear
+        biases and ``quadratic_range`` for the quadratic biases.
 
         Args:
             bias_range (number/pair):
-                Value/range that the biases of the BQM will be scaled to fit
-                within. If `quadratic_range` is provided, this range is
+                Value/range that the biases of the BQM is scaled to fit
+                within. If ``quadratic_range`` is provided, this range is
                 used to fit the linear biases.
 
             quadratic_range (number/pair):
-                The BQM will be scaled so that the quadratic biases fit within
+                The BQM is scaled so that the quadratic biases fit within
                 this range.
 
             ignored_variables (iterable, optional):
                 Biases associated with these variables are not scaled.
 
             ignored_interactions (iterable[tuple], optional):
-                As an iterable of 2-tuples. Biases associated with these
-                interactions are not scaled.
+                Biases associated with these interactions, formatted as an iterable of 2-tuples, are not scaled.
 
             ignore_offset (bool, default=False):
                 If True, the offset is not scaled.
@@ -843,7 +882,7 @@ class BQM(metaclass=abc.ABCMeta):
             return 1.0
 
     def relabel_variables_as_integers(self, inplace=True):
-        """Relabel the variables of the BQM to integers.
+        """Relabel the variables of the binary quadratic model to integers.
 
         Args:
             inplace (bool, optional, default=True):
@@ -853,10 +892,10 @@ class BQM(metaclass=abc.ABCMeta):
         Returns:
             tuple: A 2-tuple containing:
 
-                A binary quadratic model with the variables relabeled. If
+                Binary quadratic model with the variables relabeled. If
                 `inplace` is set to True, returns itself.
 
-                dict: The mapping that will restore the original labels.
+                dict: Mapping that restores the original labels.
 
         """
         if not inplace:
@@ -879,8 +918,8 @@ class BQM(metaclass=abc.ABCMeta):
                 Biases associated with these variables are not scaled.
 
             ignored_interactions (iterable[tuple], optional):
-                As an iterable of 2-tuples. Biases associated with these
-                interactions are not scaled.
+                Biases associated with these interactions, formatted as an
+                iterable of 2-tuples, are not scaled.
 
             ignore_offset (bool, default=False):
                 If True, the offset is not scaled.
@@ -914,6 +953,7 @@ class BQM(metaclass=abc.ABCMeta):
 
     @classmethod
     def shapeable(cls):
+        """Returns True if the binary quadratic model is shapeable."""
         return issubclass(cls, ShapeableBQM)
 
     def to_coo(self, fp=None, vartype_header=False):
@@ -936,7 +976,7 @@ class BQM(metaclass=abc.ABCMeta):
 
         .. _file object: https://docs.python.org/3/glossary.html#term-file-object
 
-        .. note:: Variables must use index lables (numeric lables). Binary quadratic
+        .. note:: Variables must use index labels (numeric lables). Binary quadratic
             models saved to COOrdinate format encoding do not preserve offsets.
 
         .. note:: This method will be deprecated in the future. The preferred
@@ -1035,7 +1075,42 @@ class BQM(metaclass=abc.ABCMeta):
                          dtype=np.float, index_dtype=np.intc,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-        """The BQM as 4 numpy vectors, the offset and a list of variables."""
+        """Convert binary quadratic model to NumPy vectors.
+
+        Args:
+            variable_order (iterable, optional, default=None):
+                Variable order for the vector output. By default uses
+                the order of the binary quadratic model.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the linear biases.
+
+            index_dtype (data-type, optional, default=None):
+                Desired NumPy data type for the indices.
+
+            sort_indices (Boolean, optional, default=False):
+                If True, sorts index vectors of variables and interactions.
+
+            sort_labels (Boolean, optional, default=True):
+                If True, sorts vectors based on variable labels.
+
+            return_labels (Boolean, optional, default=False):
+                If True, returns a list of variable labels.
+
+        Returns:
+            tuple: A tuple containing:
+
+                Array of linear biases.
+
+                3-tuple of arrays ``u``, ``v``, and ``b``, where the first two
+                are variables that form interactions and the third is the
+                quadratic bias of the interaction.
+
+                Offset.
+
+                Optionally, variable labels.
+
+        """
         num_variables = self.num_variables
         num_interactions = self.num_interactions
 
@@ -1126,7 +1201,7 @@ class ShapeableBQM(BQM):
 
             bias (numeric, optional, default=0):
                 The initial bias value for the added variable. If `v` is already
-                a variable, then `bias` (if any) is adding to its existing
+                a variable, any specified `bias` is added to its existing
                 linear bias.
 
         Returns:
@@ -1206,10 +1281,10 @@ class ShapeableBQM(BQM):
 
         Args:
             quadratic (dict/iterable):
-                A collection of interactions and their associated quadratic
+                Collection of interactions and their associated quadratic
                 bias. If a dict, should be of the form `{(u, v): bias, ...}`
                 where `u` and `v` are variables in the model and `bias` is
-                there associated quadratic bias. Otherwise, whould be an
+                the associated quadratic bias. Otherwise, should be an
                 iterable of `(u, v, bias)` triplets.
 
         """
@@ -1304,12 +1379,23 @@ class ShapeableBQM(BQM):
             self.fix_variable(v, val)
 
     def remove_variables_from(self, variables):
-        """Remove the given variables from the binary quadratic model."""
+        """Remove the given variables from the binary quadratic model.
+
+        Args:
+            variables (iterable):
+                Variables in the binary quadratic model.
+
+        """
         for v in variables:
             self.remove_variable(v)
 
     def remove_interactions_from(self, interactions):
-        """Remove the given interactions from the binary quadratic model."""
+        """Remove the given interactions from the binary quadratic model.
+
+        Args:
+            interactions (iterable):
+                2-tuples of interactions in the binary quadratic model.
+        """
         for u, v in interactions:
             self.remove_interaction(u, v)
 

@@ -21,12 +21,12 @@ from dimod.bqm.common cimport VarIndex, Bias
 
 
 cdef class cyAdjVectorBQM:
-    """A binary quadratic model where the neighborhoods are c++ vectors.
+    """A binary quadratic model where the neighborhoods are C++ vectors.
 
     Can be created in several ways:
 
         AdjVectorBQM(vartype)
-            Creates an empty binary quadratic model.
+            Creates an empty binary quadratic model (BQM).
 
         AdjVectorBQM(bqm)
             Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
@@ -63,7 +63,7 @@ cdef class cyAdjVectorBQM:
     Notes:
 
         The AdjVectorBQM is implemented using an adjacency structure where the
-        neighborhoods are implemented as c++ vectors.
+        neighborhoods are implemented as C++ vectors.
 
         Advantages:
 
@@ -86,11 +86,13 @@ cdef class cyAdjVectorBQM:
         >>> import numpy as np
         >>> from dimod import AdjVectorBQM
 
-        >>> # Construct from dicts
+        Construct from dicts.
+
         >>> AdjVectorBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
         AdjVectorBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
 
-        >>> # Incremental Construction
+        Incremental Construction.
+
         >>> bqm = AdjVectorBQM('SPIN')
         >>> bqm.add_variable('a')
         'a'
@@ -108,16 +110,16 @@ cdef class cyAdjVectorBQM:
     cdef Bias offset_
 
     cdef readonly object vartype
-    """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
+    """Variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
-    """The data type of the linear biases, float64."""
+    """Data type of the linear biases, float64."""
 
     cdef readonly object itype
-    """The data type of the indices, uint32."""
+    """Data type of the indices, uint32."""
 
     cdef readonly object ntype
-    """The data type of the neighborhood indices, varies by platform."""
+    """Data type of the neighborhood indices, varies by platform."""
 
     # these are not public because the user has no way to access the underlying
     # variable indices

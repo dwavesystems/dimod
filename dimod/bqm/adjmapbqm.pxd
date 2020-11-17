@@ -21,12 +21,12 @@ from dimod.bqm.common cimport VarIndex, Bias
 
 
 cdef class cyAdjMapBQM:
-    """A binary quadratic model where the neighborhoods are c++ maps.
+    """A binary quadratic model where the neighborhoods are C++ maps.
 
     Can be created in several ways:
 
         AdjMapBQM(vartype)
-            Creates an empty binary quadratic model.
+            Creates an empty binary quadratic model (BQM).
 
         AdjMapBQM(bqm)
             Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
@@ -63,7 +63,7 @@ cdef class cyAdjMapBQM:
     Notes:
 
         The AdjMapBQM is implemented using an adjacency structure where the
-        neighborhoods are implemented as c++ maps.
+        neighborhoods are implemented as C++ maps.
 
         Advantages:
 
@@ -85,11 +85,13 @@ cdef class cyAdjMapBQM:
         >>> import numpy as np
         >>> from dimod import AdjMapBQM
 
-        >>> # Construct from dicts
+        Construct from dicts.
+
         >>> AdjMapBQM({'a': -1.0}, {('a', 'b'): 1.0}, 'SPIN')
         AdjMapBQM({a: -1.0, b: 0.0}, {('a', 'b'): 1.0}, 0.0, 'SPIN')
 
-        >>> # Incremental Construction
+        Incremental Construction.
+
         >>> bqm = AdjMapBQM('SPIN')
         >>> bqm.add_variable('a')
         'a'
@@ -107,16 +109,16 @@ cdef class cyAdjMapBQM:
     cdef Bias offset_
 
     cdef readonly object vartype
-    """The variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
+    """Variable type, :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`."""
 
     cdef readonly object dtype
-    """The data type of the linear biases, float64."""
+    """Data type of the linear biases, float64."""
 
     cdef readonly object itype
-    """The data type of the indices, uint32."""
+    """Data type of the indices, uint32."""
 
     cdef readonly object ntype
-    """The data type of the neighborhood indices, varies by platform."""
+    """Data type of the neighborhood indices, varies by platform."""
 
     # these are not public because the user has no way to access the underlying
     # variable indices

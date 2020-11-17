@@ -348,7 +348,7 @@ def iter_safe_relabels(mapping, existing):
 
     Args:
         mapping (dict):
-            A map from old lables to new.
+            A map from old labels to new.
 
         existing (set):
             A container of existing labels.

@@ -215,12 +215,12 @@ cdef class cyAdjArrayBQM:
 
     @property
     def num_variables(self):
-        """int: The number of variables in the model."""
+        """int: Number of variables in the model."""
         return self.bqm_.num_variables()
 
     @property
     def num_interactions(self):
-        """int: The number of interactions in the model."""
+        """int: Number of interactions in the model."""
         return self.bqm_.num_interactions()
 
     @property
@@ -316,12 +316,34 @@ cdef class cyAdjArrayBQM:
         return self
 
     def degree(self, object v):
+        """Return degree of the specified variable.
+
+        The degree is the number of variables sharing an interaction with ``v``.
+
+        Args:
+            v (hashable):
+                Variable in the binary quadratic model.
+
+        Returns:
+            Degree of `v`.
+
+        Raises:
+            ValueError: If `v` is not a variable in the binary quadratic model.
+
+        """
+
         cdef VarIndex vi = self.label_to_idx(v)
         return self.bqm_.degree(vi)
 
     # todo: overwrite degrees
 
     def iter_linear(self):
+        """Iterate over the linear biases of the binary quadratic model.
+
+        Yields:
+            tuple: A variable in the binary quadratic model and its linear bias.
+        """
+
         cdef VarIndex vi
         cdef object v
         cdef Bias b
@@ -333,6 +355,17 @@ cdef class cyAdjArrayBQM:
             yield v, as_numpy_scalar(b, self.dtype)
 
     def iter_quadratic(self, object variables=None):
+        """Iterate over the quadratic biases of the binary quadratic model.
+
+        Args:
+            variables (iterable, optional):
+                Variables in the binary quadratic model. Iterates only over
+                interactions of these variables.
+
+        Yields:
+            3-tuple: Interaction variables in the binary quadratic model and their
+            bias.
+        """
 
         cdef VarIndex ui, vi  # c indices
         cdef object u, v  # python labels
@@ -374,31 +407,44 @@ cdef class cyAdjArrayBQM:
                     inc(span.first)
 
     def get_linear(self, object v):
+        """Get the linear bias of the specified variable.
+
+        Args:
+            v (hashable):
+                Variable in the binary quadratic model.
+
+        Returns:
+            Linear bias of ``v``.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
+
+        """
+
         return as_numpy_scalar(self.bqm_.get_linear(self.label_to_idx(v)),
                                self.dtype)
 
     def get_quadratic(self, u, v, default=None):
-        """Get the quadratic bias of (u, v).
+        """Get the quadratic bias of the specified interaction.
 
         Args:
             u (hashable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
 
             v (hashable):
-                A variable in the binary quadratic model.
+                Variable in the binary quadratic model.
 
             default (number, optional):
-                Value to return if there is no interactions between `u` and `v`.
+                Value to return if there is no interactions between ``u`` and ``v``.
 
         Returns:
-            The quadratic bias of (u, v).
+            Quadratic bias of ``(u, v)``.
 
         Raises:
-            ValueError: If either `u` or `v` is not a variable in the binary
-            quadratic model or if `u == v`
+            ValueError: If either ``u`` or ``v`` is not a variable in the binary
+                quadratic model or if ``u == v``.
 
-            ValueError: If `(u, v)` is not an interaction and `default` is
-            `None`.
+            ValueError: If ``(u, v)`` is not an interaction and `default` is `None`.
 
         """
 
@@ -424,11 +470,11 @@ cdef class cyAdjArrayBQM:
 
         Args:
             samples_like (samples_like):
-                A collection of raw samples. `samples_like` is an extension of
+                Collection of raw samples. `samples_like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (data-type, optional, default=None):
-                The desired NumPy data type for the energies. Matches
+                Desired NumPy data type for the energies. Matches
                 :attr:`.dtype` by default.
 
         Returns:
@@ -439,7 +485,7 @@ cdef class cyAdjArrayBQM:
 
     @classmethod
     def from_file(cls, file_like):
-        """Construct a BQM from a file-like object.
+        """Construct a binary quadratic model from a file-like object.
 
         See also:
             :meth:`AdjArrayBQM.to_file`: To construct a file-like object.
@@ -524,51 +570,81 @@ cdef class cyAdjArrayBQM:
 
         return bqm
 
+    def relabel_variables(self, mapping, inplace=True):
+        """Relabel variables of a binary quadratic model as specified by mapping.
 
-    relabel_variables = cyrelabel
-    """Relabel variables of a binary quadratic model as specified by mapping.
+        Args:
+            mapping (dict):
+                Dict mapping current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
 
-    Args:
-        mapping (dict):
-            Dict mapping current variable labels to new ones. If an
-            incomplete mapping is provided, unmapped variables retain their
-            current labels.
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
-        inplace (bool, optional, default=True):
-            If True, the binary quadratic model is updated in-place;
-            otherwise, a new binary quadratic model is returned.
+        Returns:
+            Binary quadratic model with relabeled variables. If `inplace`
+            is set to True, returns itself.
 
-    Returns:
-        A binary quadratic model with the variables relabeled. If `inplace`
-        is set to True, returns itself.
+        """
+        return cyrelabel(self, mapping, inplace)
 
-    """
+    def relabel_variables_as_integers(self, inplace=True):
+        """Relabel as integers the variables of a binary quadratic model.
 
-    relabel_variables_as_integers = cyrelabel_variables_as_integers
-    """Relabel the variables of the BQM to integers.
+        Uses the natural labelling of the underlying C++ objects.
 
-    Note that this method uses the natural labelling of the underlying c++
-    objects.
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
-    Args:
-        inplace (bool, optional, default=True):
-            If True, the binary quadratic model is updated in-place;
-            otherwise, a new binary quadratic model is returned.
+        Returns:
+            tuple: A 2-tuple containing:
 
-    Returns:
-        tuple: A 2-tuple containing:
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
 
-            A binary quadratic model with the variables relabeled. If
-            `inplace` is set to True, returns itself.
+                dict: Mapping that restores the original labels.
 
-            dict: The mapping that will restore the original labels.
-
-    """
+        """
+        return cyrelabel_variables_as_integers(self, inplace)
 
     def set_linear(self, object v, Bias b):
+        """Set the linear bias of a variable.
+
+        Args:
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The linear bias to set for ``v``.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the binary quadratic model.
+
+        """
         self.bqm_.set_linear(self.label_to_idx(v), b)
 
     def set_quadratic(self, object u, object v, Bias b):
+        """Set the quadratic bias of an interaction specified by its variables.
+
+        Args:
+            u (hashable):
+                A variable in the binary quadratic model.
+
+            v (hashable):
+                A variable in the binary quadratic model.
+
+            b (numeric):
+                The quadratic bias to set for interaction ``(u, v)``.
+
+        Raises:
+            ValueError: If no interaction ``(u, v)`` exists in the binary
+                quadratic model.
+
+        """
 
         if u == v:
             raise ValueError('No interaction between {} and {}'.format(u, v))
@@ -600,7 +676,42 @@ cdef class cyAdjArrayBQM:
                          dtype=None, index_dtype=None,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-        """Convert to numpy vectors."""
+        """Convert binary quadratic model to NumPy vectors.
+
+        Args:
+            variable_order (iterable, optional, default=None):
+                Variable order for the vector output. By default uses
+                the order of the binary quadratic model.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the linear biases.
+
+            index_dtype (data-type, optional, default=None):
+                Desired NumPy data type for the indices.
+
+            sort_indices (Boolean, optional, default=False):
+                If True, sorts index vectors of variables and interactions.
+
+            sort_labels (Boolean, optional, default=True):
+                If True, sorts vectors based on variable labels.
+
+            return_labels (Boolean, optional, default=False):
+                If True, returns a list of variable labels.
+
+        Returns:
+            tuple: A tuple containing:
+
+                Array of linear biases.
+
+                3-tuple of arrays ``u``, ``v``, and ``b``, where the first two
+                are variables that form interactions and the third is the
+                quadratic bias of the interaction.
+
+                Offset.
+
+                Optionally, variable labels.
+
+        """
         cdef Py_ssize_t nv = self.bqm_.num_variables()
         cdef Py_ssize_t ni = self.bqm_.num_interactions()
 
