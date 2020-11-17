@@ -442,7 +442,7 @@ cdef class cyAdjArrayBQM:
 
         Raises:
             ValueError: If either ``u`` or ``v`` is not a variable in the binary
-				        quadratic model or if ``u == v``.
+                quadratic model or if ``u == v``.
 
             ValueError: If ``(u, v)`` is not an interaction and `default` is `None`.
 
