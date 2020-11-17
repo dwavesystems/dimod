@@ -74,6 +74,11 @@ Methods
    ~AdjVectorBQM.normalize
    ~AdjVectorBQM.relabel_variables
    ~AdjVectorBQM.relabel_variables_as_integers
+   ~AdjVectorBQM.remove_interaction
+   ~AdjVectorBQM.remove_interactions_from
+   ~AdjVectorBQM.remove_offset
+   ~AdjVectorBQM.remove_variable
+   ~AdjVectorBQM.remove_variables_from
    ~AdjVectorBQM.scale
    ~AdjVectorBQM.set_linear
    ~AdjVectorBQM.set_quadratic
@@ -85,9 +90,4 @@ Methods
    ~AdjVectorBQM.to_numpy_matrix
    ~AdjVectorBQM.to_numpy_vectors
    ~AdjVectorBQM.to_qubo
-   ~AdjVectorBQM.remove_interaction
-   ~AdjVectorBQM.remove_interactions_from
-   ~AdjVectorBQM.remove_offset
-   ~AdjVectorBQM.remove_variable
-   ~AdjVectorBQM.remove_variables_from
    ~AdjVectorBQM.update
