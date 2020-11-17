@@ -26,20 +26,19 @@ __all__ = 'combinations',
 def combinations(n, k, strength=1, vartype=BINARY):
     r"""Generate a BQM that is minimized when k of n variables are selected.
 
-    More fully, we wish to generate a binary quadratic model (BQM) which is
-    minimized for each of the k-combinations of its variables.
+    More fully, generates a binary quadratic model (BQM) that is minimized for
+    each of the k-combinations of its variables.
 
     The energy for the BQM is given by
     :math:`(\sum_{i} x_i - k)^2`.
 
     Args:
         n (int/list/set):
-            If n is an integer, variables are labelled [0, n-1]. If n is list or
-            set then the variables are labelled accordingly.
+            If n is an integer, variables are labelled [0, n-1]. If n is a list
+            or set, variables are labelled accordingly.
 
         k (int):
-            The generated BQM will have 0 energy when any k
-            of the variables are 1.
+            The generated BQM has 0 energy when any k of its variables are 1.
 
         strength (number, optional, default=1):
             The energy of the first excited state of the BQM.

@@ -211,9 +211,9 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
 @graph_argument('graph')
 def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
-    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem. 
+    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem.
 
-    In a doped FM problem, `p`, the doping parameter, determines the probability of 
+    In a doped FM problem, `p`, the doping parameter, determines the probability of
     couplers set to AFM (flipped to 1). The remaining couplers remain FM (-1). In a doped
     AFM problem, the opposite is true.
 

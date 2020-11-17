@@ -88,11 +88,29 @@ def from_networkx_graph(G, vartype=None,
             Attribute name for quadratic biases. If the edge does not have a
             matching attribute then the bias defaults to 0.
 
-        cls (type, optional, default=:obj:`.AdjDictBQM`):
-            The type of binary quadratic model to construct.
+        cls (type, optional):
+            The type of binary quadratic model to construct. Default is
+            :class:`.AdjDictBQM`.
 
     Returns:
         A binary quadratic model of type `cls`.
+
+    Examples:
+        This example creates a BQM from an illustrative NetworkX graph.
+
+        >>> import networkx as nx
+        >>> import random
+        ...
+        >>> G = nx.generators.complete_graph(4)
+        >>> for node in G.nodes:
+        ...     G.nodes[node]['bias'] = random.choice([1,-1])
+        >>> for edge in G.edges:
+        ...     G.edges[edge]['quadratic'] = random.choice([1,-1])
+        ...
+        >>> bqm = dimod.from_networkx_graph(G,
+        ...                                 vartype='BINARY',
+        ...                                 edge_attribute_name='quadratic',
+        ...                                 cls=dimod.AdjMapBQM)
 
     """
     if vartype is None:

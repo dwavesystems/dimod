@@ -31,19 +31,23 @@ __all__ = ['frustrated_loop']
 @graph_argument('graph')
 def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
                     max_failed_cycles=100, planted_solution=None, seed=None):
-    """Generate a frustrated loop problem.
+    """Generate a frustrated-loop problem.
 
-    A (generic) frustrated loop (FL) problem is a sum of Hamiltonians, each generated from a single
-    "good" loop.
+    A generic frustrated-loop (FL) problem is a sum of Hamiltonians, each generated
+    from a single "good" loop, as follows:
+
     1. Generate a loop by random walking on the support graph.
-    2. If the cycle is "good" (according to provided predicates), continue, else go to 1.
-    3. Choose one edge of the loop to be anti-ferromagnetic; all other edges are ferromagnetic.
+    2. If the cycle meets provided predicates, continue; if not, return to  step 1.
+    3. Choose one edge of the loop to be anti-ferromagnetic; all other edges are
+       ferromagnetic.
     4. Add the loop's coupler values to the FL problem.
-    If at any time the magnitude of a coupler in the FL problem exceeds a given precision `R`,
-    remove that coupler from consideration in the loop generation procedure.
+       If at any time the magnitude of a coupler in the FL problem exceeds a given
+       recision `R`, remove that coupler from consideration in the loop generation
+       procedure.
 
-    This is a generic generator of FL problems that encompasses both the original FL problem
-    definition from [#HJARTL]_ and the limited FL problem definition from [#KLH]_
+    This is a generic generator of FL problems that encompasses both the original
+    FL problem definition\ [#HJARTL]_ and the limited FL problem
+    definition\ [#KLH]_\ .
 
     Args:
         graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
