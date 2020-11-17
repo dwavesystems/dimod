@@ -530,7 +530,7 @@ class BQM(metaclass=abc.ABCMeta):
                 :attr:`.dtype` by default.
 
         Returns:
-            :obj:`numpy.dtype`: The energy.
+            The energy.
 
         """
 

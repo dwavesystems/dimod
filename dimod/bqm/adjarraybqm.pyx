@@ -358,7 +358,7 @@ cdef class cyAdjArrayBQM:
         """Iterate over the quadratic biases of the binary quadratic model.
 
         Args:
-            variables (iterable):
+            variables (iterable, optional):
                 Variables in the binary quadratic model. Iterates only over
                 interactions of these variables.
 
