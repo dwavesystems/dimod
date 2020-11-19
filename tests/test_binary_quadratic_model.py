@@ -1213,28 +1213,6 @@ class TestConvert(unittest.TestCase):
         np.testing.assert_array_equal(j, [1, 3, 3])
         np.testing.assert_array_equal(values, [.5, 1.5, -1])
 
-    def test_from_numpy_vectors(self):
-        h = np.array([-1, 1, 5])
-        heads = np.array([0, 1])
-        tails = np.array([1, 2])
-        values = np.array([-1, +1])
-
-        bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(h, (heads, tails, values), 0.0, dimod.SPIN)
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising([-1, 1, 5], {(0, 1): -1, (1, 2): 1}))
-
-    def test_from_numpy_vectors_labels(self):
-        h = np.array([-1, 1, 5])
-        heads = np.array([0, 1])
-        tails = np.array([1, 2])
-        values = np.array([-1, +1])
-
-        bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(h, (heads, tails, values), 0.0, dimod.SPIN,
-                                                            variable_order=['a', 'b', 'c'])
-
-        self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({'a': -1, 'b': 1, 'c': 5},
-                                                                    {('a', 'b'): -1, ('b', 'c'): 1}))
-
     def test_energies_cpp(self):
         num_variables = 25
         p = .1
@@ -1476,6 +1454,9 @@ class TestSerialization(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN)
 
         new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
+
+        print(bqm)
+        print(new)
 
         self.assertEqual(bqm, new)
 

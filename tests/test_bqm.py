@@ -1140,6 +1140,53 @@ class TestFlipVariable(unittest.TestCase):
         self.assertEqual(bqm, BQM({'a': 1, 'b': 1}, {'ab': 1}, 1.0, dimod.SPIN))
 
 
+class TestFromNumpyVectors(unittest.TestCase):
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_3var(self, _, BQM):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1])
+        tails = np.array([1, 2])
+        values = np.array([-1, +1])
+
+        bqm = BQM.from_numpy_vectors(h, (heads, tails, values), 0.5, 'SPIN')
+
+        self.assertIs(type(bqm), BQM)
+        self.assertEqual(bqm.linear, {0: -1, 1: 1, 2: 5})
+        self.assertEqual(bqm.adj, {0: {1: -1}, 1: {0: -1, 2: 1}, 2: {1: 1}})
+        self.assertEqual(bqm.offset, 0.5)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_3var_duplicate(self, _, BQM):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1, 0, 1])
+        tails = np.array([1, 2, 1, 0])
+        values = np.array([-1, +1, -2, -3])
+
+        bqm = BQM.from_numpy_vectors(h, (heads, tails, values), 0.5, 'SPIN')
+
+        self.assertIs(type(bqm), BQM)
+        self.assertEqual(bqm.linear, {0: -1, 1: 1, 2: 5})
+        self.assertEqual(bqm.adj, {0: {1: -6}, 1: {0: -6, 2: 1}, 2: {1: 1}})
+        self.assertEqual(bqm.offset, 0.5)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_from_numpy_vectors_labels(self, _, BQM):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1])
+        tails = np.array([1, 2])
+        values = np.array([-1, +1])
+
+        bqm = BQM.from_numpy_vectors(h, (heads, tails, values), 0.5, 'SPIN',
+                                     variable_order=['a', 'b', 'c'])
+
+        self.assertEqual(bqm,
+                         BQM.from_ising({'a': -1, 'b': 1, 'c': 5},
+                                        {('a', 'b'): -1, ('b', 'c'): 1},
+                                        .5))
+
+
 class TestFromQUBO(unittest.TestCase):
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_basic(self, name, BQM):

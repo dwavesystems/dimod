@@ -18,6 +18,7 @@ import copy
 import io
 import functools
 
+from collections import defaultdict
 from collections.abc import Container, KeysView, Mapping, MutableMapping
 from numbers import Number
 from pprint import PrettyPrinter
@@ -741,8 +742,11 @@ class BQM(metaclass=abc.ABCMeta):
             variable_order = list(range(len(linear)))
 
         linear = {v: float(bias) for v, bias in zip(variable_order, linear)}
-        quadratic = {(variable_order[u], variable_order[v]): float(bias)
-                     for u, v, bias in zip(heads, tails, values)}
+
+        # for quadratic, we add duplicates together
+        quadratic = defaultdict(float)
+        for u, v, bias in zip(heads, tails, values):
+            quadratic[(variable_order[u], variable_order[v])] += bias
 
         return cls(linear, quadratic, offset, vartype)
 
