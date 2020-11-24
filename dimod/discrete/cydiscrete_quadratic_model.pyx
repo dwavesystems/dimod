@@ -117,42 +117,52 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _from_numpy_vectors(self, Integral[:] starts, Bias[:] ldata,
+    cdef void _from_numpy_vectors(self, Integral[:] case_starts, Bias[:] linear_biases,
                                   Integral[:] irow, Integral[:] icol,
-                                  Bias[:] qdata) except *:
+                                  Bias[:] quadratic_biases) except *:
 
-        # do some checking for correctness
-        cdef Py_ssize_t num_variables = starts.shape[0]
-        cdef Py_ssize_t num_cases = ldata.shape[0]
-        cdef Py_ssize_t num_interactions = irow.shape[0]
-
+        # variable declarations we'll use throughout
         cdef Py_ssize_t u, v  # variables
         cdef Py_ssize_t ci, cj  # case indices
+        cdef Py_ssize_t qi
 
-        cdef Py_ssize_t nc
-        for v in range(num_variables-1):
-            nc = starts[v+1] - starts[v]
-            # add variable checks some correctness, but to catch overflow
-            # issues we do a sanity check here
-            if nc > num_cases:
-                raise ValueError("starts does not match ldata")
-            self.add_variable(nc)
-        if num_variables:
-            self.add_variable(num_cases - starts[starts.shape[0] - 1])
+        # constants
+        cdef Py_ssize_t num_variables = case_starts.shape[0]
+        cdef Py_ssize_t num_cases = linear_biases.shape[0]
+        cdef Py_ssize_t num_interactions = irow.shape[0]
 
-        if self.num_cases() != num_cases:
-            raise ValueError("starts does not match ldata")
+        # check that starts and linear_biases are correct and consistent with eachother
+        for v in range(case_starts.shape[0] - 1):
+            if case_starts[v+1] < case_starts[v]:
+                raise ValueError("case_starts is not correctly ordered")
 
-        for ci in range(num_cases):
-            self.bqm_.set_linear(ci, ldata[ci])
+            if case_starts[v+1] >= linear_biases.shape[0]:
+                raise ValueError("case_starts does not match linear_biases")
 
-        if not (irow.shape[0] == icol.shape[0] == qdata.shape[0]):
+        # check that the quadratic are correct and consistent with eachother
+        if not (irow.shape[0] == icol.shape[0] == quadratic_biases.shape[0]):
             raise ValueError("inconsistent lengths for irow, icol, qdata")
+        for qi in range(irow.shape[0]):
+            if not (0 <= irow[qi] < num_cases):
+                raise ValueError("irow refers to case {} which is out of range"
+                                 "".format(irow[qi]))
+            if not (0 <= icol[qi] < num_cases):
+                raise ValueError("icol refers to case {} which is out of range"
+                                 "".format(icol[qi]))
+            if irow[qi] == icol[qi]:
+                raise ValueError("quadratic data contains a self-loop")
+
+        # add the cases to the BQM, then set their linear biases
+        for v in range(num_variables - 1):
+            self.add_variable(case_starts[v+1] - case_starts[v])
+        if num_variables:
+            self.add_variable(num_cases - case_starts[num_variables-1])
+        for ci in range(num_cases):
+            self.bqm_.set_linear(ci, linear_biases[ci])
 
         # if this was sorted (as it is by default from .to_numpy_vectors) then
         # we can speed it up pretty massively.
         cdef bint is_sorted = True
-        cdef Py_ssize_t qi
         for qi in range(num_interactions - 1):
             if irow[qi] > irow[qi + 1]:
                 is_sorted = False
@@ -161,7 +171,6 @@ cdef class cyDiscreteQuadraticModel:
             if irow[qi] == irow[qi + 1] and icol[qi] >= icol[qi+1]:
                 is_sorted = False
                 break
-
 
         # reserve the memory for the vectors, this helps use less memory
         # and speeds things up
@@ -182,18 +191,18 @@ cdef class cyDiscreteQuadraticModel:
                 self.bqm_.adj[irow[qi]].first.resize(
                     self.bqm_.adj[irow[qi]].first.size() + 1)
                 self.bqm_.adj[irow[qi]].first.back().first = icol[qi]
-                self.bqm_.adj[irow[qi]].first.back().second = qdata[qi]
+                self.bqm_.adj[irow[qi]].first.back().second = quadratic_biases[qi]
 
                 self.bqm_.adj[icol[qi]].first.resize(
                     self.bqm_.adj[icol[qi]].first.size() + 1)
                 self.bqm_.adj[icol[qi]].first.back().first = irow[qi]
-                self.bqm_.adj[icol[qi]].first.back().second = qdata[qi]
+                self.bqm_.adj[icol[qi]].first.back().second = quadratic_biases[qi]
 
         else:
             # this is *much* slower, an alternative would be to make a copy
             # and then sort but for now let's stick with the simple thing
             for qi in range(num_interactions):
-                self.bqm_.set_quadratic(irow[qi], icol[qi], qdata[qi])
+                self.bqm_.set_quadratic(irow[qi], icol[qi], quadratic_biases[qi])
 
         # build the adj. This is not really the memory bottleneck so
         # we can build an intermediate (unordered) set version
@@ -228,39 +237,42 @@ cdef class cyDiscreteQuadraticModel:
             sort(self.adj_[v].begin(), self.adj_[v].end())
 
     @classmethod
-    def from_numpy_vectors(cls, starts, ldata, quadratic):
+    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic):
 
         cdef cyDiscreteQuadraticModel obj = cls()
 
         try:
-            irow, icol, qdata = quadratic
+            irow, icol, quadratic_biases = quadratic
         except ValueError:
             raise ValueError("quadratic should be a 3-tuple")
 
+        case_starts = np.asarray(case_starts)
+        linear_biases = np.asarray(linear_biases, dtype=obj.dtype)
+        irow = np.asarray(irow)
+        icol = np.asarray(icol)
+        quadratic_biases = np.asarray(quadratic_biases, dtype=obj.dtype)
+
         # convert to numpy arrays, coercing the types into a simpler set
         # if necessary
-        index_dtype = np.result_type(starts, irow, icol, np.uint16)
-
-        starts = np.asarray(starts, dtype=index_dtype)
-        ldata = np.asarray(ldata, dtype=obj.dtype)
+        index_dtype = np.result_type(case_starts, irow, icol, np.uint16)
+        case_starts = np.asarray(case_starts, dtype=index_dtype)
         irow = np.asarray(irow, dtype=index_dtype)
         icol = np.asarray(icol, dtype=index_dtype)
-        qdata = np.asarray(qdata, dtype=obj.dtype)
 
         if index_dtype == np.uint16:
-            obj._from_numpy_vectors[np.uint16_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.uint16_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         elif index_dtype == np.uint32:
-            obj._from_numpy_vectors[np.uint32_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.uint32_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         elif index_dtype == np.uint64:
-            obj._from_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.uint64_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         elif index_dtype == np.int16:
-            obj._from_numpy_vectors[np.int16_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.int16_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         elif index_dtype == np.int32:
-            obj._from_numpy_vectors[np.int32_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.int32_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         elif index_dtype == np.int64:
-            obj._from_numpy_vectors[np.int64_t](starts, ldata, irow, icol, qdata)
+            obj._from_numpy_vectors[np.int64_t](case_starts, linear_biases, irow, icol, quadratic_biases)
         else:
-            raise ValueError("starts, irow and icol must be integers")
+            raise ValueError("case_starts, irow and icol must be integers")
 
         return obj
 

@@ -70,5 +70,5 @@ cdef class cyDiscreteQuadraticModel:
 
     cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
         Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
-    cdef void _from_numpy_vectors(self, Integral[:] starts, Bias[:] ldata,
-        Integral[:] irow, Integral[:] icol, Bias[:] qdata) except *
+    cdef void _from_numpy_vectors(self, Integral[:] case_starts, Bias[:] linear_biases,
+        Integral[:] irow, Integral[:] icol, Bias[:] quadratic_biases) except *
