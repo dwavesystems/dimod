@@ -405,6 +405,41 @@ class TestNumpyVectors(unittest.TestCase):
         new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
         self.assertEqual(new.num_variables(), 0)
 
+    def test_exceptions(self):
+        # make a working DQM that we can break in various ways
+        starts = [0, 3]
+        ldata = [0, 1, 2, 3, 4]
+        irow = [0, 0, 1, 2]
+        icol = [3, 4, 3, 4]
+        qdata = [-1, -2, -3, -4]
+        quadratic = (irow, icol, qdata)
+
+        dimod.DQM.from_numpy_vectors(starts, ldata, quadratic)  # smoke
+
+        with self.subTest("badly ordered starts"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors([3, 0], ldata, quadratic)
+
+        with self.subTest("case_starts inconsistent with linear_biases"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors([0, 10], ldata, quadratic)
+
+        with self.subTest("inconsistent quadratic"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors(starts, ldata, ([], [0], [1]))
+
+        with self.subTest("out-of-range icol"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors(starts, ldata, ([0], [105], [1]))
+
+        with self.subTest("out-of-range irow"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors(starts, ldata, ([105], [0], [1]))
+
+        with self.subTest("self-loop"):
+            with self.assertRaises(ValueError):
+                dimod.DQM.from_numpy_vectors(starts, ldata, ([0], [0], [1]))
+
     def test_two_var_functional(self):
         dqm = dimod.DQM()
         dqm.add_variable(5)
