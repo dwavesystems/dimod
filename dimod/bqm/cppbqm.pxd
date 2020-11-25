@@ -22,6 +22,8 @@ from libcpp.map cimport map as cppmap
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
+cimport numpy as np
+
 from dimod.bqm.common cimport VarIndex, Bias
 
 cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
@@ -139,6 +141,25 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
         AdjMapBQM(const double[], size_type)
         AdjMapBQM(const double[], size_type, bool)
 
+        # the actual signature is more general, but we already have a large
+        # number of these so we'll add them as needed
+        AdjMapBQM(np.int8_t*, np.int8_t*, np.float32_t*, size_type)
+        AdjMapBQM(np.int8_t*, np.int8_t*, np.float32_t*, size_type, bool)
+        AdjMapBQM(np.int16_t*, np.int16_t*, np.float32_t*, size_type)
+        AdjMapBQM(np.int16_t*, np.int16_t*, np.float32_t*, size_type, bool)
+        AdjMapBQM(np.int32_t*, np.int32_t*, np.float32_t*, size_type)
+        AdjMapBQM(np.int32_t*, np.int32_t*, np.float32_t*, size_type, bool)
+        AdjMapBQM(np.int64_t*, np.int64_t*, np.float32_t*, size_type)
+        AdjMapBQM(np.int64_t*, np.int64_t*, np.float32_t*, size_type, bool)
+        AdjMapBQM(np.int8_t*, np.int8_t*, np.float64_t*, size_type)
+        AdjMapBQM(np.int8_t*, np.int8_t*, np.float64_t*, size_type, bool)
+        AdjMapBQM(np.int16_t*, np.int16_t*, np.float64_t*, size_type)
+        AdjMapBQM(np.int16_t*, np.int16_t*, np.float64_t*, size_type, bool)
+        AdjMapBQM(np.int32_t*, np.int32_t*, np.float64_t*, size_type)
+        AdjMapBQM(np.int32_t*, np.int32_t*, np.float64_t*, size_type, bool)
+        AdjMapBQM(np.int64_t*, np.int64_t*, np.float64_t*, size_type)
+        AdjMapBQM(np.int64_t*, np.int64_t*, np.float64_t*, size_type, bool)
+
         # methods
 
         size_type degree(variable_type) except +
@@ -207,6 +228,25 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         AdjVectorBQM(const float[], size_type, bool)
         AdjVectorBQM(const double[], size_type)
         AdjVectorBQM(const double[], size_type, bool)
+
+        # the actual signature is more general, but we already have a large
+        # number of these so we'll add them as needed
+        AdjVectorBQM(np.int8_t*, np.int8_t*, np.float32_t*, size_type)
+        AdjVectorBQM(np.int8_t*, np.int8_t*, np.float32_t*, size_type, bool)
+        AdjVectorBQM(np.int16_t*, np.int16_t*, np.float32_t*, size_type)
+        AdjVectorBQM(np.int16_t*, np.int16_t*, np.float32_t*, size_type, bool)
+        AdjVectorBQM(np.int32_t*, np.int32_t*, np.float32_t*, size_type)
+        AdjVectorBQM(np.int32_t*, np.int32_t*, np.float32_t*, size_type, bool)
+        AdjVectorBQM(np.int64_t*, np.int64_t*, np.float32_t*, size_type)
+        AdjVectorBQM(np.int64_t*, np.int64_t*, np.float32_t*, size_type, bool)
+        AdjVectorBQM(np.int8_t*, np.int8_t*, np.float64_t*, size_type)
+        AdjVectorBQM(np.int8_t*, np.int8_t*, np.float64_t*, size_type, bool)
+        AdjVectorBQM(np.int16_t*, np.int16_t*, np.float64_t*, size_type)
+        AdjVectorBQM(np.int16_t*, np.int16_t*, np.float64_t*, size_type, bool)
+        AdjVectorBQM(np.int32_t*, np.int32_t*, np.float64_t*, size_type)
+        AdjVectorBQM(np.int32_t*, np.int32_t*, np.float64_t*, size_type, bool)
+        AdjVectorBQM(np.int64_t*, np.int64_t*, np.float64_t*, size_type)
+        AdjVectorBQM(np.int64_t*, np.int64_t*, np.float64_t*, size_type, bool)
 
         # methods
 

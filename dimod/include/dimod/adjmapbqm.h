@@ -187,6 +187,64 @@ class AdjMapBQM {
         }
     }
 
+    /**
+     * Construct a BQM from COO-formated iterators.
+     *
+     * A sparse BQM encoded in [COOrdinate] format is specified by three
+     * arrays of (row, column, value).
+     *
+     * [COOrdinate]: https://w.wiki/n$L
+     *
+     * @param row_iterator Iterator pointing to the beginning of the row data.
+     *     Must be a random access iterator.
+     * @param col_iterator Iterator pointing to the beginning of the column
+     *     data. Must be a random access iterator.
+     * @param bias_iterator Iterator pointing to the beginning of the bias data.
+     *     Must be a random access iterator.
+     * @param length The number of (row, column, bias) entries.
+     * @param ignore_diagonal If true, entries on the diagonal of the sparse
+     *     matrix are ignored.
+     */
+    template <class ItRow, class ItCol, class ItBias>
+    AdjMapBQM(ItRow row_iterator, ItCol col_iterator, ItBias bias_iterator,
+              size_type length, bool ignore_diagonal = false) {
+        std::pair<outvars_iterator, bool> ret;
+        for (size_type i = 0; i < length; ++i) {
+            // make sure that we're big enough to accomodate
+            if (*row_iterator >= adj.size()) {
+                adj.resize(*row_iterator+1);
+            }
+            if (*col_iterator >= adj.size()) {
+                adj.resize(*col_iterator+1);
+            }
+
+            if (*row_iterator == *col_iterator) {
+                // linear bias
+                if (!ignore_diagonal) {
+                    linear(*row_iterator) += *bias_iterator;
+                }
+            } else {
+                // quadratic bias
+                // make sure that we're adding if it already exists
+                ret = adj[*row_iterator].first.insert(
+                        std::make_pair(*col_iterator, *bias_iterator));
+                if (!ret.second) {
+                    ret.first->second += *bias_iterator;
+                }
+
+                ret = adj[*col_iterator].first.insert(
+                        std::make_pair(*row_iterator, *bias_iterator));
+                if (!ret.second) {
+                    ret.first->second += *bias_iterator;
+                }
+            }
+
+            ++row_iterator;
+            ++col_iterator;
+            ++bias_iterator;
+        }
+    }
+
     /// Add one (disconnected) variable to the BQM and return its index.
     variable_type add_variable() {
         adj.resize(adj.size() + 1);

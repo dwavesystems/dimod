@@ -593,6 +593,52 @@ cdef class cyAdj@name@BQM:
         return load(file_like, cls=cls)
 
     @classmethod
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def from_numpy_vectors(cls, linear, quadratic, offset, vartype,
+                           variable_order=None):
+
+        try:
+            heads, tails, values = quadratic
+        except ValueError:
+            raise ValueError("quadratic should be a 3-tuple")
+
+        if not len(heads) == len(tails) == len(values):
+            raise ValueError("row, col, and bias should be of equal length")
+
+        cdef cyAdj@name@BQM bqm = cls(vartype)
+
+        # do some type coersion
+
+        # bqm.offset = offset
+
+    #     cdef cyAdj@name@BQM bqm = cls(len(linear), vartype)
+
+    #     bqm.offset = offset
+
+    #     # set the linear, each of these is O(n)
+    #     cdef Bias[:] linear_view = np.asarray(linear, dtype=bqm.dtype)
+    #     cdef Py_ssize_t u
+    #     for u in range(linear_view.shape[0]):
+    #         bqm.bqm_.set_linear(u, linear_view[u])
+
+    #     # using fused types we could avoid this potential copy, but for now
+    #     # this is simpler
+    #     cdef VarIndex[:] irow = np.asarray(heads, dtype=bqm.itype)
+    #     cdef VarIndex[:] icol = np.asarray(tails, dtype=bqm.itype)
+    #     cdef Bias[:] qdata = np.asarray(values, dtype=bqm.dtype)
+
+    #     cdef Py_ssize_t num_interactions = irow.shape[0]
+
+    #     if num_interactions:
+    #         bqm.bqm_.set_quadratic(&irow[0], &icol[0], &qdata[0], num_interactions)
+
+        if variable_order is not None:
+            raise NotImplementedError
+
+        return bqm
+
+    @classmethod
     def _load(cls, fp, data, offset=0):
         """This method is used by :func:`.load` and should not be invoked
         directly.
