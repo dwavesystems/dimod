@@ -16,7 +16,9 @@
 #define DIMOD_ADJVECTORBQM_H_
 
 #include <stdio.h>
+#include <iostream>
 #include <algorithm>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -176,6 +178,78 @@ class AdjVectorBQM {
 #pragma omp for schedule(static)
             for (size_type v = 0; v < num_variables; ++v) {
                 dense[v * (num_variables + 1)] = dense_diagonal[v];
+            }
+        }
+    }
+
+    /**
+     * Construct a BQM from COO-formated iterators.
+     *
+     * A sparse BQM encoded in [COOrdinate] format is specified by three
+     * arrays of (row, column, value).
+     *
+     * [COOrdinate]: https://w.wiki/n$L
+     *
+     * @param row_iterator Iterator pointing to the beginning of the row data.
+     *     Must be a random access iterator.
+     * @param col_iterator Iterator pointing to the beginning of the column
+     *     data. Must be a random access iterator.
+     * @param bias_iterator Iterator pointing to the beginning of the bias data.
+     *     Must be a random access iterator.
+     * @param length The number of (row, column, bias) entries.
+     * @param ignore_diagonal If true, entries on the diagonal of the sparse
+     *     matrix are ignored.
+     */
+    template <class ItRow, class ItCol, class ItBias>
+    AdjVectorBQM(ItRow row_iterator, ItCol col_iterator, ItBias bias_iterator,
+                 size_type length, bool ignore_diagonal = false) {
+        // determine the number of variables to we can allocate adj
+        if (length > 0) {
+            size_type max_label = std::max(
+                    *std::max_element(row_iterator, row_iterator + length),
+                    *std::max_element(col_iterator, col_iterator + length));
+            adj.resize(max_label + 1);
+        }
+
+        // todo: we could pre-allocate the neighborhoods by checking the
+        // degrees
+
+        // add the values to the adjacency, not worrying about order or
+        // duplicates
+        for (size_type i = 0; i < length; i++) {
+            if (*row_iterator == *col_iterator) {
+                // linear bias
+                if (!ignore_diagonal) {
+                    linear(*row_iterator) += *bias_iterator;
+                }
+            } else {
+                // quadratic bias
+                adj[*row_iterator].first.emplace_back(*col_iterator,
+                                                      *bias_iterator);
+                adj[*col_iterator].first.emplace_back(*row_iterator,
+                                                      *bias_iterator);
+            }
+
+            ++row_iterator;
+            ++col_iterator;
+            ++bias_iterator;
+        }
+
+        // now sort each neighborhood and remove duplicates
+        for (variable_type v = 0; v < adj.size(); ++v) {
+            auto span = neighborhood(v);
+            // by default sort looks at first element in pair
+            std::sort(span.first, span.second);
+
+            // now remove any duplicate variables, adding the biases
+            auto it = adj[v].first.begin();
+            while (it + 1 < adj[v].first.end()) {
+                if (it->first == (it + 1)->first) {
+                    it->second += (it + 1)->second;
+                    adj[v].first.erase(it + 1);
+                } else {
+                    ++it;
+                }
             }
         }
     }
