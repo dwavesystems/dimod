@@ -19,8 +19,7 @@
 @header@
 
 import collections.abc as abc
-
-from numbers import Integral
+import numbers
 
 cimport cython
 
@@ -32,7 +31,7 @@ from libcpp.pair cimport pair
 import numpy as np
 
 from dimod.bqm cimport cyBQM
-from dimod.bqm.common cimport NeighborhoodIndex
+from dimod.bqm.common cimport NeighborhoodIndex, Integral32plus, Numeric32plus
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
@@ -78,7 +77,7 @@ cdef class cyAdj@name@BQM:
             obj, vartype = args
             if isinstance(obj, BQM):
                 self._init_bqm(obj, vartype)
-            elif isinstance(obj, Integral):
+            elif isinstance(obj, numbers.Integral):
                 self._init_number(obj, vartype)
             else:
                 self._init_components({}, obj, 0.0, vartype)
@@ -595,46 +594,97 @@ cdef class cyAdj@name@BQM:
     @classmethod
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    def _from_numpy_vectors(cls,
+                            Numeric32plus[::1] linear,
+                            Integral32plus[::1] irow,
+                            Integral32plus[::1] icol,
+                            Numeric32plus[::1] qdata,
+                            object vartype):
+        """Equivalent of from_numpy_vectors with fused types."""
+
+        if not irow.shape[0] == icol.shape[0] == qdata.shape[0]:
+            raise ValueError("quadratic vectors should be equal length")
+        cdef Py_ssize_t length = irow.shape[0]
+
+        cdef cyAdj@name@BQM bqm = cls(vartype)
+
+        cdef bint ignore_diagonal = bqm.vartype is Vartype.SPIN
+
+        if length:
+            bqm.bqm_ = cppAdj@name@BQM[VarIndex, Bias](
+                &irow[0], &icol[0], &qdata[0], length, ignore_diagonal)
+
+        # add the linear
+        while bqm.bqm_.num_variables() < linear.shape[0]:
+            bqm.bqm_.add_variable()
+
+        cdef Py_ssize_t v
+        for v in range(linear.shape[0]):
+            bqm.bqm_.set_linear(v, bqm.bqm_.get_linear(v) + linear[v])
+
+        # add the offset
+        cdef Py_ssize_t qi
+        if ignore_diagonal:
+            for qi in range(irow.shape[0]):
+                if irow[qi] == icol[qi]:
+                    bqm.offset_ += qdata[qi]
+
+        return bqm
+
+    @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype,
                            variable_order=None):
 
         try:
-            heads, tails, values = quadratic
+            irow, icol, qdata = quadratic
         except ValueError:
             raise ValueError("quadratic should be a 3-tuple")
 
-        if not len(heads) == len(tails) == len(values):
-            raise ValueError("row, col, and bias should be of equal length")
+        # What follows is an overly complex process that boils down to coercing
+        # our inputs to a simpler and more consistent set of data types. We
+        # need:
+        # * numpy ndarrays
+        # * contiguous memory
+        # * ldata.dtype == qdata.dtype and irow.dtype == icol.dtype
+        # * 32 or 64 bit dtypes
+        ldata = np.ascontiguousarray(linear, dtype=None if len(linear) else np.int8)
+        irow = np.ascontiguousarray(irow, dtype=None if len(irow) else np.int8)
+        icol = np.ascontiguousarray(icol, dtype=None if len(icol) else np.int8)
+        qdata = np.ascontiguousarray(qdata, dtype=None if len(qdata) else np.int8)
 
-        cdef cyAdj@name@BQM bqm = cls(vartype)
+        integral_dtype = np.promote_types(irow.dtype, icol.dtype)
+        if np.issubdtype(integral_dtype, np.unsignedinteger):
+            integral_dtype = np.promote_types(integral_dtype, np.uint32)
+        elif np.issubdtype(integral_dtype, np.signedinteger):
+            integral_dtype = np.promote_types(integral_dtype, np.int32)
+        else:
+            raise TypeError("irow and icol must be arrays of integrals")
+        irow = np.asarray(irow, dtype=integral_dtype)
+        icol = np.asarray(icol, dtype=integral_dtype)
 
-        # do some type coersion
+        numeric_dtype = np.promote_types(ldata.dtype, qdata.dtype)
+        if np.issubdtype(numeric_dtype, np.unsignedinteger):
+            numeric_dtype = np.promote_types(numeric_dtype, np.uint32)
+        elif np.issubdtype(numeric_dtype, np.signedinteger):
+            numeric_dtype = np.promote_types(numeric_dtype, np.int32)
+        elif np.issubdtype(numeric_dtype, np.floating):
+            numeric_dtype = np.promote_types(numeric_dtype, np.float32)
+        else:
+            raise TypeError("biases must be arrays of integrals or reals")
+        ldata = np.asarray(ldata, dtype=numeric_dtype)
+        qdata = np.asarray(qdata, dtype=numeric_dtype)
 
-        # bqm.offset = offset
+        # Now that everything is the right type...
+        bqm = cls._from_numpy_vectors(ldata, irow, icol, qdata, vartype)
 
-    #     cdef cyAdj@name@BQM bqm = cls(len(linear), vartype)
-
-    #     bqm.offset = offset
-
-    #     # set the linear, each of these is O(n)
-    #     cdef Bias[:] linear_view = np.asarray(linear, dtype=bqm.dtype)
-    #     cdef Py_ssize_t u
-    #     for u in range(linear_view.shape[0]):
-    #         bqm.bqm_.set_linear(u, linear_view[u])
-
-    #     # using fused types we could avoid this potential copy, but for now
-    #     # this is simpler
-    #     cdef VarIndex[:] irow = np.asarray(heads, dtype=bqm.itype)
-    #     cdef VarIndex[:] icol = np.asarray(tails, dtype=bqm.itype)
-    #     cdef Bias[:] qdata = np.asarray(values, dtype=bqm.dtype)
-
-    #     cdef Py_ssize_t num_interactions = irow.shape[0]
-
-    #     if num_interactions:
-    #         bqm.bqm_.set_quadratic(&irow[0], &icol[0], &qdata[0], num_interactions)
+        bqm.offset += offset
 
         if variable_order is not None:
-            raise NotImplementedError
+            if len(variable_order) != len(bqm):
+                raise ValueError(
+                    "variable_order must be the same length as the BQM")
+
+            bqm.relabel_variables(dict(enumerate(variable_order)))
 
         return bqm
 

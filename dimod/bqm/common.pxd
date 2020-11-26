@@ -26,3 +26,30 @@ ctypedef np.float64_t Bias
 
 # adjarraybqm uses size_t to define the indices of its neighborhoods
 ctypedef size_t NeighborhoodIndex  
+
+# convenience fused types
+ctypedef fused Integral:
+    np.uint8_t
+    np.uint16_t
+    np.uint32_t
+    np.uint64_t
+    np.int8_t
+    np.int16_t
+    np.int32_t
+    np.int64_t
+
+ctypedef fused Integral32plus:
+    np.uint32_t
+    np.uint64_t
+    np.int32_t
+    np.int64_t
+
+ctypedef fused Numeric:
+    Integral
+    np.float32_t
+    np.float64_t
+
+ctypedef fused Numeric32plus:
+    Integral32plus
+    np.float32_t
+    np.float64_t

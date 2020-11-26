@@ -739,9 +739,14 @@ class BQM(metaclass=abc.ABCMeta):
             raise ValueError("row, col, and bias should be of equal length")
 
         if variable_order is None:
-            variable_order = list(range(len(linear)))
+            num_variables = max([len(linear),
+                                 max(heads)+1 if len(heads) else 0,
+                                 max(tails)+1 if len(tails) else 0])
+            variable_order = range(num_variables)
 
-        linear = {v: float(bias) for v, bias in zip(variable_order, linear)}
+        linear = dict(zip(variable_order, linear))
+        while len(linear) < len(variable_order):
+            linear[len(linear)] = 0.0
 
         # for quadratic, we add duplicates together
         quadratic = defaultdict(float)

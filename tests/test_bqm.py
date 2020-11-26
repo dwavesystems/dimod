@@ -1172,7 +1172,7 @@ class TestFromNumpyVectors(unittest.TestCase):
         self.assertIs(bqm.vartype, dimod.SPIN)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
-    def test_from_numpy_vectors_labels(self, _, BQM):
+    def test_3var_labels(self, _, BQM):
         h = np.array([-1, 1, 5])
         heads = np.array([0, 1])
         tails = np.array([1, 2])
@@ -1185,6 +1185,87 @@ class TestFromNumpyVectors(unittest.TestCase):
                          BQM.from_ising({'a': -1, 'b': 1, 'c': 5},
                                         {('a', 'b'): -1, ('b', 'c'): 1},
                                         .5))
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_dtypes(self, _, BQM):
+        # we don't test uint64 because when combined with int it gets promoted
+        # to float
+        integral = [np.uint8, np.uint16, np.uint32,
+                    np.int8, np.int16, np.int32, np.int64]
+        numeric = integral + [np.float32, np.float64]
+
+        h = [1, 2, 3]
+        heads = [0, 1]
+        tails = [1, 2]
+        values = [4, 5]
+
+        for types in itertools.product(numeric, integral, integral, numeric):
+            with self.subTest(' '.join(map(str, types))):
+                bqm = BQM.from_numpy_vectors(
+                    np.asarray(h, dtype=types[0]),
+                    (np.asarray(heads, dtype=types[1]),
+                     np.asarray(tails, dtype=types[2]),
+                     np.asarray(values, dtype=types[3])),
+                    0.0, 'SPIN')
+
+                self.assertEqual(bqm.linear, {0: 1, 1: 2, 2: 3})
+                self.assertEqual(
+                    bqm.adj, {0: {1: 4}, 1: {0: 4, 2: 5}, 2: {1: 5}})
+
+        with self.subTest('uint64 combos'):
+            bqm = BQM.from_numpy_vectors(
+                np.asarray(h, dtype=np.uint64),
+                (np.asarray(heads, dtype=np.uint64),
+                 np.asarray(tails, dtype=np.uint64),
+                 np.asarray(values, dtype=np.uint64)),
+                0.0, 'SPIN')
+
+            self.assertEqual(bqm.linear, {0: 1, 1: 2, 2: 3})
+            self.assertEqual(bqm.adj, {0: {1: 4}, 1: {0: 4, 2: 5}, 2: {1: 5}})
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_empty(self, _, BQM):
+        bqm = BQM.from_numpy_vectors([], ([], [], []), 1.5, 'SPIN')
+        self.assertEqual(bqm.shape, (0, 0))
+        self.assertEqual(bqm.offset, 1.5)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_linear_in_quadratic(self, _, BQM):
+        h = np.array([-1, 1, 5])
+        heads = np.array([0, 1])
+        tails = np.array([0, 2])
+        values = np.array([-1, +1])
+        spin = BQM.from_numpy_vectors(h, (heads, tails, values), 0.5, 'SPIN')
+        binary = BQM.from_numpy_vectors(h, (heads, tails, values), 0.5, 'BINARY')
+
+        self.assertEqual(spin.adj, binary.adj)
+
+        self.assertEqual(spin.linear, {0: -1, 1: 1, 2: 5})
+        self.assertEqual(binary.linear, {0: -2, 1: 1, 2: 5})
+        self.assertEqual(spin.offset, -.5)
+        self.assertEqual(binary.offset, .5)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_noncontiguous(self, _, BQM):
+        quadratic = np.asarray([[0, 1], [1, 2]])
+
+        bqm = BQM.from_numpy_vectors(
+            [], (quadratic[:, 0], quadratic[:, 1], [.5, .6]), 1.5, 'SPIN')
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_oversized_linear(self, _, BQM):
+        bqm = BQM.from_numpy_vectors([0, 1, 2], ([], [], []), 1.5, 'SPIN')
+        self.assertEqual(bqm.shape, (3, 0))
+        self.assertEqual(bqm.linear, {0: 0, 1: 1, 2: 2})
+        self.assertEqual(bqm.offset, 1.5)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_undersized_linear(self, _, BQM):
+        bqm = BQM.from_numpy_vectors([0, 1], ([3], [4], [1]), 1.5, 'SPIN')
+        self.assertEqual(bqm.shape, (5, 1))
+        self.assertEqual(bqm.linear, {0: 0, 1: 1, 2: 0, 3: 0, 4: 0})
+        self.assertEqual(bqm.offset, 1.5)
+        self.assertEqual(bqm.adj, {0: {}, 1: {}, 2: {}, 3: {4: 1}, 4: {3: 1}})
 
 
 class TestFromQUBO(unittest.TestCase):
