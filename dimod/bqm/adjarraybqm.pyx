@@ -570,6 +570,39 @@ cdef class cyAdjArrayBQM:
 
         return bqm
 
+    @classmethod
+    def from_numpy_vectors(cls, linear, quadratic, offset, vartype,
+                           variable_order=None):
+        """Create a binary quadratic model from vectors.
+
+        Args:
+            linear (array_like):
+                A 1D array-like iterable of linear biases.
+
+            quadratic (tuple[array_like, array_like, array_like]):
+                A 3-tuple of 1D array_like vectors of the form (row, col, bias).
+
+            offset (numeric, optional):
+                Constant offset for the binary quadratic model.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            variable_order (iterable, optional):
+                If provided, labels the variables; otherwise, indices are used.
+
+        Returns:
+            A binary quadratic model
+
+        """
+        # AdjArrayBQM does not have a COO constructor, so we go via
+        # AdjVectorBQM
+        return cls(AdjVectorBQM.from_numpy_vectors(
+            linear, quadratic, offset, vartype, variable_order=variable_order))
+
     def relabel_variables(self, mapping, inplace=True):
         """Relabel variables of a binary quadratic model as specified by mapping.
 
