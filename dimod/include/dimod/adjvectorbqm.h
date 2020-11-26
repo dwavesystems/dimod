@@ -211,8 +211,10 @@ class AdjVectorBQM {
             adj.resize(max_label + 1);
         }
 
-        // todo: we could pre-allocate the neighborhoods by checking the
-        // degrees
+
+        // we can get 5-10% speedup on dense problems by counting the degrees
+        // and using that to reserve the neighborhood vectors. However, since
+        // it uses more memory and slows down sparse problems, we don't.
 
         // add the values to the adjacency, not worrying about order or
         // duplicates
