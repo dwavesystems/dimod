@@ -16,9 +16,7 @@
 #define DIMOD_ADJVECTORBQM_H_
 
 #include <stdio.h>
-#include <iostream>
 #include <algorithm>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
