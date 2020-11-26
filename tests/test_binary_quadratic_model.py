@@ -1455,9 +1455,6 @@ class TestSerialization(unittest.TestCase):
 
         new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
 
-        print(bqm)
-        print(new)
-
         self.assertEqual(bqm, new)
 
     def test_functional_bytes_info(self):
