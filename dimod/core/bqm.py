@@ -738,22 +738,30 @@ class BQM(metaclass=abc.ABCMeta):
         if not len(heads) == len(tails) == len(values):
             raise ValueError("row, col, and bias should be of equal length")
 
-        if variable_order is None:
-            num_variables = max([len(linear),
-                                 max(heads)+1 if len(heads) else 0,
-                                 max(tails)+1 if len(tails) else 0])
-            variable_order = range(num_variables)
-
-        linear = dict(zip(variable_order, linear))
-        while len(linear) < len(variable_order):
-            linear[len(linear)] = 0.0
+        # because quadratic defines a dense matrix, we need linear to have
+        # at least as many variables, so we extend it if needed.
+        if len(heads):
+            length = max([
+                heads.max() if isinstance(heads, np.ndarray) else max(heads),
+                tails.max() if isinstance(tails, np.ndarray) else max(tails),
+                ]) + 1
+            if len(linear) < length:
+                old_linear = linear
+                linear = np.empty(length, dtype=np.float64)
+                linear[:len(old_linear)] = old_linear
+                linear[len(old_linear):] = 0
 
         # for quadratic, we add duplicates together
         quadratic = defaultdict(float)
         for u, v, bias in zip(heads, tails, values):
-            quadratic[(variable_order[u], variable_order[v])] += bias
+            quadratic[u, v] += bias
 
-        return cls(linear, quadratic, offset, vartype)
+        bqm = cls(linear, quadratic, offset, vartype)
+
+        if variable_order is not None:
+            bqm.relabel_variables(dict(enumerate(variable_order)))
+
+        return bqm
 
     @classmethod
     def from_qubo(cls, Q, offset=0):
