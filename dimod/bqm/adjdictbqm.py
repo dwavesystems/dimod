@@ -237,11 +237,7 @@ class AdjDictBQM(ShapeableBQM):
             it = np.nditer(D, flags=['multi_index', 'refs_ok'], op_flags=['readonly'])
             while not it.finished:
                 u, v = it.multi_index
-
-                # because of the way iteration over object arrays works, we
-                # need to do some funniness
-                # see https://stackoverflow.com/a/49790081/8766655
-                bias = it.value if D.dtype != np.object else it.value.item()
+                bias = it.value[()]
 
                 if bias:
                     if u == v and vartype is Vartype.SPIN:
