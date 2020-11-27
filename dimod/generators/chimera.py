@@ -46,7 +46,7 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
         multiplier (number, optional, default=3.0):
             Strength of the intertile edges.
 
-        cls (class, optional):
+        cls (type, optional):
             Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
