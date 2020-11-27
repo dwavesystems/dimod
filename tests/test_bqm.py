@@ -15,6 +15,7 @@
 # =============================================================================
 """Generic dimod/bqm tests."""
 import itertools
+import numbers
 import os.path as path
 import shutil
 import tempfile
@@ -426,6 +427,15 @@ class TestConstruction(unittest.TestCase):
         for u in range(5):
             self.assertEqual(bqm.get_linear(u), 1)
         self.assertEqual(bqm.offset, 5)
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_array_types(self, name, BQM):
+        # comes from a bug where this was returning an array
+        h = [0, 1, 2]
+        J = np.asarray([[0, 1, 2], [0, 0, 3], [0, 0, 0]])
+        bqm = BQM(h, J, 'SPIN')
+        for bias in bqm.quadratic.values():
+            self.assertIsInstance(bias, numbers.Number)
 
     def test_bqm_binary(self):
         linear = {'a': -1, 'b': 1, 0: 1.5}
