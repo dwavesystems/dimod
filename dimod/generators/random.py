@@ -41,7 +41,9 @@ def gnp_random_bqm(n, p, vartype,
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        cls (:class:`.BinaryQuadraticModel`): BQM class to build from.
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.AdjVectorBQM`.
 
         random_state (:class:`numpy.random.RandomState`/int, optional):
             A random seed or a random state generator. Used for generating
@@ -72,14 +74,14 @@ def gnp_random_bqm(n, p, vartype,
     if not isinstance(random_state, np.random.RandomState):
         random_state = np.random.RandomState(random_state)
 
-    neighbborhoods = []
+    neighborhoods = []
     num_interactions = 0
     for v in range(n):
         # determine what variables are connected
         exists = random_state.uniform(size=(n - v - 1)) < p
         neighbors = np.arange(v+1, n)[exists]
 
-        neighbborhoods.append(neighbors)
+        neighborhoods.append(neighbors)
         num_interactions += len(neighbors)
 
     # construct irow, icol
@@ -87,7 +89,7 @@ def gnp_random_bqm(n, p, vartype,
     icol = np.empty(num_interactions, dtype=np.int)
 
     q = 0
-    for v, neighbors in enumerate(neighbborhoods):
+    for v, neighbors in enumerate(neighborhoods):
         irow[q:q+len(neighbors)] = v
         icol[q:q+len(neighbors)] = neighbors
         q += len(neighbors)
@@ -130,8 +132,9 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
         high (float, optional, default=1.0):
             The high end of the range for the random biases.
 
-        cls (:class:`.BinaryQuadraticModel`):
-            BQM class to build from.
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.BinaryQuadraticModel`.
 
         seed (int, optional, default=None):
             Random seed.
@@ -186,8 +189,9 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
         high (float, optional, default=1):
             The high end of the range for the random biases.
 
-        cls (:class:`.BinaryQuadraticModel`):
-            BQM class to build from.
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.BinaryQuadraticModel`.
 
         seed (int, optional, default=None):
             Random seed.
@@ -237,8 +241,9 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
             interpreted as a complete graph of size n, a nodes/edges pair, a
             list of edges or a NetworkX graph.
 
-        cls (:class:`.BinaryQuadraticModel`):
-            Binary quadratic model class to build from.
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.BinaryQuadraticModel`.
 
         seed (int, optional, default=None):
             Random seed.
@@ -307,8 +312,9 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
             interpreted as a complete graph of size n, a nodes/edges pair, a
             list of edges or a NetworkX graph.
 
-        cls (:class:`.BinaryQuadraticModel`):
-            Binary quadratic model class to build from.
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.BinaryQuadraticModel`.
 
         seed (int, optional, default=None):
             Random seed.
