@@ -208,16 +208,16 @@ class AdjMapBQM {
     template <class ItRow, class ItCol, class ItBias>
     AdjMapBQM(ItRow row_iterator, ItCol col_iterator, ItBias bias_iterator,
               size_type length, bool ignore_diagonal = false) {
+        // determine the number of variables so we can allocate adj
+        if (length > 0) {
+            size_type max_label = std::max(
+                    *std::max_element(row_iterator, row_iterator + length),
+                    *std::max_element(col_iterator, col_iterator + length));
+            adj.resize(max_label + 1);
+        }
+
         std::pair<outvars_iterator, bool> ret;
         for (size_type i = 0; i < length; ++i) {
-            // make sure that we're big enough to accomodate
-            if (*row_iterator >= adj.size()) {
-                adj.resize(*row_iterator+1);
-            }
-            if (*col_iterator >= adj.size()) {
-                adj.resize(*col_iterator+1);
-            }
-
             if (*row_iterator == *col_iterator) {
                 // linear bias
                 if (!ignore_diagonal) {

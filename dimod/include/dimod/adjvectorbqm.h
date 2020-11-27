@@ -201,14 +201,13 @@ class AdjVectorBQM {
     template <class ItRow, class ItCol, class ItBias>
     AdjVectorBQM(ItRow row_iterator, ItCol col_iterator, ItBias bias_iterator,
                  size_type length, bool ignore_diagonal = false) {
-        // determine the number of variables to we can allocate adj
+        // determine the number of variables so we can allocate adj
         if (length > 0) {
             size_type max_label = std::max(
                     *std::max_element(row_iterator, row_iterator + length),
                     *std::max_element(col_iterator, col_iterator + length));
             adj.resize(max_label + 1);
         }
-
 
         // we can get 5-10% speedup on dense problems by counting the degrees
         // and using that to reserve the neighborhood vectors. However, since
