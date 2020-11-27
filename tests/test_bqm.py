@@ -1185,6 +1185,13 @@ class TestFromNumpyVectors(unittest.TestCase):
                          BQM.from_ising({'a': -1, 'b': 1, 'c': 5},
                                         {('a', 'b'): -1, ('b', 'c'): 1},
                                         .5))
+        self.assertEqual(list(bqm.variables), ['a', 'b', 'c'])
+
+    @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
+    def test_5var_labels(self, _, BQM):
+        bqm = BQM.from_numpy_vectors(range(5), ([], [], []), .5, 'SPIN',
+                                     variable_order='abcde')
+        self.assertEqual(list(bqm.variables), list('abcde'))
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_dtypes(self, _, BQM):
