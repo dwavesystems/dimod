@@ -21,7 +21,7 @@ from libcpp.vector cimport vector
 cimport numpy as np
 
 from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
-from dimod.bqm.common cimport Integral, Numeric
+from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
 
 ctypedef np.float64_t Bias
@@ -59,5 +59,3 @@ cdef class cyDiscreteQuadraticModel:
 
     cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
         Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
-    cdef void _from_numpy_vectors(self, Integral[:] case_starts, Bias[:] linear_biases,
-        Integral[:] irow, Integral[:] icol, Bias[:] quadratic_biases) except *
