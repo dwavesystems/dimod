@@ -209,9 +209,19 @@ class AdjVectorBQM {
             adj.resize(max_label + 1);
         }
 
-        // we can get 5-10% speedup on dense problems by counting the degrees
-        // and using that to reserve the neighborhood vectors. However, since
-        // it uses more memory and slows down sparse problems, we don't.
+        // Count the degrees and use that to reserve the neighborhood vectors
+        std::vector<size_type> degrees(adj.size());
+        ItRow rit(row_iterator);
+        ItRow cit(col_iterator);
+        for (size_type i = 0; i < length; ++i, ++rit, ++cit) {
+            if (*rit != *cit) {
+                degrees[*rit] += 1;
+                degrees[*cit] += 1;
+            }
+        }
+        for (size_type i = 0; i < degrees.size(); ++i) {
+            adj[i].first.reserve(degrees[i]);
+        }
 
         // add the values to the adjacency, not worrying about order or
         // duplicates
@@ -237,8 +247,9 @@ class AdjVectorBQM {
         // now sort each neighborhood and remove duplicates
         for (variable_type v = 0; v < adj.size(); ++v) {
             auto span = neighborhood(v);
-            // by default sort looks at first element in pair
-            std::sort(span.first, span.second);
+            if (!std::is_sorted(span.first, span.second)) {
+                std::sort(span.first, span.second);
+            }
 
             // now remove any duplicate variables, adding the biases
             auto it = adj[v].first.begin();
