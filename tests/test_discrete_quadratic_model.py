@@ -440,6 +440,37 @@ class TestNumpyVectors(unittest.TestCase):
             with self.assertRaises(ValueError):
                 dimod.DQM.from_numpy_vectors(starts, ldata, ([0], [0], [1]))
 
+    def test_selfloop(self):
+        # should raise an exception when given a self-loop
+        starts = [0, 3, 6]  # degree 3
+        ldata = range(9)
+        irow = []
+        icol = []
+        for ci in range(3):
+            for cj in range(3, 9):
+                irow.append(ci)
+                icol.append(cj)
+        for ci in range(3, 6):
+            for cj in range(3):
+                irow.append(ci)
+                icol.append(cj)
+            for cj in range(6, 9):
+                irow.append(ci)
+                icol.append(cj)
+        for ci in range(6, 9):
+            for cj in range(6):
+                irow.append(ci)
+                icol.append(cj)
+
+        # now add a single self-loop
+        irow.append(3)
+        icol.append(4)
+
+        qdata = [1]*len(irow)
+
+        with self.assertRaises(ValueError):
+            dimod.DQM.from_numpy_vectors(starts, ldata, (irow, icol, qdata))
+
     def test_two_var_functional(self):
         dqm = dimod.DQM()
         dqm.add_variable(5)
