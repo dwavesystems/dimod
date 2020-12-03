@@ -17,6 +17,10 @@ import copy
 import os
 import itertools
 
+from functools import reduce
+
+import numpy as np
+
 from dimod.decorators import lockable_method
 
 __all__ = ['ising_energy',
@@ -489,3 +493,121 @@ class LockableDict(dict):
 def get_include():
     """Return the directory with dimod's header files."""
     return os.path.join(os.path.dirname(__file__), 'include')
+
+
+def _astypearrays(arrays, requirements, min_itemsize, allowed_types):
+    # allowed types can only be numeric for now, see comment below
+    # todo: allow unsafe with warning controlled by kwarg?
+
+    # We need to get the dtype, and as far as I can tell the only way to do
+    # it for array-like is to actually cast to a numpy array
+    arrays = [np.asarray(arr) for arr in arrays]
+
+    # get the dtype we can promote to
+    dtype = reduce(np.promote_types, (arr.dtype for arr in arrays))
+
+    if not any(np.issubdtype(dtype, type_) for type_ in allowed_types):
+        # put together an appropriate error message
+        descriptors = []
+        if np.floating in allowed_types:
+            descriptors.append('floating')
+        if np.integer in allowed_types:
+            descriptors.append('integer')
+        elif np.unsignedinteger in allowed_types:
+            if np.signedinteger in allowed_types:
+                descriptors.append('integer')
+            else:
+                descriptors.append('unsigned integer')
+        elif np.signedinteger in allowed_types:
+            descriptors.append('signed integer')
+
+        raise TypeError(
+            "Cannot safely cast arrays to {} (given {})".format(
+                ', '.join(descriptors),
+                ', '.join(arr.dtype.name for arr in arrays)))
+
+    if min_itemsize is not None:
+        if min_itemsize >= 1:
+            size = str(2**int(np.ceil(np.log2(min_itemsize))))
+        else:
+            size = '1'
+        if np.issubdtype(dtype, np.unsignedinteger):
+            kind = 'u'
+        elif np.issubdtype(dtype, np.signedinteger):
+            kind = 'i'
+        elif np.issubdtype(dtype, np.floating):
+            kind = 'f'
+        else:
+            # we could instead read this from the type string, but it's kind of
+            # pandora's box, because there's also structured arrays, complex,
+            # etc. For now, let's just restrict to numeric.
+            raise RuntimeError("unexpected dtype")
+        dtype = np.promote_types(dtype, kind+size)
+
+    arrays = tuple(np.require(arr, dtype=dtype, requirements=requirements)
+                   for arr in arrays)
+
+    if len(arrays) > 1:
+        return arrays
+    else:
+        return arrays[0]
+
+
+# Not a public function (yet)
+def asintegerarrays(*arrays, requirements=None, min_itemsize=None):
+    """Cast the given array(s) to the same integer type.
+
+    Not a public function.
+
+    This is useful when calling cython functions.
+
+    Args:
+        *arrays (array-like): At least one array-like.
+
+        requirements (str/list[str], optional): See :func:`numpy.require`.
+
+        min_itemsize (int, optional):
+            The minimum itemsize (in bytes) for the output arrays.
+
+    Returns:
+        Numpy array(s) satisfying the above requirements. They will all have
+        the same dtype.
+
+    """
+    # empty arrays are a problem because numy defaults them to float, so let's
+    # do a tiny bit of prechecking
+    arrays = [arr if len(arr) else np.asarray(arr, dtype=np.int8)
+              for arr in arrays]
+
+    if not arrays:
+        raise TypeError('asintegerarrays() takes at least 1 array (0 given)')
+
+    return _astypearrays(arrays, requirements, min_itemsize, [np.integer])
+
+
+# Not a public function (yet)
+def asnumericarrays(*arrays, requirements=None, min_itemsize=None):
+    """Cast the given array(s) to the same floating type.
+
+    Not a public function.
+
+    This is useful when calling cython functions.
+
+    Args:
+        *arrays (array-like): At least one array-like.
+
+        requirements (str/list[str], optional): See :func:`numpy.require`.
+
+        min_itemsize (int, optional):
+            The minimum itemsize (in bytes) for the output arrays.
+
+    Returns:
+        Numpy array(s) satisfying the above requirements. They will all have
+        the same dtype.
+
+    """
+    if not arrays:
+        raise TypeError('asnumericarrays() takes at least 1 array (0 given)')
+
+    return _astypearrays(arrays, requirements, min_itemsize,
+                         [np.integer, np.floating])

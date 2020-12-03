@@ -11,14 +11,13 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
-
-from __future__ import division
 
 import unittest
-from itertools import groupby
 import itertools
+
+from itertools import groupby
+
+import numpy as np
 
 import dimod
 
@@ -349,3 +348,98 @@ class TestChildStructureDFS(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             dimod.child_structure_dfs(nested)
+
+
+class TestAsIntegerArrays(unittest.TestCase):
+    def test_empty(self):
+        with self.assertRaises(TypeError):
+            dimod.utilities.asintegerarrays()
+
+    def test_min_itemsize(self):
+        arrint8 = np.ones(5, dtype=np.int8)
+        arrint16 = np.ones(5, dtype=np.int16)
+
+        new0, new1 = dimod.utilities.asintegerarrays(
+            arrint8, arrint16, min_itemsize=4)
+        self.assertEqual(new0.dtype, np.int32)
+        self.assertEqual(new1.dtype, np.int32)
+
+    def test_partial_passthrough(self):
+        arrint8 = np.ones(5, dtype=np.int8)
+        arrint16 = np.ones(5, dtype=np.int16)
+
+        new0, new1 = dimod.utilities.asintegerarrays(
+            arrint8, arrint16, min_itemsize=2)
+        self.assertEqual(new0.dtype, np.int16)
+        self.assertEqual(new1.dtype, np.int16)
+        self.assertIs(arrint16, new1)  # passthrough
+
+        arruint8 = np.ones(5, dtype=np.uint8)
+        arruint16 = np.ones(5, dtype=np.uint16)
+
+        new2, new3 = dimod.utilities.asintegerarrays(
+            arruint8, arruint16, min_itemsize=2)
+        self.assertEqual(new2.dtype, np.uint16)
+        self.assertEqual(new3.dtype, np.uint16)
+        self.assertIs(arruint16, new3)  # passthrough
+
+    def test_single_passthrough(self):
+        arr = np.ones(5, dtype=np.uint8)
+        new = dimod.utilities.asintegerarrays(arr)
+
+        self.assertIs(arr, new)  # should not copy
+
+    def test_unsafe(self):
+        arr0 = np.ones(5, dtype=np.uint64)
+        arr1 = np.ones(5, dtype=np.int64)
+
+        with self.assertRaises(TypeError):
+            dimod.utilities.asintegerarrays(arr0, arr1)
+
+        with self.assertRaises(TypeError):
+            dimod.utilities.asintegerarrays(np.ones(5, dtype=np.float32))
+
+
+class TestAsNumericArrays(unittest.TestCase):
+    def test_complex(self):
+        arr = np.ones(5, dtype=np.complex)
+        with self.assertRaises(TypeError):
+            dimod.utilities.asnumericarrays(arr)
+
+    def test_empty(self):
+        with self.assertRaises(TypeError):
+            dimod.utilities.asnumericarrays()
+
+    def test_min_itemsize(self):
+        arrint8 = np.ones(5, dtype=np.int8)
+        arrint16 = np.ones(5, dtype=np.int16)
+
+        new0, new1 = dimod.utilities.asnumericarrays(
+            arrint8, arrint16, min_itemsize=4)
+        self.assertEqual(new0.dtype, np.int32)
+        self.assertEqual(new1.dtype, np.int32)
+
+    def test_partial_passthrough(self):
+        arrint8 = np.ones(5, dtype=np.int8)
+        arrint16 = np.ones(5, dtype=np.int16)
+
+        new0, new1 = dimod.utilities.asnumericarrays(
+            arrint8, arrint16, min_itemsize=2)
+        self.assertEqual(new0.dtype, np.int16)
+        self.assertEqual(new1.dtype, np.int16)
+        self.assertIs(arrint16, new1)  # passthrough
+
+        arruint8 = np.ones(5, dtype=np.uint8)
+        arruint16 = np.ones(5, dtype=np.uint16)
+
+        new2, new3 = dimod.utilities.asnumericarrays(
+            arruint8, arruint16, min_itemsize=2)
+        self.assertEqual(new2.dtype, np.uint16)
+        self.assertEqual(new3.dtype, np.uint16)
+        self.assertIs(arruint16, new3)  # passthrough
+
+    def test_single_passthrough(self):
+        arr = np.ones(5, dtype=np.uint8)
+        new = dimod.utilities.asnumericarrays(arr)
+
+        self.assertIs(arr, new)  # should not copy
