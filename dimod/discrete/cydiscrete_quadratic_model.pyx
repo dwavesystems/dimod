@@ -22,6 +22,8 @@ from libcpp.unordered_set cimport unordered_set
 
 import numpy as np
 
+from dimod.utilities import asintegerarrays, asnumericarrays
+
 
 cdef class cyDiscreteQuadraticModel:
 
@@ -231,40 +233,17 @@ cdef class cyDiscreteQuadraticModel:
         except ValueError:
             raise ValueError("quadratic should be a 3-tuple")
 
-        # What follows is an overly complex process that boils down to coercing
-        # our inputs into a simpler and more consistent set of data types. We
-        # need:
+        # We need:
         # * numpy ndarrays
         # * contiguous memory
         # * irow.dtype == icol.dtype == case_starts.dtype
         # * ldata.dtype==qdata.dtype
         # * 32 or 64 bit dtypes
+        case_starts, icol, irow = asintegerarrays(
+            case_starts, icol, irow, min_itemsize=4, requirements='C')
+        ldata, qdata = asnumericarrays(
+            linear_biases, quadratic_biases, min_itemsize=4, requirements='C')
 
-        numeric_dtype = np.promote_types(
-            getattr(linear_biases, 'dtype', np.float64),
-            getattr(quadratic_biases, 'dtype', np.float64))
-        if numeric_dtype.itemsize < 4:
-            numeric_dtype = np.promote_types(numeric_dtype, np.float32)
-        if not (np.issubdtype(numeric_dtype, np.floating)
-                or np.issubdtype(numeric_dtype, np.integer)):
-            raise TypeError("biases must be arrays of integrals or reals")
-        ldata = np.ascontiguousarray(linear_biases, dtype=numeric_dtype)
-        qdata = np.ascontiguousarray(quadratic_biases, dtype=numeric_dtype)
-
-        integral_dtype = np.promote_types(
-            getattr(irow, 'dtype', np.int64), getattr(icol, 'dtype', np.int64))
-        integral_dtype = np.promote_types(
-            getattr(case_starts, 'dtype', np.int64), integral_dtype)
-        if integral_dtype.itemsize < 4:
-            integral_dtype = np.promote_types(integral_dtype, np.int32)
-        if not np.issubdtype(integral_dtype, np.integer):
-            raise TypeError("the promoted dtype of case_starts, irow and icol "
-                            "must be integral.")
-        case_starts = np.ascontiguousarray(case_starts, dtype=integral_dtype)
-        irow = np.ascontiguousarray(irow, dtype=integral_dtype)
-        icol = np.ascontiguousarray(icol, dtype=integral_dtype)
-
-        # now that everything is in the right type...
         return cls._from_numpy_vectors(case_starts, ldata, irow, icol, qdata)
 
     @cython.boundscheck(False)

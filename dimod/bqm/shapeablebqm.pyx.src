@@ -37,6 +37,7 @@ from dimod.bqm.utils cimport as_numpy_scalar
 from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
 from dimod.bqm.utils import cyrelabel_variables_as_integers
 from dimod.core.bqm import BQM, ShapeableBQM
+from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.vartypes import as_vartype, Vartype
 
 
@@ -664,41 +665,16 @@ cdef class cyAdj@name@BQM:
         except ValueError:
             raise ValueError("quadratic should be a 3-tuple")
 
-        # What follows is an overly complex process that boils down to coercing
-        # our inputs to a simpler and more consistent set of data types. We
-        # need:
+        # We need:
         # * numpy ndarrays
         # * contiguous memory
         # * ldata.dtype == qdata.dtype and irow.dtype == icol.dtype
         # * 32 or 64 bit dtypes
-        ldata = np.ascontiguousarray(linear, dtype=None if len(linear) else np.int8)
-        irow = np.ascontiguousarray(irow, dtype=None if len(irow) else np.int8)
-        icol = np.ascontiguousarray(icol, dtype=None if len(icol) else np.int8)
-        qdata = np.ascontiguousarray(qdata, dtype=None if len(qdata) else np.int8)
+        icol, irow = asintegerarrays(
+            icol, irow, min_itemsize=4, requirements='C')
+        ldata, qdata = asnumericarrays(
+            linear, qdata, min_itemsize=4, requirements='C')
 
-        integral_dtype = np.promote_types(irow.dtype, icol.dtype)
-        if np.issubdtype(integral_dtype, np.unsignedinteger):
-            integral_dtype = np.promote_types(integral_dtype, np.uint32)
-        elif np.issubdtype(integral_dtype, np.signedinteger):
-            integral_dtype = np.promote_types(integral_dtype, np.int32)
-        else:
-            raise TypeError("irow and icol must be arrays of integrals")
-        irow = np.asarray(irow, dtype=integral_dtype)
-        icol = np.asarray(icol, dtype=integral_dtype)
-
-        numeric_dtype = np.promote_types(ldata.dtype, qdata.dtype)
-        if np.issubdtype(numeric_dtype, np.unsignedinteger):
-            numeric_dtype = np.promote_types(numeric_dtype, np.uint32)
-        elif np.issubdtype(numeric_dtype, np.signedinteger):
-            numeric_dtype = np.promote_types(numeric_dtype, np.int32)
-        elif np.issubdtype(numeric_dtype, np.floating):
-            numeric_dtype = np.promote_types(numeric_dtype, np.float32)
-        else:
-            raise TypeError("biases must be arrays of integrals or reals")
-        ldata = np.asarray(ldata, dtype=numeric_dtype)
-        qdata = np.asarray(qdata, dtype=numeric_dtype)
-
-        # Now that everything is the right type...
         bqm = cls._from_numpy_vectors(ldata, irow, icol, qdata, vartype)
 
         bqm.offset += offset
