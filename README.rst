@@ -1,7 +1,7 @@
 .. image:: https://img.shields.io/pypi/v/dimod.svg
     :target: https://pypi.python.org/pypi/dimod
 
-.. image:: https://codecov.io/gh/dwavesystems/dimod/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/dwavesystems/dimod
 
 .. image:: https://readthedocs.com/projects/d-wave-systems-dimod/badge/?version=latest
