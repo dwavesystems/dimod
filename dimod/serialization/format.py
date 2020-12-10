@@ -22,13 +22,14 @@ import sys
 import collections.abc as abc
 
 from collections import deque
+from functools import partial
 from io import StringIO
 
 import numpy as np
 
 import dimod
 
-__all__ = 'set_printoptions', 'Formatter'
+__all__ = ['set_printoptions', 'Formatter']
 
 _format_options = {
     'width': 79,
@@ -145,9 +146,9 @@ class _SampleTable(object):
     def append_vector(self, name, vector, _left=False):
         """Add a data vectors column."""
         if np.issubdtype(vector.dtype, np.integer):
-            # determine the length we need
-            largest = str(max(vector.max(), vector.min(), key=abs))
-            length = max(len(largest), min(7, len(name)))  # how many spaces we need to represent
+            # determine what width we need for vector
+            length = max(map(lambda v: len(str(v)), vector), default=0)
+            length = max(length, min(7, len(name)))
 
             if len(name) > length:
                 header = name[:length-1] + '.'
@@ -156,19 +157,21 @@ class _SampleTable(object):
 
             def f(datum):
                 return str(getattr(datum, name)).rjust(length)
+
         elif np.issubdtype(vector.dtype, np.floating):
-            largest = np.format_float_positional(max(vector.max(), vector.min(), key=abs),
-                                                 precision=6, trim='0')
-            length = max(len(largest), min(7, len(name)))  # how many spaces we need to represent
+            # determine what width we need for vector
+            fmt = partial(np.format_float_positional, precision=6, trim='0')
+            length = max(map(lambda v: len(fmt(v)), vector), default=0)
+            length = max(length, min(7, len(name)))
+
             if len(name) > length:
                 header = name[:length-1] + '.'
             else:
                 header = name.rjust(length)
 
             def f(datum):
-                return np.format_float_positional(getattr(datum, name),
-                                                  precision=6, trim='0',
-                                                  ).rjust(length)
+                return fmt(getattr(datum, name)).rjust(length)
+
         else:
             length = 7
             if len(name) > length:

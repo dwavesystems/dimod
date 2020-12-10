@@ -70,7 +70,7 @@ def append_data_vectors(sampleset, **vectors):
 
         >>> sampleset = dimod.append_data_vectors(sampleset, new=[[0, 1], [1, 2]])
         >>> print(sampleset)
-           0  1 energy num_oc. new
+           0  1 energy num_oc.   new
         0 -1 +1   -1.4       1 [0 1]
         1 -1 +1   -1.4       1 [1 2]
         ['SPIN', 2 rows, 2 samples, 2 variables]

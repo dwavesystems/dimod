@@ -206,3 +206,17 @@ class TestSampleSet(unittest.TestCase):
                             "['DISCRETE', 4 rows, 4 samples, 3 variables]"])
 
         self.assertEqual(target, s)
+
+    def test_misalignment(self):
+        ss = dimod.SampleSet.from_samples([[0, 1], [0, 1], [1, 0]], 'BINARY',
+                                          energy=[-1, 1.55, 2])
+
+        s = Formatter().format(ss)
+
+        target = ("   0  1 energy num_oc.\n"
+                  "0  0  1   -1.0       1\n"
+                  "1  0  1   1.55       1\n"
+                  "2  1  0    2.0       1\n"
+                  "['BINARY', 3 rows, 3 samples, 2 variables]")
+
+        self.assertEqual(target, s)
