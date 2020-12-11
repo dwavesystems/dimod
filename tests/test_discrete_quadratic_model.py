@@ -328,6 +328,16 @@ class TestLinear(unittest.TestCase):
 
 
 class TestQuadratic(unittest.TestCase):
+    def test_self_loop(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(5)
+        v = dqm.add_variable(5)
+
+        with self.assertRaises(ValueError):
+            dqm.set_quadratic(u, u, {})
+        with self.assertRaises(ValueError):
+            dqm.set_quadratic_case(u, 0, u, 1, .5)
+
     def test_set_quadratic_case(self):
         dqm = dimod.DQM()
         dqm.add_variable(5, label='a')
