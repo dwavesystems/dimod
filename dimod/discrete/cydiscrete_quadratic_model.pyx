@@ -412,6 +412,9 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("unknown variable")
         if v < 0 or v >= self.adj_.size():
             raise ValueError("unknown variable")
+        if u == v:
+            raise ValueError("there cannot be a quadratic interaction between "
+                             "two cases in the same variable")
 
         cdef CaseIndex case_u, case_v
         cdef CaseIndex cu, cv
@@ -473,6 +476,10 @@ cdef class cyDiscreteQuadraticModel:
         if case_v < 0 or case_v >= self.num_cases(v):
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case_v, self.num_cases(v)))
+
+        if u == v:
+            raise ValueError("there cannot be a quadratic interaction between "
+                             "two cases in the same variable")
 
 
         cdef CaseIndex cu = self.case_starts_[u] + case_u
