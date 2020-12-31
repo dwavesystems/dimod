@@ -27,6 +27,7 @@ from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO
 from dimod.utilities import iter_safe_relabels
+from dimod.variables import Variables
 
 
 __all__ = ['DiscreteQuadraticModel', 'DQM']
@@ -69,117 +70,6 @@ class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
 
     def writable(self):
         return self._file.writable()
-
-
-# this is the third(!) variables implementation in dimod. It differs from
-# dimod.variables in that it stores its labels sparsely. It has the same
-# behaviour as the cyBQM ones, except that it rolls the logic up into a
-# object. These need to be unified.
-class _Variables(abc.Sequence, abc.Set):
-    def __init__(self):
-        self._label_to_idx = dict()
-        self._idx_to_label = dict()
-        self.stop = 0
-
-    def __contains__(self, v):
-        return v in self._label_to_idx or (isinstance(v, int)
-                                           and 0 <= v < self.stop
-                                           and v not in self._idx_to_label)
-
-    def __eq__(self, other):
-        if isinstance(other, abc.Sequence):
-            return len(self) == len(other) and all(map(eq, self, other))
-        elif isinstance(other, abc.Set):
-            return not (self ^ other)
-        else:
-            return False
-
-    def __getitem__(self, idx):
-
-        if not isinstance(idx, int):
-            raise TypeError("index must be an integer.")
-
-        given = idx  # for error message
-
-        # handle negative indexing
-        if idx < 0:
-            idx = self.stop + idx
-
-        if idx >= self.stop:
-            raise IndexError('index {} out of range'.format(given))
-
-        return self._idx_to_label.get(idx, idx)
-
-    def __len__(self):
-        return self.stop
-
-    def __ne__(self, other):
-        return not (self == other)
-
-    @property
-    def is_range(self):
-        return not self._label_to_idx
-
-    def _append(self, v=None):
-        """Append a new variable."""
-
-        if v is None:
-            # handle the easy case
-            if self.is_range:
-                self.stop += 1
-                return
-
-            # we need to pick a new label
-            v = self.stop
-
-            if v not in self:
-                # it's free, so we can stop
-                self.stop += 1
-                return
-
-            # there must be a free integer available
-            v = 0
-            while v in self:
-                v += 1
-
-        elif v in self:
-            raise ValueError('{!r} is already a variable'.format(v))
-
-        idx = self.stop
-
-        if idx != v:
-            self._label_to_idx[v] = idx
-            self._idx_to_label[idx] = v
-
-        self.stop += 1
-
-        return
-
-    def index(self, v):
-        # todo: support start and end like list.index
-        if v not in self:
-            raise ValueError('unknown variable {!r}'.format(v))
-        return self._label_to_idx.get(v, v)
-
-    def _relabel(self, mapping):
-        for submap in iter_safe_relabels(mapping, self):
-            for old, new in submap.items():
-                if old == new:
-                    continue
-
-                idx = self._label_to_idx.pop(old, old)
-
-                if new != idx:
-                    self._label_to_idx[new] = idx
-                    self._idx_to_label[idx] = new  # overwrites old idx
-                else:
-                    self._idx_to_label.pop(idx, None)
-
-    def _relabel_as_integers(self):
-        mapping = self._idx_to_label.copy()
-        self._idx_to_label.clear()
-        self._label_to_idx.clear()
-        return mapping
 
 
 class DiscreteQuadraticModel:
@@ -258,7 +148,7 @@ class DiscreteQuadraticModel:
     """
 
     def __init__(self):
-        self.variables = _Variables()
+        self.variables = Variables()
         self._cydqm = cyDiscreteQuadraticModel()
 
     @property
@@ -382,7 +272,7 @@ class DiscreteQuadraticModel:
         obj = cls._from_file_numpy(file_like)
 
         if header_data['variables']:
-            obj.variables = _Variables()
+            obj.variables = Variables()
             for v in VariablesSection.load(file_like):
                 obj.variables._append(v)
 

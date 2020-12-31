@@ -11,28 +11,19 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 import collections.abc as abc
+import io
+import warnings
 
 from numbers import Integral, Number
-
 from operator import eq
+from pprint import PrettyPrinter
 
 from dimod.decorators import lockable_method
 from dimod.utilities import iter_safe_relabels
 
 __all__ = ['Variables']
-
-
-class CallableDict(abc.Callable, dict):
-    """Dict that can be accessed like a function."""
-    __slots__ = ()
-
-    def __call__(self, v):
-        if v not in self:
-            raise ValueError('missing element {!r}'.format(v))
-        return self[v]
 
 
 def iter_serialize_variables(variables):
@@ -62,62 +53,76 @@ def iter_deserialize_variables(variables):
             yield v
 
 
-class Variables(abc.Sequence, abc.Set):
-    """set-like and list-like variable tracking.
+class _Index(abc.Callable, abc.Mapping):
+    # Deprecated API, in the future .index should be a normal method.
+    # Previous implementations of Variables treated .index as a dict.
 
-    Args:
-        iterable: An iterable of variable labels.
+    __slots__ = ('variables',)
 
-    """
-    __slots__ = ('_label', 'index', '_writeable')
+    def __init__(self, variables):
+        self.variables = variables
 
-    def __init__(self, iterable):
-        self.index = index = CallableDict()
+    def __call__(self, v):
+        # todo: support start and end like list.index
+        if v not in self.variables:
+            raise ValueError('unknown variable {!r}'.format(v))
+        return self.variables._label_to_idx.get(v, v)
 
-        def _iter():
-            idx = 0
-            for v in iterable:
-                if v in index:
-                    continue
-                index[v] = idx
-                idx += 1
-                yield v
-        self._label = list(_iter())
-
-    def __getitem__(self, i):
-        return self._label[i]
-
-    # support python2 pickle
-    def __getstate__(self):
-        return {'_label': self._label, 'index': self.index}
-
-    def __len__(self):
-        return len(self._label)
-
-    def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self._label)
-
-    # support python2 pickle
-    def __setstate__(self, state):
-        for attr, obj in state.items():
-            setattr(self, attr, obj)
-
-    def __str__(self):
-        return str(self._label)
+    def __getitem__(self, v):
+        warnings.warn("treating Variables.index as a mapping is deprecated, "
+                      "please use Variables.index(v) rather than "
+                      "Variables.index[v]",
+                      DeprecationWarning,
+                      stacklevel=2)
+        try:
+            return self(v)
+        except ValueError as err:
+            raise KeyError(*err.args)
 
     def __iter__(self):
-        return iter(self._label)
+        # as far as I know no one used this
+        raise NotImplementedError
+
+    def __len__(self):
+        # as far as I know no one used this
+        raise NotImplementedError
+
+
+class Variables(abc.Sequence, abc.Set):
+    """Set-like and list-like variables tracking.
+
+    Args:
+        iterable (iterable):
+            An iterable of labels. Duplicate labels are ignored. All labels
+            must be hashable.
+
+    """
+    __slots__ = ('_idx_to_label',
+                 '_label_to_idx',
+                 '_stop',
+                 '_writeable',
+                 'index')
+
+    def __init__(self, iterable=None):
+        self._idx_to_label = dict()
+        self._label_to_idx = dict()
+        self._stop = 0
+
+        self.index = _Index(self)
+
+        if iterable is not None:
+            for v in iterable:
+                self._append(v, permissive=True)
 
     def __contains__(self, v):
-        # we can speed this up because we're keeping a dict
         try:
-            return v in self.index
+            return (isinstance(v, int)
+                    and 0 <= v < self._stop
+                    and v not in self._idx_to_label
+                    or v in self._label_to_idx)
         except TypeError:
-            # unhashable objects
-            return False
-
-    def __ne__(self, other):
-        return not (self == other)
+            # unhashable
+            return False  # objects
 
     def __eq__(self, other):
         if isinstance(other, abc.Sequence):
@@ -127,35 +132,176 @@ class Variables(abc.Sequence, abc.Set):
         else:
             return False
 
+    def __getitem__(self, idx):
+        if not isinstance(idx, int):
+            raise TypeError("index must be an integer.")
+
+        given = idx  # for error message
+
+        # handle negative indexing
+        if idx < 0:
+            idx = self._stop + idx
+
+        if idx >= self._stop:
+            raise IndexError('index {} out of range'.format(given))
+
+        return self._idx_to_label.get(idx, idx)
+
+    def __len__(self):
+        return self._stop
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __repr__(self):
+        stream = io.StringIO()
+        stream.write(type(self).__name__)
+        stream.write('(')
+        if self:
+            if self.is_range and len(self) > 10:
+                # 10 is arbitrary, but the idea is we want to truncate
+                # longer variables that are integer-labelled
+                stream.write(repr(range(self._stop)))
+            else:
+                stream.write('[')
+                iterator = iter(self)
+                stream.write(repr(next(iterator)))
+                for v in iterator:
+                    stream.write(', ')
+                    stream.write(repr(v))
+                stream.write(']')
+        stream.write(')')
+        return stream.getvalue()
+
+    @property
+    def is_range(self):
+        return not self._label_to_idx
+
     @property
     def is_writeable(self):
+        warnings.warn("Variables.is_writeable is deprecated",
+                      DeprecationWarning, stacklevel=2)
         return getattr(self, '_writeable', True)
 
     @is_writeable.setter
     def is_writeable(self, b):
+        warnings.warn("Variables.is_writeable is deprecated",
+                      DeprecationWarning, stacklevel=2)
         self._writeable = bool(b)
 
-    # index method is overloaded by __init__
+    def _append(self, v=None, *, permissive=False):
+        """Append a new variable.
+
+        This method is semi-public. it is intended to be used by
+        classes that have :class:`.Variables` as an attribute, not by the
+        the user.
+        """
+
+        if v is None:
+            # handle the easy case
+            if self.is_range:
+                self._stop += 1
+                return
+
+            # we need to pick a new label
+            v = self._stop
+
+            if v not in self:
+                # it's free, so we can stop
+                self._stop += 1
+                return
+
+            # there must be a free integer available
+            v = 0
+            while v in self:
+                v += 1
+
+        elif v in self:
+            if permissive:
+                return
+            else:
+                raise ValueError('{!r} is already a variable'.format(v))
+
+        idx = self._stop
+
+        if idx != v:
+            self._label_to_idx[v] = idx
+            self._idx_to_label[idx] = v
+
+        self._stop += 1
+
+    def _relabel(self, mapping):
+        """Relabel the variables in-place.
+
+        This method is semi-public. it is intended to be used by
+        classes that have :class:`.Variables` as an attribute, not by the
+        the user.
+        """
+        for submap in iter_safe_relabels(mapping, self):
+            for old, new in submap.items():
+                if old == new:
+                    continue
+
+                idx = self._label_to_idx.pop(old, old)
+
+                if new != idx:
+                    self._label_to_idx[new] = idx
+                    self._idx_to_label[idx] = new  # overwrites old idx
+                else:
+                    self._idx_to_label.pop(idx, None)
+
+    def _relabel_as_integers(self):
+        """Relabel the variables as integers in-place.
+
+        This method is semi-public. it is intended to be used by
+        classes that have :class:`.Variables` as an attribute, not by the
+        the user.
+        """
+        mapping = self._idx_to_label.copy()
+        self._idx_to_label.clear()
+        self._label_to_idx.clear()
+        return mapping
 
     def count(self, v):
         # everything is unique
         return int(v in self)
 
-    def to_serializable(self):
-        return list(iter_serialize_variables(self))
+    # index is set by __init__ for now
 
     @lockable_method
-    def relabel(self, mapping):
+    def relabel(self, *args, **kwargs):
+        warnings.warn("Variables.relabel is deprecated. Objects that have "
+                      "Variables as an attribute should use ._relabel() "
+                      "instead. Users should treat the Variables object as "
+                      "static", DeprecationWarning, stacklevel=2)
+        return self._relabel(*args, **kwargs)
 
-        for submap in iter_safe_relabels(mapping, self):
+    def to_serializable(self):
+        """Return an object that (should be) json-serializable.
 
-            label = self._label
-            index = self.index
+        Returns:
+            list: A list of (hopefully) json-serializable objects. Handles some
+            common cases like NumPy scalars.
+            See :func:`iter_serialize_variables`.
 
-            for old, new in submap.items():
-                if old not in self:
-                    continue
+        """
+        return list(iter_serialize_variables(self))
 
-                label[index[old]] = new
-                index[new] = index[old]
-                del index[old]
+
+# register the various objects with prettyprint
+def _pprint_variables(printer, variables, stream, indent, *args, **kwargs):
+    if not variables or variables.is_range:
+        stream.write(repr(variables))
+    else:
+        indent += stream.write(type(variables).__name__)
+        indent += stream.write('(')
+        printer._pprint_list(variables, stream, indent, *args, **kwargs)
+        indent += stream.write(')')
+
+
+try:
+    PrettyPrinter._dispatch[Variables.__repr__] = _pprint_variables
+except AttributeError:
+    # we're using some internal stuff in PrettyPrinter so let's silently fail
+    # for that
+    pass
