@@ -273,7 +273,7 @@ class Variables(abc.Sequence, abc.Set):
         warnings.warn("Variables.relabel is deprecated. Objects that have "
                       "Variables as an attribute should use ._relabel() "
                       "instead. Users should treat the Variables object as "
-                      "static", DeprecationWarning, stacklevel=2)
+                      "static", DeprecationWarning, stacklevel=3)
         return self._relabel(*args, **kwargs)
 
     def to_serializable(self):

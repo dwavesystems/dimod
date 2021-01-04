@@ -81,9 +81,17 @@ class TestRelabel(unittest.TestCase):
         variables = Variables([0, 1])
 
         # relabels a non-existant variable 2
-        variables.relabel({0: 'a', 1: 'b', 2: 'c'})
+        variables._relabel({0: 'a', 1: 'b', 2: 'c'})
 
         self.assertEqual(variables, Variables('ab'))
+
+    def test_permissive_deprecated_api(self):
+        variables = Variables([0, 1])
+
+        with self.assertWarns(DeprecationWarning):
+            variables.relabel({0: 'a', 1: 'b', 2: 'c'})
+
+        self.assertEqual(variables, Variables('ab'))     
 
 
 @parameterized_class(
@@ -138,7 +146,7 @@ class TestIterable(unittest.TestCase):
 
         mapping = dict(zip(iterable, target))
 
-        variables.relabel(mapping)
+        variables._relabel(mapping)
 
         self.assertEqual(variables, target)
 
@@ -146,4 +154,4 @@ class TestIterable(unittest.TestCase):
         variables = Variables(self.iterable)
         mapping = {v: [v] for v in variables}
         with self.assertRaises(ValueError):
-            variables.relabel(mapping)
+            variables._relabel(mapping)
