@@ -241,12 +241,6 @@ def poly_energy(sample_like, poly):
         float: The energy of the sample.
 
     """
-
-    msg = ("poly_energy is deprecated and will be removed in dimod 0.9.0."
-           "In the future, use BinaryPolynomial.energy")
-    warnings.warn(msg, DeprecationWarning)
-    # dev note the vartype is not used in the energy calculation and this will
-    # be deprecated in the future
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
@@ -268,9 +262,4 @@ def poly_energies(samples_like, poly):
         list/:obj:`numpy.ndarray`: The energy of the sample(s).
 
     """
-    msg = ("poly_energies is deprecated and will be removed in dimod 0.9.0."
-           "In the future, use BinaryPolynomial.energies")
-    warnings.warn(msg, DeprecationWarning)
-    # dev note the vartype is not used in the energy calculation and this will
-    # be deprecated in the future
     return BinaryPolynomial(poly, 'SPIN').energies(samples_like)
