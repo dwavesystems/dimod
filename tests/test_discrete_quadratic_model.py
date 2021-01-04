@@ -234,8 +234,9 @@ class TestFile(unittest.TestCase):
         # deprecated
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
 
-        self.assertLess(len(dqm.to_file(compressed=True).read()),
-                        len(dqm.to_file().read()))
+        with self.assertWarns(DeprecationWarning):
+            self.assertLess(len(dqm.to_file(compressed=True).read()),
+                            len(dqm.to_file().read()))
 
     @parameterized.expand(file_parameterized)
     def test_functional(self, name, dqm, kwargs):

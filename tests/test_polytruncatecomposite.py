@@ -38,7 +38,8 @@ class TestSample(unittest.TestCase):
         J = {('a', 'b'): 3.2}
 
         sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 10)
-        samples = sampler.sample_ising(h, J)
+        with self.assertWarns(DeprecationWarning):
+            samples = sampler.sample_ising(h, J)
 
         # we should see 2**n < 10 rows
         self.assertEqual(len(samples), 8)
@@ -48,7 +49,8 @@ class TestSample(unittest.TestCase):
         J = {('a', 'b'): 3.2}
 
         sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 6)
-        samples = sampler.sample_ising(h, J)
+        with self.assertWarns(DeprecationWarning):
+            samples = sampler.sample_ising(h, J)
 
         self.assertEqual(len(samples), 6)
 
@@ -59,6 +61,7 @@ class TestSample(unittest.TestCase):
         J = {('a', 'b'): 3.2}
 
         sampler = PolyTruncateComposite(HigherOrderComposite(ExactSolver()), 6, aggregate=True)
-        samples = sampler.sample_ising(h, J)
+        with self.assertWarns(DeprecationWarning):
+            samples = sampler.sample_ising(h, J)
 
         self.assertEqual(len(samples), 6)

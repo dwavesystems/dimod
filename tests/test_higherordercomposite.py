@@ -23,16 +23,16 @@ import dimod.testing as dtest
 from dimod import HigherOrderComposite, ExactSolver
 
 
-class TestFixedVariableComposite(unittest.TestCase):
+class TestHigherOrderComposite(unittest.TestCase):
 
     def test_sample(self):
         linear = {0: -0.5, 1: -0.3, 2: -0.8}
         quadratic = {(0, 1, 2): -1.7}
 
         sampler = HigherOrderComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic, penalty_strength=10,
-                                        keep_penalty_variables=False,
-                                        discard_unsatisfied=False)
+        response = sampler.sample_hising(linear, quadratic, penalty_strength=10,
+                                         keep_penalty_variables=False,
+                                         discard_unsatisfied=False)
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1, 2: 1})
         self.assertAlmostEqual(response.first.energy, -3.3)
@@ -43,8 +43,8 @@ class TestFixedVariableComposite(unittest.TestCase):
         quadratic = {(0, 1, 2): -1.7}
 
         sampler = HigherOrderComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic, penalty_strength=10,
-                                        discard_unsatisfied=True)
+        response = sampler.sample_hising(linear, quadratic, penalty_strength=10,
+                                         discard_unsatisfied=True)
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1, 2: 1})
         self.assertAlmostEqual(response.first.energy, -3.3)
@@ -55,9 +55,9 @@ class TestFixedVariableComposite(unittest.TestCase):
         quadratic = {(0, 1, 2): -1.7}
 
         sampler = HigherOrderComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic, penalty_strength=10,
-                                        keep_penalty_variables=True,
-                                        discard_unsatisfied=True)
+        response = sampler.sample_hising(linear, quadratic, penalty_strength=10,
+                                         keep_penalty_variables=True,
+                                         discard_unsatisfied=True)
 
         self.assertEqual(len(response.first.sample), 5)
         self.assertAlmostEqual(response.first.energy, -3.3)
@@ -68,9 +68,9 @@ class TestFixedVariableComposite(unittest.TestCase):
         quadratic = {(0, 1): -1.7}
 
         sampler = HigherOrderComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic,
-                                        keep_penalty_variables=True,
-                                        discard_unsatisfied=False)
+        response = sampler.sample_hising(linear, quadratic,
+                                         keep_penalty_variables=True,
+                                         discard_unsatisfied=False)
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1})
         self.assertAlmostEqual(response.first.energy, -2.5)
@@ -81,9 +81,9 @@ class TestFixedVariableComposite(unittest.TestCase):
         quadratic = {(0, 1): -1.7}
 
         sampler = HigherOrderComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic, penalty_strength=10,
-                                        keep_penalty_variables=True,
-                                        discard_unsatisfied=True)
+        response = sampler.sample_hising(linear, quadratic, penalty_strength=10,
+                                         keep_penalty_variables=True,
+                                         discard_unsatisfied=True)
 
         self.assertEqual(response.first.sample, {0: 1, 1: 1})
         self.assertAlmostEqual(response.first.energy, -2.5)

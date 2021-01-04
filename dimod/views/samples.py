@@ -137,7 +137,7 @@ class SamplesArray(abc.Sequence, abc.Iterator):
         import warnings
         msg = ("SampleSet.samples() will return an iterable not an iterator in "
                "the future")
-        warnings.warn(msg, DeprecationWarning)
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
 
         itercount = getattr(self, '_itercount', 0)
         if itercount < len(self):

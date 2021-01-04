@@ -27,7 +27,7 @@ class TestMakeQuadratic(unittest.TestCase):
         bqm = dimod.higherorder.utils._spin_product(['a', 'b', 'p', 'aux'])
 
         for v in ['a', 'b', 'p', 'aux']:
-            self.assertIn(v, bqm)
+            self.assertIn(v, bqm.variables)
         self.assertEqual(len(bqm), 4)  # has an auxiliary variable
 
         seen = set()
@@ -50,7 +50,7 @@ class TestMakeQuadratic(unittest.TestCase):
         bqm = dimod.higherorder.utils._binary_product(variables)
 
         for v in variables:
-            self.assertIn(v, bqm)
+            self.assertIn(v, bqm.variables)
         self.assertEqual(len(bqm), 3)
 
         seen = set()
@@ -155,7 +155,8 @@ class TestMakeQuadratic(unittest.TestCase):
 
         bqm = make_quadratic(H, 1, 'BINARY')
 
-        self.assertEqual(set(bqm), {0, 1, 2})  # should be no aux variables
+        # should be no aux variables
+        self.assertEqual(set(bqm.variables), {0, 1, 2})
 
     def test_another(self):
         J = {(0, 1, 2): -1, (0, 1, 3): -1, (2, 3, 0): 1, (3, 2, 0): -1}

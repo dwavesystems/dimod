@@ -240,7 +240,7 @@ def assert_bqm_almost_equal(actual, desired, places=7,
     assert actual.vartype is desired.vartype, "unlike vartype"
 
     # variables should match
-    variables_diff = set(actual).symmetric_difference(desired)
+    variables_diff = set(actual.variables) ^ desired.variables
     if variables_diff:
         v = variables_diff.pop()
         msg = "{!r} is not a shared variable".format(v)

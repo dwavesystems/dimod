@@ -195,21 +195,26 @@ class TestBinaryQuadraticModel(unittest.TestCase):
     def test__contains__(self):
         bqm = dimod.BinaryQuadraticModel({'a': -1}, {}, 0.0, dimod.SPIN)
 
-        self.assertIn('a', bqm)
-        self.assertNotIn('b', bqm)
+        with self.assertWarns(DeprecationWarning):
+            self.assertIn('a', bqm)
+        with self.assertWarns(DeprecationWarning):
+            self.assertNotIn('b', bqm)
 
         bqm.add_interaction('a', 'b', .5)
 
-        self.assertIn('b', bqm)
+        with self.assertWarns(DeprecationWarning):
+            self.assertIn('b', bqm)
 
     def test__iter__(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
-        self.assertEqual(set(bqm), set())
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(set(bqm), set())
 
         bqm.add_interaction('a', 'b', -1)
 
-        self.assertEqual(set(bqm), {'a', 'b'})
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(set(bqm), {'a', 'b'})
 
     def test_variables(self):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
@@ -1294,7 +1299,8 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(bqm, dimod.BinaryQuadraticModel({0: -1, 1: 1}, {(0, 1): 1}, 1, dimod.SPIN))
 
     def test_info(self):
-        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, tag=1)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN, tag=1)
 
         self.assertIn('tag', bqm.info)
         self.assertEqual(bqm.info['tag'], 1)
@@ -1432,9 +1438,10 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     def test_functional_info(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
+        h = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        J = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel(h, J, 3, dimod.SPIN, tag=5)
 
         new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable())
 
@@ -1458,9 +1465,10 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     def test_functional_bytes_info(self):
-        linear = {'a': -1, 4: 1, ('a', "complex key"): 3}
-        quadratic = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
-        bqm = dimod.BinaryQuadraticModel(linear, quadratic, 3, dimod.SPIN, tag=5)
+        h = {'a': -1, 4: 1, ('a', "complex key"): 3}
+        J = {('a', 'c'): 1.5, ('b', 'c'): 3., ('a', 3): -1}
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel(h, J, 3, dimod.SPIN, tag=5)
 
         new = dimod.BinaryQuadraticModel.from_serializable(bqm.to_serializable(use_bytes=True))
 
