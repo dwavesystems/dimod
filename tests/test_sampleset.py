@@ -699,7 +699,8 @@ class TestIteration(unittest.TestCase):
         sampleset = dimod.SampleSet.from_samples_bqm([{'a': -1, 'b': 1}, {'a': 1, 'b': 1}], bqm)
         self.assertIsInstance(sampleset.samples(), abc.Iterator)
         self.assertIsInstance(sampleset.samples(n=2), abc.Iterator)
-        spl = next(sampleset.samples())
+        with self.assertWarns(DeprecationWarning):
+            spl = next(sampleset.samples())
         self.assertEqual(spl, {'a': 1, 'b': 1})
 
 

@@ -140,7 +140,7 @@ class TestExactSolver(unittest.TestCase):
     def test_arbitrary_labels(self):
         bqm = dimod.BQM.from_ising({}, {'ab': -1})
         sampleset = dimod.ExactSolver().sample(bqm)
-        self.assertEqual(set(sampleset.variables), set(bqm))
+        self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
 
 class TestExactPolySolver(unittest.TestCase):

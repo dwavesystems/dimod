@@ -33,7 +33,7 @@ class TestConnectedComponents(unittest.TestCase):
         bqm = dimod.BQM.from_ising({}, {'ab': -1, 'ac': -1, 'bd': -1})
 
         cc = list(dimod.connected_components(bqm))
-        self.assertEqual(cc, [set(bqm)])
+        self.assertEqual(cc, [set(bqm.variables)])
 
     def test_disconnected(self):
         bqm = dimod.BQM.from_ising({}, {'ab': -1, 'ac': -1, 'de': -1})

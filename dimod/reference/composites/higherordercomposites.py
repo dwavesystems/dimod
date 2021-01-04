@@ -25,7 +25,9 @@ Higher-order composites implement three sampling methods (similar to
 * :meth:`.PolySampler.sample_hubo`
 
 """
-from __future__ import division
+import warnings
+
+from collections import defaultdict
 
 import numpy as np
 
@@ -33,7 +35,7 @@ from dimod.core.polysampler import ComposedPolySampler, PolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.higherorder.utils import make_quadratic, poly_energies
 from dimod.sampleset import SampleSet, append_variables
-from collections import defaultdict
+
 
 
 __all__ = ['HigherOrderComposite',
@@ -91,6 +93,9 @@ class HigherOrderComposite(ComposedPolySampler):
         # need to handle offset input for backwards compatibility
         if offset:
             J[()] = offset
+        warnings.warn("HigherOrderComposite.sample_ising is deprecated and "
+                      "will be removed in dimod 0.10.0",
+                      DeprecationWarning, stacklevel=2)
         return ComposedPolySampler.sample_ising(self, h, J, *args, **kwargs)
 
     def sample_poly(self, poly, penalty_strength=1.0,
