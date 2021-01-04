@@ -26,6 +26,7 @@ import numpy as np
 from numpy.lib import recfunctions
 from warnings import warn
 
+from dimod.decorators import lockable_method
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
 from dimod.serialization.utils import (pack_samples as _pack_samples,
@@ -414,7 +415,7 @@ def _iter_records(samplesets, vartype, variables):
 
         if samples.variables != variables:
             new_record = samples.record.copy()
-            order = [samples.variables.index[v] for v in variables]
+            order = [samples.variables.index(v) for v in variables]
             new_record.sample = samples.record.sample[:, order]
             yield new_record
         else:
@@ -900,7 +901,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         self._writeable = b
 
         self.record.flags.writeable = b
-        self.variables.is_writeable = b
         self.info.is_writeable = b
 
     ###############################################################################################
@@ -1159,6 +1159,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return self
 
+    @lockable_method
     def relabel_variables(self, mapping, inplace=True):
         """Relabel the variables of a :class:`SampleSet` according to the specified mapping.
 
@@ -1197,7 +1198,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                 return sampleset.relabel_variables(mapping, inplace=True)
             return self.from_future(self, hook)
 
-        self.variables.relabel(mapping)
+        self.variables._relabel(mapping)
         return self
 
     def resolve(self):

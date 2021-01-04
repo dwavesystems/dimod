@@ -214,15 +214,15 @@ def penalty_satisfaction(response, bqm):
 
     """
     record = response.record
-    label_dict = response.variables.index
+    label_to_idx = response.variables.index
 
     if len(bqm.info['reduction']) == 0:
         return np.array([1] * len(record.sample))
 
-    penalty_vector = np.prod([record.sample[:, label_dict[qi]] *
-                              record.sample[:, label_dict[qj]]
+    penalty_vector = np.prod([record.sample[:, label_to_idx(qi)] *
+                              record.sample[:, label_to_idx(qj)]
                               == record.sample[:,
-                                 label_dict[valdict['product']]]
+                                 label_to_idx(valdict['product'])]
                               for (qi, qj), valdict in
                               bqm.info['reduction'].items()], axis=0)
     return penalty_vector
@@ -279,7 +279,7 @@ def polymorph_response(response, poly, bqm,
 
     if not keep_penalty_variables:
         original_variables = poly.variables
-        idxs = [response.variables.index[v] for v in original_variables]
+        idxs = [response.variables.index(v) for v in original_variables]
         samples = np.asarray(samples[:, idxs])
 
     num_samples, num_variables = np.shape(samples)

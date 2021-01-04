@@ -11,14 +11,11 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
+import collections.abc as abc
 import unittest
 
-try:
-    import collections.abc as abc
-except ImportError:
-    import collections as abc
+from parameterized import parameterized_class
 
 from dimod.variables import Variables
 
@@ -43,20 +40,71 @@ class TestDuplicates(unittest.TestCase):
         self.assertEqual(len(variables), 1)
 
 
+class TestPrint(unittest.TestCase):
+    def test_pprint(self):
+        import pprint
+
+        variables = Variables(range(10))
+        variables._append('a')  # make not range
+
+        string = pprint.pformat(variables, width=20)
+        target = '\n'.join(
+            ["Variables([0,",
+             "           1,",
+             "           2,",
+             "           3,",
+             "           4,",
+             "           5,",
+             "           6,",
+             "           7,",
+             "           8,",
+             "           9,",
+             "           'a'])"])
+        self.assertEqual(string, target)
+
+    def test_repr_empty(self):
+        variables = Variables()
+        self.assertEqual(repr(variables), 'Variables()')
+
+    def test_repr_mixed(self):
+        variables = Variables('abc')
+        self.assertEqual(repr(variables), "Variables(['a', 'b', 'c'])")
+
+    def test_repr_range(self):
+        self.assertEqual(repr(Variables(range(10))),
+                         'Variables({!r})'.format(list(range(10))))
+        self.assertEqual(repr(Variables(range(11))), 'Variables(range(0, 11))')
+
+
 class TestRelabel(unittest.TestCase):
     def test_permissive(self):
         variables = Variables([0, 1])
 
         # relabels a non-existant variable 2
-        variables.relabel({0: 'a', 1: 'b', 2: 'c'})
+        variables._relabel({0: 'a', 1: 'b', 2: 'c'})
 
         self.assertEqual(variables, Variables('ab'))
 
+    def test_permissive_deprecated_api(self):
+        variables = Variables([0, 1])
 
-class TestList(unittest.TestCase):
-    iterable = list(range(5))
+        with self.assertWarns(DeprecationWarning):
+            variables.relabel({0: 'a', 1: 'b', 2: 'c'})
 
+        self.assertEqual(variables, Variables('ab'))     
+
+
+@parameterized_class(
+    [dict(name='list', iterable=list(range(5))),
+     dict(name='string', iterable='abcde'),
+     dict(name='range', iterable=range(5)),
+     dict(name='mixed', iterable=[0, ('b',), 2.1, 'c', frozenset('d')]),
+     ],
+    class_name_func=lambda cls, i, inpt: '%s_%s' % (cls.__name__, inpt['name'])
+    )
+class TestIterable(unittest.TestCase):
     def test_index_api(self):
+        # deprecated API
         variables = Variables(self.iterable)
         self.assertTrue(hasattr(variables, 'index'))
         self.assertTrue(callable(variables.index))
@@ -98,7 +146,7 @@ class TestList(unittest.TestCase):
 
         mapping = dict(zip(iterable, target))
 
-        variables.relabel(mapping)
+        variables._relabel(mapping)
 
         self.assertEqual(variables, target)
 
@@ -106,17 +154,4 @@ class TestList(unittest.TestCase):
         variables = Variables(self.iterable)
         mapping = {v: [v] for v in variables}
         with self.assertRaises(ValueError):
-            variables.relabel(mapping)
-
-
-class TestMixed(TestList):
-    # misc hashable objects
-    iterable = [0, ('b',), 2.1, 'c', frozenset('d')]
-
-
-class TestRange(TestList):
-    iterable = range(5)
-
-
-class TestString(TestList):
-    iterable = 'abcde'
+            variables._relabel(mapping)

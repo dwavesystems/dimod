@@ -114,15 +114,15 @@ class SamplesArray(abc.Sequence, abc.Iterator):
 
         # multiple variables
         try:
-            index = (row, [variables.index[v] for v in col])
-        except (TypeError):
+            index = (row, [variables.index(v) for v in col])
+        except (TypeError, ValueError):
             raise KeyError('{!r} is not a variable in samples'.format(col))
 
         if isinstance(row, (abc.Sequence, np.ndarray)):
             # we know that column is a sequence (because we just constructed it)
             # so we have triggered advanced indexing which we don't want. Use
             # ix_ to get back to basic indexing
-            index = np.ix_(row, [variables.index[v] for v in col])
+            index = np.ix_(row, [variables.index(v) for v in col])
 
         return samples[index]
 
