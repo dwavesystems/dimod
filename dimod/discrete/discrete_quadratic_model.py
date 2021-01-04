@@ -26,7 +26,6 @@ import numpy as np
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO
-from dimod.utilities import iter_safe_relabels
 from dimod.variables import Variables
 
 
