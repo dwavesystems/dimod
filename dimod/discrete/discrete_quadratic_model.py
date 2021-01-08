@@ -29,7 +29,7 @@ from dimod.serialization.fileview import VariablesSection, _BytesIO
 from dimod.variables import Variables
 from typing import List, Tuple, Union, Generator
 
-Linear = Union[List[Tuple], Generator[Tuple, None, None]]
+LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
 
 __all__ = ['DiscreteQuadraticModel', 'DQM']
@@ -419,7 +419,7 @@ class DiscreteQuadraticModel:
         return self._cydqm.get_quadratic_case(
             self.variables.index(u), u_case, self.variables.index(v), v_case)
 
-    def add_constraint_as_quadratic(self, terms: Linear, lagrange_multiplier: float,
+    def add_constraint_as_quadratic(self, terms: LinearTriplets, lagrange_multiplier: float,
                                     constant: float):
         """Add a linear constraint as a quadratic objective.
 
