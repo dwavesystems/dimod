@@ -27,6 +27,9 @@ from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO
 from dimod.variables import Variables
+from typing import List, Tuple, Union, Generator
+
+Linear = Union[List[Tuple], Generator[Tuple, None, None]]
 
 
 __all__ = ['DiscreteQuadraticModel', 'DQM']
@@ -415,6 +418,24 @@ class DiscreteQuadraticModel:
         """
         return self._cydqm.get_quadratic_case(
             self.variables.index(u), u_case, self.variables.index(v), v_case)
+
+    def add_constraint_as_quadratic(self, terms: Linear, lagrange_multiplier: float,
+                                    constant: float):
+        """
+        Add a linear constraint of the form \\sum_{ik} a_{ik} x_{ik} + C = 0 to dqm object as a quadratic objective.
+        Args:
+            dqm: DiscreteQuadraticModel
+            terms: A list or a generator of tuples of the type (variable, case, bias).
+                Each tuple is evaluated to the term bias * variable_case. All terms in the list/generator are summed.
+            lagrange_multiplier: The coefficient or the penalty strength
+            const: The constant value of the constraint.
+
+        Returns: None. Updates the dqm object
+
+        """
+        variables, cases, biases = zip(*terms)
+        variables = list(map(self.variables.index, variables))
+        self._cydqm.add_constraint_as_quadratic(variables, cases, biases, lagrange_multiplier, constant)
 
     def num_cases(self, v=None):
         """If v is provided, the number of cases associated with v, otherwise

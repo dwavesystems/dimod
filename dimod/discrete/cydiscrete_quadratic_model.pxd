@@ -59,3 +59,5 @@ cdef class cyDiscreteQuadraticModel:
 
     cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
         Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
+    cpdef void add_constraint_as_quadratic(self, vector[VarIndex], vector[CaseIndex],
+                                           vector[Bias], Bias, Bias)

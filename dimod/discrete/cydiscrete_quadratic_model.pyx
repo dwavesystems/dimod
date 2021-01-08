@@ -263,6 +263,25 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    cpdef void add_constraint_as_quadratic(self, vector[VarIndex] variables, vector[CaseIndex] cases,
+                                           vector[Bias] biases, Bias lagrange_multiplier, Bias constant):
+        num_terms = len(variables)
+        for i in range(num_terms):
+            v = variables[i]
+            cv = cases[i]
+            bv = biases[i]
+            bias = self.get_linear_case(v, cv)
+            self.set_linear_case(v, cv, bias + 2 * lagrange_multiplier * bv * constant + lagrange_multiplier * bv * bv)
+            for j in range(i + 1, num_terms):
+                u = variables[j]
+                cu = cases[j]
+                bu = biases[j]
+                if v != u:
+                    bias = self.get_quadratic_case(v, cv, u, cu)
+                    self.set_quadratic_case(v, cv, u, cu, bias + 2 * lagrange_multiplier * bv * bu)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Bias get_linear_case(self, VarIndex v, CaseIndex case) except? -45.3:
 
         # self.num_cases checks that the variable is valid
