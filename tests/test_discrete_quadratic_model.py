@@ -416,7 +416,7 @@ class TestConstraint(unittest.TestCase):
         num_cases = 3
         x = {}
         for i in range(num_variables):
-            x[i] = dqm.add_variable(num_cases, label=f'x_{i}')
+            x[i] = dqm.add_variable(num_cases, label='x_{i}'.format(i=i))
 
         for c in range(num_cases):
             dqm.add_constraint_as_quadratic(

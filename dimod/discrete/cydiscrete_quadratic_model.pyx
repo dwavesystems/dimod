@@ -267,8 +267,7 @@ cdef class cyDiscreteQuadraticModel:
                                            vector[Bias] biases, Bias lagrange_multiplier, Bias constant):
         if len(variables) != len(cases) or len(variables) != len(biases):
             raise ValueError("There should be equal number of variables, "
-                             "cases, and biases. Each term should be a "
-                             "3-tuple")
+                             "cases, and biases")
 
         cdef unsigned long int num_terms = len(variables)
         cdef unsigned long int i, j

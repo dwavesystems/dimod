@@ -421,10 +421,10 @@ class DiscreteQuadraticModel:
 
     def add_constraint_as_quadratic(self, terms: Linear, lagrange_multiplier: float,
                                     constant: float):
-        """Add a linear constraint of the form below
-         .. math::
-            \sum_{i,k} a_{i,k} x_{i,k} + C = 0
-         to dqm object as a quadratic objective.
+        """Add a linear constraint as a quadratic objective.
+
+        Adds a linear constraint of the form :math:`\sum_{i,k} a_{i,k} x_{i,k} + C = 0`
+        to the discrete quadratic model as a quadratic objective.
 
         Args:
             terms: A list of tuples of the type (variable, case, bias).
