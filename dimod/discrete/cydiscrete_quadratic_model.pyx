@@ -279,7 +279,7 @@ cdef class cyDiscreteQuadraticModel:
             cv = cases[i]
             bv = biases[i]
             bias = self.get_linear_case(v, cv)
-            bias += 2 * lagrange_multiplier * (bv * constant + bv * bv)
+            bias += lagrange_multiplier * (2 * bv * constant + bv * bv)
             self.set_linear_case(v, cv, bias)
             for j in range(i + 1, num_terms):
                 u = variables[j]
