@@ -431,6 +431,27 @@ class TestConstraint(unittest.TestCase):
                     for case in range(num_cases):
                         self.assertEqual(dqm.get_quadratic_case(x[i], case, x[j], case), 2.0)
 
+    def test_more_constraint(self):
+        dqm = dimod.DQM()
+        x = dqm.add_variable(5, label='x')
+        y = dqm.add_variable(3, label='y')
+        w = dqm.add_variable(4, label='w')
+
+        expression = [(x, 1, 1.0), (y, 2, 2.0), (w, 3, 1.0)]
+        constant = -2.0
+        dqm.add_constraint_as_quadratic(
+            expression,
+            lagrange_multiplier=1.0, constant=constant)
+
+        expression_dict = {v: (c, b) for v, c, b in expression}
+        for cx, cy, cw in itertools.product(range(5), range(3), range(4)):
+            s = constant
+            state = {'x': cx, 'y': cy, 'w': cw}
+            for v, cv, bias in expression:
+                if expression_dict[v][0] == state[v]:
+                    s += bias
+            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+
 
 class TestNumpyVectors(unittest.TestCase):
 
