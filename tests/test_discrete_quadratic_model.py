@@ -409,6 +409,29 @@ class TestQuadratic(unittest.TestCase):
         dqm.set_quadratic(u, v, biases)
 
 
+class TestConstraint(unittest.TestCase):
+    def test_simple_constraint(self):
+        dqm = dimod.DQM()
+        num_variables = 2
+        num_cases = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = dqm.add_variable(num_cases, label=f'x_{i}')
+
+        for c in range(num_cases):
+            dqm.add_constraint_as_quadratic(
+                [(x[i], c, 1.0) for i in range(num_variables)],
+                lagrange_multiplier=1.0, constant=-1.0)
+
+        for i in x:
+            for case in range(num_cases):
+                self.assertEqual(dqm.get_linear_case(x[i], case), -1)
+            for j in x:
+                if j > i:
+                    for case in range(num_cases):
+                        self.assertEqual(dqm.get_quadratic(x[i], x[j], case, case), 2.0)
+
+
 class TestNumpyVectors(unittest.TestCase):
 
     def test_empty_functional(self):

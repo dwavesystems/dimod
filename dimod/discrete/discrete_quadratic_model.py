@@ -421,20 +421,25 @@ class DiscreteQuadraticModel:
 
     def add_constraint_as_quadratic(self, terms: Linear, lagrange_multiplier: float,
                                     constant: float):
-        """
-        Add a linear constraint of the form \\sum_{ik} a_{ik} x_{ik} + C = 0 to dqm object as a quadratic objective.
+        """Add a linear constraint of the form below
+         .. math::
+            \sum_{i,k} a_{i,k} x_{i,k} + C = 0
+         to dqm object as a quadratic objective.
+
         Args:
-            dqm: DiscreteQuadraticModel
-            terms: A list or a generator of tuples of the type (variable, case, bias).
-                Each tuple is evaluated to the term bias * variable_case. All terms in the list/generator are summed.
+            terms: A list of tuples of the type (variable, case, bias).
+                Each tuple is evaluated to the term (bias * variable_case).
+                All terms in the list are summed.
             lagrange_multiplier: The coefficient or the penalty strength
-            const: The constant value of the constraint.
+            constant: The constant value of the constraint.
 
-        Returns: None. Updates the dqm object
-
+        Returns: None
         """
-        variables, cases, biases = zip(*terms)
-        variables = list(map(self.variables.index, variables))
+        variables, cases, biases = [], [], []
+        for v, c, b in terms:
+            variables.append(self.variables.index(v))
+            cases.append(c)
+            biases.append(b)
         self._cydqm.add_constraint_as_quadratic(variables, cases, biases, lagrange_multiplier, constant)
 
     def num_cases(self, v=None):

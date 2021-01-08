@@ -265,20 +265,31 @@ cdef class cyDiscreteQuadraticModel:
     @cython.wraparound(False)
     cpdef void add_constraint_as_quadratic(self, vector[VarIndex] variables, vector[CaseIndex] cases,
                                            vector[Bias] biases, Bias lagrange_multiplier, Bias constant):
-        num_terms = len(variables)
+        if len(variables) != len(cases) or len(variables) != len(biases):
+            raise ValueError("There should be equal number of variables, "
+                             "cases, and biases. Each term should be a "
+                             "3-tuple")
+
+        cdef unsigned long int num_terms = len(variables)
+        cdef unsigned long int i, j
+        cdef VarIndex v, u
+        cdef CaseIndex cv, cu
+        cdef Bias bv, bu, bias
         for i in range(num_terms):
             v = variables[i]
             cv = cases[i]
             bv = biases[i]
             bias = self.get_linear_case(v, cv)
-            self.set_linear_case(v, cv, bias + 2 * lagrange_multiplier * bv * constant + lagrange_multiplier * bv * bv)
+            bias += 2 * lagrange_multiplier * (bv * constant + bv * bv)
+            self.set_linear_case(v, cv, bias)
             for j in range(i + 1, num_terms):
                 u = variables[j]
                 cu = cases[j]
                 bu = biases[j]
                 if v != u:
                     bias = self.get_quadratic_case(v, cv, u, cu)
-                    self.set_quadratic_case(v, cv, u, cu, bias + 2 * lagrange_multiplier * bv * bu)
+                    bias += 2 * lagrange_multiplier * bv * bu
+                    self.set_quadratic_case(v, cv, u, cu, bias)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
