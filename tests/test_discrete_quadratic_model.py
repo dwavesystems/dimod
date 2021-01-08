@@ -429,7 +429,7 @@ class TestConstraint(unittest.TestCase):
             for j in x:
                 if j > i:
                     for case in range(num_cases):
-                        self.assertEqual(dqm.get_quadratic(x[i], x[j], case, case), 2.0)
+                        self.assertEqual(dqm.get_quadratic_case(x[i], case, x[j], case), 2.0)
 
 
 class TestNumpyVectors(unittest.TestCase):
