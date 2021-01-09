@@ -452,6 +452,32 @@ class TestConstraint(unittest.TestCase):
                     s += bias
             self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
 
+    def test_random_constraint(self):
+        num_variables = 4
+        cases = np.random.randint(3, 6, size=num_variables)
+        dqm_0 = gnp_random_dqm(num_variables, cases, 0.5, 0.5, seed=123)
+        # copy doesn't work properly, so for now create the same dqm twice
+        dqm = gnp_random_dqm(num_variables, cases, 0.5, 0.5, seed=123)
+        x = dqm.variables
+
+        expression = [(x[i], np.random.randint(0, cases[i]), np.random.randint(0, 10)) for i in x]
+        constant = np.random.randint(1, 10) * num_variables
+        lagrange_multiplier = np.random.randint(1, 10)
+        dqm.add_constraint_as_quadratic(
+            expression,
+            lagrange_multiplier=lagrange_multiplier, constant=constant)
+
+        expression_dict = {v: (c, b) for v, c, b in expression}
+        for case_values in itertools.product(*(range(c) for c in cases)):
+            state = {x[i]: case_values[i] for i in x}
+            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
+            s = constant
+            for v, cv, bias in expression:
+                if expression_dict[v][0] == state[v]:
+                    s += bias
+
+            self.assertAlmostEqual(energy, lagrange_multiplier * s ** 2 + dqm_0.energy(state))
+
 
 class TestNumpyVectors(unittest.TestCase):
 
