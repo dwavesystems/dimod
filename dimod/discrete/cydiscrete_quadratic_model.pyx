@@ -274,21 +274,37 @@ cdef class cyDiscreteQuadraticModel:
         cdef VarIndex v, u
         cdef CaseIndex cv, cu
         cdef Bias bv, bu, bias
+        cdef vector[CaseIndex] global_index
         for i in range(num_terms):
             v = variables[i]
-            cv = cases[i]
+            case = cases[i]
+            if case < 0 or case >= self.num_cases(v):
+                raise ValueError("case {} is invalid, variable only supports {} "
+                                 "cases".format(case, self.num_cases(v)))
+            global_index.push_back(self.case_starts_[v] + case)
+
+        for i in range(num_terms):
+            v = variables[i]
+            cv = global_index[i]
             bv = biases[i]
-            bias = self.get_linear_case(v, cv)
+            bias = self.bqm_.get_linear(cv)
             bias += lagrange_multiplier * (2 * bv * constant + bv * bv)
-            self.set_linear_case(v, cv, bias)
+            self.bqm_.set_linear(cv, bias)
             for j in range(i + 1, num_terms):
                 u = variables[j]
-                cu = cases[j]
+                cu = global_index[j]
                 bu = biases[j]
                 if v != u:
-                    bias = self.get_quadratic_case(v, cv, u, cu)
+                    bias = self.bqm_.get_quadratic(cv, cu).first
                     bias += 2 * lagrange_multiplier * bv * bu
-                    self.set_quadratic_case(v, cv, u, cu, bias)
+                    self.bqm_.set_quadratic(cv, cu, bias)
+
+                    low = lower_bound(self.adj_[u].begin(), self.adj_[u].end(), v)
+                    if low == self.adj_[u].end() or deref(low) != v:
+                        self.adj_[u].insert(low, v)
+                        self.adj_[v].insert(
+                            lower_bound(self.adj_[v].begin(), self.adj_[v].end(), u),
+                            u)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
