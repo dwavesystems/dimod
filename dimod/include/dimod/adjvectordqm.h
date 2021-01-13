@@ -44,12 +44,46 @@ public:
   return v;
  } 
 
+ void get_linear(V v, B* biases) {
+   
+
+
+ }
+
+
  // Skipping copy routine since a default copy constructor will work. 
  // No deep copying is needed.
 
- std::vector<B> energies(std::vector<
+ void energies(C* p_samples, int num_variables, int num_samples, B* p_energies) {
+   assert(num_variables == _bqm.num_variables());
+   memset(p_energies, 0, num_variables * sizeof(C));  
+   for(auto si = 0; si < num_samples; si++) {
+     C* p_curr_sample = samples + si * num_variables;
+     for(auto u = 0; u < num_variables; u++) {
+       auto case_u = p_curr_sample_es[u];
+       assert(case_u < num_cases(u));
+       auto cu = _case_starts[u] + case_u;
+       p_energies[si] += _bqm.get_linear(cu);
+       for(auto vi = 0; vi < _adj[u].size(); vi++) {
+         auto v = _adj[u][vi];
+         // We only care about lower triangle.
+         if( v > u) {
+           break;
+         }
+         auto case_v = p_cur_sample[v];
+         auto cv = _case_starts[v] + case_v;
+         auto out = _bqm.get_quadratic(cu,cv);
+         if(out.second) {
+            p_energies[si]+= out.first; 
+         }
+       } 
+     }
+   } 
+ } 
 
 
+
+ }
 }  // namespace dimod
 
 #endif  // DIMOD_ADJVECTORDQM_H_
