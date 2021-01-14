@@ -38,6 +38,10 @@ public:
   std::vector<std::vector<variable_type>> _adj;
   
  AdjVectorBQM() { _case_starts.push_back(0); }
+ 
+ variable_type num_variables() {
+   return _adj.size();
+ }
 
  variable_type num_cases(variable_type v = -1) {
    assert(v < this->num_variables());
@@ -71,10 +75,11 @@ public:
    assert(case_v >= 0 && case_v < num_cases(v));
    return _bqm.get_linear(_case_starts[v] + case_v);
  }
- 
+
+ // Returns false if there is no interaction among the variables. 
  bool get_quadratic(variable_type u, variable_type v, bias_type* quadratic_biases) {
-   assert(u >=0 && u < _adj.size());
-   assert(v >=0 && v < _adj.size());
+   assert(u >=0 && u < this->num_variables());
+   assert(v >=0 && v < this->num_variables());
    auto it = std::lower_bound(_adj[u].begin(), _adj[u].end(), v);
    if( it == _adj[u].end() || *it != v)  {
      return false;
@@ -97,7 +102,7 @@ public:
    assert(case_u >= 0 && case_u < num_cases(v));
    assert(v >= 0 && v < this->num_variables());
    assert(case_v >= 0 && case_v < num_cases(v));
-
+   // should add assert for u != v ?
    auto cu = _case_starts[u] + case_u;
    auto cv = _case_starts[v] + case_v;
    return _bqm.get_quadratic(cu , cv).first;
@@ -108,27 +113,80 @@ public:
  }
 
  size_type num_variaables_interactions() {
-   size_type num_intearctions = 0;
-   for(auto v = 0, vend = this->num_variables(); v++) {
-
-
+   size_type num = 0;
+   for(auto v = 0, vend = this->num_variables(); v < vend; v++) {
+     num+= _adj[v].size(); 
    }
+   return (num/2);
 }
   
- void energies(C* p_samples, int num_variables, int num_samples, B* p_energies) {
-   assert(num_variables == _bqm.num_variables());
-   memset(p_energies, 0, num_variables * sizeof(C));  
+ void set_linear(variable_type v, bias_type* p_biases) {
+    for(auto case_v = 0, num_cases_v = this->num_cases(v); case_v < num_cases_v; case_v++) {
+       _bqm.set_linear(_case_starts[v] + case_v, p_biases[case_v]);
+    }
+ } 
+
+ void set_linear_case(variable_type v, case_type case_v, bias_type b) {
+    assert(case_v >= 0 && case_v < this->num_cases(v));
+    _bqm.set_linear(_case_starts[v] + case_v, b); 
+ }
+
+ bool set_quadratic(variable_type u, variable_type v, bias_type* p_biases) {
+   assert(u >=0 && u < this->num_variables());
+   assert(v >=0 && v < this->num_variables());
+   assert(u != v);
+   num_cases_u = num_cases(u);
+   num_cases_v = num_cases(v); 
+   auto num_cases_u = num_cases(u);
+   auto num_cases_v = num_cases(v);
+   for(auto case_u = 0; case_u < num_cases_u; case_u++) {
+     cu = _case_starts[u] + case_u;
+     for(auto case_v = 0; case_v < num_cases_v; case_v++) {
+       cv = _case_starts[v] + case_v;
+       auto bias = p_biases[cu * num_cases_v + case_v];
+       _bqm.set_quadratic(cu, cv, bias);
+     }
+   }  
+   auto low = std::lower_bound(_adj[u].begin(), _adj[u].end(), v);
+   if( low == _adj[u].end() || *low != v) {
+     _adj[u].insert(low, v);
+     _adj[v].insert(std::lower_bound(_adj[v].begin(), _adj[v].end(), u), u);
+   }
+   return true;
+ }
+
+ bool set_quadratic_case(variable_type u, case_type case_u, variable_type v, case_type case_v, bias_type bias) {
+   assert(u >= 0 && u < this->num_variables());
+   assert(case_u >= 0 && case_u < num_cases(v));
+   assert(v >= 0 && v < this->num_variables());
+   assert(case_v >= 0 && case_v < num_cases(v));
+   auto cu = _case_starts[u] + case_u;
+   auto cv = _case_starts[v] + case_v;
+   _bqm.set_quadratic(cu, cv, bias);
+   auto low = std::lower_bound(_adj[u].begin(), _adj[u].end(), v);
+   if( low == _adj[u].end() || *low != v) {
+     _adj[u].insert(low, v);
+     _adj[v].insert(std::lower_bound(_adj[v].begin(), _adj[v].end(), u), u);
+   }
+   return true;
+ }
+
+ void energies(case_type* p_samples, int num_samples, variable_type num_variables, bias_type* p_energies) {
+   assert(num_variables == this->num_variables());
+   memset(p_energies, 0, num_samples * sizeof(bias_type));  
+   #pragma omp parallel for
    for(auto si = 0; si < num_samples; si++) {
-     C* p_curr_sample = samples + si * num_variables;
+     case_type* p_curr_sample = samples + (si * num_variables);
+     bias_type* p_curr_energy = p_energies + si;
      for(auto u = 0; u < num_variables; u++) {
-       auto case_u = p_curr_sample_es[u];
+       auto case_u = p_curr_sample[u];
        assert(case_u < num_cases(u));
        auto cu = _case_starts[u] + case_u;
-       p_energies[si] += _bqm.get_linear(cu);
+       *p_curr_energy += _bqm.get_linear(cu);
        for(auto vi = 0; vi < _adj[u].size(); vi++) {
          auto v = _adj[u][vi];
          // We only care about lower triangle.
-         if( v > u) {
+         if(v > u) {
            break;
          }
          auto case_v = p_cur_sample[v];
