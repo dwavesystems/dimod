@@ -59,7 +59,7 @@ class AdjVectorDQM {
 
     size_type num_case_interactions() { return bqm_.num_interactions(); }
 
-    variable_type add_variable(size_t num_cases) {
+    variable_type add_variable(variable_type num_cases) {
         assert(num_cases > 0);
         auto v = adj_.size();
         adj_.resize(v + 1);
@@ -179,18 +179,18 @@ class AdjVectorDQM {
     }
 
     void energies(variable_type* p_samples, int num_samples,
-                  variable_type num_variables, bias_type* p_energies) {
-        assert(num_variables == this->num_variables());
-        memset(p_energies, 0, num_samples * sizeof(bias_type));
+                  variable_type sample_length, bias_type* p_energies) {
+        assert(sample_length == this->num_variables());
+        auto num_variables = sample_length;
 #pragma omp parallel for
         for (auto si = 0; si < num_samples; si++) {
-            variable_type* p_curr_sample = samples + (si * num_variables);
-            bias_type* p_curr_energy = p_energies + si;
+            variable_type* p_curr_sample = p_samples + (si * num_variables);
+            double current_sample_energy = 0;
             for (auto u = 0; u < num_variables; u++) {
                 auto case_u = p_curr_sample[u];
                 assert(case_u < num_cases(u));
                 auto cu = case_starts_[u] + case_u;
-                *p_curr_energy += bqm_.get_linear(cu);
+                current_sample_energy+= bqm_.get_linear(cu);
                 for (auto vi = 0; vi < adj_[u].size(); vi++) {
                     auto v = adj_[u][vi];
                     // We only care about lower triangle.
@@ -201,10 +201,11 @@ class AdjVectorDQM {
                     auto cv = case_starts_[v] + case_v;
                     auto out = bqm_.get_quadratic(cu, cv);
                     if (out.second) {
-                        p_energies[si] += out.first;
+                        current_sample_energy+= out.first;
                     }
                 }
             }
+	    p_energies[si] = current_sample_energy;
         }
     }
 }
