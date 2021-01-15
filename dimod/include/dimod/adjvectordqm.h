@@ -140,7 +140,8 @@ class AdjVectorDQM {
         assert(u != v);
         auto num_cases_u = num_cases(u);
         auto num_cases_v = num_cases(v);
-#pragma omp parallel for
+        // This cannot be parallelized since the vectors cannot be reshaped in
+        // parallel.
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
             cu = case_starts_[u] + case_u;
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
