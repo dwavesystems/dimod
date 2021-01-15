@@ -80,7 +80,7 @@ class AdjVectorDQM {
 
     bias_type get_linear_case(variable_type v, variable_type case_v) {
         assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < num_cases(v));
+        assert(case_v >= 0 && case_v < this->num_cases(v));
         return bqm_.get_linear(case_starts_[v] + case_v);
     }
 
@@ -107,6 +107,7 @@ class AdjVectorDQM {
         }
         auto num_cases_u = num_cases(u);
         auto num_cases_v = num_cases(v);
+#pragma omp parallel for
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
             auto span = bqm_.neighborhood(case_starts_[u] + case_u,
                                           case_starts_[v]);
@@ -124,9 +125,9 @@ class AdjVectorDQM {
     bias_type get_quadratic_case(variable_type u, variable_type case_u,
                                  variable_type v, variable_type case_v) {
         assert(u >= 0 && u < this->num_variables());
-        assert(case_u >= 0 && case_u < num_cases(v));
+        assert(case_u >= 0 && case_u < this->num_cases(u));
         assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < num_cases(v));
+        assert(case_v >= 0 && case_v < this->num_cases(v));
         // should add assert for u != v ?
         auto cu = case_starts_[u] + case_u;
         auto cv = case_starts_[v] + case_v;
@@ -137,10 +138,9 @@ class AdjVectorDQM {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         assert(u != v);
-        num_cases_u = num_cases(u);
-        num_cases_v = num_cases(v);
         auto num_cases_u = num_cases(u);
         auto num_cases_v = num_cases(v);
+#pragma omp parallel for
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
             cu = case_starts_[u] + case_u;
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
@@ -163,9 +163,9 @@ class AdjVectorDQM {
                             variable_type v, variable_type case_v,
                             bias_type bias) {
         assert(u >= 0 && u < this->num_variables());
-        assert(case_u >= 0 && case_u < num_cases(v));
+        assert(case_u >= 0 && case_u < this->num_cases(u));
         assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < num_cases(v));
+        assert(case_v >= 0 && case_v < this->num_cases(v));
         auto cu = case_starts_[u] + case_u;
         auto cv = case_starts_[v] + case_v;
         bqm_.set_quadratic(cu, cv, bias);
@@ -190,7 +190,7 @@ class AdjVectorDQM {
                 auto case_u = p_curr_sample[u];
                 assert(case_u < num_cases(u));
                 auto cu = case_starts_[u] + case_u;
-                current_sample_energy+= bqm_.get_linear(cu);
+                current_sample_energy += bqm_.get_linear(cu);
                 for (auto vi = 0; vi < adj_[u].size(); vi++) {
                     auto v = adj_[u][vi];
                     // We only care about lower triangle.
@@ -201,11 +201,11 @@ class AdjVectorDQM {
                     auto cv = case_starts_[v] + case_v;
                     auto out = bqm_.get_quadratic(cu, cv);
                     if (out.second) {
-                        current_sample_energy+= out.first;
+                        current_sample_energy += out.first;
                     }
                 }
             }
-	    p_energies[si] = current_sample_energy;
+            p_energies[si] = current_sample_energy;
         }
     }
 }
