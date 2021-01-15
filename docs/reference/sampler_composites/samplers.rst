@@ -7,7 +7,14 @@ Samplers
 The `dimod` package includes several example samplers.
 
 .. contents::
-    :depth: 3
+    :local:
+    :depth: 1
+
+Other Ocean packages provide production samplers; for example, the 
+:std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides 
+:std:doc:`samplers for D-Wave systems <oceandocs:docs_system/reference/samplers>`
+and :std:doc:`dwave-neal <oceandocs:docs_neal/sdk_index>` provides 
+a simulated-annealing sampler.
 
 .. automodule:: dimod.reference.samplers
 .. currentmodule:: dimod.reference.samplers
