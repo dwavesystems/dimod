@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <algorithm>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -32,11 +33,81 @@ class AdjVectorDQM {
     using variable_type = V;
     using size_type = std::size_t;
 
-    AdjVectorBQM bqm_;
+    AdjVectorBQM<variable_type, bias_type> bqm_;
     std::vector<variable_type> case_starts_;
     std::vector<std::vector<variable_type>> adj_;
 
     AdjVectorBQM() { case_starts_.push_back(0); }
+
+    AdjVectorDQM(variable_type* case_starts, bias_type* linear_biases,
+                 size_type num_variables, size_type num_cases,
+                 variable_type* irow, variable_type* icol,
+                 bias_type* quadratic_biases, size_type num_interactions) {
+        // Set the BQM, linear biases will be added separately.
+        if (num_interactions) {
+            bqm_ = AdjVectorBQM<variable_type, bias_type>(
+                    irow, icol, num_interactions, true);
+        }
+
+        // Accounting for the cases/variables at the end without interaction.
+        while (bqm_.num_variables() < num_cases) {
+            bqm_.add_variable();
+        }
+        assert(bqm_.num_variables() == num_cases);
+
+        // Add the linear biases.
+        for (auto ci = 0; ci < num_cases; ci++) {
+            bqm_.set_linear(ci, linear_biases[ci]);
+        }
+
+        // Set the case starts.
+        case_starts_.resize(num_variables + 1);
+        for (auto v = 0; v < num_variables; v++) {
+            case_starts_[v] = case_starts[v];
+        }
+        case_starts[num_variables] = num_cases;
+
+        // Fill the adjacency list for variables.
+        std::vector<std::unordered_set<variable_type>> adjset;
+        adjset.resize(num_variables);
+        auto u = 0;
+        for (auto ci = 0, ci_end = bqm_.num_variables(); ci++) {
+            while (ci >= case_starts_[u + 1]) {
+                u++;
+            }
+            auto span = bqm_.neighborhood(ci);
+            auto v = 0;
+            while (span.first != span.second) {
+                auto cj = *(span.first).first;
+                while (cj >= case_starts_[v + 1]) {
+                    v++;
+                }
+                adjset[u].insert(v);
+                span.first++;
+            }
+        }
+
+        adj_.resize(num_variables);
+        for (auto v = 0; v < num_variables; v++) {
+            adj_[v].insert(adj_[v].begin(), adjset[v].begin(), adjset[v].end());
+            std::sort(adj_[v].begin(), adj_[v].end());
+        }
+    }
+
+    bool is_self_loop_present() {
+        for (auto v = 0, num_variables = this->num_variables();
+             v < num_variables; v++) {
+            for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1];
+                 ci < ci_end; ci++) {
+                auto span = bqm_.neighborhood(ci, case_starts_[v]);
+                if ((span.first != span.second) &&
+                    (*(span.first).first < case_starts_[v + 1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     variable_type num_variables() { return adj_.size(); }
 
@@ -179,13 +250,13 @@ class AdjVectorDQM {
         return true;
     }
 
-    void energies(variable_type* p_samples, int num_samples,
-                  variable_type sample_length, bias_type* p_energies) {
+    void get_energies(variable_type* samples, int num_samples,
+                      variable_type sample_length, bias_type* energies) {
         assert(sample_length == this->num_variables());
         auto num_variables = sample_length;
 #pragma omp parallel for
         for (auto si = 0; si < num_samples; si++) {
-            variable_type* p_curr_sample = p_samples + (si * num_variables);
+            variable_type* p_curr_sample = samples + (si * num_variables);
             double current_sample_energy = 0;
             for (auto u = 0; u < num_variables; u++) {
                 auto case_u = p_curr_sample[u];
@@ -206,7 +277,7 @@ class AdjVectorDQM {
                     }
                 }
             }
-            p_energies[si] = current_sample_energy;
+            energies[si] = current_sample_energy;
         }
     }
 }
