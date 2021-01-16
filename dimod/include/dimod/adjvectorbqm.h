@@ -212,7 +212,7 @@ class AdjVectorBQM {
         // Count the degrees and use that to reserve the neighborhood vectors
         std::vector<size_type> degrees(adj.size());
         ItRow rit(row_iterator);
-        ItRow cit(col_iterator);
+        ItCol cit(col_iterator);
         for (size_type i = 0; i < length; ++i, ++rit, ++cit) {
             if (*rit != *cit) {
                 degrees[*rit] += 1;
@@ -244,24 +244,7 @@ class AdjVectorBQM {
             ++bias_iterator;
         }
 
-        // now sort each neighborhood and remove duplicates
-        for (variable_type v = 0; v < adj.size(); ++v) {
-            auto span = neighborhood(v);
-            if (!std::is_sorted(span.first, span.second)) {
-                std::sort(span.first, span.second);
-            }
-
-            // now remove any duplicate variables, adding the biases
-            auto it = adj[v].first.begin();
-            while (it + 1 < adj[v].first.end()) {
-                if (it->first == (it + 1)->first) {
-                    it->second += (it + 1)->second;
-                    adj[v].first.erase(it + 1);
-                } else {
-                    ++it;
-                }
-            }
-        }
+        normalize_neighborhood();
     }
 
     /// Add one (disconnected) variable to the BQM and return its index.
@@ -329,6 +312,27 @@ class AdjVectorBQM {
         auto low = std::lower_bound(span.first, span.second, start,
                                     utils::comp_v<V, B>);
         return std::make_pair(low, span.second);
+    }
+
+    /// sort each neighborhood and merge duplicates
+    void normalize_neighborhood() {
+        for (variable_type v = 0; v < adj.size(); ++v) {
+            auto span = neighborhood(v);
+            if (!std::is_sorted(span.first, span.second)) {
+                std::sort(span.first, span.second);
+            }
+
+            // now merge any duplicate variables, adding the biases
+            auto it = adj[v].first.begin();
+            while (it + 1 < adj[v].first.end()) {
+                if (it->first == (it + 1)->first) {
+                    it->second += (it + 1)->second;
+                    adj[v].first.erase(it + 1);
+                } else {
+                    ++it;
+                }
+            }
+        }
     }
 
     size_type num_variables() const { return adj.size(); }
