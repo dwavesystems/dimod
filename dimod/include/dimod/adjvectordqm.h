@@ -39,8 +39,8 @@ class AdjVectorDQM {
 
     AdjVectorBQM() { case_starts_.push_back(0); }
 
-    AdjVectorDQM(variable_type* case_starts, bias_type* linear_biases,
-                 size_type num_variables, size_type num_cases,
+    AdjVectorDQM(variable_type* case_starts, size_type num_variables,
+                 bias_type* linear_biases, size_type num_cases,
                  variable_type* irow, variable_type* icol,
                  bias_type* quadratic_biases, size_type num_interactions) {
         // Set the BQM, linear biases will be added separately.
@@ -109,7 +109,7 @@ class AdjVectorDQM {
         return false;
     }
 
-    variable_type num_variables() { return adj_.size(); }
+    size_type num_variables() { return adj_.size(); }
 
     size_type num_variaables_interactions() {
         size_type num = 0;
@@ -119,7 +119,7 @@ class AdjVectorDQM {
         return (num / 2);
     }
 
-    variable_type num_cases(variable_type v = -1) {
+    size_type num_cases(variable_type v = -1) {
         assert(v < this->num_variables());
         if (v < 0) {
             return bqm_.num_variables();
@@ -141,6 +141,18 @@ class AdjVectorDQM {
         return v;
     }
 
+    bias_type get_linear_case(variable_type v, variable_type case_v) {
+        assert(v >= 0 && v < this->num_variables());
+        assert(case_v >= 0 && case_v < this->num_cases(v));
+        return bqm_.get_linear(case_starts_[v] + case_v);
+    }
+
+    void set_linear_case(variable_type v, variable_type case_v, bias_type b) {
+        assert(v >= 0 && v < this->num_variables());
+        assert(case_v >= 0 && case_v < this->num_cases(v));
+        bqm_.set_linear(case_starts_[v] + case_v, b);
+    }
+
     void get_linear(variable_type v, bias_type* biases) {
         assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
@@ -149,22 +161,48 @@ class AdjVectorDQM {
         }
     }
 
-    bias_type get_linear_case(variable_type v, variable_type case_v) {
-        assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < this->num_cases(v));
-        return bqm_.get_linear(case_starts_[v] + case_v);
-    }
-
     void set_linear(variable_type v, bias_type* p_biases) {
+        assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
              case_v < num_cases_v; case_v++) {
             bqm_.set_linear(case_starts_[v] + case_v, p_biases[case_v]);
         }
     }
 
-    void set_linear_case(variable_type v, variable_type case_v, bias_type b) {
+    std::pair<bias_type, bool> get_quadratic_case(variable_type u,
+                                                  variable_type case_u,
+                                                  variable_type v,
+                                                  variable_type case_v) {
+        assert(u >= 0 && u < this->num_variables());
+        assert(case_u >= 0 && case_u < this->num_cases(u));
+        assert(v >= 0 && v < this->num_variables());
         assert(case_v >= 0 && case_v < this->num_cases(v));
-        bqm_.set_linear(case_starts_[v] + case_v, b);
+        auto cu = case_starts_[u] + case_u;
+        auto cv = case_starts_[v] + case_v;
+        return bqm_.get_quadratic(cu, cv);
+    }
+
+    // Check if boolean type is still okay
+    bool set_quadratic_case(variable_type u, variable_type case_u,
+                            variable_type v, variable_type case_v,
+                            bias_type bias) {
+        assert(u >= 0 && u < this->num_variables());
+        assert(case_u >= 0 && case_u < this->num_cases(u));
+        assert(v >= 0 && v < this->num_variables());
+        assert(case_v >= 0 && case_v < this->num_cases(v));
+        if (u == v) {
+            return false;
+        }
+        auto cu = case_starts_[u] + case_u;
+        auto cv = case_starts_[v] + case_v;
+        bqm_.set_quadratic(cu, cv, bias);
+        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
+        if (low == adj_[u].end() || *low != v) {
+            adj_[u].insert(low, v);
+            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
+                           u);
+        }
+        return true;
     }
 
     // Returns false if there is no interaction among the variables.
@@ -193,22 +231,12 @@ class AdjVectorDQM {
         return true;
     }
 
-    bias_type get_quadratic_case(variable_type u, variable_type case_u,
-                                 variable_type v, variable_type case_v) {
-        assert(u >= 0 && u < this->num_variables());
-        assert(case_u >= 0 && case_u < this->num_cases(u));
-        assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < this->num_cases(v));
-        // should add assert for u != v ?
-        auto cu = case_starts_[u] + case_u;
-        auto cv = case_starts_[v] + case_v;
-        return bqm_.get_quadratic(cu, cv).first;
-    }
-
     bool set_quadratic(variable_type u, variable_type v, bias_type* p_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
-        assert(u != v);
+        if (u == v) {
+            return false;
+        }
         auto num_cases_u = num_cases(u);
         auto num_cases_v = num_cases(v);
         // This cannot be parallelized since the vectors cannot be reshaped in
@@ -221,26 +249,6 @@ class AdjVectorDQM {
                 bqm_.set_quadratic(cu, cv, bias);
             }
         }
-        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (low == adj_[u].end() || *low != v) {
-            adj_[u].insert(low, v);
-            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
-                           u);
-        }
-        return true;
-    }
-
-    // Check if boolean type is still okay
-    bool set_quadratic_case(variable_type u, variable_type case_u,
-                            variable_type v, variable_type case_v,
-                            bias_type bias) {
-        assert(u >= 0 && u < this->num_variables());
-        assert(case_u >= 0 && case_u < this->num_cases(u));
-        assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < this->num_cases(v));
-        auto cu = case_starts_[u] + case_u;
-        auto cv = case_starts_[v] + case_v;
-        bqm_.set_quadratic(cu, cv, bias);
         auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
         if (low == adj_[u].end() || *low != v) {
             adj_[u].insert(low, v);
