@@ -23,8 +23,8 @@ cimport numpy as np
 from dimod.discrete.cppdqm cimport AdjVectorDQM as cppAdjVectorDQM
 from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
-ctypedef np.float64_t Bias_t
-ctypedef np.int64_t VarIndex_t
+ctypedef np.float64_t Bias
+ctypedef np.int64_t VarIndex
 
 ctypedef fused Unsigned:
     np.uint8_t
@@ -34,24 +34,24 @@ ctypedef fused Unsigned:
 
 
 cdef class cyDiscreteQuadraticModel:
-    cdef cppAdjVectorDQM[VarIndex_t, Bias_t] dqm_
+    cdef cppAdjVectorDQM[VarIndex, Bias] dqm_
 
     cdef readonly object dtype
     cdef readonly object variable_dtype
 
     cpdef Py_ssize_t add_variable(self, Py_ssize_t) except -1
-    cpdef Bias_t[:] energies(self, VarIndex_t[:, :])
-    cpdef Bias_t get_linear_case(self, VarIndex_t, VarIndex_t) except? -45.3
+    cpdef Bias[:] energies(self, VarIndex[:, :])
+    cpdef Bias get_linear_case(self, VarIndex, VarIndex) except? -45.3
     cpdef Py_ssize_t num_cases(self, Py_ssize_t v=*) except -1
     cpdef Py_ssize_t num_case_interactions(self)
     cpdef Py_ssize_t num_variable_interactions(self) except -1
     cpdef Py_ssize_t num_variables(self)
-    cpdef Py_ssize_t set_linear(self, VarIndex_t v, Numeric[:] biases) except -1
-    cpdef Py_ssize_t set_linear_case(self, VarIndex_t, VarIndex_t, Bias_t) except -1
+    cpdef Py_ssize_t set_linear(self, VarIndex v, Numeric[:] biases) except -1
+    cpdef Py_ssize_t set_linear_case(self, VarIndex, VarIndex, Bias) except -1
     cpdef Py_ssize_t set_quadratic_case(
-        self, VarIndex_t, VarIndex_t, VarIndex_t, VarIndex_t, Bias_t) except -1
-    cpdef Bias_t get_quadratic_case(
-        self, VarIndex_t, VarIndex_t, VarIndex_t, VarIndex_t)  except? -45.3
+        self, VarIndex, VarIndex, VarIndex, VarIndex, Bias) except -1
+    cpdef Bias get_quadratic_case(
+        self, VarIndex, VarIndex, VarIndex, VarIndex)  except? -45.3
 
-    cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias_t[:] ldata,
-        Unsigned[:] irow, Unsigned[:] icol, Bias_t[:] qdata)
+    cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
+        Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)

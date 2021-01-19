@@ -88,6 +88,7 @@ class AdjVectorDQM {
         }
 
         adj_.resize(num_variables);
+	#pragma omp parallel for
         for (auto v = 0; v < num_variables; v++) {
             adj_[v].insert(adj_[v].begin(), adjset[v].begin(), adjset[v].end());
             std::sort(adj_[v].begin(), adj_[v].end());
@@ -119,13 +120,9 @@ class AdjVectorDQM {
         return (num / 2);
     }
 
-    size_type num_cases(variable_type v = -1) {
-        assert(v < this->num_variables());
-        if (v < 0) {
-            return bqm_.num_variables();
-        } else {
-            return (case_starts_[v + 1] - case_starts_[v]);
-        }
+    size_type num_cases(variable_type v) {
+        assert(v >= 0 && v < this->num_variables());
+        return (case_starts_[v + 1] - case_starts_[v]);
     }
 
     size_type num_case_interactions() { return bqm_.num_interactions(); }
@@ -246,7 +243,10 @@ class AdjVectorDQM {
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
                 cv = case_starts_[v] + case_v;
                 auto bias = p_biases[cu * num_cases_v + case_v];
-                bqm_.set_quadratic(cu, cv, bias);
+	// TODO :Discuss with alexander, since we need to conditionally update adj_
+	//	if(bias != (bias_type) 0.0) {
+             	   bqm_.set_quadratic(cu, cv, bias);
+	//	}
             }
         }
         auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
