@@ -34,15 +34,16 @@ class AdjVectorDQM {
     using size_type = std::size_t;
 
     AdjVectorBQM<variable_type, bias_type> bqm_;
-    std::vector<variable_type> case_starts_; //len(adj_) + 1
+    std::vector<variable_type> case_starts_;  // len(adj_) + 1
     std::vector<std::vector<variable_type>> adj_;
 
     AdjVectorBQM() { case_starts_.push_back(0); }
 
-    AdjVectorDQM(variable_type* case_starts, size_type num_variables,
-                 bias_type* linear_biases, size_type num_cases,
-                 variable_type* irow, variable_type* icol,
-                 bias_type* quadratic_biases, size_type num_interactions) {
+    template <class InputVariable_t, class InputBias_t>
+    AdjVectorDQM(InputVariable_t *case_starts, size_type num_variables,
+                 InputBias_t *linear_biases, size_type num_cases,
+                 InputVariable_t *irow, InputVariable_t *icol,
+                 InputBias_t *quadratic_biases, size_type num_interactions) {
         // Set the BQM, linear biases will be added separately.
         if (num_interactions) {
             bqm_ = AdjVectorBQM<variable_type, bias_type>(
@@ -88,7 +89,7 @@ class AdjVectorDQM {
         }
 
         adj_.resize(num_variables);
-	#pragma omp parallel for
+#pragma omp parallel for
         for (auto v = 0; v < num_variables; v++) {
             adj_[v].insert(adj_[v].begin(), adjset[v].begin(), adjset[v].end());
             std::sort(adj_[v].begin(), adj_[v].end());
@@ -112,7 +113,7 @@ class AdjVectorDQM {
 
     size_type num_variables() { return adj_.size(); }
 
-    size_type num_variaables_interactions() {
+    size_type num_variables_interactions() {
         size_type num = 0;
         for (auto v = 0, vend = this->num_variables(); v < vend; v++) {
             num += adj_[v].size();
@@ -150,7 +151,7 @@ class AdjVectorDQM {
         bqm_.set_linear(case_starts_[v] + case_v, b);
     }
 
-    void get_linear(variable_type v, bias_type* biases) {
+    void get_linear(variable_type v, bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
              case_v < num_cases_v; case_v++) {
@@ -158,7 +159,7 @@ class AdjVectorDQM {
         }
     }
 
-    void set_linear(variable_type v, bias_type* p_biases) {
+    void set_linear(variable_type v, bias_type *p_biases) {
         assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
              case_v < num_cases_v; case_v++) {
@@ -193,18 +194,13 @@ class AdjVectorDQM {
         auto cu = case_starts_[u] + case_u;
         auto cv = case_starts_[v] + case_v;
         bqm_.set_quadratic(cu, cv, bias);
-        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (low == adj_[u].end() || *low != v) {
-            adj_[u].insert(low, v);
-            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
-                           u);
-        }
+        connect_variables(u, v);
         return true;
     }
 
     // Returns false if there is no interaction among the variables.
     bool get_quadratic(variable_type u, variable_type v,
-                       bias_type* quadratic_biases) {
+                       bias_type *quadratic_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
@@ -228,7 +224,7 @@ class AdjVectorDQM {
         return true;
     }
 
-    bool set_quadratic(variable_type u, variable_type v, bias_type* p_biases) {
+    bool set_quadratic(variable_type u, variable_type v, bias_type *p_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         if (u == v) {
@@ -238,33 +234,32 @@ class AdjVectorDQM {
         auto num_cases_v = num_cases(v);
         // This cannot be parallelized since the vectors cannot be reshaped in
         // parallel.
+        bool inserted = false;
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
             cu = case_starts_[u] + case_u;
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
                 cv = case_starts_[v] + case_v;
                 auto bias = p_biases[cu * num_cases_v + case_v];
-	// TODO :Discuss with alexander, since we need to conditionally update adj_
-	//	if(bias != (bias_type) 0.0) {
-             	   bqm_.set_quadratic(cu, cv, bias);
-	//	}
+                if (bias != (bias_type)0.0) {
+                    bqm_.set_quadratic(cu, cv, bias);
+                    inserted = true;
+                }
             }
         }
-        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (low == adj_[u].end() || *low != v) {
-            adj_[u].insert(low, v);
-            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
-                           u);
+
+        if (inserted) {
+            connect_variables(u, v);
         }
         return true;
     }
 
-    void get_energies(variable_type* samples, int num_samples,
-                      variable_type sample_length, bias_type* energies) {
+    void get_energies(variable_type *samples, int num_samples,
+                      variable_type sample_length, bias_type *energies) {
         assert(sample_length == this->num_variables());
         auto num_variables = sample_length;
 #pragma omp parallel for
         for (auto si = 0; si < num_samples; si++) {
-            variable_type* p_curr_sample = samples + (si * num_variables);
+            variable_type *p_curr_sample = samples + (si * num_variables);
             double current_sample_energy = 0;
             for (auto u = 0; u < num_variables; u++) {
                 auto case_u = p_curr_sample[u];
@@ -286,6 +281,16 @@ class AdjVectorDQM {
                 }
             }
             energies[si] = current_sample_energy;
+        }
+    }
+
+ private:
+    void connect_variables(variable_type u, variable_type v) {
+        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
+        if (low == adj_[u].end() || *low != v) {
+            adj_[u].insert(low, v);
+            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
+                           u);
         }
     }
 }
