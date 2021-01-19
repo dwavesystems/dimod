@@ -20,13 +20,11 @@ from libcpp.vector cimport vector
 
 cimport numpy as np
 
-from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
+from dimod.discrete.cppdqm cimport AdjVectorDQM as cppAdjVectorDQM
 from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
-
-ctypedef np.float64_t Bias
-ctypedef np.int64_t CaseIndex
-ctypedef np.int64_t VarIndex
+ctypedef np.float64_t Bias_t
+ctypedef np.int64_t VarIndex_t
 
 ctypedef fused Unsigned:
     np.uint8_t
@@ -36,26 +34,24 @@ ctypedef fused Unsigned:
 
 
 cdef class cyDiscreteQuadraticModel:
-    cdef cppAdjVectorBQM[CaseIndex, Bias] bqm_
-    cdef vector[CaseIndex] case_starts_  # len(adj_) + 1
-    cdef vector[vector[VarIndex]] adj_
+    cdef cppAdjVectorDQM[VarIndex_t, Bias_t] dqm_
 
     cdef readonly object dtype
-    cdef readonly object case_dtype
+    cdef readonly object variable_dtype
 
     cpdef Py_ssize_t add_variable(self, Py_ssize_t) except -1
-    cpdef Bias[:] energies(self, CaseIndex[:, :])
-    cpdef Bias get_linear_case(self, VarIndex, CaseIndex) except? -45.3
+    cpdef Bias_t[:] energies(self, VarIndex_t[:, :])
+    cpdef Bias_t get_linear_case(self, VarIndex_t, VarIndex_t) except? -45.3
     cpdef Py_ssize_t num_cases(self, Py_ssize_t v=*) except -1
     cpdef Py_ssize_t num_case_interactions(self)
     cpdef Py_ssize_t num_variable_interactions(self) except -1
     cpdef Py_ssize_t num_variables(self)
-    cpdef Py_ssize_t set_linear(self, VarIndex v, Numeric[:] biases) except -1
-    cpdef Py_ssize_t set_linear_case(self, VarIndex, CaseIndex, Bias) except -1
+    cpdef Py_ssize_t set_linear(self, VarIndex_t v, Numeric[:] biases) except -1
+    cpdef Py_ssize_t set_linear_case(self, VarIndex_t, VarIndex_t, Bias_t) except -1
     cpdef Py_ssize_t set_quadratic_case(
-        self, VarIndex, CaseIndex, VarIndex, CaseIndex, Bias) except -1
-    cpdef Bias get_quadratic_case(
-        self, VarIndex, CaseIndex, VarIndex, CaseIndex)  except? -45.3
+        self, VarIndex_t, VarIndex_t, VarIndex_t, VarIndex_t, Bias_t) except -1
+    cpdef Bias_t get_quadratic_case(
+        self, VarIndex_t, VarIndex_t, VarIndex_t, VarIndex_t)  except? -45.3
 
-    cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
-        Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
+    cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias_t[:] ldata,
+        Unsigned[:] irow, Unsigned[:] icol, Bias_t[:] qdata)

@@ -34,7 +34,7 @@ class AdjVectorDQM {
     using size_type = std::size_t;
 
     AdjVectorBQM<variable_type, bias_type> bqm_;
-    std::vector<variable_type> case_starts_;
+    std::vector<variable_type> case_starts_; //len(adj_) + 1
     std::vector<std::vector<variable_type>> adj_;
 
     AdjVectorBQM() { case_starts_.push_back(0); }
