@@ -39,11 +39,11 @@ class AdjVectorDQM {
 
     AdjVectorBQM() { case_starts_.push_back(0); }
 
-    template <class InputVariable_t, class InputBias_t>
-    AdjVectorDQM(InputVariable_t *case_starts, size_type num_variables,
-                 InputBias_t *linear_biases, size_type num_cases,
-                 InputVariable_t *irow, InputVariable_t *icol,
-                 InputBias_t *quadratic_biases, size_type num_interactions) {
+    template <class io_variable_type, class io_bias_type>
+    AdjVectorDQM(io_variable_type *case_starts, size_type num_variables,
+                 io_bias_type *linear_biases, size_type num_cases,
+                 io_variable_type *irow, io_variable_type *icol,
+                 io_bias_type *quadratic_biases, size_type num_interactions) {
         // Set the BQM, linear biases will be added separately.
         if (num_interactions) {
             bqm_ = AdjVectorBQM<variable_type, bias_type>(
@@ -151,7 +151,8 @@ class AdjVectorDQM {
         bqm_.set_linear(case_starts_[v] + case_v, b);
     }
 
-    void get_linear(variable_type v, bias_type *biases) {
+    template<class io_bias_type>
+    void get_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
              case_v < num_cases_v; case_v++) {
@@ -159,11 +160,12 @@ class AdjVectorDQM {
         }
     }
 
-    void set_linear(variable_type v, bias_type *p_biases) {
+    template<class io_bias_type>
+    void set_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
         for (auto case_v = 0, num_cases_v = this->num_cases(v);
              case_v < num_cases_v; case_v++) {
-            bqm_.set_linear(case_starts_[v] + case_v, p_biases[case_v]);
+            bqm_.set_linear(case_starts_[v] + case_v, biases[case_v]);
         }
     }
 
@@ -199,8 +201,9 @@ class AdjVectorDQM {
     }
 
     // Returns false if there is no interaction among the variables.
+    template<class io_bias_type>
     bool get_quadratic(variable_type u, variable_type v,
-                       bias_type *quadratic_biases) {
+                       io_bias_type *quadratic_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
@@ -224,7 +227,8 @@ class AdjVectorDQM {
         return true;
     }
 
-    bool set_quadratic(variable_type u, variable_type v, bias_type *p_biases) {
+    template<class io_bias_type>
+    bool set_quadratic(variable_type u, variable_type v, io_bias_type *biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         if (u == v) {
@@ -239,8 +243,8 @@ class AdjVectorDQM {
             cu = case_starts_[u] + case_u;
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
                 cv = case_starts_[v] + case_v;
-                auto bias = p_biases[cu * num_cases_v + case_v];
-                if (bias != (bias_type)0.0) {
+                auto bias = biases[cu * num_cases_v + case_v];
+                if (bias != (io_bias_type)0) {
                     bqm_.set_quadratic(cu, cv, bias);
                     inserted = true;
                 }
@@ -253,16 +257,17 @@ class AdjVectorDQM {
         return true;
     }
 
-    void get_energies(variable_type *samples, int num_samples,
-                      variable_type sample_length, bias_type *energies) {
+    template <class io_variable_type, class io_bias_type>
+    void get_energies(io_variable_type *samples, int num_samples,
+                      variable_type sample_length, io_bias_type *energies) {
         assert(sample_length == this->num_variables());
         auto num_variables = sample_length;
 #pragma omp parallel for
         for (auto si = 0; si < num_samples; si++) {
-            variable_type *p_curr_sample = samples + (si * num_variables);
+            variable_type *current_sample = samples + (si * num_variables);
             double current_sample_energy = 0;
             for (auto u = 0; u < num_variables; u++) {
-                auto case_u = p_curr_sample[u];
+                auto case_u = current_sample[u];
                 assert(case_u < num_cases(u));
                 auto cu = case_starts_[u] + case_u;
                 current_sample_energy += bqm_.get_linear(cu);
@@ -272,7 +277,7 @@ class AdjVectorDQM {
                     if (v > u) {
                         break;
                     }
-                    auto case_v = p_cur_sample[v];
+                    auto case_v = current_sample[v];
                     auto cv = case_starts_[v] + case_v;
                     auto out = bqm_.get_quadratic(cu, cv);
                     if (out.second) {
