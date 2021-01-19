@@ -314,7 +314,7 @@ cdef class cyDiscreteQuadraticModel:
                 self.bqm_.adj[cv].first.back().second = qbias
 
         # now de-duplicate the BQM
-        self.bqm_.normalize_neighborhood()
+        self.bqm_.normalize_neighborhood(cases.begin(), cases.end())
 
         # finally fix the adjacency
         cdef vector[VarIndex] variables
