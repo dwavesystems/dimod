@@ -21,9 +21,10 @@ from libcpp.vector cimport vector
 cimport numpy as np
 
 from dimod.discrete.cppdqm cimport AdjVectorDQM as cppAdjVectorDQM
-from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
+
 
 ctypedef np.float64_t Bias
+ctypedef np.int64_t CaseIndex
 ctypedef np.int64_t VarIndex
 
 ctypedef fused Unsigned:
@@ -32,26 +33,40 @@ ctypedef fused Unsigned:
     np.uint32_t
     np.uint64_t
 
+ctypedef fused Integral:
+    Unsigned
+    np.int8_t
+    np.int16_t
+    np.int32_t
+    np.int64_t
+
+ctypedef fused Numeric:
+    Integral
+    np.float32_t
+    np.float64_t
+
 
 cdef class cyDiscreteQuadraticModel:
     cdef cppAdjVectorDQM[VarIndex, Bias] dqm_
 
     cdef readonly object dtype
-    cdef readonly object variable_dtype
+    cdef readonly object case_dtype
 
     cpdef Py_ssize_t add_variable(self, Py_ssize_t) except -1
-    cpdef Bias[:] energies(self, VarIndex[:, :])
-    cpdef Bias get_linear_case(self, VarIndex, VarIndex) except? -45.3
+    cpdef Bias[:] energies(self, CaseIndex[:, :])
+    cpdef Bias get_linear_case(self, VarIndex, CaseIndex) except? -45.3
     cpdef Py_ssize_t num_cases(self, Py_ssize_t v=*) except -1
     cpdef Py_ssize_t num_case_interactions(self)
     cpdef Py_ssize_t num_variable_interactions(self) except -1
     cpdef Py_ssize_t num_variables(self)
     cpdef Py_ssize_t set_linear(self, VarIndex v, Numeric[:] biases) except -1
-    cpdef Py_ssize_t set_linear_case(self, VarIndex, VarIndex, Bias) except -1
+    cpdef Py_ssize_t set_linear_case(self, VarIndex, CaseIndex, Bias) except -1
     cpdef Py_ssize_t set_quadratic_case(
-        self, VarIndex, VarIndex, VarIndex, VarIndex, Bias) except -1
+        self, VarIndex, CaseIndex, VarIndex, CaseIndex, Bias) except -1
     cpdef Bias get_quadratic_case(
-        self, VarIndex, VarIndex, VarIndex, VarIndex)  except? -45.3
+        self, VarIndex, CaseIndex, VarIndex, CaseIndex)  except? -45.3
 
     cdef void _into_numpy_vectors(self, Unsigned[:] starts, Bias[:] ldata,
         Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata)
+    cdef void _from_numpy_vectors(self, Integral[:] starts, Bias[:] ldata,
+        Integral[:] irow, Integral[:] icol, Bias[:] qdata) except *
