@@ -78,7 +78,7 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
         bool is_self_loop_present() except +
         size_type num_variables() except +
         size_type num_variable_interactions() except +
-        size_type num_cases() except +
+        size_type num_cases(variable_type) except +
         size_type num_case_interactions() except +
         bias_type get_linear_case(variable_type, variable_type) except +
         void set_linear_case(variable_type, variable_type, bias_type) except +
