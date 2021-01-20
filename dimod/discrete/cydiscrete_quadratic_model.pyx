@@ -22,14 +22,12 @@ from libcpp.unordered_set cimport unordered_set
 
 import numpy as np
 
-from dimod.utilities import asintegerarrays, asnumericarrays
-
 
 cdef class cyDiscreteQuadraticModel:
 
     def __init__(self):
-        self.bias_dtype = np.float64
-        self.variable_dtype = np.int64
+        self.dtype = np.float64
+        self.case_dtype = np.int64
 
     @property
     def adj(self):
@@ -56,8 +54,8 @@ cdef class cyDiscreteQuadraticModel:
 
         dqm.dqm_ = self.dqm_
 
-        dqm.bias_dtype = self.bias_dtype
-        dqm.variable_dtype = self.bias_dtype
+        dqm.dtype = self.dtype
+        dqm.case_dtype = self.dtype
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -69,18 +67,19 @@ cdef class cyDiscreteQuadraticModel:
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef VarIndex num_variables = samples.shape[1]
 
-        cdef Bias[:] energies = np.empty(num_samples, dtype=self.bias_dtype)
+        cdef Bias[:] energies = np.empty(num_samples, dtype=self.dtype)
 
         cdef Py_ssize_t si, vi
         cdef CaseIndex cu, case_u, cv, case_v
         cdef VarIndex u, v
-        for si in range(num_samples):  # this could be parallelized
+        for si in range(num_samples):
             for u in range(num_variables):
                 case_u = samples[si, u]
 
                 if case_u >= self.num_cases(u):
                     raise ValueError("invalid case")
-        self.dqm_.get_energies(samples.data, num_samples, num_variables, energies.data)
+
+        self.dqm_.get_energies(&samples[0,0], num_samples, num_variables, &energies[0])
         return energies
 
     @classmethod
@@ -161,9 +160,8 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t num_cases = self.num_cases(v)
 
-        biases = np.empty(num_cases, dtype=self.bias_dtype)
-        cdef Bias[:] biases_view = biases
-	self.dqm_.get_linear(v, biases.data)
+        biases = np.empty(num_cases, dtype=self.dtype)
+	self.dqm_.get_linear(v, &biases[0])
         return biases
 
     @cython.boundscheck(False)
@@ -176,7 +174,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        return self.dqm_.get_linear(v, case)
+        return self.dqm_.get_linear_case(v, case)
 
     def get_quadratic(self, VarIndex u, VarIndex v, bint array=False):
 
@@ -196,11 +194,10 @@ cdef class cyDiscreteQuadraticModel:
 
         if array:
             # build a numpy array
-            quadratic = np.zeros((self.num_cases(u), self.num_cases(v)),
-                                 dtype=self.bias_dtype)
-            quadratic_view = quadratic
+            quadratic = np.empty((self.num_cases(u), self.num_cases(v)),
+                                 dtype=self.dtype)
+	    self.dqm_.get_quadratic(u, v, &quadratic[0,0])
 
-	# TODO : REWRITE  
         else:
             # store in a dict
             quadratic = {}
@@ -274,9 +271,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError('Recieved {} bias(es) for a variable of degree {}'
                              ''.format(biases.shape[0], self.num_cases(v)))
 
-        cdef Py_ssize_t c
-        for c in range(biases.shape[0]):
-            self.dqm_.set_linear_case(v, c,  biases[c])
+        self.dqm_.set_linear(v, &biases[0])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -322,11 +317,11 @@ cdef class cyDiscreteQuadraticModel:
                     raise ValueError("case {} is invalid, variable only supports {} "
                                      "cases".format(case_v, self.num_cases(v)))
 
-                self.dqm_.set_quadratic(u, case_u, v, case_v, bias)
+                self.dqm_.set_quadratic_case(u, case_u, v, case_v, bias)
         else:
             
-            biases_view = np.asarray(biases, dtype=self.bias_dtype).reshape(num_cases_u, num_cases_v)
-            self.dqm_.set_quadratic(u, v, biases_view.data)
+            biases_view = np.asarray(biases, dtype=self.dtype).reshape(num_cases_u, num_cases_v)
+            self.dqm_.set_quadratic(u, v, &biases_view[0,0])
 
     cpdef Py_ssize_t set_quadratic_case(self,
                                         VarIndex u, CaseIndex case_u,
@@ -393,10 +388,10 @@ cdef class cyDiscreteQuadraticModel:
             index_dtype = np.uint64
 
         starts = np.empty(num_variables, dtype=index_dtype)
-        ldata = np.empty(num_cases, dtype=self.bias_dtype)
+        ldata = np.empty(num_cases, dtype=self.dtype)
         irow = np.empty(num_interactions, dtype=index_dtype)
         icol = np.empty(num_interactions, dtype=index_dtype)
-        qdata = np.empty(num_interactions, dtype=self.bias_dtype)
+        qdata = np.empty(num_interactions, dtype=self.dtype)
 
         if index_dtype == np.uint16:
             self._into_numpy_vectors[np.uint16_t](starts, ldata, irow, icol, qdata)
