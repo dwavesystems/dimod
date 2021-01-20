@@ -28,7 +28,7 @@ namespace dimod {
 
 template <class V, class B>
 class AdjVectorDQM {
- public:
+  public:
     using bias_type = B;
     using variable_type = V;
     using size_type = std::size_t;
@@ -40,14 +40,12 @@ class AdjVectorDQM {
     AdjVectorBQM() { case_starts_.push_back(0); }
 
     template <class io_variable_type, class io_bias_type>
-    AdjVectorDQM(io_variable_type *case_starts, size_type num_variables,
-                 io_bias_type *linear_biases, size_type num_cases,
-                 io_variable_type *irow, io_variable_type *icol,
-                 io_bias_type *quadratic_biases, size_type num_interactions) {
+    AdjVectorDQM(io_variable_type *case_starts, size_type num_variables, io_bias_type *linear_biases,
+                 size_type num_cases, io_variable_type *irow, io_variable_type *icol, io_bias_type *quadratic_biases,
+                 size_type num_interactions) {
         // Set the BQM, linear biases will be added separately.
         if (num_interactions) {
-            bqm_ = AdjVectorBQM<variable_type, bias_type>(
-                    irow, icol, num_interactions, true);
+            bqm_ = AdjVectorBQM<variable_type, bias_type>(irow, icol, num_interactions, true);
         }
 
         // Accounting for the cases/variables at the end without interaction.
@@ -96,14 +94,35 @@ class AdjVectorDQM {
         }
     }
 
+    template <class io_variable_type, class io_bias_type>
+    void extract_data(io_variable_type *case_starts, io_bias_type *linear_biases, io_variable_type *irow,
+                      io_variable_type *icol, io_bias_type *quadratic_biases) {
+        auto num_variables = this->num_variables();
+        auto num_total_cases = bqm_.num_variables();
+
+        for (auto v = 0; v < num_variables; v++) {
+            case_starts[v] = case_starts_[v];
+        }
+
+        size_type qi = 0;
+        for (auto ci = 0; ci < num_total_cases; ci++) {
+            linear_biases[ci] = bqm_.get_linear(ci);
+            auto span = bqm_.neighborhood(ci);
+            while ((span.first != span.second) && (*(span.first).first < ci)) {
+                irow[qi] = ci;
+                icol[qi] = *(span.first).first;
+                quadratic_biases[qi] = *(span.first).second;
+                span.first++;
+                qi++;
+            }
+        }
+    }
+
     bool is_self_loop_present() {
-        for (auto v = 0, num_variables = this->num_variables();
-             v < num_variables; v++) {
-            for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1];
-                 ci < ci_end; ci++) {
+        for (auto v = 0, num_variables = this->num_variables(); v < num_variables; v++) {
+            for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1]; ci < ci_end; ci++) {
                 auto span = bqm_.neighborhood(ci, case_starts_[v]);
-                if ((span.first != span.second) &&
-                    (*(span.first).first < case_starts_[v + 1])) {
+                if ((span.first != span.second) && (*(span.first).first < case_starts_[v + 1])) {
                     return true;
                 }
             }
@@ -151,27 +170,23 @@ class AdjVectorDQM {
         bqm_.set_linear(case_starts_[v] + case_v, b);
     }
 
-    template<class io_bias_type>
+    template <class io_bias_type>
     void get_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
-        for (auto case_v = 0, num_cases_v = this->num_cases(v);
-             case_v < num_cases_v; case_v++) {
+        for (auto case_v = 0, num_cases_v = this->num_cases(v); case_v < num_cases_v; case_v++) {
             biases[case_v] = bqm_.get_linear(case_starts_[v] + case_v);
         }
     }
 
-    template<class io_bias_type>
+    template <class io_bias_type>
     void set_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
-        for (auto case_v = 0, num_cases_v = this->num_cases(v);
-             case_v < num_cases_v; case_v++) {
+        for (auto case_v = 0, num_cases_v = this->num_cases(v); case_v < num_cases_v; case_v++) {
             bqm_.set_linear(case_starts_[v] + case_v, biases[case_v]);
         }
     }
 
-    std::pair<bias_type, bool> get_quadratic_case(variable_type u,
-                                                  variable_type case_u,
-                                                  variable_type v,
+    std::pair<bias_type, bool> get_quadratic_case(variable_type u, variable_type case_u, variable_type v,
                                                   variable_type case_v) {
         assert(u >= 0 && u < this->num_variables());
         assert(case_u >= 0 && case_u < this->num_cases(u));
@@ -183,8 +198,7 @@ class AdjVectorDQM {
     }
 
     // Check if boolean type is still okay
-    bool set_quadratic_case(variable_type u, variable_type case_u,
-                            variable_type v, variable_type case_v,
+    bool set_quadratic_case(variable_type u, variable_type case_u, variable_type v, variable_type case_v,
                             bias_type bias) {
         assert(u >= 0 && u < this->num_variables());
         assert(case_u >= 0 && case_u < this->num_cases(u));
@@ -201,9 +215,8 @@ class AdjVectorDQM {
     }
 
     // Returns false if there is no interaction among the variables.
-    template<class io_bias_type>
-    bool get_quadratic(variable_type u, variable_type v,
-                       io_bias_type *quadratic_biases) {
+    template <class io_bias_type>
+    bool get_quadratic(variable_type u, variable_type v, io_bias_type *quadratic_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
         auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
@@ -214,20 +227,17 @@ class AdjVectorDQM {
         auto num_cases_v = num_cases(v);
 #pragma omp parallel for
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
-            auto span = bqm_.neighborhood(case_starts_[u] + case_u,
-                                          case_starts_[v]);
-            while (span.first != span.second &&
-                   *(span.first) < case_starts_[v + 1]) {
+            auto span = bqm_.neighborhood(case_starts_[u] + case_u, case_starts_[v]);
+            while (span.first != span.second && *(span.first) < case_starts_[v + 1]) {
                 case_v = *(span.first) - case_starts_[v];
-                quadratic_biases[case_u * num_cases_v + case_v] =
-                        *(span.first).second;
+                quadratic_biases[case_u * num_cases_v + case_v] = *(span.first).second;
                 span.first++;
             }
         }
         return true;
     }
 
-    template<class io_bias_type>
+    template <class io_bias_type>
     bool set_quadratic(variable_type u, variable_type v, io_bias_type *biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
@@ -258,8 +268,7 @@ class AdjVectorDQM {
     }
 
     template <class io_variable_type, class io_bias_type>
-    void get_energies(io_variable_type *samples, int num_samples,
-                      variable_type sample_length, io_bias_type *energies) {
+    void get_energies(io_variable_type *samples, int num_samples, variable_type sample_length, io_bias_type *energies) {
         assert(sample_length == this->num_variables());
         auto num_variables = sample_length;
 #pragma omp parallel for
@@ -289,13 +298,12 @@ class AdjVectorDQM {
         }
     }
 
- private:
+  private:
     void connect_variables(variable_type u, variable_type v) {
         auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
         if (low == adj_[u].end() || *low != v) {
             adj_[u].insert(low, v);
-            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u),
-                           u);
+            adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u), u);
         }
     }
 }

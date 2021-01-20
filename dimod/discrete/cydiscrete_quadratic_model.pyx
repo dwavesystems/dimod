@@ -125,11 +125,14 @@ cdef class cyDiscreteQuadraticModel:
             if irow[qi] == icol[qi]:
                 raise ValueError("quadratic data contains a self-loop")
 
-        cdef cyDiscreteQuadraticModel dqm(case_starts.data, num_variables, linear_biases.data, num_cases, irow.data, icol.data, quadratic_biases.data, num_interactions)
-        if dqm_.is_self_loop_present():
+        cdef cyDiscreteQuadraticModel cyDQM = cls()
+
+        cyDQM.dqm_ = cppAdjVectorDQM(case_starts.data, num_variables, linear_biases.data, num_cases, irow.data, icol.data, quadratic_biases.data, num_interactions)
+
+        if cyDQM.dqm_.is_self_loop_present():
             raise ValueError("A variable has a self-loop")
 
-        return dqm
+        return cyDQM
 
     @classmethod
     def from_numpy_vectors(cls, case_starts, linear_biases, quadratic):
@@ -202,13 +205,13 @@ cdef class cyDiscreteQuadraticModel:
             # store in a dict
             quadratic = {}
 
-            for ci in range(self.case_starts_[u], self.case_starts_[u+1]):
+            for ci in range(self.dqm_.case_starts_[u], self.dqm_.case_starts_[u+1]):
 
-                span = self.bqm_.neighborhood(ci, self.case_starts_[v])
+                span = self.dqm_.bqm_.neighborhood(ci, self.dqm_.case_starts_[v])
 
-                while (span.first != span.second and deref(span.first).first < self.case_starts_[v+1]):
-                    case_u = ci - self.case_starts_[u]
-                    case_v = deref(span.first).first - self.case_starts_[v]
+                while (span.first != span.second and deref(span.first).first < self.dqm_.case_starts_[v+1]):
+                    case_u = ci - self.dqm_.case_starts_[u]
+                    case_v = deref(span.first).first - self.dqm_.case_starts_[v]
                     quadratic[case_u, case_v] = deref(span.first).second
 
                     inc(span.first)
@@ -231,7 +234,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case_v, self.num_cases(v)))
 
-        return self.dqm_.get_quadratic(u, case_u, v, case_v).first 
+        return self.dqm_.get_quadratic_case(u, case_u, v, case_v).first 
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -350,26 +353,7 @@ cdef class cyDiscreteQuadraticModel:
                                   Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata):
         # we don't do array length checking so be careful! This can segfault
         # if the given arrays are incorrectly sized
-
-        cdef Py_ssize_t vi
-        for vi in range(self.num_variables()):
-            starts[vi] = self.case_starts_[vi]
-
-        cdef Py_ssize_t ci = 0
-        cdef Py_ssize_t qi = 0
-        for ci in range(self.bqm_.num_variables()):
-            ldata[ci] = self.bqm_.linear(ci)
-
-            span = self.bqm_.neighborhood(ci)
-            while span.first != span.second and deref(span.first).first < ci:
-
-                irow[qi] = ci
-                icol[qi] = deref(span.first).first
-                qdata[qi] = deref(span.first).second
-
-                inc(span.first)
-                qi += 1
-        
+	self.dqm_.extract_data(&starts[0], &ldata[0], &irow[0], &icol[0], &qdata[0])
 
     def to_numpy_vectors(self):
         
