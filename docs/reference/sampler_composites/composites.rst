@@ -4,9 +4,17 @@
 Composites
 ==========
 
-The `dimod` package includes several example composed samplers.
+The `dimod` package includes several example composed samplers:
 
 .. currentmodule:: dimod.reference.composites
+
+.. contents::
+    :local:
+    :depth: 1
+
+The :std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides 
+additional :std:doc:`composites for D-Wave systems <oceandocs:docs_system/reference/composites>`
+such as those used for :term:`minor-embedding`.
 
 Connected Components Composite
 ------------------------------
