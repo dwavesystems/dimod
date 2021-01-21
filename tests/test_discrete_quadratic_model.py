@@ -120,6 +120,26 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(dqm.variables, [1, 0, 2])
 
 
+class TestCopy(unittest.TestCase):
+    def test_simple(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(4)
+        v = dqm.add_variable(3)
+        dqm.set_quadratic(u, v, {(0, 2): -1, (2, 1): 1})
+        dqm.set_linear(u, [0, 1, 2, 3])
+
+        new = dqm.copy()
+
+        self.assertIsNot(dqm, new)
+        self.assertIsInstance(new, type(dqm))
+        np.testing.assert_array_equal(dqm.get_linear(u), new.get_linear(u))
+        np.testing.assert_array_equal(dqm.get_linear(v), new.get_linear(v))
+        self.assertEqual(dqm.get_quadratic(u, v), new.get_quadratic(u, v))
+
+        new.set_linear(u, [3, 2, 1, 0])
+        np.testing.assert_array_equal(dqm.get_linear(u), [0, 1, 2, 3])
+
+
 class TestEnergy(unittest.TestCase):
     def test_one_variable(self):
         dqm = dimod.DQM()

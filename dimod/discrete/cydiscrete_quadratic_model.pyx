@@ -73,6 +73,8 @@ cdef class cyDiscreteQuadraticModel:
         dqm.dtype = self.dtype
         dqm.case_dtype = self.dtype
 
+        return dqm
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef Bias[:] energies(self, CaseIndex[:, :] samples):
