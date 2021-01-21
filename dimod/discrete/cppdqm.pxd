@@ -42,6 +42,7 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
         # explicitly
 
         AdjVectorDQM() except +
+        AdjVectorDQM(const AdjVectorDQM &) except +
 
         # the actual signature is more general, but we already have a large
         # number of these so we'll add them as needed

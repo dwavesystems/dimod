@@ -58,6 +58,7 @@ cdef class cyDiscreteQuadraticModel:
 
         dqm.dtype = self.dtype
         dqm.case_dtype = self.dtype
+        return dqm
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -129,8 +130,8 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef cyDiscreteQuadraticModel cyDQM = cls()
 
-        cyDQM.dqm_ = cppAdjVectorDQM(case_starts.data, num_variables, linear_biases.data,
-                                     num_cases, irow.data, icol.data, quadratic_biases.data, num_interactions)
+        cyDQM.dqm_ = cppAdjVectorDQM[VarIndex, Bias](&case_starts[0], num_variables, &linear_biases[0],
+                                     num_cases, &irow[0], &icol[0], &quadratic_biases[0], num_interactions)
 
         if cyDQM.dqm_.self_loop_present():
             raise ValueError("A variable has a self-loop")

@@ -37,7 +37,16 @@ class AdjVectorDQM {
     std::vector<variable_type> case_starts_;  // len(adj_) + 1
     std::vector<std::vector<variable_type>> adj_;
 
-    AdjVectorBQM() { case_starts_.push_back(0); }
+    AdjVectorDQM() { case_starts_.push_back(0); }
+
+    explicit AdjVectorDQM(const AdjVectorDQM& dqm) {
+       bqm_ = dqm.bqm_;
+       case_starts_.insert(case_starts_.begin(), dqm.case_starts_.begin(), dqm.case_starts_.end());
+       adj_.resize(dqm.adj_.size());
+       for(auto v = 0; v < dqm.num_variables(); v++) {
+	  adj_[v].insert(adj_[v].begin(), dqm.adj_[v].begin(), dqm.adj_[v].end());
+       }
+     }
 
     template <class io_variable_type, class io_bias_type>
     AdjVectorDQM(io_variable_type *case_starts, size_type num_variables, io_bias_type *linear_biases,
@@ -70,14 +79,14 @@ class AdjVectorDQM {
         std::vector<std::unordered_set<variable_type>> adjset;
         adjset.resize(num_variables);
         auto u = 0;
-        for (auto ci = 0, ci_end = bqm_.num_variables(); ci++) {
+        for (auto ci = 0, ci_end = bqm_.num_variables(); ci < ci_end;  ci++) {
             while (ci >= case_starts_[u + 1]) {
                 u++;
             }
             auto span = bqm_.neighborhood(ci);
             auto v = 0;
             while (span.first != span.second) {
-                auto cj = *(span.first).first;
+                auto cj = (span.first)->first;
                 while (cj >= case_starts_[v + 1]) {
                     v++;
                 }
@@ -108,10 +117,10 @@ class AdjVectorDQM {
         for (auto ci = 0; ci < num_total_cases; ci++) {
             linear_biases[ci] = bqm_.get_linear(ci);
             auto span = bqm_.neighborhood(ci);
-            while ((span.first != span.second) && (*(span.first).first < ci)) {
+            while ((span.first != span.second) && ((span.first)->first < ci)) {
                 irow[qi] = ci;
-                icol[qi] = *(span.first).first;
-                quadratic_biases[qi] = *(span.first).second;
+                icol[qi] = (span.first)->first;
+                quadratic_biases[qi] = (span.first)->second;
                 span.first++;
                 qi++;
             }
@@ -122,7 +131,7 @@ class AdjVectorDQM {
         for (auto v = 0, num_variables = this->num_variables(); v < num_variables; v++) {
             for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1]; ci < ci_end; ci++) {
                 auto span = bqm_.neighborhood(ci, case_starts_[v]);
-                if ((span.first != span.second) && (*(span.first).first < case_starts_[v + 1])) {
+                if ((span.first != span.second) && ((span.first)->first < case_starts_[v + 1])) {
                     return true;
                 }
             }
@@ -133,7 +142,7 @@ class AdjVectorDQM {
     bool connection_present(variable_type u, variable_type v) {
         bool connected = true;
         auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (it == adj_[u].end() || it != v) {
+        if (it == adj_[u].end() || *it != v) {
             connected = false;
         }
         return connected;
@@ -141,7 +150,7 @@ class AdjVectorDQM {
 
     size_type num_variables() { return adj_.size(); }
 
-    size_type num_variables_interactions() {
+    size_type num_variable_interactions() {
         size_type num = 0;
         for (auto v = 0, vend = this->num_variables(); v < vend; v++) {
             num += adj_[v].size();
@@ -236,9 +245,9 @@ class AdjVectorDQM {
 #pragma omp parallel for
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
             auto span = bqm_.neighborhood(case_starts_[u] + case_u, case_starts_[v]);
-            while (span.first != span.second && *(span.first) < case_starts_[v + 1]) {
-                case_v = *(span.first) - case_starts_[v];
-                quadratic_biases[case_u * num_cases_v + case_v] = *(span.first).second;
+            while (span.first != span.second && (span.first)->first < case_starts_[v + 1]) {
+                auto case_v = (span.first)->first - case_starts_[v];
+                quadratic_biases[case_u * num_cases_v + case_v] = (span.first)->second;
                 span.first++;
             }
         }
@@ -258,9 +267,9 @@ class AdjVectorDQM {
         // parallel.
         bool inserted = false;
         for (auto case_u = 0; case_u < num_cases_u; case_u++) {
-            cu = case_starts_[u] + case_u;
+            auto cu = case_starts_[u] + case_u;
             for (auto case_v = 0; case_v < num_cases_v; case_v++) {
-                cv = case_starts_[v] + case_v;
+                auto cv = case_starts_[v] + case_v;
                 auto bias = biases[cu * num_cases_v + case_v];
                 if (bias != (io_bias_type)0) {
                     bqm_.set_quadratic(cu, cv, bias);
@@ -308,12 +317,13 @@ class AdjVectorDQM {
 
   private:
     void connect_variables(variable_type u, variable_type v) {
-        if (!connection_present(u, v)) {
+	auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
+        if (low == adj_[u].end() || *low != v) {
             adj_[u].insert(low, v);
             adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u), u);
         }
     }
-}
+};
 }  // namespace dimod
 
 #endif  // DIMOD_ADJVECTORDQM_H_
