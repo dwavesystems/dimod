@@ -273,6 +273,8 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         bias_type& linear(variable_type) except +
         pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
         pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
+        void normalize_neighborhood()
+        void normalize_neighborhood[Iter](Iter, Iter)
         size_type num_interactions() except +
         size_type num_variables() except +
         void set_linear(variable_type, bias_type) except +
