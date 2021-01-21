@@ -39,14 +39,15 @@ class AdjVectorDQM {
 
     AdjVectorDQM() { case_starts_.push_back(0); }
 
-    explicit AdjVectorDQM(const AdjVectorDQM& dqm) {
-       bqm_ = dqm.bqm_;
-       case_starts_.insert(case_starts_.begin(), dqm.case_starts_.begin(), dqm.case_starts_.end());
-       adj_.resize(dqm.adj_.size());
-       for(auto v = 0; v < dqm.num_variables(); v++) {
-	  adj_[v].insert(adj_[v].begin(), dqm.adj_[v].begin(), dqm.adj_[v].end());
-       }
-     }
+    explicit AdjVectorDQM(const AdjVectorDQM &dqm) {
+        bqm_ = dqm.bqm_;
+        case_starts_.insert(case_starts_.begin(), dqm.case_starts_.begin(), dqm.case_starts_.end());
+        adj_.resize(dqm.adj_.size());
+        auto num_variables = dqm.num_variables();
+        for (auto v = 0; v < num_variables; v++) {
+            adj_[v].insert(adj_[v].begin(), dqm.adj_[v].begin(), dqm.adj_[v].end());
+        }
+    }
 
     template <class io_variable_type, class io_bias_type>
     AdjVectorDQM(io_variable_type *case_starts, size_type num_variables, io_bias_type *linear_biases,
@@ -79,7 +80,8 @@ class AdjVectorDQM {
         std::vector<std::unordered_set<variable_type>> adjset;
         adjset.resize(num_variables);
         auto u = 0;
-        for (auto ci = 0, ci_end = bqm_.num_variables(); ci < ci_end;  ci++) {
+        auto num_total_cases = bqm_.num_variables();
+        for (auto ci = 0; ci < num_total_cases; ci++) {
             while (ci >= case_starts_[u + 1]) {
                 u++;
             }
@@ -128,7 +130,8 @@ class AdjVectorDQM {
     }
 
     bool self_loop_present() {
-        for (auto v = 0, num_variables = this->num_variables(); v < num_variables; v++) {
+        auto num_variables = this->num_variables();
+        for (auto v = 0; v < num_variables; v++) {
             for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1]; ci < ci_end; ci++) {
                 auto span = bqm_.neighborhood(ci, case_starts_[v]);
                 if ((span.first != span.second) && ((span.first)->first < case_starts_[v + 1])) {
@@ -152,7 +155,8 @@ class AdjVectorDQM {
 
     size_type num_variable_interactions() {
         size_type num = 0;
-        for (auto v = 0, vend = this->num_variables(); v < vend; v++) {
+        auto num_variables = this->num_variables();
+        for (auto v = 0; v < num_variables; v++) {
             num += adj_[v].size();
         }
         return (num / 2);
@@ -191,7 +195,8 @@ class AdjVectorDQM {
     template <class io_bias_type>
     void get_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
-        for (auto case_v = 0, num_cases_v = this->num_cases(v); case_v < num_cases_v; case_v++) {
+        auto num_cases_v = this->num_cases(v);
+        for (auto case_v = 0; case_v < num_cases_v; case_v++) {
             biases[case_v] = bqm_.get_linear(case_starts_[v] + case_v);
         }
     }
@@ -199,7 +204,8 @@ class AdjVectorDQM {
     template <class io_bias_type>
     void set_linear(variable_type v, io_bias_type *biases) {
         assert(v >= 0 && v < this->num_variables());
-        for (auto case_v = 0, num_cases_v = this->num_cases(v); case_v < num_cases_v; case_v++) {
+        auto num_cases_v = this->num_cases(v);
+        for (auto case_v = 0; case_v < num_cases_v; case_v++) {
             bqm_.set_linear(case_starts_[v] + case_v, biases[case_v]);
         }
     }
@@ -317,7 +323,7 @@ class AdjVectorDQM {
 
   private:
     void connect_variables(variable_type u, variable_type v) {
-	auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
+        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
         if (low == adj_[u].end() || *low != v) {
             adj_[u].insert(low, v);
             adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u), u);
