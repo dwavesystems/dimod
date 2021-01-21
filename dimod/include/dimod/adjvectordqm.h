@@ -118,7 +118,7 @@ class AdjVectorDQM {
         }
     }
 
-    bool is_self_loop_present() {
+    bool self_loop_present() {
         for (auto v = 0, num_variables = this->num_variables(); v < num_variables; v++) {
             for (auto ci = case_starts_[v], ci_end = case_starts_[v + 1]; ci < ci_end; ci++) {
                 auto span = bqm_.neighborhood(ci, case_starts_[v]);
@@ -128,6 +128,15 @@ class AdjVectorDQM {
             }
         }
         return false;
+    }
+
+    bool connection_present(variable_type u, variable_type v) {
+        bool connected = true;
+        auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
+        if (it == adj_[u].end() || it != v) {
+            connected = false;
+        }
+        return connected;
     }
 
     size_type num_variables() { return adj_.size(); }
@@ -219,8 +228,7 @@ class AdjVectorDQM {
     bool get_quadratic(variable_type u, variable_type v, io_bias_type *quadratic_biases) {
         assert(u >= 0 && u < this->num_variables());
         assert(v >= 0 && v < this->num_variables());
-        auto it = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (it == adj_[u].end() || *it != v) {
+        if (!connection_present(u, v)) {
             return false;
         }
         auto num_cases_u = num_cases(u);
@@ -300,8 +308,7 @@ class AdjVectorDQM {
 
   private:
     void connect_variables(variable_type u, variable_type v) {
-        auto low = std::lower_bound(adj_[u].begin(), adj_[u].end(), v);
-        if (low == adj_[u].end() || *low != v) {
+        if (!connection_present(u, v)) {
             adj_[u].insert(low, v);
             adj_[v].insert(std::lower_bound(adj_[v].begin(), adj_[v].end(), u), u);
         }
