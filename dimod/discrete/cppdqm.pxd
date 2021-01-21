@@ -75,7 +75,8 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
 
         # methods
 
-        bool is_self_loop_present() except +
+        bool self_loop_present() except +
+        bool connection_present(variable_type, variable_type) except +
         size_type num_variables() except +
         size_type num_variable_interactions() except +
         size_type num_cases(variable_type) except +
