@@ -263,48 +263,89 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef void add_constraint_as_quadratic(self, vector[VarIndex] variables, vector[CaseIndex] cases,
-                                           vector[Bias] biases, Bias lagrange_multiplier, Bias constant):
-        if len(variables) != len(cases) or len(variables) != len(biases):
-            raise ValueError("There should be equal number of variables, "
-                             "cases, and biases")
+    def add_constraint_as_quadratic(self, object terms,
+                                    Bias lagrange_multiplier, Bias constant):
 
-        cdef unsigned long int num_terms = len(variables)
-        cdef unsigned long int i, j
-        cdef VarIndex v, u
-        cdef CaseIndex cv, cu
-        cdef Bias bv, bu, bias
-        cdef vector[CaseIndex] global_index
-        for i in range(num_terms):
-            v = variables[i]
-            case = cases[i]
-            if case < 0 or case >= self.num_cases(v):
-                raise ValueError("case {} is invalid, variable only supports {} "
-                                 "cases".format(case, self.num_cases(v)))
-            global_index.push_back(self.case_starts_[v] + case)
+        # resolve the terms from a python object into some C++ objects
+        cdef unordered_set[VarIndex] variable_set
+        cdef vector[CaseIndex] cases
+        cdef vector[Bias] biases
 
+        # can allocate them if we already know the size
+        if isinstance(terms, abc.Sized):
+            cases.reserve(len(terms))
+            biases.reserve(len(terms))
+
+        # put the generator or list into our C++ objects
+        cdef Py_ssize_t v, case_v
+        cdef Bias bias
+        for v, case_v, bias in terms:
+            variable_set.insert(v)
+            cases.push_back(case_v + self.case_starts_[v])
+            biases.push_back(bias)
+
+        # add the biases to the BQM, not worrying about order or duplication
+        cdef Py_ssize_t num_terms = cases.size()
+
+        cdef Py_ssize_t i, j
+        cdef CaseIndex cu, cv
+        cdef Bias lbias, qbias
         for i in range(num_terms):
-            v = variables[i]
-            cv = global_index[i]
-            bv = biases[i]
-            bias = self.bqm_.get_linear(cv)
-            bias += lagrange_multiplier * (2 * bv * constant + bv * bv)
-            self.bqm_.set_linear(cv, bias)
+            cu = cases[i]
+
+            lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
+            self.bqm_.set_linear(cu, lbias + self.bqm_.get_linear(cu))
+
             for j in range(i + 1, num_terms):
-                u = variables[j]
-                cu = global_index[j]
-                bu = biases[j]
-                if v != u:
-                    bias = self.bqm_.get_quadratic(cv, cu).first
-                    bias += 2 * lagrange_multiplier * bv * bu
-                    self.bqm_.set_quadratic(cv, cu, bias)
+                cv = cases[j]
 
-                    low = lower_bound(self.adj_[u].begin(), self.adj_[u].end(), v)
-                    if low == self.adj_[u].end() or deref(low) != v:
-                        self.adj_[u].insert(low, v)
-                        self.adj_[v].insert(
-                            lower_bound(self.adj_[v].begin(), self.adj_[v].end(), u),
-                            u)
+                if cv == cu:
+                    continue
+
+                qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
+
+                # cython gets confused about pairs so we do some contortions
+                self.bqm_.adj[cu].first.resize(self.bqm_.adj[cu].first.size() + 1)
+                self.bqm_.adj[cu].first.back().first = cv
+                self.bqm_.adj[cu].first.back().second = qbias
+
+                self.bqm_.adj[cv].first.resize(self.bqm_.adj[cv].first.size() + 1)
+                self.bqm_.adj[cv].first.back().first = cu
+                self.bqm_.adj[cv].first.back().second = qbias
+
+        # now de-duplicate the BQM
+        self.bqm_.normalize_neighborhood(cases.begin(), cases.end())
+
+        # finally fix the adjacency
+        cdef vector[VarIndex] variables
+        variables.insert(
+            variables.end(), variable_set.begin(), variable_set.end())
+        sort(variables.begin(), variables.end())
+
+        cdef Py_ssize_t vi, ni
+        for i in range(variables.size()):
+            v = variables[i]
+
+            # this is optimized for when variables are relatively large
+            # compared adj (at 5000 variables the crossover point is %13)
+            vit = variables.begin()
+            nit = self.adj_[v].begin()
+            while vit != variables.end():
+                if deref(vit) == v:
+                    inc(vit)
+                elif nit == self.adj_[v].end():
+                    nit = self.adj_[v].insert(nit, deref(vit))
+                    inc(nit)
+                    inc(vit)
+                elif deref(vit) < deref(nit):
+                    nit = self.adj_[v].insert(nit, deref(vit))
+                    inc(nit)
+                    inc(vit)
+                elif deref(vit) > deref(nit):
+                    inc(nit)
+                else:  # *vit == *nit
+                    inc(nit)
+                    inc(vit)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

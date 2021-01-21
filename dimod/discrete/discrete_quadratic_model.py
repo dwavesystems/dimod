@@ -419,11 +419,13 @@ class DiscreteQuadraticModel:
         return self._cydqm.get_quadratic_case(
             self.variables.index(u), u_case, self.variables.index(v), v_case)
 
-    def add_constraint_as_quadratic(self, terms: LinearTriplets, lagrange_multiplier: float,
+    def add_constraint_as_quadratic(self, terms: LinearTriplets,
+                                    lagrange_multiplier: float,
                                     constant: float):
         """Add a linear constraint as a quadratic objective.
 
-        Adds a linear constraint of the form :math:`\sum_{i,k} a_{i,k} x_{i,k} + C = 0`
+        Adds a linear constraint of the form
+        :math:`\sum_{i,k} a_{i,k} x_{i,k} + C = 0`
         to the discrete quadratic model as a quadratic objective.
 
         Args:
@@ -433,14 +435,10 @@ class DiscreteQuadraticModel:
             lagrange_multiplier: The coefficient or the penalty strength
             constant: The constant value of the constraint.
 
-        Returns: None
         """
-        variables, cases, biases = [], [], []
-        for v, c, b in terms:
-            variables.append(self.variables.index(v))
-            cases.append(c)
-            biases.append(b)
-        self._cydqm.add_constraint_as_quadratic(variables, cases, biases, lagrange_multiplier, constant)
+        index_terms = ((self.variables.index(v), c, x) for v, c, x in terms)
+        self._cydqm.add_constraint_as_quadratic(
+            index_terms, lagrange_multiplier, constant)
 
     def num_cases(self, v=None):
         """If v is provided, the number of cases associated with v, otherwise
