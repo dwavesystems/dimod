@@ -54,7 +54,7 @@ class AdjVectorDQM {
                  size_type num_interactions) {
         // Set the BQM, linear biases will be added separately.
         if (num_interactions) {
-            bqm_ = AdjVectorBQM<variable_type, bias_type>(irow, icol, num_interactions, true);
+            bqm_ = AdjVectorBQM<variable_type, bias_type>(irow, icol, quadratic_biases, num_interactions, true);
         }
 
         // Accounting for the cases/variables at the end without interaction.
