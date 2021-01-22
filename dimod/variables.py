@@ -116,13 +116,18 @@ class Variables(abc.Sequence, abc.Set):
 
     def __contains__(self, v):
         try:
-            return (isinstance(v, int)
-                    and 0 <= v < self._stop
-                    and v not in self._idx_to_label
+            in_range = (isinstance(v, Number)
+                        and (isinstance(v, Integral) or v.is_integer())
+                        and 0 <= v < self._stop)
+        except AttributeError:
+            in_range = False
+
+        try:
+            return (in_range and v not in self._idx_to_label
                     or v in self._label_to_idx)
         except TypeError:
             # unhashable
-            return False  # objects
+            return False
 
     def __eq__(self, other):
         if isinstance(other, abc.Sequence):

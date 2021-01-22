@@ -15,6 +15,8 @@
 import collections.abc as abc
 import unittest
 
+import numpy as np
+
 from parameterized import parameterized_class
 
 from dimod.variables import Variables
@@ -38,6 +40,12 @@ class TestDuplicates(unittest.TestCase):
     def test_len(self):
         variables = Variables('aaaaa')
         self.assertEqual(len(variables), 1)
+
+    def test_unlike_types(self):
+        zeros = [0, 0.0, np.int8(0), np.float64(0)]
+        variables = Variables(zeros)
+        # should have set-like uniqueness
+        self.assertEqual(len(variables), len(set(zeros)))
 
 
 class TestPrint(unittest.TestCase):
@@ -99,6 +107,7 @@ class TestRelabel(unittest.TestCase):
      dict(name='string', iterable='abcde'),
      dict(name='range', iterable=range(5)),
      dict(name='mixed', iterable=[0, ('b',), 2.1, 'c', frozenset('d')]),
+     dict(name='floats', iterable=[0., 1., 2., 3., 4.]),
      ],
     class_name_func=lambda cls, i, inpt: '%s_%s' % (cls.__name__, inpt['name'])
     )

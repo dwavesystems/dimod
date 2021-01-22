@@ -53,6 +53,20 @@ def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
     return dqm
 
 
+class TestBug(unittest.TestCase):
+    # various smoke tests from bug reports
+    def test_778(self):
+        # https://github.com/dwavesystems/dimod/issues/778
+        dqm = dimod.DQM()
+
+        variables = np.array([0, 1, 2], dtype=np.int64)
+
+        for variable in variables:
+            dqm.add_variable(num_cases=5, label=variable)
+
+        self.assertEqual(dqm.num_cases(variables[0]), 5)
+
+
 class TestConstruction(unittest.TestCase):
     def test_empty(self):
         dqm = dimod.DQM()
