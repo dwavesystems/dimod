@@ -117,7 +117,7 @@ class Variables(abc.Sequence, abc.Set):
     def __contains__(self, v):
         try:
             in_range = (isinstance(v, Number)
-                        and (isinstance(v, Integral) or v.is_integer())
+                        and v == int(v)
                         and 0 <= v < self._stop)
         except AttributeError:
             in_range = False

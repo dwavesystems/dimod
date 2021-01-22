@@ -13,6 +13,9 @@
 #    limitations under the License.
 
 import collections.abc as abc
+import decimal
+import fractions
+import itertools
 import unittest
 
 import numpy as np
@@ -41,11 +44,12 @@ class TestDuplicates(unittest.TestCase):
         variables = Variables('aaaaa')
         self.assertEqual(len(variables), 1)
 
-    def test_unlike_types(self):
-        zeros = [0, 0.0, np.int8(0), np.float64(0)]
-        variables = Variables(zeros)
-        # should have set-like uniqueness
-        self.assertEqual(len(variables), len(set(zeros)))
+    def test_unlike_types_eq_hash(self):
+        zeros = [0, 0.0, np.int8(0), np.float64(0),
+                 fractions.Fraction(0), decimal.Decimal(0)]
+        for perm in itertools.permutations(zeros, len(zeros)):
+            variables = Variables(perm)
+            self.assertEqual(len(variables), len(set(zeros)))
 
 
 class TestPrint(unittest.TestCase):
