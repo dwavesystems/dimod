@@ -248,6 +248,7 @@ class AdjVectorDQM {
         }
         variable_type num_cases_u = num_cases(u);
         variable_type num_cases_v = num_cases(v);
+        memset(quadratic_biases, 0, (size_t)num_cases_u * (size_t)num_cases_v * sizeof(io_bias_type));
 #pragma omp parallel for
         for (variable_type case_u = 0; case_u < num_cases_u; case_u++) {
             auto span = bqm_.neighborhood(case_starts_[u] + case_u, case_starts_[v]);
@@ -277,7 +278,7 @@ class AdjVectorDQM {
             for (variable_type case_v = 0; case_v < num_cases_v; case_v++) {
                 variable_type cv = case_starts_[v] + case_v;
                 bias_type bias = biases[cu * num_cases_v + case_v];
-                if (bias != (bias_type) 0) {
+                if (bias != (bias_type)0) {
                     bqm_.set_quadratic(cu, cv, bias);
                     inserted = true;
                 }
@@ -286,8 +287,10 @@ class AdjVectorDQM {
 
         if (inserted) {
             connect_variables(u, v);
+            return true;
+        } else {
+            return false;
         }
-        return true;
     }
 
     template <class io_variable_type, class io_bias_type>
