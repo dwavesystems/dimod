@@ -74,7 +74,7 @@ class AdjVectorDQM {
         for (variable_type v = 0; v < num_variables; v++) {
             case_starts_[v] = case_starts[v];
         }
-        case_starts[num_variables] = num_cases;
+        case_starts_[num_variables] = num_cases;
 
         // Fill the adjacency list for variables.
         std::vector<std::unordered_set<variable_type>> adjset;

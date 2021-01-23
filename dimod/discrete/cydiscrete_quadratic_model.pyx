@@ -217,7 +217,7 @@ cdef class cyDiscreteQuadraticModel:
 
                 while (span.first != span.second and deref(span.first).first < self.dqm_.case_starts_[v+1]):
                     case_u = ci - self.dqm_.case_starts_[u]
-                    case_v = deref(span.first).first - self.case_starts_[v]
+                    case_v = deref(span.first).first - self.dqm_.case_starts_[v]
                     quadratic[case_u, case_v] = deref(span.first).second
 
                     inc(span.first)
