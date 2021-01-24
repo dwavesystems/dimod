@@ -277,7 +277,7 @@ class AdjVectorDQM {
             variable_type cu = case_starts_[u] + case_u;
             for (variable_type case_v = 0; case_v < num_cases_v; case_v++) {
                 variable_type cv = case_starts_[v] + case_v;
-                bias_type bias = biases[cu * num_cases_v + case_v];
+                bias_type bias = biases[case_u * num_cases_v + case_v];
                 if (bias != (bias_type)0) {
                     bqm_.set_quadratic(cu, cv, bias);
                     inserted = true;
