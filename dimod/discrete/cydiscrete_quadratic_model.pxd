@@ -20,7 +20,7 @@ from libcpp.vector cimport vector
 
 cimport numpy as np
 
-from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
+from dimod.discrete.cppdqm cimport AdjVectorDQM as cppAdjVectorDQM
 from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
 
@@ -36,9 +36,7 @@ ctypedef fused Unsigned:
 
 
 cdef class cyDiscreteQuadraticModel:
-    cdef cppAdjVectorBQM[CaseIndex, Bias] bqm_
-    cdef vector[CaseIndex] case_starts_  # len(adj_) + 1
-    cdef vector[vector[VarIndex]] adj_
+    cdef cppAdjVectorDQM[VarIndex, Bias] dqm_
 
     cdef readonly object dtype
     cdef readonly object case_dtype
