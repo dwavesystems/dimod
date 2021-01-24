@@ -327,6 +327,8 @@ cdef class cyDiscreteQuadraticModel:
                                      "cases".format(case_v, self.num_cases(v)))
 
                 self.dqm_.set_quadratic_case(u, case_u, v, case_v, bias)
+
+            self.dqm_.connect_variables(u,v)
         else:
 
             biases_view = np.asarray(biases, dtype=self.dtype).reshape(
