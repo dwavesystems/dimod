@@ -536,6 +536,19 @@ class TestConstraint(unittest.TestCase):
 
             self.assertAlmostEqual(energy, lagrange_multiplier * s ** 2 + dqm_0.energy(state))
 
+    def test_unknown_variable(self):
+        dqm = dimod.DQM()
+        with self.assertRaises(ValueError):
+            dqm.add_constraint_as_quadratic(
+                [(0, 0, 0)], lagrange_multiplier=1, constant=-1)
+
+    def test_out_of_range_case(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(5)
+        with self.assertRaises(ValueError):
+            dqm.add_constraint_as_quadratic(
+                [(u, 6, 0)], lagrange_multiplier=1, constant=-1)
+
 
 class TestNumpyVectors(unittest.TestCase):
 

@@ -280,6 +280,8 @@ cdef class cyDiscreteQuadraticModel:
         cdef Bias bias
         for v, case_v, bias in terms:
             variable_set.insert(v)
+            if case_v >= self.num_cases(v):  # also checks variable
+                raise ValueError("case out of range")
             cases.push_back(case_v + self.case_starts_[v])
             biases.push_back(bias)
 
