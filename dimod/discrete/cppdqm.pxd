@@ -91,8 +91,8 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
         bool set_quadratic_case(variable_type, variable_type, variable_type, variable_type, bias_type) except +
         bool get_quadratic[io_bias_type](variable_type, variable_type, io_bias_type*) except +
         bool set_quadratic[io_bias_type](variable_type, variable_type, io_bias_type*) except +
-        void get_energies[io_variable_type, io_bias_type](io_variable_type*, int, variable_type, io_bias_type*) except +
-        void extract_data[io_variable_type, io_bias_type](io_variable_type*, io_bias_type*, io_variable_type*, io_variable_type*, io_bias_type*) except +
+        double get_energy[io_variable_type](io_variable_type*) except +
+        void to_coo[io_variable_type, io_bias_type](io_variable_type*, io_bias_type*, io_variable_type*, io_variable_type*, io_bias_type*) except +
 
         # shapeable methods
 

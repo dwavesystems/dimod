@@ -15,7 +15,6 @@
 #ifndef DIMOD_ADJVECTORDQM_H_
 #define DIMOD_ADJVECTORDQM_H_
 
-#include <stdio.h>
 #include <algorithm>
 #include <unordered_set>
 #include <utility>
@@ -59,7 +58,7 @@ class AdjVectorDQM {
         // Set the BQM, linear biases will be added separately.
         if (num_interactions) {
             bqm_ = AdjVectorBQM<variable_type, bias_type>(
-                irow, icol, quadratic_biases, num_interactions, true);
+                    irow, icol, quadratic_biases, num_interactions, true);
         }
 
         // Accounting for the cases/variables at the end without interaction.
@@ -110,9 +109,9 @@ class AdjVectorDQM {
     }
 
     template <class io_variable_type, class io_bias_type>
-    void extract_data(io_variable_type *case_starts,
-                      io_bias_type *linear_biases, io_variable_type *irow,
-                      io_variable_type *icol, io_bias_type *quadratic_biases) {
+    void to_coo(io_variable_type *case_starts, io_bias_type *linear_biases,
+                io_variable_type *irow, io_variable_type *icol,
+                io_bias_type *quadratic_biases) {
         variable_type num_variables = this->num_variables();
         variable_type num_total_cases = bqm_.num_variables();
 
@@ -269,18 +268,18 @@ class AdjVectorDQM {
         }
         variable_type num_cases_u = num_cases(u);
         variable_type num_cases_v = num_cases(v);
-        memset(
-            quadratic_biases, 0,
-            (size_t)num_cases_u * (size_t)num_cases_v * sizeof(io_bias_type));
+        memset(quadratic_biases, 0,
+               (size_t)num_cases_u * (size_t)num_cases_v *
+                       sizeof(io_bias_type));
 #pragma omp parallel for
         for (variable_type case_u = 0; case_u < num_cases_u; case_u++) {
-            auto span =
-                bqm_.neighborhood(case_starts_[u] + case_u, case_starts_[v]);
+            auto span = bqm_.neighborhood(case_starts_[u] + case_u,
+                                          case_starts_[v]);
             while (span.first != span.second &&
                    (span.first)->first < case_starts_[v + 1]) {
                 variable_type case_v = (span.first)->first - case_starts_[v];
                 quadratic_biases[case_u * num_cases_v + case_v] =
-                    (span.first)->second;
+                        (span.first)->second;
                 span.first++;
             }
         }
@@ -319,36 +318,30 @@ class AdjVectorDQM {
         }
     }
 
-    template <class io_variable_type, class io_bias_type>
-    void get_energies(io_variable_type *samples, int num_samples,
-                      variable_type sample_length, io_bias_type *energies) {
-        assert(sample_length == this->num_variables());
-        variable_type num_variables = sample_length;
-#pragma omp parallel for
-        for (auto si = 0; si < num_samples; si++) {
-            variable_type *current_sample = samples + (si * num_variables);
-            double current_sample_energy = 0;
-            for (variable_type u = 0; u < num_variables; u++) {
-                variable_type case_u = current_sample[u];
-                assert(case_u < num_cases(u));
-                variable_type cu = case_starts_[u] + case_u;
-                current_sample_energy += bqm_.get_linear(cu);
-                for (variable_type vi = 0; vi < adj_[u].size(); vi++) {
-                    variable_type v = adj_[u][vi];
-                    // We only care about lower triangle.
-                    if (v > u) {
-                        break;
-                    }
-                    variable_type case_v = current_sample[v];
-                    variable_type cv = case_starts_[v] + case_v;
-                    auto out = bqm_.get_quadratic(cu, cv);
-                    if (out.second) {
-                        current_sample_energy += out.first;
-                    }
+    template <class io_variable_type>
+    double get_energy(io_variable_type *sample) {
+        variable_type num_variables = this->num_variables();
+        double sample_energy = 0;
+        for (variable_type u = 0; u < num_variables; u++) {
+            variable_type case_u = sample[u];
+            assert(case_u < num_cases(u));
+            variable_type cu = case_starts_[u] + case_u;
+            sample_energy += bqm_.get_linear(cu);
+            for (variable_type vi = 0; vi < adj_[u].size(); vi++) {
+                variable_type v = adj_[u][vi];
+                // We only care about lower triangle.
+                if (v > u) {
+                    break;
+                }
+                variable_type case_v = sample[v];
+                variable_type cv = case_starts_[v] + case_v;
+                auto out = bqm_.get_quadratic(cu, cv);
+                if (out.second) {
+                    sample_energy += out.first;
                 }
             }
-            energies[si] = current_sample_energy;
         }
+        return sample_energy;
     }
 };
 }  // namespace dimod

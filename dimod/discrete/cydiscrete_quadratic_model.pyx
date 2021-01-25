@@ -82,7 +82,9 @@ cdef class cyDiscreteQuadraticModel:
                 if case_u >= self.num_cases(u):
                     raise ValueError("invalid case")
 
-        self.dqm_.get_energies( & samples[0, 0], num_samples, num_variables, & energies[0])
+        for si in range(num_samples):
+            energies[si] = self.dqm_.get_energy(& samples[si, 0])
+
         return energies
 
     @classmethod
@@ -362,7 +364,7 @@ cdef class cyDiscreteQuadraticModel:
                                   Unsigned[:] irow, Unsigned[:] icol, Bias[:] qdata):
         # we don't do array length checking so be careful! This can segfault
         # if the given arrays are incorrectly sized
-        self.dqm_.extract_data( & starts[0], & ldata[0], & irow[0], & icol[0], & qdata[0])
+        self.dqm_.to_coo( & starts[0], & ldata[0], & irow[0], & icol[0], & qdata[0])
 
     def to_numpy_vectors(self):
 
