@@ -38,7 +38,8 @@ class AdjVectorDQM {
 
     AdjVectorDQM() { case_starts_.push_back(0); }
 
-    explicit AdjVectorDQM(const AdjVectorDQM &dqm) {
+    template <class DQM>
+    explicit AdjVectorDQM(const DQM &dqm) {
         bqm_ = dqm.bqm_;
         case_starts_.insert(case_starts_.begin(), dqm.case_starts_.begin(),
                             dqm.case_starts_.end());
