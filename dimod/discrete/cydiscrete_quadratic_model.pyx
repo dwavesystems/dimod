@@ -184,7 +184,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        return self.dqm_.get_linear_case(v, case)
+        return self.dqm_.linear_case(v, case)
 
     def get_quadratic(self, VarIndex u, VarIndex v, bint array=False):
 
@@ -296,7 +296,8 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        self.dqm_.set_linear_case(v, case, b)
+        cdef Bias *bias_ptr = &(self.dqm_.linear_case(v, case))
+        bias_ptr[0] = b
 
     def set_quadratic(self, VarIndex u, VarIndex v, biases):
 

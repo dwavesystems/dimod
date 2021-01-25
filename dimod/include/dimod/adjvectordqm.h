@@ -196,16 +196,10 @@ class AdjVectorDQM {
         return v;
     }
 
-    bias_type get_linear_case(variable_type v, variable_type case_v) {
+    bias_type &linear_case(variable_type v, variable_type case_v) {
         assert(v >= 0 && v < this->num_variables());
         assert(case_v >= 0 && case_v < this->num_cases(v));
-        return bqm_.get_linear(case_starts_[v] + case_v);
-    }
-
-    void set_linear_case(variable_type v, variable_type case_v, bias_type b) {
-        assert(v >= 0 && v < this->num_variables());
-        assert(case_v >= 0 && case_v < this->num_cases(v));
-        bqm_.set_linear(case_starts_[v] + case_v, b);
+        return bqm_.linear(case_starts_[v] + case_v);
     }
 
     template <class io_bias_type>
@@ -213,7 +207,7 @@ class AdjVectorDQM {
         assert(v >= 0 && v < this->num_variables());
         variable_type num_cases_v = this->num_cases(v);
         for (variable_type case_v = 0; case_v < num_cases_v; case_v++) {
-            biases[case_v] = bqm_.get_linear(case_starts_[v] + case_v);
+            biases[case_v] = bqm_.linear(case_starts_[v] + case_v);
         }
     }
 
@@ -222,7 +216,7 @@ class AdjVectorDQM {
         assert(v >= 0 && v < this->num_variables());
         variable_type num_cases_v = this->num_cases(v);
         for (variable_type case_v = 0; case_v < num_cases_v; case_v++) {
-            bqm_.set_linear(case_starts_[v] + case_v, biases[case_v]);
+            bqm_.linear(case_starts_[v] + case_v) = biases[case_v];
         }
     }
 

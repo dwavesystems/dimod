@@ -42,13 +42,15 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
         # explicitly
 
         AdjVectorDQM() except +
-        AdjVectorDQM(const AdjVectorDQM &) except +
+        AdjVectorDQM(const AdjVectorDQM & ) except +
 
         # the actual signature is more general, but we already have a large
         # number of these so we'll add them as needed
-        # AdjVectorDQM(variable_type* case_starts, size_type num_variables, bias_type* linear_biases,
-        #           size_type num_cases, variable_type* irow, variable_type* icol,
-        #           bias_type* quadratic_biases, size_type num_interactions)
+        # template <class io_variable_type, class io_bias_type>
+        # AdjVectorDQM(io_variable_type *case_starts, size_type num_variables,
+        #              io_bias_type *linear_biases, size_type num_cases,
+        #              io_variable_type *irow, io_variable_type *icol,
+        #              io_bias_type *quadratic_biases, size_type num_interactions)
         AdjVectorDQM(np.uint32_t*, size_type, np.uint32_t*,  size_type, np.uint32_t*, np.uint32_t*, np.uint32_t*,  size_type)
         AdjVectorDQM(np.uint32_t*, size_type, np.uint64_t*,  size_type, np.uint32_t*, np.uint32_t*, np.uint64_t*,  size_type)
         AdjVectorDQM(np.uint32_t*, size_type, np.int32_t*,   size_type, np.uint32_t*, np.uint32_t*, np.int32_t*,   size_type)
@@ -83,8 +85,7 @@ cdef extern from "dimod/adjvectordqm.h" namespace "dimod" nogil:
         size_type num_variable_interactions() except +
         size_type num_cases(variable_type) except +
         size_type num_case_interactions() except +
-        bias_type get_linear_case(variable_type, variable_type) except +
-        void set_linear_case(variable_type, variable_type, bias_type) except +
+        bias_type & linear_case(variable_type, variable_type) except +
         void get_linear[io_bias_type](variable_type, io_bias_type*) except +
         void set_linear[io_bias_type](variable_type, io_bias_type*) except +
         pair[bias_type, bool] get_quadratic_case(variable_type, variable_type, variable_type, variable_type) except +
