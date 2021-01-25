@@ -67,18 +67,20 @@ class TestBug(unittest.TestCase):
 
     def test_782(self):
         # https://github.com/dwavesystems/dimod/issues/782
+        rng = np.random.default_rng(782)
+
         dqm1 = dimod.DiscreteQuadraticModel()
         x = {}
         for i in range(10):
             x[i] = dqm1.add_variable(5)
         for c in range(5):
-            dqm1.add_constraint_as_quadratic(((x[i], 5, np.random.normal())
+            dqm1.add_constraint_as_quadratic(((x[i], c, rng.normal())
                                              for i in range(10)),
                                              lagrange_multiplier=1.0,
                                              constant=-1.0)
         dqm2 = dqm1.copy()
 
-        state = {v: np.random.randint(0, dqm1.num_cases(v)) for v in
+        state = {v: rng.integers(0, dqm1.num_cases(v)) for v in
                  dqm1.variables}
 
         self.assertEqual(dqm1.energy(state),
