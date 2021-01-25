@@ -70,9 +70,6 @@ cdef class cyDiscreteQuadraticModel:
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
 
-        dqm.dtype = self.dtype
-        dqm.case_dtype = self.dtype
-
         return dqm
 
     @cython.boundscheck(False)

@@ -54,7 +54,6 @@ def gnp_random_dqm(num_variables, num_cases, p, p_case, seed=None):
 
 
 class TestBug(unittest.TestCase):
-    # various smoke tests from bug reports
     def test_778(self):
         # https://github.com/dwavesystems/dimod/issues/778
         dqm = dimod.DQM()
@@ -65,6 +64,25 @@ class TestBug(unittest.TestCase):
             dqm.add_variable(num_cases=5, label=variable)
 
         self.assertEqual(dqm.num_cases(variables[0]), 5)
+
+    def test_782(self):
+        # https://github.com/dwavesystems/dimod/issues/782
+        dqm1 = dimod.DiscreteQuadraticModel()
+        x = {}
+        for i in range(10):
+            x[i] = dqm1.add_variable(5)
+        for c in range(5):
+            dqm1.add_constraint_as_quadratic(((x[i], 5, np.random.normal())
+                                             for i in range(10)),
+                                             lagrange_multiplier=1.0,
+                                             constant=-1.0)
+        dqm2 = dqm1.copy()
+
+        state = {v: np.random.randint(0, dqm1.num_cases(v)) for v in
+                 dqm1.variables}
+
+        self.assertEqual(dqm1.energy(state),
+                         dqm2.energy(state))
 
 
 class TestConstruction(unittest.TestCase):
@@ -152,6 +170,10 @@ class TestCopy(unittest.TestCase):
 
         new.set_linear(u, [3, 2, 1, 0])
         np.testing.assert_array_equal(dqm.get_linear(u), [0, 1, 2, 3])
+
+        new.add_variable(5)
+        self.assertEqual(new.num_variables(), dqm.num_variables() + 1)
+        self.assertEqual(new.num_cases(), dqm.num_cases() + 5)
 
 
 class TestEnergy(unittest.TestCase):
