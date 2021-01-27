@@ -940,8 +940,8 @@ cdef class cyAdj@name@BQM:
         # put the generator or list into our C++ objects
         cdef Py_ssize_t v
         cdef Bias bias
-        for v, bias in terms:
-            variables.push_back(self.label_to_idx(v))
+        for var, bias in terms:
+            variables.push_back(self.label_to_idx(var))
             biases.push_back(bias)
 
         # add the biases to the BQM, not worrying about order or duplication
@@ -952,12 +952,10 @@ cdef class cyAdj@name@BQM:
         self.offset += lagrange_multiplier * constant * constant
         for i in range(num_terms):
             v = variables[i]
-            print(i, v)
             lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
             self.bqm_.set_linear(v, lbias + self.bqm_.get_linear(v))
             for j in range(i + 1, num_terms):
                 u = variables[j]
-                print(i, j, v, u)
                 qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
                 self.bqm_.set_quadratic(u, v,
                 qbias + self.bqm_.get_quadratic(u, v).first)
