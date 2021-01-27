@@ -82,6 +82,7 @@ Methods
    ~AdjVectorBQM.scale
    ~AdjVectorBQM.set_linear
    ~AdjVectorBQM.set_quadratic
+   ~AdjVectorBQM.add_constraint_as_quadratic
    ~AdjVectorBQM.shapeable
    ~AdjVectorBQM.to_coo
    ~AdjVectorBQM.to_file
