@@ -123,11 +123,6 @@ class build_ext(_build_ext):
         self.build_tests = None
 
 
-bqmdir = os.path.join(".", "dimod", "bqm")
-namespace = {}
-exec(open(os.path.join(bqmdir, "make.py")).read(), namespace)
-namespace['make_bqms'](bqmdir)
-
 extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],

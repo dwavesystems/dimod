@@ -14,9 +14,6 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
-@header@
 
 import collections.abc as abc
 import numbers
@@ -43,7 +40,7 @@ from dimod.vartypes import as_vartype, Vartype
 
 
 @cython.embedsignature(True)
-cdef class cyAdj@name@BQM:
+cdef class cyAdjMapBQM:
 
     def __cinit__(self, *args, **kwargs):
         self.dtype = dtype
@@ -109,7 +106,7 @@ cdef class cyAdj@name@BQM:
 
     def _init_cybqm(self, cyBQM bqm):
         """Construct self from another cybqm."""
-        self.bqm_ = cppAdj@name@BQM[VarIndex, Bias](bqm.bqm_)
+        self.bqm_ = cppAdjMapBQM[VarIndex, Bias](bqm.bqm_)
 
         self.offset_ = bqm.offset_
         self.vartype = bqm.vartype
@@ -241,7 +238,7 @@ cdef class cyAdj@name@BQM:
         self.vartype = as_vartype(vartype)
 
     def __copy__(self):
-        cdef cyAdj@name@BQM bqm = type(self)(self.vartype)
+        cdef cyAdjMapBQM bqm = type(self)(self.vartype)
 
         bqm.bqm_ = self.bqm_
         bqm.offset_ = self.offset_
@@ -499,7 +496,7 @@ cdef class cyAdj@name@BQM:
                 otherwise, a new binary quadratic model is returned.
 
         Returns:
-            :obj:`.Adj@name@BQM`: A binary quadratic model with the specified
+            :obj:`.AdjMapBQM`: A binary quadratic model with the specified
             vartype.
 
         """
@@ -585,7 +582,7 @@ cdef class cyAdj@name@BQM:
         """Construct a BQM from a file-like object.
 
         See also:
-            :meth:`Adj@name@BQM.to_file`: To construct a file-like object.
+            :meth:`AdjMapBQM.to_file`: To construct a file-like object.
 
             :func:`~dimod.serialization.fileview.load`
 
@@ -608,12 +605,12 @@ cdef class cyAdj@name@BQM:
             raise ValueError("quadratic vectors should be equal length")
         cdef Py_ssize_t length = irow.shape[0]
 
-        cdef cyAdj@name@BQM bqm = cls(vartype)
+        cdef cyAdjMapBQM bqm = cls(vartype)
 
         cdef bint ignore_diagonal = bqm.vartype is Vartype.SPIN
 
         if length:
-            bqm.bqm_ = cppAdj@name@BQM[VarIndex, Bias](
+            bqm.bqm_ = cppAdjMapBQM[VarIndex, Bias](
                 &irow[0], &icol[0], &qdata[0], length, ignore_diagonal)
 
         # add the linear
@@ -709,7 +706,7 @@ cdef class cyAdj@name@BQM:
         cdef Py_ssize_t num_int = data['shape'][1]
 
         # make the bqm with the right number of variables and outvars
-        cdef cyAdj@name@BQM bqm = cls(num_var, data['vartype'])
+        cdef cyAdjMapBQM bqm = cls(num_var, data['vartype'])
 
         # offset, using the vartype it was encoded with
         bqm.offset_ = np.frombuffer(fp.read(dtype.itemsize), dtype)[0]
@@ -1004,7 +1001,7 @@ cdef class cyAdj@name@BQM:
 
         See also:
 
-            :meth:`Adj@name@BQM.from_file`: To construct a bqm from a file-like
+            :meth:`AdjMapBQM.from_file`: To construct a bqm from a file-like
             object.
 
             :func:`~dimod.serialization.fileview.FileView`
@@ -1137,5 +1134,5 @@ cdef class cyAdj@name@BQM:
         return tuple(ret)
 
 
-class Adj@name@BQM(cyAdj@name@BQM, ShapeableBQM):
-    __doc__ = cyAdj@name@BQM.__doc__
+class AdjMapBQM(cyAdjMapBQM, ShapeableBQM):
+    __doc__ = cyAdjMapBQM.__doc__

@@ -112,9 +112,6 @@ dimod/discrete/*.cpp
 dimod/discrete/*.html
 tests/*.cpp
 tests/*.html
-# generated files:
-dimod/bqm/adjmapbqm.pyx
-dimod/bqm/adjvectorbqm.pyx
 
 # benchmarking stuff
 benchmarks/html/
