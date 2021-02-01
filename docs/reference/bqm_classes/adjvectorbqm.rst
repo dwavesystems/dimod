@@ -44,6 +44,7 @@ Methods
    ~AdjVectorBQM.add_offset
    ~AdjVectorBQM.add_interaction
    ~AdjVectorBQM.add_interactions_from
+   ~AdjVectorBQM.add_linear_equality_constraint
    ~AdjVectorBQM.add_variable
    ~AdjVectorBQM.add_variables_from
    ~AdjVectorBQM.change_vartype
@@ -82,7 +83,6 @@ Methods
    ~AdjVectorBQM.scale
    ~AdjVectorBQM.set_linear
    ~AdjVectorBQM.set_quadratic
-   ~AdjVectorBQM.add_constraint_as_quadratic
    ~AdjVectorBQM.shapeable
    ~AdjVectorBQM.to_coo
    ~AdjVectorBQM.to_file

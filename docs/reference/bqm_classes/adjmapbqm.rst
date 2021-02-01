@@ -44,6 +44,7 @@ Methods
    ~AdjMapBQM.add_offset
    ~AdjMapBQM.add_interaction
    ~AdjMapBQM.add_interactions_from
+   ~AdjMapBQM.add_linear_equality_constraint
    ~AdjMapBQM.add_variable
    ~AdjMapBQM.add_variables_from
    ~AdjMapBQM.change_vartype
@@ -82,7 +83,6 @@ Methods
    ~AdjMapBQM.scale
    ~AdjMapBQM.set_linear
    ~AdjMapBQM.set_quadratic
-   ~AdjVectorBQM.add_constraint_as_quadratic
    ~AdjMapBQM.shapeable
    ~AdjMapBQM.to_coo
    ~AdjMapBQM.to_file
