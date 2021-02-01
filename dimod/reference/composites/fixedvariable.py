@@ -19,7 +19,7 @@ quadratic model before sending to its child sampler.
 """
 import numpy as np
 
-from dimod.bqm import as_bqm, AdjVectorBQM, AdjDictBQM, AdjMapBQM
+from dimod.bqm import as_bqm, AdjVectorBQM, AdjDictBQM
 from dimod.core.composite import ComposedSampler
 from dimod.sampleset import SampleSet, append_variables
 
@@ -89,7 +89,7 @@ class FixedVariableComposite(ComposedSampler):
             return self.child.sample(bqm, **parameters)
 
         # make sure that we're shapeable and that we have a BQM we can mutate
-        bqm_copy = as_bqm(bqm, cls=[AdjVectorBQM, AdjDictBQM, AdjMapBQM],
+        bqm_copy = as_bqm(bqm, cls=[AdjVectorBQM, AdjDictBQM],
                           copy=True)
 
         bqm_copy.fix_variables(fixed_variables)

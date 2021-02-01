@@ -33,16 +33,11 @@ import dimod
 
 from dimod.testing import assert_consistent_bqm
 
-BQM_CYTHON_SUBCLASSES = [dimod.AdjMapBQM,
-                         dimod.AdjVectorBQM,
-                         ]
+BQM_CYTHON_SUBCLASSES = [dimod.AdjVectorBQM]
 
-BQM_SHAPEABLE_SUBCLASSES = [dimod.AdjMapBQM,
-                            dimod.AdjVectorBQM,
-                            ]
+BQM_SHAPEABLE_SUBCLASSES = [dimod.AdjVectorBQM]
 
 BQM_SUBCLASSES = [dimod.AdjDictBQM,
-                  dimod.AdjMapBQM,
                   dimod.AdjVectorBQM,
                   dimod.BinaryQuadraticModel,
                   ]
