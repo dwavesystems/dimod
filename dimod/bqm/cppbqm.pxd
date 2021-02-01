@@ -26,70 +26,6 @@ cimport numpy as np
 
 from dimod.bqm.common cimport VarIndex, Bias
 
-cdef extern from "dimod/adjarraybqm.h" namespace "dimod" nogil:
-
-    cdef cppclass AdjArrayBQM[V, B]:
-        ctypedef V variable_type
-        ctypedef size_t neighborhood_type
-        ctypedef B bias_type
-        ctypedef size_t size_type
-
-        vector[pair[neighborhood_type, bias_type]] invars
-        vector[pair[variable_type, bias_type]] outvars
-
-        cppclass outvars_iterator:
-            pair[variable_type, bias_type]& operator*()
-            outvars_iterator operator++()
-            outvars_iterator operator--()
-            outvars_iterator operator+(size_type)
-            outvars_iterator operator-(size_type)
-            size_t operator-(outvars_iterator)
-            bint operator==(outvars_iterator)
-            bint operator!=(outvars_iterator)
-            bint operator<(outvars_iterator)
-            bint operator>(outvars_iterator)
-            bint operator<=(outvars_iterator)
-            bint operator>=(outvars_iterator)
-
-        cppclass const_outvars_iterator:
-            pair[variable_type, bias_type]& operator*()
-            const_outvars_iterator operator++()
-            const_outvars_iterator operator--()
-            const_outvars_iterator operator+(size_type)
-            const_outvars_iterator operator-(size_type)
-            size_t operator-(const_outvars_iterator)
-            bint operator==(const_outvars_iterator)
-            bint operator!=(const_outvars_iterator)
-            bint operator<(const_outvars_iterator)
-            bint operator>(const_outvars_iterator)
-            bint operator<=(const_outvars_iterator)
-            bint operator>=(const_outvars_iterator)
-
-        # constructors
-        # cython cannot handle templated constructors, so we call out the types
-        # explicitly
-
-        AdjArrayBQM() except +
-        AdjArrayBQM(AdjArrayBQM&) except +
-        AdjArrayBQM(AdjMapBQM&) except +
-        AdjArrayBQM(AdjVectorBQM&) except +
-        AdjArrayBQM(const float[], size_type)
-        AdjArrayBQM(const float[], size_type, bool)
-        AdjArrayBQM(const double[], size_type)
-        AdjArrayBQM(const double[], size_type, bool)
-
-        # methods
-
-        size_type degree(variable_type) except +
-        bias_type get_linear(variable_type) except +
-        pair[bias_type, bool] get_quadratic(variable_type, variable_type) except +
-        bias_type& linear(variable_type) except +
-        pair[outvars_iterator, outvars_iterator] neighborhood(variable_type) except +
-        pair[const_outvars_iterator, const_outvars_iterator] neighborhood(variable_type, variable_type) except +
-        size_type num_interactions() except +
-        size_type num_variables() except +
-        void set_linear(variable_type, bias_type) except +
-        bool set_quadratic(variable_type, variable_type, bias_type) except +
 
 cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
 
@@ -133,7 +69,6 @@ cdef extern from "dimod/adjmapbqm.h" namespace "dimod" nogil:
         # explicitly
 
         AdjMapBQM() except +
-        AdjMapBQM(const AdjArrayBQM&) except +
         AdjMapBQM(const AdjMapBQM&) except +
         AdjMapBQM(const AdjVectorBQM&) except +
         AdjMapBQM(const float[], size_type)
@@ -229,7 +164,6 @@ cdef extern from "dimod/adjvectorbqm.h" namespace "dimod" nogil:
         # explicitly
 
         AdjVectorBQM() except +
-        AdjVectorBQM(const AdjArrayBQM&) except +
         AdjVectorBQM(const AdjMapBQM&) except +
         AdjVectorBQM(const AdjVectorBQM&) except +
         AdjVectorBQM(const float[], size_type)

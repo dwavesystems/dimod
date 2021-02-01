@@ -678,10 +678,13 @@ def load(fp, cls=None):
 
     data = json.loads(header_data.decode('ascii'))
 
-    from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
+    from dimod.bqm import AdjMapBQM, AdjVectorBQM
 
     if cls is None:
-        cls = locals().get(data['type'])
+        if data['type'] == 'AdjArrayBQM':
+            cls = AdjVectorBQM
+        else:
+            cls = locals().get(data['type'])
 
     offset = len(BQM_MAGIC_PREFIX) + len(bytes(DEFAULT_VERSION)) + 4 + header_len
 

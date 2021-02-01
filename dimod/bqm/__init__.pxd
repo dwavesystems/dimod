@@ -11,14 +11,11 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
-from dimod.bqm.adjarraybqm cimport cyAdjArrayBQM
+
 from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
 from dimod.bqm.adjvectorbqm cimport cyAdjVectorBQM
 
 ctypedef fused cyBQM:
-    cyAdjArrayBQM
     cyAdjMapBQM
     cyAdjVectorBQM
 
