@@ -12,13 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dimod.bqm.adjmapbqm cimport cyAdjMapBQM
 from dimod.bqm.adjvectorbqm cimport cyAdjVectorBQM
 
 ctypedef fused cyBQM:
-    cyAdjMapBQM
     cyAdjVectorBQM
 
 ctypedef fused cyShapeableBQM:
-    cyAdjMapBQM
     cyAdjVectorBQM
