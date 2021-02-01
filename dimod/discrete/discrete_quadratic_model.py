@@ -419,9 +419,9 @@ class DiscreteQuadraticModel:
         return self._cydqm.get_quadratic_case(
             self.variables.index(u), u_case, self.variables.index(v), v_case)
 
-    def add_constraint_as_quadratic(self, terms: LinearTriplets,
-                                    lagrange_multiplier: float,
-                                    constant: float):
+    def add_linear_equality_constraint(self, terms: LinearTriplets,
+                                       lagrange_multiplier: float,
+                                       constant: float):
         """Add a linear constraint as a quadratic objective.
 
         Adds a linear constraint of the form
@@ -437,7 +437,7 @@ class DiscreteQuadraticModel:
 
         """
         index_terms = ((self.variables.index(v), c, x) for v, c, x in terms)
-        self._cydqm.add_constraint_as_quadratic(
+        self._cydqm.add_linear_equality_constraint(
             index_terms, lagrange_multiplier, constant)
 
     def num_cases(self, v=None):

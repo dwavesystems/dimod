@@ -262,8 +262,8 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def add_constraint_as_quadratic(self, object terms,
-                                    Bias lagrange_multiplier, Bias constant):
+    def add_linear_equality_constraint(self, object terms,
+                                       Bias lagrange_multiplier, Bias constant):
 
         # resolve the terms from a python object into some C++ objects
         cdef unordered_set[VarIndex] variable_set
