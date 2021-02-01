@@ -23,8 +23,6 @@ import unittest
 
 import numpy as np
 
-from dimod.bqm.cppbqm cimport AdjArrayBQM as cppAdjArrayBQM
-from dimod.bqm.cppbqm cimport AdjMapBQM as cppAdjMapBQM
 from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
 
 __all__ = ['TestConstruction',
@@ -32,124 +30,11 @@ __all__ = ['TestConstruction',
            'TestRemoveInteraction',
            ]
 
-ctypedef cppAdjArrayBQM[size_t, float] cppAdjArrayBQM_t
-ctypedef cppAdjMapBQM[size_t, float] cppAdjMapBQM_t
+
 ctypedef cppAdjVectorBQM[size_t, float] cppAdjVectorBQM_t
 
 
 class TestConstruction(unittest.TestCase):
-    def test_adjarraybqm_from_array(self):
-        cdef int nv = 9
-        narr = np.arange(81, dtype=np.double).reshape((nv, nv))
-        narr[4, 6] = narr[6, 4] = 0  # make slightly sparse
-        cdef double [:, :] Q = narr
-
-        cdef cppAdjArrayBQM_t bqm = cppAdjArrayBQM_t(&Q[0, 0], nv)
-
-        self.assertEqual(bqm.num_variables(), nv)
-        self.assertEqual(bqm.num_interactions(), nv*(nv-1)/2-1)
-
-        cdef int ui, vi
-        cdef double bias
-        for vi in range(nv):
-            self.assertEqual(bqm.get_linear(vi), narr[vi, vi])
-
-        for ui in range(nv):
-            for vi in range(ui+1, nv):
-                bias = Q[ui, vi] + Q[vi, ui]
-                if bias:
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertEqual(bqm.get_quadratic(ui, vi).first, bias)
-                    self.assertEqual(bqm.get_quadratic(vi, ui).first, bias)
-                else:
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-
-    def test_adjarraybqm_from_array_ignore_diagonal(self):
-        cdef int nv = 9
-        narr = np.arange(81, dtype=np.double).reshape((nv, nv))
-        narr[4, 6] = narr[6, 4] = 0  # make slightly sparse
-        cdef double [:, :] Q = narr
-
-        cdef cppAdjArrayBQM_t bqm = cppAdjArrayBQM_t(&Q[0, 0], nv, True)
-
-        self.assertEqual(bqm.num_variables(), nv)
-        self.assertEqual(bqm.num_interactions(), nv*(nv-1)/2-1)
-
-        cdef int ui, vi
-        cdef double bias
-        for vi in range(nv):
-            self.assertEqual(bqm.get_linear(vi), 0)
-
-        for ui in range(nv):
-            for vi in range(ui+1, nv):
-                bias = Q[ui, vi] + Q[vi, ui]
-                if bias:
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertEqual(bqm.get_quadratic(ui, vi).first, bias)
-                    self.assertEqual(bqm.get_quadratic(vi, ui).first, bias)
-                else:
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-
-    def test_adjmapbqm_from_array(self):
-        cdef int nv = 9
-        narr = np.arange(81, dtype=np.double).reshape((nv, nv))
-        narr[4, 6] = narr[6, 4] = 0  # make slightly sparse
-        cdef double [:, :] Q = narr
-
-        cdef cppAdjMapBQM_t bqm = cppAdjMapBQM_t(&Q[0, 0], nv)
-
-        self.assertEqual(bqm.num_variables(), nv)
-        self.assertEqual(bqm.num_interactions(), nv*(nv-1)/2-1)
-
-        cdef int ui, vi
-        cdef double bias
-        for vi in range(nv):
-            self.assertEqual(bqm.get_linear(vi), narr[vi, vi])
-
-        for ui in range(nv):
-            for vi in range(ui+1, nv):
-                bias = Q[ui, vi] + Q[vi, ui]
-                if bias:
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertEqual(bqm.get_quadratic(ui, vi).first, bias)
-                    self.assertEqual(bqm.get_quadratic(vi, ui).first, bias)
-                else:
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-
-    def test_adjmapbqm_from_array_ignore_diagonal(self):
-        cdef int nv = 9
-        narr = np.arange(81, dtype=np.double).reshape((nv, nv))
-        narr[4, 6] = narr[6, 4] = 0  # make slightly sparse
-        cdef double [:, :] Q = narr
-
-        cdef cppAdjMapBQM_t bqm = cppAdjMapBQM_t(&Q[0, 0], nv, True)
-
-        self.assertEqual(bqm.num_variables(), nv)
-        self.assertEqual(bqm.num_interactions(), nv*(nv-1)/2-1)
-
-        cdef int ui, vi
-        cdef double bias
-        for vi in range(nv):
-            self.assertEqual(bqm.get_linear(vi), 0)
-
-        for ui in range(nv):
-            for vi in range(ui+1, nv):
-                bias = Q[ui, vi] + Q[vi, ui]
-                if bias:
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertTrue(bqm.get_quadratic(ui, vi).second)
-                    self.assertEqual(bqm.get_quadratic(ui, vi).first, bias)
-                    self.assertEqual(bqm.get_quadratic(vi, ui).first, bias)
-                else:
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-                    self.assertFalse(bqm.get_quadratic(ui, vi).second)
-
 
     def test_adjvectorbqm_from_array(self):
         cdef int nv = 9

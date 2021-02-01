@@ -22,48 +22,14 @@ import unittest
 
 import numpy as np
 
-from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
-from dimod.bqm cimport cyAdjArrayBQM, cyAdjMapBQM, cyAdjVectorBQM
+from dimod.bqm import AdjVectorBQM
+from dimod.bqm cimport cyAdjVectorBQM
 
 
 __all__ = ['TestRelabel']
 
 
 class TestRelabel(unittest.TestCase):
-    def test_adjarray_natural_labelling(self):
-        
-        cdef cyAdjArrayBQM bqm = AdjArrayBQM(np.arange(25).reshape((5, 5)), 'SPIN')
-        bqm.relabel_variables({0: 4, 1: 3, 3: 1, 4: 0})
-
-        _, inverse = bqm.relabel_variables_as_integers(inplace=True)
-
-        self.assertEqual(bqm.num_variables, bqm.bqm_.num_variables())
-        self.assertEqual(bqm.num_interactions, bqm.bqm_.num_interactions())
-
-        for v in range(3):
-            self.assertEqual(bqm.get_linear(v), bqm.bqm_.get_linear(v))
-
-        for u, v in bqm.quadratic:
-            self.assertEqual(bqm.get_quadratic(u, v),
-                             bqm.bqm_.get_quadratic(u, v).first)
-
-    def test_adjmap_natural_labelling(self):
-        
-        cdef cyAdjMapBQM bqm = AdjMapBQM(np.arange(25).reshape((5, 5)), 'SPIN')
-        bqm.relabel_variables({0: 4, 1: 3, 3: 1, 4: 0})
-
-        _, inverse = bqm.relabel_variables_as_integers(inplace=True)
-
-        self.assertEqual(bqm.num_variables, bqm.bqm_.num_variables())
-        self.assertEqual(bqm.num_interactions, bqm.bqm_.num_interactions())
-
-        for v in range(3):
-            self.assertEqual(bqm.get_linear(v), bqm.bqm_.get_linear(v))
-
-        for u, v in bqm.quadratic:
-            self.assertEqual(bqm.get_quadratic(u, v),
-                             bqm.bqm_.get_quadratic(u, v).first)
-
     def test_adjvector_natural_labelling(self):
         
         cdef cyAdjVectorBQM bqm = AdjVectorBQM(np.arange(25).reshape((5, 5)), 'SPIN')
