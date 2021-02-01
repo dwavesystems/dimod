@@ -18,7 +18,6 @@
 # =============================================================================
 from dimod.bqm.cppbqm cimport AdjMapBQM as cppAdjMapBQM
 from dimod.bqm.common cimport VarIndex, Bias
-from libcpp.vector cimport vector
 
 cdef class cyAdjMapBQM:
     """A binary quadratic model where the neighborhoods are C++ maps.

@@ -27,6 +27,7 @@ from libcpp.algorithm cimport copy
 from libcpp.iterator cimport inserter
 from cython.operator cimport postincrement as inc, dereference as deref
 from libcpp.pair cimport pair
+from libcpp.vector cimport vector
 
 import numpy as np
 
@@ -783,6 +784,58 @@ cdef class cyAdj@name@BQM:
         if not removed:
             raise ValueError('No interaction between {} and {}'.format(u, v))
 
+    def add_linear_equality_constraint(self, object terms, Bias
+                                       lagrange_multiplier, Bias constant):
+        """Add a linear constraint as a quadratic objective.
+
+        Adds a linear constraint of the form
+        :math:`\sum_{i} a_{i} x_{i} + C = 0`
+        to the binary quadratic model as a quadratic objective.
+
+        Args:
+            terms (iterable/iterator):
+                An iterable of 2-tuples, (variable, bias).
+                Each tuple is evaluated to the term (bias * variable).
+                All terms in the list are summed.
+            lagrange_multiplier:
+                The coefficient or the penalty strength. This value is
+                multiplied by the entire constraint objective and added to the
+                bqm (it doesn't appear explicity in the equation above).
+            constant:
+                The constant value of the constraint, C, in the equation above.
+
+        """
+        cdef vector[VarIndex] variables
+        cdef vector[Bias] biases
+
+        # can allocate them if we already know the size
+        if isinstance(terms, abc.Sized):
+            biases.reserve(len(terms))
+            variables.reserve(len(terms))
+
+        # put the generator or list into our C++ objects
+        cdef Py_ssize_t v
+        cdef Bias bias
+        for var, bias in terms:
+            variables.push_back(self.label_to_idx(var))
+            biases.push_back(bias)
+
+        # add the biases to the BQM, not worrying about order or duplication
+        cdef Py_ssize_t num_terms = biases.size()
+
+        cdef Py_ssize_t i, j
+        cdef Bias lbias, qbias
+        self.offset += lagrange_multiplier * constant * constant
+        for i in range(num_terms):
+            v = variables[i]
+            lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
+            self.bqm_.set_linear(v, lbias + self.bqm_.get_linear(v))
+            for j in range(i + 1, num_terms):
+                u = variables[j]
+                qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
+                self.bqm_.set_quadratic(u, v,
+                qbias + self.bqm_.get_quadratic(u, v).first)
+
     def remove_variable(self, object v=None):
         """Remove a variable and its associated interactions.
 
@@ -913,52 +966,6 @@ cdef class cyAdj@name@BQM:
             vi = self.label_to_idx(self.add_variable(v))
 
         self.bqm_.set_linear(vi, b)
-
-    def add_constraint_as_quadratic(self, object terms, Bias
-                                    lagrange_multiplier, Bias constant):
-        """Add a linear constraint as a quadratic objective.
-        Adds a linear constraint of the form
-        :math:`\sum_{i} a_{i} x_{i} + C = 0`
-        to the binary quadratic model as a quadratic objective.
-
-        Args:
-            terms: A list of tuples of the type (variable, bias).
-                Each tuple is evaluated to the term (bias * variable).
-                All terms in the list are summed.
-            lagrange_multiplier: The coefficient or the penalty strength
-            constant: The constant value of the constraint.
-
-        """
-        cdef vector[VarIndex] variables
-        cdef vector[Bias] biases
-
-        # can allocate them if we already know the size
-        if isinstance(terms, abc.Sized):
-            biases.reserve(len(terms))
-            variables.reserve(len(terms))
-
-        # put the generator or list into our C++ objects
-        cdef Py_ssize_t v
-        cdef Bias bias
-        for var, bias in terms:
-            variables.push_back(self.label_to_idx(var))
-            biases.push_back(bias)
-
-        # add the biases to the BQM, not worrying about order or duplication
-        cdef Py_ssize_t num_terms = biases.size()
-
-        cdef Py_ssize_t i, j
-        cdef Bias lbias, qbias
-        self.offset += lagrange_multiplier * constant * constant
-        for i in range(num_terms):
-            v = variables[i]
-            lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
-            self.bqm_.set_linear(v, lbias + self.bqm_.get_linear(v))
-            for j in range(i + 1, num_terms):
-                u = variables[j]
-                qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
-                self.bqm_.set_quadratic(u, v,
-                qbias + self.bqm_.get_quadratic(u, v).first)
 
     def set_quadratic(self, object u, object v, Bias b):
         """Set the quadratic bias of (u, v).
