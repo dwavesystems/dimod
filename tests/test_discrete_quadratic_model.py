@@ -74,7 +74,7 @@ class TestBug(unittest.TestCase):
         for i in range(10):
             x[i] = dqm1.add_variable(5)
         for c in range(5):
-            dqm1.add_constraint_as_quadratic(((x[i], c, rng.normal())
+            dqm1.add_linear_equality_constraint(((x[i], c, rng.normal())
                                              for i in range(10)),
                                              lagrange_multiplier=1.0,
                                              constant=-1.0)
@@ -477,7 +477,7 @@ class TestConstraint(unittest.TestCase):
             x[i] = dqm.add_variable(num_cases, label='x_{i}'.format(i=i))
 
         for c in range(num_cases):
-            dqm.add_constraint_as_quadratic(
+            dqm.add_linear_equality_constraint(
                 [(x[i], c, 1.0) for i in range(num_variables)],
                 lagrange_multiplier=1.0, constant=-1.0)
 
@@ -497,7 +497,7 @@ class TestConstraint(unittest.TestCase):
 
         expression = [(x, 1, 1.0), (y, 2, 2.0), (w, 3, 1.0)]
         constant = -2.0
-        dqm.add_constraint_as_quadratic(
+        dqm.add_linear_equality_constraint(
             expression,
             lagrange_multiplier=1.0, constant=constant)
 
@@ -521,7 +521,7 @@ class TestConstraint(unittest.TestCase):
         expression = [(x[i], np.random.randint(0, cases[i]), np.random.randint(0, 10)) for i in x]
         constant = np.random.randint(1, 10) * num_variables
         lagrange_multiplier = np.random.randint(1, 10)
-        dqm.add_constraint_as_quadratic(
+        dqm.add_linear_equality_constraint(
             expression,
             lagrange_multiplier=lagrange_multiplier, constant=constant)
 
@@ -539,14 +539,14 @@ class TestConstraint(unittest.TestCase):
     def test_unknown_variable(self):
         dqm = dimod.DQM()
         with self.assertRaises(ValueError):
-            dqm.add_constraint_as_quadratic(
+            dqm.add_linear_equality_constraint(
                 [(0, 0, 0)], lagrange_multiplier=1, constant=-1)
 
     def test_out_of_range_case(self):
         dqm = dimod.DQM()
         u = dqm.add_variable(5)
         with self.assertRaises(ValueError):
-            dqm.add_constraint_as_quadratic(
+            dqm.add_linear_equality_constraint(
                 [(u, 6, 0)], lagrange_multiplier=1, constant=-1)
 
 
