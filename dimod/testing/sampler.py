@@ -24,7 +24,6 @@ __all__ = ['load_sampler_bqm_tests']
 # in the future we may want a way for folks to load new BQM classes into this
 # framework
 BQM_SUBCLASSES = [dimod.AdjDictBQM,
-                  dimod.AdjArrayBQM,
                   dimod.AdjVectorBQM,
                   dimod.AdjMapBQM,
                   dimod.BinaryQuadraticModel,

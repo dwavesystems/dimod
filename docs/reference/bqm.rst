@@ -16,7 +16,6 @@ BQM Classes
 .. toctree::
    :hidden:
 
-   bqm_classes/adjarraybqm
    bqm_classes/adjdictbqm
    bqm_classes/adjmapbqm
    bqm_classes/adjvectorbqm
@@ -25,7 +24,6 @@ BQM Classes
 .. autosummary::
 
    BinaryQuadraticModel
-   AdjArrayBQM
    AdjDictBQM
    AdjMapBQM
    AdjVectorBQM
@@ -96,7 +94,6 @@ Usage
 Ocean represents BQMs with four objects that differ in the
 data structures used to encode the BQM.
 
-* :ref:`AdjArrayBQM <adjarraybqm_dimod>`: Uses C++ vectors as arrays
 * :ref:`AdjDictBQM <adjdictbqm_dimod>`: Uses Python dictionaries
 * :ref:`AdjMapBQM <adjmapbqm_dimod>`: Uses C++ maps
 * :ref:`AdjVectorBQM <adjvectorbqm_dimod>`: Uses C++ vectors
@@ -126,14 +123,14 @@ The performance of various operations depends on your selected BQM implementatio
 the following table compares the complexity for a BQM of `v` variables.
 
 .. csv-table:: Complexity of various operations
-   :header: , AdjArrayBQM, AdjDictBQM, AdjMapBQM, AdjVectorBQM
+   :header: , AdjDictBQM, AdjMapBQM, AdjVectorBQM
 
-   add_variable, n/a, O(1) [#first]_, O(1) [#third]_, O(1) [#third]_
-   add_interaction, n/a, O(1) [#second]_, O(log v), O(v)
-   get_linear, O(1), O(1) [#first]_, O(1), O(1)
-   get_quadratic, O(log v), O(1) [#second]_, O(log v), O(log v)
-   num_variables, O(1), O(1), O(1), O(1)
-   num_interactions, O(v), O(v), O(v), O(v)
+   add_variable, O(1) [#first]_, O(1) [#third]_, O(1) [#third]_
+   add_interaction, O(1) [#second]_, O(log v), O(v)
+   get_linear, O(1) [#first]_, O(1), O(1)
+   get_quadratic, O(1) [#second]_, O(log v), O(log v)
+   num_variables, O(1), O(1), O(1)
+   num_interactions, O(v), O(v), O(v)
 
 .. todo: add the remove variable and remove_interaction
 

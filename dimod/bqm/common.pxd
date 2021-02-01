@@ -24,7 +24,6 @@ cimport numpy as np
 ctypedef np.uint32_t VarIndex
 ctypedef np.float64_t Bias
 
-# adjarraybqm uses size_t to define the indices of its neighborhoods
 ctypedef size_t NeighborhoodIndex  
 
 # convenience fused types

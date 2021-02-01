@@ -26,7 +26,7 @@ import dimod
 
 from dimod.serialization.fileview import FileView, load, SUPPORTED_VERSIONS
 
-BQM_SUBCLASSES = [dimod.AdjArrayBQM,
+BQM_SUBCLASSES = [
                   # dimod.AdjDictBQM,  # not supported yet
                   dimod.AdjMapBQM,
                   dimod.AdjVectorBQM,
