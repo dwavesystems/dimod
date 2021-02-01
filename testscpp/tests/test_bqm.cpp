@@ -15,14 +15,12 @@
 #include <vector>
 
 #include "../Catch2/single_include/catch2/catch.hpp"
-#include "dimod/adjarraybqm.h"
-#include "dimod/adjmapbqm.h"
 #include "dimod/adjvectorbqm.h"
 
 namespace dimod {
 
-TEMPLATE_TEST_CASE("Tests for BQM Classes", "[bqm]", (AdjVectorBQM<int, float>),
-                   (AdjMapBQM<int, float>), (AdjArrayBQM<int, float>)) {
+TEMPLATE_TEST_CASE("Tests for BQM Classes", "[bqm]",
+                   (AdjVectorBQM<int, float>)) {
     SECTION("Test neighborhood()") {
         float Q[9] = {1.0, 0.0, 3.0, 2.0, 1.5, 6.0, 1.0, 0.0, 0.0};
         auto bqm = TestType(Q, 3);
@@ -149,7 +147,7 @@ TEMPLATE_TEST_CASE("Tests for BQM Classes", "[bqm]", (AdjVectorBQM<int, float>),
 }
 
 TEMPLATE_TEST_CASE("Tests for Shapeable BQM Classes", "[shapeablebqm][bqm]",
-                   (AdjVectorBQM<int, float>), (AdjMapBQM<int, float>)) {
+                   (AdjVectorBQM<int, float>)) {
     SECTION("Test add_variable()") {
         auto bqm = TestType();
         bqm.add_variable();
