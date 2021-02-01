@@ -109,8 +109,7 @@ def from_networkx_graph(G, vartype=None,
         ...
         >>> bqm = dimod.from_networkx_graph(G,
         ...                                 vartype='BINARY',
-        ...                                 edge_attribute_name='quadratic',
-        ...                                 cls=dimod.AdjMapBQM)
+        ...                                 edge_attribute_name='quadratic')
 
     """
     if vartype is None:
