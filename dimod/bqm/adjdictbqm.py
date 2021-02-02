@@ -17,7 +17,7 @@ import collections.abc as abc
 
 from collections import OrderedDict
 from copy import deepcopy
-from numbers import Integral
+from numbers import Integral, Number
 
 import numpy as np
 
@@ -652,3 +652,62 @@ class AdjDictBQM(ShapeableBQM):
 
         adj = self._adj
         adj[u][v] = adj[v][u] = bias
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __mul__(self, other):
+        if isinstance(other, Number):
+            bqm = self.copy()
+            bqm.scale(other)
+
+        elif isinstance(other, BQM):
+            if other.shape[1] > 0 or self.shape[1] > 0:
+                raise ValueError("Multiply is supported for BQMs with "
+                                 "linear terms only")
+            if other.vartype != self.vartype:
+                other = other.change_vartype(self.vartype)
+
+            bqm = type(self)(vartype=self.vartype)
+            bqm.add_offset(self.offset * other.offset)
+            for v, bias in other.linear.items():
+                bqm.add_variable(v, bias * self.offset)
+            for v, bias in self.linear.items():
+                bqm.add_variable(v, bias * other.offset)
+
+            for v, bias in self.linear.items():
+                for u, bias_u in other.linear.items():
+                    if v == u:
+                        if bqm.vartype == Vartype.BINARY:
+                            bqm.add_variable(v, bias * bias_u)
+                        else:
+                            bqm.add_offset(bias * bias_u)
+                    else:
+                        bqm.add_interaction(u, v, bias_u * bias)
+        else:
+            raise ValueError("other must be a numeric or an instance of BQM")
+        return bqm
+
+    def __sub__(self, other):
+        return self.__add__(-1 * other)
+
+    def __neg__(self):
+        return -1 * self
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __add__(self, other):
+
+        if isinstance(other, Number):
+            bqm = self.copy()
+            bqm.add_offset(other)
+
+        elif isinstance(other, BQM):
+            if other.vartype != self.vartype:
+                other = other.change_vartype(self.vartype)
+            bqm = self.copy()
+            bqm.update(other)
+        else:
+            raise ValueError("other must be a numeric or an instance of BQM")
+        return bqm
