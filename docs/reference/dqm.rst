@@ -28,6 +28,7 @@ Methods
 .. autosummary::
    :toctree: generated/
 
+   ~DiscreteQuadraticModel.add_linear_equality_constraint
    ~DiscreteQuadraticModel.add_variable
    ~DiscreteQuadraticModel.copy
    ~DiscreteQuadraticModel.from_file
