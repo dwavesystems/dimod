@@ -81,10 +81,6 @@ extra_link_args = {
 
 
 class build_ext(_build_ext):
-
-    user_options = _build_ext.user_options + [('build-tests', None,
-                                               "Build dimod's cython tests")]
-
     def run(self):
         # add numpy headers
         import numpy
@@ -93,15 +89,6 @@ class build_ext(_build_ext):
         # add dimod headers
         include = os.path.join(os.path.dirname(__file__), 'dimod', 'include')
         self.include_dirs.append(include)
-
-        if self.build_tests:
-
-            test_extensions = [Extension('*', ['tests/test_*'+ext])]
-            if USE_CYTHON:
-                test_extensions = cythonize(test_extensions,
-                                            # annotate=True
-                                            )
-            self.extensions.extend(test_extensions)
 
         super().run()
 
