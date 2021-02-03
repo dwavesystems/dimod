@@ -16,3 +16,4 @@ Reference Documentation
    utilities
    vartypes
    exceptions
+   cpp

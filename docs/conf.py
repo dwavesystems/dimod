@@ -14,9 +14,12 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import subprocess
 import sys
+
+config_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(config_directory))
 
 # -- General configuration ------------------------------------------------
 # import sphinx
@@ -36,6 +39,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.ifconfig',
+    'breathe',
 ]
 
 autosummary_generate = True
@@ -94,6 +98,16 @@ import dimod
 
 """
 
+# -- Breath ---------------------------------------------------------------
+
+breathe_default_project = "dimod"
+breathe_projects = dict(
+  dimod=os.path.join(config_directory, 'build-cpp', 'xml'),
+  )
+
+# see https://breathe.readthedocs.io/en/latest/readthedocs.html
+if os.environ.get('READTHEDOCS', False):
+    subprocess.call('make cpp', shell=True, cwd=config_directory)
 
 # -- Options for HTML output ----------------------------------------------
 
