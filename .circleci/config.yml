@@ -381,6 +381,10 @@ jobs:
       - run: *linux-install-boost-template
 
       - run:
+          name: install doxygen
+          command: sudo apt-get install doxygen
+
+      - run:
           name: install dependencies
           command: |
             python -m virtualenv env
@@ -394,7 +398,7 @@ jobs:
           name: build docs
           command: |
             . env/bin/activate
-            make -C docs/ html
+            make -C docs/ cpp html
 
       - store_artifacts:
           path: ./docs/build/html

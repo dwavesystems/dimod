@@ -62,7 +62,8 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/build/
+docs/build-cpp/
 docs/reference/generated/
 docs/intro/generated/
 docs/reference/*/generated/

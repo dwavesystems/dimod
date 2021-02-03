@@ -10,8 +10,12 @@ help:
 
 clean:
 	-rm -rf build/
+	-rm -rf build-cpp/
 	-rm -rf reference/generated
 	-rm -rf reference/sampler_composites/generated
+
+cpp:
+	doxygen Doxyfile
 
 .PHONY: help Makefile
 
