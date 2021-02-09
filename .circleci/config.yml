@@ -21,6 +21,10 @@ jobs:
       - checkout
 
       - run:
+          name: fix git checkout
+          command: git reset --hard
+
+      - run:
           name: install boost
           command: |
             yum install -y boost-devel
