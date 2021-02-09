@@ -115,7 +115,6 @@ from numbers import Integral
 
 import numpy as np
 
-from dimod.bqm.utils import ilinear_biases, ineighborhood
 from dimod.variables import iter_deserialize_variables, iter_serialize_variables
 
 
@@ -463,7 +462,7 @@ class FileView(io.RawIOBase):
 
         elif pos < self.linear_end:
             # linear biases
-            ldata = ilinear_biases(bqm)
+            ldata = bqm._ilinear_biases()
             data = memoryview(ldata).cast('B')[pos - self.linear_start:]
 
         elif pos < self.quadratic_end:
@@ -487,7 +486,7 @@ class FileView(io.RawIOBase):
 
             start = ni * quadratic_itemsize + qpos % quadratic_itemsize
 
-            qdata = ineighborhood(bqm, vi)
+            qdata = bqm._ineighborhood(vi)
 
             data = memoryview(qdata).cast('B')[start:]
 

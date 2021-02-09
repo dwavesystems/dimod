@@ -17,6 +17,7 @@
 
 import collections.abc as abc
 import numbers
+import sys
 
 cimport cython
 
@@ -26,16 +27,17 @@ from cython.operator cimport postincrement as inc, dereference as deref
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
+cimport numpy as np
 import numpy as np
 
 from dimod.bqm cimport cyBQM
 from dimod.bqm.common cimport NeighborhoodIndex, Integral32plus, Numeric32plus
 from dimod.bqm.common import dtype, itype, ntype
 from dimod.bqm.utils cimport as_numpy_scalar
-from dimod.bqm.utils import coo_sort, cyenergies, cyrelabel
-from dimod.bqm.utils import cyrelabel_variables_as_integers
+from dimod.bqm.utils import coo_sort
 from dimod.core.bqm import BQM, ShapeableBQM
-from dimod.utilities import asintegerarrays, asnumericarrays
+from dimod.utilities import asintegerarrays, asnumericarrays, iter_safe_relabels
+from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
 
@@ -346,6 +348,62 @@ cdef class cyAdjVectorBQM:
         self.bqm_.set_linear(vi, bias + self.bqm_.get_linear(vi))
         return v
 
+    @cython.boundscheck
+    @cython.wraparound
+    def _ilinear_biases(self):
+        """Get the linear biases as well as the neighborhood indices."""
+
+        cdef Py_ssize_t numvar = self.bqm_.num_variables()
+
+        dtype = np.dtype([('ni', self.ntype), ('b', self.dtype)], align=False)
+        ldata = np.empty(numvar, dtype=dtype)
+
+        if numvar == 0:
+            return ldata
+
+        # if in the future the BQM does not have fixed dtypes, these will error
+        cdef size_t[:] neighbors_view = ldata['ni']
+        cdef Bias[:] bias_view = ldata['b']
+
+        neighbors_view[0] = 0
+
+        cdef VarIndex vi
+        for vi in range(numvar):
+            if vi + 1 < numvar:
+                neighbors_view[vi + 1] = neighbors_view[vi] + self.bqm_.degree(vi)
+
+            bias_view[vi] = self.bqm_.get_linear(vi)
+
+        return ldata
+
+    @cython.boundscheck
+    @cython.wraparound
+    def _ineighborhood(self, VarIndex ui):
+        if ui >= self.bqm_.num_variables():
+            raise ValueError("out of range variable, {!r}".format(ui))
+
+        cdef Py_ssize_t d = self.bqm_.degree(ui)
+
+        dtype = np.dtype([('ui', self.itype), ('b', self.dtype)], align=False)
+        neighbors = np.empty(d, dtype=dtype)
+
+        # if in the future the BQM does not have fixed dtypes, these will error
+        cdef VarIndex[:] index_view = neighbors['ui']
+        cdef Bias[:] bias_view = neighbors['b']
+
+        span = self.bqm_.neighborhood(ui)
+
+        cdef Py_ssize_t i = 0
+        while span.first != span.second:
+
+            index_view[i] = deref(span.first).first
+            bias_view[i] = deref(span.first).second
+
+            i += 1
+            inc(span.first)
+
+        return neighbors
+
     def iter_linear(self):
         """Iterate over the linear biases of the binary quadratic model.
 
@@ -559,7 +617,9 @@ cdef class cyAdjVectorBQM:
         cdef VarIndex vi = self.label_to_idx(v)
         return self.bqm_.degree(vi)
 
-    def energies(self, samples, dtype=None):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def energies(self, samples_like, dtype=None):
         """Determine the energies of the given samples.
 
         Args:
@@ -575,7 +635,54 @@ cdef class cyAdjVectorBQM:
             :obj:`numpy.ndarray`: The energies.
 
         """
-        return np.asarray(cyenergies(self, samples), dtype=dtype)
+        samples, labels = as_samples(samples_like, dtype=np.int8)
+
+        cdef np.int8_t[:, :] samples_view = samples
+
+        cdef Py_ssize_t num_samples = samples_view.shape[0]
+        cdef Py_ssize_t num_variables = samples_view.shape[1]
+
+        if num_variables != self.bqm_.num_variables():
+            raise ValueError("inconsistent number of variables")
+        if num_variables != len(labels):
+            # an internal error to as_samples. We do this check because
+            # the boundscheck is off
+            msg = "as_samples returned an inconsistent samples/variables"
+            raise RuntimeError(msg)
+
+        # we want a map such that bqm_to_sample[vi] = si
+        cdef VarIndex[:] bqm_to_sample = np.empty(num_variables, dtype=itype)
+        cdef VarIndex ui, vi, si
+        for si in range(num_variables):
+            v = labels[si]  # python label
+            bqm_to_sample[self.label_to_idx(v)] = si
+
+        # now calculate the energies
+        energies = np.zeros(num_samples, dtype=self.dtype)
+        cdef Bias[:] energies_view = energies
+
+        cdef np.int8_t uspin, vspin
+        for si in range(num_samples):
+
+            energies_view[si] += self.offset_
+
+            for ui in range(num_variables):
+                uspin = samples_view[si, bqm_to_sample[ui]]
+
+                energies_view[si] += self.bqm_.get_linear(ui) * uspin
+
+                span = self.bqm_.neighborhood(ui)
+                while span.first != span.second and deref(span.first).first < ui:
+                    vi = deref(span.first).first
+
+                    vspin = samples_view[si, bqm_to_sample[vi]]
+
+                    energies_view[si] += uspin * vspin * deref(span.first).second
+
+                    inc(span.first)
+
+        return np.asarray(energies, dtype=dtype)
+
 
     @classmethod
     def from_file(cls, file_like):
@@ -917,27 +1024,55 @@ cdef class cyAdjVectorBQM:
             Binary quadratic model with relabeled variables. If `inplace`
             is set to True, returns itself.
         """
-        return cyrelabel(self, mapping, inplace)
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
+
+        # in the future we could maybe do something that doesn't require a copy
+        existing = set(self.iter_variables())
+
+        for submap in iter_safe_relabels(mapping, existing):
+            
+            for old, new in submap.items():
+                if old == new:
+                    continue
+
+                vi = self._label_to_idx.pop(old, old)
+
+                if new != vi:
+                    self._label_to_idx[new] = vi
+                    self._idx_to_label[vi] = new  # overwrites old vi if it's there
+                else:
+                    self._idx_to_label.pop(vi, None)  # remove old reference
+
+        return self
 
     def relabel_variables_as_integers(self, inplace=True):
-            """Relabel as integers the variables of a binary quadratic model.
+        """Relabel as integers the variables of a binary quadratic model.
 
-            Uses the natural labelling of the underlying C++ objects.
+        Uses the natural labelling of the underlying C++ objects.
 
-            Args:
-                inplace (bool, optional, default=True):
-                    If True, the binary quadratic model is updated in-place;
-                    otherwise, a new binary quadratic model is returned.
+        Args:
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
 
-            Returns:
-                tuple: A 2-tuple containing:
+        Returns:
+            tuple: A 2-tuple containing:
 
-                    A binary quadratic model with the variables relabeled. If
-                    `inplace` is set to True, returns itself.
+                A binary quadratic model with the variables relabeled. If
+                `inplace` is set to True, returns itself.
 
-                    dict: Mapping that restores the original labels.
-            """
-            return cyrelabel_variables_as_integers(self, inplace)
+                dict: Mapping that restores the original labels.
+        """
+        if not inplace:
+            return self.copy().relabel_variables_as_integers(inplace=True)
+
+        inverse = self._idx_to_label.copy()  # no deep needed
+        
+        self._label_to_idx.clear()
+        self._idx_to_label.clear()
+
+        return self, inverse
 
     def set_linear(self, object v, Bias b):
         """Set the linear biase of a variable v.
