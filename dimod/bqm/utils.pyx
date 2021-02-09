@@ -34,147 +34,147 @@ cdef object as_numpy_scalar(double a, np.dtype dtype):
     """Note that the memory is interpreted to match dtype, not a cast"""
     return PyArray_Scalar(&a, dtype, None)
 
-def cylinear_min(cyBQM bqm, default=None):
-    if bqm.num_variables == 0:
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cylinear_min(cyBQM bqm, default=None):
+#     if bqm.num_variables == 0:
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef double min_ = sys.float_info.max
-    cdef Py_ssize_t vi
-    for vi in range(bqm.bqm_.num_variables()):
-        val = bqm.bqm_.get_linear(vi)
-        if val < min_:
-            min_ = val
+#     cdef double min_ = sys.float_info.max
+#     cdef Py_ssize_t vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         val = bqm.bqm_.get_linear(vi)
+#         if val < min_:
+#             min_ = val
     
-    return min_
+#     return min_
 
-def cylinear_max(cyBQM bqm, default=None):
-    if bqm.num_variables == 0:
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cylinear_max(cyBQM bqm, default=None):
+#     if bqm.num_variables == 0:
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef double max_ = -sys.float_info.max
-    cdef Py_ssize_t vi
-    for vi in range(bqm.bqm_.num_variables()):
-        val = bqm.bqm_.get_linear(vi)
-        if val > max_:
-            max_ = val
+#     cdef double max_ = -sys.float_info.max
+#     cdef Py_ssize_t vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         val = bqm.bqm_.get_linear(vi)
+#         if val > max_:
+#             max_ = val
     
-    return max_
+#     return max_
 
-def cylinear_sum(cyBQM bqm, Bias start=0):
-    """Return the sum of the linear biases."""
-    cdef VarIndex vi
-    for vi in range(bqm.bqm_.num_variables()):
-        start += bqm.bqm_.get_linear(vi)
+# def cylinear_sum(cyBQM bqm, Bias start=0):
+#     """Return the sum of the linear biases."""
+#     cdef VarIndex vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         start += bqm.bqm_.get_linear(vi)
 
-    return start
+#     return start
 
-def cyquadratic_min(cyBQM bqm, default=None):
-    if bqm.num_interactions == 0:
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cyquadratic_min(cyBQM bqm, default=None):
+#     if bqm.num_interactions == 0:
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef double min_ = sys.float_info.max
-    cdef Py_ssize_t vi
-    for vi in range(bqm.bqm_.num_variables()):
-        span = bqm.bqm_.neighborhood(vi)
+#     cdef double min_ = sys.float_info.max
+#     cdef Py_ssize_t vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         span = bqm.bqm_.neighborhood(vi)
 
-        while span.first != span.second and deref(span.first).first < vi:
-            if deref(span.first).second < min_:
-                min_ = deref(span.first).second
+#         while span.first != span.second and deref(span.first).first < vi:
+#             if deref(span.first).second < min_:
+#                 min_ = deref(span.first).second
 
-            inc(span.first)
+#             inc(span.first)
 
-    return min_
+#     return min_
 
-def cyquadratic_max(cyBQM bqm, default=None):
-    if bqm.num_interactions == 0:
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cyquadratic_max(cyBQM bqm, default=None):
+#     if bqm.num_interactions == 0:
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef double max_ = -sys.float_info.max
+#     cdef double max_ = -sys.float_info.max
 
-    cdef Py_ssize_t vi
-    for vi in range(bqm.bqm_.num_variables()):
-        span = bqm.bqm_.neighborhood(vi)
+#     cdef Py_ssize_t vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         span = bqm.bqm_.neighborhood(vi)
         
-        while span.first != span.second and deref(span.first).first < vi:
-            if deref(span.first).second > max_:
-                max_ = deref(span.first).second
+#         while span.first != span.second and deref(span.first).first < vi:
+#             if deref(span.first).second > max_:
+#                 max_ = deref(span.first).second
 
-            inc(span.first)
+#             inc(span.first)
 
-    return max_
+#     return max_
 
-def cyquadratic_sum(cyBQM bqm, Bias start=0):
-    """Return the sum of the quadratic biases."""
-    cdef VarIndex vi
-    for vi in range(bqm.bqm_.num_variables()):
-        span = bqm.bqm_.neighborhood(vi)
-        while span.first != span.second and deref(span.first).first < vi:
-            start += deref(span.first).second
-            inc(span.first)
+# def cyquadratic_sum(cyBQM bqm, Bias start=0):
+#     """Return the sum of the quadratic biases."""
+#     cdef VarIndex vi
+#     for vi in range(bqm.bqm_.num_variables()):
+#         span = bqm.bqm_.neighborhood(vi)
+#         while span.first != span.second and deref(span.first).first < vi:
+#             start += deref(span.first).second
+#             inc(span.first)
     
-    return start
+#     return start
 
-def cyneighborhood_max(cyBQM bqm, object v, object default=None):
-    if not bqm.degree(v):
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cyneighborhood_max(cyBQM bqm, object v, object default=None):
+#     if not bqm.degree(v):
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef VarIndex vi = bqm.label_to_idx(v)
+#     cdef VarIndex vi = bqm.label_to_idx(v)
 
-    cdef double max_ = -sys.float_info.max
+#     cdef double max_ = -sys.float_info.max
 
-    span = bqm.bqm_.neighborhood(vi)
-    while span.first != span.second:
-        if deref(span.first).second > max_:
-            max_ = deref(span.first).second
+#     span = bqm.bqm_.neighborhood(vi)
+#     while span.first != span.second:
+#         if deref(span.first).second > max_:
+#             max_ = deref(span.first).second
 
-        inc(span.first)
+#         inc(span.first)
 
-    return max_
+#     return max_
 
-def cyneighborhood_min(cyBQM bqm, object v, object default=None):
-    if not bqm.degree(v):
-        if default is None:
-            raise ValueError("Argument is an empty sequence")
-        else:
-            return default
+# def cyneighborhood_min(cyBQM bqm, object v, object default=None):
+#     if not bqm.degree(v):
+#         if default is None:
+#             raise ValueError("Argument is an empty sequence")
+#         else:
+#             return default
 
-    cdef VarIndex vi = bqm.label_to_idx(v)
+#     cdef VarIndex vi = bqm.label_to_idx(v)
 
-    cdef double min_ = sys.float_info.max
+#     cdef double min_ = sys.float_info.max
 
-    span = bqm.bqm_.neighborhood(vi)
-    while span.first != span.second:
-        if deref(span.first).second < min_:
-            min_ = deref(span.first).second
+#     span = bqm.bqm_.neighborhood(vi)
+#     while span.first != span.second:
+#         if deref(span.first).second < min_:
+#             min_ = deref(span.first).second
 
-        inc(span.first)
+#         inc(span.first)
 
-    return min_
+#     return min_
 
-def cyneighborhood_sum(cyBQM bqm, object v, Bias start=0):
-    cdef VarIndex vi = bqm.label_to_idx(v)
+# def cyneighborhood_sum(cyBQM bqm, object v, Bias start=0):
+#     cdef VarIndex vi = bqm.label_to_idx(v)
 
-    span = bqm.bqm_.neighborhood(vi)
-    while span.first != span.second:
-        start += deref(span.first).second
-        inc(span.first)
+#     span = bqm.bqm_.neighborhood(vi)
+#     while span.first != span.second:
+#         start += deref(span.first).second
+#         inc(span.first)
 
-    return start
+#     return start
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

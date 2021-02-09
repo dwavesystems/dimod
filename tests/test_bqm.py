@@ -2558,15 +2558,15 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(bqm.adj['a'].max(default=5), 5)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    def test_neighborhood_max_cybqm(self, name, BQM):
-        bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
+    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    # def test_neighborhood_max_cybqm(self, name, BQM):
+    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
 
-        def _max(*args, **kwargs):
-            raise Exception('boom')
+    #     def _max(*args, **kwargs):
+    #         raise Exception('boom')
 
-        with unittest.mock.patch('builtins.max', _max):
-            bqm.adj['a'].max()
+    #     with unittest.mock.patch('builtins.max', _max):
+    #         bqm.adj['a'].max()
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_neighborhood_min(self, name, BQM):
@@ -2584,15 +2584,15 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(bqm.adj['a'].min(default=5), 5)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    def test_neighborhood_min_cybqm(self, name, BQM):
-        bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
+    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    # def test_neighborhood_min_cybqm(self, name, BQM):
+    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
 
-        def _min(*args, **kwargs):
-            raise Exception('boom')
+    #     def _min(*args, **kwargs):
+    #         raise Exception('boom')
 
-        with unittest.mock.patch('builtins.min', _min):
-            bqm.adj['a'].min()
+    #     with unittest.mock.patch('builtins.min', _min):
+    #         bqm.adj['a'].min()
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_neighborhood_sum(self, name, BQM):
@@ -2607,26 +2607,26 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.adj['a'].sum(), 0)
         self.assertEqual(bqm.adj['a'].sum(start=5), 5)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    def test_neighborhood_sum_cybqm(self, name, BQM):
-        bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
+    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    # def test_neighborhood_sum_cybqm(self, name, BQM):
+    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
 
-        def _sum(*args, **kwargs):
-            raise Exception('boom')
+    #     def _sum(*args, **kwargs):
+    #         raise Exception('boom')
 
-        with unittest.mock.patch('builtins.sum', _sum):
-            bqm.adj['a'].sum()
+    #     with unittest.mock.patch('builtins.sum', _sum):
+    #         bqm.adj['a'].sum()
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    def test_quadratic_sum_cybqm(self, name, BQM):
-        # make sure it doesn't use python's sum
-        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    # def test_quadratic_sum_cybqm(self, name, BQM):
+    #     # make sure it doesn't use python's sum
+    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
 
-        def _sum(*args, **kwargs):
-            raise Exception('boom')
+    #     def _sum(*args, **kwargs):
+    #         raise Exception('boom')
 
-        with unittest.mock.patch('builtins.sum', _sum):
-            bqm.linear.sum()
+    #     with unittest.mock.patch('builtins.sum', _sum):
+    #         bqm.linear.sum()
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_quadratic_delitem(self, name, BQM):
@@ -2657,16 +2657,16 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.quadratic.sum(), 5)
         self.assertEqual(bqm.quadratic.sum(start=5), 10)
 
-    @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    def test_quadratic_sum_cybqm(self, name, BQM):
-        # make sure it doesn't use python's sum
-        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+    # def test_quadratic_sum_cybqm(self, name, BQM):
+    #     # make sure it doesn't use python's sum
+    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
 
-        def _sum(*args, **kwargs):
-            raise Exception('boom')
+    #     def _sum(*args, **kwargs):
+    #         raise Exception('boom')
 
-        with unittest.mock.patch('builtins.sum', _sum):
-            bqm.quadratic.sum()
+    #     with unittest.mock.patch('builtins.sum', _sum):
+    #         bqm.quadratic.sum()
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_lin_minmax(self, name, BQM):

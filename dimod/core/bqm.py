@@ -28,9 +28,6 @@ import numpy as np
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-from dimod.bqm.utils import cylinear_min, cylinear_max, cylinear_sum
-from dimod.bqm.utils import cyquadratic_min, cyquadratic_max, cyquadratic_sum
-from dimod.bqm.utils import cyneighborhood_max, cyneighborhood_min, cyneighborhood_sum
 
 __all__ = ['BQM', 'ShapeableBQM']
 
@@ -115,10 +112,10 @@ class Neighborhood(BQMView):
 
     def max(self, default=None):
         """The maximum quadratic bias in the neighborhood."""
-        try:
-            return cyneighborhood_max(self._bqm, self._var, default)
-        except TypeError:
-            pass
+        # try:
+        #     return cyneighborhood_max(self._bqm, self._var, default)
+        # except TypeError:
+        #     pass
 
         generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
 
@@ -129,10 +126,10 @@ class Neighborhood(BQMView):
 
     def min(self, default=None):
         """The minimum quadratic bias in the neighborhood."""
-        try:
-            return cyneighborhood_min(self._bqm, self._var, default)
-        except TypeError:
-            pass
+        # try:
+        #     return cyneighborhood_min(self._bqm, self._var, default)
+        # except TypeError:
+        #     pass
 
         generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
 
@@ -143,10 +140,10 @@ class Neighborhood(BQMView):
 
     def sum(self, start=0):
         """The sum of the quadratic biases in the neighborhood."""
-        try:
-            return cyneighborhood_sum(self._bqm, self._var, start)
-        except TypeError:
-            pass
+        # try:
+        #     return cyneighborhood_sum(self._bqm, self._var, start)
+        # except TypeError:
+        #     pass
 
         return sum((b for _, _, b in self._bqm.iter_quadratic(self._var)),
                    start)
@@ -186,10 +183,10 @@ class Linear(BQMView):
 
     def min(self, default=None):
         """Returns the minimum linear bias."""
-        try:
-            return cylinear_min(self._bqm, default=default)
-        except TypeError:
-            pass
+        # try:
+        #     return cylinear_min(self._bqm, default=default)
+        # except TypeError:
+        #     pass
 
         if default is None:
             return min(self.values())
@@ -198,10 +195,10 @@ class Linear(BQMView):
 
     def max(self, default=None):
         """Returns the maximum linear bias."""
-        try:
-            return cylinear_max(self._bqm, default=default)
-        except TypeError:
-            pass
+        # try:
+        #     return cylinear_max(self._bqm, default=default)
+        # except TypeError:
+        #     pass
 
         if default is None:
             return max(self.values())
@@ -210,10 +207,10 @@ class Linear(BQMView):
 
     def sum(self, start=0):
         """Return the sum of the linear biases."""
-        try:
-            return cylinear_sum(self._bqm, start=start)
-        except TypeError:
-            pass
+        # try:
+        #     return cylinear_sum(self._bqm, start=start)
+        # except TypeError:
+        #     pass
 
         return sum(self.values(), start)
 
@@ -251,10 +248,10 @@ class Quadratic(BQMView):
 
     def min(self, default=None):
         """Returns the minimum quadratic bias."""
-        try:
-            return cyquadratic_min(self._bqm, default=default)
-        except TypeError:
-            pass
+        # try:
+        #     return cyquadratic_min(self._bqm, default=default)
+        # except TypeError:
+        #     pass
 
         if default is None:
             return min(self.values())
@@ -263,10 +260,10 @@ class Quadratic(BQMView):
 
     def max(self, default=None):
         """Returns the maximum quadratic bias."""
-        try:
-            return cyquadratic_max(self._bqm, default=default)
-        except TypeError:
-            pass
+        # try:
+        #     return cyquadratic_max(self._bqm, default=default)
+        # except TypeError:
+        #     pass
 
         if default is None:
             return max(self.values())
@@ -275,10 +272,10 @@ class Quadratic(BQMView):
 
     def sum(self, start=0):
         """Return the sum of the quadratic biases."""
-        try:
-            return cyquadratic_sum(self._bqm, start=start)
-        except TypeError:
-            pass
+        # try:
+        #     return cyquadratic_sum(self._bqm, start=start)
+        # except TypeError:
+        #     pass
 
         return sum(self.values(), start)
 
