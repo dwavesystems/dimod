@@ -14,6 +14,8 @@
 #
 # =============================================================================
 """A sampler that returns the provided initial states."""
+import warnings
+
 from dimod.core import Sampler, Initialized
 
 __all__ = ['IdentitySampler']
@@ -97,6 +99,12 @@ class IdentitySampler(Sampler, Initialized):
 
 
         """
+        for kw in kwargs.copy():
+            if kw not in self.parameters:
+                msg = "Ignoring unknown kwarg: {!r}".format(kw)
+                warnings.warn(msg, RuntimeWarning)
+                kwargs.pop(kw)
+
         parsed = self.parse_initial_states(bqm, *args, **kwargs)
 
         # and we're done, we just pass back the initial state we were handed

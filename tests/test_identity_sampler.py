@@ -45,3 +45,10 @@ class TestIdentitySampler(unittest.TestCase):
 
         self.assertEqual(len(sampleset), 10)
         np.testing.assert_array_equal(sampleset.samples()[:2, [0, 1]], samples)
+
+    def test_kwargs(self):
+        sampler = dimod.IdentitySampler()
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+
+        with self.assertWarns(RuntimeWarning):
+            sampleset = sampler.sample(bqm, a=1, b=4)
