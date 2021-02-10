@@ -52,7 +52,7 @@ class TestSample(unittest.TestCase):
     def test_kwargs(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': -1}, {'ab': 1})
 
-        with self.assertRaises(ValueError):
+        with self.assertWarns(RuntimeWarning):
             dimod.NullSampler().sample(bqm, a=5)
 
         ss = dimod.NullSampler(parameters=['a']).sample(bqm, a=5)
