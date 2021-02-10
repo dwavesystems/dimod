@@ -20,6 +20,7 @@ Note:
     These samplers are designed for use in testing. Because they calculate
     energy for every possible sample, they are very slow.
 """
+import warnings
 
 import numpy as np
 
@@ -74,7 +75,7 @@ class ExactSolver(Sampler):
         self.properties = {}
         self.parameters = {}
 
-    def sample(self, bqm):
+    def sample(self, bqm, **kwargs):
         """Sample from a binary quadratic model.
 
         Args:
@@ -85,6 +86,10 @@ class ExactSolver(Sampler):
             :obj:`~dimod.SampleSet`
 
         """
+        for kw in kwargs:
+            msg = "Ignoring unknown kwarg: {!r}".format(kw)
+            warnings.warn(msg, RuntimeWarning)
+
         n = len(bqm.variables)
         if n == 0:
             return SampleSet.from_samples([], bqm.vartype, energy=[])
@@ -156,7 +161,7 @@ class ExactPolySolver(PolySampler):
             :obj:`~dimod.SampleSet`
 
         """
-        return ExactSolver().sample(polynomial)
+        return ExactSolver().sample(polynomial, **kwargs)
 
 
 def _graycode(bqm):
