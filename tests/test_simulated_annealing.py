@@ -15,13 +15,11 @@
 # ================================================================================================
 
 import unittest
-
 import itertools
 import random
 
 import dimod
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
-
 
 @dimod.testing.load_sampler_bqm_tests(dimod.SimulatedAnnealingSampler)
 class TestSASampler(unittest.TestCase):
@@ -98,6 +96,11 @@ class TestSASampler(unittest.TestCase):
         with self.assertRaises(ValueError):
             sampler.sample_ising({}, {}, beta_range=[7, 1, 6])
 
+    def test_kwargs(self):
+        sampler = self.sampler
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+        with self.assertWarns(RuntimeWarning):
+            sampler.sample(bqm, a=5, b=True)
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):
     def test_ising_simulated_annealing_basic(self):

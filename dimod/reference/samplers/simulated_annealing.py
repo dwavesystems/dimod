@@ -22,6 +22,7 @@ solving problems.
 """
 import random
 import math
+import warnings
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
@@ -58,7 +59,7 @@ class SimulatedAnnealingSampler(Sampler):
                            'num_sweeps': []}
         self.properties = {}
 
-    def sample(self, bqm, beta_range=None, num_reads=10, num_sweeps=1000):
+    def sample(self, bqm, beta_range=None, num_reads=10, num_sweeps=1000, **kwargs):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:
@@ -93,6 +94,10 @@ class SimulatedAnnealingSampler(Sampler):
             raise TypeError("'samples' should be a positive integer")
         if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
+
+        for kw in kwargs:
+            msg = "Ignoring unknown kwarg: {!r}".format(kw)
+            warnings.warn(msg, RuntimeWarning)
 
         h, J, offset = bqm.to_ising()
 
