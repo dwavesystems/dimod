@@ -146,6 +146,7 @@ class Sampler(metaclass=SamplerABCMeta):
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
+                Unknown keywords will be swallowed with a raised warning.
 
         Returns:
             :obj:`.SampleSet`
