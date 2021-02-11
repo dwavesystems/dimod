@@ -249,7 +249,7 @@ class Sampler(metaclass=SamplerABCMeta):
 
         Args:
             **kwargs:
-                Keyword arguments to be validated
+                Keyword arguments to be validated.
 
         Returns:
             dict: Updated `kwargs`
@@ -258,7 +258,7 @@ class Sampler(metaclass=SamplerABCMeta):
         for kw in kwargs.copy():
             if kw not in self.parameters:
                 msg = "Ignoring unknown kwarg: {!r}".format(kw)
-                warnings.warn(msg, SamplerUnknownArgWarning)
+                warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
                 kwargs.pop(kw)
 
         return kwargs
