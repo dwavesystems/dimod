@@ -16,6 +16,7 @@
 import unittest
 
 import dimod
+from dimod.core.sampler import SamplerUnknownArgWarning
 
 
 class TestConstruction(unittest.TestCase):
@@ -52,7 +53,7 @@ class TestSample(unittest.TestCase):
     def test_kwargs(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': -1}, {'ab': 1})
 
-        with self.assertWarns(RuntimeWarning):
+        with self.assertWarns(SamplerUnknownArgWarning):
             dimod.NullSampler().sample(bqm, a=5)
 
         ss = dimod.NullSampler(parameters=['a']).sample(bqm, a=5)

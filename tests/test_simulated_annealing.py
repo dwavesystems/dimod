@@ -20,6 +20,7 @@ import random
 
 import dimod
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
+from dimod.core.sampler import SamplerUnknownArgWarning
 
 @dimod.testing.load_sampler_bqm_tests(dimod.SimulatedAnnealingSampler)
 class TestSASampler(unittest.TestCase):
@@ -99,7 +100,7 @@ class TestSASampler(unittest.TestCase):
     def test_kwargs(self):
         sampler = self.sampler
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
-        with self.assertWarns(RuntimeWarning):
+        with self.assertWarns(SamplerUnknownArgWarning):
             sampler.sample(bqm, a=5, b=True)
 
 class TestSimulatedAnnealingAlgorithm(unittest.TestCase):

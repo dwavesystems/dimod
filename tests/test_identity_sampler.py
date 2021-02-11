@@ -16,6 +16,7 @@
 import unittest
 
 import dimod
+from dimod.core.sampler import SamplerUnknownArgWarning
 import numpy as np
 
 
@@ -50,5 +51,5 @@ class TestIdentitySampler(unittest.TestCase):
         sampler = dimod.IdentitySampler()
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
 
-        with self.assertWarns(RuntimeWarning):
+        with self.assertWarns(SamplerUnknownArgWarning):
             sampleset = sampler.sample(bqm, a=1, b=4)

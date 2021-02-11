@@ -107,8 +107,10 @@ from dimod.meta import SamplerABCMeta, samplemixinmethod
 from dimod.vartypes import Vartype
 
 
-__all__ = ['Sampler']
+__all__ = ['Sampler', 'SamplerUnknownArgWarning']
 
+class SamplerUnknownArgWarning(UserWarning):
+    pass
 
 class Sampler(metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
@@ -147,7 +149,7 @@ class Sampler(metaclass=SamplerABCMeta):
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
-                Unknown keywords will be swallowed with a raised warning.
+                Unknown keywords are accepted but a warning will be raised.
 
         Returns:
             :obj:`.SampleSet`
@@ -256,7 +258,7 @@ class Sampler(metaclass=SamplerABCMeta):
         for kw in kwargs.copy():
             if kw not in self.parameters:
                 msg = "Ignoring unknown kwarg: {!r}".format(kw)
-                warnings.warn(msg, RuntimeWarning)
+                warnings.warn(msg, SamplerUnknownArgWarning)
                 kwargs.pop(kw)
 
         return kwargs
