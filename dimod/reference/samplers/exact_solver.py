@@ -84,7 +84,7 @@ class ExactSolver(Sampler):
             :obj:`~dimod.SampleSet`
 
         """
-        kwargs = self.validate_kwargs(**kwargs)
+        kwargs = self.remove_unknown_kwargs(**kwargs)
 
         n = len(bqm.variables)
         if n == 0:

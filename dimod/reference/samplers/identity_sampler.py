@@ -97,7 +97,7 @@ class IdentitySampler(Sampler, Initialized):
 
 
         """
-        kwargs = self.validate_kwargs(**kwargs)
+        kwargs = self.remove_unknown_kwargs(**kwargs)
         parsed = self.parse_initial_states(bqm, *args, **kwargs)
 
         # and we're done, we just pass back the initial state we were handed

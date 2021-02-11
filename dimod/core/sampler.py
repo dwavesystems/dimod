@@ -240,7 +240,7 @@ class Sampler(metaclass=SamplerABCMeta):
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
 
-    def validate_kwargs(self, **kwargs):
+    def remove_unknown_kwargs(self, **kwargs):
         """Check that all `kwargs` are accepted by the sampler. If a
         keyword is unknown, a warning is raised and the argument is removed.
 
@@ -252,10 +252,9 @@ class Sampler(metaclass=SamplerABCMeta):
             dict: Updated `kwargs`
 
         """
-        for kw in kwargs.copy():
-            if kw not in self.parameters:
-                msg = "Ignoring unknown kwarg: {!r}".format(kw)
-                warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
-                kwargs.pop(kw)
+        for kw in [k for k in kwargs if k not in self.parameters]:
+            msg = "Ignoring unknown kwarg: {!r}".format(kw)
+            warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
+            kwargs.pop(kw)
 
         return kwargs

@@ -94,7 +94,7 @@ class SimulatedAnnealingSampler(Sampler):
         if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
 
-        kwargs = self.validate_kwargs(**kwargs)
+        kwargs = self.remove_unknown_kwargs(**kwargs)
 
         h, J, offset = bqm.to_ising()
 
