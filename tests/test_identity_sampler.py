@@ -16,7 +16,7 @@
 import unittest
 
 import dimod
-from dimod.core.sampler import SamplerUnknownArgWarning
+from dimod.exceptions import SamplerUnknownArgWarning
 import numpy as np
 
 

@@ -18,7 +18,7 @@ import unittest
 
 import dimod
 import dimod.testing as dtest
-from dimod.core.sampler import SamplerUnknownArgWarning
+from dimod.exceptions import SamplerUnknownArgWarning
 
 
 @dimod.testing.load_sampler_bqm_tests(dimod.RandomSampler)

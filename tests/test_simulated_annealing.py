@@ -20,7 +20,7 @@ import random
 
 import dimod
 from dimod.reference.samplers.simulated_annealing import ising_simulated_annealing, greedy_coloring
-from dimod.core.sampler import SamplerUnknownArgWarning
+from dimod.exceptions import SamplerUnknownArgWarning
 
 @dimod.testing.load_sampler_bqm_tests(dimod.SimulatedAnnealingSampler)
 class TestSASampler(unittest.TestCase):

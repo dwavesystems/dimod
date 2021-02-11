@@ -41,3 +41,7 @@ class BinaryQuadraticModelStructureError(BinaryQuadraticModelValueError):
 
 class WriteableError(ValueError):
     """Raised when trying to modify an immutable object."""
+
+
+class SamplerUnknownArgWarning(UserWarning):
+    """Raised when trying to pass in an unknown argument to the sampler."""

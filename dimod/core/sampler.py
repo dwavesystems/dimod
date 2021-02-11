@@ -102,15 +102,12 @@ import abc
 import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.exceptions import InvalidSampler
+from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
 from dimod.meta import SamplerABCMeta, samplemixinmethod
 from dimod.vartypes import Vartype
 
 
-__all__ = ['Sampler', 'SamplerUnknownArgWarning']
-
-class SamplerUnknownArgWarning(UserWarning):
-    pass
+__all__ = ['Sampler']
 
 class Sampler(metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
