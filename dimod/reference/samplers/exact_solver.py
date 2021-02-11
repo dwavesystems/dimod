@@ -20,8 +20,6 @@ Note:
     These samplers are designed for use in testing. Because they calculate
     energy for every possible sample, they are very slow.
 """
-import warnings
-
 import numpy as np
 
 from dimod.core.sampler import Sampler
@@ -86,9 +84,7 @@ class ExactSolver(Sampler):
             :obj:`~dimod.SampleSet`
 
         """
-        for kw in kwargs:
-            msg = "Ignoring unknown kwarg: {!r}".format(kw)
-            warnings.warn(msg, RuntimeWarning)
+        kwargs = self.validate_kwargs(**kwargs)
 
         n = len(bqm.variables)
         if n == 0:

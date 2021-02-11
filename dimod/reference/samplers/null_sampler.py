@@ -15,7 +15,6 @@
 # =============================================================================
 """A sampler that always returns an empty sample set."""
 import collections.abc as abc
-import warnings
 
 import numpy as np
 
@@ -85,9 +84,6 @@ class NullSampler(Sampler):
         samples = np.empty((0, len(bqm)))
         labels = iter(bqm.variables)
 
-        for kw in kwargs:
-            if kw not in self.parameters:
-                msg = "Ignoring unknown kwarg: {!r}".format(kw)
-                warnings.warn(msg, RuntimeWarning)
+        kwargs = self.validate_kwargs(**kwargs)
 
         return SampleSet.from_samples_bqm((samples, labels), bqm)

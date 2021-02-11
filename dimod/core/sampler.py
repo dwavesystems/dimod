@@ -99,6 +99,7 @@ Below is a more complex version of the same sampler, where the :attr:`properties
 
 """
 import abc
+import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler
@@ -239,3 +240,23 @@ class Sampler(metaclass=SamplerABCMeta):
         """
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
+
+    def validate_kwargs(self, **kwargs):
+        """Check that all `kwargs` are accepted by the sampler. If a
+        keyword is unknown, a warning is raised and the argument is removed.
+
+        Args:
+            **kwargs:
+                Keyword arguments to be validated
+
+        Returns:
+            dict: Updated `kwargs`
+
+        """
+        for kw in kwargs.copy():
+            if kw not in self.parameters:
+                msg = "Ignoring unknown kwarg: {!r}".format(kw)
+                warnings.warn(msg, RuntimeWarning)
+                kwargs.pop(kw)
+
+        return kwargs

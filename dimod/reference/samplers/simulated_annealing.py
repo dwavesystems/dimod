@@ -22,7 +22,6 @@ solving problems.
 """
 import random
 import math
-import warnings
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
@@ -95,9 +94,7 @@ class SimulatedAnnealingSampler(Sampler):
         if num_reads < 1:
             raise ValueError("'samples' should be a positive integer")
 
-        for kw in kwargs:
-            msg = "Ignoring unknown kwarg: {!r}".format(kw)
-            warnings.warn(msg, RuntimeWarning)
+        kwargs = self.validate_kwargs(**kwargs)
 
         h, J, offset = bqm.to_ising()
 
