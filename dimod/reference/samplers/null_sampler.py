@@ -84,8 +84,6 @@ class NullSampler(Sampler):
         samples = np.empty((0, len(bqm)))
         labels = iter(bqm.variables)
 
-        for kw in kwargs:
-            if kw not in self.parameters:
-                raise ValueError("unknown parameter {!r}".format(kw))
+        kwargs = self.remove_unknown_kwargs(**kwargs)
 
         return SampleSet.from_samples_bqm((samples, labels), bqm)

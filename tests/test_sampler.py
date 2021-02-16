@@ -19,7 +19,7 @@ import unittest
 import numpy as np
 
 import dimod
-
+from dimod.exceptions import SamplerUnknownArgWarning
 
 class TestSamplerClass(unittest.TestCase):
     """Tests for the template Sampler class"""
@@ -340,3 +340,26 @@ class TestSamplerClass(unittest.TestCase):
         ss = Mock().sample(dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN))
         with self.assertRaises(SignalException):
             ss.resolve()
+
+    def test_remove_unknown_kwargs(self):
+        class Dummy(dimod.Sampler):
+            def sample(self, **kwargs):
+                kwargs = self.remove_unknown_kwargs(**kwargs)
+                return kwargs
+
+            @property
+            def parameters(self):
+                return {'a':[]}
+
+            @property
+            def properties(self):
+                return {}
+
+        sampler = Dummy()
+
+        # Check that warning is raised
+        with self.assertWarns(SamplerUnknownArgWarning):
+            kwargs = sampler.sample(a=1, b=2)
+
+        # Check that known kwargs are kept and unknown kwargs are removed
+        self.assertDictEqual(kwargs, {'a': 1})

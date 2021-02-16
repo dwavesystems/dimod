@@ -21,6 +21,7 @@ import numpy.testing as npt
 
 import dimod
 import dimod.testing
+from dimod.exceptions import SamplerUnknownArgWarning
 
 
 @dimod.testing.load_sampler_bqm_tests(dimod.ExactSolver)
@@ -142,6 +143,10 @@ class TestExactSolver(unittest.TestCase):
         sampleset = dimod.ExactSolver().sample(bqm)
         self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
+    def test_kwargs(self):
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+        with self.assertWarns(SamplerUnknownArgWarning):
+            sampleset = dimod.ExactSolver().sample(bqm, a=1, b="abc")
 
 class TestExactPolySolver(unittest.TestCase):
     def test_instantiation(self):
@@ -277,3 +282,8 @@ class TestExactPolySolver(unittest.TestCase):
         poly = dimod.BinaryPolynomial.from_hising({}, {('a','b','c'): -1})
         sampleset = dimod.ExactPolySolver().sample_poly(poly)
         self.assertEqual(set(sampleset.variables), set(poly.variables))
+
+    def test_kwargs(self):
+        poly = dimod.BinaryPolynomial({}, dimod.SPIN)
+        with self.assertWarns(SamplerUnknownArgWarning):
+            response = dimod.ExactPolySolver().sample_poly(poly, a=True, b=2)

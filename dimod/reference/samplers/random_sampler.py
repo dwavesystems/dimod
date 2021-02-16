@@ -48,7 +48,7 @@ class RandomSampler(Sampler):
         self.parameters = {'num_reads': []}
         self.properties = {}
 
-    def sample(self, bqm, num_reads=10, seed=None):
+    def sample(self, bqm, num_reads=10, seed=None, **kwargs):
         """Give random samples for a binary quadratic model.
 
         Variable assignments are chosen by coin flip.
@@ -73,4 +73,5 @@ class RandomSampler(Sampler):
         # in order to save on future changes that decouple them, we won't
         # subclass
         return IdentitySampler().sample(bqm, num_reads=num_reads, seed=seed,
-                                        initial_states_generator='random')
+                                        initial_states_generator='random', 
+                                        **kwargs)

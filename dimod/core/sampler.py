@@ -99,15 +99,15 @@ Below is a more complex version of the same sampler, where the :attr:`properties
 
 """
 import abc
+import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.exceptions import InvalidSampler
+from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
 from dimod.meta import SamplerABCMeta, samplemixinmethod
 from dimod.vartypes import Vartype
 
 
 __all__ = ['Sampler']
-
 
 class Sampler(metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
@@ -146,6 +146,7 @@ class Sampler(metaclass=SamplerABCMeta):
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
+                Unknown keywords are accepted but a warning will be raised.
 
         Returns:
             :obj:`.SampleSet`
@@ -238,3 +239,22 @@ class Sampler(metaclass=SamplerABCMeta):
         """
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
+
+    def remove_unknown_kwargs(self, **kwargs):
+        """Check that all `kwargs` are accepted by the sampler. If a
+        keyword is unknown, a warning is raised and the argument is removed.
+
+        Args:
+            **kwargs:
+                Keyword arguments to be validated.
+
+        Returns:
+            dict: Updated `kwargs`
+
+        """
+        for kw in [k for k in kwargs if k not in self.parameters]:
+            msg = "Ignoring unknown kwarg: {!r}".format(kw)
+            warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
+            kwargs.pop(kw)
+
+        return kwargs

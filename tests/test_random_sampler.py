@@ -18,6 +18,7 @@ import unittest
 
 import dimod
 import dimod.testing as dtest
+from dimod.exceptions import SamplerUnknownArgWarning
 
 
 @dimod.testing.load_sampler_bqm_tests(dimod.RandomSampler)
@@ -39,3 +40,8 @@ class TestRandomSampler(unittest.TestCase):
         response = sampler.sample(bqm, num_reads=10)
 
         dtest.assert_response_energies(response, bqm)
+
+    def test_kwargs(self):
+        bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
+        with self.assertWarns(SamplerUnknownArgWarning):
+            dimod.RandomSampler().sample(bqm, a=5, b=2)
