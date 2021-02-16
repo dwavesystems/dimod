@@ -79,8 +79,9 @@ example the :meth:`sample_ising` method).
 
     class LinearIsingSampler(dimod.Sampler):
 
-        def sample_ising(self, h, J):
-            sample = linear_ising(h, J)  # Defined elsewhere
+        def sample_ising(self, h, J, **kwargs):
+            kwargs = self.remove_unknown_kwargs(**kwargs)
+            sample = linear_ising(h, J, **kwargs)  # Defined elsewhere
             energy = dimod.ising_energy(sample, h, J)
             return dimod.SampleSet.from_samples(sample, vartype=dimod.SPIN, energy=energy)
 
