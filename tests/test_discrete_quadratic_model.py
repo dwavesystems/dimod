@@ -549,6 +549,20 @@ class TestConstraint(unittest.TestCase):
             dqm.add_linear_equality_constraint(
                 [(u, 6, 0)], lagrange_multiplier=1, constant=-1)
 
+    def test_self_loop(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(5)
+        v = dqm.add_variable(6)
+
+        terms = [(u, 0, .5), (v, 1, .5), (u, 2, .5)]
+
+        dqm.add_linear_equality_constraint(
+            terms, lagrange_multiplier=1, constant=1)
+
+        # because two cases within the same variable are mentioned, we can
+        # discard that interaction
+        self.assertEqual(dqm.num_case_interactions(), 2)
+
 
 class TestNumpyVectors(unittest.TestCase):
 

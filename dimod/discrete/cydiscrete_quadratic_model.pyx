@@ -17,7 +17,7 @@ import collections.abc as abc
 cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
-from libcpp.algorithm cimport lower_bound, sort
+from libcpp.algorithm cimport lower_bound, sort, unique
 from libcpp.unordered_set cimport unordered_set
 
 import numpy as np
@@ -43,12 +43,13 @@ cdef class cyDiscreteQuadraticModel:
                                        Bias lagrange_multiplier, Bias constant):
 
         # resolve the terms from a python object into some C++ objects
-        cdef unordered_set[VarIndex] variable_set
+        cdef vector[VarIndex] variables
         cdef vector[CaseIndex] cases
         cdef vector[Bias] biases
 
         # can allocate them if we already know the size
         if isinstance(terms, abc.Sized):
+            variables.reserve(len(terms))
             cases.reserve(len(terms))
             biases.reserve(len(terms))
 
@@ -56,19 +57,21 @@ cdef class cyDiscreteQuadraticModel:
         cdef Py_ssize_t v, case_v
         cdef Bias bias
         for v, case_v, bias in terms:
-            variable_set.insert(v)
             if case_v >= self.num_cases(v):  # also checks variable
                 raise ValueError("case out of range")
+            variables.push_back(v)
             cases.push_back(case_v + self.case_starts_[v])
             biases.push_back(bias)
 
         # add the biases to the BQM, not worrying about order or duplication
         cdef Py_ssize_t num_terms = cases.size()
 
+        cdef VarIndex u
         cdef Py_ssize_t i, j
         cdef CaseIndex cu, cv
         cdef Bias lbias, qbias
         for i in range(num_terms):
+            u = variables[i]
             cu = cases[i]
 
             lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
@@ -78,6 +81,11 @@ cdef class cyDiscreteQuadraticModel:
                 cv = cases[j]
 
                 if cv == cu:
+                    continue
+
+                # interactions between cases within a variable never contribute
+                # energy
+                if u == variables[j]:
                     continue
 
                 qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
@@ -94,12 +102,11 @@ cdef class cyDiscreteQuadraticModel:
         # now de-duplicate the BQM
         self.bqm_.normalize_neighborhood(cases.begin(), cases.end())
 
-        # finally fix the adjacency
-        cdef vector[VarIndex] variables
-        variables.insert(
-            variables.end(), variable_set.begin(), variable_set.end())
+        # deduplicate and sort the variables.
         sort(variables.begin(), variables.end())
+        variables.erase(unique(variables.begin(), variables.end()), variables.end())
 
+        # finally fix the adjacency
         cdef Py_ssize_t vi, ni
         for i in range(variables.size()):
             v = variables[i]
