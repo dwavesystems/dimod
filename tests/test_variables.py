@@ -97,14 +97,6 @@ class TestRelabel(unittest.TestCase):
 
         self.assertEqual(variables, Variables('ab'))
 
-    def test_permissive_deprecated_api(self):
-        variables = Variables([0, 1])
-
-        with self.assertWarns(DeprecationWarning):
-            variables.relabel({0: 'a', 1: 'b', 2: 'c'})
-
-        self.assertEqual(variables, Variables('ab'))     
-
 
 @parameterized_class(
     [dict(name='list', iterable=list(range(5))),
@@ -116,12 +108,6 @@ class TestRelabel(unittest.TestCase):
     class_name_func=lambda cls, i, inpt: '%s_%s' % (cls.__name__, inpt['name'])
     )
 class TestIterable(unittest.TestCase):
-    def test_index_api(self):
-        # deprecated API
-        variables = Variables(self.iterable)
-        self.assertTrue(hasattr(variables, 'index'))
-        self.assertTrue(callable(variables.index))
-        self.assertTrue(isinstance(variables.index, abc.Mapping))
 
     def test_contains_unhashable(self):
         variables = Variables(self.iterable)
