@@ -53,41 +53,6 @@ def iter_deserialize_variables(variables):
             yield v
 
 
-class _Index(abc.Callable, abc.Mapping):
-    # Deprecated API, in the future .index should be a normal method.
-    # Previous implementations of Variables treated .index as a dict.
-
-    __slots__ = ('variables',)
-
-    def __init__(self, variables):
-        self.variables = variables
-
-    def __call__(self, v):
-        # todo: support start and end like list.index
-        if v not in self.variables:
-            raise ValueError('unknown variable {!r}'.format(v))
-        return self.variables._label_to_idx.get(v, v)
-
-    def __getitem__(self, v):
-        warnings.warn("treating Variables.index as a mapping is deprecated, "
-                      "please use Variables.index(v) rather than "
-                      "Variables.index[v]",
-                      DeprecationWarning,
-                      stacklevel=2)
-        try:
-            return self(v)
-        except ValueError as err:
-            raise KeyError(*err.args)
-
-    def __iter__(self):
-        # as far as I know no one used this
-        raise NotImplementedError
-
-    def __len__(self):
-        # as far as I know no one used this
-        raise NotImplementedError
-
-
 class Variables(abc.Sequence, abc.Set):
     """Set-like and list-like variables tracking.
 
@@ -100,15 +65,12 @@ class Variables(abc.Sequence, abc.Set):
     __slots__ = ('_idx_to_label',
                  '_label_to_idx',
                  '_stop',
-                 '_writeable',
-                 'index')
+                 )
 
     def __init__(self, iterable=None):
         self._idx_to_label = dict()
         self._label_to_idx = dict()
         self._stop = 0
-
-        self.index = _Index(self)
 
         if iterable is not None:
             for v in iterable:
@@ -181,18 +143,6 @@ class Variables(abc.Sequence, abc.Set):
     @property
     def is_range(self):
         return not self._label_to_idx
-
-    @property
-    def is_writeable(self):
-        warnings.warn("Variables.is_writeable is deprecated",
-                      DeprecationWarning, stacklevel=2)
-        return getattr(self, '_writeable', True)
-
-    @is_writeable.setter
-    def is_writeable(self, b):
-        warnings.warn("Variables.is_writeable is deprecated",
-                      DeprecationWarning, stacklevel=2)
-        self._writeable = bool(b)
 
     def _append(self, v=None, *, permissive=False):
         """Append a new variable.
@@ -271,15 +221,10 @@ class Variables(abc.Sequence, abc.Set):
         # everything is unique
         return int(v in self)
 
-    # index is set by __init__ for now
-
-    @lockable_method
-    def relabel(self, *args, **kwargs):
-        warnings.warn("Variables.relabel is deprecated. Objects that have "
-                      "Variables as an attribute should use ._relabel() "
-                      "instead. Users should treat the Variables object as "
-                      "static", DeprecationWarning, stacklevel=3)
-        return self._relabel(*args, **kwargs)
+    def index(self, v):
+        if v not in self:
+            raise ValueError('unknown variable {!r}'.format(v))
+        return self._label_to_idx.get(v, v)
 
     def to_serializable(self):
         """Return an object that (should be) json-serializable.
