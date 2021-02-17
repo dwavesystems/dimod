@@ -52,6 +52,18 @@ class TestDuplicates(unittest.TestCase):
             self.assertEqual(len(variables), len(set(zeros)))
 
 
+class TestIndex(unittest.TestCase):
+    def test_permissive(self):
+        variables = Variables()
+
+        with self.assertRaises(ValueError):
+            variables.index(0)
+
+        self.assertEqual(variables.index(0, permissive=True), 0)
+        self.assertEqual(variables.index(0, permissive=True), 0)
+        self.assertEqual(variables.index('a', permissive=True), 1)
+
+
 class TestPrint(unittest.TestCase):
     def test_pprint(self):
         import pprint

@@ -221,8 +221,28 @@ class Variables(abc.Sequence, abc.Set):
         # everything is unique
         return int(v in self)
 
-    def index(self, v):
-        if v not in self:
+    def index(self, v, permissive=False):
+        """Return the index of v.
+
+        Args:
+            v (hashable):
+                A variable.
+
+            permissive (bool, optional, default=False):
+                If True, the variable will be inserted, guaranteeing an index
+                can be returned.
+
+        Returns:
+            int: The index of the given variable.
+
+        Raises:
+            ValueError: If the variable is not present and `permissive` is
+            False.
+
+        """
+        if permissive:
+            self._append(v, permissive=True)
+        elif v not in self:
             raise ValueError('unknown variable {!r}'.format(v))
         return self._label_to_idx.get(v, v)
 
