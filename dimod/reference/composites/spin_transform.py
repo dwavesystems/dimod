@@ -72,10 +72,6 @@ class SpinReversalTransformComposite(Sampler, Composite):
     def __init__(self, child):
         self.children = [child]
 
-        if isinstance(child, Structured):
-            # todo something like Structured.__init__(self)
-            raise NotImplementedError
-
         self.parameters = parameters = {'spin_reversal_variables': []}
         parameters.update(child.parameters)
 
