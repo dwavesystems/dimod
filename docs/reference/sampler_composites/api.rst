@@ -21,7 +21,7 @@ ABCs.
         - Inherits from
         - Abstract Properties
         - Abstract Methods
-        - Mixins
+        - Mixin Methods
     *   - :class:`.Sampler`
         -
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`
