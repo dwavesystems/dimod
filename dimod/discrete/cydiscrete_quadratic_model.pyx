@@ -31,7 +31,7 @@ cdef struct LinearTerm:
     CaseIndex case
     Bias bias
 
-cdef bint linear_term_lt(LinearTerm& rhs, LinearTerm& lhs):
+cdef bint linear_term_lt(const LinearTerm& rhs, const LinearTerm& lhs):
     # the cases are the BQM variables
     return rhs.case < lhs.case
 
