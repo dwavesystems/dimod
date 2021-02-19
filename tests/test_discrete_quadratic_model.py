@@ -563,30 +563,28 @@ class TestConstraint(unittest.TestCase):
         # discard that interaction
         self.assertEqual(dqm.num_case_interactions(), 2)
 
-    def case_1():
+    def test_self_loop_repeat(self):
         num_variables = 4
-        cases = np.random.randint(3, 6, size=num_variables)
-        dqm_0 = dimod.DiscreteQuadraticModel()
+        cases = [4, 3, 3, 5]
         dqm = dimod.DiscreteQuadraticModel()
         for i in range(num_variables):
-            dqm_0.add_variable(cases[i], i)
             dqm.add_variable(cases[i], i)
-        x = dqm.variables
 
         expression1 = [(0, 0, 2), (1, 0, 2), (2, 1, 0), (3, 0, 8)]
         expression2 = [(0, 1, 2), (1, 1, 2), (2, 0, 0), (3, 1, 8)]
         expression = expression1 + expression2
-        constant = np.random.randint(1, 10) * num_variables
-        lagrange_multiplier = np.random.randint(1, 10)
+        lagrange_multiplier = 6
+        constant = 4
         dqm.add_linear_equality_constraint(
             expression,
-            lagrange_multiplier=lagrange_multiplier, constant=constant)
+            lagrange_multiplier=lagrange_multiplier,
+            constant=constant)
 
         expression_dict1 = {v: (c, b) for v, c, b in expression1}
         expression_dict2 = {v: (c, b) for v, c, b in expression2}
 
         for case_values in itertools.product(*(range(c) for c in cases)):
-            state = {x[i]: case_values[i] for i in x}
+            state = {i: case_values[i] for i in range(num_variables)}
             energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
@@ -595,32 +593,30 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            assert (energy == lagrange_multiplier * s ** 2 + dqm_0.energy(state))
+            self.assertEqual(energy, lagrange_multiplier * s ** 2)
 
-    def case_2():
+    def test_self_loop_repeat2(self):
         num_variables = 4
-        cases = np.random.randint(3, 6, size=num_variables)
-        dqm_0 = dimod.DiscreteQuadraticModel()
+        cases = [4, 3, 3, 5]
         dqm = dimod.DiscreteQuadraticModel()
         for i in range(num_variables):
-            dqm_0.add_variable(cases[i], i)
             dqm.add_variable(cases[i], i)
-        x = dqm.variables
 
-        expression1 = [(0, 0, 2), (1, 0, 2), (2, 1, 0), (3, 0, 8)]
-        expression2 = [(0, 0, 2), (1, 0, 2), (2, 1, 0), (3, 0, 8)]
+        expression1 = [(0, 0, 2)]
+        expression2 = [(0, 0, 2)]
         expression = expression1 + expression2
-        constant = np.random.randint(1, 10) * num_variables
-        lagrange_multiplier = np.random.randint(1, 10)
+        lagrange_multiplier = 6
+        constant = 4
         dqm.add_linear_equality_constraint(
             expression,
-            lagrange_multiplier=lagrange_multiplier, constant=constant)
+            lagrange_multiplier=lagrange_multiplier,
+            constant=constant)
 
         expression_dict1 = {v: (c, b) for v, c, b in expression1}
         expression_dict2 = {v: (c, b) for v, c, b in expression2}
 
         for case_values in itertools.product(*(range(c) for c in cases)):
-            state = {x[i]: case_values[i] for i in x}
+            state = {i: case_values[i] for i in range(num_variables)}
             energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
@@ -629,7 +625,29 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            assert (energy == lagrange_multiplier * s ** 2 + dqm_0.energy(state))
+            self.assertEqual(energy, lagrange_multiplier * s ** 2)
+
+    def test_self_loop3(self):
+
+        dqm1 = dimod.DiscreteQuadraticModel()
+        dqm2 = dimod.DiscreteQuadraticModel()
+
+        dqm1.add_variable(5)
+        dqm2.add_variable(5)
+
+        lagrange_multiplier = 1
+        constant = 0
+        dqm1.add_linear_equality_constraint(
+            [(0, 0, 1), (0, 0, 2)],
+            lagrange_multiplier=lagrange_multiplier,
+            constant=constant)
+
+        dqm2.add_linear_equality_constraint(
+            [(0, 0, 3)],
+            lagrange_multiplier=lagrange_multiplier,
+            constant=constant)
+
+        np.testing.assert_array_equal(dqm1.get_linear(0), dqm2.get_linear(0))
 
 
 class TestNumpyVectors(unittest.TestCase):

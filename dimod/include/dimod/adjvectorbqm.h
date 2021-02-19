@@ -317,45 +317,33 @@ class AdjVectorBQM {
     /// sort each neighborhood and merge duplicates
     void normalize_neighborhood() {
         for (variable_type v = 0; v < adj.size(); ++v) {
-            auto span = neighborhood(v);
-            if (!std::is_sorted(span.first, span.second)) {
-                std::sort(span.first, span.second);
-            }
-
-            // now merge any duplicate variables, adding the biases
-            auto it = adj[v].first.begin();
-            while (it + 1 < adj[v].first.end()) {
-                if (it->first == (it + 1)->first) {
-                    it->second += (it + 1)->second;
-                    adj[v].first.erase(it + 1);
-                } else {
-                    ++it;
-                }
-            }
+            normalize_neighborhood(v);
         }
     }
 
     template<class Iter>
     void normalize_neighborhood(Iter begin, Iter end) {
         while (begin != end) {
-            auto v = *begin;
-            auto span = neighborhood(v);
-            if (!std::is_sorted(span.first, span.second)) {
-                std::sort(span.first, span.second);
-            }
-
-            // now merge any duplicate variables, adding the biases
-            auto it = adj[v].first.begin();
-            while (it + 1 < adj[v].first.end()) {
-                if (it->first == (it + 1)->first) {
-                    it->second += (it + 1)->second;
-                    adj[v].first.erase(it + 1);
-                } else {
-                    ++it;
-                }
-            }
-
+            normalize_neighborhood(*begin);
             ++begin;
+        }
+    }
+
+    void normalize_neighborhood(variable_type v) {
+        auto span = neighborhood(v);
+        if (!std::is_sorted(span.first, span.second)) {
+            std::sort(span.first, span.second);
+        }
+
+        // now merge any duplicate variables, adding the biases
+        auto it = adj[v].first.begin();
+        while (it + 1 < adj[v].first.end()) {
+            if (it->first == (it + 1)->first) {
+                it->second += (it + 1)->second;
+                adj[v].first.erase(it + 1);
+            } else {
+                ++it;
+            }
         }
     }
 

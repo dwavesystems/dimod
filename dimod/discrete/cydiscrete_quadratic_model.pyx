@@ -17,12 +17,23 @@ import collections.abc as abc
 cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
+from cython.operator cimport preincrement as preinc  # for when it matters
 from libcpp.algorithm cimport lower_bound, sort, unique
 from libcpp.unordered_set cimport unordered_set
 
 import numpy as np
 
 from dimod.utilities import asintegerarrays, asnumericarrays
+
+
+cdef struct LinearTerm:
+    VarIndex variable
+    CaseIndex case
+    Bias bias
+
+cdef bint linear_term_lt(LinearTerm& rhs, LinearTerm& lhs):
+    # the cases are the BQM variables
+    return rhs.case < lhs.case
 
 
 cdef class cyDiscreteQuadraticModel:
@@ -42,53 +53,74 @@ cdef class cyDiscreteQuadraticModel:
     def add_linear_equality_constraint(self, object terms,
                                        Bias lagrange_multiplier, Bias constant):
 
-        # resolve the terms from a python object into some C++ objects
-        cdef vector[VarIndex] variables
-        cdef vector[CaseIndex] cases
-        cdef vector[Bias] biases
+        # resolve the terms from a python object into a C++ object
+        cdef vector[LinearTerm] cppterms
 
-        # can allocate them if we already know the size
+        # can allocate it if we already know the size
         if isinstance(terms, abc.Sized):
-            variables.reserve(len(terms))
-            cases.reserve(len(terms))
-            biases.reserve(len(terms))
+            cppterms.reserve(len(terms))
 
         # put the generator or list into our C++ objects
         cdef Py_ssize_t v, case_v
         cdef Bias bias
+        cdef LinearTerm term
         for v, case_v, bias in terms:
             if case_v >= self.num_cases(v):  # also checks variable
                 raise ValueError("case out of range")
-            variables.push_back(v)
-            cases.push_back(case_v + self.case_starts_[v])
-            biases.push_back(bias)
+
+            term.variable = v
+            term.case = case_v + self.case_starts_[v]
+            term.bias = bias
+            cppterms.push_back(term)
+
+        # sort and sum duplicates in terms
+        sort(cppterms.begin(), cppterms.end(), linear_term_lt)
+
+        first = cppterms.begin()
+        last = cppterms.end()
+        if first != last:
+            result = first
+
+            while preinc(first) != last:
+                if deref(result).case == deref(first).case:
+                    # first is a duplicate
+                    deref(result).bias = deref(result).bias + deref(first).bias
+                else:
+                    # advance result and set it to equal the current first
+                    inc(result)
+                    if result != first:
+                        deref(result).variable = deref(first).variable
+                        deref(result).case = deref(first).case
+                        deref(result).bias = deref(first).bias
+
+            # finally advance result and delete the rest of the vector
+            cppterms.erase(preinc(result), cppterms.end())
 
         # add the biases to the BQM, not worrying about order or duplication
-        cdef Py_ssize_t num_terms = cases.size()
+        cdef Py_ssize_t num_terms = cppterms.size()
 
         cdef VarIndex u
         cdef Py_ssize_t i, j
         cdef CaseIndex cu, cv
-        cdef Bias lbias, qbias
+        cdef Bias lbias, qbias, u_bias, v_bias
         for i in range(num_terms):
-            u = variables[i]
-            cu = cases[i]
+            u = cppterms[i].variable
+            cu = cppterms[i].case
+            u_bias = cppterms[i].bias
 
-            lbias = lagrange_multiplier * biases[i] * (2 * constant + biases[i])
+            lbias = lagrange_multiplier * u_bias * (2 * constant + u_bias)
             self.bqm_.set_linear(cu, lbias + self.bqm_.get_linear(cu))
 
             for j in range(i + 1, num_terms):
-                cv = cases[j]
-
-                if cv == cu:
-                    continue
+                cv = cppterms[j].case
+                v_bias = cppterms[j].bias
 
                 # interactions between cases within a variable never contribute
                 # energy
-                if u == variables[j]:
+                if u == cppterms[j].variable:
                     continue
 
-                qbias = 2 * lagrange_multiplier * biases[i] * biases[j]
+                qbias = 2 * lagrange_multiplier * u_bias * v_bias
 
                 # cython gets confused about pairs so we do some contortions
                 self.bqm_.adj[cu].first.resize(self.bqm_.adj[cu].first.size() + 1)
@@ -99,12 +131,16 @@ cdef class cyDiscreteQuadraticModel:
                 self.bqm_.adj[cv].first.back().first = cu
                 self.bqm_.adj[cv].first.back().second = qbias
 
-        # now de-duplicate the BQM
-        self.bqm_.normalize_neighborhood(cases.begin(), cases.end())
+        # now de-duplicate the BQM and track the variables we used
+        cdef unordered_set[VarIndex] variable_set
+        for i in range(cppterms.size()):
+            variable_set.insert(cppterms[i].variable)
+            self.bqm_.normalize_neighborhood(cppterms[i].case)
 
-        # deduplicate and sort the variables.
+        # sort the variables.
+        cdef vector[VarIndex] variables
+        variables.insert(variables.begin(), variable_set.begin(), variable_set.end())
         sort(variables.begin(), variables.end())
-        variables.erase(unique(variables.begin(), variables.end()), variables.end())
 
         # finally fix the adjacency
         cdef Py_ssize_t vi, ni
