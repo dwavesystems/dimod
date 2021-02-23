@@ -23,6 +23,11 @@ and one of the abstract methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sampl
 or :meth:`~.Sampler.sample_qubo`. The :class:`.Sampler` class provides the complementary
 methods as mixins and ensures consistent responses.
 
+Implemented sample methods must accept, and warn on, unknown keyword arguments
+`**kwargs`. This means that all implemented sample methods must have the
+`**kwargs` parameter. :meth:`~.Sampler.remove_unknown_kwargs` is a convenience
+method provided for this purpose.
+
 For example, the following steps show how to easily create a dimod sampler. It is
 sufficient to implement a single method (in this example the :meth:`sample_ising` method)
 to create a dimod sampler with the :class:`.Sampler` class.
@@ -31,7 +36,8 @@ to create a dimod sampler with the :class:`.Sampler` class.
 
     class LinearIsingSampler(dimod.Sampler):
 
-        def sample_ising(self, h, J):
+        def sample_ising(self, h, J, **kwargs):
+            kwargs = self.remove_unknown_kwargs(**kwargs)
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
             return dimod.SampleSet.from_samples([sample], vartype='SPIN', energy=[energy])
@@ -81,7 +87,8 @@ Below is a more complex version of the same sampler, where the :attr:`properties
             self._properties = {'description': 'a simple sampler that only considers the linear terms'}
             self._parameters = {'verbose': []}
 
-        def sample_ising(self, h, J, verbose=False):
+        def sample_ising(self, h, J, verbose=False, **kwargs):
+            kwargs = self.remove_unknown_kwargs(**kwargs)
             sample = linear_ising(h, J)
             energy = dimod.ising_energy(sample, h, J)
             if verbose:
@@ -115,6 +122,8 @@ class Sampler(metaclass=SamplerABCMeta):
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
     :meth:`~.Sampler.sample_qubo` assuming at least one is implemented.
 
+    Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`, which
+    may be used in sample methods to handle unknown kwargs.
     """
 
     @abc.abstractproperty  # for python2 compatibility
