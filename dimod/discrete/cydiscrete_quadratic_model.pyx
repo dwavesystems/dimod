@@ -26,14 +26,33 @@ import numpy as np
 from dimod.utilities import asintegerarrays, asnumericarrays
 
 
-cdef struct LinearTerm:
-    VarIndex variable
-    CaseIndex case
-    Bias bias
+# developer note: for whatever reason this is the only way we can sort a vector
+# of structs in clang. If we do it in pure cython we get segmentation faults
+cdef extern from *:
+    """
+    #include <vector>
+    #include <algorithm>
+    #include <cstdint>
 
-cdef bint linear_term_lt(const LinearTerm& rhs, const LinearTerm& lhs):
-    # the cases are the BQM variables
-    return rhs.case < lhs.case
+    struct LinearTerm {
+        std::int64_t variable;
+        std::int64_t case_v;
+        double bias;
+    };
+
+    bool term_lt(const LinearTerm& lhs, const LinearTerm& rhs) {
+        return lhs.case_v < rhs.case_v;
+    }
+
+    void sort_terms(std::vector<LinearTerm>& terms) {
+        std::sort(terms.begin(), terms.end(), term_lt);
+    }
+    """
+    struct LinearTerm:
+        np.int64_t variable
+        np.int64_t case "case_v"
+        double bias
+    void sort_terms(vector[LinearTerm]&)
 
 
 cdef class cyDiscreteQuadraticModel:
@@ -74,7 +93,7 @@ cdef class cyDiscreteQuadraticModel:
             cppterms.push_back(term)
 
         # sort and sum duplicates in terms
-        sort(cppterms.begin(), cppterms.end(), linear_term_lt)
+        sort_terms(cppterms)
 
         first = cppterms.begin()
         last = cppterms.end()
