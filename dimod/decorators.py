@@ -43,8 +43,13 @@ def nonblocking_sample_method(f):
     non-blocking :class:`.Sampler` or :class:`.Composite`.
 
     The function being decorated must return an iterator when called. This
-    iterator must yield exactly two values. The first value is discarded, the
-    second must be a :class:`.SampleSet`.
+    iterator must yield exactly two values.
+
+    The first value can be any object, but if the object has a `done()`
+    method, that method will determine the value of :meth:`.SampleSet.done()`.
+
+    The second value must be a :class:`.SampleSet`, which will provide the
+    samples to the user.
 
     The generator is executed until the first yield. The generator is then
     resumed when the returned sample set is resolved.
@@ -71,17 +76,14 @@ def nonblocking_sample_method(f):
     ['SPIN', 1 rows, 1 samples, 2 variables]
 
     """
+    from dimod.sampleset import SampleSet  # avoid circular import
+    
     @wraps(f)
     def _sample(*args, **kwargs):
-        # avoid circular import
-        from dimod.sampleset import SampleSet
-
         iterator = f(*args, **kwargs)
 
-        # do the blocking part
-        next(iterator)
-
-        return SampleSet.from_future(None, lambda _: next(iterator))
+        # resolve blocking part now, and make hook for the non-blocking part
+        return SampleSet.from_future(next(iterator), lambda _: next(iterator))
     return _sample
 
 
