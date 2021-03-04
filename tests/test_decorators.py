@@ -11,8 +11,8 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
 
+import concurrent.futures
 import unittest
 import itertools
 
@@ -32,6 +32,25 @@ from dimod.decorators import vartype_argument, graph_argument
 
 
 class TestNonblockingSampleMethod(unittest.TestCase):
+    def test_done(self):
+        class Sampler:
+            @dimod.decorators.nonblocking_sample_method
+            def sample(self, bqm):
+                self.future = future = concurrent.futures.Future()
+                yield future
+                if not future.done():
+                    raise Exception('boom')
+                sample = {v: 1 for v in bqm.variables}
+                yield dimod.SampleSet.from_samples_bqm(sample, bqm)
+
+        sampler = Sampler()
+
+        bqm = dimod.BQM.from_ising({'a': 1}, {('a', 'b'): -2})
+        ss = sampler.sample(bqm)
+        self.assertFalse(ss.done())
+        sampler.future.set_result(0)
+        ss.resolve()
+
     def test_simple(self):
 
         class Sampler:

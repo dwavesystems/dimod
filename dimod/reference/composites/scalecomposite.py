@@ -135,7 +135,7 @@ class ScaleComposite(ComposedSampler):
 
         sampleset = self.child.sample(bqm, **parameters)
 
-        yield  # wait until sampleset is read for the remaining part
+        yield sampleset  # so that SampleSet.done() works
 
         if not (ignored_variables or ignored_interactions or ignore_offset):
             # we just need to scale back and don't need to worry about
