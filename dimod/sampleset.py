@@ -449,6 +449,27 @@ def infer_vartype(samples_like):
 
     raise ValueError("given samples_like is of an unknown vartype")
 
+def drop_variables(sampleset, variables_to_drop):
+    """Drop variables from a sampleset
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            Original sampleset.
+
+        variables_to_drop (iter):
+            Iterable containing the variables to be dropped
+
+    Returns:
+        :obj:`.SampleSet`: A sampleset without the variables to be dropped.
+    """
+    
+    reduced_variables = [var for var in sampleset.variables if var not in variables_to_drop]
+    reduced_samples = sampleset.samples()[:, reduced_variables]
+
+    return dimod.SampleSet.from_samples((reduced_samples, reduced_variables), 
+                                        vartype=sampleset.vartype, 
+                                        energy=sampleset.record.energy,
+                                        info=sampleset.info)
 
 class SampleSet(abc.Iterable, abc.Sized):
     """Samples and any other data returned by dimod samplers.

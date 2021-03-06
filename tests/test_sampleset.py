@@ -528,6 +528,16 @@ class TestAppendVectors(unittest.TestCase):
         with self.assertRaises(ValueError):
             sampleset = dimod.append_data_vectors(sampleset, sets=[{0}, {1}])
 
+class TestDropVariables(unittest.TestCase):
+    def test_variables_were_dropped(self):
+        samples = np.triu(np.ones((5, 5)))
+        labels = 'abcde'
+        sampleset = dimod.SampleSet.from_samples((samples, labels), vartype='BINARY', energy=1)
+        variables_to_drop="ae"
+        expected_variables = set([label for label in labels if label not in variables_to_drop])
+        obtained_variables = set(dimod.sampleset.drop_variables(sampleset, variables_to_drop).variables)
+        self.assertTrue(obtained_variables==expected_variables)
+
 class TestFromFuture(unittest.TestCase):
     def test_default(self):
 
