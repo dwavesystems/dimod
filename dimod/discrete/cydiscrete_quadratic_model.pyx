@@ -160,6 +160,11 @@ cdef class cyDiscreteQuadraticModel:
 
         return dqm
 
+    def degree(self, Py_ssize_t vi):
+        if not 0 <= vi < self.adj_.size():
+            raise ValueError("not a variable")
+        return self.adj_[vi].size()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef Bias[:] energies(self, CaseIndex[:, :] samples):
