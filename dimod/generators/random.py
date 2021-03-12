@@ -20,7 +20,101 @@ from dimod.bqm import AdjVectorBQM
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
-__all__ = ['gnp_random_bqm', 'uniform', 'ran_r', 'randint']
+__all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint']
+
+
+def gnm_random_bqm(variables, num_interactions, vartype, *,
+                   cls=AdjVectorBQM,
+                   random_state=None,
+                   bias_generator=None):
+    """Generate a random BQM with a fixed number of variables and interactions.
+
+    Args:
+        variables (int/sequence):
+            The variables. If `variables` is an int, the variables are labelled
+            as `[0, variables)`.
+
+        num_interactions (int): The number of interactions.
+
+        vartype (:class:`.Vartype`/str/set):
+            Variable type for the BQM. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        cls (type, optional):
+            Binary quadratic model class to build from. Default is
+            :class:`.AdjVectorBQM`.
+
+        random_state (:class:`numpy.random.RandomState`/int, optional):
+            A random seed or a random state generator. Used for generating
+            the structure of the BQM and, if `bias_generator` is not given, for
+            the bias generation.
+
+        bias_generator (callable, optional):
+            Bias generating function.
+            Should accept a single argument `n` and return an
+            :class:`~numpy.ndarray` of biases of length `n`.
+            May be called multiple times.
+            If not provided, :meth:numpy.random.RandomState.uniform is used by
+            default.
+
+    Returns:
+        A binary quadratic model of type `cls`.
+
+    """
+
+    if isinstance(variables, abc.Sequence):
+        labels = variables
+        num_variables = len(labels)
+    else:
+        labels = range(variables)
+        num_variables = variables
+
+    if num_variables < 0:
+        raise ValueError('num_variables must not be negative')
+    if num_interactions < 0:
+        raise ValueError('num_interactions must not be negative')
+
+    # upper bound to complete graph
+    num_interactions = min(num_variables*(num_variables-1)//2,
+                           num_interactions)
+
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
+
+    if bias_generator is None:
+        def bias_generator(n):
+            return random_state.uniform(size=n)
+
+    bqm = cls(vartype=vartype)
+
+    for vi, bias in enumerate(bias_generator(num_variables)):
+        bqm.set_linear(labels[vi], bias)
+
+    qbias = bias_generator(num_interactions)
+
+    if num_interactions:
+        ui = 0
+        vi = 1
+        k = 0
+        for t in range(num_interactions):
+            # this randint one-at-a-time actually dominates the runtime, there
+            # is some stuff we can do to imporve performance but it gets into
+            # cython territory quickly so I think this is fine for now
+            if random_state.randint(num_interactions - t) < num_interactions - k:
+                bqm.set_quadratic(labels[ui], labels[vi], qbias[k])
+                k += 1
+                if k == num_interactions:
+                    break
+            vi += 1
+            if vi == num_variables:  # go to next row of adjacency matrix
+                ui += 1
+                vi = ui + 1
+
+    bqm.offset, = bias_generator(1)
+
+    return bqm
 
 
 def gnp_random_bqm(n, p, vartype,
