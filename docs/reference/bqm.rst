@@ -50,6 +50,8 @@ Generating BQMs:
    chimera_anticluster
    combinations
    frustrated_loop
+   gnm_random_bqm
+   gnp_random_bqm
    randint
    ran_r
    uniform

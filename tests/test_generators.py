@@ -27,6 +27,32 @@ else:
     _networkx = True
 
 
+class TestRandomGNMRandomBQM(unittest.TestCase):
+    def test_bias_generator(self):
+        def gen(n):
+            return np.full(n, 6)
+
+        bqm = dimod.generators.gnm_random_bqm(10, 20, 'SPIN',
+                                              bias_generator=gen)
+
+        self.assertTrue(all(b == 6 for b in bqm.linear.values()))
+        self.assertTrue(all(b == 6 for b in bqm.quadratic.values()))
+        self.assertEqual(bqm.offset, 6)
+        self.assertEqual(sorted(bqm.variables), list(range(10)))
+
+    def test_labelled(self):
+        bqm = dimod.generators.gnm_random_bqm('abcdef', 1, 'SPIN')
+        self.assertEqual(bqm.shape, (6, 1))
+        self.assertEqual(list(bqm.variables), list('abcdef'))
+
+    def test_shape(self):
+        n = 10
+        for m in range(n*(n-1)//2):
+            with self.subTest(shape=(n, m)):
+                bqm = dimod.generators.gnm_random_bqm(n, m, 'SPIN')
+                self.assertEqual(bqm.shape, (n, m))
+
+
 class TestRandomGNPRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
         def gen(n):
