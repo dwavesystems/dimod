@@ -74,6 +74,48 @@ class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
         return self._file.writable()
 
 
+class VariableNeighborhood(abc.Set):
+    # this really shouldn't be set-like because __contains__ is O(degree(v))
+    # but for backwards compatiblity we'll leave it.
+    __slots__ = ('_dqm', '_vi')
+
+    def __init__(self, dqm, v):
+        self._dqm = dqm
+        self._vi = dqm.variables.index(v)  # raises ValueError
+
+    def __contains__(self, u):
+        return self._dqm.variables.index(u) in self._dqm._cydqm.adj[self._vi]
+
+    def __iter__(self):
+        for ui in self._dqm._cydqm.adj[self._vi]:
+            yield self._dqm.variables[ui]
+
+    def __len__(self):
+        return self._dqm._cydqm.degree(self._vi)
+
+    def __repr__(self):
+        return str(dict(self))
+
+
+class VariableAdjacency(abc.Mapping):
+    __slots__ = ('_dqm',)
+
+    def __init__(self, dqm):
+        self._dqm = dqm
+
+    def __getitem__(self, v):
+        return VariableNeighborhood(self._dqm, v)
+
+    def __iter__(self):
+        yield from self._dqm.variables
+
+    def __len__(self):
+        return len(self._dqm.variables)
+
+    def __repr__(self):
+        return str(dict(self))
+
+
 class DiscreteQuadraticModel:
     """Encodes a discrete quadratic model.
 
@@ -156,9 +198,12 @@ class DiscreteQuadraticModel:
     @property
     def adj(self):
         """dict[hashable, set]: The adjacency structure of the variables."""
-        return dict((self.variables[ui],
-                     set(self.variables[vi] for vi in neighborhood))
-                    for ui, neighborhood in enumerate(self._cydqm.adj))
+        try:
+            return self._adj
+        except AttributeError:
+            pass
+        self._adj = adj = VariableAdjacency(self)
+        return adj
 
     def add_linear_equality_constraint(self, terms: LinearTriplets,
                                        lagrange_multiplier: float,
@@ -216,6 +261,9 @@ class DiscreteQuadraticModel:
         for v in self.variables:
             new.variables._append(v)
         return new
+
+    def degree(self, v):
+        return self._cydqm.degree(self.variables.index(v))
 
     def energy(self, sample):
         energy, = self.energies(sample)

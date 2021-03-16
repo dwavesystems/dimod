@@ -62,7 +62,8 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/build/
+docs/build-cpp/
 docs/reference/generated/
 docs/intro/generated/
 docs/reference/*/generated/
@@ -112,9 +113,6 @@ dimod/discrete/*.cpp
 dimod/discrete/*.html
 tests/*.cpp
 tests/*.html
-# generated files:
-dimod/bqm/adjmapbqm.pyx
-dimod/bqm/adjvectorbqm.pyx
 
 # benchmarking stuff
 benchmarks/html/

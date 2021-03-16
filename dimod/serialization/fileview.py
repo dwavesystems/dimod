@@ -107,6 +107,7 @@ and 4 bytes of length.
 import abc
 import io
 import json
+import warnings
 
 from collections.abc import Sequence
 from operator import eq
@@ -678,10 +679,18 @@ def load(fp, cls=None):
 
     data = json.loads(header_data.decode('ascii'))
 
-    from dimod.bqm import AdjArrayBQM, AdjMapBQM, AdjVectorBQM
+    from dimod.bqm import AdjVectorBQM
 
     if cls is None:
-        cls = locals().get(data['type'])
+        # todo: test
+        if data['type'] == 'AdjArrayBQM' or data['type'] == 'AdjMapBQM':
+            warnings.warn(
+                "No longer supported BQM type, defaulting to AdjVectorBQM",
+                DeprecationWarning,
+                stacklevel=2)
+            cls = AdjVectorBQM
+        else:
+            cls = locals().get(data['type'])
 
     offset = len(BQM_MAGIC_PREFIX) + len(bytes(DEFAULT_VERSION)) + 4 + header_len
 

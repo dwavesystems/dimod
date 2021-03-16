@@ -50,18 +50,8 @@ representation of BQMs is convenient:
 ...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> dict_bqm = dimod.BQM.from_qubo(qubo)
 
-When working with large, fixed-structured BQMs, you might use
-dimod's :ref:`AdjArrayBQM <adjarraybqm_dimod>` class for performance.
-
->>> import numpy as np
->>> q_array = np.array([[-3.0, 2, 2, 2],
-...                     [0, -1.0, 0.0, 0.0],
-...                     [0, 0, -1.0, 0.0],
-...                     [0, 0, 0, -1.0]])
->>> array_bqm = dimod.AdjArrayBQM(q_array, 'BINARY')
-
 Especially for very large BQMs, you might read the data from a file using methods,
-such as :meth:`~dimod.bqm.adjarraybqm.AdjArrayBQM.from_file` or others,
+such as :meth:`~dimod.bqm.adjvectorbqm.AdjVectorBQM.from_file` or others,
 described in the documentation of each class.
 
 Additionally, dimod provides a variety of :ref:`BQM generators <bqm>`.

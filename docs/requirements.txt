@@ -1,4 +1,6 @@
 sphinx
 sphinx_rtd_theme
 
+breathe
+
 networkx==2.0

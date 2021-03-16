@@ -21,6 +21,10 @@ jobs:
       - checkout
 
       - run:
+          name: fix git checkout
+          command: git reset --hard
+
+      - run:
           name: install boost
           command: |
             yum install -y boost-devel
@@ -204,7 +208,7 @@ jobs:
           name: build
           command: |
             . env/bin/activate
-            python setup.py build_ext --inplace --build-tests
+            python setup.py build_ext --inplace
 
       - run:
           name: run tests
@@ -315,7 +319,7 @@ jobs:
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --build-tests --include-dirs boost\lib\native\include\
+            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
 
       - run:
           name: run unittests
@@ -381,6 +385,10 @@ jobs:
       - run: *linux-install-boost-template
 
       - run:
+          name: install doxygen
+          command: sudo apt-get install doxygen
+
+      - run:
           name: install dependencies
           command: |
             python -m virtualenv env
@@ -394,7 +402,7 @@ jobs:
           name: build docs
           command: |
             . env/bin/activate
-            make -C docs/ html
+            make -C docs/ cpp html
 
       - store_artifacts:
           path: ./docs/build/html

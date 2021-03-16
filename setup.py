@@ -81,10 +81,6 @@ extra_link_args = {
 
 
 class build_ext(_build_ext):
-
-    user_options = _build_ext.user_options + [('build-tests', None,
-                                               "Build dimod's cython tests")]
-
     def run(self):
         # add numpy headers
         import numpy
@@ -93,15 +89,6 @@ class build_ext(_build_ext):
         # add dimod headers
         include = os.path.join(os.path.dirname(__file__), 'dimod', 'include')
         self.include_dirs.append(include)
-
-        if self.build_tests:
-
-            test_extensions = [Extension('*', ['tests/test_*'+ext])]
-            if USE_CYTHON:
-                test_extensions = cythonize(test_extensions,
-                                            # annotate=True
-                                            )
-            self.extensions.extend(test_extensions)
 
         super().run()
 
@@ -123,19 +110,10 @@ class build_ext(_build_ext):
         self.build_tests = None
 
 
-bqmdir = os.path.join(".", "dimod", "bqm")
-namespace = {}
-exec(open(os.path.join(bqmdir, "make.py")).read(), namespace)
-namespace['make_bqms'](bqmdir)
-
 extensions = [Extension("dimod.roof_duality._fix_variables",
                         ['dimod/roof_duality/_fix_variables'+ext,
                          'dimod/roof_duality/src/fix_variables.cpp'],
                         include_dirs=['dimod/roof_duality/src/']),
-              Extension("dimod.bqm.adjmapbqm",
-                        ['dimod/bqm/adjmapbqm'+ext]),
-              Extension("dimod.bqm.adjarraybqm",
-                        ['dimod/bqm/adjarraybqm'+ext]),
               Extension("dimod.bqm.adjvectorbqm",
                         ['dimod/bqm/adjvectorbqm'+ext]),
               Extension("dimod.bqm.utils",
