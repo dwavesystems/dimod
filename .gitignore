@@ -107,6 +107,8 @@ ENV/
 # cython intermediate files
 dimod/roof_duality/_fix_variables.cpp
 dimod/roof_duality/*.html
+dimod/*.cpp
+dimod/*.html
 dimod/bqm/*.cpp
 dimod/bqm/*.html
 dimod/discrete/*.cpp
