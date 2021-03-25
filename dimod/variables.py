@@ -12,6 +12,20 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+A class and utilities for encoding variable objects.
+
+The :class:`Variables` class is intended to be used as an attribute of other
+classes, such as :class:`.DiscreteQuadraticModel` and :class:`.SampleSet`.
+
+The goals of the class are:
+    *   Have a minimal memory footprint when the variables are labeled `[0, n)`
+    *   Behave like a list for iteration and getting items
+    *   Behave like a set for determining if it contains an item
+    *   Constant time for finding the index of an item
+
+"""
+
 import collections.abc as abc
 import io
 import warnings
@@ -96,13 +110,14 @@ class Variables(cyVariables, abc.Set, abc.Sequence):
 
     @property
     def is_range(self):
+        """Return True if the variables are labeled `[0,n)`."""
         return self._is_range()
 
     def to_serializable(self):
-        """Return an object that (should be) json-serializable.
+        """Return an object that is json-serializable.
 
         Returns:
-            list: A list of (hopefully) json-serializable objects. Handles some
+            list: A list of json-serializable objects. Handles some
             common cases like NumPy scalars.
             See :func:`iter_serialize_variables`.
 

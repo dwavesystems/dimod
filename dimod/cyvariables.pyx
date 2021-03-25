@@ -170,7 +170,7 @@ cdef class cyVariables:
                 or PyDict_Contains(self._label_to_index, v))
 
     cpdef Py_ssize_t count(self, object v) except -1:
-        """Return the number of times ``v`` appears in Variables.
+        """Return the number of times `v` appears in Variables.
 
         Because the variables are always unique, this will always return 1 or 0.
         """
@@ -190,7 +190,7 @@ cdef class cyVariables:
             return False
 
     cpdef Py_ssize_t index(self, object v, bint permissive=False) except -1:
-        """Return the index of v.
+        """Return the index of `v`.
 
         Args:
             v (hashable):

@@ -14,6 +14,7 @@ Reference Documentation
    dqm
    higherorder
    utilities
+   variables
    vartypes
    exceptions
    cpp
