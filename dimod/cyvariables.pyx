@@ -51,13 +51,12 @@ cdef class cyVariables:
         if self._is_range():
             v = pyidx
         else:
-            # I am reasonably confident that this is safe and it's faster
-            # than self._index_to_label.get
+            # faster than self._index_to_label.get
             obj = PyDict_GetItemWithError(self._index_to_label, pyidx)
             if obj == NULL:
                 v = pyidx
             else:
-                v = <object>obj
+                v = <object>obj  # correctly handles the ref count
 
         return v
 
@@ -179,7 +178,7 @@ cdef class cyVariables:
 
         # handle other numeric types
         if isinstance(v, Number):
-            v_int = int(v)  # assume this is safe...
+            v_int = int(v)  # assume this is safe because it's a number
             if v_int == v:
                 return self._count_int(v_int)  # it's an integer afterall!
 
@@ -216,12 +215,11 @@ cdef class cyVariables:
         if self._is_range():
             return v if PyLong_Check(v) else int(v)
 
-        # I am reasonably confident that this is safe and it's faste
-        # than self._label_to_index.get
+        # faster than self._label_to_index.get
         cdef PyObject* obj = PyDict_GetItemWithError(self._label_to_index, v)
         if obj == NULL:
             pyobj = v
         else:
-            pyobj = <object>obj
+            pyobj = <object>obj  # correctly updates ref count
 
         return pyobj if PyLong_Check(pyobj) else int(pyobj)
