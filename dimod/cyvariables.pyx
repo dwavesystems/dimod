@@ -66,6 +66,22 @@ cdef class cyVariables:
     cpdef object _append(self, object v=None, bint permissive=False):
         """Append a new variable.
 
+        Args:
+            v (hashable, optional):
+                Add a new variable. If `None`, a new label will be generated.
+
+            permissive (bool, optional, default=False):
+                If `False`, appending a variable that already exists will raise
+                a `ValueError`. If `True`, appending a variable that already
+                exists will not change the container.
+
+        Returns:
+            hashable: The label of the appended variable.
+
+        Raises:
+            ValueError: If the variable is present and `permissive` is
+            False.
+
         This method is semi-public. it is intended to be used by
         classes that have :class:`.Variables` as an attribute, not by the
         the user.
@@ -100,6 +116,19 @@ cdef class cyVariables:
     cpdef object _extend(self, object iterable, bint permissive=False):
         """Add new variables.
 
+        Args:
+            iterable (iterable[hashable], optional):
+                An iterable of hashable objects.
+
+            permissive (bool, optional, default=False):
+                If `False`, appending a variable that already exists will raise
+                a `ValueError`. If `True`, appending a variable that already
+                exists will not change the container.
+
+        Raises:
+            ValueError: If a variable is present and `permissive` is
+            False.
+
         This method is semi-public. it is intended to be used by
         classes that have :class:`.Variables` as an attribute, not by the
         the user.
@@ -127,6 +156,12 @@ cdef class cyVariables:
     def _relabel(self, mapping):
         """Relabel the variables in-place.
 
+        Args:
+            mapping (dict):
+                Mapping from current variable labels to new, as a dict. If
+                an incomplete mapping is specified, unmapped variables keep
+                their current labels.
+
         This method is semi-public. it is intended to be used by
         classes that have :class:`.Variables` as an attribute, not by the
         the user.
@@ -146,6 +181,9 @@ cdef class cyVariables:
 
     def _relabel_as_integers(self):
         """Relabel the variables as integers in-place.
+
+        Returns:
+            dict: The mapping that would restore the original labels.
 
         This method is semi-public. it is intended to be used by
         classes that have :class:`.Variables` as an attribute, not by the
