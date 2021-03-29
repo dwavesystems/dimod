@@ -18,7 +18,7 @@ A class and utilities for encoding variable objects.
 The :class:`Variables` class is intended to be used as an attribute of other
 classes, such as :class:`.DiscreteQuadraticModel` and :class:`.SampleSet`.
 
-The goals of the class are:
+The requirements for the class are:
     *   Have a minimal memory footprint when the variables are labeled `[0, n)`
     *   Behave like a list for iteration and getting items
     *   Behave like a set for determining if it contains an item

@@ -69,6 +69,9 @@ cdef class cyVariables:
         Args:
             v (hashable, optional):
                 Add a new variable. If `None`, a new label will be generated.
+                The generated label will be the index of the new variable if
+                that index is available, otherwise it will be the lowest
+                available non-negative integer.
 
             permissive (bool, optional, default=False):
                 If `False`, appending a variable that already exists will raise
@@ -110,7 +113,7 @@ cdef class cyVariables:
         return v
 
     cpdef bint _is_range(self):
-        """Return whether the Variables are current labelled [0, n)."""
+        """Return whether the variables are currently labelled [0, n)."""
         return not PyDict_Size(self._label_to_index)
 
     cpdef object _extend(self, object iterable, bint permissive=False):
@@ -183,7 +186,19 @@ cdef class cyVariables:
         """Relabel the variables as integers in-place.
 
         Returns:
-            dict: The mapping that would restore the original labels.
+            dict: A mapping that will restore the original labels.
+
+        Examples:
+
+            >>> variables = dimod.variables.Variables(['a', 'b', 'c', 'd'])
+            >>> print(variables)
+            Variables(['a', 'b', 'c', 'd'])
+            >>> mapping = variables._relabel_as_integers()
+            >>> print(variables)
+            Variables([0, 1, 2, 3])
+            >>> variables._relabel(mapping)  # restore the original labels
+            >>> print(variables)
+            Variables(['a', 'b', 'c', 'd'])
 
         This method is semi-public. it is intended to be used by
         classes that have :class:`.Variables` as an attribute, not by the
@@ -207,7 +222,7 @@ cdef class cyVariables:
                 or PyDict_Contains(self._label_to_index, v))
 
     cpdef Py_ssize_t count(self, object v) except -1:
-        """Return the number of times `v` appears in Variables.
+        """Return the number of times `v` appears in the variables.
 
         Because the variables are always unique, this will always return 1 or 0.
         """
