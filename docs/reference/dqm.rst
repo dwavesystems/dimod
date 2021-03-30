@@ -21,6 +21,7 @@ Attributes
    :toctree: generated/
 
    ~DiscreteQuadraticModel.adj
+   ~DiscreteQuadraticModel.variables
 
 Methods
 -------

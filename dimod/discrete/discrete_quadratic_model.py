@@ -195,6 +195,9 @@ class DiscreteQuadraticModel:
         self.variables = Variables()
         self._cydqm = cyDiscreteQuadraticModel()
 
+    variables = None  # overwritten by __init__, here for the docstring
+    """:class:`~.variables.Variables` of variable labels."""
+
     @property
     def adj(self):
         """dict[hashable, set]: The adjacency structure of the variables."""

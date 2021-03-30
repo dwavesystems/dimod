@@ -121,7 +121,8 @@ extensions = [Extension("dimod.roof_duality._fix_variables",
               Extension("dimod.bqm.common",
                         ['dimod/bqm/common'+ext]),
               Extension("dimod.discrete.cydiscrete_quadratic_model",
-                        ["dimod/discrete/cydiscrete_quadratic_model"+ext])
+                        ["dimod/discrete/cydiscrete_quadratic_model"+ext]),
+              Extension("dimod.cyvariables", ["dimod/cyvariables"+ext]),
               ]
 
 

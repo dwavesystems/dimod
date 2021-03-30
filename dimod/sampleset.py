@@ -876,10 +876,9 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @property
     def variables(self):
-        """:class:`.VariableIndexView` of variable labels.
+        """:class:`~.variables.Variables` of variable labels.
 
         Corresponds to columns of the sample field of :attr:`.SampleSet.record`.
-
         """
         self.resolve()
         return self._variables

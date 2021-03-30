@@ -25,6 +25,15 @@ from parameterized import parameterized_class
 from dimod.variables import Variables
 
 
+class TestAppend(unittest.TestCase):
+    def test_conflict(self):
+        variables = Variables()
+        variables._append(1)
+        variables._append()  # should take the label 0
+        variables._append()
+
+        self.assertEqual(variables, [1, 0, 2])
+
 class TestDuplicates(unittest.TestCase):
     def test_duplicates(self):
         # should have no duplicates
@@ -63,6 +72,16 @@ class TestIndex(unittest.TestCase):
         self.assertEqual(variables.index(0, permissive=True), 0)
         self.assertEqual(variables.index('a', permissive=True), 1)
 
+
+class TestPop(unittest.TestCase):
+    def test_empty(self):
+        with self.assertRaises(IndexError):
+            Variables()._pop()
+
+    def test_simple(self):
+        variables = Variables('abc')
+        self.assertEqual(variables._pop(), 'c')
+        self.assertEqual(variables, 'ab')
 
 class TestPrint(unittest.TestCase):
     def test_pprint(self):
@@ -114,6 +133,9 @@ class TestRelabel(unittest.TestCase):
     [dict(name='list', iterable=list(range(5))),
      dict(name='string', iterable='abcde'),
      dict(name='range', iterable=range(5)),
+     dict(name='range_reversed', iterable=range(4, -1, -1)),
+     dict(name='range_start', iterable=range(2, 7)),
+     dict(name='range_step', iterable=range(0, 10, 2)),
      dict(name='mixed', iterable=[0, ('b',), 2.1, 'c', frozenset('d')]),
      dict(name='floats', iterable=[0., 1., 2., 3., 4.]),
      ],
