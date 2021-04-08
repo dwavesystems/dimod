@@ -319,7 +319,8 @@ jobs:
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            python setup.py build_ext --inplace --include-dirs boost\lib\native\include\
+            $env:CL+=' -Iboost\lib\native\include\'
+            python setup.py build_ext --inplace
 
       - run:
           name: run unittests

@@ -15,28 +15,12 @@
 import os
 
 from setuptools import setup
+
+import numpy
+
+from Cython.Build import cythonize
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as _build_ext
-
-
-# if the numpy ranges change here, don't forget to update the circle-ci job
-install_requires = ['numpy>=1.17.3,<2.0.0']
-
-setup_requires = ['numpy>=1.17.3,<2.0.0']
-
-extras_require = {'all': ['networkx>=2.0,<3.0',
-                          'pandas>=0.22.0,<0.23.0',
-                          'pymongo>=3.7.0,<3.8.0'],
-                  }
-
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    USE_CYTHON = False
-else:
-    USE_CYTHON = True
-
-ext = '.pyx' if USE_CYTHON else '.cpp'
 
 extra_compile_args = {
     'msvc': ['/EHsc'],
@@ -50,17 +34,6 @@ extra_link_args = {
 
 
 class build_ext(_build_ext):
-    def run(self):
-        # add numpy headers
-        import numpy
-        self.include_dirs.append(numpy.get_include())
-
-        # add dimod headers
-        include = os.path.join(os.path.dirname(__file__), 'dimod', 'include')
-        self.include_dirs.append(include)
-
-        super().run()
-
     def build_extensions(self):
         compiler = self.compiler.compiler_type
 
@@ -74,38 +47,30 @@ class build_ext(_build_ext):
 
         super().build_extensions()
 
-    def initialize_options(self):
-        super().initialize_options()
-        self.build_tests = None
-
-
-extensions = [Extension("dimod.roof_duality._fix_variables",
-                        ['dimod/roof_duality/_fix_variables'+ext,
-                         'dimod/roof_duality/src/fix_variables.cpp'],
-                        include_dirs=['dimod/roof_duality/src/']),
-              Extension("dimod.bqm.adjvectorbqm",
-                        ['dimod/bqm/adjvectorbqm'+ext]),
-              Extension("dimod.bqm.utils",
-                        ['dimod/bqm/utils'+ext]),
-              Extension("dimod.bqm.common",
-                        ['dimod/bqm/common'+ext]),
-              Extension("dimod.discrete.cydiscrete_quadratic_model",
-                        ["dimod/discrete/cydiscrete_quadratic_model"+ext]),
-              Extension("dimod.cyvariables", ["dimod/cyvariables"+ext]),
-              ]
-
-
-if USE_CYTHON:
-    from Cython.Build import cythonize
-    extensions = cythonize(extensions,
-                           # annotate=True,
-                           )
 
 setup(
     name='dimod',
-    install_requires=install_requires,
-    extras_require=extras_require,
-    setup_requires=setup_requires,
     cmdclass=dict(build_ext=build_ext),
-    ext_modules=extensions,
+    ext_modules=cythonize(
+        ['dimod/bqm/adjvectorbqm.pyx',
+         'dimod/bqm/utils.pyx',
+         'dimod/bqm/common.pyx',
+         'dimod/discrete/cydiscrete_quadratic_model.pyx',
+         'dimod/cyvariables.pyx',
+         # roofduality needs to be treated differently until deprecation
+         Extension("dimod.roof_duality._fix_variables",
+                   ['dimod/roof_duality/_fix_variables.pyx',
+                    'dimod/roof_duality/src/fix_variables.cpp'],
+                   include_dirs=['dimod/roof_duality/src/']),
+         ],
+        annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
+        nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),
+        ),
+    include_dirs=[
+        numpy.get_include(),
+        'dimod/include/',
+        ],
+    install_requires=[
+        'numpy>=1.17.3,<2.0.0',  # keep synced with circle-ci, pyproject.toml
+        ],
 )
