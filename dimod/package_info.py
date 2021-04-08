@@ -11,10 +11,12 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
 
-__version__ = '0.10.0.dev3'
+# This file is kept for backwards compatibility
+
+from dimod import __version__
+
+# keep description, author and author email up to date with setup.cfg
 __author__ = 'D-Wave Systems Inc.'
 __authoremail__ = 'acondello@dwavesys.com'
 __description__ = 'A shared API for binary quadratic model samplers.'
