@@ -101,7 +101,7 @@ cdef class cyAdjVectorBQM:
         >>> bqm
         AdjVectorBQM({a: 0.0, 1: 0.0}, {('a', 1): 3.0}, 0.0, 'SPIN')
 
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
     """
     cdef cppAdjVectorBQM[VarIndex, Bias] bqm_

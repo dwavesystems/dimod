@@ -77,7 +77,7 @@ def nonblocking_sample_method(f):
 
     """
     from dimod.sampleset import SampleSet  # avoid circular import
-    
+
     @wraps(f)
     def _sample(*args, **kwargs):
         iterator = f(*args, **kwargs)
@@ -140,7 +140,7 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
     Returns:
         Function decorator.
 
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
     """
 
     def index_label_decorator(f):

@@ -169,7 +169,7 @@ jobs:
     steps:
       - checkout
 
-      - run: 
+      - run:
           name: install pyenv
           command: |
             brew install pyenv
@@ -242,7 +242,7 @@ jobs:
     steps:
       - checkout
 
-      - run: 
+      - run:
           name: install pyenv
           command: |
             brew install pyenv
@@ -264,7 +264,7 @@ jobs:
           key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
 
       - run: *osx-install-template
-      
+
       - run:
           name: create bdist_wheel
           command: |
@@ -414,11 +414,17 @@ jobs:
             . env/bin/activate
             make -C docs/ doctest
 
+      - run:
+          name: linkcheck
+          command: |
+            . env/bin/activate
+            make -C docs/ linkcheck
+
   test-linux-cpp11:
     docker:
       # just use a python image, all we really want is debian
       - image: circleci/python:3.6-jessie
-    
+
     working_directory: ~/repo
 
     steps:
@@ -450,7 +456,7 @@ workflows:
           matrix:
             parameters:
               # We could make the second numpy version unbounded, but for now
-              # let's pin it for reproducability 
+              # let's pin it for reproducability
               numpy-version: ['1.17.3', '1.18.5', '1.19.5', '1.20.2']
               image:
                 - 3.9-buster

@@ -123,7 +123,7 @@ class AdjDictBQM(ShapeableBQM):
         >>> dimod.AdjDictBQM({('a', 'b'): Fraction(1, 3)}, 'BINARY')
         AdjDictBQM({a: 0.0, b: 0.0}, {('a', 'b'): 1/3}, 0.0, 'BINARY')
 
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
     """
     # developer note: we should add a FAQ for why spin-valued diagonal biases

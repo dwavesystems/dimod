@@ -83,6 +83,12 @@ add_module_names = False
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'sdk_index.rst']
 
+linkcheck_retries = 2
+linkcheck_anchors = False
+linkcheck_ignore = [r'https://cloud.dwavesys.com/leap',  # redirects, many checks
+                    r'https://docs.ocean.dwavesys.com/projects/dimod'
+                    ]  # dimod RTD currently not building on boost
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
@@ -214,7 +220,7 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                       'numpy': ('https://numpy.org/doc/stable/', None),
                        'bson': ('https://api.mongodb.com/python/current/', None),
                        'networkx': ('https://networkx.github.io/documentation/stable/', None),
                        'oceandocs': ('https://docs.ocean.dwavesys.com/en/stable/', None),

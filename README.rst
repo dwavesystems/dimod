@@ -1,5 +1,5 @@
 .. image:: https://img.shields.io/pypi/v/dimod.svg
-    :target: https://pypi.python.org/pypi/dimod
+    :target: https://pypi.org/project/dimod
 
 .. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/dwavesystems/dimod
