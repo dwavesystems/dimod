@@ -714,7 +714,7 @@ class DiscreteQuadraticModel:
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
             constructed by `json.dumps(list(bqm.variables)).
 
-        .. _NPY format: https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+        .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
         See Also:
             :meth:`DiscreteQuadraticModel.from_file`

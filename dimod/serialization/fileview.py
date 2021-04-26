@@ -17,7 +17,7 @@ A format for saving large binary quadratic models.
 
 This format is inspired by the `NPY format`_
 
-.. _NPY format: https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.format.html
+.. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
 Extension Convention
 --------------------

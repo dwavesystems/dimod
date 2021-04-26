@@ -78,7 +78,7 @@ def append_data_vectors(sampleset, **vectors):
 
         >>> print(sampleset.record.dtype)
         (numpy.record, [('sample', 'i1', (2,)), ('energy', '<f8'), ('num_occurrences', '<i8'), ('new', '<i8', (2,))])
-    
+
     """
     record = sampleset.record
 
@@ -95,10 +95,10 @@ def append_data_vectors(sampleset, **vectors):
                 # np's append_fields cannot append a vector with a shape that
                 # doesn't match the base array's, so appending non-scalar data
                 # requires a workaround
-                dtype = np.dtype([(name, vector[0].dtype, vector[0].shape)]) 
+                dtype = np.dtype([(name, vector[0].dtype, vector[0].shape)])
                 new_arr = recfunctions.unstructured_to_structured(vector, dtype=dtype)
-                record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)              
-        
+                record = recfunctions.merge_arrays((record, new_arr), flatten=True, asrecarray=True)
+
         except (TypeError, AttributeError):
             raise ValueError("Field value type not supported.")
 
@@ -154,7 +154,7 @@ def append_variables(sampleset, samples_like, sort_labels=True):
         1 +1 +1 +1 +1    1.0       1
         ['SPIN', 2 rows, 2 samples, 4 variables]
 
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
     """
     samples, labels = as_samples(samples_like)
@@ -259,7 +259,7 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
                [0, 0],
                [0, 0]], dtype=int8), ['in', 'out'])
 
-    .. _array_like: https://docs.scipy.org/doc/numpy/user/basics.creation.html
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
     """
     if isinstance(samples_like, SampleSet):
@@ -570,7 +570,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset.variables
             Variables(['a', 'b', 'c'])
 
-        .. _array_like:  https://docs.scipy.org/doc/numpy/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
+        .. _array_like:  https://numpy.org/doc/stable/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
         """
         if aggregate_samples:
             return cls.from_samples(samples_like, vartype, energy,
@@ -1267,7 +1267,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     def append_variables(self, samples_like, sort_labels=True):
         """Deprecated in favor of `dimod.append_variables`."""
-        
+
         warn("SampleSet.append_variables is deprecated; please use "
              "`dimod.append_variables` instead.", DeprecationWarning)
 
