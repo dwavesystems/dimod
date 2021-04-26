@@ -86,7 +86,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'sdk_index.rst']
 linkcheck_retries = 2
 linkcheck_anchors = False
 linkcheck_ignore = [r'https://cloud.dwavesys.com/leap',  # redirects, many checks
-                    ]
+                    r'https://docs.ocean.dwavesys.com/projects/dimod'
+                    ]  # dimod RTD currently not building on boost
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
