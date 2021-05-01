@@ -39,29 +39,10 @@ cdef class cyVariables:
 
     # todo: support slices
     def __getitem__(self, Py_ssize_t idx):
-        if idx < 0:
-            idx = self._stop + idx
-
-        if idx >= self._stop:
-            raise IndexError('index out of range')
-
-        cdef object v
-        cdef object pyidx = idx
-        cdef PyObject* obj
-        if self._is_range():
-            v = pyidx
-        else:
-            # faster than self._index_to_label.get
-            obj = PyDict_GetItemWithError(self._index_to_label, pyidx)
-            if obj == NULL:
-                v = pyidx
-            else:
-                v = <object>obj  # correctly handles the ref count
-
-        return v
+        return self.at(idx)
 
     def __len__(self):
-        return self._stop
+        return self.size()
 
     cpdef object _append(self, object v=None, bint permissive=False):
         """Append a new variable.
@@ -140,7 +121,7 @@ cdef class cyVariables:
         for v in iterable:
             self._append(v, permissive=permissive)
 
-    def _pop(self):
+    cpdef object _pop(self):
         """Remove the last variable.
 
         This method is semi-public. it is intended to be used by
@@ -209,6 +190,33 @@ cdef class cyVariables:
         self._label_to_index.clear()
         return mapping
 
+    cdef object at(self, Py_ssize_t idx):
+        """Get variable `idx`.
+
+        This method is useful for accessing from cython since __getitem__ goes
+        through python.
+        """
+        if idx < 0:
+            idx = self._stop + idx
+
+        if idx >= self._stop:
+            raise IndexError('index out of range')
+
+        cdef object v
+        cdef object pyidx = idx
+        cdef PyObject* obj
+        if self._is_range():
+            v = pyidx
+        else:
+            # faster than self._index_to_label.get
+            obj = PyDict_GetItemWithError(self._index_to_label, pyidx)
+            if obj == NULL:
+                v = pyidx
+            else:
+                v = <object>obj  # correctly handles the ref count
+
+        return v
+
     cdef Py_ssize_t _count_int(self, object v) except -1:
         # only works when v is an int
         cdef Py_ssize_t vi = v
@@ -276,3 +284,11 @@ cdef class cyVariables:
             pyobj = <object>obj  # correctly updates ref count
 
         return pyobj if PyLong_Check(pyobj) else int(pyobj)
+
+    cdef Py_ssize_t size(self):
+        """The number of variables.
+
+        This method is useful for accessing from cython since __len__ goes
+        through python.
+        """
+        return self._stop
