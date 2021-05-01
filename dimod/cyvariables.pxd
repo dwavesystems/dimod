@@ -22,9 +22,13 @@ cdef class cyVariables:
     cdef object _label_to_index
     cdef Py_ssize_t _stop
 
+    cdef object at(self, Py_ssize_t)
+    cdef Py_ssize_t size(self)
+
     cpdef object _append(self, object v=*, bint permissive=*)
     cpdef object _extend(self, object iterable, bint permissive=*)
     cpdef bint _is_range(self)
+    cpdef object _pop(self)
     cdef Py_ssize_t _count_int(self, object) except -1
     cpdef Py_ssize_t count(self, object) except -1
     cpdef Py_ssize_t index(self, object, bint permissive=*) except -1
