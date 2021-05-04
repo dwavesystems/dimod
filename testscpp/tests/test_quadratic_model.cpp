@@ -106,7 +106,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
             // there are smarter ways to do this but it's simple
             std::vector<std::vector<int>> spn_samples;
             std::vector<std::vector<int>> bin_samples;
-            for (size_t i = 0; i < 1 << bqm.num_variables(); ++i) {
+            for (auto i = 0; i < 1 << bqm.num_variables(); ++i) {
                 std::vector<int> bin_sample;
                 std::vector<int> spn_sample;
                 for (size_t v = 0; v < bqm.num_variables(); ++v) {

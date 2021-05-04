@@ -159,7 +159,7 @@ class Neighborhood {
      */
     bias_type at(index_type v) const {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        size_type idx = std::distance(neighbors.begin(), it);
+        auto idx = std::distance(neighbors.begin(), it);
         if (it != neighbors.end() && (*it) == v) {
             // it exists
             return quadratic_biases[idx];
@@ -210,7 +210,7 @@ class Neighborhood {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         if (it != neighbors.end() && (*it) == v) {
             // is there to erase
-            size_type idx = std::distance(neighbors.begin(), it);
+            auto idx = std::distance(neighbors.begin(), it);
 
             neighbors.erase(it);
             quadratic_biases.erase(quadratic_biases.begin() + idx);
@@ -242,7 +242,7 @@ class Neighborhood {
      */
     bias_type get(index_type v, bias_type value = 0) const {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        size_type idx = std::distance(neighbors.begin(), it);
+        auto idx = std::distance(neighbors.begin(), it);
         if (it != neighbors.end() && (*it) == v) {
             // it exists
             return quadratic_biases[idx];
@@ -264,7 +264,7 @@ class Neighborhood {
      */
     bias_type& operator[](index_type v) {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        size_type idx = std::distance(neighbors.begin(), it);
+        auto idx = std::distance(neighbors.begin(), it);
         if (it == neighbors.end() || (*it) != v) {
             // it doesn't exist so insert
             neighbors.insert(it, v);
@@ -320,7 +320,7 @@ class QuadraticModelBase {
     bias_type energy(Iter sample_start) {
         bias_type en = offset();
 
-        for (index_type u = 0; u < num_variables(); ++u) {
+        for (size_type u = 0; u < num_variables(); ++u) {
             auto u_val = *(sample_start + u);
 
             en += u_val * linear(u);
@@ -457,7 +457,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             : base_type(), vartype_(vartype) {}
 
     /// Create a BQM with `n` variables of the given `vartype`.
-    BinaryQuadraticModel(size_type n, Vartype vartype)
+    BinaryQuadraticModel(index_type n, Vartype vartype)
             : BinaryQuadraticModel(vartype) {
         resize(n);
     }
@@ -476,7 +476,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      *
      */
     template <class T>
-    BinaryQuadraticModel(const T dense[], size_type num_variables,
+    BinaryQuadraticModel(const T dense[], index_type num_variables,
                          Vartype vartype)
             : BinaryQuadraticModel(num_variables, vartype) {
         add_quadratic(dense, num_variables);
@@ -514,17 +514,17 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      * as linear biases.
      */
     template <class T>
-    void add_quadratic(const T dense[], size_type num_variables) {
+    void add_quadratic(const T dense[], index_type num_variables) {
         // todo: let users add quadratic off the diagonal with row_offset,
         // col_offset
 
-        assert(num_variables <= base_type::num_variables());
+        assert((size_t)num_variables <= base_type::num_variables());
 
         bool sort_needed = !base_type::is_linear();  // do we need to sort after
 
         bias_type qbias;
-        for (size_type u = 0; u < num_variables; ++u) {
-            for (size_type v = u + 1; v < num_variables; ++v) {
+        for (index_type u = 0; u < num_variables; ++u) {
+            for (index_type v = u + 1; v < num_variables; ++v) {
                 qbias = dense[u * num_variables + v] +
                         dense[v * num_variables + u];
 
@@ -542,12 +542,12 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         // handle the diagonal according to vartype
         if (vartype_ == Vartype::SPIN) {
             // diagonal is added to the offset since -1*-1 == 1*1 == 1
-            for (size_type v = 0; v < num_variables; ++v) {
+            for (index_type v = 0; v < num_variables; ++v) {
                 base_type::offset_ += dense[v * (num_variables + 1)];
             }
         } else if (vartype_ == Vartype::BINARY) {
             // diagonal is added as linear biases since 1*1 == 1, 0*0 == 0
-            for (size_type v = 0; v < num_variables; ++v) {
+            for (index_type v = 0; v < num_variables; ++v) {
                 base_type::linear_biases_[v] += dense[v * (num_variables + 1)];
             }
         } else {
@@ -632,7 +632,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     const Vartype& vartype() const { return vartype_; }
 
     /// Return the vartype of `v`.
-    const Vartype& vartype(size_type v) const { return vartype_; }
+    const Vartype& vartype(index_type v) const { return vartype_; }
 
  private:
     Vartype vartype_;
