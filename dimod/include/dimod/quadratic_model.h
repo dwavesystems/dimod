@@ -43,6 +43,9 @@ class Neighborhood {
     /// The first template parameter (Bias).
     using bias_type = Bias;
 
+    /// The type for variable indices
+    using index_type = std::ptrdiff_t;
+
     /// The second template parameter (Neighbor).
     using neighbor_type = Neighbor;
 
@@ -157,7 +160,7 @@ class Neighborhood {
      * This function automatically checks whether `v` is a variable in the
      * neighborhood and throws a `std::out_of_range` exception if it is not.
      */
-    bias_type at(neighbor_type v) const {
+    bias_type at(index_type v) const {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         size_type idx = std::distance(neighbors.begin(), it);
         if (it != neighbors.end() && (*it) == v) {
@@ -196,7 +199,7 @@ class Neighborhood {
      * only be used when you know that the neighbor is greater than the current
      * last element.
      */
-    void emplace_back(neighbor_type v, bias_type bias) {
+    void emplace_back(index_type v, bias_type bias) {
         neighbors.push_back(v);
         quadratic_biases.push_back(bias);
     }
@@ -206,7 +209,7 @@ class Neighborhood {
      *
      * Returns the number of element removed, either 0 or 1.
      */
-    size_type erase(neighbor_type v) {
+    size_type erase(index_type v) {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         if (it != neighbors.end() && (*it) == v) {
             // is there to erase
@@ -228,7 +231,7 @@ class Neighborhood {
     }
 
     /// Return an iterator to the first element that does not come before `v`.
-    iterator lower_bound(neighbor_type v) {
+    iterator lower_bound(index_type v) {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         return iterator{it, quadratic_biases.begin() +
                                     std::distance(neighbors.begin(), it)};
@@ -240,7 +243,7 @@ class Neighborhood {
      * Return the bias of `v` if `v` is in the neighborhood, otherwise return
      * the `value` provided without inserting `v`.
      */
-    bias_type get(neighbor_type v, bias_type value = 0) const {
+    bias_type get(index_type v, bias_type value = 0) const {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         size_type idx = std::distance(neighbors.begin(), it);
         if (it != neighbors.end() && (*it) == v) {
@@ -262,7 +265,7 @@ class Neighborhood {
      * bias. If `v` is not in the neighborhood, it is inserted and a reference
      * is returned to its bias.
      */
-    bias_type& operator[](neighbor_type v) {
+    bias_type& operator[](index_type v) {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
         size_type idx = std::distance(neighbors.begin(), it);
         if (it == neighbors.end() || (*it) != v) {
@@ -279,11 +282,14 @@ class Neighborhood {
     std::vector<bias_type> quadratic_biases;
 };
 
-template <class Bias, class Neighbor = std::size_t>
+template <class Bias, class Neighbor = std::int64_t>
 class QuadraticModelBase {
  public:
     /// The first template parameter (Bias)
     using bias_type = Bias;
+
+    /// The type for variable indices
+    using index_type = std::ptrdiff_t;
 
     /// The second template parameter (Neighbor)
     using neighbor_type = Neighbor;
@@ -320,7 +326,7 @@ class QuadraticModelBase {
     bias_type energy(Iter sample_start) {
         bias_type en = offset();
 
-        for (size_type u = 0; u < num_variables(); ++u) {
+        for (index_type u = 0; u < num_variables(); ++u) {
             auto u_val = *(sample_start + u);
 
             en += u_val * linear(u);
@@ -352,14 +358,14 @@ class QuadraticModelBase {
     }
 
     /// Return a reference to the linear bias associated with `v`.
-    bias_type& linear(size_type v) { return linear_biases_[v]; }
+    bias_type& linear(index_type v) { return linear_biases_[v]; }
 
     /// Return a reference to the linear bias associated with `v`.
-    const bias_type& linear(size_type v) const { return linear_biases_[v]; }
+    const bias_type& linear(index_type v) const { return linear_biases_[v]; }
 
     /// Return a pair of iterators - the start and end of the neighborhood
     std::pair<const_neighborhood_iterator, const_neighborhood_iterator>
-    neighborhood(size_type u) const {
+    neighborhood(index_type u) const {
         return std::make_pair(adj_[u].cbegin(), adj_[u].cend());
     }
 
@@ -372,7 +378,7 @@ class QuadraticModelBase {
      * each quadratic bias is stored twice.
      *
      */
-    bias_type quadratic(size_type u, neighbor_type v) const {
+    bias_type quadratic(index_type u, neighbor_type v) const {
         return adj_[u].get(v);
     }
 
@@ -385,7 +391,7 @@ class QuadraticModelBase {
      * Raises an `out_of_range` error if either `u` or `v` are not variables or
      * if they do not have an interaction then the function throws an exception.
      */
-    bias_type quadratic_at(size_type u, size_type v) const {
+    bias_type quadratic_at(index_type u, index_type v) const {
         return adj_[u].at(v);
     }
 
@@ -404,7 +410,7 @@ class QuadraticModelBase {
     }
 
     /// The number of other variables `v` interacts with.
-    size_type num_interactions(size_type v) const { return adj_[v].size(); }
+    size_type num_interactions(index_type v) const { return adj_[v].size(); }
 
     /// Return a reference to the offset
     bias_type& offset() { return offset_; }
@@ -413,7 +419,7 @@ class QuadraticModelBase {
     const bias_type& offset() const { return offset_; }
 
     /// Remove the interaction if it exists
-    bool remove_interaction(size_type u, size_type v) {
+    bool remove_interaction(index_type u, index_type v) {
         if (adj_[u].erase(v)) {
             return adj_[v].erase(u);  // should always be true
         } else {
@@ -434,7 +440,7 @@ class QuadraticModelBase {
  * Internally, BQMs are stored in a vector-of-vectors adjacency format.
  *
  */
-template <class Bias, class Neighbor = std::size_t>
+template <class Bias, class Neighbor = std::int64_t>
 class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
  public:
     /// The type of the base class.
@@ -443,8 +449,13 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
     /// The first template parameter (Bias).
     using bias_type = typename base_type::bias_type;
 
+    /// The type for variable indices
+    using index_type = std::ptrdiff_t;
+
     /// Unsigned integral that can represent non-negative values.
     using size_type = typename base_type::size_type;
+
+    /// The second template parameter (Neighbor)
     using neighbor_type = typename base_type::neighbor_type;
 
     /// Empty constructor. The vartype defaults to `Vartype::BINARY`.
@@ -481,7 +492,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
     }
 
     /// Add quadratic bias for the given variables.
-    void add_quadratic(size_type u, size_type v, bias_type bias) {
+    void add_quadratic(index_type u, index_type v, bias_type bias) {
         if (u == v) {
             if (vartype_ == Vartype::BINARY) {
                 base_type::linear(u) += bias;
@@ -595,14 +606,14 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
     }
 
     /// Resize the binary quadratic model to contain n variables.
-    void resize(size_type n) {
-        if (n < base_type::num_variables()) {
+    void resize(index_type n) {
+        if (n < (index_type)base_type::num_variables()) {
             // Clean out any of the to-be-deleted variables from the
             // neighborhoods.
             // This approach is better in the dense case. In the sparse case
             // we could determine which neighborhoods need to be trimmed rather
             // than just doing them all.
-            for (size_type v = 0; v < n; ++v) {
+            for (index_type v = 0; v < n; ++v) {
                 base_type::adj_[v].erase(base_type::adj_[v].lower_bound(n),
                                          base_type::adj_[v].end());
             }
@@ -613,7 +624,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
     }
 
     /// Set the quadratic bias for the given variables.
-    void set_quadratic(size_type u, size_type v, bias_type bias) {
+    void set_quadratic(index_type u, index_type v, bias_type bias) {
         if (u == v) {
             // unlike add_quadratic, this is not really well defined for
             // binary quadratic models. I.e. if there is a linear bias, do we
