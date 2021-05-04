@@ -12,10 +12,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef DIMOD_UTILS_H_
-#define DIMOD_UTILS_H_
+#pragma once
 
+#include <algorithm>
 #include <utility>
+#include <vector>
 
 #define BLOCK_SIZE 64  // Block size for cache blocking.
 
@@ -27,7 +28,24 @@ namespace utils {
         return ub.first < v;
     }
 
+    template <class T1, class T2>
+    void zip_sort(std::vector<T1> &keys, std::vector<T2> &values) {
+        std::size_t size = std::min(keys.size(), values.size());
+
+        std::vector<std::pair<T1, T2>> zipped;
+        zipped.reserve(size);
+
+        for (std::size_t i = 0; i < size; ++i) {
+            zipped.emplace_back(keys[i], values[i]);
+        }
+
+        std::sort(zipped.begin(), zipped.end());
+
+        for (std::size_t i = 0; i < size; ++i) {
+            keys[i] = zipped[i].first;
+            values[i] = zipped[i].second;
+        }
+    }
+
 }  // namespace utils
 }  // namespace dimod
-
-#endif  // DIMOD_UTILS_H_

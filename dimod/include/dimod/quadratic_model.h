@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "dimod/utils.h"
+
 namespace dimod {
 
 /// Encode the domain of a variable.
@@ -252,8 +254,37 @@ class Neighborhood {
         }
     }
 
+    /// Request that the neighborhood capacity be at least enough to contain `n`
+    /// elements.
+    void reserve(index_type n) {
+        neighbors.reserve(n);
+        quadratic_biases.reserve(n);
+    }
+
     /// Return the size of the neighborhood.
     size_type size() const { return neighbors.size(); }
+
+    // Sort the neighborhood and sum the biases of duplicate variables.
+    void sort_and_sum() {
+        if (!std::is_sorted(neighbors.begin(), neighbors.end())) {
+            utils::zip_sort(neighbors, quadratic_biases);
+        }
+
+        // now remove any duplicates, adding the biases
+        size_type i = 0;
+        while (i + 1 < size()) {
+            if (neighbors[i] == neighbors[i + 1]) {
+                // add the duplicates bias
+                quadratic_biases[i] += quadratic_biases[i + 1];
+
+                // remove the duplicate
+                neighbors.erase(neighbors.begin() + i + 1);
+                quadratic_biases.erase(quadratic_biases.begin() + i + 1);
+            } else {
+                ++i;
+            }
+        }
+    }
 
     /**
      * Access the bias of `v`.
@@ -552,6 +583,58 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             }
         } else {
             throw std::logic_error("bad vartype");
+        }
+    }
+
+    template <class ItRow, class ItCol, class ItBias>
+    void add_quadratic(ItRow row_iterator, ItCol col_iterator,
+                       ItBias bias_iterator, size_type length) {
+        // determine the number of variables so we can resize ourself if needed
+        if (length > 0) {
+            size_type max_label = std::max(
+                    *std::max_element(row_iterator, row_iterator + length),
+                    *std::max_element(col_iterator, col_iterator + length));
+
+            if (max_label >= base_type::num_variables()) {
+                resize(max_label + 1);
+            }
+        }
+
+        // count the number of elements to be inserted into each
+        std::vector<size_type> counts(base_type::num_variables());
+        ItRow rit(row_iterator);
+        ItCol cit(col_iterator);
+        for (size_type i = 0; i < length; ++i, ++rit, ++cit) {
+            if (*rit != *cit) {
+                counts[*rit] += 1;
+                counts[*cit] += 1;
+            }
+        }
+
+        // reserve the neighborhoods
+        for (size_type i = 0; i < counts.size(); ++i) {
+            base_type::adj_[i].reserve(counts[i]);
+        }
+
+        // add the values to the neighborhoods, not worrying about order
+        rit = row_iterator;
+        cit = col_iterator;
+        ItBias bit(bias_iterator);
+        for (size_type i = 0; i < length; ++i, ++rit, ++cit, ++bit) {
+            if (*rit == *cit) {
+                // let add_quadratic handle this case based on vartype
+                add_quadratic(*rit, *cit, *bit);
+            } else {
+                base_type::adj_[*rit].emplace_back(*cit, *bit);
+                base_type::adj_[*cit].emplace_back(*rit, *bit);
+            }
+        }
+
+        // finally sort and sum the neighborhoods we touched
+        for (size_type i = 0; i < counts.size(); ++i) {
+            if (counts[i] > 0) {
+                base_type::adj_[i].sort_and_sum();
+            }
         }
     }
 
