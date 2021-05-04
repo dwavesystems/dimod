@@ -264,7 +264,7 @@ class Neighborhood {
     /// Return the size of the neighborhood.
     size_type size() const { return neighbors.size(); }
 
-    // Sort the neighborhood and sum the biases of duplicate variables.
+    /// Sort the neighborhood and sum the biases of duplicate variables.
     void sort_and_sum() {
         if (!std::is_sorted(neighbors.begin(), neighbors.end())) {
             utils::zip_sort(neighbors, quadratic_biases);
@@ -586,6 +586,19 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
     }
 
+    /**
+     * Construct a BQM from COO-formated iterators.
+     *
+     * A sparse BQM encoded in [COOrdinate] format is specified by three
+     * arrays of (row, column, value).
+     *
+     * [COOrdinate]: https://w.wiki/n$L
+     *
+     * `row_iterator` must be a random access iterator  pointing to the beginning of the row data.
+     * `col_iterator` must be a random access iterator pointing to the beginning of the column data.
+     * `bias_iterator` must be a random access iterator pointing to the beginning of the bias data.     
+     * `length` must be the number of (row, column, bias) entries.
+     */
     template <class ItRow, class ItCol, class ItBias>
     void add_quadratic(ItRow row_iterator, ItCol col_iterator,
                        ItBias bias_iterator, size_type length) {
