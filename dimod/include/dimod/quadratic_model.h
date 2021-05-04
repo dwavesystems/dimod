@@ -601,16 +601,18 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      */
     template <class ItRow, class ItCol, class ItBias>
     void add_quadratic(ItRow row_iterator, ItCol col_iterator,
-                       ItBias bias_iterator, size_type length) {
+                       ItBias bias_iterator, index_type length) {
         // determine the number of variables so we can resize ourself if needed
         if (length > 0) {
-            size_type max_label = std::max(
+            index_type max_label = std::max(
                     *std::max_element(row_iterator, row_iterator + length),
                     *std::max_element(col_iterator, col_iterator + length));
 
-            if (max_label >= base_type::num_variables()) {
+            if ((size_t)max_label >= base_type::num_variables()) {
                 resize(max_label + 1);
             }
+        } else if (length < 0) {
+            throw std::out_of_range("length must be positive");
         }
 
         // count the number of elements to be inserted into each
