@@ -37,17 +37,14 @@ enum Vartype {
  * of biases. Neighborhoods are designed to make access more like a standard
  * library map.
  */
-template <class Bias, class Neighbor>
+template <class Bias, class Index>
 class Neighborhood {
  public:
     /// The first template parameter (Bias).
     using bias_type = Bias;
 
-    /// The type for variable indices
-    using index_type = std::ptrdiff_t;
-
-    /// The second template parameter (Neighbor).
-    using neighbor_type = Neighbor;
+    /// The second template parameter (Index).
+    using index_type = Index;
 
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
@@ -57,13 +54,13 @@ class Neighborhood {
         using iterator_category = std::forward_iterator_tag;
 
         using difference_type = std::ptrdiff_t;
-        using value_type = std::pair<const neighbor_type&, bias_type&>;
+        using value_type = std::pair<const index_type&, bias_type&>;
         using pointer = value_type*;
         using reference = value_type;
 
         using bias_iterator = typename std::vector<bias_type>::iterator;
         using neighbor_iterator =
-                typename std::vector<neighbor_type>::const_iterator;
+                typename std::vector<index_type>::const_iterator;
 
         Iterator(neighbor_iterator nit, bias_iterator bit)
                 : neighbor_it_(nit), bias_it_(bit) {}
@@ -100,13 +97,13 @@ class Neighborhood {
     struct ConstIterator {
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = std::pair<const neighbor_type&, const bias_type&>;
+        using value_type = std::pair<const index_type&, const bias_type&>;
         using pointer = value_type*;
         using reference = value_type;
 
         using bias_iterator = typename std::vector<bias_type>::const_iterator;
         using neighbor_iterator =
-                typename std::vector<neighbor_type>::const_iterator;
+                typename std::vector<index_type>::const_iterator;
 
         ConstIterator() {}
 
@@ -147,10 +144,10 @@ class Neighborhood {
     };
 
  public:
-    /// A forward iterator to `pair<const neighbor_type&, bias_type&>`.
+    /// A forward iterator to `pair<const index_type&, bias_type&>`.
     using iterator = Iterator;
 
-    /// A forward iterator to `const pair<const neighbor_type&, const
+    /// A forward iterator to `const pair<const index_type&, const
     /// bias_type&>.`
     using const_iterator = ConstIterator;
 
@@ -278,28 +275,25 @@ class Neighborhood {
     }
 
  protected:
-    std::vector<neighbor_type> neighbors;
+    std::vector<index_type> neighbors;
     std::vector<bias_type> quadratic_biases;
 };
 
-template <class Bias, class Neighbor = std::int64_t>
+template <class Bias, class Index = int>
 class QuadraticModelBase {
  public:
     /// The first template parameter (Bias)
     using bias_type = Bias;
 
-    /// The type for variable indices
-    using index_type = std::ptrdiff_t;
-
-    /// The second template parameter (Neighbor)
-    using neighbor_type = Neighbor;
+    /// The second template parameter (Index).
+    using index_type = Index;
 
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
 
-    /// A forward iterator to `pair<const neighbor_type&, bias_type&>`
+    /// A forward iterator to `pair<const index_type&, bias_type&>`
     using const_neighborhood_iterator =
-            typename Neighborhood<bias_type, neighbor_type>::const_iterator;
+            typename Neighborhood<bias_type, index_type>::const_iterator;
 
     QuadraticModelBase() : offset_(0) {}
 
@@ -378,7 +372,7 @@ class QuadraticModelBase {
      * each quadratic bias is stored twice.
      *
      */
-    bias_type quadratic(index_type u, neighbor_type v) const {
+    bias_type quadratic(index_type u, index_type v) const {
         return adj_[u].get(v);
     }
 
@@ -429,7 +423,7 @@ class QuadraticModelBase {
 
  protected:
     std::vector<bias_type> linear_biases_;
-    std::vector<Neighborhood<bias_type, neighbor_type>> adj_;
+    std::vector<Neighborhood<bias_type, index_type>> adj_;
 
     bias_type offset_;
 };
@@ -440,23 +434,20 @@ class QuadraticModelBase {
  * Internally, BQMs are stored in a vector-of-vectors adjacency format.
  *
  */
-template <class Bias, class Neighbor = std::int64_t>
-class BinaryQuadraticModel : public QuadraticModelBase<Bias, Neighbor> {
+template <class Bias, class Index = int>
+class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
  public:
     /// The type of the base class.
-    using base_type = QuadraticModelBase<Bias, Neighbor>;
+    using base_type = QuadraticModelBase<Bias, Index>;
 
     /// The first template parameter (Bias).
     using bias_type = typename base_type::bias_type;
 
-    /// The type for variable indices
-    using index_type = std::ptrdiff_t;
+    /// The second template parameter (Index).
+    using index_type = Index;
 
     /// Unsigned integral that can represent non-negative values.
     using size_type = typename base_type::size_type;
-
-    /// The second template parameter (Neighbor)
-    using neighbor_type = typename base_type::neighbor_type;
 
     /// Empty constructor. The vartype defaults to `Vartype::BINARY`.
     BinaryQuadraticModel() : base_type(), vartype_(Vartype::BINARY) {}
