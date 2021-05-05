@@ -32,7 +32,12 @@ namespace utils {
     // zip_sort is a modification of the code found here :
     // https://www.geeksforgeeks.org/iterative-quick-sort/
 
-    /// Sort two vectors, using `control` to provide the ordering.
+    /**
+     * Sort two vectors, using `control` to provide the ordering.
+     *
+     * Note that this only sorts by the `control`, the values of `response`
+     * are ignored.
+     */
     template <class T1, class T2>
     void zip_sort(std::vector<T1>& control, std::vector<T2>& response) {
         assert(control.size() == response.size());
@@ -61,6 +66,10 @@ namespace utils {
 
             std::int64_t pivot_choice_index = (low + high + 1) / 2;
             if (pivot_choice_index != high) {
+                T1 control_temp = control[pivot_choice_index];
+                control[pivot_choice_index] = control[high];
+                control[high] = control_temp;
+
                 T2 response_temp = response[pivot_choice_index];
                 response[pivot_choice_index] = response[high];
                 response[high] = response_temp;
