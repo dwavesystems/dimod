@@ -36,6 +36,102 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                 }
             }
         }
+
+        AND_GIVEN("some COO-formatted arrays") {
+            int irow[4] = {0, 2, 0, 1};
+            int icol[4] = {0, 2, 1, 2};
+            float bias[4] = {.5, -2, 2, -3};
+            std::size_t length = 4;
+
+            WHEN("we add the biases with add_quadratic") {
+                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
+
+                THEN("it takes its values from the arrays") {
+                    REQUIRE(bqm.num_variables() == 3);
+
+                    if (bqm.vartype() == Vartype::SPIN) {
+                        REQUIRE(bqm.linear(0) == 0);
+                        REQUIRE(bqm.linear(1) == 0);
+                        REQUIRE(bqm.linear(2) == 0);
+                        REQUIRE(bqm.offset() == -1.5);
+                    } else {
+                        REQUIRE(bqm.vartype() == Vartype::BINARY);
+                        REQUIRE(bqm.linear(0) == .5);
+                        REQUIRE(bqm.linear(1) == 0);
+                        REQUIRE(bqm.linear(2) == -2);
+                        REQUIRE(bqm.offset() == 0);
+                    }
+
+                    REQUIRE(bqm.num_interactions() == 2);
+                    REQUIRE(bqm.quadratic(0, 1) == 2);
+                    REQUIRE(bqm.quadratic(2, 1) == -3);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
+                                      std::out_of_range);
+                }
+            }
+        }
+
+        AND_GIVEN("some COO-formatted arrays with duplicates") {
+            int irow[6] = {0, 2, 0, 1, 0, 0};
+            int icol[6] = {0, 2, 1, 2, 1, 0};
+            float bias[6] = {.5, -2, 2, -3, 4, 1};
+            std::size_t length = 6;
+
+            WHEN("we add the biases with add_quadratic") {
+                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
+
+                THEN("it combines duplicate values") {
+                    REQUIRE(bqm.num_variables() == 3);
+
+                    if (bqm.vartype() == Vartype::SPIN) {
+                        REQUIRE(bqm.linear(0) == 0);
+                        REQUIRE(bqm.linear(1) == 0);
+                        REQUIRE(bqm.linear(2) == 0);
+                        REQUIRE(bqm.offset() == -.5);
+                    } else {
+                        REQUIRE(bqm.vartype() == Vartype::BINARY);
+                        REQUIRE(bqm.linear(0) == 1.5);
+                        REQUIRE(bqm.linear(1) == 0.);
+                        REQUIRE(bqm.linear(2) == -2);
+                        REQUIRE(bqm.offset() == 0);
+                    }
+
+                    REQUIRE(bqm.num_interactions() == 2);
+                    REQUIRE(bqm.quadratic(0, 1) == 6);
+                    REQUIRE(bqm.quadratic(2, 1) == -3);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
+                                      std::out_of_range);
+                }
+            }
+        }
+
+        AND_GIVEN("some COO-formatted arrays with multiple duplicates") {
+            int irow[4] = {0, 1, 0, 1};
+            int icol[4] = {1, 2, 1, 0};
+            float bias[4] = {-1, 1, -2, -3};
+            std::size_t length = 4;
+
+            WHEN("we add the biases with add_quadratic") {
+                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
+
+                THEN("it combines duplicate values") {
+                    REQUIRE(bqm.num_variables() == 3);
+                    REQUIRE(bqm.linear(0) == 0);
+                    REQUIRE(bqm.linear(1) == 0);
+                    REQUIRE(bqm.linear(2) == 0);
+
+                    REQUIRE(bqm.num_interactions() == 2);
+                    REQUIRE(bqm.quadratic(0, 1) == -6);
+                    REQUIRE(bqm.quadratic(1, 0) == -6);
+                    REQUIRE(bqm.quadratic(2, 1) == 1);
+                    REQUIRE(bqm.quadratic(1, 2) == 1);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
+                                      std::out_of_range);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(2, 0),
+                                      std::out_of_range);
+                }
+            }
+        }
     }
 
     GIVEN("a BQM constructed from a dense array") {
