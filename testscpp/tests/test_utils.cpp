@@ -18,79 +18,81 @@
 #include "../Catch2/single_include/catch2/catch.hpp"
 #include "dimod/utils.h"
 
-namespace dimod::utils {
+namespace dimod {
+namespace utils {
 
-TEST_CASE("Two vectors are zip-sorted", "[utils]") {
-    std::default_random_engine generator;
-    std::uniform_int_distribution<int> int_distribution(0, 100);
-    std::uniform_real_distribution<double> signed_distribution(-100, 100);
+    TEST_CASE("Two vectors are zip-sorted", "[utils]") {
+        std::default_random_engine generator;
+        std::uniform_int_distribution<int> int_distribution(0, 100);
+        std::uniform_real_distribution<double> signed_distribution(-100, 100);
 
-    // 1000 random sortings
-    for (int i = 0; i < 1000; i++) {
-        int num_elements = int_distribution(generator);
+        // 1000 random sortings
+        for (int i = 0; i < 1000; i++) {
+            int num_elements = int_distribution(generator);
 
-        std::vector<int> control(num_elements);
-        std::vector<int> response(num_elements);
-        std::vector<std::pair<int, int>> v_pair(num_elements);
+            std::vector<int> control(num_elements);
+            std::vector<int> response(num_elements);
+            std::vector<std::pair<int, int>> v_pair(num_elements);
 
-        for (int i = 0; i < num_elements; i++) {
-            control[i] = i;
-            response[i] = signed_distribution(generator);
-        }
+            for (int i = 0; i < num_elements; i++) {
+                control[i] = i;
+                response[i] = signed_distribution(generator);
+            }
 
-        std::shuffle(control.begin(), control.end(), generator);
+            std::shuffle(control.begin(), control.end(), generator);
 
-        for (int i = 0; i < num_elements; i++) {
-            v_pair[i] = {control[i], response[i]};
-        }
+            for (int i = 0; i < num_elements; i++) {
+                v_pair[i] = {control[i], response[i]};
+            }
 
-        zip_sort(control, response);
-        std::sort(v_pair.begin(), v_pair.end());
+            zip_sort(control, response);
+            std::sort(v_pair.begin(), v_pair.end());
 
-        REQUIRE(std::is_sorted(control.begin(), control.end()));
+            REQUIRE(std::is_sorted(control.begin(), control.end()));
 
-        for (int i = 0; i < num_elements; i++) {
-            REQUIRE(v_pair[i].first == control[i]);
-            REQUIRE(v_pair[i].second == response[i]);
-        }
-    }
-}
-
-TEST_CASE("Two vectors with duplicates are zip-sorted", "[utils]") {
-    std::default_random_engine generator;
-    std::uniform_int_distribution<int> int_distribution(0, 50);
-    std::uniform_real_distribution<double> signed_distribution(-100, 100);
-
-    // 10 random sortings
-    for (int i = 0; i < 10; i++) {
-        int num_elements = int_distribution(generator);
-
-        std::vector<int> control(2*num_elements);
-        std::vector<int> response(2*num_elements);
-        std::vector<std::pair<int, int>> v_pair(2*num_elements);
-
-        for (int i = 0; i < num_elements; i++) {
-            control[2*i] = i;
-            control[2*i + 1] = i;
-        }
-
-        std::shuffle(control.begin(), control.end(), generator);
-
-        for (int i = 0; i < control.size(); i++) {
-            response[i] = control[i];
-            v_pair[i] = {control[i], response[i]};
-        }
-
-        zip_sort(control, response);
-        std::sort(v_pair.begin(), v_pair.end());
-
-        REQUIRE(std::is_sorted(control.begin(), control.end()));
-
-        for (int i = 0; i < num_elements; i++) {
-            REQUIRE(v_pair[i].first == control[i]);
-            REQUIRE(v_pair[i].second == response[i]);
+            for (int i = 0; i < num_elements; i++) {
+                REQUIRE(v_pair[i].first == control[i]);
+                REQUIRE(v_pair[i].second == response[i]);
+            }
         }
     }
-}
 
-}  // namespace dimod::utils
+    TEST_CASE("Two vectors with duplicates are zip-sorted", "[utils]") {
+        std::default_random_engine generator;
+        std::uniform_int_distribution<int> int_distribution(0, 50);
+        std::uniform_real_distribution<double> signed_distribution(-100, 100);
+
+        // 10 random sortings
+        for (int i = 0; i < 10; i++) {
+            int num_elements = int_distribution(generator);
+
+            std::vector<int> control(2 * num_elements);
+            std::vector<int> response(2 * num_elements);
+            std::vector<std::pair<int, int>> v_pair(2 * num_elements);
+
+            for (int i = 0; i < num_elements; i++) {
+                control[2 * i] = i;
+                control[2 * i + 1] = i;
+            }
+
+            std::shuffle(control.begin(), control.end(), generator);
+
+            for (int i = 0; i < control.size(); i++) {
+                response[i] = control[i];
+                v_pair[i] = {control[i], response[i]};
+            }
+
+            zip_sort(control, response);
+            std::sort(v_pair.begin(), v_pair.end());
+
+            REQUIRE(std::is_sorted(control.begin(), control.end()));
+
+            for (int i = 0; i < num_elements; i++) {
+                REQUIRE(v_pair[i].first == control[i]);
+                REQUIRE(v_pair[i].second == response[i]);
+            }
+        }
+    }
+
+}  // namespace utils
+}  // namespace dimod
