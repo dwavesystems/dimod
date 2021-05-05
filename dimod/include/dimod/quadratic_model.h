@@ -270,19 +270,33 @@ class Neighborhood {
             utils::zip_sort(neighbors, quadratic_biases);
         }
 
-        // now remove any duplicates, adding the biases
+        // now remove any duplicates, summing the biases of duplicates
         size_type i = 0;
-        while (i + 1 < size()) {
-            if (neighbors[i] == neighbors[i + 1]) {
-                // add the duplicates bias
-                quadratic_biases[i] += quadratic_biases[i + 1];
+        size_type j = 1;
 
-                // remove the duplicate
-                neighbors.erase(neighbors.begin() + i + 1);
-                quadratic_biases.erase(quadratic_biases.begin() + i + 1);
-            } else {
-                ++i;
+        // walk quickly through the neighborhood until we find a duplicate
+        while (j < neighbors.size() && neighbors[i] != neighbors[j]) {
+            ++i;
+            ++j;
+        }
+
+        // if we found one, move into de-duplication
+        if (j < neighbors.size()) {
+            while (j < neighbors.size()) {
+                if (neighbors[i] == neighbors[j]) {
+                    quadratic_biases[i] += quadratic_biases[j];
+                    ++j;
+                } else {
+                    ++i;
+                    neighbors[i] = neighbors[j];
+                    quadratic_biases[i] = quadratic_biases[j];
+                    ++j;
+                }
             }
+
+            // finally resize to contain only the unique values
+            neighbors.resize(i + 1);
+            quadratic_biases.resize(i + 1);
         }
     }
 
@@ -616,7 +630,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
 
         // count the number of elements to be inserted into each
-        std::vector<size_type> counts(base_type::num_variables());
+        std::vector<size_type> counts(base_type::num_variables(), 0);
         ItRow rit(row_iterator);
         ItCol cit(col_iterator);
         for (size_type i = 0; i < length; ++i, ++rit, ++cit) {

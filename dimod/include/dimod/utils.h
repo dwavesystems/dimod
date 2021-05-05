@@ -15,7 +15,7 @@
 #pragma once
 
 #include <algorithm>
-#include <climits>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -40,7 +40,7 @@ namespace utils {
 
         if (length < 2) {
             return;
-        } else if (length > LLONG_MAX) {
+        } else if (length > std::numeric_limits<int64_t>::max()) {
             throw std::logic_error(
                     "Length of arrays are too big for sorting. Numerical "
                     "overflow will occur.");
@@ -61,9 +61,9 @@ namespace utils {
 
             std::int64_t pivot_choice_index = (low + high + 1) / 2;
             if (pivot_choice_index != high) {
-                T1 control_temp = control[pivot_choice_index];
-                control[pivot_choice_index] = control[high];
-                control[high] = control_temp;
+                T2 response_temp = response[pivot_choice_index];
+                response[pivot_choice_index] = response[high];
+                response[high] = response_temp;
             }
 
             T1 pivot_element = control[high];
