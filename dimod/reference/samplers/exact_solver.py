@@ -176,7 +176,7 @@ class ExactSolverDQM(Sampler):
         self.parameters = {}
 
     def sample_dqm(self, dqm, **kwargs):
-        """Sample from a binary quadratic model.
+        """Sample from a discrete quadratic model.
 
         Args:
             dqm (:obj:`~dimod.DiscreteQuadraticModel`):
