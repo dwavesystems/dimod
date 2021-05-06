@@ -26,8 +26,9 @@ from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
 from dimod.core.polysampler import PolySampler
 from dimod.vartypes import Vartype
+from dimod import as_samples
 
-__all__ = ['ExactSolver', 'ExactPolySolver']
+__all__ = ['ExactSolver', 'ExactPolySolver', 'ExactSolverDQM']
 
 
 class ExactSolver(Sampler):
@@ -159,6 +160,45 @@ class ExactPolySolver(PolySampler):
         """
         return ExactSolver().sample(polynomial, **kwargs)
 
+class ExactSolverDQM(Sampler):
+    """A simple exact solver for testing and debugging code using your local CPU.
+
+    Notes:
+        This solver becomes slow for problems with 18 or more
+        variables, worse for increasingly many cases per variable.
+
+    """
+    properties = None
+    parameters = None
+
+    def __init__(self):
+        self.properties = {}
+        self.parameters = {}
+
+    def sample_dqm(self, dqm, **kwargs):
+        """Sample from a binary quadratic model.
+
+        Args:
+            dqm (:obj:`~dimod.DiscreteQuadraticModel`):
+                Discrete quadratic model to be sampled from.
+
+        Returns:
+            :obj:`~dimod.SampleSet`
+
+        """
+        kwargs = self.remove_unknown_kwargs(**kwargs)
+        
+        
+        n = dqm.num_variables()
+        if n == 0:
+            return SampleSet.from_samples([], 'DISCRETE', energy=[])
+
+        possible_samples = as_samples(_all_cases_dqm(dqm))
+        energies = dqm.energies(possible_samples[0])
+        
+        response = SampleSet.from_samples(possible_samples, 'DISCRETE', energies).relabel_variables(dict(enumerate(dqm.variables)))
+        return response
+
 
 def _graycode(bqm):
     """Get a numpy array containing all possible samples in a gray-code order"""
@@ -177,3 +217,18 @@ def _graycode(bqm):
         samples[i, v] = not samples[i - 1, v]
 
     return samples
+
+
+def _all_cases_dqm(dqm):
+    """Get a numpy array containing all possible samples as lists of integers"""
+    # developer note: there may be better ways to do this, but because we're
+    # limited in performance by the energy calculation, this is probably fine
+    
+    dqm_ = dqm.copy()
+    dqm_.relabel_variables_as_integers()
+    n = dqm.num_variables()
+    
+    cases = [range(dqm_.num_cases(i)) for i in range(n)]    
+    combinations = np.array(np.meshgrid(*cases)).T.reshape(-1,n)
+    
+    return combinations
