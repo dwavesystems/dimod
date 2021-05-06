@@ -23,10 +23,9 @@ Note:
 import numpy as np
 
 from dimod.core.sampler import Sampler
-from dimod.sampleset import SampleSet
+from dimod.sampleset import SampleSet, as_samples
 from dimod.core.polysampler import PolySampler
 from dimod.vartypes import Vartype
-import as_samples
 
 __all__ = ['ExactSolver', 'ExactPolySolver', 'ExactSolverDQM']
 
