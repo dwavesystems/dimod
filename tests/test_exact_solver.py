@@ -49,6 +49,13 @@ class TestExactSolver(unittest.TestCase):
         self.assertEqual(response.record.sample.shape, (0, 0))
         self.assertIs(response.vartype, bqm.vartype)
 
+    def test_sample_DISCRETE_empty(self):
+        dqm = dimod.DiscreteQuadraticModel({}, {}, 0.0, dimod.DISCRETE)
+        response = dimod.ExactDQMSolver().sample_dqm(dqm)
+
+        self.assertEqual(response.record.sample.shape, (0, 0))
+        self.assertIs(response.vartype, dqm.vartype)
+
     def test_sample_SPIN(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
                                          {(0, 1): -1.0, (1, 2): 1.0, (0, 2): 1.0},
@@ -74,7 +81,7 @@ class TestExactSolver(unittest.TestCase):
 
         response = dimod.ExactSolver().sample(bqm)
 
-        # every possible conbination should be present
+        # every possible combination should be present
         self.assertEqual(len(response), 2**len(bqm))
         self.assertEqual(response.record.sample.shape, (2**len(bqm), len(bqm)))
 
@@ -82,6 +89,23 @@ class TestExactSolver(unittest.TestCase):
         self.assertIs(response.vartype, bqm.vartype)
 
         dimod.testing.assert_response_energies(response, bqm)
+
+    def test_sample_DISCRETE(self):
+        dqm = dimod.DiscreteQuadraticModel.from_numpy_vectors(
+                        case_starts =   [0, 3],
+                        linear_biases = [0, 1, 2, 0, 1, 2, 3, 4, 5],
+                        quadratic =     ([5, 5, 5, 7, 7, 7], [0, 1, 2, 0, 1, 2], [0, 1, 2, 1, 2, 3])
+                                )
+        response = dimod.ExactDQMSolver().sample(dqm)
+
+        # every possible combination should be present
+        self.assertEqual(len(response), 15)
+        self.assertEqual(response.record.sample.shape, (15, dqm.num_variables()))
+
+        #confirm vartype
+        self.assertIs(response.vartype, dqm.vartype)
+
+        dimod.testing.assert_response_energies(response, dqm)
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}
@@ -143,10 +167,18 @@ class TestExactSolver(unittest.TestCase):
         sampleset = dimod.ExactSolver().sample(bqm)
         self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
+        dqm = dimod.DQM.from_numpy_vectors([0], [-1], None, labels={'ab'})
+        sampleset = dimod.ExactDQMSolver().sample(dqm)
+        self.assertEqual(set(sampleset.variables), set(dqm.variables))
+
     def test_kwargs(self):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
         with self.assertWarns(SamplerUnknownArgWarning):
             sampleset = dimod.ExactSolver().sample(bqm, a=1, b="abc")
+
+        dqm = dimod.DiscreteQuadraticModel()
+        with self.assertWarns(SamplerUnknownArgWarning):
+            sampleset = dimod.ExactDQMSolver().sample(dqm, a=1, b="abc")
 
 class TestExactPolySolver(unittest.TestCase):
     def test_instantiation(self):

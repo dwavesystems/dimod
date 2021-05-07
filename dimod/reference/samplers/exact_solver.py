@@ -27,7 +27,7 @@ from dimod.sampleset import SampleSet, as_samples
 from dimod.core.polysampler import PolySampler
 from dimod.vartypes import Vartype
 
-__all__ = ['ExactSolver', 'ExactPolySolver', 'ExactSolverDQM']
+__all__ = ['ExactSolver', 'ExactPolySolver', 'ExactDQMSolver']
 
 
 class ExactSolver(Sampler):
@@ -159,7 +159,7 @@ class ExactPolySolver(PolySampler):
         """
         return ExactSolver().sample(polynomial, **kwargs)
 
-class ExactSolverDQM(Sampler):
+class ExactDQMSolver(Sampler):
     """A simple exact solver for testing and debugging code using your local CPU.
 
     Notes:
@@ -187,13 +187,12 @@ class ExactSolverDQM(Sampler):
         """
         kwargs = self.remove_unknown_kwargs(**kwargs)
         
-        
         n = dqm.num_variables()
         if n == 0:
             return SampleSet.from_samples([], 'DISCRETE', energy=[])
 
         possible_samples = as_samples(_all_cases_dqm(dqm))
-        energies = dqm.energies(possible_samples[0])
+        energies = dqm.energies(possible_samples)
         
         response = SampleSet.from_samples(possible_samples, 'DISCRETE', energies).relabel_variables(dict(enumerate(dqm.variables)))
         return response
@@ -222,12 +221,8 @@ def _all_cases_dqm(dqm):
     """Get a numpy array containing all possible samples as lists of integers"""
     # developer note: there may be better ways to do this, but because we're
     # limited in performance by the energy calculation, this is probably fine
-    
-    dqm_ = dqm.copy()
-    dqm_.relabel_variables_as_integers()
-    n = dqm.num_variables()
-    
-    cases = [range(dqm_.num_cases(i)) for i in range(n)]    
-    combinations = np.array(np.meshgrid(*cases)).T.reshape(-1,n)
+
+    cases = [range(dqm.num_cases(v)) for v in dqm.variables] 
+    combinations = np.array(np.meshgrid(*cases)).T.reshape(-1,dqm.num_variables())
     
     return combinations
