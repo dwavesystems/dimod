@@ -50,7 +50,7 @@ class TestExactSolver(unittest.TestCase):
         self.assertIs(response.vartype, bqm.vartype)
 
     def test_sample_DISCRETE_empty(self):
-        dqm = dimod.DiscreteQuadraticModel({}, {}, 0.0, dimod.DISCRETE)
+        dqm = dimod.DiscreteQuadraticModel()
         response = dimod.ExactDQMSolver().sample_dqm(dqm)
 
         self.assertEqual(response.record.sample.shape, (0, 0))
