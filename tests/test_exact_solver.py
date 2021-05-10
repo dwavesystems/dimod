@@ -167,7 +167,7 @@ class TestExactSolver(unittest.TestCase):
         sampleset = dimod.ExactSolver().sample(bqm)
         self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
-        dqm = dimod.DQM.from_numpy_vectors([0], [-1], None, labels={'ab'})
+        dqm = dimod.DQM.from_numpy_vectors([0], [-1], ([0], [0], [0]), labels={'ab'})
         sampleset = dimod.ExactDQMSolver().sample(dqm)
         self.assertEqual(set(sampleset.variables), set(dqm.variables))
 
