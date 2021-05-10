@@ -54,7 +54,7 @@ class TestExactSolver(unittest.TestCase):
         response = dimod.ExactDQMSolver().sample_dqm(dqm)
 
         self.assertEqual(response.record.sample.shape, (0, 0))
-        self.assertIs(response.vartype, dqm.vartype)
+        self.assertIs(response.vartype, 'DISCRETE')
 
     def test_sample_SPIN(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
@@ -103,7 +103,7 @@ class TestExactSolver(unittest.TestCase):
         self.assertEqual(response.record.sample.shape, (15, dqm.num_variables()))
 
         #confirm vartype
-        self.assertIs(response.vartype, dqm.vartype)
+        self.assertIs(response.vartype, 'DISCRETE')
 
         dimod.testing.assert_response_energies(response, dqm)
 
@@ -167,7 +167,7 @@ class TestExactSolver(unittest.TestCase):
         sampleset = dimod.ExactSolver().sample(bqm)
         self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
-        dqm = dimod.DQM.from_numpy_vectors([0], [-1], ([0], [0], [0]), labels={'ab'})
+        dqm = dimod.DQM.from_numpy_vectors([0], [-1], ([], [], []), labels={'ab'})
         sampleset = dimod.ExactDQMSolver().sample(dqm)
         self.assertEqual(set(sampleset.variables), set(dqm.variables))
 
