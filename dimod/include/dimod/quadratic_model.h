@@ -590,13 +590,13 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      */
     template <class B, class I, class T>
     void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
-                const std::vector<T>& mapping) {
-        if (bqm.vartype() != vartype()) {
+                 const std::vector<T>& mapping) {
+        if (bqm.vartype() != this->vartype()) {
             // we could do this without the copy, but for now let's just do
             // it simply
             auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
             bqm_copy.change_vartype(vartype());
-            add_bqm(bqm_copy, mapping);
+            this->add_bqm(bqm_copy, mapping);
             return;
         }
 
@@ -607,32 +607,23 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         // resize if needed
         index_type size = *std::max_element(mapping.begin(), mapping.end()) + 1;
         if (size > base_type::num_variables()) {
-            resize(size);
+            this->resize(size);
         }
 
         // offset
         base_type::offset() += bqm.offset();
 
         // linear
-        for (index_type v = 0; v < bqm.num_variables(); ++v) {
-            base_type::linear(mapping[v]) += bqm.linear(v);
-        }
+        for (index_type old_u = 0; old_u < bqm.num_variables(); ++old_u) {
+            index_type new_u = mapping[old_u];
+            base_type::linear(new_u) += bqm.linear(old_u);
 
-        // quadratic
-        for (index_type v = 0; v < bqm.num_variables(); ++v) {
-            if (bqm.adj_[v].size() == 0) {
-                continue;
+            // quadratic
+            auto span = bqm.neighborhood(old_u);
+            for (auto it = span.first; it != span.second; ++it) {
+                index_type new_v = mapping[(*it).first];
+                base_type::adj_[new_u].emplace_back(new_v, (*it).second);
             }
-
-            base_type::adj_[v].reserve(base_type::adj_[v].size() +
-                                       bqm.adj_[v].size());
-            for (auto it = bqm.adj_[v].cbegin(); it != bqm.adj_[v].cend();
-                 ++it) {
-                base_type::adj_[v].emplace_back(mapping[(*it).first],
-                                                (*it).second);
-            }
-
-            base_type::adj_[v].sort_and_sum();
         }
     }
 
