@@ -323,33 +323,6 @@ TEMPLATE_TEST_CASE_SIG(
                     CHECK(bqm1.quadratic(3, 4) == Approx(-25));
                 }
             }
-
-            WHEN("the update involves a mapping") {
-                std::vector<int> mapping = {7, 2, 0};
-                bqm1.add_bqm(bqm0, mapping);
-
-                THEN("the biases are mapped appropriately") {
-                    REQUIRE(bqm1.num_variables() == 8);
-                    REQUIRE(bqm1.num_interactions() == 6);
-
-                    CHECK(bqm1.offset() == Approx(-7.8));
-
-                    CHECK(bqm1.linear(0) == Approx(0));
-                    CHECK(bqm1.linear(1) == Approx(-3.25));
-                    CHECK(bqm1.linear(2) == Approx(2));
-                    CHECK(bqm1.linear(3) == Approx(3));
-                    CHECK(bqm1.linear(4) == Approx(-4.5));
-                    CHECK(bqm1.linear(5) == Approx(0));
-                    CHECK(bqm1.linear(6) == Approx(0));
-                    CHECK(bqm1.linear(7) == Approx(0));
-
-                    CHECK(bqm1.quadratic(0, 1) == Approx(5.6));
-                    CHECK(bqm1.quadratic(0, 2) == Approx(1.5));
-                    CHECK(bqm1.quadratic(0, 3) == Approx(-1));
-                    CHECK(bqm1.quadratic(1, 2) == Approx(1.6));
-                    CHECK(bqm1.quadratic(3, 4) == Approx(-25));
-                }
-            }
         }
 
         AND_GIVEN("a BQM with 5 variables and a different vartype") {
@@ -396,6 +369,51 @@ TEMPLATE_TEST_CASE_SIG(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+SCENARIO("One bqm can be added to another") {
+    GIVEN("Two BQMs of different vartypes") {
+        auto bin = BinaryQuadraticModel<double>(2, Vartype::BINARY);
+        bin.linear(0) = .3;
+        bin.set_quadratic(0, 1, -1);
+
+        auto spn = BinaryQuadraticModel<double>(2, Vartype::SPIN);
+        spn.linear(1) = -1;
+        spn.set_quadratic(0, 1, 1);
+        spn.offset() = 1.2;
+
+        WHEN("the spin one is added to the binary") {
+            bin.add_bqm(spn);
+
+            THEN("the combined model is correct") {
+                REQUIRE(bin.num_variables() == 2);
+                CHECK(bin.num_interactions() == 1);
+
+                CHECK(bin.linear(0) == -1.7);
+                CHECK(bin.linear(1) == -4);
+
+                CHECK(bin.quadratic(0, 1) == 3);
+            }
+        }
+
+        WHEN("the spin one is added to the binary one with an offset") {
+            std::vector<int> mapping = {1, 2};
+            bin.add_bqm(spn, mapping);
+
+            THEN("the combined model is correct") {
+                REQUIRE(bin.num_variables() == 3);
+                CHECK(bin.num_interactions() == 2);
+
+                CHECK(bin.linear(0) == .3);
+                CHECK(bin.linear(1) == -2);
+                CHECK(bin.linear(2) == -4);
+
+                CHECK(bin.quadratic(0, 1) == -1);
+                CHECK(bin.quadratic(1, 2) == 4);
+                CHECK_THROWS_AS(bin.quadratic_at(0, 2), std::out_of_range);
             }
         }
     }
