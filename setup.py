@@ -52,11 +52,13 @@ setup(
     name='dimod',
     cmdclass=dict(build_ext=build_ext),
     ext_modules=cythonize(
-        ['dimod/bqm/adjvectorbqm.pyx',
+        ['dimod/binary/cybqm/*.pyx',
+         'dimod/bqm/adjvectorbqm.pyx',
          'dimod/bqm/utils.pyx',
          'dimod/bqm/common.pyx',
-         'dimod/discrete/cydiscrete_quadratic_model.pyx',
+         'dimod/cyutilities.pyx',
          'dimod/cyvariables.pyx',
+         'dimod/discrete/cydiscrete_quadratic_model.pyx',
          # roofduality needs to be treated differently until deprecation
          Extension("dimod.roof_duality._fix_variables",
                    ['dimod/roof_duality/_fix_variables.pyx',
