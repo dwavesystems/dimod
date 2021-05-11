@@ -21,7 +21,8 @@ namespace dimod {
 
 TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                        ((typename Bias, Vartype vartype), Bias, vartype),
-                       (double, Vartype::BINARY), (double, Vartype::SPIN)) {
+                       (double, Vartype::BINARY), (double, Vartype::SPIN),
+                       (float, Vartype::BINARY), (float, Vartype::SPIN)) {
     GIVEN("an empty BQM") {
         auto bqm = BinaryQuadraticModel<Bias>(vartype);
 
@@ -242,6 +243,157 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                     for (size_t si = 0; si < energies.size(); ++si) {
                         REQUIRE(energies[si] ==
                                 Approx(bqm.energy(bin_samples[si])));
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEMPLATE_TEST_CASE_SIG(
+        "Scenario: BQMs can be combined", "[bqm]",
+        ((typename B0, typename B1, Vartype vartype), B0, B1, vartype),
+        (float, float, Vartype::BINARY), (double, float, Vartype::BINARY),
+        (float, double, Vartype::BINARY), (double, double, Vartype::BINARY),
+        (float, float, Vartype::SPIN), (double, float, Vartype::SPIN),
+        (float, double, Vartype::SPIN), (double, double, Vartype::SPIN)) {
+    GIVEN("a BQM with 3 variables") {
+        auto bqm0 = BinaryQuadraticModel<B0>(3, vartype);
+        bqm0.linear(2) = -1;
+        bqm0.set_quadratic(0, 1, 1.5);
+        bqm0.set_quadratic(0, 2, -2);
+        bqm0.set_quadratic(1, 2, 7);
+        bqm0.offset() = -4;
+
+        AND_GIVEN("a BQM with 5 variables and the same vartype") {
+            auto bqm1 = BinaryQuadraticModel<B1>(5, vartype);
+            bqm1.linear(0) = 1;
+            bqm1.linear(1) = -3.25;
+            bqm1.linear(2) = 2;
+            bqm1.linear(3) = 3;
+            bqm1.linear(4) = -4.5;
+            bqm1.set_quadratic(0, 1, 5.6);
+            bqm1.set_quadratic(0, 3, -1);
+            bqm1.set_quadratic(1, 2, 1.6);
+            bqm1.set_quadratic(3, 4, -25);
+            bqm1.offset() = -3.8;
+
+            WHEN("the first is updated with the second") {
+                bqm0.add_bqm(bqm1);
+
+                THEN("the biases are added") {
+                    REQUIRE(bqm0.num_variables() == 5);
+                    REQUIRE(bqm0.num_interactions() == 5);
+
+                    CHECK(bqm0.offset() == Approx(-7.8));
+
+                    CHECK(bqm0.linear(0) == Approx(1));
+                    CHECK(bqm0.linear(1) == Approx(-3.25));
+                    CHECK(bqm0.linear(2) == Approx(1));
+                    CHECK(bqm0.linear(3) == Approx(3));
+                    CHECK(bqm0.linear(4) == Approx(-4.5));
+
+                    CHECK(bqm0.quadratic(0, 1) == Approx(7.1));
+                    CHECK(bqm0.quadratic(0, 2) == Approx(-2));
+                    CHECK(bqm0.quadratic(0, 3) == Approx(-1));
+                    CHECK(bqm0.quadratic(1, 2) == Approx(8.6));
+                    CHECK(bqm0.quadratic(3, 4) == Approx(-25));
+                }
+            }
+
+            WHEN("the second is updated with the first") {
+                bqm1.add_bqm(bqm0);
+
+                THEN("the biases are added") {
+                    REQUIRE(bqm1.num_variables() == 5);
+                    REQUIRE(bqm1.num_interactions() == 5);
+
+                    CHECK(bqm1.offset() == Approx(-7.8));
+
+                    CHECK(bqm1.linear(0) == Approx(1));
+                    CHECK(bqm1.linear(1) == Approx(-3.25));
+                    CHECK(bqm1.linear(2) == Approx(1));
+                    CHECK(bqm1.linear(3) == Approx(3));
+                    CHECK(bqm1.linear(4) == Approx(-4.5));
+
+                    CHECK(bqm1.quadratic(0, 1) == Approx(7.1));
+                    CHECK(bqm1.quadratic(0, 2) == Approx(-2));
+                    CHECK(bqm1.quadratic(0, 3) == Approx(-1));
+                    CHECK(bqm1.quadratic(1, 2) == Approx(8.6));
+                    CHECK(bqm1.quadratic(3, 4) == Approx(-25));
+                }
+            }
+
+            WHEN("the update involves a mapping") {
+                std::vector<int> mapping = {7, 2, 0};
+                bqm1.add_bqm(bqm0, mapping);
+
+                THEN("the biases are mapped appropriately") {
+                    REQUIRE(bqm1.num_variables() == 8);
+                    REQUIRE(bqm1.num_interactions() == 6);
+
+                    CHECK(bqm1.offset() == Approx(-7.8));
+
+                    CHECK(bqm1.linear(0) == Approx(0));
+                    CHECK(bqm1.linear(1) == Approx(-3.25));
+                    CHECK(bqm1.linear(2) == Approx(2));
+                    CHECK(bqm1.linear(3) == Approx(3));
+                    CHECK(bqm1.linear(4) == Approx(-4.5));
+                    CHECK(bqm1.linear(5) == Approx(0));
+                    CHECK(bqm1.linear(6) == Approx(0));
+                    CHECK(bqm1.linear(7) == Approx(0));
+
+                    CHECK(bqm1.quadratic(0, 1) == Approx(5.6));
+                    CHECK(bqm1.quadratic(0, 2) == Approx(1.5));
+                    CHECK(bqm1.quadratic(0, 3) == Approx(-1));
+                    CHECK(bqm1.quadratic(1, 2) == Approx(1.6));
+                    CHECK(bqm1.quadratic(3, 4) == Approx(-25));
+                }
+            }
+        }
+
+        AND_GIVEN("a BQM with 5 variables and a different vartype") {
+            Vartype vt;
+            if (vartype == Vartype::SPIN) {
+                vt = Vartype::BINARY;
+            } else {
+                vt = Vartype::SPIN;
+            }
+
+            auto bqm1 = BinaryQuadraticModel<B1>(5, vt);
+            bqm1.linear(0) = 1;
+            bqm1.linear(1) = -3.25;
+            bqm1.linear(2) = 2;
+            bqm1.linear(3) = 3;
+            bqm1.linear(4) = -4.5;
+            bqm1.set_quadratic(0, 1, 5.6);
+            bqm1.set_quadratic(0, 3, -1);
+            bqm1.set_quadratic(1, 2, 1.6);
+            bqm1.set_quadratic(3, 4, -25);
+            bqm1.offset() = -3.8;
+
+            WHEN("the first is updated with the second") {
+                auto bqm0_cp = BinaryQuadraticModel<B0>(bqm0);
+                auto bqm1_cp = BinaryQuadraticModel<B1>(bqm1);
+
+                bqm0.add_bqm(bqm1);
+
+                THEN("it was as if the vartype was changed first") {
+                    bqm1_cp.change_vartype(vartype);
+                    bqm0_cp.add_bqm(bqm1_cp);
+
+                    REQUIRE(bqm0.num_variables() == bqm0_cp.num_variables());
+                    REQUIRE(bqm0.num_interactions() ==
+                            bqm0_cp.num_interactions());
+                    REQUIRE(bqm0.offset() == Approx(bqm0_cp.offset()));
+                    for (auto u = 0u; u < bqm0.num_variables(); ++u) {
+                        REQUIRE(bqm0.linear(u) == Approx(bqm0_cp.linear(u)));
+
+                        auto span = bqm0.neighborhood(u);
+                        for (auto it = span.first; it != span.second; ++it) {
+                            REQUIRE((*it).second == Approx(bqm0_cp.quadratic_at(
+                                                            u, (*it).first)));
+                        }
                     }
                 }
             }

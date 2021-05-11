@@ -340,6 +340,9 @@ class QuadraticModelBase {
     using const_neighborhood_iterator =
             typename Neighborhood<bias_type, index_type>::const_iterator;
 
+    template <class B, class I>
+    friend class BinaryQuadraticModel;
+
     QuadraticModelBase() : offset_(0) {}
 
     /// Return True if the model has no quadratic biases.
@@ -525,6 +528,112 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
                          Vartype vartype)
             : BinaryQuadraticModel(num_variables, vartype) {
         add_quadratic(dense, num_variables);
+    }
+
+    /**
+     * Add the variables, interactions and biases from another BQM.
+     *
+     * The size of the updated BQM will be adjusted appropriately.
+     *
+     * If the other BQM does not have the same vartype, the biases are adjusted
+     * accordingly.
+     */
+    template <class B, class I>
+    void add_bqm(const BinaryQuadraticModel<B, I>& bqm) {
+        if (bqm.vartype() != vartype()) {
+            // we could do this without the copy, but for now let's just do
+            // it simply
+            auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
+            bqm_copy.change_vartype(vartype());
+            add_bqm(bqm_copy);
+            return;
+        }
+
+        // offset
+        base_type::offset() += bqm.offset();
+
+        // linear
+        if (bqm.num_variables() > base_type::num_variables()) {
+            resize(bqm.num_variables());
+        }
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            base_type::linear(v) += bqm.linear(v);
+        }
+
+        // quadratic
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            if (bqm.adj_[v].size() == 0) {
+                continue;
+            }
+
+            base_type::adj_[v].reserve(base_type::adj_[v].size() +
+                                       bqm.adj_[v].size());
+            for (auto it = bqm.adj_[v].cbegin(); it != bqm.adj_[v].cend();
+                 ++it) {
+                base_type::adj_[v].emplace_back((*it).first, (*it).second);
+            }
+
+            base_type::adj_[v].sort_and_sum();
+        }
+    }
+
+    /**
+     * Add the variables, interactions and biases from another BQM.
+     *
+     * The size of the updated BQM will be adjusted appropriately.
+     *
+     * If the other BQM does not have the same vartype, the biases are adjusted
+     * accordingly.
+     *
+     * `mapping` must be a vector of the same length of the given BQM. It
+     * should map the variables of `bqm` to new labels.
+     */
+    template <class B, class I, class T>
+    void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
+                const std::vector<T>& mapping) {
+        if (bqm.vartype() != vartype()) {
+            // we could do this without the copy, but for now let's just do
+            // it simply
+            auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
+            bqm_copy.change_vartype(vartype());
+            add_bqm(bqm_copy, mapping);
+            return;
+        }
+
+        if (mapping.size() != bqm.num_variables()) {
+            throw std::logic_error("bqm and mapping must have the same length");
+        }
+
+        // resize if needed
+        index_type size = *std::max_element(mapping.begin(), mapping.end()) + 1;
+        if (size > base_type::num_variables()) {
+            resize(size);
+        }
+
+        // offset
+        base_type::offset() += bqm.offset();
+
+        // linear
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            base_type::linear(mapping[v]) += bqm.linear(v);
+        }
+
+        // quadratic
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            if (bqm.adj_[v].size() == 0) {
+                continue;
+            }
+
+            base_type::adj_[v].reserve(base_type::adj_[v].size() +
+                                       bqm.adj_[v].size());
+            for (auto it = bqm.adj_[v].cbegin(); it != bqm.adj_[v].cend();
+                 ++it) {
+                base_type::adj_[v].emplace_back(mapping[(*it).first],
+                                                (*it).second);
+            }
+
+            base_type::adj_[v].sort_and_sum();
+        }
     }
 
     /// Add quadratic bias for the given variables.
