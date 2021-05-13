@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import concurrent.futures
+import typing
 import unittest
 import itertools
 
@@ -293,3 +294,46 @@ class TestGraphArgument(unittest.TestCase):
             @graph_argument('G', b=True)
             def f(G):
                 pass
+
+
+class TestForwardingMethod(unittest.TestCase):
+    def setUp(self):
+
+        class Inner:
+            def func(self, a: int, b: int = 0):
+                """Inner.func docstring"""
+                return a + b
+
+        class Outer:
+            def __init__(self):
+                self.inner = Inner()
+                self.func_count = 0
+
+            @dimod.decorators.forwarding_method
+            def func(self, a: int, b: int = 0) -> int:
+                """Outer.func docstring"""
+                self.func_count += 1
+                return self.inner.func
+
+        self.outer = Outer()
+
+    def test_annotation(self):
+        outer = self.outer
+        self.assertEqual(typing.get_type_hints(outer.func),
+                        {'a': int, 'b': int, 'return': int})
+
+    def test_call_count(self):
+        outer = self.outer
+        for _ in range(10):
+            outer.func(1, 5)
+        self.assertEqual(outer.func_count, 1)
+
+    def test_doc(self):
+        outer = self.outer
+        self.assertEqual(outer.func.__doc__, "Outer.func docstring")
+        outer.func(2, 3)
+        self.assertEqual(outer.func.__doc__, "Inner.func docstring")
+
+    def test_output(self):
+        outer = self.outer
+        self.assertEqual(outer.func(2, 3), 5)
