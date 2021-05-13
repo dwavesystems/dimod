@@ -17,17 +17,28 @@ import io
 import warnings
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container
+from functools import cached_property
 from numbers import Integral, Number
-from typing import Hashable, Union
+from typing import Hashable, Union, Tuple, Optional, Any
 
 import numpy as np
 
-from functools import cached_property
+try:
+    from numpy.typing import ArrayLike, DTypeLike
+except ImportError:
+    ArrayLike = Any
+    DTypeLike = Any
 
 from dimod.binary.cybqm import cybqm_cls
+from dimod.decorators import forwarding_method
+from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BinaryQuadraticModel']
+
+
+Variable = Hashable  # todo: doc, and exclude None
+Bias = Union[int, float, np.number]
 
 
 class BQMView:
@@ -288,11 +299,11 @@ class BinaryQuadraticModel:
         return Linear(self)
 
     @property
-    def num_variables(self):
+    def num_variables(self) -> int:
         return self.data.num_variables()
 
     @property
-    def num_interactions(self):
+    def num_interactions(self) -> int:
         return self.data.num_interactions()
 
     @cached_property
@@ -300,16 +311,16 @@ class BinaryQuadraticModel:
         return Quadratic(self)
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         return self.num_variables, self.num_interactions
 
     @cached_property
-    def variables(self):
+    def variables(self) -> Variables:
         """Alias for :meth:`add_quadratic_from`."""
         return self.data.variables
 
     @property
-    def offset(self):
+    def offset(self) -> np.number:
         """Constant energy offset associated with the model."""
         return self.data.offset
 
@@ -326,7 +337,7 @@ class BinaryQuadraticModel:
         return self.data.vartype
 
     @classmethod
-    def shapeable(cls):
+    def shapeable(cls) -> bool:
         """Returns True if the binary quadratic model is shapeable.
 
         This method is deprecated. All BQMs are shapeable.
@@ -338,8 +349,8 @@ class BinaryQuadraticModel:
             stacklevel=2)
         return True
 
-    @cached_property  # for performance, todo: investigate docs
-    def add_linear(self):
+    @forwarding_method
+    def add_linear(self, v: Variable, bias: Bias):
         return self.data.add_linear
 
     def add_linear_from(self, linear: Union[Iterable, Mapping]):
@@ -365,14 +376,14 @@ class BinaryQuadraticModel:
             self.add_linear(v, bias)
 
     def add_linear_from_array(self, linear: Sequence):
-        linear = np.asarray(linear)
+        ldata = np.asarray(linear)
 
         # cython has trouble with readonly buffers as of 0.29.22, in the
         # future we can remove this
-        if not linear.flags.writeable:
-            linear = np.array(linear, copy=True)
+        if not ldata.flags.writeable:
+            ldata = np.array(ldata, copy=True)
 
-        self.data.add_linear_from_array(np.asarray(linear))
+        self.data.add_linear_from_array(np.asarray(ldata))
 
     add_variables_from = add_linear_from
     """Alias for :meth:`add_linear_from`."""
@@ -380,8 +391,8 @@ class BinaryQuadraticModel:
     def add_offset(self, bias):
         self.offset += bias
 
-    @cached_property  # for performance, todo: investigate docs
-    def add_quadratic(self):
+    @forwarding_method
+    def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
         return self.data.add_quadratic
 
     def add_interaction(self, *args, **kwargs):
@@ -419,7 +430,7 @@ class BinaryQuadraticModel:
     add_interactions_from = add_quadratic_from
     """Alias for :meth:`add_quadratic_from`."""
 
-    def add_quadratic_from_dense(self, quadratic: np.ndarray):
+    def add_quadratic_from_dense(self, quadratic: ArrayLike):
         """Add quadratic biases from a square 2d array-like.
 
         Args:
@@ -434,12 +445,12 @@ class BinaryQuadraticModel:
         # cython has trouble with readonly buffers as of 0.29.22, in the
         # future we can remove this
         if not quadratic.flags.writeable:
-            linear = np.array(linear, copy=True)
+            quadratic = np.array(quadratic, copy=True)
 
         self.data.add_quadratic_from_dense(quadratic)
 
-    @cached_property  # for performance, todo: investigate docs
-    def add_variable(self):
+    @forwarding_method
+    def add_variable(self, v: Optional[Variable] = None, bias: Bias = 0):
         return self.data.add_variable
 
     def contract_variables(self, u, v):
@@ -509,8 +520,8 @@ class BinaryQuadraticModel:
         self.data.change_vartype(vartype)
         return self
 
-    @cached_property  # for performance, todo: investigate docs
-    def degree(self):
+    @forwarding_method
+    def degree(self, v: Variable):
         return self.data.degree
 
     @classmethod
@@ -519,9 +530,8 @@ class BinaryQuadraticModel:
         """
         return cls(vartype)
 
-    @cached_property  # for performance, todo: investigate docs
-    def energies(self):
-        return self.data.energies
+    def energies(self, samples_like, dtype: Optional[DTypeLike] = None):
+        return self.data.energies(samples_like, dtype=dtype)
 
     def energy(self, sample, dtype=None):
         """Determine the energy of the given sample.
@@ -686,8 +696,8 @@ class BinaryQuadraticModel:
                       'use v in bqm.variables instead.', stacklevel=2)
         return v in self.data.variables
 
-    @cached_property  # for performance, todo: investigate docs
-    def iter_neighborhood(self):
+    @forwarding_method
+    def iter_neighborhood(self, v: Variable):
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
@@ -736,12 +746,13 @@ class BinaryQuadraticModel:
                       'use iter(bqm.variables) instead.', stacklevel=2)
         return iter(self.variables)
 
-    @cached_property  # for performance, todo: investigate docs
-    def get_linear(self):
+    @forwarding_method
+    def get_linear(self, v: Variable):
         return self.data.get_linear
 
-    @cached_property  # for performance, todo: investigate docs
-    def get_quadratic(self):
+    @forwarding_method
+    def get_quadratic(self, u: Variable, v: Variable,
+                      default: Optional[Bias] = None):
         return self.data.get_quadratic
 
     def normalize(self, bias_range=1, quadratic_range=None,
@@ -835,8 +846,8 @@ class BinaryQuadraticModel:
         mapping = self.data.relabel_variables_as_integers()
         return self, mapping
 
-    @cached_property  # for performance, todo: investigate docs
-    def remove_interaction(self):
+    @forwarding_method
+    def remove_interaction(self, u: Variable, v: Variable):
         return self.data.remove_interaction
 
     def remove_interactions_from(self, interactions: Iterable):
@@ -850,12 +861,12 @@ class BinaryQuadraticModel:
         for u, v in interactions:
             self.remove_interaction(u, v)
 
-    @cached_property  # for performance, todo: investigate docs
-    def remove_variable(self):
+    @forwarding_method
+    def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         return self.data.remove_variable
 
-    @cached_property  # for performance, todo: investigate docs
-    def resize(self):
+    @forwarding_method
+    def resize(self, n: int):
         return self.data.resize
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
@@ -905,12 +916,12 @@ class BinaryQuadraticModel:
         if not ignore_offset:
             self.offset *= scalar
 
-    @cached_property  # for performance, todo: investigate docs
-    def set_linear(self):
+    @forwarding_method
+    def set_linear(self, v: Variable, bias: Bias):
         return self.data.set_linear
 
-    @cached_property  # for performance, todo: investigate docs
-    def set_quadratic(self):
+    @forwarding_method
+    def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         return self.data.set_quadratic
 
     def to_coo(self, fp=None, vartype_header: bool = False):
@@ -987,9 +998,28 @@ class BinaryQuadraticModel:
 
         return dense
 
-    @cached_property  # for performance, todo: investigate docs
-    def to_numpy_vectors(self):
-        return self.data.to_numpy_vectors
+    def to_numpy_vectors(self, variable_order=None, *,
+                         dtype=None, index_dtype=None,
+                         sort_indices=False, sort_labels=True,
+                         return_labels=False):
+
+        if dtype is not None:
+            warnings.warn(
+                "The 'dtype' keyword argument is deprecated since dimod 0.10.0"
+                " and does nothing",
+                DeprecationWarning, stacklevel=2)
+        if index_dtype is not None:
+            warnings.warn(
+                "The 'index_dtype' keyword argument is deprecated since dimod "
+                "0.10.0 and does nothing",
+                DeprecationWarning, stacklevel=2)
+
+        return self.data.to_numpy_vectors(
+            variable_order=variable_order,
+            sort_indices=sort_indices,
+            sort_labels=sort_labels,
+            return_labels=return_labels,
+            )
 
     def update(self, other):
         try:

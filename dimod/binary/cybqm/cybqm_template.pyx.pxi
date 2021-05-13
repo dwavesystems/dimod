@@ -502,7 +502,6 @@ cdef class cyBQM_template(cyBQMBase):
         self.cppbqm.set_quadratic(ui, vi, bias)
 
     def to_numpy_vectors(self, variable_order=None, *,
-                         dtype=None, index_dtype=None,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
 
@@ -576,11 +575,8 @@ cdef class cyBQM_template(cyBQMBase):
         if sort_indices:
             coo_sort(irow, icol, qdata)
 
-        ret = [np.asarray(ldata, dtype),
-               (np.asarray(irow, index_dtype),
-                np.asarray(icol, index_dtype),
-                np.asarray(qdata, dtype)),
-               self.offset]
+        # todo: nametuple
+        ret = [ldata, (irow, icol, qdata), self.offset]
 
         if return_labels:
             ret.append(labels)
