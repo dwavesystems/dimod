@@ -32,6 +32,7 @@ __all__ = ['nonblocking_sample_method',
            'vartype_argument',
            'graph_argument',
            'lockable_method',
+           'forwarding_method',
            ]
 
 
@@ -435,3 +436,79 @@ def lockable_method(f):
             raise WriteableError
         return f(obj, *args, **kwds)
     return _check_writeable
+
+
+_NOT_FOUND = object()
+
+
+def forwarding_method(func):
+    """Improve the performance of a forwarding method by avoiding an attribute
+    lookup.
+
+    The decorated method should return the function that it is forwarding to.
+    Subsequent calls will be made directly to that function.
+
+    Example:
+
+        >>> import typing
+        >>> import timeit
+        >>> from dimod.decorators import forwarding_method
+        ...
+        >>> class Inner:
+        ...     def func(self, a: int, b: int = 0) -> int:
+        ...         "Inner.func docsting."
+        ...         return a + b
+        ...
+        >>> class Outer:
+        ...     def __init__(self):
+        ...         self.inner = Inner()
+        ...
+        ...     def func(self, a: int, b: int = 0) -> int:
+        ...         "Outer.func docsting."
+        ...         return self.inner.func(a, b=b)
+        ...
+        ...     @forwarding_method
+        ...     def fwd_func(self, a: int, b: int = 0) -> int:
+        ...         "Outer.fwd_func docsting."
+        ...         return self.inner.func
+        ...
+        >>> obj = Outer()
+        >>> obj.func(2, 3)
+        5
+        >>> obj.fwd_func(1, 3)
+        4
+        >>> timeit.timeit(lambda: obj.func(10, 5))  # doctest:+SKIP
+        0.275462614998105
+        >>> timeit.timeit(lambda: obj.fwd_func(10, 5))  # doctest:+SKIP
+        0.16692455199881806
+        >>> Outer.fwd_func.__doc__
+        'Outer.fwd_func docsting.'
+        >>> obj.fwd_func.__doc__
+        'Inner.func docsting.'
+
+    """
+    @wraps(func)
+    def wrapper(obj, *args, **kwargs):
+        name = func.__name__
+
+        try:
+            cache = obj.__dict__
+        except AttributeError:
+            raise TypeError(
+                f"No '__dict__' attribute on {type(obj).__name__!r}") from None
+
+        method = cache.get(name, _NOT_FOUND)
+
+        if method is _NOT_FOUND:
+            # the args and kwargs are ignored but they are required to not
+            # raise an error
+            try:
+                cache[name] = method = func(obj, *args, **kwargs)
+            except TypeError:
+                raise TypeError(
+                    f"the '__dict__' attribute of {type(obj).__name__!r} "
+                    "instance does not support item assignment.") from None
+
+        return method(*args, **kwargs)
+
+    return wrapper
