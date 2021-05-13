@@ -233,8 +233,6 @@ def assert_bqm_almost_equal(actual, desired, places=7,
             If true, interactions with 0 bias are ignored.
 
     """
-    assert isinstance(actual, dimod.BinaryQuadraticModel), "not a binary quadratic model"
-    assert isinstance(desired, dimod.BinaryQuadraticModel), "not a binary quadratic model"
 
     # vartype should match
     assert actual.vartype is desired.vartype, "unlike vartype"

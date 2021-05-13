@@ -17,7 +17,7 @@ include "cybqm_template.pyx.pxi"
 import numpy as np
 
 BIAS_DTYPE = np.float32
-INDEX_DTYPE = np.int64
+INDEX_DTYPE = np.int32
 
 __all__ = ['cyBQM_float32']
 

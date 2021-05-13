@@ -31,8 +31,9 @@ from parameterized import parameterized
 import dimod
 
 from dimod.binary import BinaryQuadraticModel as newBQM
+from dimod.binary import BQMfloat32, BQMfloat64
 
-from dimod.testing import assert_consistent_bqm
+from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
 BQM_CYTHON_SUBCLASSES = [dimod.AdjVectorBQM]
 
@@ -42,6 +43,7 @@ BQM_SUBCLASSES = [dimod.AdjDictBQM,
                   dimod.AdjVectorBQM,
                   dimod.BinaryQuadraticModel,
                   newBQM,
+                  BQMfloat32, BQMfloat64
                   ]
 
 
@@ -185,9 +187,9 @@ class TestAdjacency(unittest.TestCase):
         self.assertEqual(2.0, bqm.adj[0][1])
 
         self.assertIn(2, bqm.adj[1])
-        self.assertEqual(.4, bqm.adj[1][2])
+        self.assertAlmostEqual(.4, bqm.adj[1][2])
         self.assertIn(1, bqm.adj[2])
-        self.assertEqual(.4, bqm.adj[2][1])
+        self.assertAlmostEqual(.4, bqm.adj[2][1])
 
         self.assertNotIn(2, bqm.adj[0])
         with self.assertRaises(KeyError):
@@ -317,7 +319,7 @@ class TestChangeVartype(unittest.TestCase):
             binary_energy += sum(binary_sample[v] * binary_sample[u] * bias
                                  for (u, v), bias in binary.quadratic.items())
 
-            self.assertAlmostEqual(spin_energy, binary_energy)
+            self.assertAlmostEqual(spin_energy, binary_energy, places=5)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_change_vartype_binary_to_binary_copy(self, name, BQM):
@@ -562,7 +564,7 @@ class TestConstruction(unittest.TestCase):
 
         self.assertEqual(bqm.linear, {v: v+1 for v in range(5)})
         self.assertEqual(bqm.quadratic, {})
-        self.assertEqual(bqm.offset, 1.2)
+        self.assertAlmostEqual(bqm.offset, 1.2)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
@@ -577,7 +579,7 @@ class TestConstruction(unittest.TestCase):
         adj_target.update(a=dict(b=-1), b=dict(a=-1))
         self.assertEqual(bqm.linear, htarget)
         self.assertEqual(bqm.adj, adj_target)
-        self.assertEqual(bqm.offset, 1.2)
+        self.assertAlmostEqual(bqm.offset, 1.2)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
@@ -595,7 +597,7 @@ class TestConstruction(unittest.TestCase):
         assert_consistent_bqm(bqm)
         self.assertEqual(bqm.linear, {0: 0, 1: 0, 2: 0, 4: 0, 5: 0})
         self.assertEqual(bqm.quadratic, {(0, 1): -1, (1, 2): 1.5, (4, 5): 7})
-        self.assertEqual(bqm.offset, 5)
+        self.assertAlmostEqual(bqm.offset, 5)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_no_args(self, name, BQM):
@@ -702,7 +704,7 @@ class TestContractVariables(unittest.TestCase):
 
         target = BQM({'a': -6}, {'ac': 1}, -.8, dimod.SPIN)
 
-        self.assertEqual(bqm, target)
+        assert_bqm_almost_equal(bqm, target, places=5)
 
 
 class TestCoo(unittest.TestCase):
@@ -1307,7 +1309,7 @@ class TestFromQUBO(unittest.TestCase):
         self.assertEqual(bqm.adj, {0: {1: -1, 2: -1},
                                    1: {0: -1, 2: 1},
                                    2: {0: -1, 1: 1}})
-        self.assertEqual(bqm.offset, 1.6)
+        self.assertAlmostEqual(bqm.offset, 1.6)
 
 
 class TestGetLinear(unittest.TestCase):
@@ -1506,7 +1508,7 @@ class TestNumpyMatrix(unittest.TestCase):
 
         for (row, col), bias in np.ndenumerate(M):
             if row == col:
-                self.assertEqual(bias, linear[row])
+                self.assertAlmostEqual(bias, linear[row])
             else:
                 self.assertTrue((row, col) in quadratic or (col, row) in quadratic)
                 self.assertFalse((row, col) in quadratic and (col, row) in quadratic)
@@ -1515,9 +1517,9 @@ class TestNumpyMatrix(unittest.TestCase):
                     self.assertEqual(bias, 0)
                 else:
                     if (row, col) in quadratic:
-                        self.assertEqual(quadratic[(row, col)], bias)
+                        self.assertAlmostEqual(quadratic[(row, col)], bias)
                     else:
-                        self.assertEqual(quadratic[(col, row)], bias)
+                        self.assertAlmostEqual(quadratic[(col, row)], bias)
 
         #
 
@@ -1539,7 +1541,8 @@ class TestNumpyMatrix(unittest.TestCase):
 
         M = bqm.to_numpy_matrix(['a', 'c', 'b'])
 
-        self.assertTrue(np.array_equal(M, [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]))
+        target = [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]
+        np.testing.assert_array_almost_equal(M, target)
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_functional(self, name, BQM):
@@ -1885,7 +1888,9 @@ class TestRelabel(unittest.TestCase):
         del newlinear[0]
         del newlinear[1]
 
-        self.assertEqual(newlinear, newmodel.linear)
+        self.assertEqual(set(newlinear), set(newmodel.linear))
+        for v in newlinear:
+            self.assertAlmostEqual(newlinear[v], newmodel.linear[v])
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_partial_relabel_inplace(self, name, BQM):
@@ -1904,7 +1909,9 @@ class TestRelabel(unittest.TestCase):
         mapping = {0: 'a', 1: 'b'}  # partial mapping
         bqm.relabel_variables(mapping, inplace=True)
 
-        self.assertEqual(newlinear, bqm.linear)
+        self.assertEqual(set(newlinear), set(bqm.linear))
+        for v in newlinear:
+            self.assertAlmostEqual(newlinear[v], bqm.linear[v])
 
 
 class TestScale(unittest.TestCase):
@@ -2481,8 +2488,6 @@ class TestUpdate(unittest.TestCase):
 
         target = BQM({'a': .3, 'b': -2, 'c': -4}, {'ab': -1, 'cb': 4},
                      3.2, dimod.BINARY)
-
-        print(binary, target)
 
         self.assertEqual(binary, target)
 

@@ -34,7 +34,11 @@ from dimod.decorators import forwarding_method
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
-__all__ = ['BinaryQuadraticModel']
+__all__ = ['BinaryQuadraticModel',
+           'BQM',
+           'BQMfloat32',
+           'BQMfloat64',
+           ]
 
 
 Variable = Hashable  # todo: doc, and exclude None
@@ -1032,3 +1036,16 @@ class BinaryQuadraticModel:
             return
 
         raise NotImplementedError
+
+
+BQM = BinaryQuadraticModel
+
+
+class BQMfloat32(BQM):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, dtype=np.float32, **kwargs)
+
+
+class BQMfloat64(BQM):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, dtype=np.float64, **kwargs)
