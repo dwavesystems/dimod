@@ -54,6 +54,7 @@ Examples:
 
 """
 import enum
+import typing
 
 __all__ = ['as_vartype',
            'Vartype', 'ExtendedVartype',
@@ -87,7 +88,11 @@ BINARY = Vartype.BINARY
 DISCRETE = ExtendedVartype.DISCRETE
 
 
-def as_vartype(vartype, extended=False):
+VartypeLike = typing.Union[Vartype, str, frozenset]
+ExtendedVartypeLike = typing.Union[VartypeLike, ExtendedVartype]
+
+
+def as_vartype(vartype: ExtendedVartypeLike, extended: bool = False):
     """Cast various inputs to a valid vartype object.
 
     Args:
