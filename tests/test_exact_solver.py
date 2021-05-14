@@ -54,7 +54,7 @@ class TestExactSolver(unittest.TestCase):
         response = dimod.ExactDQMSolver().sample_dqm(dqm)
 
         self.assertEqual(response.record.sample.shape, (0, 0))
-        self.assertIs(response.vartype, 'DISCRETE')
+        self.assertIs(response.vartype, dimod.DISCRETE)
 
     def test_sample_SPIN(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
@@ -96,14 +96,14 @@ class TestExactSolver(unittest.TestCase):
                         linear_biases = [0, 1, 2, 0, 1, 2, 3, 4, 5],
                         quadratic =     ([5, 5, 5, 7, 7, 7], [0, 1, 2, 0, 1, 2], [0, 1, 2, 1, 2, 3])
                                 )
-        response = dimod.ExactDQMSolver().sample(dqm)
+        response = dimod.ExactDQMSolver().sample_dqm(dqm)
 
         # every possible combination should be present
-        self.assertEqual(len(response), 15)
-        self.assertEqual(response.record.sample.shape, (15, dqm.num_variables()))
+        self.assertEqual(len(response), 18)
+        self.assertEqual(response.record.sample.shape, (18, dqm.num_variables()))
 
         #confirm vartype
-        self.assertIs(response.vartype, 'DISCRETE')
+        self.assertIs(response.vartype, dimod.DISCRETE)
 
         dimod.testing.assert_response_energies(response, dqm)
 
@@ -168,7 +168,7 @@ class TestExactSolver(unittest.TestCase):
         self.assertEqual(set(sampleset.variables), set(bqm.variables))
 
         dqm = dimod.DQM.from_numpy_vectors([0], [-1], ([], [], []), labels={'ab'})
-        sampleset = dimod.ExactDQMSolver().sample(dqm)
+        sampleset = dimod.ExactDQMSolver().sample_dqm(dqm)
         self.assertEqual(set(sampleset.variables), set(dqm.variables))
 
     def test_kwargs(self):
