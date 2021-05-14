@@ -29,20 +29,19 @@ except ImportError:
     ArrayLike = Any
     DTypeLike = Any
 
-from dimod.binary.cybqm import cybqm_cls
+from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
+from dimod.binary.pybqm import pyBQM
 from dimod.decorators import forwarding_method
+from dimod.typing import Bias, Variable
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BinaryQuadraticModel',
            'BQM',
-           'BQMfloat32',
-           'BQMfloat64',
+           'DictBQM',
+           'Float32BQM',
+           'Float64BQM',
            ]
-
-
-Variable = Hashable  # todo: doc, and exclude None
-Bias = Union[int, float, np.number]
 
 
 class BQMView:
@@ -178,6 +177,12 @@ class Quadratic(MutableMapping, BQMView):
 class BinaryQuadraticModel:
     """TODO"""
 
+    _DATA_CLASSES = {
+        np.dtype(np.float32): cyBQM_float32,
+        np.dtype(np.float64): cyBQM_float64,
+        np.dtype(np.object_): pyBQM,
+    }
+
     def __init__(self, *args, vartype=None, dtype=np.float64):
 
         if vartype is not None:
@@ -216,7 +221,7 @@ class BinaryQuadraticModel:
             raise TypeError(msg.format(len(args)))
 
     def _init_components(self, linear, quadratic, offset, vartype, dtype):
-        self.data = cybqm_cls(np.dtype(dtype))(vartype)
+        self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
 
         vartype = self.data.vartype
 
@@ -263,7 +268,7 @@ class BinaryQuadraticModel:
         self.offset += offset
 
     def _init_empty(self, vartype, dtype):
-        self.data = cybqm_cls(np.dtype(dtype))(vartype)
+        self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
 
     def __eq__(self, other):
         # todo: performance
@@ -671,7 +676,8 @@ class BinaryQuadraticModel:
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, *,
                            variable_order=None, dtype=np.float64):
         obj = super().__new__(cls)
-        obj.data = cybqm_cls(dtype).from_numpy_vectors(
+        data_cls = cls._DATA_CLASSES[np.dtype(dtype)]
+        obj.data = data_cls.from_numpy_vectors(
             linear, quadratic, offset, vartype,
             variable_order=variable_order)
         return obj
@@ -721,7 +727,7 @@ class BinaryQuadraticModel:
                           DeprecationWarning, stacklevel=2)
 
             # single variable case
-            if variables in self.variables:
+            if isinstance(variables, Hashable) in self.variables:
                 u = variables
                 for v, bias in self.iter_neighborhood(u):
                     yield u, v, bias
@@ -1041,11 +1047,16 @@ class BinaryQuadraticModel:
 BQM = BinaryQuadraticModel
 
 
-class BQMfloat32(BQM):
+class DictBQM(BQM):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, dtype=object, **kwargs)
+
+
+class Float32BQM(BQM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, dtype=np.float32, **kwargs)
 
 
-class BQMfloat64(BQM):
+class Float64BQM(BQM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, dtype=np.float64, **kwargs)

@@ -12,21 +12,5 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import numpy as np
-
 from dimod.binary.cybqm.cybqm_float32 import cyBQM_float32
 from dimod.binary.cybqm.cybqm_float64 import cyBQM_float64
-
-__all__ = [
-    'cyBQM_float32',
-    'cyBQM_float64',
-    ]
-
-
-def cybqm_cls(dtype):
-    if np.issubdtype(dtype, np.float32):
-        return cyBQM_float32
-    elif np.issubdtype(dtype, np.float64):
-        return cyBQM_float64
-    else:
-        raise ValueError("unsupported dtype")

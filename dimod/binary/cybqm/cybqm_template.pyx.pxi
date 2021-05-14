@@ -26,12 +26,12 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.unordered_set cimport unordered_set
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float
+from dimod.cyutilities cimport as_numpy_float, Integer
 from dimod.cyutilities import coo_sort
 from dimod.sampleset import as_samples
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.variables import Variables
-from dimod.vartypes import Vartype as Vartype, as_vartype
+from dimod.vartypes import Vartype, as_vartype
 
 
 # Design principles/conventions:
@@ -254,10 +254,10 @@ cdef class cyBQM_template(cyBQMBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _from_numpy_vectors(cls,
-                            Numeric32plus[::1] linear,
-                            Integral32plus[::1] irow,
-                            Integral32plus[::1] icol,
-                            Numeric32plus[::1] qdata,
+                            Numeric[::1] linear,
+                            Integer[::1] irow,
+                            Integer[::1] icol,
+                            Numeric[::1] qdata,
                             bias_type offset,
                             object vartype):
         """Equivalent of from_numpy_vectors with fused types."""

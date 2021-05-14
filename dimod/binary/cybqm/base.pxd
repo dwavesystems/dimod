@@ -15,29 +15,5 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cimport cython
-
-cimport numpy as np
-
-__all__ = ['cyBQMBase']
-
-# todo: be consistent about sign/unsign and support int8
-
-ctypedef fused Integral32plus:
-    np.uint32_t
-    np.uint64_t
-    np.int32_t
-    np.int64_t
-
-ctypedef fused Numeric:
-    cython.integral  # short, int, long
-    cython.floating  # float, double
-
-ctypedef fused Numeric32plus:
-    Integral32plus
-    np.float32_t
-    np.float64_t
-
-
 cdef class cyBQMBase:
     pass

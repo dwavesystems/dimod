@@ -17,12 +17,10 @@ cimport cython
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
-# cimport numpy as np
-
 from dimod.binary.cybqm.base cimport cyBQMBase
-from dimod.binary.cybqm.base cimport Integral32plus, Numeric, Numeric32plus
-
 from dimod.cyvariables cimport cyVariables
+from dimod.cyutilities cimport Numeric 
+
 
 cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
     enum cppVartype "dimod::Vartype":
@@ -67,9 +65,8 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
 cdef class cyBQM_template(cyBQMBase):
     cdef cppBinaryQuadraticModel[bias_type, index_type] cppbqm
 
-    cdef readonly cyVariables variables
-
     cdef readonly object dtype
+    cdef readonly cyVariables variables
 
     # developer note: we mostly use Py_ssize_t rather than size_t
     # since python does not really have an unsigned integer type that it

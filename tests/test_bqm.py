@@ -31,7 +31,7 @@ from parameterized import parameterized
 import dimod
 
 from dimod.binary import BinaryQuadraticModel as newBQM
-from dimod.binary import BQMfloat32, BQMfloat64
+from dimod.binary import DictBQM, Float32BQM, Float64BQM
 
 from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
@@ -43,7 +43,7 @@ BQM_SUBCLASSES = [dimod.AdjDictBQM,
                   dimod.AdjVectorBQM,
                   dimod.BinaryQuadraticModel,
                   newBQM,
-                  BQMfloat32, BQMfloat64
+                  DictBQM, Float32BQM, Float64BQM,
                   ]
 
 
@@ -1210,7 +1210,8 @@ class TestFromNumpyVectors(unittest.TestCase):
         # to float
         integral = [np.uint8, np.uint16, np.uint32,
                     np.int8, np.int16, np.int32, np.int64]
-        numeric = integral + [np.float32, np.float64]
+        numeric = [np.int8, np.int16, np.int32, np.int64,
+                   np.float32, np.float64]
 
         h = [1, 2, 3]
         heads = [0, 1]
@@ -1229,17 +1230,6 @@ class TestFromNumpyVectors(unittest.TestCase):
                 self.assertEqual(bqm.linear, {0: 1, 1: 2, 2: 3})
                 self.assertEqual(
                     bqm.adj, {0: {1: 4}, 1: {0: 4, 2: 5}, 2: {1: 5}})
-
-        with self.subTest('uint64 combos'):
-            bqm = BQM.from_numpy_vectors(
-                np.asarray(h, dtype=np.uint64),
-                (np.asarray(heads, dtype=np.uint64),
-                 np.asarray(tails, dtype=np.uint64),
-                 np.asarray(values, dtype=np.uint64)),
-                0.0, 'SPIN')
-
-            self.assertEqual(bqm.linear, {0: 1, 1: 2, 2: 3})
-            self.assertEqual(bqm.adj, {0: {1: 4}, 1: {0: 4, 2: 5}, 2: {1: 5}})
 
     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SUBCLASSES])
     def test_empty(self, _, BQM):
