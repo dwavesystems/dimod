@@ -68,7 +68,9 @@ class pyBQM:
         self.add_variable(u)
         self.add_variable(v)
 
-        self._adj[u][v] = self._adj[v][u] = self._adj[v].get(u, 0) + bias
+        zero = type(bias)(0)
+
+        self._adj[u][v] = self._adj[v][u] = bias + self._adj[v].get(u, zero)
 
     def add_quadratic_from_dense(self, quadratic: ArrayLike):
         quadratic = np.asarray(quadratic)

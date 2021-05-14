@@ -241,10 +241,14 @@ class BinaryQuadraticModel:
                     self.add_quadratic(u, v, bias)
 
         else:
-            quadratic = np.asarray(quadratic, order='C')
+            if self.dtype == np.dtype('O') and not hasattr(quadratic, 'dtype'):
+                dt = np.dtype('O')
+            else:
+                dt = None
+
+            quadratic = np.asarray(quadratic, order='C', dtype=dt)
             diag = np.diagonal(quadratic)
             if diag.any():
-
                 if vartype is Vartype.SPIN:
                     self.offset += diag.sum()
                 elif vartype is Vartype.BINARY:
@@ -624,7 +628,7 @@ class BinaryQuadraticModel:
                       'dimod 0.10.0, '
                       'use dimod.serialization.coo.load(bqm) or '
                       'dimod.serialization.coo.loads(bqm, fp) instead.',
-                      stacklevel=2)
+                      DeprecationWarning, stacklevel=2)
 
         import dimod.serialization.coo as coo
 
@@ -659,7 +663,8 @@ class BinaryQuadraticModel:
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0,
                           interactions=None):
         warnings.warn('BQM.from_numpy_matrix(M) is deprecated since dimod '
-                      '0.10.0, use BQM(M, "BINARY") instead.', stacklevel=2)
+                      '0.10.0, use BQM(M, "BINARY") instead.',
+                      DeprecationWarning, stacklevel=2)
         bqm = cls(mat, Vartype.BINARY)
         bqm.offset = offset
 
@@ -703,7 +708,8 @@ class BinaryQuadraticModel:
 
     def has_variable(self, v):
         warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0, '
-                      'use v in bqm.variables instead.', stacklevel=2)
+                      'use v in bqm.variables instead.', 
+                      DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
     @forwarding_method
@@ -948,7 +954,7 @@ class BinaryQuadraticModel:
         warnings.warn('bqm.to_coo() is deprecated since dimod 0.10.0, '
                       'use dimod.serialization.coo.dump(bqm) or '
                       'dimod.serialization.coo.dumps(bqm, fp) instead.',
-                      stacklevel=2)
+                      DeprecationWarning, stacklevel=2)
 
         import dimod.serialization.coo as coo
 
@@ -975,7 +981,7 @@ class BinaryQuadraticModel:
 
     def to_numpy_matrix(self, variable_order=None):
         warnings.warn('bqm.to_numpy_matrix() is deprecated since dimod 0.10.0',
-                      stacklevel=2)
+                      DeprecationWarning, stacklevel=2)
 
         if variable_order is None:
             if self.variables ^ range(self.num_variables):
