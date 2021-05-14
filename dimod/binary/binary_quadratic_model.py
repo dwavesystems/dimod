@@ -16,7 +16,7 @@ import copy
 import io
 import warnings
 
-from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container
+from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container, Collection
 from functools import cached_property
 from numbers import Integral, Number
 from typing import Hashable, Union, Tuple, Optional, Any
@@ -41,6 +41,7 @@ __all__ = ['BinaryQuadraticModel',
            'DictBQM',
            'Float32BQM',
            'Float64BQM',
+           'as_bqm',
            ]
 
 
@@ -196,15 +197,13 @@ class BinaryQuadraticModel:
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             if isinstance(args[0], BinaryQuadraticModel):
-                raise NotImplementedError
-                self._init_bqm(args[0], dtype=dtype)
+                self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
         elif len(args) == 2:
             # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
             if isinstance(args[0], BinaryQuadraticModel):
-                raise NotImplementedError
-                self._init_bqm(args[0], args[1], dtype=dtype)
+                self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             elif isinstance(args[0], Integral):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
@@ -220,6 +219,14 @@ class BinaryQuadraticModel:
             msg = "__init__() takes 4 positional arguments but {} were given."
             raise TypeError(msg.format(len(args)))
 
+    def _init_bqm(self, bqm, vartype, dtype):
+        if dtype is None:
+            dtype = bqm.dtype
+        if vartype is None:
+            vartype = bqm.vartype
+        self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
+        self.data.update(bqm.data)
+
     def _init_components(self, linear, quadratic, offset, vartype, dtype):
         self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
 
@@ -227,7 +234,7 @@ class BinaryQuadraticModel:
 
         if isinstance(quadratic, (Mapping, Iterator)):
             if isinstance(quadratic, Mapping):
-                quadratic = ((u, v, bias) for (u, v), bias in quadratic.items())
+                quadratic = ((u, v, b) for (u, v), b in quadratic.items())
 
             for u, v, bias in quadratic:
                 if u == v:
@@ -1066,3 +1073,82 @@ class Float32BQM(BQM):
 class Float64BQM(BQM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, dtype=np.float64, **kwargs)
+
+
+def as_bqm(*args, cls: None = None, copy: bool = False,
+           dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    """Convert the input to a binary quadratic model.
+
+    Converts the following input formats to a binary quadratic model (BQM):
+
+        as_bqm(vartype)
+            Creates an empty binary quadratic model.
+
+        as_bqm(bqm)
+            Creates a BQM from another BQM. See `copy` and `cls` kwargs below.
+
+        as_bqm(bqm, vartype)
+            Creates a BQM from another BQM, changing to the appropriate
+            `vartype` if necessary. See `copy` and `cls` kwargs below.
+
+        as_bqm(n, vartype)
+            Creates a BQM with `n` variables, indexed linearly from zero,
+            setting all biases to zero.
+
+        as_bqm(quadratic, vartype)
+            Creates a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form `{(u, v): b, ...}`. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        as_bqm(linear, quadratic, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`. Note that when formed
+            with SPIN-variables, biases on the diagonal are added to the offset.
+
+        as_bqm(linear, quadratic, offset, vartype)
+            Creates a BQM from linear and quadratic biases, where `linear` is a
+            one-dimensional array_like_ or a dictionary of the form
+            `{v: b, ...}`, and `quadratic` is a square array_like_ or a
+            dictionary of the form `{(u, v): b, ...}`, and `offset` is a
+            numerical offset. Note that when formed with SPIN-variables, biases
+            on the diagonal are added to the offset.
+
+    Args:
+        *args: See above.
+
+        cls: Deprecated. This function always returns a
+            :class:`.BinaryQuadraticModel`.
+
+        copy: If False, a new BQM is only constructed when
+            necessary.
+
+        dtype: Data type of the returned BQM.
+
+    Returns:
+        A binary quadratic model.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
+    """
+    if cls is not None:
+        warnings.warn("the 'cls' keyword argument of 'as_bqm' is deprecated "
+                      " as of dimod 0.10.0 and does nothing.",
+                      DeprecationWarning, stacklevel=2)
+
+    if not copy:
+        # the only cases we don't copy in are when the dtype and vartype match
+        # a given bqm
+        if isinstance(args[0], BinaryQuadraticModel):
+            bqm = args[0]
+            if dtype is None or np.dtype(dtype) == bqm.dtype:
+                if len(args) == 1:
+                    return bqm
+                elif len(args) == 2:
+                    vartype = args[1]
+                    if bqm.vartype is as_vartype(vartype):
+                        return bqm
+
+    return BinaryQuadraticModel(*args, dtype=dtype)

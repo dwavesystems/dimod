@@ -66,6 +66,7 @@ cdef class cyBQM_template(cyBQMBase):
     cdef cppBinaryQuadraticModel[bias_type, index_type] cppbqm
 
     cdef readonly object dtype
+    cdef readonly object index_dtype
     cdef readonly cyVariables variables
 
     # developer note: we mostly use Py_ssize_t rather than size_t

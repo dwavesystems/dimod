@@ -31,10 +31,9 @@ from parameterized import parameterized
 import dimod
 
 from dimod.binary import BinaryQuadraticModel, DictBQM, Float32BQM, Float64BQM
+from dimod.binary import as_bqm
 from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
-
-BQM_SUBCLASSES = [BinaryQuadraticModel, DictBQM, Float32BQM, Float64BQM]
 
 BQMs = dict(BinaryQuadraticModel=BinaryQuadraticModel,
             DictBQM=DictBQM,
@@ -165,99 +164,38 @@ class TestAdjacency(unittest.TestCase):
             bqm.adj[2][0]
 
 
-# class TestAsBQM(unittest.TestCase):
-#     def test_basic(self):
-#         bqm = dimod.as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
+class TestAsBQM(unittest.TestCase):
+    def test_basic(self):
+        bqm = as_bqm({0: -1}, {(0, 1): 5}, 1.6, dimod.SPIN)
 
-#         assert_consistent_bqm(bqm)
+        assert_consistent_bqm(bqm)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_bqm_input(self, name, BQM):
-#         bqm = BQM({'ab': -1}, dimod.BINARY)
+    @parameterized.expand(BQMs.items())
+    def test_bqm_input(self, name, BQM):
+        bqm = BQM({'ab': -1}, dimod.BINARY)
 
-#         self.assertIs(dimod.as_bqm(bqm), bqm)
-#         self.assertEqual(dimod.as_bqm(bqm), bqm)
-#         self.assertIsNot(dimod.as_bqm(bqm, copy=True), bqm)
-#         self.assertEqual(dimod.as_bqm(bqm, copy=True), bqm)
+        self.assertIs(as_bqm(bqm), bqm)
+        self.assertEqual(as_bqm(bqm), bqm)
+        self.assertIsNot(as_bqm(bqm, copy=True), bqm)
+        self.assertEqual(as_bqm(bqm, copy=True), bqm)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_bqm_input_change_vartype(self, name, BQM):
-#         bqm = BQM({'ab': -1}, dimod.BINARY)
+    @parameterized.expand(BQMs.items())
+    def test_bqm_input_change_vartype(self, name, BQM):
+        bqm = BQM({'ab': -1}, dimod.BINARY)
 
-#         self.assertEqual(dimod.as_bqm(bqm, 'SPIN').vartype, dimod.SPIN)
+        self.assertEqual(as_bqm(bqm, 'SPIN').vartype, dimod.SPIN)
 
-#         self.assertIs(dimod.as_bqm(bqm, 'BINARY'), bqm)
-#         self.assertIsNot(dimod.as_bqm(bqm, 'BINARY', copy=True), bqm)
-#         self.assertEqual(dimod.as_bqm(bqm, 'BINARY', copy=True), bqm)
+        self.assertIs(as_bqm(bqm, 'BINARY'), bqm)
+        self.assertIsNot(as_bqm(bqm, 'BINARY', copy=True), bqm)
+        self.assertEqual(as_bqm(bqm, 'BINARY', copy=True), bqm)
 
-#     def test_type_target(self):
-
-#         for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-#             bqm = source({'a': -1}, {}, dimod.BINARY)
-#             new = dimod.as_bqm(bqm, cls=target)
-
-#             self.assertIsInstance(new, target)
-#             self.assertEqual(bqm, new)
-
-#             if issubclass(source, target):
-#                 self.assertIs(bqm, new)
-#             else:
-#                 self.assertIsNot(bqm, new)
-
-#     def test_type_target_copy(self):
-
-#         for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-#             bqm = source({'a': -1}, {}, dimod.BINARY)
-#             new = dimod.as_bqm(bqm, cls=target, copy=True)
-
-#             self.assertIsInstance(new, target)
-#             self.assertEqual(bqm, new)
-#             self.assertIsNot(bqm, new)
-
-#     def test_type_filter_empty(self):
-#         subclasses = list(BQM_SUBCLASSES)
-
-#         if len(subclasses) < 1:
-#             return
-
-#         BQM = subclasses[0]
-
-#         with self.assertRaises(ValueError):
-#             dimod.as_bqm(BQM('SPIN'), cls=[])
-
-#     def test_type_filter_exclusive(self):
-#         subclasses = list(BQM_SUBCLASSES)
-
-#         if len(subclasses) < 3:
-#             return
-
-#         BQM0, BQM1, BQM2 = subclasses[0], subclasses[1], subclasses[2]
-
-#         bqm = BQM0({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, .4, 'SPIN')
-
-#         new = dimod.as_bqm(bqm, cls=[BQM1, BQM2])
-
-#         self.assertIsInstance(new, (BQM1, BQM2))
-#         self.assertEqual(new, bqm)
-
-#     def test_type_filter_inclusive(self):
-#         subclasses = list(BQM_SUBCLASSES)
-
-#         if len(subclasses) < 2:
-#             return
-
-#         BQM0, BQM1 = subclasses[0], subclasses[1]
-
-#         bqm = BQM0({0: 1, 1: -1, 2: .5}, {(0, 1): .5, (1, 2): 1.5}, .4, 'SPIN')
-
-#         new = dimod.as_bqm(bqm, cls=[BQM1, BQM0])
-
-#         self.assertIsInstance(new, BQM0)
-#         self.assertIs(new, bqm)  # pass through
+    def test_cls(self):
+        bqm = BinaryQuadraticModel({'ab': -1}, dimod.BINARY)
+        with self.assertWarns(DeprecationWarning):
+            as_bqm(bqm, cls=123)
 
 
 class TestChangeVartype(unittest.TestCase):
-
     def assertConsistentEnergies(self, spin, binary):
         """Brute force check that spin and binary bqms have idential energy
         for all possible samples.
@@ -404,77 +342,77 @@ class TestConstruction(unittest.TestCase):
         for bias in bqm.quadratic.values():
             self.assertIsInstance(bias, numbers.Number)
 
-    # def test_bqm_binary(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.BINARY
-    #     for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             new = target(bqm)
+    def test_bqm_binary(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.BINARY
+        for source, target in itertools.product(BQMs.values(), repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm)
 
-    #             self.assertIsInstance(new, target)
-    #             assert_consistent_bqm(new)
-    #             self.assertEqual(bqm.adj, new.adj)
-    #             self.assertEqual(bqm.offset, new.offset)
-    #             self.assertEqual(bqm.vartype, new.vartype)
+                self.assertIsInstance(new, target)
+                assert_consistent_bqm(new)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
-    # def test_bqm_spin(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.SPIN
-    #     for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             new = target(bqm)
+    def test_bqm_spin(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.SPIN
+        for source, target in itertools.product(BQMs.values(), repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm)
 
-    #             self.assertIsInstance(new, target)
-    #             assert_consistent_bqm(new)
-    #             self.assertEqual(bqm.adj, new.adj)
-    #             self.assertEqual(bqm.offset, new.offset)
-    #             self.assertEqual(bqm.vartype, new.vartype)
+                self.assertIsInstance(new, target)
+                assert_consistent_bqm(new)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
-    # def test_bqm_binary_to_spin(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.BINARY
-    #     for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             new = target(bqm, vartype=dimod.SPIN)
+    def test_bqm_binary_to_spin(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.BINARY
+        for source, target in itertools.product(BQMs.values(), repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm, vartype=dimod.SPIN)
 
-    #             self.assertIsInstance(new, target)
-    #             assert_consistent_bqm(new)
-    #             self.assertEqual(new.vartype, dimod.SPIN)
+                self.assertIsInstance(new, target)
+                assert_consistent_bqm(new)
+                self.assertEqual(new.vartype, dimod.SPIN)
 
-    #             # change back for equality check
-    #             new.change_vartype(dimod.BINARY)
-    #             self.assertEqual(bqm.adj, new.adj)
-    #             self.assertEqual(bqm.offset, new.offset)
-    #             self.assertEqual(bqm.vartype, new.vartype)
+                # change back for equality check
+                new.change_vartype(dimod.BINARY)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
-    # def test_bqm_spin_to_binary(self):
-    #     linear = {'a': -1, 'b': 1, 0: 1.5}
-    #     quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
-    #     offset = 0
-    #     vartype = dimod.SPIN
-    #     for source, target in itertools.product(BQM_SUBCLASSES, repeat=2):
-    #         with self.subTest(source=source, target=target):
-    #             bqm = source(linear, quadratic, offset, vartype)
-    #             new = target(bqm, vartype=dimod.BINARY)
+    def test_bqm_spin_to_binary(self):
+        linear = {'a': -1, 'b': 1, 0: 1.5}
+        quadratic = {(0, 1): -1, (0, 0): 1, (1, 2): 1.5, (2, 2): 4, (4, 5): 7}
+        offset = 0
+        vartype = dimod.SPIN
+        for source, target in itertools.product(BQMs.values(), repeat=2):
+            with self.subTest(source=source, target=target):
+                bqm = source(linear, quadratic, offset, vartype)
+                new = target(bqm, vartype=dimod.BINARY)
 
-    #             self.assertIsInstance(new, target)
-    #             assert_consistent_bqm(new)
-    #             self.assertEqual(new.vartype, dimod.BINARY)
+                self.assertIsInstance(new, target)
+                assert_consistent_bqm(new)
+                self.assertEqual(new.vartype, dimod.BINARY)
 
-    #             # change back for equality check
-    #             new.change_vartype(dimod.SPIN)
-    #             self.assertEqual(bqm.adj, new.adj)
-    #             self.assertEqual(bqm.offset, new.offset)
-    #             self.assertEqual(bqm.vartype, new.vartype)
+                # change back for equality check
+                new.change_vartype(dimod.SPIN)
+                self.assertEqual(bqm.adj, new.adj)
+                self.assertEqual(bqm.offset, new.offset)
+                self.assertEqual(bqm.vartype, new.vartype)
 
     @parameterized.expand(BQMs.items())
     def test_dense_zeros(self, name, BQM):
@@ -510,17 +448,6 @@ class TestConstruction(unittest.TestCase):
         bqm = BQM(h, J, dimod.SPIN)
 
         self.assertEqual(bqm.shape, (5, 10))
-
-    # @parameterized.expand(BQMs.items())
-    # def test_legacy_bqm(self, name, BQM):
-    #     lbqm = dimod.BinaryQuadraticModel.from_ising({'a': 2}, {'ab': -1}, 7)
-
-    #     new = BQM(lbqm)
-
-    #     self.assertEqual(lbqm.linear, new.linear)
-    #     self.assertEqual(lbqm.adj, new.adj)
-    #     self.assertEqual(lbqm.offset, new.offset)
-    #     self.assertEqual(lbqm.vartype, new.vartype)
 
     @parameterized.expand(BQMs.items())
     def test_linear_array_quadratic_array(self, name, BQM):
@@ -1025,8 +952,7 @@ class TestEnergies(unittest.TestCase):
 
 
 # class TestFileView(unittest.TestCase):
-#     @parameterized.expand(
-#         [(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+#     @parameterized.expand(BQMs.items())
 #     def test_empty(self, name, BQM):
 #         bqm = BQM('SPIN')
 
@@ -1038,8 +964,7 @@ class TestEnergies(unittest.TestCase):
 
 #         self.assertEqual(bqm, new)
 
-#     @parameterized.expand(
-#         [(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
+#     @parameterized.expand(BQMs.items())
 #     def test_2path(self, name, BQM):
 #         bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
 
@@ -2624,7 +2549,7 @@ class TestViews(unittest.TestCase):
     # def test_lin_minmax(self, name, BQM):
     #     num_vars = 10
     #     D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
-    #     bqm = BQM(D, 'SPIN') 
+    #     bqm = BQM(D, 'SPIN')
 
     #     lmin = min(bqm.linear.values())
     #     self.assertEqual(lmin, bqm.linear.min())
@@ -2636,17 +2561,17 @@ class TestViews(unittest.TestCase):
     # def test_quad_minmax(self, name, BQM):
     #     num_vars = 10
     #     D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
-    #     bqm = BQM(D, 'SPIN') 
+    #     bqm = BQM(D, 'SPIN')
 
     #     qmin = min(bqm.quadratic.values())
     #     self.assertEqual(qmin, bqm.quadratic.min())
-       
+
     #     qmax = max(bqm.quadratic.values())
     #     self.assertEqual(qmax, bqm.quadratic.max())
 
     # @parameterized.expand(BQMs.items())
     # def test_lin_minmax_empty(self, name, BQM):
-    #     bqm = BQM('SPIN') 
+    #     bqm = BQM('SPIN')
 
     #     # Test when default is not set
     #     with self.assertRaises(ValueError):
@@ -2654,14 +2579,14 @@ class TestViews(unittest.TestCase):
 
     #     with self.assertRaises(ValueError):
     #         bqm.linear.max()
-        
+
     #     # Test when default is set
     #     self.assertEqual(bqm.linear.min(default=1), 1)
     #     self.assertEqual(bqm.linear.max(default=2), 2)
 
     # @parameterized.expand(BQMs.items())
     # def test_quad_minmax_empty(self, name, BQM):
-    #     bqm = BQM(500, 'SPIN') 
+    #     bqm = BQM(500, 'SPIN')
 
     #     # Test when default is not set
     #     with self.assertRaises(ValueError):

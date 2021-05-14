@@ -44,6 +44,7 @@ from dimod.vartypes import Vartype, as_vartype
 cdef class cyBQM_template(cyBQMBase):
     def __init__(self, vartype):
         self.dtype = np.dtype(BIAS_DTYPE)
+        self.index_dtype = np.dtype(INDEX_DTYPE)
         self.change_vartype(vartype)
         self.variables = Variables()
 
@@ -510,8 +511,8 @@ cdef class cyBQM_template(cyBQMBase):
 
         # numpy arrays, we will return these
         ldata = np.empty(num_variables, dtype=self.dtype)
-        irow = np.empty(num_interactions, dtype=INDEX_DTYPE)
-        icol = np.empty(num_interactions, dtype=INDEX_DTYPE)
+        irow = np.empty(num_interactions, dtype=self.index_dtype)
+        icol = np.empty(num_interactions, dtype=self.index_dtype)
         qdata = np.empty(num_interactions, dtype=self.dtype)
 
         # views into the numpy arrays for faster cython access
@@ -583,7 +584,7 @@ cdef class cyBQM_template(cyBQMBase):
 
         return tuple(ret)
 
-    def update(self, cyBQM other):
+    def _update(self, cyBQM other):
         # get the reindexing
         cdef vector[Py_ssize_t] mapping
         mapping.reserve(other.num_variables())
@@ -593,3 +594,25 @@ cdef class cyBQM_template(cyBQMBase):
         self.cppbqm.add_bqm(other.cppbqm, mapping)
 
         assert self.variables.size() == self.cppbqm.num_variables()
+
+    def update(self, other):
+        try:
+            self._update(other)
+        except TypeError:
+            pass
+        else:
+            return
+
+        assert not isinstance(other, cyBQMBase)
+
+        if other.vartype != self.vartype:
+            other = copy.deepcopy(other)
+            other.change_vartype(self.vartype)
+
+        for v in other.variables:
+            self.add_linear(v, other.get_linear(v))
+
+        for u, v, bias in other.iter_quadratic():
+            self.add_quadratic(u, v, bias)
+
+        self._add_offset(other.offset)
