@@ -200,10 +200,10 @@ class ExactDQMSolver(Sampler):
         if n == 0:
             return SampleSet.from_samples([], 'DISCRETE', energy=[])
 
-        possible_samples = as_samples(_all_cases_dqm(dqm))
+        possible_samples = as_samples((_all_cases_dqm(dqm), list(dqm.variables)))
         energies = dqm.energies(possible_samples)
         
-        response = SampleSet.from_samples(possible_samples, 'DISCRETE', energies).relabel_variables(dict(enumerate(dqm.variables)))
+        response = SampleSet.from_samples(possible_samples, 'DISCRETE', energies)
         return response
 
 
