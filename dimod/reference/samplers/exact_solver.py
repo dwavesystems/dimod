@@ -159,7 +159,7 @@ class ExactPolySolver(PolySampler):
         """
         return ExactSolver().sample(polynomial, **kwargs)
 
-class ExactDQMSolver(Sampler):
+class ExactDQMSolver():
     """A simple exact solver for testing and debugging code using your local CPU.
 
     Notes:
@@ -167,12 +167,6 @@ class ExactDQMSolver(Sampler):
         variables, worse for increasingly many cases per variable.
 
     """
-    properties = None
-    parameters = None
-
-    def __init__(self):
-        self.properties = {}
-        self.parameters = {}
 
     def sample(self, dqm, **parameters):
         return self.sample_dqm(dqm, **parameters)
@@ -188,7 +182,6 @@ class ExactDQMSolver(Sampler):
             :obj:`~dimod.SampleSet`
 
         """
-        kwargs = self.remove_unknown_kwargs(**kwargs)
         
         n = dqm.num_variables()
         if n == 0:
