@@ -105,7 +105,7 @@ class TestExactSolver(unittest.TestCase):
         #confirm vartype
         self.assertIs(response.vartype, dimod.DISCRETE)
 
-        dimod.testing.assert_response_energies(response, dqm)
+        dimod.testing.assert_sampleset_energies_dqm(response, dqm)
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}
