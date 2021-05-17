@@ -21,11 +21,13 @@ Note:
     energy for every possible sample, they are very slow.
 """
 import numpy as np
+import warnings
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet, as_samples
 from dimod.core.polysampler import PolySampler
 from dimod.vartypes import Vartype
+from dimod.exceptions import SamplerUnknownArgWarning
 
 __all__ = ['ExactSolver', 'ExactPolySolver', 'ExactDQMSolver']
 
@@ -167,6 +169,28 @@ class ExactDQMSolver():
         variables, worse for increasingly many cases per variable.
 
     """
+    properties = None
+    parameters = None
+
+    def __init__(self):
+        self.properties = {}
+        self.parameters = {}
+
+    def remove_unknown_kwargs(self, **kwargs):
+        """Check that all `kwargs` are accepted by the sampler. If a
+        keyword is unknown, a warning is raised and the argument is removed.
+        Args:
+            **kwargs:
+                Keyword arguments to be validated.
+        Returns:
+            dict: Updated `kwargs`
+        """
+        for kw in [k for k in kwargs if k not in self.parameters]:
+            msg = "Ignoring unknown kwarg: {!r}".format(kw)
+            warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
+            kwargs.pop(kw)
+
+        return kwargs
 
     def sample(self, dqm, **parameters):
         return self.sample_dqm(dqm, **parameters)
