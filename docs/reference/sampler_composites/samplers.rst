@@ -44,6 +44,30 @@ Methods
    ExactSolver.sample_ising
    ExactSolver.sample_qubo
 
+Exact DQM Solver
+------------
+
+A simple DQM exact solver for testing and debugging code using your local CPU.
+
+Note:
+    This sampler is designed for use in testing. Because it calculates the
+    energy for every possible sample, it is very slow.
+
+
+Class
+~~~~~
+
+.. autoclass:: ExactDQMSolver
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ExactDQMSolver.sample
+   ExactDQMSolver.sample_dqm
+
 Identity Sampler
 ----------------
 
