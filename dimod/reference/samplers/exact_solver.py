@@ -174,12 +174,6 @@ class ExactDQMSolver(Sampler):
         self.properties = {}
         self.parameters = {}
 
-    def sample_ising(self, h, J, **parameters):
-        return ExactSolver().sample_ising(h, J, **parameters)
-
-    def sample_qubo(self, Q, **parameters):
-        return ExactSolver().sample_qubo(Q, **parameters)
-
     def sample(self, dqm, **parameters):
         return self.sample_dqm(dqm, **parameters)
 
