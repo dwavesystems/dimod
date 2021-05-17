@@ -42,9 +42,25 @@ cdef fused Integer:
     SignedInteger
     UnsignedInteger
 
+cdef fused ConstInteger:
+    const short
+    const int
+    const long
+    const unsigned int
+    const unsigned short
+    const unsigned long
+
 ctypedef fused Numeric:
     cython.integral  # short, int, long
     cython.floating  # float, double
+
+# cython doesn't like const Numeric
+ctypedef fused ConstNumeric:
+    const short
+    const int
+    const long
+    const float
+    const double
 
 
 cdef object as_numpy_float(cython.floating)

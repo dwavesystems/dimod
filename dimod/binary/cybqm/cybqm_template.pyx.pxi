@@ -26,7 +26,7 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.unordered_set cimport unordered_set
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float, Integer
+from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
 from dimod.sampleset import as_samples
 from dimod.utilities import asintegerarrays, asnumericarrays
@@ -86,6 +86,61 @@ cdef class cyBQM_template(cyBQMBase):
         cdef bias_type *b = &(self.cppbqm.offset())
         b[0] += bias
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ilinear(self):
+        """Return a numpy struct array with the linear biases and the
+        indices of the neighborhoods. This method is used for serialization.
+        """
+        cdef Py_ssize_t num_variables = self.num_variables()
+
+        dtype = np.dtype([('ni', self.index_dtype), ('b', self.dtype)],
+                          align=False)
+        ldata = np.empty(num_variables, dtype=dtype)
+
+        cdef index_type[:] neighbors_view = ldata['ni']
+        cdef bias_type[:] bias_view = ldata['b']
+
+        cdef Py_ssize_t vi
+        if num_variables:
+            neighbors_view[0] = 0
+            bias_view[0] = self.cppbqm.linear(0)
+
+            for vi in range(1, num_variables):
+                neighbors_view[vi] = (neighbors_view[vi - 1]
+                                      + self.cppbqm.num_interactions(vi - 1))
+                bias_view[vi] = self.cppbqm.linear(vi)
+
+        return ldata
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ineighborhood(self, Py_ssize_t ui):
+        """
+        """
+        if not 0 <= ui < self.num_variables():
+            raise ValueError(f"out of range variable, {ui!r}")
+
+        cdef Py_ssize_t degree = self.cppbqm.num_interactions(ui)
+
+        dtype = np.dtype([('ui', self.index_dtype), ('b', self.dtype)],
+                         align=False)
+        neighbors = np.empty(degree, dtype=dtype)
+        
+        cdef index_type[:] index_view = neighbors['ui']
+        cdef bias_type[:] bias_view = neighbors['b']
+
+        span = self.cppbqm.neighborhood(ui)
+        cdef Py_ssize_t i = 0
+        while span.first != span.second:
+            index_view[i] = deref(span.first).first
+            bias_view[i] = deref(span.first).second
+
+            i += 1
+            inc(span.first)
+
+        return neighbors
+
     cdef Py_ssize_t _index(self, v, bint permissive=False) except -1:
         """Return the index of variable `v`.
 
@@ -116,7 +171,7 @@ cdef class cyBQM_template(cyBQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Py_ssize_t add_linear_from_array(self, Numeric[:] linear) except -1:
+    cpdef Py_ssize_t add_linear_from_array(self, ConstNumeric[:] linear) except -1:
         cdef Py_ssize_t vi
         cdef Py_ssize_t length = linear.shape[0]
 
@@ -132,6 +187,13 @@ cdef class cyBQM_template(cyBQMBase):
             for vi in range(length):
                 self.add_linear(vi, linear[vi])
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def add_offset_from_array(self, ConstNumeric[::1] offset):
+        if offset.shape[0] != 1:
+            raise ValueError("array should be of length 1")
+        self._add_offset(offset[0])
+
     def add_quadratic(self, u, v, bias_type bias):
         if u == v:
             raise ValueError(f"{u!r} cannot have an interaction with itself")
@@ -140,9 +202,26 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t vi = self._index(v, permissive=True)
         self.cppbqm.add_quadratic(ui, vi, bias)
 
+    def add_quadratic_from_arrays(self,
+                                  ConstInteger[::1] irow,
+                                  ConstInteger[::1] icol,
+                                  ConstNumeric[::1] qdata):
+
+        if not irow.shape[0] == icol.shape[0] == qdata.shape[0]:
+            raise ValueError("quadratic vectors should be equal length")
+        cdef Py_ssize_t length = irow.shape[0]
+
+        if length:
+            if self.variables._is_range():
+                self.cppbqm.add_quadratic(&irow[0], &icol[0], &qdata[0], length)
+                self.variables._stop = self.cppbqm.num_variables()
+            else:
+                raise NotImplementedError
+
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Py_ssize_t add_quadratic_from_dense(self, Numeric[:, ::1] quadratic) except -1:
+    cpdef Py_ssize_t add_quadratic_from_dense(self, ConstNumeric[:, ::1] quadratic) except -1:
         if quadratic.shape[0] != quadratic.shape[1]:
             raise ValueError("quadratic must be a square matrix")
 
@@ -255,10 +334,10 @@ cdef class cyBQM_template(cyBQMBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _from_numpy_vectors(cls,
-                            Numeric[::1] linear,
-                            Integer[::1] irow,
-                            Integer[::1] icol,
-                            Numeric[::1] qdata,
+                            ConstNumeric[::1] linear,
+                            ConstInteger[::1] irow,
+                            ConstInteger[::1] icol,
+                            ConstNumeric[::1] qdata,
                             bias_type offset,
                             object vartype):
         """Equivalent of from_numpy_vectors with fused types."""

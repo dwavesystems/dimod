@@ -14,12 +14,14 @@
 
 import copy
 import io
+import json
+import tempfile
 import warnings
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container, Collection
 from functools import cached_property
 from numbers import Integral, Number
-from typing import Hashable, Union, Tuple, Optional, Any
+from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO
 
 import numpy as np
 
@@ -32,8 +34,9 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.decorators import forwarding_method
+from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.typing import Bias, Variable
-from dimod.variables import Variables
+from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['BinaryQuadraticModel',
@@ -43,6 +46,8 @@ __all__ = ['BinaryQuadraticModel',
            'Float64BQM',
            'as_bqm',
            ]
+
+BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 
 class BQMView:
@@ -184,7 +189,10 @@ class BinaryQuadraticModel:
         np.dtype(np.object_): pyBQM,
     }
 
-    def __init__(self, *args, vartype=None, dtype=np.float64):
+    DEFAULT_DTYPE = np.float64
+    """The default dtype used to construct the class."""
+
+    def __init__(self, *args, vartype=None, dtype=None):
 
         if vartype is not None:
             args = [*args, vartype]
@@ -228,7 +236,7 @@ class BinaryQuadraticModel:
         self.data.update(bqm.data)
 
     def _init_components(self, linear, quadratic, offset, vartype, dtype):
-        self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
+        self._init_empty(vartype, dtype)
 
         vartype = self.data.vartype
 
@@ -279,7 +287,12 @@ class BinaryQuadraticModel:
         self.offset += offset
 
     def _init_empty(self, vartype, dtype):
+        dtype = self.DEFAULT_DTYPE if dtype is None else dtype
         self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
+
+    def __init_subclass__(cls, /, default_dtype=np.float64, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.DEFAULT_DTYPE = np.dtype(default_dtype)
 
     def __eq__(self, other):
         # todo: performance
@@ -645,6 +658,97 @@ class BinaryQuadraticModel:
         return coo.load(obj, cls=cls, vartype=vartype)
 
     @classmethod
+    def from_file(cls, fp: Union[BinaryIO, ByteString]):
+        """Construct a DQM from a file-like object.
+
+        The inverse of :meth:`~BinaryQuadraticModel.to_file`.
+
+        """
+        if isinstance(fp, ByteString):
+            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+        else:
+            file_like = fp
+
+        prefix = file_like.read(len(BQM_MAGIC_PREFIX))
+        if prefix != BQM_MAGIC_PREFIX:
+            raise ValueError("unknown file type, expected magic string "
+                             f"{BQM_MAGIC_PREFIX!r} but got {prefix!r} "
+                             "instead")
+
+        version = tuple(file_like.read(2))
+        if version >= (3, 0):
+            raise ValueError("cannot load a BQM serialized with version "
+                             f"{version!r}, try upgrading your dimod version")
+
+        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
+        data = json.loads(file_like.read(header_len).decode('ascii'))
+
+        num_variables, num_interactions = data['shape']
+
+        dtype = np.dtype(data['dtype'])
+        itype = np.dtype(data['itype'])  # index of the variable
+        ntype = np.dtype(data['ntype'])  # index of the neighborhood
+
+        bqm = cls(data['vartype'], dtype=data['dtype'])
+
+        # offset
+        offset_bytes = file_like.read(dtype.itemsize)
+        if len(offset_bytes) < dtype.itemsize:
+            raise ValueError("given file is missing offset biases")
+        offset_array = np.frombuffer(offset_bytes, dtype=dtype)
+        bqm.data.add_offset_from_array(offset_array)
+
+        if num_variables:
+            linear_dtype = np.dtype([('nidx', ntype), ('bias', dtype)],
+                                    align=False)
+            quadratic_dtype = np.dtype([('outvar', itype), ('bias', dtype)],
+                                       align=False)
+            # linear
+            ldata = np.frombuffer(
+                file_like.read(num_variables*linear_dtype.itemsize),
+                dtype=linear_dtype)
+            if ldata.shape[0] != num_variables:
+                raise ValueError("given file is missing linear data")
+
+            bqm.data.add_linear_from_array(ldata['bias'])
+
+            # quadratic
+            for v in range(num_variables):
+                if v < num_variables - 1:
+                    degree = int(ldata['nidx'][v + 1] - ldata['nidx'][v])
+                else:
+                    degree = int(2*num_interactions - ldata['nidx'][v])
+
+                qdata = np.frombuffer(
+                    file_like.read(degree*quadratic_dtype.itemsize),
+                    dtype=quadratic_dtype)
+                if qdata.shape[0] != degree:
+                    raise ValueError("given file is missing quadratic data")
+
+                # we only want the lower triangle, so that we're always
+                # appending variables - speeds up construction
+                vi = np.searchsorted(qdata['outvar'], v, side='right')
+
+                # need these to be C-ordered so we can pass them into function
+                irow = np.ascontiguousarray(qdata['outvar'][:vi])
+                icol = np.full(vi, v, dtype=itype)
+                biases = np.ascontiguousarray(qdata['bias'][:vi])
+
+                bqm.data.add_quadratic_from_arrays(irow, icol, biases)
+
+        # labels
+        if data['variables']:
+            if version < (2, 0):
+                # the variables are in the header
+                bqm.relabel_variables(dict(enumerate(
+                    iter_deserialize_variables(data['variables']))))
+            else:
+                bqm.relabel_variables(dict(enumerate(
+                    VariablesSection.load(file_like))))
+
+        return bqm
+
+    @classmethod
     def from_ising(cls, h: Union[Mapping, Sequence],
                    J: Mapping,
                    offset: Number = 0):
@@ -970,6 +1074,166 @@ class BinaryQuadraticModel:
         else:
             coo.dump(self, fp, vartype_header)
 
+    def to_file(self, *,
+                ignore_labels: bool = False,
+                spool_size: int = int(1e9),
+                version: Union[int, Tuple[int, int]] = 2,
+                ) -> tempfile.SpooledTemporaryFile:
+        """Serialize the BQM to a file-like object.
+
+        Note that BQMs with the 'object' data type are serialized as `float64`.
+
+        Args:
+            ignore_labels: Treat the BQM as unlabeled. This is useful for
+                large BQMs to save on space.
+
+            spool_size: Defines the `max_size` passed to the constructor of
+                :class:`tempfile.SpooledTemporaryFile`. Determines whether
+                the returned file-like's contents will be kept on disk or in
+                memory.
+
+            version: The serialization version to use. Either as an integer
+                defining the major version, or as a tuple, `(major, minor)`.
+
+        Format Specification (Version 1.0):
+
+            This format is inspired by the `NPY format`_
+
+            The first 8 bytes are a magic string: exactly "DIMODBQM".
+
+            The next 1 byte is an unsigned byte: the major version of the file
+            format.
+
+            The next 1 byte is an unsigned byte: the minor version of the file
+            format.
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the header data HEADER_LEN.
+
+            The next HEADER_LEN bytes form the header data. This is a
+            json-serialized dictionary. The dictionary is exactly:
+
+            .. code-block:: python
+
+                dict(shape=bqm.shape,
+                     dtype=bqm.dtype.name,
+                     itype=bqm.data.index_dtype.name,
+                     ntype=bqm.data.index_dtype.name,
+                     vartype=bqm.vartype.name,
+                     type=type(bqm).__name__,
+                     variables=list(bqm.variables),
+                     )
+
+            it is terminated by a newline character and padded with spaces to
+            make the entire length of the entire header divisible by 64.
+
+            The binary quadratic model data comes after the header. The number
+            of bytes can be determined by the data types and the number of
+            variables and number of interactions (described in the `shape`).
+
+            The first `dtype.itemsize` bytes are the offset.
+            The next `num_variables * (ntype.itemsize + dtype.itemsize) bytes
+            are the linear data. The linear data includes the neighborhood
+            starts and the biases.
+            The final `2 * num_interactions * (itype.itemsize + dtype.itemsize)
+            bytes are the quadratic data. Stored as `(outvar, bias)` pairs.
+
+        Format Specification (Version 2.0):
+
+            In order to make the header a more reasonable length, the variable
+            labels have been moved to the body. The `variables` field of the
+            header dictionary now has a boolean value, making the dictionary:
+
+            .. code-block:: python
+
+                dict(shape=bqm.shape,
+                     dtype=bqm.dtype.name,
+                     itype=bqm.data.index_dtype.name,
+                     ntype=bqm.data.index_dtype.name,
+                     vartype=bqm.vartype.name,
+                     type=type(bqm).__name__,
+                     variables=any(v != i for i,v in enumerate(bqm.variables)),
+                     )
+
+            If the BQM is index-labeled, then no additional data is added.
+            Otherwise, a new section is appended after the bias data.
+
+            The first 4 bytes are exactly "VARS".
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the variables array `VARIABLES_LENGTH`.
+
+            The next VARIABLES_LENGTH bytes are a json-serialized array. As
+            constructed by `json.dumps(list(bqm.variables)).
+
+        .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
+
+
+        """
+        if self.dtype == np.dtype('O'):
+            # todo: allow_pickle (defaulting False) that bypasses this
+            return BinaryQuadraticModel(self, dtype=np.float64).to_file(
+                ignore_labels=ignore_labels, spool_size=spool_size,
+                version=version)
+
+        # determine if we support the given version
+        if isinstance(version, Integral):
+            version = (version, 0)
+        if version not in [(1, 0), (2, 0)]:
+            raise ValueError(f"Unsupported version: {version!r}")
+
+        # the file we'll be writing to
+        file = SpooledTemporaryFile(max_size=spool_size)
+
+        prefix = BQM_MAGIC_PREFIX
+        file.write(prefix)
+        file.write(bytes(version))
+
+        # the data in the header
+        data = dict(shape=self.shape,
+                    dtype=self.dtype.name,
+                    itype=self.data.index_dtype.name,
+                    ntype=self.data.index_dtype.name,
+                    vartype=self.vartype.name,
+                    type=type(self).__name__,
+                    )
+
+        if version < (2, 0):  # type: ignore[operator]
+            # the variable labels go in the header
+            if ignore_labels:
+                data.update(variables=list(range(self.num_variables)))
+            else:
+                data.update(variables=self.variables.to_serializable())
+        elif ignore_labels:
+            data.update(variables=False)
+        else:
+            data.update(variables=not self.variables._is_range())
+
+        header_data = json.dumps(data, sort_keys=True).encode('ascii')
+        header_data += b'\n'
+        header_data += b' '*(64 - (len(prefix) + 6 + len(header_data)) % 64)
+        header_len = np.dtype('<u4').type(len(header_data)).tobytes()
+
+        file.write(header_len)
+        file.write(header_data)
+
+        # write the offset
+        file.write(memoryview(self.data.offset).cast('B'))
+
+        # write the linear biases and the neighborhood lengths
+        file.write(memoryview(self.data._ilinear()).cast('B'))
+
+        # now the neighborhoods
+        for vi in range(self.data.num_variables()):
+            file.write(memoryview(self.data._ineighborhood(vi)).cast('B'))
+
+        # finally the labels (if needed)
+        if version >= (2, 0) and data['variables']:  # type: ignore[operator]
+            file.write(VariablesSection(self.variables).dumps())
+
+        file.seek(0)  # go back to the start
+        return file
+
     def to_ising(self):
         """Convert a binary quadratic model to Ising format.
 
@@ -1060,19 +1324,16 @@ class BinaryQuadraticModel:
 BQM = BinaryQuadraticModel
 
 
-class DictBQM(BQM):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, dtype=object, **kwargs)
+class DictBQM(BQM, default_dtype=object):
+    pass
 
 
-class Float32BQM(BQM):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, dtype=np.float32, **kwargs)
+class Float32BQM(BQM, default_dtype=np.float32):
+    pass
 
 
-class Float64BQM(BQM):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, dtype=np.float64, **kwargs)
+class Float64BQM(BQM, default_dtype=np.float64):
+    pass
 
 
 def as_bqm(*args, cls: None = None, copy: bool = False,

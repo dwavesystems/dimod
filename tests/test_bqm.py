@@ -951,30 +951,30 @@ class TestEnergies(unittest.TestCase):
             bqm.energies(samples)
 
 
-# class TestFileView(unittest.TestCase):
-#     @parameterized.expand(BQMs.items())
-#     def test_empty(self, name, BQM):
-#         bqm = BQM('SPIN')
+class TestFileView(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_empty(self, name, BQM):
+        bqm = BQM('SPIN')
 
-#         with tempfile.TemporaryFile() as tf:
-#             with bqm.to_file() as bqmf:
-#                 shutil.copyfileobj(bqmf, tf)
-#             tf.seek(0)
-#             new = BQM.from_file(tf)
+        with tempfile.TemporaryFile() as tf:
+            with bqm.to_file() as bqmf:
+                shutil.copyfileobj(bqmf, tf)
+            tf.seek(0)
+            new = BQM.from_file(tf)
 
-#         self.assertEqual(bqm, new)
+        self.assertEqual(bqm, new)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_2path(self, name, BQM):
-#         bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_2path(self, name, BQM):
+        bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
 
-#         with tempfile.TemporaryFile() as tf:
-#             with bqm.to_file() as bqmf:
-#                 shutil.copyfileobj(bqmf, tf)
-#             tf.seek(0)
-#             new = BQM.from_file(tf)
+        with tempfile.TemporaryFile() as tf:
+            with bqm.to_file() as bqmf:
+                shutil.copyfileobj(bqmf, tf)
+            tf.seek(0)
+            new = BQM.from_file(tf)
 
-#         self.assertEqual(bqm, new)
+        self.assertEqual(bqm, new)
 
 
 class TestFixVariable(unittest.TestCase):
