@@ -55,6 +55,12 @@ cdef class cyBQM_template(cyBQMBase):
         memo[id(self)] = new
         return new
 
+    def __reduce__(self):
+        ldata, qdata, off, labels = self.to_numpy_vectors(return_labels=True)
+        return (
+            type(self).from_numpy_vectors,
+            (ldata, qdata, off, self.vartype, labels))
+
     @property
     def offset(self):
         """Constant energy offset associated with the model."""

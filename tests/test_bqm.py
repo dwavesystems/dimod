@@ -1561,15 +1561,15 @@ class TestOffset(unittest.TestCase):
         self.assertIsInstance(bqm.offset, dtype)
 
 
-# class TestPickle(unittest.TestCase):
-#     @parameterized.expand(BQMs.items())
-#     def test_picklable(self, name, BQM):
-#         import pickle
+class TestPickle(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_picklable(self, name, BQM):
+        import pickle
 
-#         bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
-#         new = pickle.loads(pickle.dumps(bqm))
-#         self.assertIs(type(bqm), type(new))
-#         self.assertEqual(bqm, new)
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': 2}, 6, dimod.BINARY)
+        new = pickle.loads(pickle.dumps(bqm))
+        self.assertIs(type(bqm), type(new))
+        self.assertEqual(bqm, new)
 
 
 class TestRemoveInteraction(unittest.TestCase):
