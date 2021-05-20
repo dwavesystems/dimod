@@ -32,7 +32,7 @@ enum Vartype {
 };
 
 /**
- * Used internally by QuadraticModelBase to sparsely encode the neighborhood of 
+ * Used internally by QuadraticModelBase to sparsely encode the neighborhood of
  * a variable.
  *
  * Internally, Neighborhoods keep two vectors, one of neighbors and the other
@@ -124,13 +124,11 @@ class Neighborhood {
             return tmp;
         }
 
-        friend bool operator==(const ConstIterator& a,
-                               const ConstIterator& b) {
+        friend bool operator==(const ConstIterator& a, const ConstIterator& b) {
             return a.neighbor_it_ == b.neighbor_it_ && a.bias_it_ == b.bias_it_;
         }
 
-        friend bool operator!=(const ConstIterator& a,
-                               const ConstIterator& b) {
+        friend bool operator!=(const ConstIterator& a, const ConstIterator& b) {
             return !(a == b);
         }
 
@@ -708,10 +706,11 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      *
      * [COOrdinate]: https://w.wiki/n$L
      *
-     * `row_iterator` must be a random access iterator  pointing to the beginning of the row data.
-     * `col_iterator` must be a random access iterator pointing to the beginning of the column data.
-     * `bias_iterator` must be a random access iterator pointing to the beginning of the bias data.     
-     * `length` must be the number of (row, column, bias) entries.
+     * `row_iterator` must be a random access iterator  pointing to the
+     * beginning of the row data. `col_iterator` must be a random access
+     * iterator pointing to the beginning of the column data. `bias_iterator`
+     * must be a random access iterator pointing to the beginning of the bias
+     * data. `length` must be the number of (row, column, bias) entries.
      */
     template <class ItRow, class ItCol, class ItBias>
     void add_quadratic(ItRow row_iterator, ItCol col_iterator,
