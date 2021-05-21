@@ -452,6 +452,10 @@ class ConstNeighborhoodIterator {
     }
 };
 
+
+template<class Bias, class Index>
+class ConstQuadraticIterator;
+
 template <class Bias, class Index = int>
 class QuadraticModelBase {
  public:
@@ -464,9 +468,12 @@ class QuadraticModelBase {
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
 
-    /// A forward iterator to `pair<const index_type&, bias_type&>`
+    /// A random access iterator to `pair<const index_type&, const bias_type&>`
     using const_neighborhood_iterator =
             typename Neighborhood<bias_type, index_type>::const_iterator;
+
+    /// A forward iterator pointing to the quadratic biases.
+    using const_quadratic_iterator = ConstQuadraticIterator<Bias, Index>;
 
     template <class B, class I>
     friend class BinaryQuadraticModel;
@@ -481,6 +488,14 @@ class QuadraticModelBase {
             }
         }
         return true;
+    }
+
+    const_quadratic_iterator cbegin_quadratic() const {
+        return const_quadratic_iterator(this, 0);
+    }
+
+    const_quadratic_iterator cend_quadratic() const {
+        return const_quadratic_iterator(this, this->num_variables());
     }
 
     /**
@@ -602,6 +617,81 @@ class QuadraticModelBase {
     std::vector<Neighborhood<bias_type, index_type>> adj_;
 
     bias_type offset_;
+
+    friend class ConstQuadraticIterator<Bias, Index>;
+};
+
+template <class Bias, class Index>
+class ConstQuadraticIterator {
+ public:
+    using bias_type = Bias;
+    using index_type = Index;
+    using quadratic_model_type = QuadraticModelBase<Bias, Index>;
+
+    struct value_type {
+        const index_type u;
+        const index_type v;
+        const bias_type& bias;
+    };
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
+
+    ConstQuadraticIterator() : qm_(nullptr), v_(0), i_(0), term_(nullptr) {}
+
+    ConstQuadraticIterator(const quadratic_model_type* qm, index_type v)
+            : qm_(qm), v_(v), i_(0), term_(nullptr) {
+        advance();
+    }
+
+    const reference operator*() const { return *term_; }
+
+    const pointer operator->() const { return term_; }
+
+    ConstQuadraticIterator<Bias, Index>& operator++() {
+        ++i_;
+        advance();
+        return *this;
+    }
+
+    ConstQuadraticIterator<Bias, Index>& operator++(int) {
+        ConstQuadraticIterator<Bias, Index> r(*this);
+        ++i_;
+        advance();
+        return r;
+    }
+
+    bool operator==(ConstQuadraticIterator<Bias, Index> const& r) const {
+        return v_ == r.v_ && i_ == r.i_;
+    }
+
+    bool operator!=(ConstQuadraticIterator<Bias, Index> const& r) const {
+        return v_ != r.v_ || i_ != r.i_;
+    }
+
+ private:
+    const quadratic_model_type* qm_;
+    index_type v_;  // current neighborhood
+    index_type i_;  // index in the neighborhood
+
+    value_type* term_;
+
+    // clear the current term and advance from the current position (inclusive)
+    // we traverse the lower triangle (including self-loops)
+    void advance() {
+        if (term_) delete term_;
+
+        while ((size_t)v_ < qm_->num_variables()) {
+            auto nit = qm_->adj_[v_].cbegin() + i_;
+            if (nit < qm_->adj_[v_].cend() && nit->first <= v_) {
+                term_ = new value_type{v_, nit->first, nit->second};
+                return;
+            }
+            ++v_;
+            i_ = 0;
+        }
+    }
 };
 
 /**
