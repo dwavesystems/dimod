@@ -165,8 +165,11 @@ class ExactDQMSolver():
     """A simple exact solver for testing and debugging code using your local CPU.
 
     Notes:
-        This solver becomes slow for problems with 18 or more
-        variables, worse for increasingly many cases per variable.
+        This solver calculates the energy for every possible
+        combination of variable cases. If variable i has
+        k_i many cases, this will be k_1 * k_2 * ... * k_n
+        which grows exponentially for constant k_i in the
+        number of variables.
 
     """
     properties = None
