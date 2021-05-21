@@ -501,8 +501,15 @@ SCENARIO("Neighborhood can be manipulated") {
                 (*it).second = -48;
                 REQUIRE(neighborhood.at(1) == -48);
 
-                // it++;
-                // it->second += 1;
+                it++;
+                it->second = 104;
+                REQUIRE(neighborhood.at(3) == 104);
+            }
+
+            THEN("we can erase some with an iterator") {
+                neighborhood.erase(neighborhood.begin() + 1,
+                                   neighborhood.end());
+                REQUIRE(neighborhood.size() == 1);
             }
         }
     }

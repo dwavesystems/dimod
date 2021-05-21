@@ -31,6 +31,12 @@ enum Vartype {
     INTEGER  ///< Variables that are integer valued.
 };
 
+template <class Bias, class Index>
+class NeighborhoodIterator;
+
+template <class Bias, class Index>
+class ConstNeighborhoodIterator;
+
 /**
  * Used internally by QuadraticModelBase to sparsely encode the neighborhood of
  * a variable.
@@ -51,105 +57,12 @@ class Neighborhood {
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
 
- private:
-    struct Iterator {
-        using iterator_category = std::forward_iterator_tag;
+    /// A random access iterator to `pair<const index_type&, bias_type&>`.
+    using iterator = NeighborhoodIterator<Bias, Index>;
 
-        using difference_type = std::ptrdiff_t;
-        using value_type = std::pair<const index_type&, bias_type&>;
-        using pointer = value_type*;
-        using reference = value_type;
-
-        using bias_iterator = typename std::vector<bias_type>::iterator;
-        using neighbor_iterator =
-                typename std::vector<index_type>::const_iterator;
-
-        Iterator(neighbor_iterator nit, bias_iterator bit)
-                : neighbor_it_(nit), bias_it_(bit) {}
-
-        Iterator& operator++() {
-            bias_it_++;
-            neighbor_it_++;
-            return *this;
-        }
-
-        Iterator operator++(int) {
-            Iterator tmp = *this;
-            ++(*this);
-            return tmp;
-        }
-
-        friend bool operator==(const Iterator& a, const Iterator& b) {
-            return a.neighbor_it_ == b.neighbor_it_ && a.bias_it_ == b.bias_it_;
-        }
-
-        friend bool operator!=(const Iterator& a, const Iterator& b) {
-            return !(a == b);
-        }
-
-        value_type operator*() { return value_type{*neighbor_it_, *bias_it_}; }
-
-     private:
-        bias_iterator bias_it_;
-        neighbor_iterator neighbor_it_;
-
-        friend class Neighborhood;
-    };
-
-    struct ConstIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = std::pair<const index_type&, const bias_type&>;
-        using pointer = value_type*;
-        using reference = value_type;
-
-        using bias_iterator = typename std::vector<bias_type>::const_iterator;
-        using neighbor_iterator =
-                typename std::vector<index_type>::const_iterator;
-
-        ConstIterator() {}
-
-        ConstIterator(neighbor_iterator nit, bias_iterator bit)
-                : neighbor_it_(nit), bias_it_(bit) {}
-
-        ConstIterator& operator++() {
-            bias_it_++;
-            neighbor_it_++;
-            return *this;
-        }
-
-        ConstIterator operator++(int) {
-            ConstIterator tmp = *this;
-            ++(*this);
-            return tmp;
-        }
-
-        friend bool operator==(const ConstIterator& a, const ConstIterator& b) {
-            return a.neighbor_it_ == b.neighbor_it_ && a.bias_it_ == b.bias_it_;
-        }
-
-        friend bool operator!=(const ConstIterator& a, const ConstIterator& b) {
-            return !(a == b);
-        }
-
-        const value_type operator*() const {
-            return value_type{*neighbor_it_, *bias_it_};
-        }
-
-     private:
-        bias_iterator bias_it_;
-        neighbor_iterator neighbor_it_;
-
-        friend class Neighborhood;
-    };
-
- public:
-    /// A forward iterator to `pair<const index_type&, bias_type&>`.
-    using iterator = Iterator;
-
-    /// A forward iterator to `const pair<const index_type&, const
+    /// A random access iterator to `const pair<const index_type&, const
     /// bias_type&>.`
-    using const_iterator = ConstIterator;
+    using const_iterator = ConstNeighborhoodIterator<Bias, Index>;
 
     /**
      * Return a reference to the bias associated with `v`.
@@ -170,24 +83,16 @@ class Neighborhood {
     }
 
     /// Returns an iterator to the beginning.
-    iterator begin() {
-        return iterator{neighbors.cbegin(), quadratic_biases.begin()};
-    }
+    iterator begin() { return iterator(this, 0); }
 
     /// Returns an iterator to the end.
-    iterator end() {
-        return iterator{neighbors.cend(), quadratic_biases.end()};
-    }
+    iterator end() { return iterator(this, size()); }
 
     /// Returns a const_iterator to the beginning.
-    const_iterator cbegin() const {
-        return const_iterator{neighbors.cbegin(), quadratic_biases.cbegin()};
-    }
+    const_iterator cbegin() const { return const_iterator(this, 0); }
 
     /// Returns a const_iterator to the end.
-    const_iterator cend() const {
-        return const_iterator{neighbors.cend(), quadratic_biases.cend()};
-    }
+    const_iterator cend() const { return const_iterator(this, size()); }
 
     /**
      * Insert a neighbor, bias pair at the end of the neighborhood.
@@ -223,15 +128,19 @@ class Neighborhood {
 
     /// Erase elements from the neighborhood.
     void erase(iterator first, iterator last) {
-        quadratic_biases.erase(first.bias_it_, last.bias_it_);
-        neighbors.erase(first.neighbor_it_, last.neighbor_it_);
+        auto start_dist = std::distance(begin(), first);
+        auto end_dist = std::distance(end(), last);
+
+        quadratic_biases.erase(quadratic_biases.begin() + start_dist,
+                               quadratic_biases.end() + end_dist);
+        neighbors.erase(neighbors.begin() + start_dist,
+                        neighbors.end() + end_dist);
     }
 
     /// Return an iterator to the first element that does not come before `v`.
     iterator lower_bound(index_type v) {
         auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        return iterator{it, quadratic_biases.begin() +
-                                    std::distance(neighbors.begin(), it)};
+        return iterator(this, std::distance(neighbors.begin(), it));
     }
 
     /**
@@ -320,6 +229,227 @@ class Neighborhood {
  protected:
     std::vector<index_type> neighbors;
     std::vector<bias_type> quadratic_biases;
+
+    friend class NeighborhoodIterator<Bias, Index>;
+    friend class ConstNeighborhoodIterator<Bias, Index>;
+};
+
+template <class Bias, class Index>
+class NeighborhoodIterator {
+ public:
+    using bias_type = Bias;
+    using index_type = Index;
+    using neighborhood_type = Neighborhood<Bias, Index>;
+
+    using value_type = std::pair<const index_type&, bias_type&>;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::random_access_iterator_tag;
+
+    NeighborhoodIterator() : neighborhood_(nullptr), i_(0), pair_(nullptr) {}
+
+    NeighborhoodIterator(neighborhood_type* neighborhood, index_type i)
+            : neighborhood_(neighborhood), i_(i), pair_(nullptr) {
+        update_pair();
+    }
+
+    reference operator*() { return *pair_; }
+
+    pointer operator->() { return pair_; }
+
+    NeighborhoodIterator<Bias, Index>& operator++() {
+        ++i_;
+        update_pair();
+        return *this;
+    }
+    NeighborhoodIterator<Bias, Index>& operator--() {
+        --i_;
+        update_pair();
+        return *this;
+    }
+    NeighborhoodIterator<Bias, Index> operator++(int) {
+        NeighborhoodIterator<Bias, Index> r(*this);
+        ++i_;
+        update_pair();
+        return r;
+    }
+    NeighborhoodIterator<Bias, Index> operator--(int) {
+        NeighborhoodIterator<Bias, Index> r(*this);
+        --i_;
+        update_pair();
+        return r;
+    }
+
+    NeighborhoodIterator<Bias, Index>& operator+=(int n) {
+        i_ += n;
+        update_pair();
+        return *this;
+    }
+    NeighborhoodIterator<Bias, Index>& operator-=(int n) {
+        i_ -= n;
+        update_pair();
+        return *this;
+    }
+
+    NeighborhoodIterator<Bias, Index> operator+(int n) const {
+        NeighborhoodIterator<Bias, Index> r(*this);
+        return r += n;
+    }
+    NeighborhoodIterator<Bias, Index> operator-(int n) const {
+        NeighborhoodIterator<Bias, Index> r(*this);
+        return r -= n;
+    }
+
+    difference_type operator-(
+            NeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ - r.i_;
+    }
+
+    bool operator<(NeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ < r.i_;
+    }
+    bool operator<=(NeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ <= r.i_;
+    }
+    bool operator>(NeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ > r.i_;
+    }
+    bool operator>=(NeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ >= r.i_;
+    }
+    bool operator!=(const NeighborhoodIterator<Bias, Index>& r) const {
+        return i_ != r.i_;
+    }
+    bool operator==(const NeighborhoodIterator<Bias, Index>& r) const {
+        return i_ == r.i_;
+    }
+
+ private:
+    neighborhood_type* neighborhood_;
+    index_type i_;
+
+    value_type* pair_;
+
+    void update_pair() {
+        if (pair_) {
+            delete pair_;
+        }
+        if (i_ < neighborhood_->size()) {
+            pair_ = new value_type(neighborhood_->neighbors[i_],
+                                   neighborhood_->quadratic_biases[i_]);
+        }
+    }
+};
+
+template <class Bias, class Index>
+class ConstNeighborhoodIterator {
+ public:
+    using bias_type = Bias;
+    using index_type = Index;
+    using neighborhood_type = Neighborhood<Bias, Index>;
+
+    using value_type = std::pair<const index_type&, const bias_type&>;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::random_access_iterator_tag;
+
+    ConstNeighborhoodIterator()
+            : neighborhood_(nullptr), i_(0), pair_(nullptr) {}
+
+    ConstNeighborhoodIterator(const neighborhood_type* neighborhood,
+                              index_type i)
+            : neighborhood_(neighborhood), i_(i), pair_(nullptr) {
+        update_pair();
+    }
+
+    const reference operator*() const { return *pair_; }
+
+    const pointer operator->() const { return pair_; }
+
+    ConstNeighborhoodIterator<Bias, Index>& operator++() {
+        ++i_;
+        update_pair();
+        return *this;
+    }
+    ConstNeighborhoodIterator<Bias, Index>& operator--() {
+        --i_;
+        update_pair();
+        return *this;
+    }
+    ConstNeighborhoodIterator<Bias, Index> operator++(int) {
+        ConstNeighborhoodIterator<Bias, Index> r(*this);
+        ++i_;
+        update_pair();
+        return r;
+    }
+    ConstNeighborhoodIterator<Bias, Index> operator--(int) {
+        ConstNeighborhoodIterator<Bias, Index> r(*this);
+        --i_;
+        update_pair();
+        return r;
+    }
+
+    ConstNeighborhoodIterator<Bias, Index>& operator+=(int n) {
+        i_ += n;
+        update_pair();
+        return *this;
+    }
+    ConstNeighborhoodIterator<Bias, Index>& operator-=(int n) {
+        i_ -= n;
+        update_pair();
+        return *this;
+    }
+
+    ConstNeighborhoodIterator<Bias, Index> operator+(int n) const {
+        ConstNeighborhoodIterator<Bias, Index> r(*this);
+        return r += n;
+    }
+    ConstNeighborhoodIterator<Bias, Index> operator-(int n) const {
+        ConstNeighborhoodIterator<Bias, Index> r(*this);
+        return r -= n;
+    }
+
+    difference_type operator-(
+            ConstNeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ - r.i_;
+    }
+
+    bool operator<(ConstNeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ < r.i_;
+    }
+    bool operator<=(ConstNeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ <= r.i_;
+    }
+    bool operator>(ConstNeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ > r.i_;
+    }
+    bool operator>=(ConstNeighborhoodIterator<Bias, Index> const& r) const {
+        return i_ >= r.i_;
+    }
+    bool operator!=(const ConstNeighborhoodIterator<Bias, Index>& r) const {
+        return i_ != r.i_;
+    }
+    bool operator==(const ConstNeighborhoodIterator<Bias, Index>& r) const {
+        return i_ == r.i_;
+    }
+
+ private:
+    const neighborhood_type* neighborhood_;
+    index_type i_;
+
+    value_type* pair_;
+
+    void update_pair() {
+        if (pair_) {
+            delete pair_;
+        }
+        if (i_ < neighborhood_->size()) {
+            pair_ = new value_type(neighborhood_->neighbors[i_],
+                                   neighborhood_->quadratic_biases[i_]);
+        }
+    }
 };
 
 template <class Bias, class Index = int>
