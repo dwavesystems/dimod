@@ -14,7 +14,7 @@
 #
 # ================================================================================================
 
-__version__ = '0.9.14'
+__version__ = '0.9.15'
 __author__ = 'D-Wave Systems Inc.'
 __authoremail__ = 'acondello@dwavesys.com'
 __description__ = 'A shared API for binary quadratic model samplers.'
