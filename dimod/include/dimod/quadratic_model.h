@@ -335,7 +335,7 @@ class NeighborhoodIterator {
         if (pair_) {
             delete pair_;
         }
-        if (i_ < neighborhood_->size()) {
+        if (i_ < (index_type)neighborhood_->size()) {
             pair_ = new value_type(neighborhood_->neighbors[i_],
                                    neighborhood_->quadratic_biases[i_]);
         }
@@ -445,7 +445,7 @@ class ConstNeighborhoodIterator {
         if (pair_) {
             delete pair_;
         }
-        if (i_ < neighborhood_->size()) {
+        if (i_ < (index_type)neighborhood_->size()) {
             pair_ = new value_type(neighborhood_->neighbors[i_],
                                    neighborhood_->quadratic_biases[i_]);
         }
@@ -655,7 +655,7 @@ class ConstQuadraticIterator {
         return *this;
     }
 
-    ConstQuadraticIterator<Bias, Index>& operator++(int) {
+    ConstQuadraticIterator<Bias, Index> operator++(int) {
         ConstQuadraticIterator<Bias, Index> r(*this);
         ++i_;
         advance();
@@ -824,7 +824,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
 
         // resize if needed
         index_type size = *std::max_element(mapping.begin(), mapping.end()) + 1;
-        if (size > base_type::num_variables()) {
+        if (size > (index_type)base_type::num_variables()) {
             this->resize(size);
         }
 
@@ -832,7 +832,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         base_type::offset() += bqm.offset();
 
         // linear
-        for (index_type old_u = 0; old_u < bqm.num_variables(); ++old_u) {
+        for (index_type old_u = 0; old_u < (index_type)bqm.num_variables(); ++old_u) {
             index_type new_u = mapping[old_u];
             base_type::linear(new_u) += bqm.linear(old_u);
 
@@ -949,10 +949,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
 
         // count the number of elements to be inserted into each
-        std::vector<size_type> counts(base_type::num_variables(), 0);
+        std::vector<index_type> counts(base_type::num_variables(), 0);
         ItRow rit(row_iterator);
         ItCol cit(col_iterator);
-        for (size_type i = 0; i < length; ++i, ++rit, ++cit) {
+        for (index_type i = 0; i < length; ++i, ++rit, ++cit) {
             if (*rit != *cit) {
                 counts[*rit] += 1;
                 counts[*cit] += 1;
@@ -968,7 +968,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         rit = row_iterator;
         cit = col_iterator;
         ItBias bit(bias_iterator);
-        for (size_type i = 0; i < length; ++i, ++rit, ++cit, ++bit) {
+        for (index_type i = 0; i < length; ++i, ++rit, ++cit, ++bit) {
             if (*rit == *cit) {
                 // let add_quadratic handle this case based on vartype
                 add_quadratic(*rit, *cit, *bit);
