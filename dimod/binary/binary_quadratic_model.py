@@ -15,10 +15,11 @@
 import copy
 import io
 import json
+import operator
 import tempfile
 import warnings
 
-from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container, Collection
+from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container, Collection, Callable
 from functools import cached_property
 from numbers import Integral, Number
 from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO
@@ -94,6 +95,34 @@ class Neighborhood(Mapping, BQMView):
     def __setitem__(self, v, bias):
         self._bqm.set_quadratic(self._var, v, bias)
 
+    def max(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the maximum quadratic bias of the neighborhood"""
+        try:
+            return self._bqm.reduce_neighborhood(self._var, max)
+        except TypeError as err:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def min(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the minimum quadratic bias of the neighborhood"""
+        try:
+            return self._bqm.reduce_neighborhood(self._var, min)
+        except TypeError as err:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def sum(self, start=0):
+        """Return the sum of the quadratic biases of the neighborhood"""
+        return self._bqm.reduce_neighborhood(self._var, operator.add, start)
+
 
 class Adjacency(Mapping, BQMView):
     """Quadratic biases as a nested dict of dicts.
@@ -140,6 +169,34 @@ class Linear(MutableMapping, BQMView):
     def __setitem__(self, v, bias):
         self._bqm.set_linear(v, bias)
 
+    def max(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the maximum linear bias."""
+        try:
+            return self._bqm.reduce_linear(max)
+        except TypeError:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def min(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the minimum linear bias."""
+        try:
+            return self._bqm.reduce_linear(min)
+        except TypeError:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def sum(self, start=0):
+        """Return the sum of the linear biases."""
+        return self._bqm.reduce_linear(operator.add, start)
+
 
 class Quadratic(MutableMapping, BQMView):
     """Quadratic biases as a flat mapping.
@@ -178,6 +235,34 @@ class Quadratic(MutableMapping, BQMView):
 
     def __setitem__(self, uv, bias):
         self._bqm.set_quadratic(*uv, bias)
+
+    def max(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the maximum quadratic bias."""
+        try:
+            return self._bqm.reduce_quadratic(max)
+        except TypeError:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def min(self, *, default: Optional[Bias] = None) -> Bias:
+        """Return the minimum quadratic bias."""
+        try:
+            return self._bqm.reduce_quadratic(min)
+        except TypeError:
+            pass
+
+        if default is None:
+            raise ValueError("cannot find min of an empty sequence")
+
+        return default
+
+    def sum(self, start=0):
+        """Return the sum of the quadratic biases."""
+        return self._bqm.reduce_quadratic(operator.add, start)
 
 
 class BinaryQuadraticModel:
@@ -958,6 +1043,29 @@ class BinaryQuadraticModel:
             return 1.0 / inv_scalar
         else:
             return 1.0
+
+    @forwarding_method
+    def reduce_linear(self, function: Callable,
+                      initializer: Optional[Bias] = None) -> Any:
+        """Apply function of two arguments cumulatively to the linear biases.
+        """
+        return self.data.reduce_linear
+
+    @forwarding_method
+    def reduce_neighborhood(self, v: Variable, function: Callable,
+                            initializer: Optional[Bias] = None) -> Any:
+        """Apply function of two arguments cumulatively to the quadratic biases
+        associated with a single variable.
+        """
+        return self.data.reduce_neighborhood
+
+    @forwarding_method
+    def reduce_quadratic(self, function: Callable,
+                         initializer: Optional[Bias] = None) -> Any:
+        """Apply function of two arguments cumulatively to the quadratic
+        biases.
+        """
+        return self.data.reduce_quadratic
 
     def relabel_variables(self, mapping, inplace=True):
         if not inplace:

@@ -15,6 +15,7 @@
 # from collections.abc import Mapping
 
 import copy
+import operator
 
 # cimport cpython
 cimport cython
@@ -465,28 +466,138 @@ cdef class cyBQM_template(cyBQMBase):
             inc(span.first)
 
     def iter_quadratic(self):
-        cdef Py_ssize_t ui
-        cdef Py_ssize_t vi
-        cdef bias_type bias
+        it = self.cppbqm.cbegin_quadratic()
+        while it != self.cppbqm.cend_quadratic():
+            u = self.variables.at(deref(it).u)
+            v = self.variables.at(deref(it).v)
+            yield u, v, as_numpy_float(deref(it).bias)
+            inc(it)
 
-        for ui in range(self.num_variables()):
-            u = self.variables.at(ui)
-
-            span = self.cppbqm.neighborhood(ui)
-            while span.first != span.second:
-                vi = deref(span.first).first
-                if vi >= ui:
-                    break
-                bias = deref(span.first).second
-                yield u, self.variables.at(vi), as_numpy_float(bias)
-
-                inc(span.first)
 
     cpdef Py_ssize_t num_interactions(self):
         return self.cppbqm.num_interactions()
 
     cpdef Py_ssize_t num_variables(self):
         return self.cppbqm.num_variables()
+
+    def reduce_linear(self, function, initializer=None):
+        if self.num_variables() == 0 and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_linear() on an empty BQM")
+
+        cdef Py_ssize_t start, vi
+        cdef bias_type value, tmp
+
+        if initializer is None:
+            start = 1
+            value = self.cppbqm.linear(0)
+        else:
+            start = 0
+            value = initializer
+
+        # speed up a few common cases
+        if function is operator.add:
+            for vi in range(start, self.num_variables()):
+                value += self.cppbqm.linear(vi)
+        elif function is max:
+            for vi in range(start, self.num_variables()):
+                tmp = self.cppbqm.linear(vi)
+                if tmp > value:
+                    value = tmp
+        elif function is min:
+            for vi in range(start, self.num_variables()):
+                tmp = self.cppbqm.linear(vi)
+                if tmp < value:
+                    value = tmp
+        else:
+            for vi in range(start, self.num_variables()):
+                value = function(value, self.cppbqm.linear(vi))
+
+        return as_numpy_float(value)
+
+    def reduce_neighborhood(self, u, function, initializer=None):
+        cdef Py_ssize_t ui = self.variables.index(u)
+
+        if self.cppbqm.num_interactions(ui) == 0 and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_neighborhood() on an empty neighbhorhood")
+
+        cdef bias_type value, tmp
+
+        span = self.cppbqm.neighborhood(ui)
+
+        if initializer is None:
+            value = deref(span.first).second
+            inc(span.first)
+        else:
+            value = initializer
+
+        # speed up a few common cases
+        if function is operator.add:
+            while span.first != span.second:
+                value += deref(span.first).second
+                inc(span.first)
+        elif function is max:
+            while span.first != span.second:
+                tmp = deref(span.first).second
+                if tmp > value:
+                    value = tmp
+                inc(span.first)
+        elif function is min:
+            while span.first != span.second:
+                tmp = deref(span.first).second
+                if tmp < value:
+                    value = tmp
+                inc(span.first)
+        else:
+            while span.first != span.second:
+                value = function(value, deref(span.first).second)
+                inc(span.first)
+
+        return as_numpy_float(value)
+
+    def reduce_quadratic(self, function, initializer=None):
+
+        if self.cppbqm.is_linear() and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_quadratic() on a linear model")
+
+        cdef bias_type value, tmp
+
+        start = self.cppbqm.cbegin_quadratic()
+
+        if initializer is None:
+            value = deref(start).bias
+            inc(start)
+        else:
+            value = initializer
+
+        # handle a few common cases
+        if function is operator.add:
+            while start != self.cppbqm.cend_quadratic():
+                value += deref(start).bias
+                inc(start)
+        elif function is max:
+            while start != self.cppbqm.cend_quadratic():
+                tmp = deref(start).bias
+                if tmp > value:
+                    value = tmp
+                inc(start)
+        elif function is min:
+            while start != self.cppbqm.cend_quadratic():
+                tmp = deref(start).bias
+                if tmp < value:
+                    value = tmp
+                inc(start)
+        else:
+            while start != self.cppbqm.cend_quadratic():
+                value = function(value, deref(start).bias)
+                inc(start)
+
+        return as_numpy_float(value)
 
     def relabel_variables(self, mapping):
         self.variables._relabel(mapping)

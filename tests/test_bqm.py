@@ -15,6 +15,7 @@
 """Generic dimod/bqm tests."""
 import itertools
 import numbers
+import operator
 import os.path as path
 import shutil
 import tempfile
@@ -1572,6 +1573,68 @@ class TestPickle(unittest.TestCase):
         self.assertEqual(bqm, new)
 
 
+class TestReduce(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_reduce_linear(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_linear_from((v, v) for v in range(5))
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_linear(min), 0)
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_linear(max), 4)
+
+        with self.subTest('sum'):
+            self.assertEqual(bqm.reduce_linear(operator.add), 10)
+
+        with self.subTest('custom'):
+            def mymin(a, b):
+                return min(a, b)
+            self.assertEqual(bqm.reduce_linear(min),
+                             bqm.reduce_linear(mymin))
+
+    @parameterized.expand(BQMs.items())
+    def test_reduce_neighborhood(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_quadratic_from({'ab': 1, 'bc': 2, 'ac': 4})
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_neighborhood('b', min), 1)
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_neighborhood('b', max), 2)
+
+        with self.subTest('sum'):
+            self.assertEqual(bqm.reduce_neighborhood('b', operator.add), 3)
+
+        with self.subTest('custom'):
+            def mymin(a, b):
+                return min(a, b)
+            self.assertEqual(bqm.reduce_neighborhood('b', min),
+                             bqm.reduce_neighborhood('b', mymin))
+
+    @parameterized.expand(BQMs.items())
+    def test_reduce_quadratic(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_quadratic_from({'ab': 1, 'bc': 2, 'ac': 4})
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_quadratic(min), 1)
+
+        with self.subTest('min'):
+            self.assertEqual(bqm.reduce_quadratic(max), 4)
+
+        with self.subTest('sum'):
+            self.assertEqual(bqm.reduce_quadratic(operator.add), 7)
+
+        with self.subTest('custom'):
+            def mymin(a, b):
+                return min(a, b)
+            self.assertEqual(bqm.reduce_quadratic(min),
+                             bqm.reduce_quadratic(mymin))
+
+
 class TestRemoveInteraction(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_basic(self, name, BQM):
@@ -2415,97 +2478,56 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.get_linear('a'), 5)
         assert_consistent_bqm(bqm)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_linear_sum(self, name, BQM):
-    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': 1, 'bc': 1})
-    #     self.assertEqual(bqm.linear.sum(), 1)
-    #     self.assertEqual(bqm.linear.sum(start=5), 6)
+    @parameterized.expand(BQMs.items())
+    def test_linear_sum(self, name, BQM):
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': 1, 'bc': 1})
+        self.assertEqual(bqm.linear.sum(), 1)
+        self.assertEqual(bqm.linear.sum(start=5), 6)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_max(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
-    #     self.assertEqual(bqm.adj['a'].max(), 2)
-    #     self.assertEqual(bqm.adj['b'].max(), 3)
-    #     self.assertEqual(bqm.adj['c'].max(), 3)
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_max(self, name, BQM):
+        bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
+        self.assertEqual(bqm.adj['a'].max(), 2)
+        self.assertEqual(bqm.adj['b'].max(), 3)
+        self.assertEqual(bqm.adj['c'].max(), 3)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_max_empty(self, name, BQM):
-    #     bqm = BQM.from_ising({'a': 1}, {})
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_max_empty(self, name, BQM):
+        bqm = BQM.from_ising({'a': 1}, {})
 
-    #     with self.assertRaises(ValueError):
-    #         bqm.adj['a'].max()
+        with self.assertRaises(ValueError):
+            bqm.adj['a'].max()
 
-    #     self.assertEqual(bqm.adj['a'].max(default=5), 5)
+        self.assertEqual(bqm.adj['a'].max(default=5), 5)
 
-    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    # def test_neighborhood_max_cybqm(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_min(self, name, BQM):
+        bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
+        self.assertEqual(bqm.adj['a'].min(), -2)
+        self.assertEqual(bqm.adj['b'].min(), -3)
+        self.assertEqual(bqm.adj['c'].min(), -3)
 
-    #     def _max(*args, **kwargs):
-    #         raise Exception('boom')
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_min_empty(self, name, BQM):
+        bqm = BQM.from_ising({'a': 1}, {})
 
-    #     with unittest.mock.patch('builtins.max', _max):
-    #         bqm.adj['a'].max()
+        with self.assertRaises(ValueError):
+            bqm.adj['a'].min()
 
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_min(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
-    #     self.assertEqual(bqm.adj['a'].min(), -2)
-    #     self.assertEqual(bqm.adj['b'].min(), -3)
-    #     self.assertEqual(bqm.adj['c'].min(), -3)
+        self.assertEqual(bqm.adj['a'].min(default=5), 5)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_min_empty(self, name, BQM):
-    #     bqm = BQM.from_ising({'a': 1}, {})
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_sum(self, name, BQM):
+        bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
+        self.assertEqual(bqm.adj['a'].sum(), -3)
+        self.assertEqual(bqm.adj['b'].sum(), -4)
+        self.assertEqual(bqm.adj['c'].sum(), -5)
 
-    #     with self.assertRaises(ValueError):
-    #         bqm.adj['a'].min()
-
-    #     self.assertEqual(bqm.adj['a'].min(default=5), 5)
-
-    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    # def test_neighborhood_min_cybqm(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
-
-    #     def _min(*args, **kwargs):
-    #         raise Exception('boom')
-
-    #     with unittest.mock.patch('builtins.min', _min):
-    #         bqm.adj['a'].min()
-
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_sum(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
-    #     self.assertEqual(bqm.adj['a'].sum(), -3)
-    #     self.assertEqual(bqm.adj['b'].sum(), -4)
-    #     self.assertEqual(bqm.adj['c'].sum(), -5)
-
-    # @parameterized.expand(BQMs.items())
-    # def test_neighborhood_sum_empty(self, name, BQM):
-    #     bqm = BQM.from_ising({'a': 1}, {})
-    #     self.assertEqual(bqm.adj['a'].sum(), 0)
-    #     self.assertEqual(bqm.adj['a'].sum(start=5), 5)
-
-    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    # def test_neighborhood_sum_cybqm(self, name, BQM):
-    #     bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
-
-    #     def _sum(*args, **kwargs):
-    #         raise Exception('boom')
-
-    #     with unittest.mock.patch('builtins.sum', _sum):
-    #         bqm.adj['a'].sum()
-
-    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    # def test_quadratic_sum_cybqm(self, name, BQM):
-    #     # make sure it doesn't use python's sum
-    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
-
-    #     def _sum(*args, **kwargs):
-    #         raise Exception('boom')
-
-    #     with unittest.mock.patch('builtins.sum', _sum):
-    #         bqm.linear.sum()
+    @parameterized.expand(BQMs.items())
+    def test_neighborhood_sum_empty(self, name, BQM):
+        bqm = BQM.from_ising({'a': 1}, {})
+        self.assertEqual(bqm.adj['a'].sum(), 0)
+        self.assertEqual(bqm.adj['a'].sum(start=5), 5)
 
     @parameterized.expand(BQMs.items())
     def test_quadratic_delitem(self, name, BQM):
@@ -2528,76 +2550,76 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_quadratic_sum(self, name, BQM):
-    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
-    #     self.assertEqual(bqm.quadratic.sum(), 5)
-    #     self.assertEqual(bqm.quadratic.sum(start=5), 10)
+    @parameterized.expand(BQMs.items())
+    def test_quadratic_sum(self, name, BQM):
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+        self.assertEqual(bqm.quadratic.sum(), 5)
+        self.assertEqual(bqm.quadratic.sum(start=5), 10)
 
-    # @parameterized.expand([(cls.__name__, cls) for cls in BQM_CYTHON_SUBCLASSES])
-    # def test_quadratic_sum_cybqm(self, name, BQM):
-    #     # make sure it doesn't use python's sum
-    #     bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
+    @parameterized.expand(BQMs.items())
+    def test_quadratic_sum_cybqm(self, name, BQM):
+        # make sure it doesn't use python's sum
+        bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
 
-    #     def _sum(*args, **kwargs):
-    #         raise Exception('boom')
+        def _sum(*args, **kwargs):
+            raise Exception('boom')
 
-    #     with unittest.mock.patch('builtins.sum', _sum):
-    #         bqm.quadratic.sum()
+        with unittest.mock.patch('builtins.sum', _sum):
+            bqm.quadratic.sum()
 
-    # @parameterized.expand(BQMs.items())
-    # def test_lin_minmax(self, name, BQM):
-    #     num_vars = 10
-    #     D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
-    #     bqm = BQM(D, 'SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_lin_minmax(self, name, BQM):
+        num_vars = 10
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN')
 
-    #     lmin = min(bqm.linear.values())
-    #     self.assertEqual(lmin, bqm.linear.min())
+        lmin = min(bqm.linear.values())
+        self.assertEqual(lmin, bqm.linear.min())
 
-    #     lmax = max(bqm.linear.values())
-    #     self.assertEqual(lmax, bqm.linear.max())
+        lmax = max(bqm.linear.values())
+        self.assertEqual(lmax, bqm.linear.max())
 
-    # @parameterized.expand(BQMs.items())
-    # def test_quad_minmax(self, name, BQM):
-    #     num_vars = 10
-    #     D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
-    #     bqm = BQM(D, 'SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_quad_minmax(self, name, BQM):
+        num_vars = 10
+        D = np.arange(num_vars*num_vars).reshape((num_vars, num_vars))
+        bqm = BQM(D, 'SPIN')
 
-    #     qmin = min(bqm.quadratic.values())
-    #     self.assertEqual(qmin, bqm.quadratic.min())
+        qmin = min(bqm.quadratic.values())
+        self.assertEqual(qmin, bqm.quadratic.min())
 
-    #     qmax = max(bqm.quadratic.values())
-    #     self.assertEqual(qmax, bqm.quadratic.max())
+        qmax = max(bqm.quadratic.values())
+        self.assertEqual(qmax, bqm.quadratic.max())
 
-    # @parameterized.expand(BQMs.items())
-    # def test_lin_minmax_empty(self, name, BQM):
-    #     bqm = BQM('SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_lin_minmax_empty(self, name, BQM):
+        bqm = BQM('SPIN')
 
-    #     # Test when default is not set
-    #     with self.assertRaises(ValueError):
-    #         bqm.linear.min()
+        # Test when default is not set
+        with self.assertRaises(ValueError):
+            bqm.linear.min()
 
-    #     with self.assertRaises(ValueError):
-    #         bqm.linear.max()
+        with self.assertRaises(ValueError):
+            bqm.linear.max()
 
-    #     # Test when default is set
-    #     self.assertEqual(bqm.linear.min(default=1), 1)
-    #     self.assertEqual(bqm.linear.max(default=2), 2)
+        # Test when default is set
+        self.assertEqual(bqm.linear.min(default=1), 1)
+        self.assertEqual(bqm.linear.max(default=2), 2)
 
-    # @parameterized.expand(BQMs.items())
-    # def test_quad_minmax_empty(self, name, BQM):
-    #     bqm = BQM(500, 'SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_quad_minmax_empty(self, name, BQM):
+        bqm = BQM(500, 'SPIN')
 
-    #     # Test when default is not set
-    #     with self.assertRaises(ValueError):
-    #         bqm.quadratic.min()
+        # Test when default is not set
+        with self.assertRaises(ValueError):
+            bqm.quadratic.min()
 
-    #     with self.assertRaises(ValueError):
-    #         bqm.quadratic.max()
+        with self.assertRaises(ValueError):
+            bqm.quadratic.max()
 
-    #     # Test when default is set
-    #     self.assertEqual(bqm.quadratic.min(default=1), 1)
-    #     self.assertEqual(bqm.quadratic.max(default=2), 2)
+        # Test when default is set
+        self.assertEqual(bqm.quadratic.min(default=1), 1)
+        self.assertEqual(bqm.quadratic.max(default=2), 2)
 
 
 # class TestConstraint(unittest.TestCase):

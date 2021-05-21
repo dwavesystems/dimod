@@ -40,6 +40,17 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
             bint operator==(const_neighborhood_iterator)
             bint operator!=(const_neighborhood_iterator)
 
+        cppclass const_quadratic_iterator:
+            cppclass value_type:
+                index_type u
+                index_type v
+                bias_type bias
+
+            value_type operator*()
+            const_quadratic_iterator operator++()
+            bint operator==(const_quadratic_iterator&)
+            bint operator!=(const_quadratic_iterator&)
+
         cppBinaryQuadraticModel()
         cppBinaryQuadraticModel(cppVartype)
 
@@ -48,7 +59,10 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void add_quadratic(index_type, index_type, bias_type) except +
         void add_quadratic[T](const T dense[], index_type)
         void add_quadratic[ItRow, ItCol, ItBias](ItRow, ItCol, ItBias, index_type) except +
+        const_quadratic_iterator cbegin_quadratic()
+        const_quadratic_iterator cend_quadratic()
         void change_vartype(cppVartype)
+        bint is_linear()
         bias_type& linear(index_type)
         bias_type& offset()
         bias_type quadratic_at(index_type, index_type) except +

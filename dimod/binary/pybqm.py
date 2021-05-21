@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import copy
 
-from collections.abc import Collection, Mapping, KeysView
+from collections.abc import Collection, Mapping, KeysView, Callable
+from functools import reduce
 from typing import Any, Dict, Iterator, Optional, Tuple
 
 import numpy as np
@@ -203,6 +204,30 @@ class pyBQM:
         n = sum(map(len, self._adj.values()), 0)
         n -= self.num_variables()  # subtract the self-loops
         return n // 2
+
+    def reduce_linear(self, function: Callable,
+                      initializer: Optional[Any] = None) -> Any:
+        gen = (self.get_linear(v) for v in self.variables)
+        if initializer is None:
+            return reduce(function, gen)
+        else:
+            return reduce(function, gen, initializer)
+
+    def reduce_neighborhood(self, v: Variable, function: Callable,
+                            initializer: Optional[Any] = None) -> Any:
+        gen = (b for _, b in self.iter_neighborhood(v))
+        if initializer is None:
+            return reduce(function, gen)
+        else:
+            return reduce(function, gen, initializer)
+
+    def reduce_quadratic(self, function: Callable,
+                         initializer: Optional[Any] = None) -> Any:
+        gen = (b for _, _, b in self.iter_quadratic())
+        if initializer is None:
+            return reduce(function, gen)
+        else:
+            return reduce(function, gen, initializer)
 
     def remove_interaction(self, u: Variable, v: Variable):
         if u == v:
