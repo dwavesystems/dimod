@@ -247,16 +247,17 @@ class NeighborhoodIterator {
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::random_access_iterator_tag;
 
-    NeighborhoodIterator() : neighborhood_(nullptr), i_(0), pair_(nullptr) {}
+    NeighborhoodIterator()
+            : neighborhood_ptr_(nullptr), i_(0), pair_ptr_(nullptr) {}
 
     NeighborhoodIterator(neighborhood_type* neighborhood, index_type i)
-            : neighborhood_(neighborhood), i_(i), pair_(nullptr) {
+            : neighborhood_ptr_(neighborhood), i_(i), pair_ptr_(nullptr) {
         update_pair();
     }
 
-    reference operator*() { return *pair_; }
+    reference operator*() { return *pair_ptr_; }
 
-    pointer operator->() { return pair_; }
+    pointer operator->() { return pair_ptr_; }
 
     NeighborhoodIterator<Bias, Index>& operator++() {
         ++i_;
@@ -326,18 +327,18 @@ class NeighborhoodIterator {
     }
 
  private:
-    neighborhood_type* neighborhood_;
+    neighborhood_type* neighborhood_ptr_;
     index_type i_;
 
-    value_type* pair_;
+    value_type* pair_ptr_;
 
     void update_pair() {
-        if (pair_) {
-            delete pair_;
+        if (pair_ptr_) {
+            delete pair_ptr_;
         }
-        if (i_ < (index_type)neighborhood_->size()) {
-            pair_ = new value_type(neighborhood_->neighbors[i_],
-                                   neighborhood_->quadratic_biases[i_]);
+        if (i_ >= 0 && i_ < (index_type)neighborhood_ptr_->size()) {
+            pair_ptr_ = new value_type(neighborhood_ptr_->neighbors[i_],
+                                       neighborhood_ptr_->quadratic_biases[i_]);
         }
     }
 };
@@ -356,17 +357,17 @@ class ConstNeighborhoodIterator {
     using iterator_category = std::random_access_iterator_tag;
 
     ConstNeighborhoodIterator()
-            : neighborhood_(nullptr), i_(0), pair_(nullptr) {}
+            : neighborhood_ptr_(nullptr), i_(0), pair_ptr_(nullptr) {}
 
     ConstNeighborhoodIterator(const neighborhood_type* neighborhood,
                               index_type i)
-            : neighborhood_(neighborhood), i_(i), pair_(nullptr) {
+            : neighborhood_ptr_(neighborhood), i_(i), pair_ptr_(nullptr) {
         update_pair();
     }
 
-    const reference operator*() const { return *pair_; }
+    const reference operator*() const { return *pair_ptr_; }
 
-    const pointer operator->() const { return pair_; }
+    const pointer operator->() const { return pair_ptr_; }
 
     ConstNeighborhoodIterator<Bias, Index>& operator++() {
         ++i_;
@@ -436,24 +437,23 @@ class ConstNeighborhoodIterator {
     }
 
  private:
-    const neighborhood_type* neighborhood_;
+    const neighborhood_type* neighborhood_ptr_;
     index_type i_;
 
-    value_type* pair_;
+    value_type* pair_ptr_;
 
     void update_pair() {
-        if (pair_) {
-            delete pair_;
+        if (pair_ptr_) {
+            delete pair_ptr_;
         }
-        if (i_ < (index_type)neighborhood_->size()) {
-            pair_ = new value_type(neighborhood_->neighbors[i_],
-                                   neighborhood_->quadratic_biases[i_]);
+        if (i_ >= 0 && i_ < (index_type)neighborhood_ptr_->size()) {
+            pair_ptr_ = new value_type(neighborhood_ptr_->neighbors[i_],
+                                       neighborhood_ptr_->quadratic_biases[i_]);
         }
     }
 };
 
-
-template<class Bias, class Index>
+template <class Bias, class Index>
 class ConstQuadraticIterator;
 
 template <class Bias, class Index = int>
@@ -832,7 +832,8 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         base_type::offset() += bqm.offset();
 
         // linear
-        for (index_type old_u = 0; old_u < (index_type)bqm.num_variables(); ++old_u) {
+        for (index_type old_u = 0; old_u < (index_type)bqm.num_variables();
+             ++old_u) {
             index_type new_u = mapping[old_u];
             base_type::linear(new_u) += bqm.linear(old_u);
 
