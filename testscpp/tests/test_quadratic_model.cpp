@@ -185,6 +185,29 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
             REQUIRE(pairs[1].second == 4);
             REQUIRE(pairs.size() == 2);
         }
+
+        WHEN("we iterate over the quadratic biases") {
+            auto first = bqm.cbegin_quadratic();
+            auto last = bqm.cend_quadratic();
+            THEN("we read out the lower triangle") {
+                CHECK(first->u == 1);
+                CHECK(first->v == 0);
+                CHECK(first->bias == 2);
+                CHECK((*first).u == 1);
+                CHECK((*first).v == 0);
+                CHECK((*first).bias == 2);
+
+                ++first;
+
+                CHECK(first->u == 2);
+                CHECK(first->v == 0);
+                CHECK(first->bias == 4);
+
+                first++;
+
+                CHECK(first == last);
+            }
+        }
     }
 
     GIVEN("a BQM with five variables, two interactions and an offset") {
@@ -501,8 +524,15 @@ SCENARIO("Neighborhood can be manipulated") {
                 (*it).second = -48;
                 REQUIRE(neighborhood.at(1) == -48);
 
-                // it++;
-                // it->second += 1;
+                ++it;
+                it->second = 104;
+                REQUIRE(neighborhood.at(3) == 104);
+            }
+
+            THEN("we can erase some with an iterator") {
+                neighborhood.erase(neighborhood.begin() + 1,
+                                   neighborhood.end());
+                REQUIRE(neighborhood.size() == 1);
             }
         }
     }
