@@ -12,6 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
 import copy
 import io
 import json
@@ -34,6 +36,7 @@ except ImportError:
 
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
+from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.typing import Bias, Variable
@@ -408,6 +411,28 @@ class BinaryQuadraticModel:
         return Adjacency(self)
 
     @property
+    def binary(self) -> BinaryQuadraticModel:
+        """todo"""
+        if self.vartype is Vartype.BINARY:
+            return self
+
+        try:
+            bqm = self._binary
+        except AttributeError:
+            pass
+        else:
+            if bqm.vartype is Vartype.BINARY:
+                return bqm
+
+        bqm = type(self).__new__(type(self))
+        bqm.data = VartypeView(self.data, Vartype.BINARY)
+
+        bqm._spin = self
+
+        self._binary: BinaryQuadraticModel = bqm
+        return bqm
+
+    @property
     def dtype(self) -> np.dtype:
         """Data-type of the model's biases."""
         return self.data.dtype
@@ -431,6 +456,28 @@ class BinaryQuadraticModel:
     @property
     def shape(self) -> Tuple[int, int]:
         return self.num_variables, self.num_interactions
+
+    @property
+    def spin(self) -> BinaryQuadraticModel:
+        """todo"""
+        if self.vartype is Vartype.SPIN:
+            return self
+
+        try:
+            bqm = self._spin
+        except AttributeError:
+            pass
+        else:
+            if bqm.vartype is Vartype.SPIN:
+                return bqm
+
+        bqm = type(self).__new__(type(self))
+        bqm.data = VartypeView(self.data, Vartype.SPIN)
+
+        bqm._binary = self
+
+        self._spin: BinaryQuadraticModel = bqm
+        return bqm
 
     @cached_property
     def variables(self) -> Variables:

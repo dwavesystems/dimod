@@ -1993,239 +1993,330 @@ class TestShape(unittest.TestCase):
 #             self.assertAlmostEqual(energy, model.energy(bin_sample))
 
 
-# class TestVartypeViews(unittest.TestCase):
-#     # SpinView and BinaryView
+class TestVartypeViews(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_add_offset_binary(self, name, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.SPIN)
 
+        bqm.binary.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_add_offset_binary(self, name, BQM):
-#         bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.SPIN)
+    @parameterized.expand(BQMs.items())
+    def test_add_offset_spin(self, name, BQM):
+        bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.BINARY)
 
-#         bqm.binary.add_offset(2)
-#         self.assertEqual(bqm.offset, 3.5)
+        bqm.spin.add_offset(2)
+        self.assertEqual(bqm.offset, 3.5)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_add_offset_spin(self, name, BQM):
-#         bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.BINARY)
+    @parameterized.expand(BQMs.items())
+    def test_binary_binary(self, name, BQM):
+        bqm = BQM(dimod.BINARY)
+        self.assertIs(bqm.binary, bqm)
+        self.assertIs(bqm.binary.binary, bqm)  # and so on
 
-#         bqm.spin.add_offset(2)
-#         self.assertEqual(bqm.offset, 3.5)
+    @parameterized.expand(BQMs.items())
+    def test_spin_spin(self, name, BQM):
+        bqm = BQM(dimod.SPIN)
+        self.assertIs(bqm.spin, bqm)
+        self.assertIs(bqm.spin.spin, bqm)  # and so on
 
-#     @parameterized.expand(BQMs.items())
-#     def test_binary_binary(self, name, BQM):
-#         bqm = BQM(dimod.BINARY)
-#         self.assertIs(bqm.binary, bqm)
-#         self.assertIs(bqm.binary.binary, bqm)  # and so on
+    @parameterized.expand(BQMs.items())
+    def test_simple_binary(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
 
-#     @parameterized.expand(BQMs.items())
-#     def test_spin_spin(self, name, BQM):
-#         bqm = BQM(dimod.SPIN)
-#         self.assertIs(bqm.spin, bqm)
-#         self.assertIs(bqm.spin.spin, bqm)  # and so on
+        assert_consistent_bqm(bqm.binary)
+        self.assertIs(bqm.binary.vartype, dimod.BINARY)
+        binary = bqm.change_vartype(dimod.BINARY, inplace=False)
+        self.assertEqual(binary, bqm.binary)
+        self.assertNotEqual(binary, bqm)
+        self.assertIs(bqm.binary.spin, bqm)
+        self.assertIs(bqm.binary.binary, bqm.binary)  # and so on
 
-#     @parameterized.expand(BQMs.items())
-#     def test_simple_binary(self, name, BQM):
-#         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
+    @parameterized.expand(BQMs.items())
+    def test_simple_spin(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
 
-#         assert_consistent_bqm(bqm.binary)
-#         self.assertIs(bqm.binary.vartype, dimod.BINARY)
-#         binary = bqm.change_vartype(dimod.BINARY, inplace=False)
-#         self.assertEqual(binary, bqm.binary)
-#         self.assertNotEqual(binary, bqm)
-#         self.assertIs(bqm.binary.spin, bqm)
-#         self.assertIs(bqm.binary.binary, bqm.binary)  # and so on
+        assert_consistent_bqm(bqm.spin)
+        self.assertIs(bqm.spin.vartype, dimod.SPIN)
+        spin = bqm.change_vartype(dimod.SPIN, inplace=False)
+        self.assertEqual(spin, bqm.spin)
+        self.assertNotEqual(spin, bqm)
+        self.assertIs(bqm.spin.binary, bqm)
+        self.assertIs(bqm.spin.spin, bqm.spin)  # and so on
 
-#     @parameterized.expand(BQMs.items())
-#     def test_simple_spin(self, name, BQM):
-#         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
+    @parameterized.expand(BQMs.items())
+    def test_copy_binary(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
+        new = bqm.binary.copy()
+        self.assertIsNot(new, bqm.binary)
+        self.assertIsInstance(new, BQM)
 
-#         assert_consistent_bqm(bqm.spin)
-#         self.assertIs(bqm.spin.vartype, dimod.SPIN)
-#         spin = bqm.change_vartype(dimod.SPIN, inplace=False)
-#         self.assertEqual(spin, bqm.spin)
-#         self.assertNotEqual(spin, bqm)
-#         self.assertIs(bqm.spin.binary, bqm)
-#         self.assertIs(bqm.spin.spin, bqm.spin)  # and so on
+    @parameterized.expand(BQMs.items())
+    def test_copy_spin(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
+        new = bqm.spin.copy()
+        self.assertIsNot(new, bqm.spin)
+        self.assertIsInstance(new, BQM)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_copy_binary(self, name, BQM):
-#         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
-#         new = bqm.binary.copy()
-#         self.assertIsNot(new, bqm.binary)
-#         self.assertIsInstance(new, BQM)
+    @parameterized.expand(BQMs.items())
+    def test_offset_binary(self, name, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.SPIN)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_copy_spin(self, name, BQM):
-#         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
-#         new = bqm.spin.copy()
-#         self.assertIsNot(new, bqm.spin)
-#         self.assertIsInstance(new, BQM)
+        bqm.binary.offset -= 2
+        self.assertEqual(bqm.offset, 1)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_offset_binary(self, name, BQM):
-#         bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.SPIN)
+    @parameterized.expand(BQMs.items())
+    def test_offset_spin(self, name, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.BINARY)
 
-#         bqm.binary.offset -= 2
-#         self.assertEqual(bqm.offset, 1)
+        bqm.spin.offset -= 2
+        self.assertEqual(bqm.offset, 1)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_offset_spin(self, name, BQM):
-#         bqm = BQM({'a': 1}, {'ab': 2}, 3, dimod.BINARY)
+    @parameterized.expand(BQMs.items())
+    def test_set_linear_binary(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
 
-#         bqm.spin.offset -= 2
-#         self.assertEqual(bqm.offset, 1)
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_linear_binary(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
+        view.set_linear(0, .5)
+        copy.set_linear(0, .5)
 
-#         view = bqm.binary
-#         copy = bqm.change_vartype(dimod.BINARY, inplace=False)
+        self.assertEqual(view.get_linear(0), .5)
+        self.assertEqual(copy.get_linear(0), .5)
 
-#         view.set_linear(0, .5)
-#         copy.set_linear(0, .5)
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.get_linear(0), .5)
-#         self.assertEqual(copy.get_linear(0), .5)
+    @parameterized.expand(BQMs.items())
+    def test_set_linear_spin(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_linear_spin(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
+        view.set_linear(0, .5)
+        copy.set_linear(0, .5)
 
-#         view = bqm.spin
-#         copy = bqm.change_vartype(dimod.SPIN, inplace=False)
+        self.assertEqual(view.get_linear(0), .5)
+        self.assertEqual(copy.get_linear(0), .5)
 
-#         view.set_linear(0, .5)
-#         copy.set_linear(0, .5)
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.get_linear(0), .5)
-#         self.assertEqual(copy.get_linear(0), .5)
+    @parameterized.expand(BQMs.items())
+    def test_set_offset_binary(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_offset_binary(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
+        view.offset = .5
+        copy.offset = .5
 
-#         view = bqm.binary
-#         copy = bqm.change_vartype(dimod.BINARY, inplace=False)
+        self.assertEqual(view.offset, .5)
+        self.assertEqual(copy.offset, .5)
 
-#         view.offset = .5
-#         copy.offset = .5
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.offset, .5)
-#         self.assertEqual(copy.offset, .5)
+    @parameterized.expand(BQMs.items())
+    def test_set_offset_spin(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_offset_spin(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
+        view.offset = .5
+        copy.offset = .5
 
-#         view = bqm.spin
-#         copy = bqm.change_vartype(dimod.SPIN, inplace=False)
+        self.assertEqual(view.offset, .5)
+        self.assertEqual(copy.offset, .5)
 
-#         view.offset = .5
-#         copy.offset = .5
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.offset, .5)
-#         self.assertEqual(copy.offset, .5)
+    @parameterized.expand(BQMs.items())
+    def test_set_quadratic_binary(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        view = bqm.binary
+        copy = bqm.change_vartype(dimod.BINARY, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_quadratic_binary(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.SPIN)
+        view.set_quadratic(0, 1, -1)
+        copy.set_quadratic(0, 1, -1)
 
-#         view = bqm.binary
-#         copy = bqm.change_vartype(dimod.BINARY, inplace=False)
+        self.assertEqual(view.get_quadratic(0, 1), -1)
+        self.assertEqual(copy.get_quadratic(0, 1), -1)
 
-#         view.set_quadratic(0, 1, -1)
-#         copy.set_quadratic(0, 1, -1)
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.get_quadratic(0, 1), -1)
-#         self.assertEqual(copy.get_quadratic(0, 1), -1)
+    @parameterized.expand(BQMs.items())
+    def test_set_quadratic_spin(self, name, BQM):
+        bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        view = bqm.spin
+        copy = bqm.change_vartype(dimod.SPIN, inplace=False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_set_quadratic_spin(self, name, BQM):
-#         bqm = BQM({0: 1, 1: -3, 2: 2}, {(0, 1): -5, (1, 2): 6}, 16, dimod.BINARY)
+        view.set_quadratic(0, 1, -1)
+        copy.set_quadratic(0, 1, -1)
 
-#         view = bqm.spin
-#         copy = bqm.change_vartype(dimod.SPIN, inplace=False)
+        self.assertEqual(view.get_quadratic(0, 1), -1)
+        self.assertEqual(copy.get_quadratic(0, 1), -1)
 
-#         view.set_quadratic(0, 1, -1)
-#         copy.set_quadratic(0, 1, -1)
+        self.assertEqual(view.spin, copy.spin)
+        self.assertEqual(view.binary, copy.binary)
 
-#         self.assertEqual(view.get_quadratic(0, 1), -1)
-#         self.assertEqual(copy.get_quadratic(0, 1), -1)
+    @parameterized.expand(BQMs.items())
+    def test_change_vartype_binary(self, name, BQM):
+        bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'BINARY')
+        bqm.offset = 1
 
-#         self.assertEqual(view.spin, copy.spin)
-#         self.assertEqual(view.binary, copy.binary)
+        spin = bqm.spin
 
-#     @parameterized.expand([(cls.__name__, cls, inplace)
-#                            for (cls, inplace)
-#                            in itertools.product(BQM_SUBCLASSES, [False, True])])
-#     def test_relabel_variables_binary(self, name, BQM, inplace):
-#         # to get a BinaryView, construct in SPIN, and ask for binary
-#         linear = {0: 1, 1: -3, 2: 2}
-#         quadratic = {(0, 1): -5, (1, 2): 6}
-#         offset = 16
-#         vartype = dimod.SPIN
-#         view = BQM(linear, quadratic, offset, vartype).binary
+        spin.change_vartype('SPIN')  # should do nothing
+        self.assertIs(spin.vartype, dimod.SPIN)
+        self.assertIs(bqm.spin, spin)
 
-#         # relabel view
-#         mapping = {0: 'a', 1: 'b', 2: 'c'}
-#         new = view.relabel_variables(mapping, inplace=inplace)
-#         assert_consistent_bqm(new)
-#         if inplace:
-#             self.assertIs(view, new)
-#         else:
-#             self.assertIsNot(view, new)
+        new = spin.change_vartype('SPIN', inplace=False)
+        self.assertIs(new.vartype, dimod.SPIN)
+        self.assertIsNot(new, spin)
+        self.assertIsInstance(new, BQM)
 
-#         # check that new model is correct
-#         linear = {'a': 1, 'b': -3, 'c': 2}
-#         quadratic = {'ab': -5, 'bc': 6}
-#         offset = 16
-#         vartype = dimod.SPIN
-#         test = BQM(linear, quadratic, offset, vartype).binary
-#         self.assertEqual(new, test)
+        new = spin.change_vartype('BINARY', inplace=False)
+        self.assertIs(new.vartype, dimod.BINARY)
+        self.assertIsNot(new, spin)
+        self.assertIsInstance(new, BQM)
 
-#     @parameterized.expand([(cls.__name__, cls, inplace)
-#                            for (cls, inplace)
-#                            in itertools.product(BQM_SUBCLASSES, [False, True])])
-#     def test_relabel_variables_spin(self, name, BQM, inplace):
-#         # to get a SpinView, construct in BINARY, and ask for spin
-#         linear = {0: 1, 1: -3, 2: 2}
-#         quadratic = {(0, 1): -5, (1, 2): 6}
-#         offset = 16
-#         vartype = dimod.BINARY
-#         view = BQM(linear, quadratic, offset, vartype).spin
+        spin.change_vartype('BINARY')
+        self.assertIs(spin.vartype, dimod.BINARY)
+        self.assertIsNot(bqm.spin, spin)
 
-#         # relabel view
-#         mapping = {0: 'a', 1: 'b', 2: 'c'}
-#         new = view.relabel_variables(mapping, inplace=inplace)
-#         assert_consistent_bqm(new)
-#         if inplace:
-#             self.assertIs(view, new)
-#         else:
-#             self.assertIsNot(view, new)
+    @parameterized.expand(BQMs.items())
+    def test_change_vartype_spin(self, name, BQM):
+        bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'SPIN')
+        bqm.offset = 1
 
-#         # check that new model is correct
-#         linear = {'a': 1, 'b': -3, 'c': 2}
-#         quadratic = {'ab': -5, 'bc': 6}
-#         offset = 16
-#         vartype = dimod.BINARY
-#         test = BQM(linear, quadratic, offset, vartype).spin
-#         self.assertEqual(new, test)
+        binary = bqm.binary
+
+        binary.change_vartype('BINARY')  # should do nothing
+        self.assertIs(binary.vartype, dimod.BINARY)
+        self.assertIs(bqm.binary, binary)
+
+        new = binary.change_vartype('BINARY', inplace=False)
+        self.assertIs(new.vartype, dimod.BINARY)
+        self.assertIsNot(new, binary)
+        self.assertIsInstance(new, BQM)
+
+        new = binary.change_vartype('SPIN', inplace=False)
+        self.assertIs(new.vartype, dimod.SPIN)
+        self.assertIsNot(new, binary)
+        self.assertIsInstance(new, BQM)
+
+        binary.change_vartype('SPIN')
+        self.assertIs(binary.vartype, dimod.SPIN)
+        self.assertIsNot(bqm.binary, binary)
+
+    @parameterized.expand(BQMs.items())
+    def test_consistency_binary_to_spin(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -2}, {'ab': 3, 'bc': 4}, 1.5, 'BINARY')
+
+        spin = bqm.change_vartype('SPIN', inplace=False)
+        view = bqm.spin
+
+        self.assertEqual(spin, view)
+        self.assertEqual(bqm, spin.binary)
+
+    @parameterized.expand(BQMs.items())
+    def test_consistency_spin_to_binary(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': -2}, {'ab': 3, 'bc': 4}, 1.5, 'SPIN')
+
+        binary = bqm.change_vartype('BINARY', inplace=False)
+        view = bqm.binary
+
+        self.assertEqual(binary, view)
+        self.assertEqual(bqm, binary.spin)
+
+    @parameterized.expand(BQMs.items())
+    def test_consistent_energies_binary(self, name, BQM):
+        bqm = BQM({'a': -7, 'b': -32.2}, {'ab': -5, 'bc': 1.5}, 20.6, 'BINARY')
+
+        bin_sampleset = dimod.ExactSolver().sample(bqm)
+        spin_sampleset = dimod.ExactSolver().sample(bqm.spin)
+
+        self.assertEqual(bin_sampleset.change_vartype('SPIN', inplace=False),
+                         spin_sampleset)
+        self.assertEqual(spin_sampleset.change_vartype('BINARY', inplace=False),
+                         bin_sampleset)
+
+    @parameterized.expand(BQMs.items())
+    def test_consistent_energies_spin(self, name, BQM):
+        bqm = BQM({'a': -7, 'b': -32.2}, {'ab': -5, 'bc': 1.5}, 20.6, 'SPIN')
+
+        bin_sampleset = dimod.ExactSolver().sample(bqm.binary)
+        spin_sampleset = dimod.ExactSolver().sample(bqm)
+
+        self.assertEqual(bin_sampleset.change_vartype('SPIN', inplace=False),
+                         spin_sampleset)
+        self.assertEqual(spin_sampleset.change_vartype('BINARY', inplace=False),
+                         bin_sampleset)
+
+    @parameterized.expand([(cls.__name__, cls, inplace)
+                           for (cls, inplace)
+                           in itertools.product(BQMs.values(), [False, True])])
+    def test_relabel_variables_binary(self, name, BQM, inplace):
+        # to get a BinaryView, construct in SPIN, and ask for binary
+        linear = {0: 1, 1: -3, 2: 2}
+        quadratic = {(0, 1): -5, (1, 2): 6}
+        offset = 16
+        vartype = dimod.SPIN
+        view = BQM(linear, quadratic, offset, vartype).binary
+
+        # relabel view
+        mapping = {0: 'a', 1: 'b', 2: 'c'}
+        new = view.relabel_variables(mapping, inplace=inplace)
+        assert_consistent_bqm(new)
+        if inplace:
+            self.assertIs(view, new)
+        else:
+            self.assertIsNot(view, new)
+
+        # check that new model is correct
+        linear = {'a': 1, 'b': -3, 'c': 2}
+        quadratic = {'ab': -5, 'bc': 6}
+        offset = 16
+        vartype = dimod.SPIN
+        test = BQM(linear, quadratic, offset, vartype).binary
+        self.assertEqual(new, test)
+
+    @parameterized.expand([(cls.__name__, cls, inplace)
+                           for (cls, inplace)
+                           in itertools.product(BQMs.values(), [False, True])])
+    def test_relabel_variables_spin(self, name, BQM, inplace):
+        # to get a SpinView, construct in BINARY, and ask for spin
+        linear = {0: 1, 1: -3, 2: 2}
+        quadratic = {(0, 1): -5, (1, 2): 6}
+        offset = 16
+        vartype = dimod.BINARY
+        view = BQM(linear, quadratic, offset, vartype).spin
+
+        # relabel view
+        mapping = {0: 'a', 1: 'b', 2: 'c'}
+        new = view.relabel_variables(mapping, inplace=inplace)
+        assert_consistent_bqm(new)
+        if inplace:
+            self.assertIs(view, new)
+        else:
+            self.assertIsNot(view, new)
+
+        # check that new model is correct
+        linear = {'a': 1, 'b': -3, 'c': 2}
+        quadratic = {'ab': -5, 'bc': 6}
+        offset = 16
+        vartype = dimod.BINARY
+        test = BQM(linear, quadratic, offset, vartype).spin
+        self.assertEqual(new, test)
 
 
 class TestToNumpyVectors(unittest.TestCase):
