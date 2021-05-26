@@ -12,8 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import annotations
-
+import collections.abc as abc
 import copy
 import itertools
 import io
@@ -22,10 +21,8 @@ import operator
 import tempfile
 import warnings
 
-from collections.abc import Iterable, Iterator, Mapping, Sequence, MutableMapping, Container, Collection, Callable
-from functools import cached_property
 from numbers import Integral, Number
-from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO
+from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence
 
 import numpy as np
 
@@ -38,6 +35,7 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
+from dimod.compatibility23 import cached_property
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.typing import Bias, Variable
@@ -76,7 +74,7 @@ class BQMView:
         return stream.getvalue()
 
 
-class Neighborhood(Mapping, BQMView):
+class Neighborhood(abc.Mapping, BQMView):
     __slots__ = ['_var']
 
     def __init__(self, bqm, v):
@@ -128,7 +126,7 @@ class Neighborhood(Mapping, BQMView):
         return self._bqm.reduce_neighborhood(self._var, operator.add, start)
 
 
-class Adjacency(Mapping, BQMView):
+class Adjacency(abc.Mapping, BQMView):
     """Quadratic biases as a nested dict of dicts.
 
     Accessed like a dict of dicts, where the keys of the outer dict are all
@@ -146,7 +144,7 @@ class Adjacency(Mapping, BQMView):
         return self._bqm.num_variables
 
 
-class Linear(MutableMapping, BQMView):
+class Linear(abc.MutableMapping, BQMView):
     """Linear biases as a mapping.
 
     Accessed like a dict, where keys are the variables of the binary quadratic
@@ -202,7 +200,7 @@ class Linear(MutableMapping, BQMView):
         return self._bqm.reduce_linear(operator.add, start)
 
 
-class Quadratic(MutableMapping, BQMView):
+class Quadratic(abc.MutableMapping, BQMView):
     """Quadratic biases as a flat mapping.
 
     Accessed like a dict, where keys are 2-tuples of varables, which represent
@@ -215,7 +213,7 @@ class Quadratic(MutableMapping, BQMView):
             raise KeyError(repr(uv))
 
     def __eq__(self, other):
-        if not isinstance(other, Mapping):
+        if not isinstance(other, abc.Mapping):
             return NotImplemented
 
         try:
@@ -329,8 +327,8 @@ class BinaryQuadraticModel:
 
         vartype = self.data.vartype
 
-        if isinstance(quadratic, (Mapping, Iterator)):
-            if isinstance(quadratic, Mapping):
+        if isinstance(quadratic, (abc.Mapping, abc.Iterator)):
+            if isinstance(quadratic, abc.Mapping):
                 quadratic = ((u, v, b) for (u, v), b in quadratic.items())
 
             for u, v, bias in quadratic:
@@ -368,7 +366,7 @@ class BinaryQuadraticModel:
             else:
                 self.add_quadratic_from_dense(quadratic)
 
-        if isinstance(linear, (Iterator, Mapping)):
+        if isinstance(linear, (abc.Iterator, abc.Mapping)):
             self.add_linear_from(linear)
         else:
             self.add_linear_from_array(linear)
@@ -412,7 +410,7 @@ class BinaryQuadraticModel:
         return Adjacency(self)
 
     @property
-    def binary(self) -> BinaryQuadraticModel:
+    def binary(self) -> 'BinaryQuadraticModel':
         """todo"""
         if self.vartype is Vartype.BINARY:
             return self
@@ -459,7 +457,7 @@ class BinaryQuadraticModel:
         return self.num_variables, self.num_interactions
 
     @property
-    def spin(self) -> BinaryQuadraticModel:
+    def spin(self) -> 'BinaryQuadraticModel':
         """todo"""
         if self.vartype is Vartype.SPIN:
             return self
@@ -576,9 +574,9 @@ class BinaryQuadraticModel:
                 Otherwise, should be an iterable of `(v, bias)` pairs.
 
         """
-        if isinstance(linear, Mapping):
+        if isinstance(linear, abc.Mapping):
             iterator = linear.items()
-        elif isinstance(linear, Iterator):
+        elif isinstance(linear, abc.Iterator):
             iterator = linear
         else:
             raise TypeError(
@@ -632,7 +630,7 @@ class BinaryQuadraticModel:
         """
         add_quadratic = self.data.add_quadratic
 
-        if isinstance(quadratic, Mapping):
+        if isinstance(quadratic, abc.Mapping):
             for (u, v), bias in quadratic.items():
                 add_quadratic(u, v, bias)
         else:
@@ -796,7 +794,7 @@ class BinaryQuadraticModel:
                 assignments.
 
         """
-        if isinstance(fixed, Mapping):
+        if isinstance(fixed, abc.Mapping):
             fixed = fixed.items()
         for v, val in fixed:
             self.fix_variable(v, val)
@@ -1103,12 +1101,12 @@ class BinaryQuadraticModel:
 
         if ignored_variables is None:
             ignored_variables = set()
-        elif not isinstance(ignored_variables, Container):
+        elif not isinstance(ignored_variables, abc.Container):
             ignored_variables = set(ignored_variables)
 
         if ignored_interactions is None:
             ignored_interactions = set()
-        elif not isinstance(ignored_interactions, Container):
+        elif not isinstance(ignored_interactions, abc.Container):
             ignored_interactions = set(ignored_interactions)
 
         if quadratic_range is None:
@@ -1222,12 +1220,12 @@ class BinaryQuadraticModel:
 
         if ignored_variables is None:
             ignored_variables = set()
-        elif not isinstance(ignored_variables, Container):
+        elif not isinstance(ignored_variables, abc.Container):
             ignored_variables = set(ignored_variables)
 
         if ignored_interactions is None:
             ignored_interactions = set()
-        elif not isinstance(ignored_interactions, Container):
+        elif not isinstance(ignored_interactions, abc.Container):
             ignored_interactions = set(ignored_interactions)
 
         linear = self.linear

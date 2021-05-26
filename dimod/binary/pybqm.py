@@ -12,13 +12,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import annotations
-
 import copy
 
-from collections.abc import Collection, Mapping, KeysView, Callable
+from collections.abc import Collection, KeysView, Callable
 from functools import reduce
-from typing import Any, Dict, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterator, Optional, Tuple, Mapping
 
 import numpy as np
 
@@ -106,7 +104,7 @@ class pyBQM:
         self.add_linear(v, bias)
         return v
 
-    def change_vartype(self, vartype: VartypeLike) -> pyBQM:
+    def change_vartype(self, vartype: VartypeLike) -> 'pyBQM':
         vartype = as_vartype(vartype)
 
         # in place and we are already correct, so nothing to do

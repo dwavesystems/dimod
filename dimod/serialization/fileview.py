@@ -107,7 +107,7 @@ class Section(abc.ABC):
             raise ValueError("unknown subheader, expected {} but recieved "
                              "{}".format(cls.magic, magic))
         length = np.frombuffer(fp.read(4), '<u4')[0]
-        return cls.loads_data(fp.read(length))
+        return cls.loads_data(fp.read(int(length)))
 
 
 class VariablesSection(Section):
