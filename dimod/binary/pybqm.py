@@ -303,7 +303,7 @@ class pyBQM:
         num_interactions = self.num_interactions()
 
         if variable_order is None:
-            variable_order = list(self._adj)
+            variable_order = list(self.variables)
 
             if sort_labels:
                 try:

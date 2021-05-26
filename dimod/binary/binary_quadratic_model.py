@@ -1464,16 +1464,7 @@ class BinaryQuadraticModel:
             )
 
     def update(self, other):
-        try:
-            self.data.update(other.data)
-        except AttributeError:
-            raise TypeError
-        except TypeError:
-            pass
-        else:
-            return
-
-        raise NotImplementedError
+        self.data.update(other.data)
 
 
 BQM = BinaryQuadraticModel

@@ -36,11 +36,33 @@ from dimod.binary import as_bqm
 from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
 
+def cross_vartype_view(*args, **kwargs):
+    bqm = BinaryQuadraticModel(*args, **kwargs)
+    if bqm.vartype is dimod.SPIN:
+        bqm.change_vartype(dimod.BINARY)
+        return bqm.spin
+    else:
+        bqm.change_vartype(dimod.SPIN)
+        return bqm.binary
+
+
+def vartype_view(*args, **kwargs):
+    bqm = BinaryQuadraticModel(*args, **kwargs)
+    if bqm.vartype is dimod.SPIN:
+        return bqm.spin
+    else:
+        return bqm.binary
+
+
 BQMs = dict(BinaryQuadraticModel=BinaryQuadraticModel,
             DictBQM=DictBQM,
             Float32BQM=Float32BQM,
             Float64BQM=Float64BQM,
+            VartypeView=vartype_view,
+            CrossVartypeView=cross_vartype_view,
             )
+
+BQM_CLSs = dict((k, v) for k, v in BQMs.items() if isinstance(v, type))
 
 
 class TestAddOffset(unittest.TestCase):
@@ -353,11 +375,13 @@ class TestConstruction(unittest.TestCase):
                 bqm = source(linear, quadratic, offset, vartype)
                 new = target(bqm)
 
-                self.assertIsInstance(new, target)
                 assert_consistent_bqm(new)
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
+
+                if isinstance(target, type):
+                    self.assertIsInstance(new, target)
 
     def test_bqm_spin(self):
         linear = {'a': -1, 'b': 1, 0: 1.5}
@@ -369,11 +393,13 @@ class TestConstruction(unittest.TestCase):
                 bqm = source(linear, quadratic, offset, vartype)
                 new = target(bqm)
 
-                self.assertIsInstance(new, target)
                 assert_consistent_bqm(new)
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
+
+                if isinstance(target, type):
+                    self.assertIsInstance(new, target)
 
     def test_bqm_binary_to_spin(self):
         linear = {'a': -1, 'b': 1, 0: 1.5}
@@ -385,7 +411,6 @@ class TestConstruction(unittest.TestCase):
                 bqm = source(linear, quadratic, offset, vartype)
                 new = target(bqm, vartype=dimod.SPIN)
 
-                self.assertIsInstance(new, target)
                 assert_consistent_bqm(new)
                 self.assertEqual(new.vartype, dimod.SPIN)
 
@@ -394,6 +419,9 @@ class TestConstruction(unittest.TestCase):
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
+
+                if isinstance(target, type):
+                    self.assertIsInstance(new, target)
 
     def test_bqm_spin_to_binary(self):
         linear = {'a': -1, 'b': 1, 0: 1.5}
@@ -405,7 +433,6 @@ class TestConstruction(unittest.TestCase):
                 bqm = source(linear, quadratic, offset, vartype)
                 new = target(bqm, vartype=dimod.BINARY)
 
-                self.assertIsInstance(new, target)
                 assert_consistent_bqm(new)
                 self.assertEqual(new.vartype, dimod.BINARY)
 
@@ -414,6 +441,9 @@ class TestConstruction(unittest.TestCase):
                 self.assertEqual(bqm.adj, new.adj)
                 self.assertEqual(bqm.offset, new.offset)
                 self.assertEqual(bqm.vartype, new.vartype)
+
+                if isinstance(target, type):
+                    self.assertIsInstance(new, target)
 
     @parameterized.expand(BQMs.items())
     def test_dense_zeros(self, name, BQM):
@@ -596,7 +626,7 @@ class TestContractVariables(unittest.TestCase):
 
 
 class TestCoo(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_to_coo_string_empty_BINARY(self, name, BQM):
         bqm = BQM.empty(dimod.BINARY)
 
@@ -607,7 +637,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm_str, '')
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_to_coo_string_empty_SPIN(self, name, BQM):
         bqm = BQM.empty(dimod.SPIN)
 
@@ -618,7 +648,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm_str, '')
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_to_coo_string_typical_SPIN(self, name, BQM):
         bqm = BQM.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4})
         with self.assertWarns(DeprecationWarning):
@@ -626,7 +656,7 @@ class TestCoo(unittest.TestCase):
         contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
         self.assertEqual(s, contents)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_to_coo_string_typical_BINARY(self, name, BQM):
         bqm = BQM.from_qubo({(0, 0): 1, (0, 1): 2, (2, 3): .4})
         with self.assertWarns(DeprecationWarning):
@@ -634,7 +664,7 @@ class TestCoo(unittest.TestCase):
         contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
         self.assertEqual(s, contents)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_from_coo_file(self, name, BQM):
         import os.path as path
 
@@ -646,14 +676,14 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, BQM.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_from_coo_string(self, name, BQM):
         contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
         with self.assertWarns(DeprecationWarning):
             bqm = BQM.from_coo(contents, dimod.SPIN)
         self.assertEqual(bqm, BQM.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_file_empty_BINARY(self, name, BQM):
         bqm = BQM.empty(dimod.BINARY)
 
@@ -672,7 +702,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_file_empty_SPIN(self, name, BQM):
         bqm = BQM.empty(dimod.SPIN)
 
@@ -691,7 +721,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_file_BINARY(self, name, BQM):
         bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
 
@@ -710,7 +740,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_file_SPIN(self, name, BQM):
         bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
@@ -729,7 +759,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_string_empty_BINARY(self, name, BQM):
         bqm = BQM.empty(dimod.BINARY)
 
@@ -740,7 +770,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_string_empty_SPIN(self, name, BQM):
         bqm = BQM.empty(dimod.SPIN)
 
@@ -751,7 +781,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_string_BINARY(self, name, BQM):
         bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
 
@@ -762,7 +792,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_two_digit_integers_string(self, name, BQM):
         bqm = BQM.from_ising({12: .5, 0: 1}, {(0, 12): .5})
 
@@ -773,7 +803,7 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_string_SPIN(self, name, BQM):
         bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
@@ -786,7 +816,7 @@ class TestCoo(unittest.TestCase):
 
 
 class TestDepreaction(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_shapeable(self, name, BQM):
         with self.assertWarns(DeprecationWarning):
             self.assertTrue(BQM.shapeable())
@@ -858,7 +888,7 @@ class TestCopy(unittest.TestCase):
 
         self.assertIs(new, copied[1][0])
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_subclass(self, name, BQM):
         # copy should respect subclassing
         class SubBQM(BQM):
@@ -872,7 +902,7 @@ class TestCopy(unittest.TestCase):
 
 
 class TestEmpty(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_binary(self, name, BQM):
         bqm = BQM.empty(dimod.BINARY)
         self.assertIsInstance(bqm, BQM)
@@ -880,7 +910,7 @@ class TestEmpty(unittest.TestCase):
         self.assertIs(bqm.vartype, dimod.BINARY)
         self.assertEqual(bqm.shape, (0, 0))
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_spin(self, name, BQM):
         bqm = BQM.empty(dimod.SPIN)
         self.assertIsInstance(bqm, BQM)
@@ -953,7 +983,7 @@ class TestEnergies(unittest.TestCase):
 
 
 class TestFileView(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_empty(self, name, BQM):
         bqm = BQM('SPIN')
 
@@ -965,7 +995,7 @@ class TestFileView(unittest.TestCase):
 
         self.assertEqual(bqm, new)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_2path(self, name, BQM):
         bqm = BQM([.1, -.2], [[0, -1], [0, 0]], 'SPIN')
 
@@ -1042,7 +1072,7 @@ class TestFixVariables(unittest.TestCase):
 
 
 class TestFromNumpyVectors(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_3var(self, _, BQM):
         h = np.array([-1, 1, 5])
         heads = np.array([0, 1])
@@ -1057,7 +1087,7 @@ class TestFromNumpyVectors(unittest.TestCase):
         self.assertEqual(bqm.offset, 0.5)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_3var_duplicate(self, _, BQM):
         h = np.array([-1, 1, 5])
         heads = np.array([0, 1, 0, 1])
@@ -1072,7 +1102,7 @@ class TestFromNumpyVectors(unittest.TestCase):
         self.assertEqual(bqm.offset, 0.5)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_3var_labels(self, _, BQM):
         h = np.array([-1, 1, 5])
         heads = np.array([0, 1])
@@ -1088,13 +1118,13 @@ class TestFromNumpyVectors(unittest.TestCase):
                                         .5))
         self.assertEqual(list(bqm.variables), ['a', 'b', 'c'])
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_5var_labels(self, _, BQM):
         bqm = BQM.from_numpy_vectors(range(5), ([], [], []), .5, 'SPIN',
                                      variable_order='abcde')
         self.assertEqual(list(bqm.variables), list('abcde'))
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_dtypes(self, _, BQM):
         # we don't test uint64 because when combined with int it gets promoted
         # to float
@@ -1121,13 +1151,13 @@ class TestFromNumpyVectors(unittest.TestCase):
                 self.assertEqual(
                     bqm.adj, {0: {1: 4}, 1: {0: 4, 2: 5}, 2: {1: 5}})
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_empty(self, _, BQM):
         bqm = BQM.from_numpy_vectors([], ([], [], []), 1.5, 'SPIN')
         self.assertEqual(bqm.shape, (0, 0))
         self.assertEqual(bqm.offset, 1.5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_linear_in_quadratic(self, _, BQM):
         h = np.array([-1, 1, 5])
         heads = np.array([0, 1])
@@ -1143,21 +1173,21 @@ class TestFromNumpyVectors(unittest.TestCase):
         self.assertEqual(spin.offset, -.5)
         self.assertEqual(binary.offset, .5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_noncontiguous(self, _, BQM):
         quadratic = np.asarray([[0, 1], [1, 2]])
 
         bqm = BQM.from_numpy_vectors(
             [], (quadratic[:, 0], quadratic[:, 1], [.5, .6]), 1.5, 'SPIN')
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_oversized_linear(self, _, BQM):
         bqm = BQM.from_numpy_vectors([0, 1, 2], ([], [], []), 1.5, 'SPIN')
         self.assertEqual(bqm.shape, (3, 0))
         self.assertEqual(bqm.linear, {0: 0, 1: 1, 2: 2})
         self.assertEqual(bqm.offset, 1.5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_undersized_linear(self, _, BQM):
         bqm = BQM.from_numpy_vectors([0, 1], ([3], [4], [1]), 1.5, 'SPIN')
         self.assertEqual(bqm.shape, (5, 1))
@@ -1167,7 +1197,7 @@ class TestFromNumpyVectors(unittest.TestCase):
 
 
 class TestFromQUBO(unittest.TestCase):
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_basic(self, name, BQM):
         Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
         bqm = BQM.from_qubo(Q)
@@ -1179,7 +1209,7 @@ class TestFromQUBO(unittest.TestCase):
                                    2: {0: -1, 1: 1}})
         self.assertEqual(bqm.offset, 0)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_with_offset(self, name, BQM):
         Q = {(0, 0): -1, (0, 1): -1, (0, 2): -1, (1, 2): 1}
         bqm = BQM.from_qubo(Q, 1.6)
@@ -1414,7 +1444,7 @@ class TestNumpyMatrix(unittest.TestCase):
         target = [[-1., 1.2, 0.], [0., 0., 0.3], [0., 0., 0.]]
         np.testing.assert_array_almost_equal(M, target)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_functional(self, name, BQM):
         bqm = BQM({'a': -1}, {'ac': 1.2, 'bc': .3}, dimod.BINARY)
 
@@ -1429,7 +1459,7 @@ class TestNumpyMatrix(unittest.TestCase):
         assert_consistent_bqm(new)
         self.assertEqual(bqm, new)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_from_numpy_matrix(self, name, BQM):
 
         linear = {'a': -1}
@@ -1650,6 +1680,13 @@ class TestRemoveInteraction(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.remove_interaction(1, 1)
 
+    @parameterized.expand(BQMs.items())
+    def test_energy(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': 2, 'c': 3}, {'ab': 4, 'bc': 5}, 6, 'BINARY')
+        en = bqm.energy({'a': 1, 'b': 1, 'c': 1})
+        bqm.remove_interaction('a', 'b')
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'c': 1}), en - 4)
+
 
 class TestRemoveInteractionsFrom(unittest.TestCase):
     @parameterized.expand(BQMs.items())
@@ -1662,6 +1699,13 @@ class TestRemoveInteractionsFrom(unittest.TestCase):
 
 
 class TestRemoveVariable(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_energy(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': 2, 'c': 3}, {'ab': 4, 'bc': 5}, 6, 'BINARY')
+        en = bqm.energy({'a': 1, 'b': 1, 'c': 1})
+        bqm.remove_variable('a')
+        self.assertEqual(bqm.energy({'b': 1, 'c': 1}), en - 5)
+
     @parameterized.expand(BQMs.items())
     def test_labelled(self, name, BQM):
         bqm = BQM(dimod.SPIN)
@@ -2044,14 +2088,14 @@ class TestVartypeViews(unittest.TestCase):
         self.assertIs(bqm.spin.binary, bqm)
         self.assertIs(bqm.spin.spin, bqm.spin)  # and so on
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_copy_binary(self, name, BQM):
         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'SPIN')
         new = bqm.binary.copy()
         self.assertIsNot(new, bqm.binary)
         self.assertIsInstance(new, BQM)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_copy_spin(self, name, BQM):
         bqm = BQM({'a': 1, 'b': -3, 'c': 2}, {'ab': -5, 'bc': 6}, 16, 'BINARY')
         new = bqm.spin.copy()
@@ -2168,7 +2212,7 @@ class TestVartypeViews(unittest.TestCase):
         self.assertEqual(view.spin, copy.spin)
         self.assertEqual(view.binary, copy.binary)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_change_vartype_binary(self, name, BQM):
         bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'BINARY')
         bqm.offset = 1
@@ -2193,7 +2237,7 @@ class TestVartypeViews(unittest.TestCase):
         self.assertIs(spin.vartype, dimod.BINARY)
         self.assertIsNot(bqm.spin, spin)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_change_vartype_spin(self, name, BQM):
         bqm = BQM({'ab': -1, 'ac': -1, 'bc': -1, 'cd': -1}, 'SPIN')
         bqm.offset = 1
@@ -2453,7 +2497,7 @@ class TestToNumpyVectors(unittest.TestCase):
         np.testing.assert_array_equal(qdata, [])
         self.assertEqual(off, 0)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_sort_indices(self, name, BQM):
         bqm = BQM.from_ising({}, {(0, 1): .5, (3, 2): -1, (0, 3): 1.5})
 
@@ -2569,20 +2613,20 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.get_linear('a'), 5)
         assert_consistent_bqm(bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_linear_sum(self, name, BQM):
         bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': 1, 'bc': 1})
         self.assertEqual(bqm.linear.sum(), 1)
         self.assertEqual(bqm.linear.sum(start=5), 6)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_max(self, name, BQM):
         bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
         self.assertEqual(bqm.adj['a'].max(), 2)
         self.assertEqual(bqm.adj['b'].max(), 3)
         self.assertEqual(bqm.adj['c'].max(), 3)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_max_empty(self, name, BQM):
         bqm = BQM.from_ising({'a': 1}, {})
 
@@ -2591,14 +2635,14 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(bqm.adj['a'].max(default=5), 5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_min(self, name, BQM):
         bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
         self.assertEqual(bqm.adj['a'].min(), -2)
         self.assertEqual(bqm.adj['b'].min(), -3)
         self.assertEqual(bqm.adj['c'].min(), -3)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_min_empty(self, name, BQM):
         bqm = BQM.from_ising({'a': 1}, {})
 
@@ -2607,14 +2651,14 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(bqm.adj['a'].min(default=5), 5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_sum(self, name, BQM):
         bqm = BQM.from_ising({}, {'ab': -1, 'ac': -2, 'bc': -3})
         self.assertEqual(bqm.adj['a'].sum(), -3)
         self.assertEqual(bqm.adj['b'].sum(), -4)
         self.assertEqual(bqm.adj['c'].sum(), -5)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_sum_empty(self, name, BQM):
         bqm = BQM.from_ising({'a': 1}, {})
         self.assertEqual(bqm.adj['a'].sum(), 0)
@@ -2641,13 +2685,13 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.get_quadratic('a', 'b'), 5)
         assert_consistent_bqm(bqm)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_quadratic_sum(self, name, BQM):
         bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})
         self.assertEqual(bqm.quadratic.sum(), 5)
         self.assertEqual(bqm.quadratic.sum(start=5), 10)
 
-    @parameterized.expand(BQMs.items())
+    @parameterized.expand(BQM_CLSs.items())
     def test_quadratic_sum_cybqm(self, name, BQM):
         # make sure it doesn't use python's sum
         bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': -1, 'bc': 6})

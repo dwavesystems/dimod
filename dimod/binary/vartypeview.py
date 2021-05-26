@@ -14,7 +14,7 @@
 
 import functools
 
-from collections.abc import Collection, Iterator, Callable
+from collections.abc import Collection, Iterator, Callable, Sequence
 from operator import add
 from typing import Tuple, Iterator, Optional, Mapping
 
@@ -22,6 +22,7 @@ import numpy as np
 
 from numpy.typing import DTypeLike
 
+from dimod.binary.pybqm import pyBQM
 from dimod.sampleset import as_samples
 from dimod.typing import Bias, Variable
 from dimod.vartypes import BINARY, SPIN, Vartype, as_vartype, VartypeLike
@@ -35,7 +36,7 @@ def view_method(f):
         # explicitly check that we're getting the expected vartype combinations
         if obj._vartype == obj.data.vartype:
             # if the vartype matches, just use the underlying data method
-            return obj.data.getattr(f.__name__)(*args, **kwargs)
+            return getattr(obj.data, f.__name__)(*args, **kwargs)
 
         elif obj.data.vartype is SPIN and obj._vartype is BINARY:
             return f(obj, *args, **kwargs)
@@ -59,30 +60,42 @@ class VartypeView:
         return self.data.dtype
 
     @property
-    def variables(self) -> Collection:
+    def variables(self) -> Sequence:
         return self.data.variables
 
     @property
     def vartype(self) -> Vartype:
         return self._vartype
 
-    @property  # type: ignore[misc]
-    @view_method
+    @property
     def offset(self) -> Bias:
-        if self._vartype is BINARY:  # binary <- spin
+        if self._vartype == self.data.vartype:
+            return self.data.offset
+        elif self._vartype is BINARY and self.data.vartype is SPIN:
+            # binary <- spin
             return (self.data.offset
                     - self.data.reduce_linear(add, 0)
                     + self.data.reduce_quadratic(add, 0))
-        else:  # spin <- binary
+        elif self._vartype is SPIN and self.data.vartype is BINARY:
+            # spin <- binary
             return (self.data.offset
                     + self.data.reduce_linear(add, 0) / 2
                     + self.data.reduce_quadratic(add, 0) / 4)
+        else:
+            raise RuntimeError("unexpected vartype combination")
 
-    @offset.setter  # type: ignore[misc]
-    @view_method
+    @offset.setter
     def offset(self, bias: Bias):
-        # use the difference
-        self.data.offset += bias - self.offset
+        if self._vartype == self.data.vartype:
+            self.data.offset = bias
+        elif self._vartype is BINARY and self.data.vartype is SPIN:
+            # binary <- spin
+            self.data.offset += bias - self.offset  # use the difference
+        elif self._vartype is SPIN and self.data.vartype is BINARY:
+            # spin <- binary
+            self.data.offset += bias - self.offset  # use the difference
+        else:
+            raise RuntimeError("unexpected vartype combination")
 
     @view_method
     def add_linear(self, v: Variable, bias: Bias):
@@ -106,8 +119,17 @@ class VartypeView:
             self.data.add_linear(v, -2*bias)
             self.data.offset += bias
 
+    def add_variable(self, v: Optional[Variable] = None,
+                     bias: Bias = 0) -> Variable:
+        v = self.data.add_variable(v)
+        self.add_linear(v, bias)
+        return v
+
     def change_vartype(self, vartype: VartypeLike):
         self._vartype = as_vartype(vartype)
+
+    def degree(self, v: Variable):
+        return self.data.degree(v)
 
     @view_method
     def energies(self, samples_like, dtype: DTypeLike = None):
@@ -120,7 +142,7 @@ class VartypeView:
             samples += 1
             samples //= 2
 
-        return self.data.energies((samples, labels))
+        return self.data.energies((samples, labels), dtype=dtype)
 
     @view_method
     def get_linear(self, v: Variable) -> Bias:
@@ -132,11 +154,45 @@ class VartypeView:
                     + self.data.reduce_neighborhood(v, add, 0) / 4)
 
     @view_method
-    def get_quadratic(self, u: Variable, v: Variable) -> Bias:
+    def get_quadratic(self, u: Variable, v: Variable,
+                      default: Optional[Bias] = None) -> Bias:
+        if u == v:
+            raise ValueError(f"{u!r} cannot have an interaction with itself")
+
+        try:
+            if self._vartype is BINARY:  # binary <- spin
+                return 4 * self.data.get_quadratic(u, v)
+            else:  # spin <- binary
+                return self.data.get_quadratic(u, v) / 4
+        except ValueError as err:
+            if default is None:
+                raise ValueError(
+                    f"{u!r} and {v!r} have no interaction") from None
+            return default
+
+    @view_method
+    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
         if self._vartype is BINARY:  # binary <- spin
-            return 4 * self.data.get_quadratic(u, v)
+            for u, bias in self.data.iter_neighborhood(v):
+                yield u, 4 * bias
         else:  # spin <- binary
-            return self.data.get_quadratic(u, v) / 4
+            for u, bias in self.data.iter_neighborhood(v):
+                yield u, bias / 4
+
+    @view_method
+    def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
+        if self._vartype is BINARY:  # binary <- spin
+            for u, v, bias in self.data.iter_quadratic():
+                yield u, v, 4 * bias
+        else:  # spin <- binary
+            for u, v, bias in self.data.iter_quadratic():
+                yield u, v, bias / 4
+
+    def num_interactions(self):
+        return self.data.num_interactions()
+
+    def num_variables(self):
+        return self.data.num_variables()
 
     def reduce_linear(self, function: Callable,
                       initializer: Optional[Bias] = None) -> Bias:
@@ -163,39 +219,48 @@ class VartypeView:
             return functools.reduce(function, gen, initializer)
 
     @view_method
-    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
-        if self._vartype is BINARY:  # binary <- spin
-            for u, bias in self.data.iter_neighborhood(v):
-                yield u, 4 * bias
-        else:  # spin <- binary
-            for u, bias in self.data.iter_neighborhood(v):
-                yield u, bias / 4
+    def remove_interaction(self, u: Variable, v: Variable):
+        self.set_quadratic(u, v, 0)  # zero it out in the appropriate vartype
+        self.data.remove_interaction(u, v)
 
     @view_method
-    def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
-        if self._vartype is BINARY:  # binary <- spin
-            for u, v, bias in self.data.iter_quadratic():
-                yield u, v, 4 * bias
-        else:  # spin <- binary
-            for u, v, bias in self.data.iter_quadratic():
-                yield u, v, bias / 4
-
-    def num_interactions(self):
-        return self.data.num_interactions()
-
-    def num_variables(self):
-        return self.data.num_variables()
-
-    @view_method
-    def set_linear(self, v: Variable, bias: Bias):
-        self.add_linear(v, bias - self.get_linear(v))  # just add the delta
-
-    def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        # just add the delta
-        self.add_quadratic(u, v, bias - self.get_quadratic(u, v))
+    def remove_variable(self, v: Optional[Variable] = None) -> Variable:
+        if v is None:
+            v = self.variables[-1]
+        # set everything associated with `v` to 0
+        for u, _ in self.iter_neighborhood(v):
+            self.set_quadratic(u, v, 0)
+        self.set_linear(v, 0)
+        return self.data.remove_variable(v)
 
     def relabel_variables(self, mapping: Mapping[Variable, Variable]):
         self.data.relabel_variables(mapping)
 
     def relabel_variables_as_integers(self) -> Mapping[int, Variable]:
         return self.data.relabel_variables_as_integers()
+
+    @view_method
+    def set_linear(self, v: Variable, bias: Bias):
+        self.add_linear(v, bias - self.get_linear(v))  # just add the delta
+
+    def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        self.add_variable(u)
+        self.add_variable(v)
+        # just add the delta
+        self.add_quadratic(u, v, bias - self.get_quadratic(u, v))
+
+    # we could do something more clever, but this saves a lot of effort
+    to_numpy_vectors = pyBQM.to_numpy_vectors
+
+    @view_method
+    def update(self, other):
+        # use our own type!
+        other = VartypeView(other, self.vartype)
+
+        for v in other.variables:
+            self.add_linear(v, other.get_linear(v))
+
+        for u, v, bias in other.iter_quadratic():
+            self.add_quadratic(u, v, bias)
+
+        self.offset += other.offset
