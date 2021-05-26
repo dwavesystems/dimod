@@ -754,11 +754,11 @@ class BinaryQuadraticModel:
         for v, val in fixed:
             self.fix_variable(v, val)
 
-    # def flip_variable(self, v: Hashable):
-    #     """Flip variable `v` in a binary quadratic model."""
-    #     for u in self.adj[v]:
-    #         self.spin.adj[v][u] *= -1
-    #     self.spin.linear[v] *= -1
+    def flip_variable(self, v: Hashable):
+        """Flip variable `v` in a binary quadratic model."""
+        for u in self.adj[v]:
+            self.spin.adj[v][u] *= -1
+        self.spin.linear[v] *= -1
 
     @classmethod
     def from_coo(cls, obj, vartype=None):
@@ -1462,6 +1462,11 @@ class BinaryQuadraticModel:
             sort_labels=sort_labels,
             return_labels=return_labels,
             )
+
+    def to_qubo(self) -> Tuple[Mapping[Tuple[Variable, Variable], Bias], Bias]:
+        qubo = dict(self.binary.quadratic)
+        qubo.update(((v, v), bias) for v, bias in self.binary.linear.items())
+        return qubo, self.binary.offset
 
     def update(self, other):
         self.data.update(other.data)

@@ -1057,18 +1057,18 @@ class TestFixVariables(unittest.TestCase):
         self.assertEqual(bqm.offset, -2)
 
 
-# class TestFlipVariable(unittest.TestCase):
-#     @parameterized.expand(BQMs.items())
-#     def test_binary(self, name, BQM):
-#         bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 0, dimod.BINARY)
-#         bqm.flip_variable('a')
-#         self.assertEqual(bqm, BQM({'a': 1}, {'ab': 1}, -1.0, dimod.BINARY))
+class TestFlipVariable(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_binary(self, name, BQM):
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 0, dimod.BINARY)
+        bqm.flip_variable('a')
+        self.assertEqual(bqm, BQM({'a': 1}, {'ab': 1}, -1.0, dimod.BINARY))
 
-#     @parameterized.expand(BQMs.items())
-#     def test_spin(self, name, BQM):
-#         bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 1.0, dimod.SPIN)
-#         bqm.flip_variable('a')
-#         self.assertEqual(bqm, BQM({'a': 1, 'b': 1}, {'ab': 1}, 1.0, dimod.SPIN))
+    @parameterized.expand(BQMs.items())
+    def test_spin(self, name, BQM):
+        bqm = BQM({'a': -1, 'b': 1}, {'ab': -1}, 1.0, dimod.SPIN)
+        bqm.flip_variable('a')
+        self.assertEqual(bqm, BQM({'a': 1, 'b': 1}, {'ab': 1}, 1.0, dimod.SPIN))
 
 
 class TestFromNumpyVectors(unittest.TestCase):
@@ -1995,46 +1995,50 @@ class TestShape(unittest.TestCase):
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
 
 
-# class TestToIsing(unittest.TestCase):
-#     @parameterized.expand(BQMs.items())
-#     def test_spin(self, name, BQM):
-#         linear = {0: 7.1, 1: 103}
-#         quadratic = {(0, 1): .97}
-#         offset = 0.3
-#         vartype = dimod.SPIN
+class TestToIsing(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_spin(self, name, BQM):
+        linear = {0: 7.1, 1: 103}
+        quadratic = {frozenset((0, 1)): .97}
+        offset = 0.3
+        vartype = dimod.SPIN
 
-#         model = BQM(linear, quadratic, offset, vartype)
+        model = BQM(linear, quadratic, offset, vartype)
 
-#         h, J, off = model.to_ising()
+        h, J, off = model.to_ising()
 
-#         self.assertEqual(off, offset)
-#         self.assertEqual(linear, h)
-#         self.assertEqual(quadratic, J)
+        self.assertAlmostEqual(off, offset)
+        self.assertEqual(set(linear), set(h))
+        for v in linear:
+            self.assertAlmostEqual(h[v], linear[v], 5)
+        self.assertEqual(set(map(frozenset, J)), set(quadratic))
+        for u, v in J:
+            self.assertAlmostEqual(J[u, v], quadratic[frozenset([u, v])], 5)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_to_ising_binary_to_ising(self, name, BQM):
-#         linear = {0: 7.1, 1: 103}
-#         quadratic = {(0, 1): .97}
-#         offset = 0.3
-#         vartype = dimod.BINARY
+    @parameterized.expand(BQMs.items())
+    def test_to_ising_binary_to_ising(self, name, BQM):
+        linear = {0: 7.1, 1: 103}
+        quadratic = {(0, 1): .97}
+        offset = 0.3
+        vartype = dimod.BINARY
 
-#         model = BQM(linear, quadratic, offset, vartype)
+        model = BQM(linear, quadratic, offset, vartype)
 
-#         h, J, off = model.to_ising()
+        h, J, off = model.to_ising()
 
-#         for spins in itertools.product((-1, 1), repeat=len(model)):
-#             spin_sample = dict(zip(range(len(spins)), spins))
-#             bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
+        for spins in itertools.product((-1, 1), repeat=len(model)):
+            spin_sample = dict(zip(range(len(spins)), spins))
+            bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
 
-#             # calculate the qubo's energy
-#             energy = off
-#             for (u, v), bias in J.items():
-#                 energy += spin_sample[u] * spin_sample[v] * bias
-#             for v, bias in h.items():
-#                 energy += spin_sample[v] * bias
+            # calculate the qubo's energy
+            energy = off
+            for (u, v), bias in J.items():
+                energy += spin_sample[u] * spin_sample[v] * bias
+            for v, bias in h.items():
+                energy += spin_sample[v] * bias
 
-#             # and the energy of the model
-#             self.assertAlmostEqual(energy, model.energy(bin_sample))
+            # and the energy of the model
+            self.assertAlmostEqual(energy, model.energy(bin_sample), 5)
 
 
 class TestVartypeViews(unittest.TestCase):
@@ -2509,43 +2513,51 @@ class TestToNumpyVectors(unittest.TestCase):
         np.testing.assert_array_equal(values, [.5, 1.5, -1])
 
 
-# class TestToQUBO(unittest.TestCase):
-#     @parameterized.expand(BQMs.items())
-#     def test_binary(self, name, BQM):
-#         linear = {0: 0, 1: 0}
-#         quadratic = {(0, 1): 1}
-#         offset = 0.0
-#         vartype = dimod.BINARY
+class TestToQUBO(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_binary(self, name, BQM):
+        linear = {0: 0, 1: 0}
+        quadratic = {(0, 1): 1}
+        offset = 0.0
+        vartype = dimod.BINARY
 
-#         model = BQM(linear, quadratic, offset, vartype)
+        model = BQM(linear, quadratic, offset, vartype)
 
-#         Q, off = model.to_qubo()
+        Q, off = model.to_qubo()
 
-#         self.assertEqual(off, offset)
-#         self.assertEqual({(0, 0): 0, (1, 1): 0, (0, 1): 1}, Q)
+        self.assertEqual(off, offset)
+        self.assertEqual(len(Q), 3)
+        self.assertEqual(Q[0, 0], 0)
+        self.assertEqual(Q[1, 1], 0)
+        if (0, 1) in Q:
+            self.assertEqual(Q[0, 1], 1)
+        elif (1, 0) in Q:
+            self.assertEqual(Q[1, 0], 1)
+        else:
+            self.assertTrue(False)
 
-#     @parameterized.expand(BQMs.items())
-#     def test_spin(self, name, BQM):
-#         linear = {0: .5, 1: 1.3}
-#         quadratic = {(0, 1): -.435}
-#         offset = 1.2
-#         vartype = dimod.SPIN
+    @parameterized.expand(BQMs.items())
+    def test_spin(self, name, BQM):
+        linear = {0: .5, 1: 1.3}
+        quadratic = {(0, 1): -.435}
+        offset = 1.2
+        vartype = dimod.SPIN
 
-#         model = BQM(linear, quadratic, offset, vartype)
+        model = BQM(linear, quadratic, offset, vartype)
 
-#         Q, off = model.to_qubo()
+        Q, off = model.to_qubo()
 
-#         for spins in itertools.product((-1, 1), repeat=len(model)):
-#             spin_sample = dict(zip(range(len(spins)), spins))
-#             bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
+        for spins in itertools.product((-1, 1), repeat=len(model)):
+            spin_sample = dict(zip(range(len(spins)), spins))
+            bin_sample = {v: (s + 1) // 2 for v, s in spin_sample.items()}
 
-#             # calculate the qubo's energy
-#             energy = off
-#             for (u, v), bias in Q.items():
-#                 energy += bin_sample[u] * bin_sample[v] * bias
+            # calculate the qubo's energy
+            energy = off
+            for (u, v), bias in Q.items():
+                energy += bin_sample[u] * bin_sample[v] * bias
 
-#             # and the energy of the model
-#             self.assertAlmostEqual(energy, model.energy(spin_sample))
+            # and the energy of the model
+            self.assertAlmostEqual(energy, model.energy(spin_sample), 5)
 
 
 class TestUpdate(unittest.TestCase):
