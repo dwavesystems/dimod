@@ -16,11 +16,14 @@ import functools
 
 from collections.abc import Collection, Iterator, Callable, Sequence
 from operator import add
-from typing import Tuple, Iterator, Optional, Mapping
+from typing import Tuple, Iterator, Optional, Mapping, Any
 
 import numpy as np
 
-from numpy.typing import DTypeLike
+try:
+    from numpy.typing import ArrayLike, DTypeLike
+except ImportError:
+    DTypeLike = Any
 
 from dimod.binary.pybqm import pyBQM
 from dimod.sampleset import as_samples
