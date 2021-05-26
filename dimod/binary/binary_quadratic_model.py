@@ -379,7 +379,7 @@ class BinaryQuadraticModel:
         dtype = self.DEFAULT_DTYPE if dtype is None else dtype
         self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
 
-    def __init_subclass__(cls, /, default_dtype=np.float64, **kwargs):
+    def __init_subclass__(cls, default_dtype=np.float64, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.DEFAULT_DTYPE = np.dtype(default_dtype)
 
