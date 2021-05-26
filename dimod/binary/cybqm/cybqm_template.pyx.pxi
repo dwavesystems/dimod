@@ -17,6 +17,8 @@
 import copy
 import operator
 
+from collections.abc import Sized
+
 # cimport cpython
 cimport cython
 
@@ -175,6 +177,51 @@ cdef class cyBQM_template(cyBQMBase):
     def add_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self._index(v, permissive=True)
         self._add_linear(vi, bias)
+
+    def add_linear_equality_constraint(self, object terms,
+                                       bias_type lagrange_multiplier,
+                                       bias_type constant):
+        cdef vector[index_type] variables
+        cdef vector[bias_type] biases
+
+        # can allocate them if we already know the size
+        if isinstance(terms, Sized):
+            biases.reserve(len(terms))
+            variables.reserve(len(terms))
+
+        cdef bias_type bias
+        for v, bias in terms:
+            variables.push_back(self._index(v, permissive=True))
+            biases.push_back(bias)
+
+        cdef Py_ssize_t i, j
+        cdef Py_ssize_t num_terms = biases.size()
+
+        # offset part
+        self._add_offset(lagrange_multiplier * constant * constant)
+
+        # linear part
+        if self.cppbqm.vartype() == cppVartype.BINARY:
+            for i in range(num_terms):
+                self._add_linear(
+                    variables[i],
+                    lagrange_multiplier * biases[i] * (2 * constant + biases[i]))
+        elif self.cppbqm.vartype() == cppVartype.SPIN:
+            for i in range(num_terms):
+                self._add_linear(
+                    variables[i],
+                    lagrange_multiplier * biases[i] * 2 * constant)
+                self._add_offset(lagrange_multiplier * biases[i] * biases[i])
+        else:
+            raise RuntimeError("unexpected vartype")
+
+        # quadratic part
+        for i in range(num_terms):
+            for j in range(i + 1, num_terms):
+                self.cppbqm.add_quadratic(
+                    variables[i], variables[j],
+                    2 * lagrange_multiplier * biases[i] * biases[j]
+                    )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

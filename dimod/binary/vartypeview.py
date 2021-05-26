@@ -106,6 +106,9 @@ class VartypeView:
             self.data.add_linear(v, 2*bias)
             self.data.offset -= bias
 
+    def add_linear_equality_constraint(self, *args, **kwargs):
+        raise NotImplementedError  # defer to caller
+
     @view_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
         if self._vartype is BINARY:  # binary -> spin

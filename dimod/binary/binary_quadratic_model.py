@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import copy
+import itertools
 import io
 import json
 import operator
@@ -517,6 +518,52 @@ class BinaryQuadraticModel:
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
         return self.data.add_linear
+
+    def add_linear_equality_constraint(self,
+                                       terms: Iterable[Tuple[Variable, Bias]],
+                                       lagrange_multiplier: Bias,
+                                       constant: Bias):
+        """Add a linear constraint as a quadratic objective.
+
+        Adds a linear constraint of the form
+        :math:`\\sum_{i} a_{i} x_{i} + C = 0`
+        to the binary quadratic model as a quadratic objective.
+
+        Args:
+            terms (iterable/iterator):
+                An iterable of 2-tuples, (variable, bias).
+                Each tuple is evaluated to the term (bias * variable).
+                All terms in the list are summed.
+            lagrange_multiplier:
+                The coefficient or the penalty strength. This value is
+                multiplied by the entire constraint objective and added to the
+                bqm (it doesn't appear explicity in the equation above).
+            constant:
+                The constant value of the constraint, C, in the equation above.
+
+        """
+        try:
+            self.data.add_linear_equality_constraint(
+                terms, lagrange_multiplier, constant)
+            return
+        except NotImplementedError:
+            pass
+
+        for pair in itertools.combinations_with_replacement(terms, 2):
+            (u, ubias), (v, vbias) = pair
+
+            if u == v:
+                if self.vartype is Vartype.SPIN:
+                    self.add_linear(
+                        u, 2 * lagrange_multiplier * ubias * constant)
+                    self.offset += lagrange_multiplier * ubias * vbias
+                else:
+                    self.add_linear(
+                        u, lagrange_multiplier * ubias * (2*constant + vbias))
+            else:
+                self.add_quadratic(
+                    u, v, 2 * lagrange_multiplier * ubias * vbias)
+        self.offset += lagrange_multiplier * constant * constant
 
     def add_linear_from(self, linear: Union[Iterable, Mapping]):
         """Add variables and linear biases to a binary quadratic model.

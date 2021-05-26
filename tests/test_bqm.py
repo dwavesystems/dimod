@@ -2769,87 +2769,106 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.quadratic.max(default=2), 2)
 
 
-# class TestConstraint(unittest.TestCase):
-#     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SHAPEABLE_SUBCLASSES])
-#     def test_simple_constraint(self, name, BQM):
-#         bqm = BQM('BINARY')
-#         num_variables = 2
-#         num_cases = 3
-#         x = {}
-#         for i in range(num_variables):
-#             x[i] = bqm.add_variable('x_{i}'.format(i=i))
+class TestConstraint(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_simple_constraint(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 2
+        num_cases = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
 
-#         bqm.add_linear_equality_constraint(
-#             [(x[i], 1.0) for i in range(num_variables)],
-#             lagrange_multiplier=1.0, constant=-1.0)
+        bqm.add_linear_equality_constraint(
+            [(x[i], 1.0) for i in range(num_variables)],
+            lagrange_multiplier=1.0, constant=-1.0)
 
-#         for i in x:
-#             for case in range(num_cases):
-#                 self.assertEqual(bqm.get_linear(x[i]), -1)
-#             for j in x:
-#                 if j > i:
-#                     for case in range(num_cases):
-#                         self.assertEqual(bqm.get_quadratic(x[i], x[j]), 2.0)
+        for i in x:
+            for case in range(num_cases):
+                self.assertEqual(bqm.get_linear(x[i]), -1)
+            for j in x:
+                if j > i:
+                    for case in range(num_cases):
+                        self.assertEqual(bqm.get_quadratic(x[i], x[j]), 2.0)
 
-#     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SHAPEABLE_SUBCLASSES])
-#     def test_more_constraint(self, name, BQM):
-#         bqm = BQM('BINARY')
-#         x = bqm.add_variable('x')
-#         y = bqm.add_variable('y')
-#         w = bqm.add_variable('w')
+    @parameterized.expand(BQMs.items())
+    def test_simple_constraint_iterator(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 2
+        num_cases = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
 
-#         expression = [(x, 1.0), (y, 2.0), (w, 1.0)]
-#         constant = -2.0
-#         bqm.add_linear_equality_constraint(
-#             expression,
-#             lagrange_multiplier=1.0, constant=constant)
+        bqm.add_linear_equality_constraint(
+            ((x[i], 1.0) for i in range(num_variables)),
+            lagrange_multiplier=1.0, constant=-1.0)
 
-#         for cx, cy, cw in itertools.product(range(2), repeat=3):
-#             s = constant
-#             state = {'x': cx, 'y': cy, 'w': cw}
-#             for v, bias in expression:
-#                 if state[v]:
-#                     s += bias
-#             self.assertAlmostEqual(bqm.energy(state), s ** 2)
+        for i in x:
+            for case in range(num_cases):
+                self.assertEqual(bqm.get_linear(x[i]), -1)
+            for j in x:
+                if j > i:
+                    for case in range(num_cases):
+                        self.assertEqual(bqm.get_quadratic(x[i], x[j]), 2.0)
 
-#     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SHAPEABLE_SUBCLASSES])
-#     def test_random_constraint(self, name, BQM):
-#         num_variables = 4
-#         bqm_0 = dimod.generators.gnp_random_bqm(n=num_variables, p=0.5,
-#                                                 vartype=dimod.BINARY)
-#         bqm = bqm_0.copy()
-#         x = list(bqm.variables)
+    @parameterized.expand(BQMs.items())
+    def test_more_constraint(self, name, BQM):
+        bqm = BQM('BINARY')
+        x = bqm.add_variable('x')
+        y = bqm.add_variable('y')
+        w = bqm.add_variable('w')
 
-#         expression = [(x[i], np.random.randint(0, 10)) for i in x]
-#         constant = np.random.randint(1, 10) * num_variables
-#         lagrange_multiplier = np.random.randint(1, 10)
-#         bqm.add_linear_equality_constraint(
-#             expression,
-#             lagrange_multiplier=lagrange_multiplier, constant=constant)
+        expression = [(x, 1.0), (y, 2.0), (w, 1.0)]
+        constant = -2.0
+        bqm.add_linear_equality_constraint(
+            expression,
+            lagrange_multiplier=1.0, constant=constant)
 
-#         for binary_values in itertools.product(range(2), repeat=num_variables):
-#             state = {x[i]: binary_values[i] for i in x}
-#             energy = bqm.energy(state)
-#             s = constant
-#             for v, bias in expression:
-#                 if state[v]:
-#                     s += bias
+        for cx, cy, cw in itertools.product(range(2), repeat=3):
+            s = constant
+            state = {'x': cx, 'y': cy, 'w': cw}
+            for v, bias in expression:
+                if state[v]:
+                    s += bias
+            self.assertAlmostEqual(bqm.energy(state), s ** 2)
 
-#             self.assertAlmostEqual(energy,
-#                                    lagrange_multiplier * s ** 2 +
-#                                    bqm_0.energy(state))
+    @parameterized.expand(BQMs.items())
+    def test_random_constraint(self, name, BQM):
+        num_variables = 4
+        bqm_0 = dimod.generators.gnp_random_bqm(n=num_variables, p=0.5,
+                                                vartype=dimod.BINARY)
+        bqm = bqm_0.copy()
+        x = list(bqm.variables)
 
-#     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SHAPEABLE_SUBCLASSES])
-#     def test_unknown_variable(self, name, BQM):
-#         bqm = BQM('BINARY')
-#         with self.assertRaises(ValueError):
-#             bqm.add_linear_equality_constraint(
-#                 [(0, 0)], lagrange_multiplier=1, constant=-1)
+        expression = [(x[i], np.random.randint(0, 10)) for i in x]
+        constant = np.random.randint(1, 10) * num_variables
+        lagrange_multiplier = np.random.randint(1, 10)
+        bqm.add_linear_equality_constraint(
+            expression,
+            lagrange_multiplier=lagrange_multiplier, constant=constant)
 
-#     @parameterized.expand([(cls.__name__, cls) for cls in BQM_SHAPEABLE_SUBCLASSES])
-#     def test_out_of_range_variable(self, name, BQM):
-#         bqm = BQM('BINARY')
-#         u = bqm.add_variable(5)
-#         with self.assertRaises(ValueError):
-#             bqm.add_linear_equality_constraint(
-#                 [(u + 1, 0)], lagrange_multiplier=1, constant=-1)
+        for binary_values in itertools.product(range(2), repeat=num_variables):
+            state = {x[i]: binary_values[i] for i in x}
+            energy = bqm.energy(state)
+            s = constant
+            for v, bias in expression:
+                if state[v]:
+                    s += bias
+
+            self.assertAlmostEqual(energy,
+                                   lagrange_multiplier * s ** 2 +
+                                   bqm_0.energy(state))
+
+    @parameterized.expand(BQMs.items())
+    def test_spin(self, name, BQM):
+        terms = [('r', -2), ('s', 1), ('t', 4)]
+
+        bqm = BQM('SPIN')
+        bqm.add_linear_equality_constraint(terms, 1, 0)
+
+        for spins in itertools.product((-1, 1), repeat=3):
+            sample = dict(zip('rst', spins))
+
+            self.assertAlmostEqual(bqm.energy(sample),
+                                   sum(sample[v]*b for v, b in terms)**2)

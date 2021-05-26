@@ -58,6 +58,9 @@ class pyBQM:
         self._adj.setdefault(v, dict())
         self._adj[v][v] = self._adj[v].get(v, 0) + bias
 
+    def add_linear_equality_constraint(self, *args, **kwargs):
+        raise NotImplementedError  # defer to caller
+
     def add_linear_from_array(self, linear: ArrayLike):
         for v, bias in enumerate(np.asarray(linear)):
             self.add_linear(v, bias)
