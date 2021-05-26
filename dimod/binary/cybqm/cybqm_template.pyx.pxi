@@ -795,20 +795,5 @@ cdef class cyBQM_template(cyBQMBase):
         try:
             self._update(other)
         except TypeError:
-            pass
-        else:
-            return
-
-        assert not isinstance(other, cyBQMBase)
-
-        if other.vartype != self.vartype:
-            other = copy.deepcopy(other)
-            other.change_vartype(self.vartype)
-
-        for v in other.variables:
-            self.add_linear(v, other.get_linear(v))
-
-        for u, v, bias in other.iter_quadratic():
-            self.add_quadratic(u, v, bias)
-
-        self._add_offset(other.offset)
+            # if other is not a cybqm, defer back to the caller
+            raise NotImplementedError from None

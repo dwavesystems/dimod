@@ -321,7 +321,7 @@ class BinaryQuadraticModel:
         if vartype is None:
             vartype = bqm.vartype
         self.data = type(self)._DATA_CLASSES[np.dtype(dtype)](vartype)
-        self.data.update(bqm.data)
+        self.update(bqm)
 
     def _init_components(self, linear, quadratic, offset, vartype, dtype):
         self._init_empty(vartype, dtype)
@@ -1456,12 +1456,71 @@ class BinaryQuadraticModel:
                 "0.10.0 and does nothing",
                 DeprecationWarning, stacklevel=2)
 
-        return self.data.to_numpy_vectors(
-            variable_order=variable_order,
-            sort_indices=sort_indices,
-            sort_labels=sort_labels,
-            return_labels=return_labels,
-            )
+        try:
+            return self.data.to_numpy_vectors(
+                variable_order=variable_order,
+                sort_indices=sort_indices,
+                sort_labels=sort_labels,
+                return_labels=return_labels,
+                )
+        except NotImplementedError:
+            # methods can defer this
+            pass
+
+        num_variables = self.num_variables
+        num_interactions = self.num_interactions
+
+        if variable_order is None:
+            variable_order = list(self.variables)
+
+            if sort_labels:
+                try:
+                    variable_order.sort()
+                except TypeError:
+                    # can't sort unlike types in py3
+                    pass
+
+        if len(variable_order) != num_variables:
+            raise ValueError("variable_order does not match the number of "
+                             "variables")
+
+        ldata = np.asarray([self.get_linear(v) for v in variable_order])
+
+        label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
+        irow = []
+        icol = []
+        qdata = []
+        for u, v, bias in self.iter_quadratic():
+            irow.append(label_to_idx[u])
+            icol.append(label_to_idx[v])
+            qdata.append(bias)
+
+        irow = np.asarray(irow)
+        icol = np.asarray(icol)
+        qdata = np.asarray(qdata)
+
+        if sort_indices:
+            # row index should be less than col index, this handles
+            # upper-triangular vs lower-triangular
+            swaps = irow > icol
+            if swaps.any():
+                # in-place
+                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+
+            # sort lexigraphically
+            order = np.lexsort((irow, icol))
+            if not (order == range(len(order))).all():
+                # copy
+                irow = irow[order]
+                icol = icol[order]
+                qdata = qdata[order]
+
+        ret = [ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)]
+
+        if return_labels:
+            ret.append(variable_order)
+
+        return tuple(ret)
 
     def to_qubo(self) -> Tuple[Mapping[Tuple[Variable, Variable], Bias], Bias]:
         qubo = dict(self.binary.quadratic)
@@ -1469,7 +1528,23 @@ class BinaryQuadraticModel:
         return qubo, self.binary.offset
 
     def update(self, other):
-        self.data.update(other.data)
+        try:
+            self.data.update(other.data)
+            return
+        except NotImplementedError:
+            # methods can defer this
+            pass
+
+        if self.vartype is Vartype.SPIN:
+            other = other.spin
+        elif self.vartype is Vartype.BINARY:
+            other = other.binary
+        else:
+            raise RuntimeError("unexpected vartype")
+
+        self.add_linear_from((v, other.get_linear(v)) for v in other.variables)
+        self.add_quadratic_from(other.iter_quadratic())
+        self.offset += other.offset
 
 
 BQM = BinaryQuadraticModel

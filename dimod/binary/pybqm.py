@@ -153,12 +153,29 @@ class pyBQM:
     def energies(self, samples_like, dtype: DTypeLike = None):
         samples, labels = as_samples(samples_like)
 
-        ldata, (irow, icol, qdata), offset \
-            = self.to_numpy_vectors(variable_order=labels)
+        if len(labels) != self.num_variables():
+            raise ValueError("variable_order does not match the number of "
+                             "variables")
+
+        ldata = np.asarray([self.get_linear(v) for v in labels])
+
+        label_to_idx = {v: idx for idx, v in enumerate(labels)}
+        irow = []
+        icol = []
+        qdata = []
+        for u, v, bias in self.iter_quadratic():
+            irow.append(label_to_idx[u])
+            icol.append(label_to_idx[v])
+            qdata.append(bias)
+
+        irow = np.asarray(irow)  # type: ignore[assignment]
+        icol = np.asarray(icol)  # type: ignore[assignment]
+        qdata = np.asarray(qdata)  # type: ignore[assignment]
 
         energies = samples.dot(ldata)
         energies += (samples[:, irow]*samples[:, icol]).dot(qdata)
-        energies += offset
+        energies += ldata.dtype.type(self.offset)
+
         return np.asarray(energies, dtype=dtype)
 
     def get_linear(self, v: Variable) -> Any:
@@ -296,74 +313,8 @@ class pyBQM:
         self.add_variable(v)
         self._adj[u][v] = self._adj[v][u] = bias
 
-    def to_numpy_vectors(self, variable_order=None,
-                         sort_indices=False, sort_labels=True,
-                         return_labels=False):
-        num_variables = self.num_variables()
-        num_interactions = self.num_interactions()
+    def to_numpy_vectors(self, *args, **kwargs):
+        raise NotImplementedError  # defer to the caller
 
-        if variable_order is None:
-            variable_order = list(self.variables)
-
-            if sort_labels:
-                try:
-                    variable_order.sort()
-                except TypeError:
-                    # can't sort unlike types in py3
-                    pass
-
-        if len(variable_order) != num_variables:
-            raise ValueError("variable_order does not match the number of "
-                             "variables")
-
-        ldata = np.asarray([self.get_linear(v) for v in variable_order])
-
-        label_to_idx = {v: idx for idx, v in enumerate(variable_order)}
-        irow = []
-        icol = []
-        qdata = []
-        for u, v, bias in self.iter_quadratic():
-            irow.append(label_to_idx[u])
-            icol.append(label_to_idx[v])
-            qdata.append(bias)
-
-        irow = np.asarray(irow)
-        icol = np.asarray(icol)
-        qdata = np.asarray(qdata)
-
-        if sort_indices:
-            # row index should be less than col index, this handles
-            # upper-triangular vs lower-triangular
-            swaps = irow > icol
-            if swaps.any():
-                # in-place
-                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
-
-            # sort lexigraphically
-            order = np.lexsort((irow, icol))
-            if not (order == range(len(order))).all():
-                # copy
-                irow = irow[order]
-                icol = icol[order]
-                qdata = qdata[order]
-
-        ret = [ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)]
-
-        if return_labels:
-            ret.append(variable_order)
-
-        return tuple(ret)
-
-    def update(self, other):
-        # in the future when we have vartype views we can improve this
-        if other.vartype != self.vartype:
-            other = copy.deepcopy(other)
-            other.change_vartype(self.vartype)
-
-        for v in other.variables:
-            self.add_linear(v, other.get_linear(v))
-
-        for u, v, bias in other.iter_quadratic():
-            self.add_quadratic(u, v, bias)
-
-        self.offset += other.offset
+    def update(self, *args, **kwargs):
+        raise NotImplementedError  # defer to the caller

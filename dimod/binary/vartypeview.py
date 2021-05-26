@@ -249,18 +249,8 @@ class VartypeView:
         # just add the delta
         self.add_quadratic(u, v, bias - self.get_quadratic(u, v))
 
-    # we could do something more clever, but this saves a lot of effort
-    to_numpy_vectors = pyBQM.to_numpy_vectors
+    def to_numpy_vectors(self, *args, **kwargs):
+        raise NotImplementedError  # defer to the caller
 
-    @view_method
-    def update(self, other):
-        # use our own type!
-        other = VartypeView(other, self.vartype)
-
-        for v in other.variables:
-            self.add_linear(v, other.get_linear(v))
-
-        for u, v, bias in other.iter_quadratic():
-            self.add_quadratic(u, v, bias)
-
-        self.offset += other.offset
+    def update(self, *args, **kwargs):
+        raise NotImplementedError  # defer to the caller
