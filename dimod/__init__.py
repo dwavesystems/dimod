@@ -23,14 +23,7 @@ import dimod.core
 from dimod.reference import *
 import dimod.reference
 
-try:
-    import dimod.roof_duality._fix_variables as _
-except ImportError:
-    pass
-else:
-    # we only import fix_variables function into the top level namespace if the c++ extension
-    # is built
-    from dimod.roof_duality import fix_variables
+from dimod.roof_duality import fix_variables
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel, BQM
 import dimod.binary_quadratic_model

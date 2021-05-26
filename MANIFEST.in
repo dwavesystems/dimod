@@ -1,4 +1,3 @@
 include pyproject.toml
-recursive-include dimod/roof_duality *.cpp *.hpp
 recursive-include dimod/include *h
 recursive-include dimod *.pyx *.pxd *.pyx.src

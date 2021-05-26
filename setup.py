@@ -57,11 +57,6 @@ setup(
          'dimod/bqm/common.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',
          'dimod/cyvariables.pyx',
-         # roofduality needs to be treated differently until deprecation
-         Extension("dimod.roof_duality._fix_variables",
-                   ['dimod/roof_duality/_fix_variables.pyx',
-                    'dimod/roof_duality/src/fix_variables.cpp'],
-                   include_dirs=['dimod/roof_duality/src/']),
          ],
         annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),

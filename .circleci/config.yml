@@ -25,11 +25,6 @@ jobs:
           command: git reset --hard
 
       - run:
-          name: install boost
-          command: |
-            yum install -y boost-devel
-
-      - run:
           name: build wheels
           command: |
             for PYBIN in /opt/python/*/bin; do
@@ -61,12 +56,6 @@ jobs:
 
     steps:
       - checkout
-
-      # in the future we'd like to not need boost here
-      - run: &linux-install-boost-template
-          name: install boost
-          command: |
-            sudo apt-get install libboost-dev
 
       - run:
           name: build sdist
@@ -174,11 +163,6 @@ jobs:
           command: |
             brew install pyenv
 
-      - run: &install-boost-osx-template
-          name: install boost
-          command: |
-            brew install boost
-
       - restore_cache:
           keys:
             - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
@@ -247,8 +231,6 @@ jobs:
           command: |
             brew install pyenv
 
-      - run: *install-boost-osx-template
-
       - restore_cache:
           keys:
             - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
@@ -310,16 +292,10 @@ jobs:
             pip install -r requirements.txt
             pip install -r tests\requirements.txt
 
-      - run:  &win-install-boost-template
-          name: install boost
-          command: |
-             nuget install boost -ExcludeVersion -OutputDirectory .
-
       - run:
           name: build extension
           command: |
             env\Scripts\activate.ps1
-            $env:CL+=' -Iboost\lib\native\include\'
             python setup.py build_ext --inplace
 
       - run:
@@ -354,13 +330,10 @@ jobs:
 
       - run: *win-install-dependencies-template
 
-      - run: *win-install-boost-template
-
       - run:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
-            $env:CL+=' -Iboost\lib\native\include\'
             python setup.py bdist_wheel
 
       - store_artifacts:
@@ -382,8 +355,6 @@ jobs:
 
     steps:
       - checkout
-
-      - run: *linux-install-boost-template
 
       - run:
           name: install doxygen
@@ -429,7 +400,6 @@ jobs:
 
     steps:
       - checkout
-      - run: *linux-install-boost-template
       - run:
           name: run cpp tests
           command: |

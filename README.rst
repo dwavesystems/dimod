@@ -87,11 +87,6 @@ in place:
     pip install -r requirements.txt
     python setup.py build_ext --inplace
 
-Note that installation from source requires that your system have the Boost_
-C++ libraries installed.
-
-.. _Boost: https://www.boost.org/
-
 .. installation-end-marker
 
 License
