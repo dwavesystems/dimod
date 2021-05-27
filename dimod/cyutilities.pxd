@@ -45,10 +45,10 @@ cdef fused Integer:
 cdef fused ConstInteger:
     const short
     const int
-    const long
-    const unsigned int
+    const long long
     const unsigned short
-    const unsigned long
+    const unsigned int
+    const unsigned long long
 
 ctypedef fused Numeric:
     cython.integral  # short, int, long
@@ -58,7 +58,7 @@ ctypedef fused Numeric:
 ctypedef fused ConstNumeric:
     const short
     const int
-    const long
+    const long long
     const float
     const double
 
