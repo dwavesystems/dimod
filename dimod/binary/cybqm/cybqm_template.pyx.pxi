@@ -338,7 +338,7 @@ cdef class cyBQM_template(cyBQMBase):
             raise RuntimeError(
                 "as_samples returned an inconsistent samples/variables")
 
-        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(num_variables, dtype=int)
+        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(num_variables, dtype=np.intp)
         cdef Py_ssize_t si
         for si in range(num_variables):
             v = labels[si]  # python label
@@ -794,7 +794,7 @@ cdef class cyBQM_template(cyBQMBase):
                         pass
 
             # ok, using the variable_order, calculate the re-index
-            reindex = np.full(num_variables, -1, dtype=int)
+            reindex = np.full(num_variables, -1, dtype=np.intp)
             for ri, v in enumerate(variable_order):
                 vi = self.variables.index(v)
                 reindex[vi] = ri
