@@ -67,8 +67,9 @@ class TestFunctional(unittest.TestCase):
     @parameterized.expand(BQM_x_VERSION)
     def test_empty(self, name, BQM, version):
         bqm = BQM('SPIN')
-        with FileView(bqm, version=version) as fp:
-            new = load(fp)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp)
 
         self.assertEqual(bqm, new)
         if bqm.dtype != np.dtype('O'):
@@ -77,8 +78,9 @@ class TestFunctional(unittest.TestCase):
     @parameterized.expand(BQM_x_VERSION)
     def test_empty_bytes(self, name, BQM, version):
         bqm = BQM('SPIN')
-        with FileView(bqm, version=version) as fp:
-            new = load(fp.read())
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp.read())
 
         self.assertEqual(bqm, new)
         if bqm.dtype != np.dtype('O'):
@@ -91,8 +93,9 @@ class TestFunctional(unittest.TestCase):
         labeled_bqm = bqm.relabel_variables(dict(enumerate('abcde')),
                                             inplace=False)
 
-        with FileView(labeled_bqm, version=version, ignore_labels=True) as fv:
-            new = load(fv)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(labeled_bqm, version=version, ignore_labels=True) as fv:
+                new = load(fv)
 
         self.assertEqual(new, bqm)
         if bqm.dtype != np.dtype('O'):
@@ -102,8 +105,9 @@ class TestFunctional(unittest.TestCase):
     def test_labelled(self, name, BQM, version):
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
 
-        with FileView(bqm, version=version) as fp:
-            new = load(fp)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp)
 
         self.assertEqual(bqm, new)
         if bqm.dtype != np.dtype('O'):
@@ -113,8 +117,9 @@ class TestFunctional(unittest.TestCase):
     def test_labelled_bytes(self, name, BQM, version):
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
 
-        with FileView(bqm, version=version) as fp:
-            new = load(fp.read())
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp.read())
 
         if bqm.dtype != np.dtype('O'):
             self.assertEqual(bqm.dtype, new.dtype)
@@ -125,8 +130,9 @@ class TestFunctional(unittest.TestCase):
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
         bqm.add_variable()
 
-        with FileView(bqm, version=version) as fp:
-            new = load(fp)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp)
 
         if bqm.dtype != np.dtype('O'):
             self.assertEqual(bqm.dtype, new.dtype)
@@ -137,8 +143,9 @@ class TestFunctional(unittest.TestCase):
         bqm = BQM({'a': -1}, {'ab': 1}, 7, 'SPIN')
         bqm.add_variable()
 
-        with FileView(bqm, version=version) as fp:
-            new = load(fp.read())
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp.read())
 
         if bqm.dtype != np.dtype('O'):
             self.assertEqual(bqm.dtype, new.dtype)
@@ -149,8 +156,9 @@ class TestFunctional(unittest.TestCase):
         bqm = BQM(np.triu(np.arange(25).reshape((5, 5))), 'SPIN')
         bqm.offset = -1
 
-        with FileView(bqm, version=version) as fp:
-            new = load(fp)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fp:
+                new = load(fp)
 
         if bqm.dtype != np.dtype('O'):
             self.assertEqual(bqm.dtype, new.dtype)
@@ -160,7 +168,8 @@ class TestFunctional(unittest.TestCase):
     def test_unhashable_variables(self, name, BQM, version):
         bqm = BQM({(0, 1): 1}, {}, 'SPIN')
 
-        with FileView(bqm, version=version) as fv:
-            new = load(fv)
+        with self.assertWarns(DeprecationWarning):
+            with FileView(bqm, version=version) as fv:
+                new = load(fv)
 
         self.assertEqual(new, bqm)
