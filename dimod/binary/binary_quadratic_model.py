@@ -652,7 +652,7 @@ class BinaryQuadraticModel:
 
     def add_offset(self, bias):
         """Add offset to to the model."""
-        name = cls.__name__
+        name = type(self).__name__
         warnings.warn(
             f"{name}.add_offset(b) is deprecated. Please use bqm.offset += b.",
             DeprecationWarning,
