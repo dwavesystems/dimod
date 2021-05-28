@@ -22,7 +22,8 @@ import tempfile
 import warnings
 
 from numbers import Integral, Number
-from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence
+from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
+
 
 import numpy as np
 
@@ -35,7 +36,6 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
-from dimod.compatibility23 import cached_property
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.typing import Bias, Variable
@@ -405,13 +405,31 @@ class BinaryQuadraticModel:
                                                      self.offset,
                                                      self.vartype.name)
 
-    @cached_property
+    @property
     def adj(self) -> Adjacency:
-        return Adjacency(self)
+        """Adjacency structure as a nested mapping of mapping.
+
+        Accessed like a dict of dicts, where the keys of the outer dict are all
+        of the model's variables (e.g. `v`) and the values are the neighborhood
+        of `v`. Each neighborhood is a dict where the keys are the neighbors of
+        `v` and the values are their associated quadratic biases.
+        """
+        # we could use cached property but this is way simpler and doesn't
+        # break the docs
+        try:
+            return self._adj  # type: ignore[has-type]
+        except AttributeError:
+            pass
+        self._adj = adj = Adjacency(self)
+        return adj
 
     @property
     def binary(self) -> 'BinaryQuadraticModel':
-        """todo"""
+        """Binary-valued version of the binary quadratic model.
+
+        If the binary quadratic model is binary-valued, this references itself,
+        otherwise it will reference a view.
+        """
         if self.vartype is Vartype.BINARY:
             return self
 
@@ -436,29 +454,72 @@ class BinaryQuadraticModel:
         """Data-type of the model's biases."""
         return self.data.dtype
 
-    @cached_property
+    @property
     def linear(self) -> Linear:
-        return Linear(self)
+        """Linear biases as a mapping.
+
+        Accessed like a dict, where keys are the variables of the binary
+        quadratic model and values are the linear biases.
+        """
+        # we could use cached property but this is way simpler and doesn't
+        # break the docs
+        try:
+            return self._linear  # type: ignore[has-type]
+        except AttributeError:
+            pass
+        self._linear = linear = Linear(self)
+        return linear
 
     @property
-    def num_variables(self) -> int:
-        return self.data.num_variables()
+    def offset(self) -> np.number:
+        """Constant energy offset associated with the model."""
+        return self.data.offset
+
+    @offset.setter
+    def offset(self, offset):
+        self.data.offset = offset
 
     @property
     def num_interactions(self) -> int:
+        """Number of interactions in the model.
+
+        The complexity is linear in the number of variables.
+        """
         return self.data.num_interactions()
 
-    @cached_property
+    @property
+    def num_variables(self) -> int:
+        """Number of variables in the model."""
+        return self.data.num_variables()
+
+    @property
     def quadratic(self) -> Quadratic:
-        return Quadratic(self)
+        """Quadratic biases as a flat mapping.
+
+        Accessed like a dict, where keys are 2-tuples of varables, which
+        represent an interaction and values are the quadratic biases.
+        """
+        # we could use cached property but this is way simpler and doesn't
+        # break the docs
+        try:
+            return self._quadratic  # type: ignore[has-type]
+        except AttributeError:
+            pass
+        self._quadratic = quadratic = Quadratic(self)
+        return quadratic
 
     @property
     def shape(self) -> Tuple[int, int]:
+        """A 2-tuple of :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
     @property
     def spin(self) -> 'BinaryQuadraticModel':
-        """todo"""
+        """Spin-valued version of the binary quadratic model.
+
+        If the binary quadratic model is spin-valued, this references itself,
+        otherwise it will reference a view.
+        """
         if self.vartype is Vartype.SPIN:
             return self
 
@@ -478,19 +539,10 @@ class BinaryQuadraticModel:
         self._spin: BinaryQuadraticModel = bqm
         return bqm
 
-    @cached_property
-    def variables(self) -> Variables:
-        """Alias for :meth:`add_quadratic_from`."""
-        return self.data.variables
-
     @property
-    def offset(self) -> np.number:
-        """Constant energy offset associated with the model."""
-        return self.data.offset
-
-    @offset.setter
-    def offset(self, offset):
-        self.data.offset = offset
+    def variables(self) -> Variables:
+        """The variables of the binary quadratic model"""
+        return self.data.variables
 
     @property
     def vartype(self) -> Vartype:
@@ -515,12 +567,12 @@ class BinaryQuadraticModel:
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
+        """Add a quadratic term."""
         return self.data.add_linear
 
-    def add_linear_equality_constraint(self,
-                                       terms: Iterable[Tuple[Variable, Bias]],
-                                       lagrange_multiplier: Bias,
-                                       constant: Bias):
+    def add_linear_equality_constraint(
+            self, terms: Iterable[Tuple[Variable, Bias]],
+            lagrange_multiplier: Bias, constant: Bias):
         """Add a linear constraint as a quadratic objective.
 
         Adds a linear constraint of the form
@@ -599,6 +651,12 @@ class BinaryQuadraticModel:
     """Alias for :meth:`add_linear_from`."""
 
     def add_offset(self, bias):
+        """Add offset to to the model."""
+        name = cls.__name__
+        warnings.warn(
+            f"{name}.add_offset(b) is deprecated. Please use bqm.offset += b.",
+            DeprecationWarning,
+            stacklevel=2)
         self.offset += bias
 
     @forwarding_method
@@ -663,6 +721,30 @@ class BinaryQuadraticModel:
     def add_variable(self, v: Optional[Variable] = None, bias: Bias = 0):
         return self.data.add_variable
 
+    def change_vartype(self, vartype, inplace=True):
+        """Return a binary quadratic model with the specified vartype.
+
+        Args:
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the changed model. Accepted input values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            inplace (bool, optional, default=True):
+                If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Returns:
+            :obj:`.BQM`: A binary quadratic model with the specified
+            vartype.
+
+        """
+        if not inplace:
+            return self.copy().change_vartype(vartype, inplace=True)
+        self.data.change_vartype(vartype)
+        return self
+
     def contract_variables(self, u, v):
         """Enforce u, v being the same variable in a binary quadratic model.
 
@@ -705,30 +787,6 @@ class BinaryQuadraticModel:
     def copy(self, deep=False):
         """Return a copy."""
         return copy.deepcopy(self)
-
-    def change_vartype(self, vartype, inplace=True):
-        """Return a binary quadratic model with the specified vartype.
-
-        Args:
-            vartype (:class:`.Vartype`/str/set, optional):
-                Variable type for the changed model. Accepted input values:
-
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-
-            inplace (bool, optional, default=True):
-                If True, the binary quadratic model is updated in-place;
-                otherwise, a new binary quadratic model is returned.
-
-        Returns:
-            :obj:`.BQM`: A binary quadratic model with the specified
-            vartype.
-
-        """
-        if not inplace:
-            return self.copy().change_vartype(vartype, inplace=True)
-        self.data.change_vartype(vartype)
-        return self
 
     @forwarding_method
     def degree(self, v: Variable):
