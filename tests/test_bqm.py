@@ -2591,6 +2591,17 @@ class TestUpdate(unittest.TestCase):
 
         self.assertEqual(binary, target)
 
+    @parameterized.expand(BQMs.items())
+    def test_simple(self, name, BQM):
+        bqm0 = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        bqm1 = BQM({'c': 3, 'a': -2}, {'ab': 5, 'cb': 1}, 1.5, 'SPIN')
+
+        bqm0.update(bqm1)
+
+        target = BQM({'a': -3, 'c': 3}, {'ba': 6, 'cb': 1}, 3, 'SPIN')
+
+        self.assertEqual(bqm0, target)
+
 
 class TestViews(unittest.TestCase):
     @parameterized.expand(BQMs.items())
