@@ -440,6 +440,40 @@ SCENARIO("One bqm can be added to another") {
             }
         }
     }
+
+    GIVEN("Two BQMs of the same vartype") {
+        auto bqm0 = BinaryQuadraticModel<double>(2, Vartype::SPIN);
+        bqm0.linear(0) = -1;
+        bqm0.set_quadratic(0, 1, 1.5);
+        bqm0.offset() = 1.5;
+
+        auto bqm1 = BinaryQuadraticModel<double>(3, Vartype::SPIN);
+        bqm1.linear(0) = -2;
+        bqm1.linear(2) = 3;
+        bqm1.set_quadratic(0, 1, 5);
+        bqm1.set_quadratic(2, 1, 1);
+        bqm1.offset() = 1.5;
+
+        WHEN("the spin one is added to the binary one with a mapping") {
+            std::vector<int> mapping = {0, 1, 2};
+            bqm0.add_bqm(bqm1, mapping);
+
+            THEN("the biases are summed") {
+                REQUIRE(bqm0.num_variables() == 3);
+                CHECK(bqm0.num_interactions() == 2);
+
+                CHECK(bqm0.offset() == 3);
+
+                CHECK(bqm0.linear(0) == -3);
+                CHECK(bqm0.linear(1) == 0);
+                CHECK(bqm0.linear(2) == 3);
+
+                CHECK(bqm0.quadratic(0, 1) == 6.5);
+                CHECK(bqm0.quadratic(1, 2) == 1);
+                CHECK_THROWS_AS(bqm0.quadratic_at(0, 2), std::out_of_range);
+            }
+        }
+    }
 }
 
 SCENARIO("Neighborhood can be manipulated") {
