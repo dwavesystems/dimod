@@ -69,7 +69,8 @@ class TestAddOffset(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_typical(self, name, BQM):
         bqm = BQM({}, {'ab': -1}, 1.5, 'SPIN')
-        bqm.add_offset(2)
+        with self.assertWarns(DeprecationWarning):
+            bqm.add_offset(2)
         self.assertEqual(bqm.offset, 3.5)
 
 
@@ -2064,14 +2065,16 @@ class TestVartypeViews(unittest.TestCase):
     def test_add_offset_binary(self, name, BQM):
         bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.SPIN)
 
-        bqm.binary.add_offset(2)
+        with self.assertWarns(DeprecationWarning):
+            bqm.binary.add_offset(2)
         self.assertEqual(bqm.offset, 3.5)
 
     @parameterized.expand(BQMs.items())
     def test_add_offset_spin(self, name, BQM):
         bqm = BQM({'a': -1}, {'ab': 2}, 1.5, dimod.BINARY)
 
-        bqm.spin.add_offset(2)
+        with self.assertWarns(DeprecationWarning):
+            bqm.spin.add_offset(2)
         self.assertEqual(bqm.offset, 3.5)
 
     @parameterized.expand(BQMs.items())
