@@ -198,6 +198,9 @@ class pyBQM:
                     f"{u!r} and {v!r} have no interaction") from None
             return default
 
+    def is_linear(self) -> bool:
+        return not any(len(Nv) > 1 for Nv in self._adj.values())
+
     def iter_neighborhood(self, v: Variable) -> Iterator[Any]:
         try:
             Nv = self._adj[v]

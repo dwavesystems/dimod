@@ -176,6 +176,9 @@ class VartypeView:
                     f"{u!r} and {v!r} have no interaction") from None
             return default
 
+    def is_linear(self) -> bool:
+        return self.data.is_linear()
+
     @view_method
     def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
         if self._vartype is BINARY:  # binary <- spin

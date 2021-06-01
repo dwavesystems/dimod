@@ -1295,6 +1295,24 @@ class TestGetQuadratic(unittest.TestCase):
         self.assertIsInstance(bqm.get_quadratic(2, 0), dtype)
 
 
+class TestIsLinear(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_no_variables(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.offset = 1
+        self.assertTrue(bqm.is_linear())
+
+    @parameterized.expand(BQMs.items())
+    def test_linear_only(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': 2}, {}, 1, 'SPIN')
+        self.assertTrue(bqm.is_linear())
+
+    @parameterized.expand(BQMs.items())
+    def test_quadratic(self, name, BQM):
+        bqm = BQM({'a': 1, 'b': 2}, {'ab': 1}, 1, 'SPIN')
+        self.assertFalse(bqm.is_linear())
+
+
 class TestIteration(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_iter_quadratic_neighbours(self, name, BQM):

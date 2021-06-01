@@ -96,6 +96,7 @@ cdef class cyBQM_template(cyBQMBase):
     cpdef Py_ssize_t add_linear_from_array(self, ConstNumeric[:] linear) except -1
     cpdef Py_ssize_t add_quadratic_from_dense(self, ConstNumeric[:, ::1] quadratic) except -1
     cpdef Py_ssize_t change_vartype(self, object) except -1
+    cpdef bint is_linear(self)
     cpdef Py_ssize_t num_interactions(self)
     cpdef Py_ssize_t num_variables(self)
     cpdef Py_ssize_t resize(self, Py_ssize_t) except -1

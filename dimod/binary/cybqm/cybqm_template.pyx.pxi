@@ -497,6 +497,9 @@ cdef class cyBQM_template(cyBQMBase):
             bias = default
         return as_numpy_float(bias)
 
+    cpdef bint is_linear(self):
+        return self.cppbqm.is_linear()
+
     def iter_neighborhood(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
 

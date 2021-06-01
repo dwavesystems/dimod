@@ -1058,6 +1058,10 @@ class BinaryQuadraticModel:
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
+    def is_linear(self) -> bool:
+        """Return True if the model has no quadratic interactions."""
+        return self.data.is_linear()
+
     @forwarding_method
     def iter_neighborhood(self, v: Variable):
         return self.data.iter_neighborhood

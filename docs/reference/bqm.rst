@@ -71,6 +71,7 @@ Methods
    BinaryQuadraticModel.fix_variable
    BinaryQuadraticModel.fix_variables
    BinaryQuadraticModel.flip_variable
+   BinaryQuadraticModel.is_linear
    BinaryQuadraticModel.iter_neighborhood
    BinaryQuadraticModel.iter_quadratic
    BinaryQuadraticModel.get_linear
