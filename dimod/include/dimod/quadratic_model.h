@@ -758,40 +758,40 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      */
     template <class B, class I>
     void add_bqm(const BinaryQuadraticModel<B, I>& bqm) {
-        if (bqm.vartype() != vartype()) {
+        if (bqm.vartype() != this->vartype()) {
             // we could do this without the copy, but for now let's just do
             // it simply
             auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
             bqm_copy.change_vartype(vartype());
-            add_bqm(bqm_copy);
+            this->add_bqm(bqm_copy);
             return;
         }
 
+        // make sure we're big enough
+        if (bqm.num_variables() > this->num_variables()) {
+            this->resize(bqm.num_variables());
+        }
+
         // offset
-        base_type::offset() += bqm.offset();
+        this->offset() += bqm.offset();
 
         // linear
-        if (bqm.num_variables() > base_type::num_variables()) {
-            resize(bqm.num_variables());
-        }
-        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+        for (size_type v = 0; v < bqm.num_variables(); ++v) {
             base_type::linear(v) += bqm.linear(v);
         }
 
         // quadratic
-        for (index_type v = 0; v < bqm.num_variables(); ++v) {
-            if (bqm.adj_[v].size() == 0) {
-                continue;
+        for (size_type v = 0; v < bqm.num_variables(); ++v) {
+            if (bqm.adj_[v].size() == 0) continue;
+
+            this->adj_[v].reserve(this->adj_[v].size() + bqm.adj_[v].size());
+
+            auto span = bqm.neighborhood(v);
+            for (auto it = span.first; it != span.second; ++it) {
+                this->adj_[v].emplace_back(it->first, it->second);
             }
 
-            base_type::adj_[v].reserve(base_type::adj_[v].size() +
-                                       bqm.adj_[v].size());
-            for (auto it = bqm.adj_[v].cbegin(); it != bqm.adj_[v].cend();
-                 ++it) {
-                base_type::adj_[v].emplace_back((*it).first, (*it).second);
-            }
-
-            base_type::adj_[v].sort_and_sum();
+            this->adj_[v].sort_and_sum();
         }
     }
 
@@ -803,7 +803,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      * If the other BQM does not have the same vartype, the biases are adjusted
      * accordingly.
      *
-     * `mapping` must be a vector of the same length of the given BQM. It
+     * `mapping` must be a vector at least as long as the given BQM. It
      * should map the variables of `bqm` to new labels.
      */
     template <class B, class I, class T>
@@ -818,31 +818,38 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             return;
         }
 
-        if (mapping.size() != bqm.num_variables()) {
-            throw std::logic_error("bqm and mapping must have the same length");
-        }
-
-        // resize if needed
-        index_type size = *std::max_element(mapping.begin(), mapping.end()) + 1;
-        if (size > (index_type)base_type::num_variables()) {
-            this->resize(size);
+        // make sure we're big enough
+        T max_v = *std::max_element(mapping.begin(),
+                                    mapping.begin() + bqm.num_variables());
+        if (max_v < 0) {
+            throw std::out_of_range("contents of mapping must be non-negative");
+        } else if ((size_type)max_v >= this->num_variables()) {
+            this->resize(max_v + 1);
         }
 
         // offset
-        base_type::offset() += bqm.offset();
+        this->offset() += bqm.offset();
 
         // linear
-        for (index_type old_u = 0; old_u < (index_type)bqm.num_variables();
-             ++old_u) {
-            index_type new_u = mapping[old_u];
-            base_type::linear(new_u) += bqm.linear(old_u);
+        for (size_type v = 0; v < bqm.num_variables(); ++v) {
+            this->linear(mapping[v]) += bqm.linear(v);
+        }
 
-            // quadratic
-            auto span = bqm.neighborhood(old_u);
+        // quadratic
+        for (size_type v = 0; v < bqm.num_variables(); ++v) {
+            if (bqm.adj_[v].size() == 0) continue;
+
+            index_type this_v = mapping[v];
+
+            this->adj_[this_v].reserve(this->adj_[this_v].size() +
+                                       bqm.adj_[v].size());
+
+            auto span = bqm.neighborhood(v);
             for (auto it = span.first; it != span.second; ++it) {
-                index_type new_v = mapping[(*it).first];
-                base_type::adj_[new_u].emplace_back(new_v, (*it).second);
+                this->adj_[this_v].emplace_back(mapping[it->first], it->second);
             }
+
+            this->adj_[this_v].sort_and_sum();
         }
     }
 
