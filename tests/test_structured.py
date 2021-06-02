@@ -122,3 +122,4 @@ class TestStructuredClass(unittest.TestCase):
 
         self.assertTrue(dummy.valid_bqm_structure(valid_structure_bqm))
         self.assertFalse(dummy.valid_bqm_structure(invalid_structure_bqm))
+        
