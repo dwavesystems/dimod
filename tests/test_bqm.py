@@ -901,6 +901,14 @@ class TestCopy(unittest.TestCase):
         self.assertEqual(type(bqm), type(new))
         self.assertEqual(bqm, new)
 
+    @parameterized.expand(BQM_CLSs.items())
+    def test_bug(self, name, BQM):
+        bqm = BQM({'a': 1}, {}, 'SPIN')
+        bqm.get_linear('a')
+        new = bqm.copy()
+        new.scale(-1)
+        self.assertEqual(new, BQM({'a': -1}, {}, 0, 'SPIN'))
+
 
 class TestEmpty(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())

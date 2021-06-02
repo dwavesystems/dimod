@@ -381,6 +381,15 @@ class BinaryQuadraticModel:
         super().__init_subclass__(**kwargs)
         cls.DEFAULT_DTYPE = np.dtype(default_dtype)
 
+    def __copy__(self):
+        return type(self)(self)
+
+    def __deepcopy__(self, memo):
+        new = type(self).__new__(type(self))
+        new.data = copy.deepcopy(self.data, memo)
+        memo[id(self)] = new
+        return new
+
     def __eq__(self, other):
         # todo: performance
         try:
