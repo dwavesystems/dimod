@@ -146,7 +146,7 @@ class Structured(abc.ABC):
 
         return G
 
-    def check_bqm_structure(self, bqm: "BinaryQuadraticModel"):
+    def valid_bqm_structure(self, bqm: "BinaryQuadraticModel"):
         """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
         matches the graph provided by the sampler.
 
@@ -154,16 +154,10 @@ class Structured(abc.ABC):
             bqm: :class:`dimod.BinaryQuadraticModel` object to validate.
 
         Returns:
-            True if BQM structure matches that of sampler.
-
-        Raises:
-            :exception:`dimod.exceptions.BinaryQuadraticModelStructureError`
-            if structure doesn't match.
+            Boolean indicating validity of BQM structure compared to sampler graph.
 
         """
         if all(variable in self.adjacency for variable in bqm.variables) and \
            all(neighbor in self.adjacency[vertex] for neighbor, vertex in bqm.quadratic):
             return True
-        raise BinaryQuadraticModelStructureError(
-            "BQM structure does not match graph provided by sampler."
-        )
+        return False
