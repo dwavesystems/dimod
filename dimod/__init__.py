@@ -52,6 +52,8 @@ from dimod.sampleset import *
 
 from dimod.serialization.format import set_printoptions
 
+from dimod.sym import *
+
 from dimod.utilities import *
 import dimod.utilities
 
