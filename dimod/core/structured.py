@@ -74,6 +74,7 @@ Examples:
 import abc
 
 from collections import namedtuple
+from dimod.exceptions import BinaryQuadraticModelStructureError
 
 __all__ = ['Structured']
 
@@ -144,3 +145,25 @@ class Structured(abc.ABC):
         G.add_nodes_from(self.nodelist)
 
         return G
+
+    def check_bqm_structure(self, bqm: "BinaryQuadraticModel"):
+        """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
+        matches the graph provided by the sampler.
+
+        Args:
+            bqm: :class:`dimod.BinaryQuadraticModel` object to validate.
+
+        Returns:
+            True if BQM structure matches that of sampler.
+
+        Raises:
+            :exception:`dimod.exceptions.BinaryQuadraticModelStructureError`
+            if structure doesn't match.
+
+        """
+        if all(variable in self.adjacency for variable in bqm.variables) and \
+           all(neighbor in self.adjacency[vertex] for neighbor, vertex in bqm.quadratic):
+            return True
+        raise BinaryQuadraticModelStructureError(
+            "BQM structure does not match graph provided by sampler."
+        )
