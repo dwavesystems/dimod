@@ -84,9 +84,21 @@ class pyBQM:
         for u in range(num_variables):
             for v in range(num_variables):
                 if u == v:
-                    self.add_linear(u, quadratic[u, v])
+                    continue
                 elif quadratic[u, v]:
                     self.add_quadratic(u, v, quadratic[u, v])
+
+        # now handle the linear
+        if self.vartype is Vartype.SPIN:
+            for v in range(num_variables):
+                # since s*s == 1
+                self.offset += quadratic[v, v]
+        elif self.vartype is Vartype.BINARY:
+            for v in range(num_variables):
+                # since x*x == x
+                self.add_linear(v, quadratic[v, v])
+        else:
+            raise RuntimeError("unexpected vartype")
 
     def add_variable(self, v: Optional[Variable] = None,
                      bias: Any = 0) -> Variable:
