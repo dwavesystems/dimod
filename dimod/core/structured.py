@@ -74,7 +74,6 @@ Examples:
 import abc
 
 from collections import namedtuple
-from dimod.exceptions import BinaryQuadraticModelStructureError
 
 __all__ = ['Structured']
 
