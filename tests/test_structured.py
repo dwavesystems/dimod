@@ -97,7 +97,7 @@ class TestStructuredClass(unittest.TestCase):
         for u, v in nxG.edges:
             self.assertIn(u, G[v])
 
-    def test_valid_bqm_structure(self):
+    def test_valid_bqm_graph(self):
         class Dummy(dimod.Structured):
             @property
             def nodelist(self):
@@ -120,6 +120,5 @@ class TestStructuredClass(unittest.TestCase):
 
         dummy = Dummy()
 
-        self.assertTrue(dummy.valid_bqm_structure(valid_structure_bqm))
-        self.assertFalse(dummy.valid_bqm_structure(invalid_structure_bqm))
-        
+        self.assertTrue(dummy.valid_bqm_graph(valid_structure_bqm))
+        self.assertFalse(dummy.valid_bqm_graph(invalid_structure_bqm))
