@@ -18,7 +18,7 @@
 cimport numpy as np
 
 ctypedef np.float64_t bias_type
-ctypedef np.int64_t index_type
+ctypedef np.int32_t index_type
 
 __all__ = ['cyBQM_float64']
 
