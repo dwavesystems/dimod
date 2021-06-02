@@ -96,4 +96,29 @@ class TestStructuredClass(unittest.TestCase):
     
         for u, v in nxG.edges:
             self.assertIn(u, G[v])
+
+    def test_valid_bqm_graph(self):
+        class Dummy(dimod.Structured):
+            @property
+            def nodelist(self):
+                return list(range(5))
+            
+            @property
+            def edgelist(self):
+                return [(0,1),(1,2),(2,3)]
         
+        valid_structure_bqm = dimod.BQM(
+            {0:0, 1:1, 2:2, 3:3, 4:4},
+            {(0,1):1, (1,2):1, (2,3):1},
+            0.0, dimod.BINARY
+        )
+
+        # Invalid due to extra variable '5' not present in nodelist/edgelist of dummy sampler.
+        invalid_structure_bqm = dimod.BQM(
+            {1:1, 2:2, 5:5}, {(1,2):1}, 0.0, dimod.BINARY
+        )
+
+        dummy = Dummy()
+
+        self.assertTrue(dummy.valid_bqm_graph(valid_structure_bqm))
+        self.assertFalse(dummy.valid_bqm_graph(invalid_structure_bqm))

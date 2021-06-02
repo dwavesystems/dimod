@@ -144,3 +144,17 @@ class Structured(abc.ABC):
         G.add_nodes_from(self.nodelist)
 
         return G
+
+    def valid_bqm_graph(self, bqm: "BinaryQuadraticModel"):
+        """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
+        matches the graph provided by the sampler.
+
+        Args:
+            bqm: :class:`dimod.BinaryQuadraticModel` object to validate.
+
+        Returns:
+            Boolean indicating validity of BQM graph compared to sampler graph.
+
+        """
+        return all(variable in self.adjacency for variable in bqm.variables) and \
+               all(neighbor in self.adjacency[vertex] for neighbor, vertex in bqm.quadratic)
