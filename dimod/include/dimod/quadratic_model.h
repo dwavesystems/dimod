@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "dimod/utils.h"
+
 namespace dimod {
 
 /// Encode the domain of a variable.
@@ -252,8 +254,51 @@ class Neighborhood {
         }
     }
 
+    /// Request that the neighborhood capacity be at least enough to contain `n`
+    /// elements.
+    void reserve(index_type n) {
+        neighbors.reserve(n);
+        quadratic_biases.reserve(n);
+    }
+
     /// Return the size of the neighborhood.
     size_type size() const { return neighbors.size(); }
+
+    /// Sort the neighborhood and sum the biases of duplicate variables.
+    void sort_and_sum() {
+        if (!std::is_sorted(neighbors.begin(), neighbors.end())) {
+            utils::zip_sort(neighbors, quadratic_biases);
+        }
+
+        // now remove any duplicates, summing the biases of duplicates
+        size_type i = 0;
+        size_type j = 1;
+
+        // walk quickly through the neighborhood until we find a duplicate
+        while (j < neighbors.size() && neighbors[i] != neighbors[j]) {
+            ++i;
+            ++j;
+        }
+
+        // if we found one, move into de-duplication
+        if (j < neighbors.size()) {
+            while (j < neighbors.size()) {
+                if (neighbors[i] == neighbors[j]) {
+                    quadratic_biases[i] += quadratic_biases[j];
+                    ++j;
+                } else {
+                    ++i;
+                    neighbors[i] = neighbors[j];
+                    quadratic_biases[i] = quadratic_biases[j];
+                    ++j;
+                }
+            }
+
+            // finally resize to contain only the unique values
+            neighbors.resize(i + 1);
+            quadratic_biases.resize(i + 1);
+        }
+    }
 
     /**
      * Access the bias of `v`.
@@ -294,6 +339,9 @@ class QuadraticModelBase {
     /// A forward iterator to `pair<const index_type&, bias_type&>`
     using const_neighborhood_iterator =
             typename Neighborhood<bias_type, index_type>::const_iterator;
+
+    template <class B, class I>
+    friend class BinaryQuadraticModel;
 
     QuadraticModelBase() : offset_(0) {}
 
@@ -482,6 +530,103 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         add_quadratic(dense, num_variables);
     }
 
+    /**
+     * Add the variables, interactions and biases from another BQM.
+     *
+     * The size of the updated BQM will be adjusted appropriately.
+     *
+     * If the other BQM does not have the same vartype, the biases are adjusted
+     * accordingly.
+     */
+    template <class B, class I>
+    void add_bqm(const BinaryQuadraticModel<B, I>& bqm) {
+        if (bqm.vartype() != vartype()) {
+            // we could do this without the copy, but for now let's just do
+            // it simply
+            auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
+            bqm_copy.change_vartype(vartype());
+            add_bqm(bqm_copy);
+            return;
+        }
+
+        // offset
+        base_type::offset() += bqm.offset();
+
+        // linear
+        if (bqm.num_variables() > base_type::num_variables()) {
+            resize(bqm.num_variables());
+        }
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            base_type::linear(v) += bqm.linear(v);
+        }
+
+        // quadratic
+        for (index_type v = 0; v < bqm.num_variables(); ++v) {
+            if (bqm.adj_[v].size() == 0) {
+                continue;
+            }
+
+            base_type::adj_[v].reserve(base_type::adj_[v].size() +
+                                       bqm.adj_[v].size());
+            for (auto it = bqm.adj_[v].cbegin(); it != bqm.adj_[v].cend();
+                 ++it) {
+                base_type::adj_[v].emplace_back((*it).first, (*it).second);
+            }
+
+            base_type::adj_[v].sort_and_sum();
+        }
+    }
+
+    /**
+     * Add the variables, interactions and biases from another BQM.
+     *
+     * The size of the updated BQM will be adjusted appropriately.
+     *
+     * If the other BQM does not have the same vartype, the biases are adjusted
+     * accordingly.
+     *
+     * `mapping` must be a vector of the same length of the given BQM. It
+     * should map the variables of `bqm` to new labels.
+     */
+    template <class B, class I, class T>
+    void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
+                 const std::vector<T>& mapping) {
+        if (bqm.vartype() != this->vartype()) {
+            // we could do this without the copy, but for now let's just do
+            // it simply
+            auto bqm_copy = BinaryQuadraticModel<B, I>(bqm);
+            bqm_copy.change_vartype(vartype());
+            this->add_bqm(bqm_copy, mapping);
+            return;
+        }
+
+        if (mapping.size() != bqm.num_variables()) {
+            throw std::logic_error("bqm and mapping must have the same length");
+        }
+
+        // resize if needed
+        index_type size = *std::max_element(mapping.begin(), mapping.end()) + 1;
+        if (size > base_type::num_variables()) {
+            this->resize(size);
+        }
+
+        // offset
+        base_type::offset() += bqm.offset();
+
+        // linear
+        for (index_type old_u = 0; old_u < bqm.num_variables(); ++old_u) {
+            index_type new_u = mapping[old_u];
+            base_type::linear(new_u) += bqm.linear(old_u);
+
+            // quadratic
+            auto span = bqm.neighborhood(old_u);
+            for (auto it = span.first; it != span.second; ++it) {
+                index_type new_v = mapping[(*it).first];
+                base_type::adj_[new_u].emplace_back(new_v, (*it).second);
+            }
+        }
+    }
+
     /// Add quadratic bias for the given variables.
     void add_quadratic(index_type u, index_type v, bias_type bias) {
         if (u == v) {
@@ -552,6 +697,73 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             }
         } else {
             throw std::logic_error("bad vartype");
+        }
+    }
+
+    /**
+     * Construct a BQM from COO-formated iterators.
+     *
+     * A sparse BQM encoded in [COOrdinate] format is specified by three
+     * arrays of (row, column, value).
+     *
+     * [COOrdinate]: https://w.wiki/n$L
+     *
+     * `row_iterator` must be a random access iterator  pointing to the beginning of the row data.
+     * `col_iterator` must be a random access iterator pointing to the beginning of the column data.
+     * `bias_iterator` must be a random access iterator pointing to the beginning of the bias data.     
+     * `length` must be the number of (row, column, bias) entries.
+     */
+    template <class ItRow, class ItCol, class ItBias>
+    void add_quadratic(ItRow row_iterator, ItCol col_iterator,
+                       ItBias bias_iterator, index_type length) {
+        // determine the number of variables so we can resize ourself if needed
+        if (length > 0) {
+            index_type max_label = std::max(
+                    *std::max_element(row_iterator, row_iterator + length),
+                    *std::max_element(col_iterator, col_iterator + length));
+
+            if ((size_t)max_label >= base_type::num_variables()) {
+                resize(max_label + 1);
+            }
+        } else if (length < 0) {
+            throw std::out_of_range("length must be positive");
+        }
+
+        // count the number of elements to be inserted into each
+        std::vector<size_type> counts(base_type::num_variables(), 0);
+        ItRow rit(row_iterator);
+        ItCol cit(col_iterator);
+        for (size_type i = 0; i < length; ++i, ++rit, ++cit) {
+            if (*rit != *cit) {
+                counts[*rit] += 1;
+                counts[*cit] += 1;
+            }
+        }
+
+        // reserve the neighborhoods
+        for (size_type i = 0; i < counts.size(); ++i) {
+            base_type::adj_[i].reserve(counts[i]);
+        }
+
+        // add the values to the neighborhoods, not worrying about order
+        rit = row_iterator;
+        cit = col_iterator;
+        ItBias bit(bias_iterator);
+        for (size_type i = 0; i < length; ++i, ++rit, ++cit, ++bit) {
+            if (*rit == *cit) {
+                // let add_quadratic handle this case based on vartype
+                add_quadratic(*rit, *cit, *bit);
+            } else {
+                base_type::adj_[*rit].emplace_back(*cit, *bit);
+                base_type::adj_[*cit].emplace_back(*rit, *bit);
+            }
+        }
+
+        // finally sort and sum the neighborhoods we touched
+        for (size_type i = 0; i < counts.size(); ++i) {
+            if (counts[i] > 0) {
+                base_type::adj_[i].sort_and_sum();
+            }
         }
     }
 

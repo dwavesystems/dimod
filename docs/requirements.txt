@@ -3,4 +3,4 @@ sphinx_rtd_theme
 
 breathe
 
-networkx==2.0
+networkx==2.5
