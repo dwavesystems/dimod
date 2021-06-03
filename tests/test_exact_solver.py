@@ -178,7 +178,7 @@ class TestExactSolver(unittest.TestCase):
 
         dqm = dimod.DiscreteQuadraticModel()
         with self.assertWarns(SamplerUnknownArgWarning):
-            sampleset = dimod.ExactDQMSolver().sample(dqm, a=1, b="abc")
+            sampleset = dimod.ExactDQMSolver().sample_dqm(dqm, a=1, b="abc")
 
 class TestExactPolySolver(unittest.TestCase):
     def test_instantiation(self):

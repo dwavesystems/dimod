@@ -190,7 +190,7 @@ class ExactDQMSolver():
             :obj:`~dimod.SampleSet`
 
         """
-        remove_unknown_kwargs = Sampler.remove_unknown_kwargs(**kwargs)
+        remove_unknown_kwargs = Sampler().remove_unknown_kwargs(**kwargs)
         
         n = dqm.num_variables()
         if n == 0:
