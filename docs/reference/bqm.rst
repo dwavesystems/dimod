@@ -7,24 +7,96 @@ Binary Quadratic Models
 For an introduction to BQMs, see
 :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
-BQM Classes
-===========
+Class
+=====
 
-.. currentmodule:: dimod
+.. currentmodule:: dimod.binary
 
-.. we need this toctree for the autosummary links below work
-.. toctree::
-   :hidden:
+.. autoclass:: BinaryQuadraticModel
 
-   bqm_classes/adjdictbqm
-   bqm_classes/adjvectorbqm
-   bqm_classes/binary_quadratic_model.rst
+.. autoclass:: BQM
+
+Attributes
+----------
 
 .. autosummary::
+   :toctree: generated/
 
-   BinaryQuadraticModel
-   AdjDictBQM
-   AdjVectorBQM
+   BinaryQuadraticModel.adj
+   BinaryQuadraticModel.binary
+   BinaryQuadraticModel.dtype
+   BinaryQuadraticModel.linear
+   BinaryQuadraticModel.num_interactions
+   BinaryQuadraticModel.num_variables
+   BinaryQuadraticModel.offset
+   BinaryQuadraticModel.quadratic
+   BinaryQuadraticModel.shape
+   BinaryQuadraticModel.spin
+   BinaryQuadraticModel.variables
+   BinaryQuadraticModel.vartype
+
+Class Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   BinaryQuadraticModel.empty
+   BinaryQuadraticModel.from_coo
+   BinaryQuadraticModel.from_file
+   BinaryQuadraticModel.from_ising
+   BinaryQuadraticModel.from_numpy_vectors
+   BinaryQuadraticModel.from_qubo
+
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   BinaryQuadraticModel.add_linear
+   BinaryQuadraticModel.add_linear_equality_constraint
+   BinaryQuadraticModel.add_linear_from
+   BinaryQuadraticModel.add_linear_from_array
+   BinaryQuadraticModel.add_quadratic
+   BinaryQuadraticModel.add_quadratic_from
+   BinaryQuadraticModel.add_quadratic_from_dense
+   BinaryQuadraticModel.add_variable
+   BinaryQuadraticModel.change_vartype
+   BinaryQuadraticModel.contract_variables
+   BinaryQuadraticModel.copy
+   BinaryQuadraticModel.degree
+   BinaryQuadraticModel.energies
+   BinaryQuadraticModel.energy
+   BinaryQuadraticModel.fix_variable
+   BinaryQuadraticModel.fix_variables
+   BinaryQuadraticModel.flip_variable
+   BinaryQuadraticModel.is_linear
+   BinaryQuadraticModel.iter_neighborhood
+   BinaryQuadraticModel.iter_quadratic
+   BinaryQuadraticModel.get_linear
+   BinaryQuadraticModel.get_quadratic
+   BinaryQuadraticModel.normalize
+   BinaryQuadraticModel.reduce_linear
+   BinaryQuadraticModel.reduce_neighborhood
+   BinaryQuadraticModel.reduce_quadratic
+   BinaryQuadraticModel.relabel_variables
+   BinaryQuadraticModel.relabel_variables_as_integers
+   BinaryQuadraticModel.remove_interaction
+   BinaryQuadraticModel.remove_interactions_from
+   BinaryQuadraticModel.remove_variable
+   BinaryQuadraticModel.resize
+   BinaryQuadraticModel.scale
+   BinaryQuadraticModel.set_linear
+   BinaryQuadraticModel.set_quadratic
+   BinaryQuadraticModel.to_coo
+   BinaryQuadraticModel.to_file
+   BinaryQuadraticModel.to_ising
+   BinaryQuadraticModel.to_numpy_vectors
+   BinaryQuadraticModel.to_qubo
+   BinaryQuadraticModel.update
+
+
 
 
 Functions

@@ -25,7 +25,7 @@ import numpy as np
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
-from dimod.serialization.fileview import VariablesSection, _BytesIO
+from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
 from dimod.variables import Variables
 from typing import List, Tuple, Union, Generator
 
@@ -46,32 +46,6 @@ DQMVectors = namedtuple(
     'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
-
-
-# we want to use SpooledTemporaryFile but have it also include the methods
-# from io.IOBase. This is (probably) forthcoming in future python, see
-# https://bugs.python.org/issue35112
-if issubclass(tempfile.SpooledTemporaryFile, io.IOBase):
-    warnings.warn("Using deprecated SpooledTemporaryFile wrapper, "
-                  "functionality is now included in SpooledTemporaryFile",
-                  DeprecationWarning)
-
-
-class _SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
-
-    # This is not part of io.IOBase, but it is implemented in io.BytesIO
-    # and io.TextIOWrapper
-    def readinto(self, *args, **kwargs):
-        return self._file.readinto(*args, **kwargs)
-
-    def readable(self):
-        return self._file.readable()
-
-    def seekable(self):
-        return self._file.seekable()
-
-    def writable(self):
-        return self._file.writable()
 
 
 class VariableNeighborhood(abc.Set):
@@ -721,7 +695,7 @@ class DiscreteQuadraticModel:
 
         """
 
-        file = _SpooledTemporaryFile(max_size=spool_size)
+        file = SpooledTemporaryFile(max_size=spool_size)
 
         # attach the header
         header_parts = [DQM_MAGIC_PREFIX,

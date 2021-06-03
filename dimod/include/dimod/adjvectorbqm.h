@@ -44,7 +44,7 @@ class AdjVectorBQM {
     explicit AdjVectorBQM(const BQM &bqm) {
         adj.resize(bqm.num_variables());
 
-        for (variable_type v = 0; v < bqm.num_variables(); ++v) {
+        for (size_type v = 0; v < bqm.num_variables(); ++v) {
             linear(v) = bqm.linear(v);
 
             auto span = bqm.neighborhood(v);
@@ -261,8 +261,8 @@ class AdjVectorBQM {
 
     std::pair<bias_type, bool> get_quadratic(variable_type u,
                                              variable_type v) const {
-        assert(u >= 0 && u < adj.size());
-        assert(v >= 0 && v < adj.size());
+        assert(u >= 0 && (size_type)u < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
         assert(u != v);
 
         auto span = neighborhood(u);
@@ -275,24 +275,24 @@ class AdjVectorBQM {
     }
 
     bias_type &linear(variable_type v) {
-        assert(v >= 0 && v < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
         return adj[v].second;
     }
 
     const bias_type &linear(variable_type v) const {
-        assert(v >= 0 && v < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
         return adj[v].second;
     }
 
     std::pair<outvars_iterator, outvars_iterator> neighborhood(
             variable_type u) {
-        assert(u >= 0 && u < adj.size());
+        assert(u >= 0 && (size_type)u < adj.size());
         return std::make_pair(adj[u].first.begin(), adj[u].first.end());
     }
 
     std::pair<const_outvars_iterator, const_outvars_iterator> neighborhood(
             variable_type u) const {
-        assert(u >= 0 && u < adj.size());
+        assert(u >= 0 && (size_type)u < adj.size());
         return std::make_pair(adj[u].first.cbegin(), adj[u].first.cend());
     }
 
@@ -316,7 +316,7 @@ class AdjVectorBQM {
 
     /// sort each neighborhood and merge duplicates
     void normalize_neighborhood() {
-        for (variable_type v = 0; v < adj.size(); ++v) {
+        for (size_type v = 0; v < adj.size(); ++v) {
             normalize_neighborhood(v);
         }
     }
@@ -375,8 +375,8 @@ class AdjVectorBQM {
     }
 
     bool remove_interaction(variable_type u, variable_type v) {
-        assert(u >= 0 && u < adj.size());
-        assert(v >= 0 && v < adj.size());
+        assert(u >= 0 && (size_type)u < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
 
         auto span = neighborhood(u);
         auto low = std::lower_bound(span.first, span.second, v,
@@ -401,13 +401,13 @@ class AdjVectorBQM {
 
     [[deprecated("Use AdjVectorBQM::linear(v)")]] void set_linear(
             variable_type v, bias_type b) {
-        assert(v >= 0 && v < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
         linear(v) = b;
     }
 
     bool set_quadratic(variable_type u, variable_type v, bias_type b) {
-        assert(u >= 0 && u < adj.size());
-        assert(v >= 0 && v < adj.size());
+        assert(u >= 0 && (size_type)u < adj.size());
+        assert(v >= 0 && (size_type)v < adj.size());
         assert(u != v);
 
         auto span = neighborhood(u);

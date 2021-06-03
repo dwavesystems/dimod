@@ -502,8 +502,9 @@ def forwarding_method(func):
         if method is _NOT_FOUND:
             # the args and kwargs are ignored but they are required to not
             # raise an error
+            method = func(obj, *args, **kwargs)
             try:
-                cache[name] = method = func(obj, *args, **kwargs)
+                cache[name] = method
             except TypeError:
                 raise TypeError(
                     f"the '__dict__' attribute of {type(obj).__name__!r} "

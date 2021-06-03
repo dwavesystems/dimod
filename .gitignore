@@ -111,6 +111,10 @@ dimod/*.cpp
 dimod/*.html
 dimod/bqm/*.cpp
 dimod/bqm/*.html
+dimod/binary/*.cpp
+dimod/binary/*.html
+dimod/binary/cybqm/*.cpp
+dimod/binary/cybqm/*.html
 dimod/discrete/*.cpp
 dimod/discrete/*.html
 tests/*.cpp
