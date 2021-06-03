@@ -179,25 +179,6 @@ class ExactDQMSolver():
         self.properties = {}
         self.parameters = {}
 
-    def remove_unknown_kwargs(self, **kwargs):
-        """Check that all `kwargs` are accepted by the sampler. If a
-        keyword is unknown, a warning is raised and the argument is removed.
-        Args:
-            **kwargs:
-                Keyword arguments to be validated.
-        Returns:
-            dict: Updated `kwargs`
-        """
-        for kw in [k for k in kwargs if k not in self.parameters]:
-            msg = "Ignoring unknown kwarg: {!r}".format(kw)
-            warnings.warn(msg, SamplerUnknownArgWarning, stacklevel=3)
-            kwargs.pop(kw)
-
-        return kwargs
-
-    def sample(self, dqm, **parameters):
-        return self.sample_dqm(dqm, **parameters)
-
     def sample_dqm(self, dqm, **kwargs):
         """Sample from a discrete quadratic model.
 
@@ -209,7 +190,7 @@ class ExactDQMSolver():
             :obj:`~dimod.SampleSet`
 
         """
-        kwargs = self.remove_unknown_kwargs(**kwargs)
+        remove_unknown_kwargs = Sampler.remove_unknown_kwargs(**kwargs)
         
         n = dqm.num_variables()
         if n == 0:
