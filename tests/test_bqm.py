@@ -1321,6 +1321,11 @@ class TestIsLinear(unittest.TestCase):
         bqm = BQM({'a': 1, 'b': 2}, {'ab': 1}, 1, 'SPIN')
         self.assertFalse(bqm.is_linear())
 
+    @parameterized.expand(BQMs.items())
+    def test_three_quadratic(self, name, BQM):
+        bqm = BQM({}, {'ab': 1, 'cd': 1}, 0, 'SPIN')
+        self.assertFalse(bqm.is_linear())
+
 
 class TestIteration(unittest.TestCase):
     @parameterized.expand(BQMs.items())
