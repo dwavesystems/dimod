@@ -63,9 +63,19 @@ cdef class cyDiscreteQuadraticModel:
         self.dtype = np.float64
         self.case_dtype = np.int64
 
+        self.offset_ = 0
+
     @property
     def adj(self):
         return self.adj_
+
+    @property
+    def offset(self):
+        return self.offset_
+
+    @offset.setter
+    def offset(self, Bias offset):
+        self.offset_ = offset
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -219,6 +229,7 @@ cdef class cyDiscreteQuadraticModel:
         dqm.bqm_ = self.bqm_
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
+        dqm.offset_ = self.offset_
 
         return dqm
 

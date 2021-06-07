@@ -182,6 +182,15 @@ class DiscreteQuadraticModel:
         self._adj = adj = VariableAdjacency(self)
         return adj
 
+    @property
+    def offset(self):
+        return self._cydqm.offset
+
+    @offset.setter
+    def offset(self, offset: float):
+        self._cydqm.offset = offset
+
+
     def add_linear_equality_constraint(self, terms: LinearTriplets,
                                        lagrange_multiplier: float,
                                        constant: float):
