@@ -65,7 +65,6 @@ Methods
 .. autosummary::
    :toctree: generated/
 
-   ExactDQMSolver.sample
    ExactDQMSolver.sample_dqm
 
 Identity Sampler

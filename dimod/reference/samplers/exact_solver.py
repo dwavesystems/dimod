@@ -21,7 +21,6 @@ Note:
     energy for every possible sample, they are very slow.
 """
 import numpy as np
-import warnings
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet, as_samples
@@ -190,7 +189,7 @@ class ExactDQMSolver():
             :obj:`~dimod.SampleSet`
 
         """
-        remove_unknown_kwargs = Sampler.remove_unknown_kwargs(self, **kwargs)
+        Sampler.remove_unknown_kwargs(self, **kwargs)
         
         n = dqm.num_variables()
         if n == 0:
