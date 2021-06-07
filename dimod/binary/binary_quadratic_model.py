@@ -38,7 +38,7 @@ from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
-from dimod.sym import symbolic
+from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
@@ -392,22 +392,8 @@ class BinaryQuadraticModel:
         memo[id(self)] = new
         return new
 
-    def __eq__(self, other):
-        # todo: performance
-        try:
-            return (self.vartype == other.vartype
-                    and self.shape == other.shape  # redundant, fast to check
-                    and self.offset == other.offset
-                    and self.linear == other.linear
-                    and self.adj == other.adj)
-        except AttributeError:
-            return False
-
     def __len__(self):
         return self.num_variables
-
-    def __ne__(self, other):
-        return not self == other
 
     def __repr__(self):
         return "{!s}({!s}, {!s}, {!r}, {!r})".format(type(self).__name__,
@@ -417,81 +403,78 @@ class BinaryQuadraticModel:
                                                      self.vartype.name)
 
     def __add__(self, other: Union['BinaryQuadraticModel', Bias]):
-        if symbolic.active():
-            # in python 3.8+ we could do this is functools.singledispatchmethod
-            if isinstance(other, BinaryQuadraticModel):
-                if other.num_variables and other.vartype != self.vartype:
-                    # future: return QuadraticModel
-                    raise TypeError("cannot add BQMs with different vartypes")
-                new = self.copy()
-                new.update(other)
-                return new
-            if isinstance(other, Number):
-                new = self.copy()
-                new.offset += other
-                return new
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError("cannot add BQMs with different vartypes")
+            new = self.copy()
+            new.update(other)
+            return new
+        if isinstance(other, Number):
+            new = self.copy()
+            new.offset += other
+            return new
         return NotImplemented
 
     def __iadd__(self, other: Union['BinaryQuadraticModel', Bias]):
-        if symbolic.active():
-            # in python 3.8+ we could do this is functools.singledispatchmethod
-            if isinstance(other, BinaryQuadraticModel):
-                if other.num_variables and other.vartype != self.vartype:
-                    # future: return QuadraticModel
-                    raise TypeError("cannot add BQMs with different vartypes")
-                self.update(other)
-                return self
-            if isinstance(other, Number):
-                self.offset += other
-                return self
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError("cannot add BQMs with different vartypes")
+            self.update(other)
+            return self
+        if isinstance(other, Number):
+            self.offset += other
+            return self
         return NotImplemented
 
     def __radd__(self, other: Union['BinaryQuadraticModel', Bias]):
         return self + other
 
     def __mul__(self, other: Union['BinaryQuadraticModel', Bias]):
-        if symbolic.active():
-            # in python 3.8+ we could do this is functools.singledispatchmethod
-            if isinstance(other, BinaryQuadraticModel):
-                if not (self.is_linear() and other.is_linear()):
-                    raise TypeError(
-                        "cannot multiply BQMs with interactions")
-                elif other.num_variables and other.vartype != self.vartype:
-                    # future: return QuadraticModel
-                    raise TypeError(
-                        "cannot multiply BQMs with different vartypes")
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if not (self.is_linear() and other.is_linear()):
+                raise TypeError(
+                    "cannot multiply BQMs with interactions")
+            elif other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot multiply BQMs with different vartypes")
 
-                new = self.empty(self.vartype)
+            new = self.empty(self.vartype)
 
-                self_offset = self.offset
-                other_offset = other.offset
+            self_offset = self.offset
+            other_offset = other.offset
 
-                for u, ubias in self.linear.items():
-                    for v, vbias in other.linear.items():
-                        if u == v:
-                            if self.vartype is Vartype.BINARY:
-                                new.add_linear(u, ubias*vbias)
-                            else:
-                                new.offset += ubias * vbias
+            for u, ubias in self.linear.items():
+                for v, vbias in other.linear.items():
+                    if u == v:
+                        if self.vartype is Vartype.BINARY:
+                            new.add_linear(u, ubias*vbias)
                         else:
-                            new.add_quadratic(u, v, ubias * vbias)
+                            new.offset += ubias * vbias
+                    else:
+                        new.add_quadratic(u, v, ubias * vbias)
 
-                    new.add_linear(u, ubias * other_offset)
+                new.add_linear(u, ubias * other_offset)
 
-                for v, bias in other.linear.items():
-                    new.add_linear(v, bias*self_offset)
+            for v, bias in other.linear.items():
+                new.add_linear(v, bias*self_offset)
 
-                return new
+            return new
 
-            if isinstance(other, Number):
-                new = self.copy()
-                new.scale(other)
-                return new
+        if isinstance(other, Number):
+            new = self.copy()
+            new.scale(other)
+            return new
         return NotImplemented
 
     def __imul__(self, other: Bias):  # type: ignore[misc]
         # in-place multiplication is only defined for numbers
-        if symbolic.active() and isinstance(other, Number):
+        if isinstance(other, Number):
             self.scale(other)
             return self
         return NotImplemented
@@ -508,43 +491,61 @@ class BinaryQuadraticModel:
         return self
 
     def __sub__(self, other: Union['BinaryQuadraticModel', Bias]):
-        if symbolic.active():
-            # in python 3.8+ we could do this is functools.singledispatchmethod
-            if isinstance(other, BinaryQuadraticModel):
-                if other.num_variables and other.vartype != self.vartype:
-                    # future: return QuadraticModel
-                    raise TypeError(
-                        "cannot subtract BQMs with different vartypes")
-                new = self.copy()
-                new.scale(-1)
-                new.update(other)
-                new.scale(-1)
-                return new
-            if isinstance(other, Number):
-                new = self.copy()
-                new.offset -= other
-                return new
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot subtract BQMs with different vartypes")
+            new = self.copy()
+            new.scale(-1)
+            new.update(other)
+            new.scale(-1)
+            return new
+        if isinstance(other, Number):
+            new = self.copy()
+            new.offset -= other
+            return new
         return NotImplemented
 
     def __isub__(self, other: Union['BinaryQuadraticModel', Bias]):
-        if symbolic.active():
-            # in python 3.8+ we could do this is functools.singledispatchmethod
-            if isinstance(other, BinaryQuadraticModel):
-                if other.num_variables and other.vartype != self.vartype:
-                    # future: return QuadraticModel
-                    raise TypeError(
-                        "cannot subtract BQMs with different vartypes")
-                self.scale(-1)
-                self.update(other)
-                self.scale(-1)
-                return self
-            if isinstance(other, Number):
-                self.offset -= other
-                return self
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot subtract BQMs with different vartypes")
+            self.scale(-1)
+            self.update(other)
+            self.scale(-1)
+            return self
+        if isinstance(other, Number):
+            self.offset -= other
+            return self
         return NotImplemented
 
     def __rsub__(self, other):
         return self - other
+
+    def __eq__(self, other):
+        if isinstance(other, (Number, BinaryQuadraticModel)):
+            return Eq(self, other)
+        # Old version of BQM returned False for unknown types, so we keep doing
+        # the here for backwards compatibility
+        return False
+
+    def __ge__(self, other: Bias):
+        if isinstance(other, Number):
+            return Ge(self, other)
+        return NotImplemented
+
+    def __le__(self, other: Bias):
+        if isinstance(other, Number):
+            return Le(self, other)
+        return NotImplemented
+
+    def __ne__(self, other):
+        return not self == other
 
     @property
     def adj(self) -> Adjacency:
@@ -1198,6 +1199,19 @@ class BinaryQuadraticModel:
                       'use v in bqm.variables instead.', 
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
+
+    def is_equal(self, other):
+        if isinstance(other, Number):
+            return not self.num_variables and self.offset == other
+        # todo: performance
+        try:
+            return (self.vartype == other.vartype
+                    and self.shape == other.shape  # redundant, fast to check
+                    and self.offset == other.offset
+                    and self.linear == other.linear
+                    and self.adj == other.adj)
+        except AttributeError:
+            return False
 
     def is_linear(self) -> bool:
         """Return True if the model has no quadratic interactions."""

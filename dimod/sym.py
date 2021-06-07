@@ -12,27 +12,49 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import contextlib
+import abc
+import enum
 
-__all__ = ['symbolic']
+__all__ = ['Sense', 'Eq', 'Ge', 'Le']
 
 
-class symbolic(contextlib.ContextDecorator):
-    """Context manager for creating quadratic models symbolically.
+class Sense(enum.Enum):
+    Le = '<='
+    Ge = '>='
+    Eq = '=='
 
-    This context manager is reentrant but not thread safe.
-    """
-    _count: int = 0
 
-    def __init__(self):
+class Comparison(abc.ABC):
+    def __init__(self, lhs, rhs):
+        # todo: type checking
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def __init_subclass__(cls, sense=None, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if sense is not None:
+            cls.sense = sense if isinstance(sense, Sense) else Sense(sense)
+
+    @property
+    @abc.abstractmethod
+    def sense(self):
         pass
 
-    def __enter__(self):
-        symbolic._count += 1
+    def __repr__(self):
+        return f"{self.lhs!r} {self.sense.value} {self.rhs!r}"
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        symbolic._count -= 1
 
-    @classmethod
-    def active(cls) -> bool:
-        return cls._count > 0
+class Eq(Comparison, sense='=='):
+    def __bool__(self):
+        try:
+            return self.lhs.is_equal(self.rhs)
+        except AttributeError:
+            return False
+
+
+class Ge(Comparison, sense='>='):
+    pass
+
+
+class Le(Comparison, sense='<='):
+    pass

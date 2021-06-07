@@ -2025,7 +2025,6 @@ class TestShape(unittest.TestCase):
 
 class TestSymbolic(unittest.TestCase):
     @parameterized.expand(BQMs.items())
-    @dimod.symbolic()
     def test_add_number(self, name, BQM):
         bqm = BQM('SPIN')
         new = bqm + 1
@@ -2034,7 +2033,6 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(bqm.num_variables, 0)
 
     @parameterized.expand(BQMs.items())
-    @dimod.symbolic()
     def test_iadd_number(self, name, BQM):
         bqm = BQM('SPIN')
         old = bqm
@@ -2044,7 +2042,6 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(bqm.num_variables, 0)
 
     @parameterized.expand(BQMs.items())
-    @dimod.symbolic()
     def test_radd_number(self, name, BQM):
         bqm = BQM('SPIN')
         new = 1 + bqm
@@ -2053,15 +2050,6 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(bqm.num_variables, 0)
 
     @parameterized.expand(BQMs.items())
-    def test_exceptions(self, name, BQM):
-        bqm = BQM('SPIN')
-        with self.assertRaises(TypeError):
-            bqm + 1
-        with self.assertRaises(TypeError):
-            bqm * 1
-
-    @parameterized.expand(BQMs.items())
-    @dimod.symbolic()
     def test_exceptions_symbolic_mode(self, name, BQM):
         bqm = BQM('SPIN')
         with self.assertRaises(TypeError):
@@ -2076,7 +2064,6 @@ class TestSymbolic(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm *= 'a'
 
-    @dimod.symbolic()
     def test_expressions_spin(self):
         u = Spin('u')
         v = Spin('v')
