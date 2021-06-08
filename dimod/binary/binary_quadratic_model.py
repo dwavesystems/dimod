@@ -325,6 +325,8 @@ class BinaryQuadraticModel:
     def _init_components(self, linear, quadratic, offset, vartype, dtype):
         self._init_empty(vartype, dtype)
 
+        self.offset = offset
+
         vartype = self.data.vartype
 
         if isinstance(quadratic, (abc.Mapping, abc.Iterator)):
@@ -370,8 +372,6 @@ class BinaryQuadraticModel:
             self.add_linear_from(linear)
         else:
             self.add_linear_from_array(linear)
-
-        self.offset += offset
 
     def _init_empty(self, vartype, dtype):
         dtype = self.DEFAULT_DTYPE if dtype is None else dtype

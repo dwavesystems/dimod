@@ -1600,6 +1600,32 @@ class TestObjectDtype(unittest.TestCase):
         for _, bias in bqm.quadratic.items():
             self.assertIsInstance(bias, np.int32)
 
+    def test_fractions(self):
+        from fractions import Fraction
+
+        bqm = DictBQM({'a': Fraction(1, 3)}, {'ab': Fraction(2, 7)},
+                      Fraction(5), 'SPIN')
+
+        self.assertIsInstance(bqm.offset, Fraction)
+        self.assertIsInstance(bqm.get_linear('a'), Fraction)
+        self.assertIsInstance(bqm.get_quadratic('a', 'b'), Fraction)
+
+    def test_string(self):
+        bqm = DictBQM({0: 'a'}, {(0, 1): 'b'}, 'c', 'BINARY')
+
+        self.assertIsInstance(bqm.offset, str)
+        self.assertEqual(bqm.offset, 'c')
+        self.assertIsInstance(bqm.get_linear(0), str)
+        self.assertEqual(bqm.get_linear(0), 'a')
+        self.assertIsInstance(bqm.get_quadratic(0, 1), str)
+        self.assertEqual(bqm.get_quadratic(0, 1), 'b')
+
+        bqm.add_linear(0, 't')
+        self.assertEqual(bqm.get_linear(0), 'at')
+
+        bqm.add_quadratic(0, 1, 't')
+        self.assertEqual(bqm.get_quadratic(0, 1), 'bt')
+
 
 class TestOffset(unittest.TestCase):
     @parameterized.expand(BQMs.items())
