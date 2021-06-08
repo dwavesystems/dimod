@@ -634,10 +634,12 @@ class BinaryQuadraticModel:
     ):
         """Add a linear inequality constraint as a quadratic objective.
 
-        Adds a linear inequality constraint of the form
-        :math:`\\sum_{i} a_{i} x_{i} + C <= 0`
-        to the binary quadratic model as a quadratic objective. Only integral coefficient are handled correctly.
-        Try multiplying both sides of equations by factor of 10s to remove fractional coefficients.
+        Adds a linear inequality constraint of the form:
+
+        math:`\\sum_{i} a_{i} x_{i} + C <= 0`
+        to the binary quadratic model as a quadratic objective.
+        For constraints with fractional coefficients, multiply both sides of the inequality by an
+        appropriate factor of ten to attain or approximate integer coefficients.
 
         Args:
             terms (iterable/iterator):
@@ -651,14 +653,14 @@ class BinaryQuadraticModel:
             constant:
                 The constant value of the constraint, C, in the equation above
             label:
-                Label assigned to the new slack variables.
+                Prefix used to label the slack variables used to create the new objective.
             slack_method:
-                The method for adding slack. Only log2 method currently supported for BQM object. log2 adds
-                 log2(slack_range) number of binary variables to the constraint.
+                "The method for adding slack variables. Supported methods are:
+                - log2: Adds log2(slack_range) number of binary variables to the constraint.
             slack_range:
-                could be used to limit the range of slack variables.
+                The maximum possible range for slack variables when creating this constraint.
             discontinuous_slack:
-                If true it allows the lhs of the constraint be zero when slack_range is provided.
+                If True, the left-hand side of the constraint can be zero when slack_range is provided.
 
         """
         assert (slack_method in ['log2'])

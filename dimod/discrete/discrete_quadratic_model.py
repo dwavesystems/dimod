@@ -213,10 +213,12 @@ class DiscreteQuadraticModel:
 
         """Add a linear inequality constraint as a quadratic objective.
 
-        Adds a linear inequality constraint of the form
-        :math:`\sum_{i,k} a_{i,k} x_{i,k} + C <= 0
-        to the discrete quadratic model as a quadratic objective. Only integral coefficient are handled correctly.
-        Try multiplying both sides of equations by factor of 10s to remove fractional coefficients.
+        Adds a linear inequality constraint of the form:
+
+        math:`\sum_{i,k} a_{i,k} x_{i,k} + C <= 0
+        to the discrete quadratic model as a quadratic objective. Coefficients should be integers.
+        For constraints with fractional coefficients, multiply both sides of the inequality by an
+        appropriate factor of ten to attain or approximate integer coefficients.
 
         Args:
             terms:
@@ -228,15 +230,15 @@ class DiscreteQuadraticModel:
             constant:
                 The constant value of the constraint.
             label:
-                Label assigned to the new slack variables.
+                Prefix used to label the slack variables used to create the new objective.
             slack_method:
-                The method for adding slack. log2 and log10 method currently supported. log2 adds log2(slack_range)
-                 number of dqm variables each with two cases to the constraint.
-                 log10 method adds log10 dqm variables each with up to 10 cases.
+                "The method for adding slack variables. Supported methods are:
+                - log2: Adds log2(slack_range) number of dqm variables each with two cases to the constraint.
+                - log10: Adds log10 dqm variables each with up to 10 cases.
             slack_range:
-                Could be used to limit the range of slack variables.
+                The maximum possible range for slack variables when creating this constraint.
             discontinuous_slack:
-                If true it allows the lhs of the constraint be zero when slack_range is provided.
+                If True, the left-hand side of the constraint can be zero when slack_range is provided.
 
        """
         assert (slack_method in ['log2', 'log10'])
