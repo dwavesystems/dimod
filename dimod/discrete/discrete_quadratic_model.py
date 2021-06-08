@@ -46,7 +46,7 @@ DQMVectors = namedtuple(
     'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
 
 DQMVectorsWithOffset = namedtuple(
-    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
+    'DQMVectorsWithOffset', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
 
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
