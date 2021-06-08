@@ -44,6 +44,10 @@ VERSION = bytes([1, 0])  # version 1.0
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 DQMVectors = namedtuple(
     'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
+
+DQMVectorsWithOffset = namedtuple(
+    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
+
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
 
@@ -758,8 +762,11 @@ class DiscreteQuadraticModel:
 
         return file
 
-    def to_numpy_vectors(self):
+    def to_numpy_vectors(self, return_offset: bool = False):
         """Convert the DQM to five numpy vectors and the labels.
+
+        Args:
+            return_offset: Boolean flag to optionally return energy offset value.
 
         Returns:
             :class:`DQMVectors`: A named tuple with fields `['case_starts',
@@ -802,13 +809,20 @@ class DiscreteQuadraticModel:
             :meth:`~DiscreteQuadraticModel.from_numpy_vectors`
 
         """
-        case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
+        if not return_offset:
+            case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
 
-        return DQMVectors(case_starts,
-                          linear_biases,
-                          QuadraticVectors(*quadratic),
-                          self.variables,
-                          )
+            return DQMVectors(case_starts,
+                            linear_biases,
+                            QuadraticVectors(*quadratic),
+                            self.variables,
+                            )
+
+        case_starts, linear_biases, quadratic, offset = self._cydqm.to_numpy_vectors(return_offset)
+
+        return DQMVectorsWithOffset(
+            case_starts, linear_biases, QuadraticVectors(*quadratic), self.variables, offset
+        )
 
 
 DQM = DiscreteQuadraticModel  # alias

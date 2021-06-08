@@ -18,6 +18,7 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from cython.operator cimport preincrement as preinc  # for when it matters
+from libcpp cimport bool
 from libcpp.algorithm cimport lower_bound, sort, unique
 from libcpp.unordered_set cimport unordered_set
 
@@ -81,6 +82,8 @@ cdef class cyDiscreteQuadraticModel:
     @cython.wraparound(False)
     def add_linear_equality_constraint(self, object terms,
                                        Bias lagrange_multiplier, Bias constant):
+        # adjust energy offset
+        self.offset_ += lagrange_multiplier * constant * constant
 
         # resolve the terms from a python object into a C++ object
         cdef vector[LinearTerm] cppterms
@@ -248,7 +251,7 @@ cdef class cyDiscreteQuadraticModel:
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef VarIndex num_variables = samples.shape[1]
 
-        cdef Bias[:] energies = np.zeros(num_samples, dtype=self.dtype)
+        cdef Bias[:] energies = np.full(num_samples, self.offset_, dtype=self.dtype)
 
         cdef Py_ssize_t si, vi
         cdef CaseIndex cu, case_u, cv, case_v
@@ -688,7 +691,7 @@ cdef class cyDiscreteQuadraticModel:
                 qi += 1
         
 
-    def to_numpy_vectors(self):
+    def to_numpy_vectors(self, bool return_offset=False):
         
         cdef Py_ssize_t num_variables = self.num_variables()
         cdef Py_ssize_t num_cases = self.num_cases()
@@ -717,4 +720,7 @@ cdef class cyDiscreteQuadraticModel:
         else:
             self._into_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
 
+        if return_offset:
+            return starts, ldata, (irow, icol, qdata), self.offset_
+            
         return starts, ldata, (irow, icol, qdata)
