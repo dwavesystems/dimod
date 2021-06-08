@@ -57,16 +57,6 @@ def test_sample_qubo(self, sampler, Q):
         self.assertAlmostEqual(dimod.qubo_energy(sample, Q), en)
 
 
-def test_sample_dqm(self, sampler, dqm):
-    sampleset = sampler.sample_dqm(dqm)
-
-    self.assertEqual(set(sampleset.variables), set().union(dqm.variables))
-    self.assertIs(sampleset.vartype, dimod.DISCRETE)
-
-    for sample, en in sampleset.data(['sample', 'energy']):
-        self.assertAlmostEqual(dqm.energy(sample), en)
-
-
 class TestCaseOverloadWarning(UserWarning):
     pass
 
