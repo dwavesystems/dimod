@@ -38,7 +38,7 @@ class pyBQM:
         self._adj: Dict[Variable, Dict[Variable, Any]] = dict()
         self._vartype = as_vartype(vartype)
 
-        self.offset = 0.0
+        self.offset = 0
 
     @property
     def dtype(self) -> np.dtype:
@@ -54,7 +54,8 @@ class pyBQM:
 
     def add_linear(self, v: Variable, bias: Any):
         self._adj.setdefault(v, dict())
-        self._adj[v][v] = self._adj[v].get(v, 0) + bias
+        zero = type(bias)()
+        self._adj[v][v] = self._adj[v].get(v, zero) + bias
 
     def add_linear_equality_constraint(self, *args, **kwargs):
         raise NotImplementedError  # defer to caller
@@ -67,12 +68,16 @@ class pyBQM:
         if u == v:
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
-        self.add_variable(u)
-        self.add_variable(v)
+        zero = type(bias)()
 
-        zero = type(bias)(0)
+        # derive the linear types to match quadratic. This might not always
+        # be what we want but it's as good a guess as any
+        if u not in self.variables:
+            self.set_linear(u, zero)
+        if v not in self.variables:
+            self.set_linear(v, zero)
 
-        self._adj[u][v] = self._adj[v][u] = bias + self._adj[v].get(u, zero)
+        self._adj[u][v] = self._adj[v][u] = self._adj[v].get(u, zero) + bias
 
     def add_quadratic_from_dense(self, quadratic: ArrayLike):
         quadratic = np.asarray(quadratic)
