@@ -203,6 +203,94 @@ class DiscreteQuadraticModel:
         self._cydqm.add_linear_equality_constraint(
             index_terms, lagrange_multiplier, constant)
 
+    def add_linear_inequality_constraint(self, terms: LinearTriplets,
+                                         lagrange_multiplier: float,
+                                         constant: float,
+                                         label: str,
+                                         slack_method: str = "log2",
+                                         slack_range: int = None,
+                                         discontinuous_slack: bool = False):
+
+        """Add a linear inequality constraint as a quadratic objective.
+
+        Adds a linear inequality constraint of the form
+        :math:`\sum_{i,k} a_{i,k} x_{i,k} + C <= 0
+        to the discrete quadratic model as a quadratic objective. Only integral coefficient are handled correctly.
+        Try multiplying both sides of equations by factor of 10s to remove fractional coefficients.
+
+        Args:
+            terms:
+                A list of tuples of the type (variable, case, bias).
+                Each tuple is evaluated to the term (bias * variable_case).
+                All terms in the list are summed.
+            lagrange_multiplier:
+                The coefficient or the penalty strength
+            constant:
+                The constant value of the constraint.
+            label:
+                Label assigned to the new slack variables.
+            slack_method:
+                The method for adding slack. log2 and log10 method currently supported. log2 adds log2(slack_range)
+                 number of dqm variables each with two cases to the constraint.
+                 log10 method adds log10 dqm variables each with up to 10 cases.
+            slack_range:
+                Could be used to limit the range of slack variables.
+            discontinuous_slack:
+                If true it allows the lhs of the constraint be zero when slack_range is provided.
+
+       """
+        assert (slack_method in ['log2', 'log10'])
+
+        terms_upper_bound = sum(v for _, _, v in terms if v > 0)
+        slack_terms = []
+        if terms_upper_bound <= -constant:
+            print(f'Did not add constraint {label}. This constraint is feasible with any value for state variables.')
+            return slack_terms
+
+        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
+        if terms_lower_bound > -constant:
+            print(f'Did not add constraint {label}. This constraint is infeasible with any value for state variables.')
+            return slack_terms
+
+        slack_lower_bound = max(0, -constant - terms_upper_bound)
+        slack_upper_bound = -constant - terms_lower_bound
+
+        if slack_lower_bound == slack_upper_bound:
+            print(f'add constraint {label} as equality constraint.')
+            self.add_linear_equality_constraint(terms, lagrange_multiplier, constant)
+            return slack_terms
+        else:
+            if slack_range is None:
+                diff = int(slack_upper_bound - slack_lower_bound)
+            else:
+                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range))
+
+            slack_terms = []
+            if slack_method == "log2":
+                num_slack = int(np.floor(np.log2(diff)))
+                slack_coefficients = [2 ** j for j in range(num_slack)]
+                if diff - 2 ** num_slack >= 0:
+                    slack_coefficients.append(diff - 2 ** num_slack + 1)
+
+                for j, s in enumerate(slack_coefficients):
+                    sv = self.add_variable(2, f'slack_{label}_{j}')
+                    slack_terms.append((sv, 0, s))
+                if discontinuous_slack and slack_range is not None:
+                    sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
+                    slack_terms.append((sv, 0, slack_upper_bound))
+
+            elif slack_method == "log10":
+                num_dqm_vars = int(np.ceil(np.log10(diff)))
+                for j in range(num_dqm_vars):
+                    slack_term = list(range(0, min(diff + 1, 10 ** (j + 1)), 10 ** j))[1:]
+                    sv = self.add_variable(len(slack_term) + 1, f'slack_{label}_{j}')
+                    for i, val in enumerate(slack_term):
+                        slack_terms.append((sv, i, val))
+                if discontinuous_slack and slack_range is not None:
+                    slack_terms.append((sv, len(slack_term), slack_upper_bound))
+            self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, constant)
+            return slack_terms
+
     def add_variable(self, num_cases, label=None):
         """Add a discrete variable.
 

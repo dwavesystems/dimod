@@ -624,6 +624,84 @@ class BinaryQuadraticModel:
                     u, v, 2 * lagrange_multiplier * ubias * vbias)
         self.offset += lagrange_multiplier * constant * constant
 
+    def add_linear_inequality_constraint(
+            self, terms: Iterable[Tuple[Variable, Bias]],
+            lagrange_multiplier: Bias, constant: Bias,
+            label: str,
+            slack_method: str = "log2",
+            slack_range: int = None,
+            discontinuous_slack: bool = False
+    ):
+        """Add a linear inequality constraint as a quadratic objective.
+
+        Adds a linear inequality constraint of the form
+        :math:`\\sum_{i} a_{i} x_{i} + C <= 0`
+        to the binary quadratic model as a quadratic objective. Only integral coefficient are handled correctly.
+        Try multiplying both sides of equations by factor of 10s to remove fractional coefficients.
+
+        Args:
+            terms (iterable/iterator):
+                An iterable of 2-tuples, (variable, bias).
+                Each tuple is evaluated to the term (bias * variable).
+                All terms in the list are summed.
+            lagrange_multiplier:
+                The coefficient or the penalty strength. This value is
+                multiplied by the entire constraint objective and added to the
+                bqm (it doesn't appear explicitly in the equation above).
+            constant:
+                The constant value of the constraint, C, in the equation above
+            label:
+                Label assigned to the new slack variables.
+            slack_method:
+                The method for adding slack. Only log2 method currently supported for BQM object. log2 adds
+                 log2(slack_range) number of binary variables to the constraint.
+            slack_range:
+                could be used to limit the range of slack variables.
+            discontinuous_slack:
+                If true it allows the lhs of the constraint be zero when slack_range is provided.
+
+        """
+        assert (slack_method in ['log2'])
+
+        terms_upper_bound = sum(v for _, v in terms if v > 0)
+        slack_terms = []
+        if terms_upper_bound <= -constant:
+            print(f'Did not add constraint {label}. This constraint is feasible with any value for state variables.')
+            return slack_terms
+
+        terms_lower_bound = sum(v for _, v in terms if v < 0)
+        if terms_lower_bound > -constant:
+            print(f'Did not add constraint {label}. This constraint is infeasible with any value for state variables.')
+            return slack_terms
+
+        slack_lower_bound = max(0, -constant - terms_upper_bound)
+        slack_upper_bound = -constant - terms_lower_bound
+        if slack_lower_bound == slack_upper_bound:
+            print(f'add constraint {label} as equality constraint.')
+            self.add_linear_equality_constraint(terms, lagrange_multiplier, constant)
+            return slack_terms
+        else:
+            if slack_range is None:
+                diff = int(slack_upper_bound - slack_lower_bound)
+            else:
+                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range))
+
+            num_slack = int(np.floor(np.log2(diff)))
+            slack_coefficients = [2 ** j for j in range(num_slack)]
+            if diff - 2 ** num_slack >= 0:
+                slack_coefficients.append(diff - 2 ** num_slack + 1)
+
+            for j, s in enumerate(slack_coefficients):
+                sv = self.add_variable(f'slack_{label}_{j}')
+                slack_terms.append((sv, s))
+            if discontinuous_slack and slack_range is not None:
+                sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
+                slack_terms.append((sv, slack_upper_bound))
+
+        self.add_linear_equality_constraint(
+            terms + slack_terms, lagrange_multiplier, constant)
+        return slack_terms
+
     def add_linear_from(self, linear: Union[Iterable, Mapping]):
         """Add variables and linear biases to a binary quadratic model.
 
