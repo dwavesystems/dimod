@@ -215,6 +215,42 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
         assert round(bqm.energy(sample) - energy, precision) == 0
 
 
+def assert_sampleset_energies_dqm(sampleset, dqm, precision=7):
+    """Assert that each sample in the given sample set has the correct energy.
+
+    Args:
+        sampleset (:obj:`.SampleSet`):
+            Sample set as returned by a dimod sampler.
+
+        dqm (:obj:`.DiscreteQuadraticModel`):
+            The discrete quadratic model (DQM) used to generate the samples.
+
+        precision (int, optional, default=7):
+            Equality of energy is tested by calculating the difference between
+            the `response`'s sample energy and that returned by BQM's
+            :meth:`~.BinaryQuadraticModel.energy`, rounding to the closest
+            multiple of 10 to the power of minus `precision`.
+
+    Raises:
+        AssertionError: If any of the samples in the sample set do not match
+        their associated energy.
+
+    """
+
+    assert isinstance(sampleset, dimod.SampleSet), "expected sampleset to be a dimod SampleSet object"
+
+    for sample, energy in sampleset.data(['sample', 'energy']):
+        assert isinstance(sample, abc.Mapping), "'for sample in sampleset', each sample should be a Mapping"
+
+        for v, value in sample.items():
+            assert v in dqm.variables, 'sample contains a variable not in the given dqm'
+
+            for v in dqm.variables:
+                assert v in sample, "dqm contains a variable not in sample"
+
+        assert round(dqm.energy(sample) - energy, precision) == 0
+
+
 def assert_bqm_almost_equal(actual, desired, places=7,
                             ignore_zero_interactions=False):
     """Test if two binary quadratic models have almost equal biases.
