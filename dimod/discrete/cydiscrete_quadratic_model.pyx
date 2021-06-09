@@ -293,7 +293,8 @@ cdef class cyDiscreteQuadraticModel:
                             Numeric32plus[::1] linear_biases,
                             Integral32plus[::1] irow,
                             Integral32plus[::1] icol,
-                            Numeric32plus[::1] quadratic_biases):
+                            Numeric32plus[::1] quadratic_biases,
+                            Bias offset):
         """Equivalent of from_numpy_vectors with fused types."""
 
         # some input checking
@@ -389,10 +390,13 @@ cdef class cyDiscreteQuadraticModel:
                 if deref(span2.first).first < dqm.case_starts_[v+1]:
                     raise ValueError("A variable has a self-loop")
 
+        # add provided offset to dqm
+        dqm.offset_ = offset
+
         return dqm
 
     @classmethod
-    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic):
+    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic, offset = 0):
 
         cdef cyDiscreteQuadraticModel obj = cls()
 
@@ -412,7 +416,7 @@ cdef class cyDiscreteQuadraticModel:
         ldata, qdata = asnumericarrays(
             linear_biases, quadratic_biases, min_itemsize=4, requirements='C')
 
-        return cls._from_numpy_vectors(case_starts, ldata, irow, icol, qdata)
+        return cls._from_numpy_vectors(case_starts, ldata, irow, icol, qdata, offset)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -722,5 +726,5 @@ cdef class cyDiscreteQuadraticModel:
 
         if return_offset:
             return starts, ldata, (irow, icol, qdata), self.offset_
-            
+
         return starts, ldata, (irow, icol, qdata)

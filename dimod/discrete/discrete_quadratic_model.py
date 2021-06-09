@@ -43,10 +43,9 @@ VERSION = bytes([1, 0])  # version 1.0
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 DQMVectors = namedtuple(
-    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
-
-DQMVectorsWithOffset = namedtuple(
-    'DQMVectorsWithOffset', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
+    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'],
+    defaults=(0,)
+)
 
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
@@ -344,7 +343,7 @@ class DiscreteQuadraticModel:
 
     @classmethod
     def from_numpy_vectors(cls, case_starts, linear_biases, quadratic,
-                           labels=None):
+                           offset=0, labels=None):
         """Construct a DQM from five numpy vectors.
 
         Args:
@@ -372,6 +371,9 @@ class DiscreteQuadraticModel:
                   the case interactions were defined in a sparse matrix, these
                   would be the values.
 
+            offset (float):
+                Energy offset of the DQM.
+
             labels (list, optional):
                 The variable labels. Defaults to index-labeled.
 
@@ -392,7 +394,7 @@ class DiscreteQuadraticModel:
         obj = cls()
 
         obj._cydqm = cyDiscreteQuadraticModel.from_numpy_vectors(
-            case_starts, linear_biases, quadratic)
+            case_starts, linear_biases, quadratic, offset)
 
         if labels is not None:
             if len(labels) != obj._cydqm.num_variables():
@@ -820,7 +822,7 @@ class DiscreteQuadraticModel:
 
         case_starts, linear_biases, quadratic, offset = self._cydqm.to_numpy_vectors(return_offset)
 
-        return DQMVectorsWithOffset(
+        return DQMVectors(
             case_starts, linear_biases, QuadraticVectors(*quadratic), self.variables, offset
         )
 
