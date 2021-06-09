@@ -33,6 +33,7 @@ import dimod
 
 from dimod.binary import BinaryQuadraticModel, DictBQM, Float32BQM, Float64BQM
 from dimod.binary import as_bqm
+from dimod.binary import Spin, Binary
 from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
 
@@ -1600,6 +1601,32 @@ class TestObjectDtype(unittest.TestCase):
         for _, bias in bqm.quadratic.items():
             self.assertIsInstance(bias, np.int32)
 
+    def test_fractions(self):
+        from fractions import Fraction
+
+        bqm = DictBQM({'a': Fraction(1, 3)}, {'ab': Fraction(2, 7)},
+                      Fraction(5), 'SPIN')
+
+        self.assertIsInstance(bqm.offset, Fraction)
+        self.assertIsInstance(bqm.get_linear('a'), Fraction)
+        self.assertIsInstance(bqm.get_quadratic('a', 'b'), Fraction)
+
+    def test_string(self):
+        bqm = DictBQM({0: 'a'}, {(0, 1): 'b'}, 'c', 'BINARY')
+
+        self.assertIsInstance(bqm.offset, str)
+        self.assertEqual(bqm.offset, 'c')
+        self.assertIsInstance(bqm.get_linear(0), str)
+        self.assertEqual(bqm.get_linear(0), 'a')
+        self.assertIsInstance(bqm.get_quadratic(0, 1), str)
+        self.assertEqual(bqm.get_quadratic(0, 1), 'b')
+
+        bqm.add_linear(0, 't')
+        self.assertEqual(bqm.get_linear(0), 'at')
+
+        bqm.add_quadratic(0, 1, 't')
+        self.assertEqual(bqm.get_quadratic(0, 1), 'bt')
+
 
 class TestOffset(unittest.TestCase):
     @parameterized.expand(BQMs.items())
@@ -2025,6 +2052,60 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
+
+
+class TestSymbolic(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_add_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        new = bqm + 1
+        self.assertIsNot(bqm, new)
+        self.assertEqual(new.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_iadd_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        old = bqm
+        bqm += 1
+        self.assertIs(bqm, old)
+        self.assertEqual(bqm.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_radd_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        new = 1 + bqm
+        self.assertIsNot(bqm, new)
+        self.assertEqual(new.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_exceptions_symbolic_mode(self, name, BQM):
+        bqm = BQM('SPIN')
+        with self.assertRaises(TypeError):
+            bqm + 'a'
+        with self.assertRaises(TypeError):
+            'a' + bqm
+        with self.assertRaises(TypeError):
+            bqm += 'a'
+
+        with self.assertRaises(TypeError):
+            bqm * 'a'
+        with self.assertRaises(TypeError):
+            bqm *= 'a'
+
+    def test_expressions_spin(self):
+        u = Spin('u')
+        v = Spin('v')
+
+        BQM = BinaryQuadraticModel
+
+        self.assertEqual(u*v, BQM({}, {'uv': 1}, 0, 'SPIN'))
+        self.assertEqual(u*u, BQM({'u': 0}, {}, 1, 'SPIN'))
+        self.assertEqual(u*(v-1), BQM({'u': -1}, {'uv': 1}, 0, 'SPIN'))
+        self.assertEqual(-u, BQM({'u': -1}, {}, 0, 'SPIN'))
+        self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'SPIN'))
 
 
 class TestToIsing(unittest.TestCase):
