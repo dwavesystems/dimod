@@ -95,6 +95,7 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(dqm.variables, [])
         self.assertEqual(dqm.adj, {})
         self.assertEqual(dqm.num_cases(), 0)
+        self.assertEqual(dqm.offset, 0)
 
     def test_one_variable(self):
         dqm = dimod.DQM()
@@ -107,6 +108,18 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(dqm.adj, {0: set()})
         self.assertEqual(dqm.num_cases(), 10)
         self.assertEqual(dqm.num_cases(0), 10)
+
+    def test_offset(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(2)
+        dqm.set_linear(0, [1,1])
+        initial_energy = dqm.energy([0])
+
+        dqm.offset = 10
+        self.assertEqual(dqm.offset, 10)
+        self.assertEqual(
+            dqm.energy([0]), initial_energy + dqm.offset
+        )
 
     def test_one_labelled(self):
         dqm = dimod.DQM()
