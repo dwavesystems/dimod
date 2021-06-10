@@ -521,7 +521,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression:
                 if expression_dict[v][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
     def test_random_constraint(self):
         num_variables = 4
@@ -541,13 +541,12 @@ class TestConstraint(unittest.TestCase):
         expression_dict = {v: (c, b) for v, c, b in expression}
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {x[i]: case_values[i] for i in x}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression:
                 if expression_dict[v][0] == state[v]:
                     s += bias
 
-            self.assertAlmostEqual(energy, lagrange_multiplier * s ** 2 + dqm_0.energy(state))
+            self.assertAlmostEqual(dqm.energy(state), lagrange_multiplier * s ** 2 + dqm_0.energy(state))
 
     def test_unknown_variable(self):
         dqm = dimod.DQM()
@@ -598,7 +597,6 @@ class TestConstraint(unittest.TestCase):
 
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {i: case_values[i] for i in range(num_variables)}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
                 if expression_dict1[v][0] == state[v]:
@@ -606,7 +604,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            self.assertEqual(energy, lagrange_multiplier * s ** 2)
+            self.assertEqual(dqm.energy(state), lagrange_multiplier * s ** 2)
 
     def test_self_loop_repeat2(self):
         num_variables = 4
@@ -630,7 +628,6 @@ class TestConstraint(unittest.TestCase):
 
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {i: case_values[i] for i in range(num_variables)}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
                 if expression_dict1[v][0] == state[v]:
@@ -638,7 +635,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            self.assertEqual(energy, lagrange_multiplier * s ** 2)
+            self.assertEqual(dqm.energy(state), lagrange_multiplier * s ** 2)
 
     def test_self_loop3(self):
 
