@@ -38,7 +38,7 @@ __all__ = ['DiscreteQuadraticModel', 'DQM']
 # constants for serialization
 DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
-VERSION = bytes([1, 0])  # version 1.0
+VERSION = bytes([1, 1])  # version 1.1
 
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
@@ -593,7 +593,7 @@ class DiscreteQuadraticModel:
             self.variables.index(v), v_case,
             bias)
 
-    def _to_file_numpy(self, file, compress, save_offset=False):
+    def _to_file_numpy(self, file, compress):
         # the biases etc, saved using numpy
 
         # we'd like to just let numpy handle the header etc, but it doesn't
@@ -603,30 +603,21 @@ class DiscreteQuadraticModel:
         file.write(b'    ')  # will be replaced by the length
         start = file.tell()
 
-        vectors = self.to_numpy_vectors(return_offset=save_offset)
+        vectors = self.to_numpy_vectors(return_offset=True)
 
         if compress:
             save = np.savez_compressed
         else:
             save = np.savez
 
-        if save_offset:
-            save(file,
-                case_starts=vectors.case_starts,
-                linear_biases=vectors.linear_biases,
-                quadratic_row_indices=vectors.quadratic.row_indices,
-                quadratic_col_indices=vectors.quadratic.col_indices,
-                quadratic_biases=vectors.quadratic.biases,
-                offset=vectors.offset,
-                )
-        else:
-                save(file,
-                case_starts=vectors.case_starts,
-                linear_biases=vectors.linear_biases,
-                quadratic_row_indices=vectors.quadratic.row_indices,
-                quadratic_col_indices=vectors.quadratic.col_indices,
-                quadratic_biases=vectors.quadratic.biases,
-                )
+        save(file,
+            case_starts=vectors.case_starts,
+            linear_biases=vectors.linear_biases,
+            quadratic_row_indices=vectors.quadratic.row_indices,
+            quadratic_col_indices=vectors.quadratic.col_indices,
+            quadratic_biases=vectors.quadratic.biases,
+            offset=vectors.offset,
+            )
 
         # record the length
         end = file.tell()
@@ -635,7 +626,7 @@ class DiscreteQuadraticModel:
         file.seek(end)
 
     def to_file(self, compress=False, compressed=None, ignore_labels=False,
-                spool_size=int(1e9), save_offset=False):
+                spool_size=int(1e9)):
         """Convert the DQM to a file-like object.
 
         Args:
@@ -654,9 +645,6 @@ class DiscreteQuadraticModel:
                 :class:`tempfile.SpooledTemporaryFile`. Determines whether
                 the returned file-like's contents will be kept on disk or in
                 memory.
-
-            save_offset (bool, optional, default=False):
-                If True, stores the offset under header "offset".
 
         Returns:
             A file-like object that can be used to construct a copy of the DQM.
@@ -769,7 +757,7 @@ class DiscreteQuadraticModel:
                 )
             compress = compressed or compress
 
-        self._to_file_numpy(file, compress, save_offset)
+        self._to_file_numpy(file, compress)
 
         if not index_labeled:
             file.write(VariablesSection(self.variables).dumps())

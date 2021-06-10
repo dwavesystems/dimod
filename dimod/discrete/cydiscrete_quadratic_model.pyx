@@ -18,7 +18,6 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from cython.operator cimport preincrement as preinc  # for when it matters
-from libcpp cimport bool
 from libcpp.algorithm cimport lower_bound, sort, unique
 from libcpp.unordered_set cimport unordered_set
 
@@ -687,7 +686,7 @@ cdef class cyDiscreteQuadraticModel:
                 qi += 1
         
 
-    def to_numpy_vectors(self, bool return_offset=False):
+    def to_numpy_vectors(self, bint return_offset=False):
         
         cdef Py_ssize_t num_variables = self.num_variables()
         cdef Py_ssize_t num_cases = self.num_cases()
