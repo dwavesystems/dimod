@@ -17,6 +17,9 @@ __version__ = '0.10.0.dev4'
 
 from dimod.bqm import *
 
+from dimod.constrained import *
+import dimod.constrained
+
 from dimod.core import *
 import dimod.core
 
