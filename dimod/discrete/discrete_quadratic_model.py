@@ -43,9 +43,9 @@ VERSION = bytes([1, 1])  # version 1.1
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 DQMVectors = namedtuple(
-    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'],
-    defaults=(0,)
-)
+    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
+
+DQMVectors.__new__.__defaults__ = (0,)
 
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
