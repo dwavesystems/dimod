@@ -697,8 +697,9 @@ class BinaryQuadraticModel:
                 sv = self.add_variable(f'slack_{label}_{j}')
                 slack_terms.append((sv, s))
             if discontinuous_slack and slack_range is not None:
-                sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
-                slack_terms.append((sv, slack_upper_bound))
+                if slack_range < slack_upper_bound:
+                    sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
+                    slack_terms.append((sv, slack_upper_bound))
 
         self.add_linear_equality_constraint(
             terms + slack_terms, lagrange_multiplier, constant)

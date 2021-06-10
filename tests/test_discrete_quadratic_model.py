@@ -536,6 +536,30 @@ class TestConstraint(unittest.TestCase):
                     s += bias
             self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
 
+    def test_inequality_log10_discontinuous_slack(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5, label='x')
+        expression = [('x', 1, -69.0)]
+
+        constant = 1
+        slack_terms = dqm.add_linear_inequality_constraint(
+            expression,
+            lagrange_multiplier=1.0,
+            constant=constant,
+            label='ineq',
+            slack_method="log10",
+            slack_range=10,
+            discontinuous_slack=True)
+        self.assertTrue(slack_terms[10][2] == 69 - constant)
+        expression_dict = {(v, c): (c, b) for v, c, b in expression + slack_terms}
+        for cx, cs1, cs2 in itertools.product(range(5), range(10),  range(3)):
+            s = constant
+            state = {'x': cx, 'slack_ineq_0': cs1, 'slack_ineq_1': cs2}
+            for v, cv, bias in expression + slack_terms:
+                if expression_dict[v, cv][0] == state[v]:
+                    s += bias
+            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+
     def test_inequality_constraint_log10(self):
         dqm = dimod.DQM()
         dqm.add_variable(5, label='x')

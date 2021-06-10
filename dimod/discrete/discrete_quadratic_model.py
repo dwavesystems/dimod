@@ -265,7 +265,7 @@ class DiscreteQuadraticModel:
             if slack_range is None:
                 diff = int(slack_upper_bound - slack_lower_bound)
             else:
-                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range))
+                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range+1))
 
             slack_terms = []
             if slack_method == "log2":
@@ -276,20 +276,25 @@ class DiscreteQuadraticModel:
 
                 for j, s in enumerate(slack_coefficients):
                     sv = self.add_variable(2, f'slack_{label}_{j}')
-                    slack_terms.append((sv, 0, s))
+                    slack_terms.append((sv, 1, s))
                 if discontinuous_slack and slack_range is not None:
-                    sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
-                    slack_terms.append((sv, 0, slack_upper_bound))
+                    if slack_range < slack_upper_bound:
+                        sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
+                        slack_terms.append((sv, 1, slack_upper_bound))
 
             elif slack_method == "log10":
                 num_dqm_vars = int(np.ceil(np.log10(diff)))
                 for j in range(num_dqm_vars):
                     slack_term = list(range(0, min(diff + 1, 10 ** (j + 1)), 10 ** j))[1:]
-                    sv = self.add_variable(len(slack_term) + 1, f'slack_{label}_{j}')
+                    if j < num_dqm_vars-1 or not (discontinuous_slack and slack_range is not None):
+                        sv = self.add_variable(len(slack_term) + 1, f'slack_{label}_{j}')
+                    else:
+                        sv = self.add_variable(len(slack_term) + 2, f'slack_{label}_{j}')
                     for i, val in enumerate(slack_term):
-                        slack_terms.append((sv, i, val))
+                        slack_terms.append((sv, i+1, val))
                 if discontinuous_slack and slack_range is not None:
-                    slack_terms.append((sv, len(slack_term), slack_upper_bound))
+                    if slack_range < slack_upper_bound:
+                        slack_terms.append((sv, len(slack_term) + 1, slack_upper_bound))
             self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, constant)
             return slack_terms
 
