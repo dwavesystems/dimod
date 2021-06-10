@@ -291,18 +291,13 @@ class DiscreteQuadraticModel:
 
         data = np.load(file_like)
 
-        try:
-            offset = data['offset']
-        except KeyError:
-            offset = 0
-
         obj = cls.from_numpy_vectors(data['case_starts'],
                                      data['linear_biases'],
                                      (data['quadratic_row_indices'],
                                       data['quadratic_col_indices'],
                                       data['quadratic_biases'],
                                       ),
-                                     offset=offset,
+                                     offset=data.get('offset', 0),
                                      )
 
         # move to the end of the data section
