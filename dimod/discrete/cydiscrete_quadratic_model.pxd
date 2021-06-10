@@ -40,7 +40,7 @@ cdef class cyDiscreteQuadraticModel:
     cdef vector[CaseIndex] case_starts_  # len(adj_) + 1
     cdef vector[vector[VarIndex]] adj_
 
-    cdef Bias offset_
+    cdef public Bias offset
 
     cdef readonly object dtype
     cdef readonly object case_dtype
