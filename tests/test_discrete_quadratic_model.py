@@ -826,7 +826,7 @@ class TestNumpyVectors(unittest.TestCase):
         vectors = dqm.to_numpy_vectors()
 
         # suffle the quadratic vectors so they are not ordered anymore
-        starts, ldata, (irow, icol, qdata), labels = vectors
+        starts, ldata, (irow, icol, qdata), labels, offset = vectors
 
         shuffled = (starts, ldata,
                     (np.array(np.flip(icol), copy=True),

@@ -74,7 +74,7 @@ cdef class cyDiscreteQuadraticModel:
     def add_linear_equality_constraint(self, object terms,
                                        Bias lagrange_multiplier, Bias constant):
         # adjust energy offset
-        self.offset_ += lagrange_multiplier * constant * constant
+        self.offset += lagrange_multiplier * constant * constant
 
         # resolve the terms from a python object into a C++ object
         cdef vector[LinearTerm] cppterms
@@ -223,7 +223,7 @@ cdef class cyDiscreteQuadraticModel:
         dqm.bqm_ = self.bqm_
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
-        dqm.offset_ = self.offset_
+        dqm.offset = self.offset
 
         return dqm
 
@@ -242,7 +242,7 @@ cdef class cyDiscreteQuadraticModel:
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef VarIndex num_variables = samples.shape[1]
 
-        cdef Bias[:] energies = np.full(num_samples, self.offset_, dtype=self.dtype)
+        cdef Bias[:] energies = np.full(num_samples, self.offset, dtype=self.dtype)
 
         cdef Py_ssize_t si, vi
         cdef CaseIndex cu, case_u, cv, case_v
@@ -382,7 +382,7 @@ cdef class cyDiscreteQuadraticModel:
                     raise ValueError("A variable has a self-loop")
 
         # add provided offset to dqm
-        dqm.offset_ = offset
+        dqm.offset = offset
 
         return dqm
 
@@ -716,6 +716,6 @@ cdef class cyDiscreteQuadraticModel:
             self._into_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
 
         if return_offset:
-            return starts, ldata, (irow, icol, qdata), self.offset_
+            return starts, ldata, (irow, icol, qdata), self.offset
 
         return starts, ldata, (irow, icol, qdata)

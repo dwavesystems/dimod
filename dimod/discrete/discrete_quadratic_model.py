@@ -344,7 +344,7 @@ class DiscreteQuadraticModel:
 
     @classmethod
     def from_numpy_vectors(cls, case_starts, linear_biases, quadratic,
-                           offset=0, labels=None):
+                           labels=None, offset=0):
         """Construct a DQM from five numpy vectors.
 
         Args:
@@ -372,11 +372,11 @@ class DiscreteQuadraticModel:
                   the case interactions were defined in a sparse matrix, these
                   would be the values.
 
-            offset (float):
-                Energy offset of the DQM.
-
             labels (list, optional):
                 The variable labels. Defaults to index-labeled.
+
+            offset (float):
+                Energy offset of the DQM.
 
         Example:
 
