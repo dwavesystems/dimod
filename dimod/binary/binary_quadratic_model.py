@@ -37,7 +37,7 @@ from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
+from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection, load
 from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
@@ -1909,3 +1909,7 @@ def as_bqm(*args, cls: None = None, copy: bool = False,
                         return bqm
 
     return BinaryQuadraticModel(*args, dtype=dtype)
+
+
+# register fileview loader
+load.register(BQM_MAGIC_PREFIX, BinaryQuadraticModel.from_file)

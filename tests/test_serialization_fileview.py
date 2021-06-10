@@ -173,3 +173,22 @@ class TestFunctional(unittest.TestCase):
                 new = load(fv)
 
         self.assertEqual(new, bqm)
+
+
+class TestLoad(unittest.TestCase):
+    def test_bqm(self):
+        bqm = BinaryQuadraticModel({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        self.assertEqual(bqm, load(bqm.to_file()))
+
+    def test_dqm(self):
+        dqm = dimod.DiscreteQuadraticModel()
+        dqm.add_variable(5, 'a')
+        dqm.add_variable(6, 'b')
+        dqm.set_quadratic_case('a', 0, 'b', 5, 1.5)
+
+        new = load(dqm.to_file())
+
+        self.assertEqual(dqm.num_variables(), new.num_variables())
+        self.assertEqual(dqm.num_cases(), new.num_cases())
+        self.assertEqual(dqm.get_quadratic_case('a', 0, 'b', 5),
+                         new.get_quadratic_case('a', 0, 'b', 5))

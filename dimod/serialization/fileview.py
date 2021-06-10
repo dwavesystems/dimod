@@ -19,6 +19,8 @@ import json
 import tempfile
 import warnings
 
+from typing import ByteString, Callable, Mapping
+
 import numpy as np
 
 from dimod.variables import iter_deserialize_variables, iter_serialize_variables
@@ -221,8 +223,16 @@ class _BytesIO(io.RawIOBase):
         return True
 
 
+_loaders: Mapping[bytes, Callable] = dict()
+
+
+def register(prefix: bytes, loader: Callable):
+    """Register a new loader."""
+    _loaders[prefix] = loader
+
+
 def load(fp, cls=None):
-    """Load a binary quadratic model from a file.
+    """Load a model from a file.
 
     Args:
         fp (bytes-like/file-like):
@@ -233,9 +243,35 @@ def load(fp, cls=None):
             Deprecated keyword argument. Is ignored.
 
     Returns:
-        The loaded bqm.
+        The loaded model.
 
     """
-    # todo: handle DQM
-    from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-    return BinaryQuadraticModel.from_file(fp)
+    if cls is not None:
+        warnings.warn("'cls' keyword argument is deprecated and ignored",
+                      DeprecationWarning, stacklevel=2)
+
+    if isinstance(fp, ByteString):
+        file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+    else:
+        file_like = fp
+
+    if not file_like.seekable:
+        raise ValueError("expected file-like to be seekable")
+
+    pos = file_like.tell()
+
+    lengths = sorted(set(map(len, _loaders)))
+    for num_bytes in lengths:
+        prefix = file_like.read(num_bytes)
+        file_like.seek(pos)
+
+        try:
+            return _loaders[prefix](file_like)
+        except KeyError:
+            pass
+
+    raise ValueError("cannot load the given file-like")
+
+
+# for slightly more explicit naming
+load.register = register
