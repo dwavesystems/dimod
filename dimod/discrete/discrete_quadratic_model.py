@@ -25,7 +25,7 @@ import numpy as np
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
-from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
+from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile, load
 from dimod.variables import Variables
 from typing import List, Tuple, Union, Generator
 
@@ -803,3 +803,7 @@ class DiscreteQuadraticModel:
 
 
 DQM = DiscreteQuadraticModel  # alias
+
+
+# register fileview loader
+load.register(DQM_MAGIC_PREFIX, DiscreteQuadraticModel.from_file)
