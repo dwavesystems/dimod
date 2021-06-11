@@ -13,7 +13,6 @@
 #    limitations under the License.
 
 import json
-import os.path
 import re
 import tempfile
 import uuid
@@ -27,7 +26,8 @@ import numpy as np
 
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, load
+from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
+from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
@@ -240,20 +240,13 @@ class ConstrainedQuadraticModel:
         else:
             file_like = fp
 
-        prefix = file_like.read(len(CQM_MAGIC_PREFIX))
-        if prefix != CQM_MAGIC_PREFIX:
-            raise ValueError("unknown file type, expected magic string "
-                             f"{CQM_MAGIC_PREFIX!r} but got {prefix!r} "
-                             "instead")
+        header_info = read_header(file_like, CQM_MAGIC_PREFIX)
 
-        version = tuple(file_like.read(2))
-        if version >= (2, 0):
+        if header_info.version >= (2, 0):
             raise ValueError("cannot load a BQM serialized with version "
                              f"{version!r}, try upgrading your dimod version")
 
-        # we don't actually need any of the data in the header for construction
-        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
-        data = json.loads(file_like.read(header_len).decode('ascii'))
+        # we don't actually need the data
 
         cqm = CQM()
 
@@ -349,23 +342,12 @@ class ConstrainedQuadraticModel:
         """
         file = SpooledTemporaryFile(max_size=spool_size)
 
-        # apply header
-        prefix = CQM_MAGIC_PREFIX
-        file.write(prefix)
-        file.write(bytes((1, 0)))  # version 1.0
-
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
                     num_biases=self.num_biases(),
                     )
 
-        header_data = json.dumps(data, sort_keys=True).encode('ascii')
-        header_data += b'\n'
-        header_data += b' '*(64 - (len(prefix) + 6 + len(header_data)) % 64)
-        header_len = np.dtype('<u4').type(len(header_data)).tobytes()
-
-        file.write(header_len)
-        file.write(header_data)
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 0))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
