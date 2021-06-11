@@ -856,3 +856,127 @@ class TestRelabel(unittest.TestCase):
         new = dqm.relabel_variables({'a': 'b', 'b': 'a'}, inplace=False)
 
         self.assertEqual(new.variables, ['b', 'a'])
+
+
+class TestCaseLabelDQM(unittest.TestCase):
+    def test_conserved_behavior(self):
+        dqm = dimod.CaseLabelDQM()
+        u = dqm.add_variable(2)
+        v = dqm.add_variable(3)
+
+        # non-unique variable label
+        with self.assertRaises(ValueError) as cm:
+            dqm.add_variable(2, label=u)
+
+        # no such variable
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_linear(2, 1)
+
+        # no such variable
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic(u, 2, 1)
+
+        dqm.set_linear(u, [0.5, 1])
+        dqm.set_linear_case(v, 0, 1.5)
+        dqm.set_quadratic(u, v, {(1, 1): -0.5})
+        dqm.set_quadratic_case(u, 0, v, 1, -1)
+
+        # illegal variable self interaction
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic(u, u, {(0, 1): -0.5})
+
+        # illegal variable self interaction
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic_case(u, 0, u, 1, -1)
+
+        self.assertEqual(list(dqm.get_linear(u)), [0.5, 1])
+        self.assertEqual(dqm.get_linear_case(v, 0), 1.5)
+        self.assertEqual(dqm.get_quadratic(u, v), {(1, 1): -0.5, (0, 1): -1})
+        self.assertEqual(dqm.get_quadratic_case(u, 0, v, 1), -1)
+        self.assertEqual(dqm.num_variables(), 2)
+        self.assertEqual(dqm.num_variable_interactions(), 1)
+        self.assertEqual(dqm.num_cases(), 5)
+        self.assertEqual(dqm.num_case_interactions(), 2)
+
+    def test_unique_case_labels(self):
+        dqm = dimod.CaseLabelDQM()
+        dqm.add_variable({'x1', 'x2', 'x3'})
+        dqm.add_variable(['y1', 'y2', 'y3'], label='y1')
+
+        # non-unique variable label
+        with self.assertRaises(ValueError) as cm:
+            dqm.add_variable({'z1', 'z2'}, label='x1')
+
+        # non-unique case label
+        with self.assertRaises(ValueError) as cm:
+            dqm.add_variable({'x1', 'x4', 'x5'})
+
+        # invalid case labels
+        with self.assertRaises(TypeError) as cm:
+            dqm.add_variable({{}, []})
+
+        dqm.set_linear('x1', 0.5)
+        dqm.set_linear('y1', 1.5)
+        dqm.set_quadratic('x2', 'y3', -0.5)
+        dqm.set_quadratic('x3', 'y2', -1.5)
+
+        # illegal variable self interaction
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic('x1', 'x1', -0.5)
+
+        # no such case
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_linear('x4', 1)
+
+        # no such case
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic('x1', 'x4', 1)
+
+        self.assertEqual(dqm.get_linear('x1'), 0.5)
+        self.assertEqual(dqm.get_quadratic('x2', 'y3'), -0.5)
+        self.assertEqual(dqm.num_variables(), 2)
+        self.assertEqual(dqm.num_variable_interactions(), 1)
+        self.assertEqual(dqm.num_cases(), 6)
+        self.assertEqual(dqm.num_case_interactions(), 2)
+
+    def test_shared_case_labels(self):
+        dqm = dimod.CaseLabelDQM()
+        u = dqm.add_variable({'red', 'green', 'blue'}, shared_labels=True)
+        v = dqm.add_variable(['blue', 'yellow', 'brown'], label='v', shared_labels=True)
+        self.assertEqual(v, 'v')
+
+        # non-unique variable label
+        with self.assertRaises(ValueError) as cm:
+            dqm.add_variable({'magenta', 'cyan'}, label=u, shared_labels=True)
+
+        # non-unique case label
+        with self.assertRaises(ValueError) as cm:
+            dqm.add_variable([1, 2, 1], shared_labels=True)
+
+        # invalid case labels
+        with self.assertRaises(TypeError) as cm:
+            dqm.add_variable({{}, []}, shared_labels=True)
+
+        dqm.set_linear_case(u, 'red', 1)
+        dqm.set_linear_case(v, 'yellow', 2)
+        dqm.set_quadratic_case(u, 'green', v, 'blue', -0.5)
+        dqm.set_quadratic_case(u, 'blue', v, 'brown', -0.5)
+
+        # illegal variable self interaction
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic_case(u, 'red', u, 'green', -1)
+
+        # no such case
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_linear_case(u, 'orange', 1)
+
+        # no such case
+        with self.assertRaises(ValueError) as cm:
+            dqm.set_quadratic_case(u, 'green', v, 'purple', 1)
+
+        self.assertEqual(dqm.get_linear_case(u, 'red'), 1)
+        self.assertEqual(dqm.get_quadratic_case(u, 'green', v, 'blue'), -0.5)
+        self.assertEqual(dqm.num_variables(), 2)
+        self.assertEqual(dqm.num_variable_interactions(), 1)
+        self.assertEqual(dqm.num_cases(), 6)
+        self.assertEqual(dqm.num_case_interactions(), 2)

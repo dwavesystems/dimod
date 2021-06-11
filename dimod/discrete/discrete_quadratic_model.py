@@ -17,7 +17,7 @@ import io
 import json
 import warnings
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 import numpy as np
 
@@ -30,7 +30,7 @@ from typing import List, Tuple, Union, Generator
 LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
 
-__all__ = ['DiscreteQuadraticModel', 'DQM']
+__all__ = ['DiscreteQuadraticModel', 'DQM', 'CaseLabelDQM']
 
 
 # constants for serialization
@@ -801,3 +801,315 @@ class DiscreteQuadraticModel:
 
 
 DQM = DiscreteQuadraticModel  # alias
+
+
+class CaseLabelDQM(DQM):
+    '''DiscreteQuadraticModel that allows assignment of arbitrary labels to
+    cases of discrete variables.
+
+    Two types of case labels are offered:
+
+    1. Unique case labels are unique among variable labels and themselves.
+
+    2. Shared case labels are unique among cases for a variable, but may be
+        reused among variables.
+
+    Examples:
+
+        Declare variables with unique case labels.
+
+        >>> dqm = dimod.DiscreteQuadraticModel()
+        >>> dqm.add_variable({'x1', 'x2', 'x3'})
+        >>> dqm.add_variable(['y1', 'y2', 'y3'])
+
+        Set linear biases
+
+        >>> dqm.set_linear('x1', 0.5)
+        >>> dqm.set_linear('y1', 1.5)
+
+        Set quadratic biases
+
+        >>> dqm.set_quadratic('x2', 'y3', -0.5)
+        >>> dqm.set_quadratic('x3', 'y2', -1.5)
+
+        Declare variables with shared case labels.
+
+        >>> u = dqm.add_variable({'red', 'green', 'blue'}, shared_labels=True)
+        >>> v = dqm.add_variable(['blue', 'yellow', 'brown'], label='v', shared_labels=True)
+
+        Set linear biases
+
+        >>> dqm.set_linear_case(u, 'red', 1)
+        >>> dqm.set_linear_case(v, 'yellow', 2)
+
+        Set quadratic biases
+
+        >>> dqm.set_quadratic_case(u, 'green', v, 'blue', -0.5)
+        >>> dqm.set_quadratic_case(u, 'blue', v, 'brown', -0.5)
+
+    '''
+    def __init__(self, *args, **kwargs):
+        DQM.__init__(self, *args, **kwargs)
+        self._shared_case_label = defaultdict(dict)
+        self._shared_label_case = defaultdict(dict)
+        self._unique_case_label = {}
+        self._unique_label_case = {}
+
+    def add_variable(self, cases, label=None, shared_labels=False):
+        """Add a discrete variable to the model.
+
+        Args:
+            cases (int or iterable):
+                The number of cases in the variable, or an iterable containing
+                the labels that will identify the cases of the variable.
+
+            label (hashable, optional):
+                A label for the variable. Can be any hashable except `None`.
+                Defaults to the length of the discrete quadratic model, if that
+                label is available. Otherwise defaults to the lowest available
+                positive integer label.
+
+            shared_labels (bool, optional, default=False):
+                If True and `cases` is an iterable, shared case labels are
+                created.  If False and `cases` is an iterable, unique case
+                labels are created.  If `cases` is not an iterable, ignored.
+
+        Returns:
+            The label of the new variable.
+
+        Raises:
+            ValueError: If `label` already exists as a variable label, or if
+                any of the case labels is not unique.
+
+            TypeError: If `label` is not hashable, or if any of the case labels
+                is not hashable.
+
+        """
+        if label in self._unique_label_case:
+            raise ValueError(f'variable label {label} is not unique')
+
+        if isinstance(cases, int):
+            return DQM.add_variable(self, cases, label=label)
+
+        else:
+            if len(set(cases)) != len(cases):
+                raise ValueError('case labels are not unique')
+
+            if shared_labels:
+                var = DQM.add_variable(self, len(cases), label=label)
+
+                for k, case in enumerate(cases):
+                    self._shared_label_case[var][case] = k
+                    self._shared_case_label[var][k] = case
+
+            else:
+                for case in cases:
+                    if (case in self.variables) or (case in self._unique_label_case):
+                        raise ValueError(f'case label {case} is not unique')
+
+                var = DQM.add_variable(self, len(cases), label=label)
+
+                for k, case in enumerate(cases):
+                    self._unique_label_case[case] = (var, k)
+                    self._unique_case_label[(var, k)] = case
+
+            return var
+
+    def _lookup_shared_case(self, v, case):
+        """Translate shared case label `case` of variable `v` to integer.
+
+        Raises:
+            ValueError: If `case` of `v` is unknown.
+
+        """
+        map_ = self._shared_label_case.get(v)
+        if map_:
+            if case not in map_:
+                raise ValueError(f'unknown case {case} of variable {v}')
+            return map_[case]
+        return case
+
+    def get_linear(self, v):
+        """The linear bias(es) associated with variable `v`.
+
+        Args:
+            v: A variable in the discrete quadratic model, or a unique case
+                label.
+
+        Returns:
+            The linear bias(es).  If `v` is a variable, returns a
+                :meth:`~DiscreteQuadraticModel.num_cases(v)` by 1 numpy array.
+
+                If `v` is a unique case label, returns a float.
+
+        """
+        v_k = self._unique_label_case.get(v)
+        if v_k:
+            return DQM.get_linear_case(self, *v_k)
+        else:
+            return DQM.get_linear(self, v)
+
+    def get_linear_case(self, v, case):
+        """The linear bias associated with case `case` of variable `v`.
+
+        Args:
+            v: A variable in the discrete quadratic model.
+
+            case: The case of `v`.
+
+        Returns:
+            The linear bias.
+
+        """
+        case = self._lookup_shared_case(v, case)
+        return DQM.get_linear_case(self, v, case)
+
+    def get_quadratic(self, u, v, array=False):
+        """The bias(es) associated with the interaction between `u` and `v`.
+
+        Args:
+            u: A variable in the discrete quadratic model, or a unique case
+                label.  If `u` is a unique case label, `v` must be a unique
+                case label.
+
+            v: A variable in the discrete quadratic model, or a unique case
+                label.  If `u` is a unique case label, `v` must be a unique
+                case label.
+
+            array (bool, optional, default=False): If True and `u` and `v` are
+                variables, a dense array is returned rather than a dict.  If
+                `u` and `v` are unique case labels, ignored.
+
+        Returns:
+            The quadratic bias(es).  If `array=False` and `u` and `v` are
+            variables, returns a dictionary of the form
+            `{case_u, case_v: bias, ...}`
+
+            If `array=True` and `u` and `v` are variables, returns a
+            :meth:`~DiscreteQuadraticModel.num_cases(u)` by
+            :meth:`~DiscreteQuadraticModel.num_cases(v)` numpy array.
+
+            If `u` and `v` are unique case labels, returns a float.
+
+        Raises:
+            ValueError: If `u` is a unique case label and `v` is not.
+
+        """
+        u_k = self._unique_label_case.get(u)
+        if u_k:
+            if v not in self._unique_label_case:
+                raise ValueError(f'unknown case label {v}')
+
+            v_m = self._unique_label_case[v]
+            return DQM.get_quadratic_case(self, *u_k, *v_m)
+        else:
+            return DQM.get_quadratic(self, u, v)
+
+    def get_quadratic_case(self, u, u_case, v, v_case):
+        """The bias associated with the interaction between two cases of `u`
+        and `v`.
+
+        Args:
+            u: A variable in the discrete quadratic model.
+
+            u_case: The case of `u`.
+
+            v: A variable in the discrete quadratic model.
+
+            v_case: The case of `v`.
+
+        Returns:
+            The quadratic bias.
+
+        """
+        u_case = self._lookup_shared_case(u, u_case)
+        v_case = self._lookup_shared_case(v, v_case)
+        return DQM.get_quadratic_case(self, u, u_case, v, v_case)
+
+    def set_linear(self, v, biases):
+        """Set the linear bias(es) associated with `v`.
+
+        Args:
+            v: A variable in the discrete quadratic model, or a unique case
+                label.
+
+            biases (float or array-like):  If `v` is a variable, the linear
+                biases in an array.  Otherwise, the linear bias is a real
+                number.
+
+        """
+        v_k = self._unique_label_case.get(v)
+        if v_k:
+            DQM.set_linear_case(self, *v_k, biases)
+        else:
+            DQM.set_linear(self, v, biases)
+
+    def set_linear_case(self, v, case, bias):
+        """The linear bias associated with case `case` of variable `v`.
+
+        Args:
+            v: A variable in the discrete quadratic model.
+
+            case: The case of `v`.
+
+            bias (float): The linear bias.
+
+        """
+        case = self._lookup_shared_case(v, case)
+        DQM.set_linear_case(self, v, case, bias)
+
+    def set_quadratic(self, u, v, biases):
+        """Set bias(es) associated with the interaction between `u` and `v`.
+
+        Args:
+            u: A variable in the discrete quadratic model, or a unique case
+                label.  If `u` is a unique case label, `v` must be a unique
+                case label.
+
+            v: A variable in the discrete quadratic model, or a unique case
+                label.  If `u` is a unique case label, `v` must be a unique
+                case label.
+
+            biases (float or array-like/dict):
+                The quadratic bias(es).  If `u` and `v` are variables, then
+                `biases` may be a dictionary of the form
+                `{case_u, case_v: bias, ...}` or a
+                :meth:`~DiscreteQuadraticModel.num_cases(u)` by
+                :meth:`~DiscreteQuadraticModel.num_cases(v)` array-like.
+
+                If `u` and `v` are unique case labels, the quadratic bias is a
+                real number.
+
+        Raises:
+            ValueError: If `u` is a unique case label and `v` is not.
+
+        """
+        u_k = self._unique_label_case.get(u)
+        if u_k:
+            if v not in self._unique_label_case:
+                raise ValueError(f'unknown case label {v}')
+
+            v_m = self._unique_label_case[v]
+            DQM.set_quadratic_case(self, *u_k, *v_m, biases)
+        else:
+            DQM.set_quadratic(self, u, v, biases)
+
+    def set_quadratic_case(self, u, u_case, v, v_case, bias):
+        """Set the bias associated with the interaction between two cases of
+        variables `u` and `v`.
+
+        Args:
+            u: A variable in the discrete quadratic model.
+
+            u_case: The case of `u`.
+
+            v: A variable in the discrete quadratic model.
+
+            v_case: The case of `v`.
+
+            bias (float): The quadratic bias.
+
+        """
+        u_case = self._lookup_shared_case(u, u_case)
+        v_case = self._lookup_shared_case(v, v_case)
+        DQM.set_quadratic_case(self, u, u_case, v, v_case, bias)
