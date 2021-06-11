@@ -28,6 +28,15 @@ class TestAddConstraint(unittest.TestCase):
         cqm.add_constraint(bqm, '<=')
         cqm.add_constraint(bqm, '>=')  # add it again
 
+    def test_duplicate(self):
+        cqm = CQM()
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+
+        cqm.add_constraint(bqm <= 5, label='hello')
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(bqm <= 5, label='hello')
+
     def test_symbolic(self):
         cqm = CQM()
 

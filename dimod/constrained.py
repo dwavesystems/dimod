@@ -82,6 +82,7 @@ class ConstrainedQuadraticModel:
 
     def add_constraint(self, data, *args, **kwargs):
         """A convenience wrapper for other methods that add constraints."""
+        # in python 3.8+ we can use singledispatchmethod
         if isinstance(data, BinaryQuadraticModel):
             self.add_constraint_from_bqm(data, *args, **kwargs)
         elif isinstance(data, Comparison):
@@ -126,7 +127,7 @@ class ConstrainedQuadraticModel:
             label = uuid.uuid4().hex[:6]
             while label in self.constraints:
                 label = uuid.uuid4().hex[:6]
-        elif label is self.constraints:
+        elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
         vartype = bqm.vartype
@@ -156,7 +157,7 @@ class ConstrainedQuadraticModel:
                                        comp: Comparison,
                                        label: Optional[Hashable] = None,
                                        copy: bool = True) -> Hashable:
-        """Add a constraint from a binary quadratic model.
+        """Add a constraint from a comparison.
 
         Args:
             comp: A comparison object.
@@ -182,7 +183,7 @@ class ConstrainedQuadraticModel:
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
                                      ) -> Hashable:
-        """Add a constraint from a binary quadratic model.
+        """Add a constraint from an iterable of tuples.
 
         Args:
             iterable: An iterable of terms as tuples. The variables must
@@ -262,7 +263,7 @@ class ConstrainedQuadraticModel:
             constraint_labels = set()
             for arch in zf.namelist():
                 # even on windows zip uses /
-                match = re.match("constraints/(.*)/(?:rhs|lhs|sense)", arch)
+                match = re.match("constraints/([^/]+)/", arch)
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
