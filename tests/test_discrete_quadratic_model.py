@@ -664,7 +664,8 @@ class TestNumpyVectors(unittest.TestCase):
 
     def test_empty_functional(self):
         dqm = dimod.DQM()
-        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
         self.assertEqual(new.num_variables(), 0)
 
     def test_exceptions(self):
@@ -741,7 +742,8 @@ class TestNumpyVectors(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
 
-        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
 
         self.assertEqual(new.num_variables(), dqm.num_variables())
         self.assertEqual(new.num_cases(), dqm.num_cases())
@@ -760,11 +762,13 @@ class TestNumpyVectors(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 'b', {(0, 1): 1.5, (3, 4): 1})
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
-        new = dimod.DQM.from_numpy_vectors(*vectors)
+            new = dimod.DQM.from_numpy_vectors(*vectors)
 
-        new_vectors = new.to_numpy_vectors()
+            new_vectors = new.to_numpy_vectors()
+
         np.testing.assert_array_equal(vectors[0], new_vectors[0])
         np.testing.assert_array_equal(vectors[1], new_vectors[1])
         np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
@@ -790,11 +794,13 @@ class TestNumpyVectors(unittest.TestCase):
 
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
         new = dimod.DQM.from_numpy_vectors(*vectors)
 
-        new_vectors = new.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            new_vectors = new.to_numpy_vectors()
         np.testing.assert_array_equal(vectors[0], new_vectors[0])
         np.testing.assert_array_equal(vectors[1], new_vectors[1])
         np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
@@ -820,10 +826,11 @@ class TestNumpyVectors(unittest.TestCase):
 
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
         # suffle the quadratic vectors so they are not ordered anymore
-        starts, ldata, (irow, icol, qdata), labels, offset = vectors
+        starts, ldata, (irow, icol, qdata), labels = vectors
 
         shuffled = (starts, ldata,
                     (np.array(np.flip(icol), copy=True),

@@ -22,6 +22,7 @@ from collections import namedtuple
 from operator import eq
 
 import numpy as np
+from numpy.core.shape_base import stack
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
@@ -42,10 +43,11 @@ VERSION = bytes([1, 1])  # version 1.1
 
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
+LegacyDQMVectors = namedtuple(
+    'LegacyDQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
+
 DQMVectors = namedtuple(
     'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
-
-DQMVectors.__new__.__defaults__ = (0,)
 
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
@@ -814,13 +816,17 @@ class DiscreteQuadraticModel:
 
         """
         if not return_offset:
+            warnings.warn(
+                "`return_offset` will default to `True` in the future.", DeprecationWarning,
+                stacklevel=2
+            )
+            
             case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
 
-            return DQMVectors(case_starts,
-                            linear_biases,
-                            QuadraticVectors(*quadratic),
-                            self.variables,
-                            )
+            return LegacyDQMVectors(case_starts,
+                                    linear_biases,
+                                    QuadraticVectors(*quadratic),
+                                    self.variables)
 
         case_starts, linear_biases, quadratic, offset = self._cydqm.to_numpy_vectors(return_offset)
 
