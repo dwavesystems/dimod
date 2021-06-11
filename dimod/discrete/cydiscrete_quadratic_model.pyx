@@ -63,6 +63,8 @@ cdef class cyDiscreteQuadraticModel:
         self.dtype = np.float64
         self.case_dtype = np.int64
 
+        self.offset = 0
+
     @property
     def adj(self):
         return self.adj_
@@ -71,6 +73,8 @@ cdef class cyDiscreteQuadraticModel:
     @cython.wraparound(False)
     def add_linear_equality_constraint(self, object terms,
                                        Bias lagrange_multiplier, Bias constant):
+        # adjust energy offset
+        self.offset += lagrange_multiplier * constant * constant
 
         # resolve the terms from a python object into a C++ object
         cdef vector[LinearTerm] cppterms
@@ -219,6 +223,7 @@ cdef class cyDiscreteQuadraticModel:
         dqm.bqm_ = self.bqm_
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
+        dqm.offset = self.offset
 
         return dqm
 
@@ -237,7 +242,7 @@ cdef class cyDiscreteQuadraticModel:
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef VarIndex num_variables = samples.shape[1]
 
-        cdef Bias[:] energies = np.zeros(num_samples, dtype=self.dtype)
+        cdef Bias[:] energies = np.full(num_samples, self.offset, dtype=self.dtype)
 
         cdef Py_ssize_t si, vi
         cdef CaseIndex cu, case_u, cv, case_v
@@ -279,7 +284,8 @@ cdef class cyDiscreteQuadraticModel:
                             Numeric32plus[::1] linear_biases,
                             Integral32plus[::1] irow,
                             Integral32plus[::1] icol,
-                            Numeric32plus[::1] quadratic_biases):
+                            Numeric32plus[::1] quadratic_biases,
+                            Bias offset):
         """Equivalent of from_numpy_vectors with fused types."""
 
         # some input checking
@@ -375,10 +381,13 @@ cdef class cyDiscreteQuadraticModel:
                 if deref(span2.first).first < dqm.case_starts_[v+1]:
                     raise ValueError("A variable has a self-loop")
 
+        # add provided offset to dqm
+        dqm.offset = offset
+
         return dqm
 
     @classmethod
-    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic):
+    def from_numpy_vectors(cls, case_starts, linear_biases, quadratic, offset = 0):
 
         cdef cyDiscreteQuadraticModel obj = cls()
 
@@ -398,7 +407,7 @@ cdef class cyDiscreteQuadraticModel:
         ldata, qdata = asnumericarrays(
             linear_biases, quadratic_biases, min_itemsize=4, requirements='C')
 
-        return cls._from_numpy_vectors(case_starts, ldata, irow, icol, qdata)
+        return cls._from_numpy_vectors(case_starts, ldata, irow, icol, qdata, offset)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -677,7 +686,7 @@ cdef class cyDiscreteQuadraticModel:
                 qi += 1
         
 
-    def to_numpy_vectors(self):
+    def to_numpy_vectors(self, bint return_offset=False):
         
         cdef Py_ssize_t num_variables = self.num_variables()
         cdef Py_ssize_t num_cases = self.num_cases()
@@ -705,5 +714,8 @@ cdef class cyDiscreteQuadraticModel:
             self._into_numpy_vectors[np.uint32_t](starts, ldata, irow, icol, qdata)
         else:
             self._into_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
+
+        if return_offset:
+            return starts, ldata, (irow, icol, qdata), self.offset
 
         return starts, ldata, (irow, icol, qdata)
