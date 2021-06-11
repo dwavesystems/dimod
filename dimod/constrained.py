@@ -14,6 +14,7 @@
 
 import json
 import os.path
+import re
 import tempfile
 import uuid
 import zipfile
@@ -258,17 +259,19 @@ class ConstrainedQuadraticModel:
         with zipfile.ZipFile(file_like, mode='r') as zf:
             cqm.set_objective(load(zf.read("objective")))
 
-            # get the constraints
-            constraint_paths = set(os.path.dirname(n) for n in zf.namelist())
-            constraint_paths.remove("")
+            constraint_labels = set()
+            for arch in zf.namelist():
+                # even on windows zip uses /
+                match = re.match("constraints/(.*)/(?:rhs|lhs|sense)", arch)
+                if match is not None:
+                    constraint_labels.add(match.group(1))
 
-            for constraint_path in constraint_paths:
-                # todo: handle QM as well
-                lhs = load(zf.read(os.path.join(constraint_path, 'lhs')))
-                rhs = np.frombuffer(zf.read(os.path.join(constraint_path, 'rhs')), np.float64)[0]
-                sense = zf.read(os.path.join(constraint_path, 'sense')).decode('ascii')
-                name = deserialize_variable(json.loads(os.path.split(constraint_path)[1]))
-                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=name)
+            for constraint in constraint_labels:
+                lhs = load(zf.read(f"constraints/{constraint}/lhs"))
+                rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
+                sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
+                label = deserialize_variable(json.loads(constraint))
+                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
 
         return cqm
 
