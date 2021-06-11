@@ -26,7 +26,7 @@ import numpy as np
 
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
+from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, load
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
@@ -38,6 +38,7 @@ CQM_MAGIC_PREFIX = b'DIMODCQM'
 
 
 class TypedVariables(Variables):
+    """Tracks variable labels and the vartype of each variable."""
     def __init__(self):
         super().__init__()
         self.vartypes: list[Vartype] = []
@@ -66,7 +67,20 @@ class ConstrainedQuadraticModel:
         self.labels = Variables()
         self.constraints = {}
 
+    @property
+    def objective(self) -> BinaryQuadraticModel:
+        """The objective to be minimized."""
+        try:
+            return self._objective
+        except AttributeError:
+            pass
+
+        objective = BinaryQuadraticModel('BINARY')
+        self._objective: BinaryQuadraticModel = objective
+        return objective
+
     def add_constraint(self, data, *args, **kwargs):
+        """A convenience wrapper for other methods that add constraints."""
         if isinstance(data, BinaryQuadraticModel):
             self.add_constraint_from_bqm(data, *args, **kwargs)
         elif isinstance(data, Comparison):
@@ -82,7 +96,23 @@ class ConstrainedQuadraticModel:
                                 rhs: Bias = 0,
                                 label: Optional[Hashable] = None,
                                 copy: bool = True) -> Hashable:
+        """Add a constraint from a binary quadratic model.
 
+        Args:
+            bqm: A binary quadratic model.
+
+            sense: One of `<=', '>=', '=='.
+
+            rhs: The right hand side of the constraint.
+
+            label: A label for the constraint. Must be unique. If no label
+                is provided, then one is generated using :mod:`uuid`.
+
+            copy: If `True`, the BQM is copied. This can be set to `False` to
+                improve performance, but subsequently mutating the bqm can
+                cause issues.
+
+        """
         variables = self.variables
 
         # get sense as an enum
@@ -125,6 +155,19 @@ class ConstrainedQuadraticModel:
                                        comp: Comparison,
                                        label: Optional[Hashable] = None,
                                        copy: bool = True) -> Hashable:
+        """Add a constraint from a binary quadratic model.
+
+        Args:
+            comp: A comparison object.
+
+            label: A label for the constraint. Must be unique. If no label
+                is provided, then one is generated using :mod:`uuid`.
+
+            copy: If `True`, the model is copied. This can be set to `False` to
+                improve performance, but subsequently mutating the model can
+                cause issues.
+
+        """
         if not isinstance(comp.lhs, BinaryQuadraticModel):
             raise TypeError("comparison should have a BQM lhs")
         if not isinstance(comp.rhs, Number):
@@ -138,6 +181,20 @@ class ConstrainedQuadraticModel:
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
                                      ) -> Hashable:
+        """Add a constraint from a binary quadratic model.
+
+        Args:
+            iterable: An iterable of terms as tuples. The variables must
+                have already been added to the object.
+
+            sense: One of `<=', '>=', '=='.
+
+            rhs: The right hand side of the constraint.
+
+            label: A label for the constraint. Must be unique. If no label
+                is provided, then one is generated using :mod:`uuid`.
+
+        """
         # use quadratic model in the future
         qm = BinaryQuadraticModel('BINARY')
         for *variables, bias in iterable:
@@ -163,9 +220,12 @@ class ConstrainedQuadraticModel:
             qm, sense, rhs=rhs, label=label, copy=False)
 
     def add_variable(self, v: Variable, vartype: VartypeLike):
+        """Add a variable to the model."""
         if self.variables.count(v):
-            raise NotImplementedError
-        return self.variables._append(vartype, v)
+            if as_vartype(vartype) != self.variables.vartype(v):
+                raise ValueError("given variable has already been added with a different vartype")
+        else:
+            return self.variables._append(vartype, v)
 
     @classmethod
     def from_file(cls, fp: Union[BinaryIO, ByteString]) -> "ConstrainedQuadraticModel":
@@ -196,7 +256,7 @@ class ConstrainedQuadraticModel:
         cqm = CQM()
 
         with zipfile.ZipFile(file_like, mode='r') as zf:
-            cqm.set_objective(BinaryQuadraticModel.from_file(zf.read("objective")))
+            cqm.set_objective(load(zf.read("objective")))
 
             # get the constraints
             constraint_paths = set(os.path.dirname(n) for n in zf.namelist())
@@ -204,7 +264,7 @@ class ConstrainedQuadraticModel:
 
             for constraint_path in constraint_paths:
                 # todo: handle QM as well
-                lhs = BinaryQuadraticModel.from_file(zf.read(os.path.join(constraint_path, 'lhs')))
+                lhs = load(zf.read(os.path.join(constraint_path, 'lhs')))
                 rhs = np.frombuffer(zf.read(os.path.join(constraint_path, 'rhs')), np.float64)[0]
                 sense = zf.read(os.path.join(constraint_path, 'sense')).decode('ascii')
                 name = deserialize_variable(json.loads(os.path.split(constraint_path)[1]))
@@ -220,6 +280,7 @@ class ConstrainedQuadraticModel:
         return num_biases
 
     def set_objective(self, bqm: BinaryQuadraticModel):
+        """Set the objective of the constrained quadratic model."""
         variables = self.variables
 
         vartype = bqm.vartype
@@ -231,7 +292,7 @@ class ConstrainedQuadraticModel:
         for v in bqm.variables:
             variables._append(vartype, v, permissive=True)
 
-        self.objective = bqm
+        self._objective = bqm
 
     def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.

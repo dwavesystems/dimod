@@ -63,3 +63,16 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.lhs, new.constraints[label].lhs)
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
+
+    def test_functional_empty(self):
+        new = CQM.from_file(CQM().to_file())
+
+
+class TestSetObjective(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(CQM().objective.num_variables, 0)
+
+    def test_set(self):
+        cqm = CQM()
+        cqm.set_objective(Spin('a') * 5)
+        self.assertEqual(cqm.objective, Spin('a') * 5)
