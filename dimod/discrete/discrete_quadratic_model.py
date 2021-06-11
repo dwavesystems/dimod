@@ -15,11 +15,9 @@
 import collections.abc as abc
 import io
 import json
-import tempfile
 import warnings
 
 from collections import namedtuple
-from operator import eq
 
 import numpy as np
 
