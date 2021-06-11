@@ -394,3 +394,7 @@ class ConstrainedQuadraticModel:
 
 
 CQM = ConstrainedQuadraticModel
+
+
+# register fileview loader
+load.register(CQM_MAGIC_PREFIX, ConstrainedQuadraticModel.from_file)
