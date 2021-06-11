@@ -16,8 +16,12 @@
 import abc
 import io
 import json
+import struct
 import tempfile
 import warnings
+
+from collections import namedtuple
+from typing import BinaryIO, ByteString, Callable, Mapping, Tuple
 
 import numpy as np
 
@@ -221,8 +225,16 @@ class _BytesIO(io.RawIOBase):
         return True
 
 
+_loaders: Mapping[bytes, Callable] = dict()
+
+
+def register(prefix: bytes, loader: Callable):
+    """Register a new loader."""
+    _loaders[prefix] = loader
+
+
 def load(fp, cls=None):
-    """Load a binary quadratic model from a file.
+    """Load a model from a file.
 
     Args:
         fp (bytes-like/file-like):
@@ -233,9 +245,107 @@ def load(fp, cls=None):
             Deprecated keyword argument. Is ignored.
 
     Returns:
-        The loaded bqm.
+        The loaded model.
 
     """
-    # todo: handle DQM
-    from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-    return BinaryQuadraticModel.from_file(fp)
+    if cls is not None:
+        warnings.warn("'cls' keyword argument is deprecated and ignored",
+                      DeprecationWarning, stacklevel=2)
+
+    if isinstance(fp, ByteString):
+        file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+    else:
+        file_like = fp
+
+    if not file_like.seekable:
+        raise ValueError("expected file-like to be seekable")
+
+    pos = file_like.tell()
+
+    lengths = sorted(set(map(len, _loaders)))
+    for num_bytes in lengths:
+        prefix = file_like.read(num_bytes)
+        file_like.seek(pos)
+
+        try:
+            return _loaders[prefix](file_like)
+        except KeyError:
+            pass
+
+    raise ValueError("cannot load the given file-like")
+
+
+# for slightly more explicit naming
+load.register = register
+
+
+def make_header(prefix: bytes, data: Mapping, version: Tuple[int, int]) -> bytearray:
+    """Construct a header for serializing dimod models.
+
+    The first `len(prefix)` bytes will be exactly the contents of `prefix`.
+
+    The next 1 byte is an unsigned byte: the major version of the file
+    format.
+
+    The next 1 byte is an unsigned byte: the minor version of the file
+    format.
+
+    The next 4 bytes form a little-endian unsigned int, the length of
+    the header data `HEADER_LEN`.
+
+    The next `HEADER_LEN` bytes form the header data. This will be `data`
+    json-serialized and encoded with 'ascii'.
+
+    The header is padded with spaces to make the entire length divisible by 64.
+
+    """
+    header = bytearray()
+
+    header += prefix
+    header += bytes(version)
+
+    version_start = len(header)
+
+    header += bytes(4)  # will hold the data length
+
+    data_start = len(header)
+
+    header += json.dumps(data, sort_keys=True).encode('ascii')
+    header += b'\n'
+
+    # want the entire thing to be divisible by 64 for alignment
+    if len(header) % 64:
+        header += b' '*(64 - len(header) % 64)
+
+    assert not len(header) % 64
+
+    header[version_start:version_start+4] = struct.pack('<I', len(header) - data_start)
+
+    return header
+
+
+def write_header(file_like: BinaryIO, prefix: bytes, data: Mapping, version: Tuple[int, int]):
+    """Write a header constructed by :func:`.make_header` to a file-like."""
+    file_like.write(make_header(prefix, data, version))
+
+
+HeaderInfo = namedtuple('HeaderInfo', ['data', 'version'])
+
+
+def read_header(file_like: BinaryIO, prefix: bytes) -> HeaderInfo:
+    """Read the information from a header constructed by :func:`.make_header`.
+
+    The return value should be accessed by attribute for easy future expansion.
+    """
+    read_prefix = file_like.read(len(prefix))
+    if read_prefix != prefix:
+        raise ValueError("unknown file type, expected magic string "
+                         f"{prefix!r} but got {read_prefix!r} "
+                         "instead")
+
+    version = tuple(file_like.read(2))
+
+    header_len = struct.unpack('<I', file_like.read(4))[0]
+    data = json.loads(file_like.read(header_len).decode('ascii'))
+
+    return HeaderInfo(data, version)

@@ -32,7 +32,8 @@ cdef class cyVariables:
         self._stop = 0
 
         if iterable is not None:
-            self._extend(iterable, permissive=True)
+            for v in iterable:
+                self._append(v, permissive=True)
 
     def __contains__(self, v):
         return bool(self.count(v))

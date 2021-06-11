@@ -22,10 +22,12 @@ from collections import namedtuple
 from operator import eq
 
 import numpy as np
+from numpy.core.shape_base import stack
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
+from dimod.serialization.fileview import load, read_header, write_header
 from dimod.variables import Variables
 from typing import List, Tuple, Union, Generator
 
@@ -38,12 +40,15 @@ __all__ = ['DiscreteQuadraticModel', 'DQM']
 # constants for serialization
 DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
-VERSION = bytes([1, 0])  # version 1.0
 
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
+LegacyDQMVectors = namedtuple(
+    'LegacyDQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
+
 DQMVectors = namedtuple(
-    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
+    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
+
 QuadraticVectors = namedtuple(
     'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
 
@@ -181,6 +186,15 @@ class DiscreteQuadraticModel:
             pass
         self._adj = adj = VariableAdjacency(self)
         return adj
+
+    @property
+    def offset(self):
+        return self._cydqm.offset
+
+    @offset.setter
+    def offset(self, offset: float):
+        self._cydqm.offset = offset
+
 
     def add_linear_equality_constraint(self, terms: LinearTriplets,
                                        lagrange_multiplier: float,
@@ -379,7 +393,8 @@ class DiscreteQuadraticModel:
                                      (data['quadratic_row_indices'],
                                       data['quadratic_col_indices'],
                                       data['quadratic_biases'],
-                                      )
+                                      ),
+                                     offset=data.get('offset', 0),
                                      )
 
         # move to the end of the data section
@@ -397,20 +412,13 @@ class DiscreteQuadraticModel:
         if isinstance(file_like, (bytes, bytearray, memoryview)):
             file_like = _BytesIO(file_like)
 
-        magic = file_like.read(len(DQM_MAGIC_PREFIX))
-        if magic != DQM_MAGIC_PREFIX:
-            raise ValueError("unknown file type, expected magic string {} but "
-                             "got {}".format(DQM_MAGIC_PREFIX, magic))
+        header_info = read_header(file_like, DQM_MAGIC_PREFIX)
+        version = header_info.version
+        header_data = header_info.data
 
-        version = tuple(file_like.read(2))
-        if version[0] != 1:
-            raise ValueError("cannot load a DQM serialized with version {!r}, "
-                             "try upgrading your dimod version"
-                             "".format(version))
-
-        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
-
-        header_data = json.loads(file_like.read(header_len).decode('ascii'))
+        if version >= (2, 0):
+            raise ValueError("cannot load a DQM serialized with version "
+                             f"{version!r}, try upgrading your dimod version")
 
         obj = cls._from_file_numpy(file_like)
 
@@ -426,7 +434,7 @@ class DiscreteQuadraticModel:
 
     @classmethod
     def from_numpy_vectors(cls, case_starts, linear_biases, quadratic,
-                           labels=None):
+                           labels=None, offset=0):
         """Construct a DQM from five numpy vectors.
 
         Args:
@@ -457,6 +465,9 @@ class DiscreteQuadraticModel:
             labels (list, optional):
                 The variable labels. Defaults to index-labeled.
 
+            offset (float):
+                Energy offset of the DQM.
+
         Example:
 
             >>> dqm = dimod.DiscreteQuadraticModel()
@@ -474,7 +485,7 @@ class DiscreteQuadraticModel:
         obj = cls()
 
         obj._cydqm = cyDiscreteQuadraticModel.from_numpy_vectors(
-            case_starts, linear_biases, quadratic)
+            case_starts, linear_biases, quadratic, offset)
 
         if labels is not None:
             if len(labels) != obj._cydqm.num_variables():
@@ -682,7 +693,7 @@ class DiscreteQuadraticModel:
         file.write(b'    ')  # will be replaced by the length
         start = file.tell()
 
-        vectors = self.to_numpy_vectors()
+        vectors = self.to_numpy_vectors(return_offset=True)
 
         if compress:
             save = np.savez_compressed
@@ -690,12 +701,13 @@ class DiscreteQuadraticModel:
             save = np.savez
 
         save(file,
-             case_starts=vectors.case_starts,
-             linear_biases=vectors.linear_biases,
-             quadratic_row_indices=vectors.quadratic.row_indices,
-             quadratic_col_indices=vectors.quadratic.col_indices,
-             quadratic_biases=vectors.quadratic.biases,
-             )
+            case_starts=vectors.case_starts,
+            linear_biases=vectors.linear_biases,
+            quadratic_row_indices=vectors.quadratic.row_indices,
+            quadratic_col_indices=vectors.quadratic.col_indices,
+            quadratic_biases=vectors.quadratic.biases,
+            offset=vectors.offset,
+            )
 
         # record the length
         end = file.tell()
@@ -792,41 +804,18 @@ class DiscreteQuadraticModel:
 
         file = SpooledTemporaryFile(max_size=spool_size)
 
-        # attach the header
-        header_parts = [DQM_MAGIC_PREFIX,
-                        VERSION,
-                        bytes(4),  # placeholder for HEADER_LEN
-                        ]
-
         index_labeled = ignore_labels or self.variables.is_range
 
-        header_data = json.dumps(
-            dict(num_variables=self.num_variables(),
-                 num_cases=self.num_cases(),
-                 num_case_interactions=self.num_case_interactions(),
-                 num_variable_interactions=self.num_variable_interactions(),
-                 variables=not index_labeled,
-                 ),
-            sort_keys=True).encode('ascii')
+        data = dict(num_variables=self.num_variables(),
+                    num_cases=self.num_cases(),
+                    num_case_interactions=self.num_case_interactions(),
+                    num_variable_interactions=self.num_variable_interactions(),
+                    variables=not index_labeled,
+                    )
 
-        header_parts.append(header_data)
-
-        # make the entire header length divisible by 64
-        length = sum(len(part) for part in header_parts)
-        if length % 64:
-            padding = b' '*(64 - length % 64)
-        else:
-            padding = b''
-        header_parts.append(padding)
-
-        HEADER_LEN = len(padding) + len(header_data)
-        header_parts[2] = np.dtype('<u4').type(HEADER_LEN).tobytes()
-
-        for part in header_parts:
-            file.write(part)
+        write_header(file, DQM_MAGIC_PREFIX, data, version=(1, 1))
 
         # the section containing most of the data, encoded with numpy
-
         if compressed is not None:
             warnings.warn(
                 "Argument 'compressed' is deprecated and in future will raise "
@@ -844,8 +833,11 @@ class DiscreteQuadraticModel:
 
         return file
 
-    def to_numpy_vectors(self):
+    def to_numpy_vectors(self, return_offset: bool = False):
         """Convert the DQM to five numpy vectors and the labels.
+
+        Args:
+            return_offset: Boolean flag to optionally return energy offset value.
 
         Returns:
             :class:`DQMVectors`: A named tuple with fields `['case_starts',
@@ -888,13 +880,28 @@ class DiscreteQuadraticModel:
             :meth:`~DiscreteQuadraticModel.from_numpy_vectors`
 
         """
-        case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
+        if not return_offset:
+            warnings.warn(
+                "`return_offset` will default to `True` in the future.", DeprecationWarning,
+                stacklevel=2
+            )
+            
+            case_starts, linear_biases, quadratic = self._cydqm.to_numpy_vectors()
 
-        return DQMVectors(case_starts,
-                          linear_biases,
-                          QuadraticVectors(*quadratic),
-                          self.variables,
-                          )
+            return LegacyDQMVectors(case_starts,
+                                    linear_biases,
+                                    QuadraticVectors(*quadratic),
+                                    self.variables)
+
+        case_starts, linear_biases, quadratic, offset = self._cydqm.to_numpy_vectors(return_offset)
+
+        return DQMVectors(
+            case_starts, linear_biases, QuadraticVectors(*quadratic), self.variables, offset
+        )
 
 
 DQM = DiscreteQuadraticModel  # alias
+
+
+# register fileview loader
+load.register(DQM_MAGIC_PREFIX, DiscreteQuadraticModel.from_file)

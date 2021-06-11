@@ -95,6 +95,7 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(dqm.variables, [])
         self.assertEqual(dqm.adj, {})
         self.assertEqual(dqm.num_cases(), 0)
+        self.assertEqual(dqm.offset, 0)
 
     def test_one_variable(self):
         dqm = dimod.DQM()
@@ -107,6 +108,18 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(dqm.adj, {0: set()})
         self.assertEqual(dqm.num_cases(), 10)
         self.assertEqual(dqm.num_cases(0), 10)
+
+    def test_offset(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(2)
+        dqm.set_linear(0, [1,1])
+        initial_energy = dqm.energy([0])
+
+        dqm.offset = 10
+        self.assertEqual(dqm.offset, 10)
+        self.assertEqual(
+            dqm.energy([0]), initial_energy + dqm.offset
+        )
 
     def test_one_labelled(self):
         dqm = dimod.DQM()
@@ -508,7 +521,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression:
                 if expression_dict[v][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
     def test_inequality_constraint_log2(self):
         dqm = dimod.DQM()
@@ -626,13 +639,12 @@ class TestConstraint(unittest.TestCase):
         expression_dict = {v: (c, b) for v, c, b in expression}
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {x[i]: case_values[i] for i in x}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression:
                 if expression_dict[v][0] == state[v]:
                     s += bias
 
-            self.assertAlmostEqual(energy, lagrange_multiplier * s ** 2 + dqm_0.energy(state))
+            self.assertAlmostEqual(dqm.energy(state), lagrange_multiplier * s ** 2 + dqm_0.energy(state))
 
     def test_unknown_variable(self):
         dqm = dimod.DQM()
@@ -683,7 +695,6 @@ class TestConstraint(unittest.TestCase):
 
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {i: case_values[i] for i in range(num_variables)}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
                 if expression_dict1[v][0] == state[v]:
@@ -691,7 +702,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            self.assertEqual(energy, lagrange_multiplier * s ** 2)
+            self.assertEqual(dqm.energy(state), lagrange_multiplier * s ** 2)
 
     def test_self_loop_repeat2(self):
         num_variables = 4
@@ -715,7 +726,6 @@ class TestConstraint(unittest.TestCase):
 
         for case_values in itertools.product(*(range(c) for c in cases)):
             state = {i: case_values[i] for i in range(num_variables)}
-            energy = dqm.energy(state) + lagrange_multiplier * constant ** 2
             s = constant
             for v, cv, bias in expression1:
                 if expression_dict1[v][0] == state[v]:
@@ -723,7 +733,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression2:
                 if expression_dict2[v][0] == state[v]:
                     s += bias
-            self.assertEqual(energy, lagrange_multiplier * s ** 2)
+            self.assertEqual(dqm.energy(state), lagrange_multiplier * s ** 2)
 
     def test_self_loop3(self):
 
@@ -752,7 +762,8 @@ class TestNumpyVectors(unittest.TestCase):
 
     def test_empty_functional(self):
         dqm = dimod.DQM()
-        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
         self.assertEqual(new.num_variables(), 0)
 
     def test_exceptions(self):
@@ -829,7 +840,8 @@ class TestNumpyVectors(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
 
-        new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.DQM.from_numpy_vectors(*dqm.to_numpy_vectors())
 
         self.assertEqual(new.num_variables(), dqm.num_variables())
         self.assertEqual(new.num_cases(), dqm.num_cases())
@@ -848,11 +860,13 @@ class TestNumpyVectors(unittest.TestCase):
         dqm.set_linear_case(0, 3, 1.5)
         dqm.set_quadratic(0, 'b', {(0, 1): 1.5, (3, 4): 1})
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
-        new = dimod.DQM.from_numpy_vectors(*vectors)
+            new = dimod.DQM.from_numpy_vectors(*vectors)
 
-        new_vectors = new.to_numpy_vectors()
+            new_vectors = new.to_numpy_vectors()
+
         np.testing.assert_array_equal(vectors[0], new_vectors[0])
         np.testing.assert_array_equal(vectors[1], new_vectors[1])
         np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
@@ -878,11 +892,13 @@ class TestNumpyVectors(unittest.TestCase):
 
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
         new = dimod.DQM.from_numpy_vectors(*vectors)
 
-        new_vectors = new.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            new_vectors = new.to_numpy_vectors()
         np.testing.assert_array_equal(vectors[0], new_vectors[0])
         np.testing.assert_array_equal(vectors[1], new_vectors[1])
         np.testing.assert_array_equal(vectors[2][0], new_vectors[2][0])
@@ -908,7 +924,8 @@ class TestNumpyVectors(unittest.TestCase):
 
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=17)
 
-        vectors = dqm.to_numpy_vectors()
+        with self.assertWarns(DeprecationWarning):
+            vectors = dqm.to_numpy_vectors()
 
         # suffle the quadratic vectors so they are not ordered anymore
         starts, ldata, (irow, icol, qdata), labels = vectors

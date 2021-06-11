@@ -33,6 +33,7 @@ import dimod
 
 from dimod.binary import BinaryQuadraticModel, DictBQM, Float32BQM, Float64BQM
 from dimod.binary import as_bqm
+from dimod.binary import Spin, Binary
 from dimod.testing import assert_consistent_bqm, assert_bqm_almost_equal
 
 
@@ -2051,6 +2052,60 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
+
+
+class TestSymbolic(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_add_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        new = bqm + 1
+        self.assertIsNot(bqm, new)
+        self.assertEqual(new.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_iadd_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        old = bqm
+        bqm += 1
+        self.assertIs(bqm, old)
+        self.assertEqual(bqm.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_radd_number(self, name, BQM):
+        bqm = BQM('SPIN')
+        new = 1 + bqm
+        self.assertIsNot(bqm, new)
+        self.assertEqual(new.offset, 1)
+        self.assertEqual(bqm.num_variables, 0)
+
+    @parameterized.expand(BQMs.items())
+    def test_exceptions_symbolic_mode(self, name, BQM):
+        bqm = BQM('SPIN')
+        with self.assertRaises(TypeError):
+            bqm + 'a'
+        with self.assertRaises(TypeError):
+            'a' + bqm
+        with self.assertRaises(TypeError):
+            bqm += 'a'
+
+        with self.assertRaises(TypeError):
+            bqm * 'a'
+        with self.assertRaises(TypeError):
+            bqm *= 'a'
+
+    def test_expressions_spin(self):
+        u = Spin('u')
+        v = Spin('v')
+
+        BQM = BinaryQuadraticModel
+
+        self.assertEqual(u*v, BQM({}, {'uv': 1}, 0, 'SPIN'))
+        self.assertEqual(u*u, BQM({'u': 0}, {}, 1, 'SPIN'))
+        self.assertEqual(u*(v-1), BQM({'u': -1}, {'uv': 1}, 0, 'SPIN'))
+        self.assertEqual(-u, BQM({'u': -1}, {}, 0, 'SPIN'))
+        self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'SPIN'))
 
 
 class TestToIsing(unittest.TestCase):

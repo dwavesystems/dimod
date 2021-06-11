@@ -173,3 +173,38 @@ class TestFunctional(unittest.TestCase):
                 new = load(fv)
 
         self.assertEqual(new, bqm)
+
+
+class TestLoad(unittest.TestCase):
+    def test_bqm(self):
+        bqm = BinaryQuadraticModel({'a': -1}, {'ab': 1}, 7, 'SPIN')
+        self.assertEqual(bqm, load(bqm.to_file()))
+
+    def test_cqm(self):
+        cqm = dimod.CQM()
+
+        bqm = BinaryQuadraticModel({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=')
+        cqm.add_constraint(bqm, '>=')  # add it again
+
+        new = load(cqm.to_file())
+
+        self.assertEqual(cqm.objective, new.objective)
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertEqual(constraint.lhs, new.constraints[label].lhs)
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+
+    def test_dqm(self):
+        dqm = dimod.DiscreteQuadraticModel()
+        dqm.add_variable(5, 'a')
+        dqm.add_variable(6, 'b')
+        dqm.set_quadratic_case('a', 0, 'b', 5, 1.5)
+
+        new = load(dqm.to_file())
+
+        self.assertEqual(dqm.num_variables(), new.num_variables())
+        self.assertEqual(dqm.num_cases(), new.num_cases())
+        self.assertEqual(dqm.get_quadratic_case('a', 0, 'b', 5),
+                         new.get_quadratic_case('a', 0, 'b', 5))

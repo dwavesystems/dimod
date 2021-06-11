@@ -41,31 +41,34 @@ from dimod.decorators import lockable_method
 __all__ = ['Variables']
 
 
-def iter_serialize_variables(variables):
+def serialize_variable(v):
     # want to handle things like numpy numbers and fractions that do not
     # serialize so easy
-    for v in variables:
-        if isinstance(v, Integral):
-            yield int(v)
-        elif isinstance(v, Number):
-            yield float(v)
-        elif isinstance(v, str):
-            yield v
-        # we want Collection, but that's not available in py3.5
-        elif isinstance(v, (abc.Sequence, abc.Set)):
-            yield tuple(iter_serialize_variables(v))
-        else:
-            yield v
+    if isinstance(v, Integral):
+        return int(v)
+    elif isinstance(v, Number):
+        return float(v)
+    elif isinstance(v, str):
+        return v
+    elif isinstance(v, abc.Collection):
+        return tuple(iter_serialize_variables(v))
+    else:
+        return v
+
+
+def iter_serialize_variables(variables):
+    yield from map(serialize_variable, variables)
+
+
+def deserialize_variable(v):
+    if isinstance(v, abc.Collection) and not isinstance(v, str):
+        return tuple(iter_deserialize_variables(v))
+    else:
+        return v
 
 
 def iter_deserialize_variables(variables):
-    # convert list back into tuples
-    for v in variables:
-        # we want Collection, but that's not available in py3.5
-        if isinstance(v, (abc.Sequence, abc.Set)) and not isinstance(v, str):
-            yield tuple(iter_deserialize_variables(v))
-        else:
-            yield v
+    yield from map(deserialize_variable, variables)
 
 
 class Variables(cyVariables, abc.Set, abc.Sequence):

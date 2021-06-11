@@ -38,6 +38,8 @@ from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
+from dimod.serialization.fileview import load, read_header, write_header
+from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
@@ -48,6 +50,7 @@ __all__ = ['BinaryQuadraticModel',
            'Float32BQM',
            'Float64BQM',
            'as_bqm',
+           'Spin', 'Binary',
            ]
 
 BQM_MAGIC_PREFIX = b'DIMODBQM'
@@ -390,22 +393,8 @@ class BinaryQuadraticModel:
         memo[id(self)] = new
         return new
 
-    def __eq__(self, other):
-        # todo: performance
-        try:
-            return (self.vartype == other.vartype
-                    and self.shape == other.shape  # redundant, fast to check
-                    and self.offset == other.offset
-                    and self.linear == other.linear
-                    and self.adj == other.adj)
-        except AttributeError:
-            return False
-
     def __len__(self):
         return self.num_variables
-
-    def __ne__(self, other):
-        return not self == other
 
     def __repr__(self):
         return "{!s}({!s}, {!s}, {!r}, {!r})".format(type(self).__name__,
@@ -413,6 +402,151 @@ class BinaryQuadraticModel:
                                                      self.quadratic,
                                                      self.offset,
                                                      self.vartype.name)
+
+    def __add__(self, other: Union['BinaryQuadraticModel', Bias]):
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError("cannot add BQMs with different vartypes")
+            new = self.copy()
+            new.update(other)
+            return new
+        if isinstance(other, Number):
+            new = self.copy()
+            new.offset += other
+            return new
+        return NotImplemented
+
+    def __iadd__(self, other: Union['BinaryQuadraticModel', Bias]):
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError("cannot add BQMs with different vartypes")
+            self.update(other)
+            return self
+        if isinstance(other, Number):
+            self.offset += other
+            return self
+        return NotImplemented
+
+    def __radd__(self, other: Union['BinaryQuadraticModel', Bias]):
+        return self + other
+
+    def __mul__(self, other: Union['BinaryQuadraticModel', Bias]):
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if not (self.is_linear() and other.is_linear()):
+                raise TypeError(
+                    "cannot multiply BQMs with interactions")
+            elif other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot multiply BQMs with different vartypes")
+
+            new = self.empty(self.vartype)
+
+            self_offset = self.offset
+            other_offset = other.offset
+
+            for u, ubias in self.linear.items():
+                for v, vbias in other.linear.items():
+                    if u == v:
+                        if self.vartype is Vartype.BINARY:
+                            new.add_linear(u, ubias*vbias)
+                        else:
+                            new.offset += ubias * vbias
+                    else:
+                        new.add_quadratic(u, v, ubias * vbias)
+
+                new.add_linear(u, ubias * other_offset)
+
+            for v, bias in other.linear.items():
+                new.add_linear(v, bias*self_offset)
+
+            return new
+
+        if isinstance(other, Number):
+            new = self.copy()
+            new.scale(other)
+            return new
+        return NotImplemented
+
+    def __imul__(self, other: Bias):  # type: ignore[misc]
+        # in-place multiplication is only defined for numbers
+        if isinstance(other, Number):
+            self.scale(other)
+            return self
+        return NotImplemented
+
+    def __rmul__(self, other: Union['BinaryQuadraticModel', Bias]):
+        return self * other
+
+    def __neg__(self):
+        new = self.copy()
+        new.scale(-1)
+        return new
+
+    def __pos__(self):
+        return self
+
+    def __sub__(self, other: Union['BinaryQuadraticModel', Bias]):
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot subtract BQMs with different vartypes")
+            new = self.copy()
+            new.scale(-1)
+            new.update(other)
+            new.scale(-1)
+            return new
+        if isinstance(other, Number):
+            new = self.copy()
+            new.offset -= other
+            return new
+        return NotImplemented
+
+    def __isub__(self, other: Union['BinaryQuadraticModel', Bias]):
+        # in python 3.8+ we could do this is functools.singledispatchmethod
+        if isinstance(other, BinaryQuadraticModel):
+            if other.num_variables and other.vartype != self.vartype:
+                # future: return QuadraticModel
+                raise TypeError(
+                    "cannot subtract BQMs with different vartypes")
+            self.scale(-1)
+            self.update(other)
+            self.scale(-1)
+            return self
+        if isinstance(other, Number):
+            self.offset -= other
+            return self
+        return NotImplemented
+
+    def __rsub__(self, other):
+        return self - other
+
+    def __eq__(self, other):
+        if isinstance(other, (Number, BinaryQuadraticModel)):
+            return Eq(self, other)
+        # Old version of BQM returned False for unknown types, so we keep doing
+        # the here for backwards compatibility
+        return False
+
+    def __ge__(self, other: Bias):
+        if isinstance(other, Number):
+            return Ge(self, other)
+        return NotImplemented
+
+    def __le__(self, other: Bias):
+        if isinstance(other, Number):
+            return Le(self, other)
+        return NotImplemented
+
+    def __ne__(self, other):
+        return not self == other
 
     @property
     def adj(self) -> Adjacency:
@@ -994,19 +1128,13 @@ class BinaryQuadraticModel:
         else:
             file_like = fp
 
-        prefix = file_like.read(len(BQM_MAGIC_PREFIX))
-        if prefix != BQM_MAGIC_PREFIX:
-            raise ValueError("unknown file type, expected magic string "
-                             f"{BQM_MAGIC_PREFIX!r} but got {prefix!r} "
-                             "instead")
+        header_info = read_header(file_like, BQM_MAGIC_PREFIX)
+        version = header_info.version
+        data = header_info.data
 
-        version = tuple(file_like.read(2))
         if version >= (3, 0):
             raise ValueError("cannot load a BQM serialized with version "
                              f"{version!r}, try upgrading your dimod version")
-
-        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
-        data = json.loads(file_like.read(header_len).decode('ascii'))
 
         num_variables, num_interactions = data['shape']
 
@@ -1147,6 +1275,19 @@ class BinaryQuadraticModel:
                       'use v in bqm.variables instead.', 
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
+
+    def is_equal(self, other):
+        if isinstance(other, Number):
+            return not self.num_variables and self.offset == other
+        # todo: performance
+        try:
+            return (self.vartype == other.vartype
+                    and self.shape == other.shape  # redundant, fast to check
+                    and self.offset == other.offset
+                    and self.linear == other.linear
+                    and self.adj == other.adj)
+        except AttributeError:
+            return False
 
     def is_linear(self) -> bool:
         """Return True if the model has no quadratic interactions."""
@@ -1380,17 +1521,15 @@ class BinaryQuadraticModel:
         elif not isinstance(ignored_interactions, abc.Container):
             ignored_interactions = set(ignored_interactions)
 
-        linear = self.linear
-        for v in linear:
+        for v in self.variables:
             if v in ignored_variables:
                 continue
-            linear[v] *= scalar
+            self.set_linear(v, scalar*self.get_linear(v))
 
-        quadratic = self.quadratic
-        for u, v in quadratic:
+        for u, v, bias in self.iter_quadratic():
             if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
                 continue
-            quadratic[(u, v)] *= scalar
+            self.set_quadratic(u, v, scalar*self.get_quadratic(u, v))
 
         if not ignore_offset:
             self.offset *= scalar
@@ -1528,18 +1667,13 @@ class BinaryQuadraticModel:
                 ignore_labels=ignore_labels, spool_size=spool_size,
                 version=version)
 
-        # determine if we support the given version
-        if isinstance(version, Integral):
-            version = (version, 0)
-        if version not in [(1, 0), (2, 0)]:
+        version_tpl: Tuple[int, int] = (version, 0) if isinstance(version, Integral) else version
+
+        if version_tpl not in [(1, 0), (2, 0)]:
             raise ValueError(f"Unsupported version: {version!r}")
 
         # the file we'll be writing to
         file = SpooledTemporaryFile(max_size=spool_size)
-
-        prefix = BQM_MAGIC_PREFIX
-        file.write(prefix)
-        file.write(bytes(version))
 
         # the data in the header
         data = dict(shape=self.shape,
@@ -1550,7 +1684,7 @@ class BinaryQuadraticModel:
                     type=type(self).__name__,
                     )
 
-        if version < (2, 0):  # type: ignore[operator]
+        if version_tpl < (2, 0):
             # the variable labels go in the header
             if ignore_labels:
                 data.update(variables=list(range(self.num_variables)))
@@ -1561,13 +1695,7 @@ class BinaryQuadraticModel:
         else:
             data.update(variables=not self.variables._is_range())
 
-        header_data = json.dumps(data, sort_keys=True).encode('ascii')
-        header_data += b'\n'
-        header_data += b' '*(64 - (len(prefix) + 6 + len(header_data)) % 64)
-        header_len = np.dtype('<u4').type(len(header_data)).tobytes()
-
-        file.write(header_len)
-        file.write(header_data)
+        write_header(file, BQM_MAGIC_PREFIX, data, version=version_tpl)
 
         # write the offset
         file.write(memoryview(self.data.offset).cast('B'))
@@ -1580,7 +1708,7 @@ class BinaryQuadraticModel:
             file.write(memoryview(self.data._ineighborhood(vi)).cast('B'))
 
         # finally the labels (if needed)
-        if version >= (2, 0) and data['variables']:  # type: ignore[operator]
+        if version_tpl >= (2, 0) and data['variables']:  # type: ignore[operator]
             file.write(VariablesSection(self.variables).dumps())
 
         file.seek(0)  # go back to the start
@@ -1759,6 +1887,16 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
+def Binary(label: Variable, bias: Bias = 1,
+           dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
+
+
+def Spin(label: Variable, bias: Bias = 1,
+         dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
+
+
 def as_bqm(*args, cls: None = None, copy: bool = False,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
     """Convert the input to a binary quadratic model.
@@ -1836,3 +1974,7 @@ def as_bqm(*args, cls: None = None, copy: bool = False,
                         return bqm
 
     return BinaryQuadraticModel(*args, dtype=dtype)
+
+
+# register fileview loader
+load.register(BQM_MAGIC_PREFIX, BinaryQuadraticModel.from_file)
