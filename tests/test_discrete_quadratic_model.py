@@ -580,7 +580,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + (ub - constant) ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
     def test_inequality_cross_zero(self):
         lbs = [-9, 4]
@@ -630,7 +630,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v, cv][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + (ub - constant) ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
     def test_inequality_constraint_log10_3dqm(self):
         dqm = dimod.DQM()
@@ -653,7 +653,7 @@ class TestConstraint(unittest.TestCase):
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v, cv][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
     def test_random_constraint(self):
         num_variables = 4

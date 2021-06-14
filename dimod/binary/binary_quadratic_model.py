@@ -758,7 +758,7 @@ class BinaryQuadraticModel:
                     u, v, 2 * lagrange_multiplier * ubias * vbias)
         self.offset += lagrange_multiplier * constant * constant
 
-    def add_linear_inequality_constraint_binary(
+    def add_linear_inequality_constraint(
             self, terms: Iterable[Tuple[Variable, Bias]],
             lagrange_multiplier: Bias,
             label: str,
@@ -803,8 +803,8 @@ class BinaryQuadraticModel:
         """
         assert (slack_method in ['log2'])
 
-        terms_upper_bound = sum(v for _, _, v in terms if v > 0)
-        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
+        terms_upper_bound = sum(v for _, v in terms if v > 0)
+        terms_lower_bound = sum(v for _, v in terms if v < 0)
         ub_c = min(terms_upper_bound, ub - constant)
         lb_c = max(terms_lower_bound, lb - constant)
         slack_terms = []
@@ -826,7 +826,8 @@ class BinaryQuadraticModel:
             zero_constraint = False
             if cross_zero:
                 if lb_c > 0 or ub_c < 0:
-                    zero_constraint = True
+                    if ub_c-slack_upper_bound > 0:
+                        zero_constraint = True
 
             num_slack = int(np.floor(np.log2(slack_upper_bound)))
             slack_coefficients = [2 ** j for j in range(num_slack)]
@@ -839,7 +840,7 @@ class BinaryQuadraticModel:
 
             if zero_constraint:
                 sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
-                slack_terms.append((sv, ub_c))
+                slack_terms.append((sv, ub_c-slack_upper_bound))
 
         self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, -ub_c)
         return slack_terms
