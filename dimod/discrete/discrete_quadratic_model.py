@@ -33,14 +33,11 @@ from typing import List, Tuple, Union, Generator
 
 LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
-
 __all__ = ['DiscreteQuadraticModel', 'DQM']
-
 
 # constants for serialization
 DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
-
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 LegacyDQMVectors = namedtuple(
@@ -219,17 +216,18 @@ class DiscreteQuadraticModel:
 
     def add_linear_inequality_constraint(self, terms: LinearTriplets,
                                          lagrange_multiplier: float,
-                                         constant: float,
                                          label: str,
+                                         constant: int = 0,
+                                         lb: int = - np.Infinity,
+                                         ub: int = 0,
                                          slack_method: str = "log2",
-                                         slack_range: int = None,
-                                         discontinuous_slack: bool = False):
+                                         cross_zero: bool = False):
 
         """Add a linear inequality constraint as a quadratic objective.
 
         Adds a linear inequality constraint of the form:
 
-        math:`\sum_{i,k} a_{i,k} x_{i,k} + C <= 0
+        math:'lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub'
         to the discrete quadratic model as a quadratic objective. Coefficients should be integers.
         For constraints with fractional coefficients, multiply both sides of the inequality by an
         appropriate factor of ten to attain or approximate integer coefficients.
@@ -241,75 +239,77 @@ class DiscreteQuadraticModel:
                 All terms in the list are summed.
             lagrange_multiplier:
                 The coefficient or the penalty strength
-            constant:
-                The constant value of the constraint.
             label:
                 Prefix used to label the slack variables used to create the new objective.
+            constant:
+                The constant value of the constraint.
+            lb:
+                lower bound for the constraint
+            ub:
             slack_method:
                 "The method for adding slack variables. Supported methods are:
                 - log2: Adds log2(slack_range) number of dqm variables each with two cases to the constraint.
                 - log10: Adds log10 dqm variables each with up to 10 cases.
-            slack_range:
-                The maximum possible range for slack variables when creating this constraint.
-            discontinuous_slack:
-                If True, the left-hand side of the constraint can be zero when slack_range is provided.
 
+                upper bound for the constraint
+            cross_zero
+                If True, includes zero as the domain of constraint if not include already
        """
         assert (slack_method in ['log2', 'log10'])
 
         terms_upper_bound = sum(v for _, _, v in terms if v > 0)
+        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
+        ub_c = min(terms_upper_bound, ub - constant)
+        lb_c = max(terms_lower_bound, lb - constant)
         slack_terms = []
-        if terms_upper_bound <= -constant:
+
+        if terms_upper_bound <= ub_c and terms_lower_bound >= lb_c:
             print(f'Did not add constraint {label}. This constraint is feasible with any value for state variables.')
             return slack_terms
 
-        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
-        if terms_lower_bound > -constant:
+        if ub_c <= lb_c:
             print(f'Did not add constraint {label}. This constraint is infeasible with any value for state variables.')
             return slack_terms
 
-        slack_lower_bound = max(0, -constant - terms_upper_bound)
-        slack_upper_bound = -constant - terms_lower_bound
-
-        if slack_lower_bound == slack_upper_bound:
+        slack_upper_bound = int(ub_c - lb_c)
+        if slack_upper_bound == 0:
             print(f'add constraint {label} as equality constraint.')
             self.add_linear_equality_constraint(terms, lagrange_multiplier, constant)
             return slack_terms
         else:
-            if slack_range is None:
-                diff = int(slack_upper_bound - slack_lower_bound)
-            else:
-                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range+1))
+            zero_constraint = False
+            if cross_zero:
+                if lb_c > 0 or ub_c < 0:
+                    zero_constraint = True
 
-            slack_terms = []
             if slack_method == "log2":
-                num_slack = int(np.floor(np.log2(diff)))
+                num_slack = int(np.floor(np.log2(slack_upper_bound)))
                 slack_coefficients = [2 ** j for j in range(num_slack)]
-                if diff - 2 ** num_slack >= 0:
-                    slack_coefficients.append(diff - 2 ** num_slack + 1)
+                if slack_upper_bound - 2 ** num_slack >= 0:
+                    slack_coefficients.append(slack_upper_bound - 2 ** num_slack + 1)
 
                 for j, s in enumerate(slack_coefficients):
                     sv = self.add_variable(2, f'slack_{label}_{j}')
                     slack_terms.append((sv, 1, s))
-                if discontinuous_slack and slack_range is not None:
-                    if slack_range < slack_upper_bound:
-                        sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
-                        slack_terms.append((sv, 1, slack_upper_bound))
+
+                if zero_constraint:
+                    sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
+                    slack_terms.append((sv, 1, ub_c))
 
             elif slack_method == "log10":
-                num_dqm_vars = int(np.ceil(np.log10(diff)))
+                num_dqm_vars = int(np.ceil(np.log10(slack_upper_bound+1)))
                 for j in range(num_dqm_vars):
-                    slack_term = list(range(0, min(diff + 1, 10 ** (j + 1)), 10 ** j))[1:]
-                    if j < num_dqm_vars-1 or not (discontinuous_slack and slack_range is not None):
+                    slack_term = list(range(0, min(slack_upper_bound + 1, 10 ** (j + 1)), 10 ** j))[1:]
+                    if j < num_dqm_vars - 1 or not zero_constraint:
                         sv = self.add_variable(len(slack_term) + 1, f'slack_{label}_{j}')
                     else:
                         sv = self.add_variable(len(slack_term) + 2, f'slack_{label}_{j}')
                     for i, val in enumerate(slack_term):
-                        slack_terms.append((sv, i+1, val))
-                if discontinuous_slack and slack_range is not None:
-                    if slack_range < slack_upper_bound:
-                        slack_terms.append((sv, len(slack_term) + 1, slack_upper_bound))
-            self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, constant)
+                        slack_terms.append((sv, i + 1, val))
+                if zero_constraint:
+                    slack_terms.append((sv, len(slack_term) + 1, ub_c))
+
+            self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, -ub_c)
             return slack_terms
 
     def add_variable(self, num_cases, label=None):
@@ -398,7 +398,7 @@ class DiscreteQuadraticModel:
                                      )
 
         # move to the end of the data section
-        file_like.seek(start+length, io.SEEK_SET)
+        file_like.seek(start + length, io.SEEK_SET)
 
         return obj
 
@@ -491,7 +491,7 @@ class DiscreteQuadraticModel:
             if len(labels) != obj._cydqm.num_variables():
                 raise ValueError(
                     "labels does not match the length of the DQM"
-                    )
+                )
 
             for v in labels:
                 obj.variables._append(v)
@@ -711,7 +711,7 @@ class DiscreteQuadraticModel:
 
         # record the length
         end = file.tell()
-        file.seek(start-4)
+        file.seek(start - 4)
         file.write(np.dtype('<u4').type(end - start).tobytes())
         file.seek(end)
 
@@ -821,7 +821,7 @@ class DiscreteQuadraticModel:
                 "Argument 'compressed' is deprecated and in future will raise "
                 "an exception; please use 'compress' instead.",
                 DeprecationWarning, stacklevel=2
-                )
+            )
             compress = compressed or compress
 
         self._to_file_numpy(file, compress)

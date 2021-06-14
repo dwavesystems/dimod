@@ -758,19 +758,21 @@ class BinaryQuadraticModel:
                     u, v, 2 * lagrange_multiplier * ubias * vbias)
         self.offset += lagrange_multiplier * constant * constant
 
-    def add_linear_inequality_constraint(
+    def add_linear_inequality_constraint_binary(
             self, terms: Iterable[Tuple[Variable, Bias]],
-            lagrange_multiplier: Bias, constant: Bias,
+            lagrange_multiplier: Bias,
             label: str,
+            constant: int = 0,
+            lb: int = - np.Infinity,
+            ub: int = 0,
             slack_method: str = "log2",
-            slack_range: int = None,
-            discontinuous_slack: bool = False
+            cross_zero: bool = False
     ):
         """Add a linear inequality constraint as a quadratic objective.
 
         Adds a linear inequality constraint of the form:
 
-        math:`\\sum_{i} a_{i} x_{i} + C <= 0`
+        math:'lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub'
         to the binary quadratic model as a quadratic objective.
         For constraints with fractional coefficients, multiply both sides of the inequality by an
         appropriate factor of ten to attain or approximate integer coefficients.
@@ -784,59 +786,62 @@ class BinaryQuadraticModel:
                 The coefficient or the penalty strength. This value is
                 multiplied by the entire constraint objective and added to the
                 bqm (it doesn't appear explicitly in the equation above).
-            constant:
-                The constant value of the constraint, C, in the equation above
             label:
                 Prefix used to label the slack variables used to create the new objective.
+            constant:
+                The constant value of the constraint.
+            lb:
+                lower bound for the constraint
+            ub:
+                upper bound for the constraint
             slack_method:
                 "The method for adding slack variables. Supported methods are:
                 - log2: Adds log2(slack_range) number of binary variables to the constraint.
-            slack_range:
-                The maximum possible range for slack variables when creating this constraint.
-            discontinuous_slack:
-                If True, the left-hand side of the constraint can be zero when slack_range is provided.
+            cross_zero
+                If True, includes zero as the domain of constraint if not include already
 
         """
         assert (slack_method in ['log2'])
 
-        terms_upper_bound = sum(v for _, v in terms if v > 0)
+        terms_upper_bound = sum(v for _, _, v in terms if v > 0)
+        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
+        ub_c = min(terms_upper_bound, ub - constant)
+        lb_c = max(terms_lower_bound, lb - constant)
         slack_terms = []
-        if terms_upper_bound <= -constant:
+
+        if terms_upper_bound <= ub_c and terms_lower_bound >= lb_c:
             print(f'Did not add constraint {label}. This constraint is feasible with any value for state variables.')
             return slack_terms
 
-        terms_lower_bound = sum(v for _, v in terms if v < 0)
-        if terms_lower_bound > -constant:
+        if ub_c <= lb_c:
             print(f'Did not add constraint {label}. This constraint is infeasible with any value for state variables.')
             return slack_terms
 
-        slack_lower_bound = max(0, -constant - terms_upper_bound)
-        slack_upper_bound = -constant - terms_lower_bound
-        if slack_lower_bound == slack_upper_bound:
+        slack_upper_bound = int(ub_c - lb_c)
+        if slack_upper_bound == 0:
             print(f'add constraint {label} as equality constraint.')
             self.add_linear_equality_constraint(terms, lagrange_multiplier, constant)
             return slack_terms
         else:
-            if slack_range is None:
-                diff = int(slack_upper_bound - slack_lower_bound)
-            else:
-                diff = int(min(slack_upper_bound - slack_lower_bound, slack_range))
+            zero_constraint = False
+            if cross_zero:
+                if lb_c > 0 or ub_c < 0:
+                    zero_constraint = True
 
-            num_slack = int(np.floor(np.log2(diff)))
+            num_slack = int(np.floor(np.log2(slack_upper_bound)))
             slack_coefficients = [2 ** j for j in range(num_slack)]
-            if diff - 2 ** num_slack >= 0:
-                slack_coefficients.append(diff - 2 ** num_slack + 1)
+            if slack_upper_bound - 2 ** num_slack >= 0:
+                slack_coefficients.append(slack_upper_bound - 2 ** num_slack + 1)
 
             for j, s in enumerate(slack_coefficients):
                 sv = self.add_variable(f'slack_{label}_{j}')
                 slack_terms.append((sv, s))
-            if discontinuous_slack and slack_range is not None:
-                if slack_range < slack_upper_bound:
-                    sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
-                    slack_terms.append((sv, slack_upper_bound))
 
-        self.add_linear_equality_constraint(
-            terms + slack_terms, lagrange_multiplier, constant)
+            if zero_constraint:
+                sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
+                slack_terms.append((sv, ub_c))
+
+        self.add_linear_equality_constraint(terms + slack_terms, lagrange_multiplier, -ub_c)
         return slack_terms
 
     def add_linear_from(self, linear: Union[Iterable, Mapping]):

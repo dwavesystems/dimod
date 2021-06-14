@@ -523,6 +523,37 @@ class TestConstraint(unittest.TestCase):
                     s += bias
             self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
+    def test_inequality_constraint_empty(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(5, label='x')
+        dqm.add_variable(3, label='y')
+        dqm.add_variable(4, label='w')
+        expression = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
+        constant = 0
+        num_dqm_vars = dqm.num_variables()
+        slack_terms = dqm.add_linear_inequality_constraint(
+            expression,
+            lagrange_multiplier=1.0,
+            constant=constant,
+            label='inequality_0',
+            slack_method="log2",
+            lb=-40,
+            ub=-30)
+        self.assertTrue((len(slack_terms) == 0))
+        self.assertTrue(dqm.num_variables() == num_dqm_vars)
+
+        slack_terms = dqm.add_linear_inequality_constraint(
+            expression,
+            lagrange_multiplier=1.0,
+            constant=5,
+            label='inequality_0',
+            slack_method="log2",
+            lb=-50,
+            ub=30)
+
+        self.assertTrue((len(slack_terms) == 0))
+        self.assertTrue(dqm.num_variables() == num_dqm_vars)
+
     def test_inequality_constraint_log2(self):
         dqm = dimod.DQM()
         dqm.add_variable(5, label='x')
@@ -531,47 +562,48 @@ class TestConstraint(unittest.TestCase):
 
         expression = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
 
-        constant = 3
+        constant = 0
+        ub = -3
         slack_terms = dqm.add_linear_inequality_constraint(
             expression,
             lagrange_multiplier=1.0,
             constant=constant,
             label='inequality_0',
-            slack_method="log2")
+            slack_method="log2",
+            ub=ub)
 
         expression_dict = {v: (c, b) for v, c, b in expression + slack_terms}
         for cx, cy, cw, cs1, cs2, cs3 in itertools.product(range(5), range(3), range(4), range(2), range(2), range(2)):
-            s = constant
+            s = -ub-constant
             state = {'x': cx, 'y': cy, 'w': cw,
                      'slack_inequality_0_0': cs1, 'slack_inequality_0_1': cs2, 'slack_inequality_0_2': cs3}
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state) + (ub - constant) ** 2, s ** 2)
 
-    def test_inequality_log10_discontinuous_slack(self):
-        dqm = dimod.DQM()
-        dqm.add_variable(5, label='x')
-        expression = [('x', 1, -69.0)]
+    def test_inequality_cross_zero(self):
+        lbs = [-9, 4]
+        ubs = [-4, 14]
+        expressions = [-69.0, 69.0]
 
-        constant = 1
-        slack_terms = dqm.add_linear_inequality_constraint(
-            expression,
-            lagrange_multiplier=1.0,
-            constant=constant,
-            label='ineq',
-            slack_method="log10",
-            slack_range=10,
-            discontinuous_slack=True)
-        self.assertTrue(slack_terms[10][2] == 69 - constant)
-        expression_dict = {(v, c): (c, b) for v, c, b in expression + slack_terms}
-        for cx, cs1, cs2 in itertools.product(range(5), range(10),  range(3)):
-            s = constant
-            state = {'x': cx, 'slack_ineq_0': cs1, 'slack_ineq_1': cs2}
-            for v, cv, bias in expression + slack_terms:
-                if expression_dict[v, cv][0] == state[v]:
-                    s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+        for i, method in enumerate(['log2', 'log10']):
+            lb = lbs[i]
+            ub = ubs[i]
+            dqm = dimod.DQM()
+            dqm.add_variable(5, label='x')
+            expression = [('x', 1, expressions[i])]
+            constant = 1
+            slack_terms = dqm.add_linear_inequality_constraint(
+                expression,
+                lagrange_multiplier=1.0,
+                constant=constant,
+                label='ineq',
+                slack_method=method,
+                lb=lb,
+                ub=ub,
+                cross_zero=True)
+            self.assertTrue(slack_terms[-1][2] == ub - constant)
 
     def test_inequality_constraint_log10(self):
         dqm = dimod.DQM()
@@ -581,34 +613,36 @@ class TestConstraint(unittest.TestCase):
 
         expression = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
 
-        constant = 3
+        constant = 0
+        ub = -3
         slack_terms = dqm.add_linear_inequality_constraint(
             expression,
             lagrange_multiplier=1.0,
             constant=constant,
+            ub=ub,
             label='ineq_0',
             slack_method="log10")
 
         expression_dict = {(v, c): (c, b) for v, c, b in expression + slack_terms}
         for cx, cy, cw, cs in itertools.product(range(5), range(3), range(4), range(7)):
-            s = constant
+            s = -ub - constant
             state = {'x': cx, 'y': cy, 'w': cw, 'slack_ineq_0_0': cs}
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v, cv][0] == state[v]:
                     s += bias
-            self.assertAlmostEqual(dqm.energy(state) + constant ** 2, s ** 2)
+            self.assertAlmostEqual(dqm.energy(state) + (ub - constant) ** 2, s ** 2)
 
     def test_inequality_constraint_log10_3dqm(self):
         dqm = dimod.DQM()
         dqm.add_variable(5, label='x')
-
         expression = [('x', 1, -621.0)]
-
         constant = 3
+        ub = 0
         slack_terms = dqm.add_linear_inequality_constraint(
             expression,
             lagrange_multiplier=1.0,
             constant=constant,
+            ub=ub,
             label='ineq_0',
             slack_method="log10")
 

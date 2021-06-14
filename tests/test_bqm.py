@@ -2918,7 +2918,7 @@ class TestConstraint(unittest.TestCase):
                         self.assertEqual(bqm.get_quadratic(x[i], x[j]), 2.0)
 
     @parameterized.expand(BQMs.items())
-    def test_inequality_constraint_1(self, name, BQM):
+    def test_inequality_constraint(self, name, BQM):
         bqm = BQM('BINARY')
         num_variables = 3
         x = {}
@@ -2934,6 +2934,25 @@ class TestConstraint(unittest.TestCase):
             for j in x:
                 if j > i:
                     self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
+
+    def test_inequality_constraint_cross_zero(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
+        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2), ('slack_inequality0_2', 1)]
+        slack_terms = bqm.add_linear_inequality_constraint(
+            [(x[i], 2.0) for i in range(num_variables)],
+            lagrange_multiplier=1.0, constant=-4.0, lb= 3, ub=12, label='inequality0')
+        print(slack_terms)
+        self.assertTrue(slacks == slack_terms)
+        for i in x:
+            self.assertEqual(bqm.get_linear(x[i]), -12)
+            for j in x:
+                if j > i:
+                    self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
+
 
     @parameterized.expand(BQMs.items())
     def test_simple_constraint_iterator(self, name, BQM):
