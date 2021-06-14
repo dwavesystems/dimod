@@ -38,6 +38,7 @@ from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
+from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
@@ -1046,19 +1047,13 @@ class BinaryQuadraticModel:
         else:
             file_like = fp
 
-        prefix = file_like.read(len(BQM_MAGIC_PREFIX))
-        if prefix != BQM_MAGIC_PREFIX:
-            raise ValueError("unknown file type, expected magic string "
-                             f"{BQM_MAGIC_PREFIX!r} but got {prefix!r} "
-                             "instead")
+        header_info = read_header(file_like, BQM_MAGIC_PREFIX)
+        version = header_info.version
+        data = header_info.data
 
-        version = tuple(file_like.read(2))
         if version >= (3, 0):
             raise ValueError("cannot load a BQM serialized with version "
                              f"{version!r}, try upgrading your dimod version")
-
-        header_len = int(np.frombuffer(file_like.read(4), '<u4')[0])
-        data = json.loads(file_like.read(header_len).decode('ascii'))
 
         num_variables, num_interactions = data['shape']
 
@@ -1591,18 +1586,13 @@ class BinaryQuadraticModel:
                 ignore_labels=ignore_labels, spool_size=spool_size,
                 version=version)
 
-        # determine if we support the given version
-        if isinstance(version, Integral):
-            version = (version, 0)
-        if version not in [(1, 0), (2, 0)]:
+        version_tpl: Tuple[int, int] = (version, 0) if isinstance(version, Integral) else version
+
+        if version_tpl not in [(1, 0), (2, 0)]:
             raise ValueError(f"Unsupported version: {version!r}")
 
         # the file we'll be writing to
         file = SpooledTemporaryFile(max_size=spool_size)
-
-        prefix = BQM_MAGIC_PREFIX
-        file.write(prefix)
-        file.write(bytes(version))
 
         # the data in the header
         data = dict(shape=self.shape,
@@ -1613,7 +1603,7 @@ class BinaryQuadraticModel:
                     type=type(self).__name__,
                     )
 
-        if version < (2, 0):  # type: ignore[operator]
+        if version_tpl < (2, 0):
             # the variable labels go in the header
             if ignore_labels:
                 data.update(variables=list(range(self.num_variables)))
@@ -1624,13 +1614,7 @@ class BinaryQuadraticModel:
         else:
             data.update(variables=not self.variables._is_range())
 
-        header_data = json.dumps(data, sort_keys=True).encode('ascii')
-        header_data += b'\n'
-        header_data += b' '*(64 - (len(prefix) + 6 + len(header_data)) % 64)
-        header_len = np.dtype('<u4').type(len(header_data)).tobytes()
-
-        file.write(header_len)
-        file.write(header_data)
+        write_header(file, BQM_MAGIC_PREFIX, data, version=version_tpl)
 
         # write the offset
         file.write(memoryview(self.data.offset).cast('B'))
@@ -1643,7 +1627,7 @@ class BinaryQuadraticModel:
             file.write(memoryview(self.data._ineighborhood(vi)).cast('B'))
 
         # finally the labels (if needed)
-        if version >= (2, 0) and data['variables']:  # type: ignore[operator]
+        if version_tpl >= (2, 0) and data['variables']:  # type: ignore[operator]
             file.write(VariablesSection(self.variables).dumps())
 
         file.seek(0)  # go back to the start
@@ -1909,3 +1893,7 @@ def as_bqm(*args, cls: None = None, copy: bool = False,
                         return bqm
 
     return BinaryQuadraticModel(*args, dtype=dtype)
+
+
+# register fileview loader
+load.register(BQM_MAGIC_PREFIX, BinaryQuadraticModel.from_file)
