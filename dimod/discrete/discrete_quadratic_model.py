@@ -825,7 +825,7 @@ class CaseLabelDQM(DQM):
 
         Declare variables with unique case labels.
 
-        >>> dqm = dimod.DiscreteQuadraticModel()
+        >>> dqm = dimod.CaseLabelDQM()
         >>> dqm.add_variable({'x1', 'x2', 'x3'})
         >>> dqm.add_variable(['y1', 'y2', 'y3'])
 
@@ -868,7 +868,8 @@ class CaseLabelDQM(DQM):
         Args:
             cases (int or iterable):
                 The number of cases in the variable, or an iterable containing
-                the labels that will identify the cases of the variable.
+                the labels that will identify the cases of the variable.  Case
+                labels can be any hashable.
 
             label (hashable, optional):
                 A label for the variable. Can be any hashable except `None`.
@@ -937,15 +938,15 @@ class CaseLabelDQM(DQM):
         return case
 
     def get_linear(self, v):
-        """The linear bias(es) associated with variable `v`.
+        """The linear biases associated with variable `v`.
 
         Args:
             v: A variable in the discrete quadratic model, or a unique case
                 label.
 
         Returns:
-            The linear bias(es).  If `v` is a variable, returns a
-                :meth:`~DiscreteQuadraticModel.num_cases(v)` by 1 numpy array.
+            The linear biases.  If `v` is a variable, returns a NumPy array of
+                size :meth:`~DiscreteQuadraticModel.num_cases(v)` by 1.
 
                 If `v` is a unique case label, returns a float.
 
@@ -972,7 +973,7 @@ class CaseLabelDQM(DQM):
         return super().get_linear_case(v, case)
 
     def get_quadratic(self, u, v, array=False):
-        """The bias(es) associated with the interaction between `u` and `v`.
+        """The biases associated with the interaction between `u` and `v`.
 
         Args:
             u: A variable in the discrete quadratic model, or a unique case
@@ -988,13 +989,13 @@ class CaseLabelDQM(DQM):
                 `u` and `v` are unique case labels, ignored.
 
         Returns:
-            The quadratic bias(es).  If `array=False` and `u` and `v` are
+            The quadratic biases.  If `array=False` and `u` and `v` are
             variables, returns a dictionary of the form
             `{case_u, case_v: bias, ...}`
 
-            If `array=True` and `u` and `v` are variables, returns a
-            :meth:`~DiscreteQuadraticModel.num_cases(u)` by
-            :meth:`~DiscreteQuadraticModel.num_cases(v)` numpy array.
+            If `array=True` and `u` and `v` are variables, returns a NumPy
+            array of size :meth:`~DiscreteQuadraticModel.num_cases(u)` by
+            :meth:`~DiscreteQuadraticModel.num_cases(v)`.
 
             If `u` and `v` are unique case labels, returns a float.
 
@@ -1034,14 +1035,14 @@ class CaseLabelDQM(DQM):
         return super().get_quadratic_case(u, u_case, v, v_case)
 
     def set_linear(self, v, biases):
-        """Set the linear bias(es) associated with `v`.
+        """Set the linear biases associated with `v`.
 
         Args:
             v: A variable in the discrete quadratic model, or a unique case
                 label.
 
             biases (float or array-like):  If `v` is a variable, the linear
-                biases in an array.  Otherwise, the linear bias is a real
+                biases is an array.  Otherwise, the linear bias is a real
                 number.
 
         """
@@ -1066,7 +1067,7 @@ class CaseLabelDQM(DQM):
         super().set_linear_case(v, case, bias)
 
     def set_quadratic(self, u, v, biases):
-        """Set bias(es) associated with the interaction between `u` and `v`.
+        """Set biases associated with the interaction between `u` and `v`.
 
         Args:
             u: A variable in the discrete quadratic model, or a unique case
@@ -1078,7 +1079,7 @@ class CaseLabelDQM(DQM):
                 case label.
 
             biases (float or array-like/dict):
-                The quadratic bias(es).  If `u` and `v` are variables, then
+                The quadratic biases.  If `u` and `v` are variables, then
                 `biases` may be a dictionary of the form
                 `{case_u, case_v: bias, ...}` or a
                 :meth:`~DiscreteQuadraticModel.num_cases(u)` by
