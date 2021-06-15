@@ -737,7 +737,7 @@ cdef class cyBQM_template(cyBQMBase):
             self.variables._pop()
 
     def set_linear(self, v, bias_type bias):
-        cdef Py_ssize_t vi = self.variables.index(v, permissive=True)
+        cdef Py_ssize_t vi = self._index(v, permissive=True)
         self._set_linear(vi, bias)
 
     def set_quadratic(self, u, v, bias_type bias):
