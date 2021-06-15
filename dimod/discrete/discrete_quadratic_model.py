@@ -856,7 +856,7 @@ class CaseLabelDQM(DQM):
 
     '''
     def __init__(self, *args, **kwargs):
-        DQM.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._shared_case_label = defaultdict(dict)
         self._shared_label_case = defaultdict(dict)
         self._unique_case_label = {}
@@ -896,14 +896,14 @@ class CaseLabelDQM(DQM):
             raise ValueError(f'variable label {label} is not unique')
 
         if isinstance(cases, int):
-            return DQM.add_variable(self, cases, label=label)
+            return super().add_variable(cases, label=label)
 
         else:
             if len(set(cases)) != len(cases):
                 raise ValueError('case labels are not unique')
 
             if shared_labels:
-                var = DQM.add_variable(self, len(cases), label=label)
+                var = super().add_variable(len(cases), label=label)
 
                 for k, case in enumerate(cases):
                     self._shared_label_case[var][case] = k
@@ -914,7 +914,7 @@ class CaseLabelDQM(DQM):
                     if (case in self.variables) or (case in self._unique_label_case):
                         raise ValueError(f'case label {case} is not unique')
 
-                var = DQM.add_variable(self, len(cases), label=label)
+                var = super().add_variable(len(cases), label=label)
 
                 for k, case in enumerate(cases):
                     self._unique_label_case[case] = (var, k)
@@ -952,9 +952,9 @@ class CaseLabelDQM(DQM):
         """
         v_k = self._unique_label_case.get(v)
         if v_k:
-            return DQM.get_linear_case(self, *v_k)
+            return super().get_linear_case(*v_k)
         else:
-            return DQM.get_linear(self, v)
+            return super().get_linear(v)
 
     def get_linear_case(self, v, case):
         """The linear bias associated with case `case` of variable `v`.
@@ -969,7 +969,7 @@ class CaseLabelDQM(DQM):
 
         """
         case = self._lookup_shared_case(v, case)
-        return DQM.get_linear_case(self, v, case)
+        return super().get_linear_case(v, case)
 
     def get_quadratic(self, u, v, array=False):
         """The bias(es) associated with the interaction between `u` and `v`.
@@ -1008,9 +1008,9 @@ class CaseLabelDQM(DQM):
                 raise ValueError(f'unknown case label {v}')
 
             v_m = self._unique_label_case[v]
-            return DQM.get_quadratic_case(self, *u_k, *v_m)
+            return super().get_quadratic_case(*u_k, *v_m)
         else:
-            return DQM.get_quadratic(self, u, v)
+            return super().get_quadratic(u, v)
 
     def get_quadratic_case(self, u, u_case, v, v_case):
         """The bias associated with the interaction between two cases of `u`
@@ -1031,7 +1031,7 @@ class CaseLabelDQM(DQM):
         """
         u_case = self._lookup_shared_case(u, u_case)
         v_case = self._lookup_shared_case(v, v_case)
-        return DQM.get_quadratic_case(self, u, u_case, v, v_case)
+        return super().get_quadratic_case(u, u_case, v, v_case)
 
     def set_linear(self, v, biases):
         """Set the linear bias(es) associated with `v`.
@@ -1047,9 +1047,9 @@ class CaseLabelDQM(DQM):
         """
         v_k = self._unique_label_case.get(v)
         if v_k:
-            DQM.set_linear_case(self, *v_k, biases)
+            super().set_linear_case(*v_k, biases)
         else:
-            DQM.set_linear(self, v, biases)
+            super().set_linear(v, biases)
 
     def set_linear_case(self, v, case, bias):
         """The linear bias associated with case `case` of variable `v`.
@@ -1063,7 +1063,7 @@ class CaseLabelDQM(DQM):
 
         """
         case = self._lookup_shared_case(v, case)
-        DQM.set_linear_case(self, v, case, bias)
+        super().set_linear_case(v, case, bias)
 
     def set_quadratic(self, u, v, biases):
         """Set bias(es) associated with the interaction between `u` and `v`.
@@ -1097,9 +1097,9 @@ class CaseLabelDQM(DQM):
                 raise ValueError(f'unknown case label {v}')
 
             v_m = self._unique_label_case[v]
-            DQM.set_quadratic_case(self, *u_k, *v_m, biases)
+            super().set_quadratic_case(*u_k, *v_m, biases)
         else:
-            DQM.set_quadratic(self, u, v, biases)
+            super().set_quadratic(u, v, biases)
 
     def set_quadratic_case(self, u, u_case, v, v_case, bias):
         """Set the bias associated with the interaction between two cases of
@@ -1119,4 +1119,4 @@ class CaseLabelDQM(DQM):
         """
         u_case = self._lookup_shared_case(u, u_case)
         v_case = self._lookup_shared_case(v, v_case)
-        DQM.set_quadratic_case(self, u, u_case, v, v_case, bias)
+        super().set_quadratic_case(u, u_case, v, v_case, bias)
