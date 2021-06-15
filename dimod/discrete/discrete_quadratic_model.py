@@ -861,6 +861,7 @@ class CaseLabelDQM(DQM):
         self._shared_label_case = defaultdict(dict)
         self._unique_case_label = {}
         self._unique_label_case = {}
+        self._unique_label_vars = set()
 
     def add_variable(self, cases, label=None, shared_labels=False):
         """Add a discrete variable to the model.
@@ -916,6 +917,7 @@ class CaseLabelDQM(DQM):
                         raise ValueError(f'case label {case} is not unique')
 
                 var = super().add_variable(len(cases), label=label)
+                self._unique_label_vars.add(var)
 
                 for k, case in enumerate(cases):
                     self._unique_label_case[case] = (var, k)
@@ -1121,3 +1123,24 @@ class CaseLabelDQM(DQM):
         u_case = self._lookup_shared_case(u, u_case)
         v_case = self._lookup_shared_case(v, v_case)
         super().set_quadratic_case(u, u_case, v, v_case, bias)
+
+    def get_cases(self, v):
+        """The cases of variable `v`.
+
+        Returns:
+            List of case labels for `v`, if case labels exist for `v`.
+
+            If case labels do not exist for `v`, returns a list of integers
+            from `0` to :meth:`~DiscreteQuadraticModel.num_cases(v)` - 1.
+
+        """
+        range_ = range(self.num_cases(v))
+        map_ = self._shared_case_label.get(v)
+        if map_:
+            return [map_[case] for case in range_]
+
+        elif v in self._unique_label_vars:
+            return [self._unique_case_label[(v, case)] for case in range_]
+
+        else:
+            return list(range_)

@@ -997,3 +997,13 @@ class TestCaseLabelDQM(unittest.TestCase):
         self.assertEqual(dqm.num_variable_interactions(), 1)
         self.assertEqual(dqm.num_cases(), 6)
         self.assertEqual(dqm.num_case_interactions(), 2)
+
+    def test_get_cases(self):
+        dqm = dimod.CaseLabelDQM()
+        x = dqm.add_variable(['red', 'green', 'blue'], shared_labels=True)
+        y = dqm.add_variable(['x1', 'x2', 'x3'])
+        z = dqm.add_variable(3)
+
+        self.assertEqual(dqm.get_cases(x), ['red', 'green', 'blue'])
+        self.assertEqual(dqm.get_cases(y), ['x1', 'x2', 'x3'])
+        self.assertEqual(dqm.get_cases(z), [0, 1, 2])
