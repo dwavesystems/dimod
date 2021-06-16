@@ -56,7 +56,7 @@ Examples:
     ... 1 2 -4.5
     ... '''
     >>> coo.loads(coo_string, vartype=dimod.BINARY)
-    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(0, 1): 1.0, (1, 2): -4.5}, 0.0, 'BINARY')
+    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(1, 0): 1.0, (2, 1): -4.5}, 0.0, 'BINARY')
 
     Or provide the vartype as a header.
 
@@ -67,7 +67,7 @@ Examples:
     ... 1 2 -4.5
     ... '''
     >>> coo.loads(coo_string)
-    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(0, 1): 1.0, (1, 2): -4.5}, 0.0, 'BINARY')
+    BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(1, 0): 1.0, (2, 1): -4.5}, 0.0, 'BINARY')
 
 """
 

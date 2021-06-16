@@ -21,28 +21,10 @@ Examples:
     >>> import json
     >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
     ...
-    >>> bqm = dimod.BinaryQuadraticModel.from_ising({}, {('a', 'b'): -1})
-    >>> s = json.dumps(bqm, cls=DimodEncoder)
-    >>> new = json.loads(s, cls=DimodDecoder)
-    >>> bqm == new
-    True
-
-    >>> import json
-    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
-    ...
     >>> sampleset = dimod.SampleSet.from_samples({'a': -1, 'b': 1}, dimod.SPIN, energy=5)
     >>> s = json.dumps(sampleset, cls=DimodEncoder)
     >>> new = json.loads(s, cls=DimodDecoder)
     >>> sampleset == new
-    True
-
-    >>> import json
-    >>> from dimod.serialization.json import DimodEncoder, DimodDecoder
-    ...
-    >>> # now inside a list
-    >>> s = json.dumps([sampleset, bqm], cls=DimodEncoder)
-    >>> new = json.loads(s, cls=DimodDecoder)
-    >>> new == [sampleset, bqm]
     True
 
 """
