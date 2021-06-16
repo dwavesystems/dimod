@@ -935,6 +935,27 @@ class BinaryQuadraticModel:
     def degree(self, v: Variable):
         return self.data.degree
 
+    def degrees(self, array: bool = False, dtype: DTypeLike = np.int
+                ) -> Union[np.ndarray, Mapping[Variable, int]]:
+        """Return the degrees of a binary quadratic model's variables.
+
+        Args:
+            array (optional, default=False):
+                If True, returns a :obj:`numpy.ndarray`; otherwise returns a dict.
+
+            dtype (optional, default=:class:`numpy.int`):
+                The data type of the returned degrees. Applies only if
+                `array==True`.
+
+        Returns:
+            Degrees of all variables.
+
+        """
+        if array:
+            return np.fromiter(map(self.degree, self.variables),
+                               count=len(self), dtype=dtype)
+        return {v: self.degree(v) for v in self.variables}
+
     @classmethod
     def empty(cls, vartype):
         """Create a new binary quadratic model with no variables and no offset.

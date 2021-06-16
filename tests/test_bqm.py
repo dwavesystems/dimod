@@ -817,6 +817,20 @@ class TestCoo(unittest.TestCase):
         self.assertEqual(bqm, new_bqm)
 
 
+class TestDegree(unittest.TestCase):
+    @parameterized.expand(BQM_CLSs.items())
+    def test_degrees(self, name, BQM):
+        bqm = BQM({}, {'ab': 1, 'bc': 1, 'ac': 1, 'ad': 1}, 'SPIN')
+        self.assertEqual(bqm.degrees(), {'a': 3, 'b': 2, 'c': 2, 'd': 1})
+
+    @parameterized.expand(BQM_CLSs.items())
+    def test_degrees_array(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_linear_from((v, 0) for v in 'abcd')
+        bqm.add_quadratic_from({'ab': 1, 'bc': 1, 'ac': 1, 'ad': 1})
+        np.testing.assert_array_equal(bqm.degrees(array=True), [3, 2, 2, 1])
+
+
 class TestDepreaction(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())
     def test_shapeable(self, name, BQM):
