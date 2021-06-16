@@ -2758,6 +2758,12 @@ class TestViews(unittest.TestCase):
         self.assertEqual(bqm.linear.sum(start=5), 6)
 
     @parameterized.expand(BQM_CLSs.items())
+    def test_linear_update(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.linear.update({'a': -1.0, 'b': 1.0, 'c': 1.0})
+        self.assertEqual(bqm.linear, {'a': -1.0, 'b': 1.0, 'c': 1.0})
+
+    @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_max(self, name, BQM):
         bqm = BQM.from_ising({}, {'ab': 1, 'ac': 2, 'bc': 3})
         self.assertEqual(bqm.adj['a'].max(), 2)
