@@ -294,17 +294,17 @@ class BinaryQuadraticModel:
             raise TypeError("A valid vartype or another bqm must be provided")
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
-            if isinstance(args[0], BinaryQuadraticModel):
+            if hasattr(args[0], 'vartype'):
                 self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
         elif len(args) == 2:
             # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
-            if isinstance(args[0], BinaryQuadraticModel):
-                self._init_bqm(args[0], vartype=args[1], dtype=dtype)
-            elif isinstance(args[0], Integral):
+            if isinstance(args[0], Integral):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
+            elif hasattr(args[0], 'vartype'):
+                self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             else:
                 self._init_components([], args[0], 0.0, args[1], dtype=dtype)
         elif len(args) == 3:
@@ -546,7 +546,7 @@ class BinaryQuadraticModel:
         return NotImplemented
 
     def __ne__(self, other):
-        return not self == other
+        return not self.is_equal(other)
 
     @property
     def adj(self) -> Adjacency:
@@ -935,6 +935,27 @@ class BinaryQuadraticModel:
     def degree(self, v: Variable):
         return self.data.degree
 
+    def degrees(self, array: bool = False, dtype: DTypeLike = np.int
+                ) -> Union[np.ndarray, Mapping[Variable, int]]:
+        """Return the degrees of a binary quadratic model's variables.
+
+        Args:
+            array (optional, default=False):
+                If True, returns a :obj:`numpy.ndarray`; otherwise returns a dict.
+
+            dtype (optional, default=:class:`numpy.int`):
+                The data type of the returned degrees. Applies only if
+                `array==True`.
+
+        Returns:
+            Degrees of all variables.
+
+        """
+        if array:
+            return np.fromiter(map(self.degree, self.variables),
+                               count=len(self), dtype=dtype)
+        return {v: self.degree(v) for v in self.variables}
+
     @classmethod
     def empty(cls, vartype):
         """Create a new binary quadratic model with no variables and no offset.
@@ -1141,6 +1162,48 @@ class BinaryQuadraticModel:
 
         """
         return cls(h, J, offset, Vartype.SPIN)
+
+    @classmethod
+    def from_networkx_graph(cls, G, vartype=None, node_attribute_name='bias',
+                            edge_attribute_name='bias'):
+        """Create a binary quadratic model from a NetworkX graph.
+
+        Args:
+            G (:obj:`networkx.Graph`):
+                A NetworkX graph with biases stored as node/edge attributes.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input
+                values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the `G` should have a vartype attribute. If
+                `vartype` is provided and `G.vartype` exists then the argument
+                overrides the property.
+
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases. If the node does not have a
+                matching attribute then the bias defaults to 0.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases. If the edge does not have a
+                matching attribute then the bias defaults to 0.
+
+        Returns:
+            Binary quadratic model
+
+        .. note:: This method is deprecated. Use :func:`.from_networkx_graph`.
+
+        """
+        warnings.warn('BinaryQuadraticModel.from_networkx_graph() is deprecated since '
+                      'dimod 0.10.0, '
+                      'use dimod.from_networkx_graph(bqm) instead.',
+                      DeprecationWarning, stacklevel=2)
+        from dimod.converters import from_networkx_graph  # avoid circular import
+        return from_networkx_graph(G, vartype, node_attribute_name,
+                                   edge_attribute_name, cls=cls)
 
     @classmethod
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0,
@@ -1404,6 +1467,11 @@ class BinaryQuadraticModel:
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         return self.data.remove_variable
 
+    def remove_variables_from(self, variables: Iterable[Variable]):
+        """Remove the given variables from the binary quadratic model."""
+        for v in variables:
+            self.remove_variable(v)
+
     @forwarding_method
     def resize(self, n: int):
         return self.data.resize
@@ -1649,6 +1717,31 @@ class BinaryQuadraticModel:
         bqm = self.spin
         return dict(bqm.linear), dict(bqm.quadratic), bqm.offset
 
+    def to_networkx_graph(self, node_attribute_name='bias',
+                          edge_attribute_name='bias'):
+        """Convert a binary quadratic model to NetworkX graph format.
+
+        Args:
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases.
+
+        Returns:
+            :class:`networkx.Graph`: A NetworkX graph with biases stored as
+            node/edge attributes.
+
+        .. note:: This method is deprecated. Use :func:`.to_networkx_graph`.
+
+        """
+        warnings.warn('BinaryQuadraticModel.to_networkx_graph() is deprecated since '
+                      'dimod 0.10.0, '
+                      'use bqm.to_networkx_graph() instead.',
+                      DeprecationWarning, stacklevel=2)
+        from dimod.converters import to_networkx_graph  # avoid circular import
+        return to_networkx_graph(self, node_attribute_name, edge_attribute_name)
+
     def to_numpy_matrix(self, variable_order=None):
         warnings.warn('bqm.to_numpy_matrix() is deprecated since dimod 0.10.0',
                       DeprecationWarning, stacklevel=2)
@@ -1739,8 +1832,8 @@ class BinaryQuadraticModel:
             icol.append(label_to_idx[v])
             qdata.append(bias)
 
-        irow = np.asarray(irow)
-        icol = np.asarray(icol)
+        irow = np.asarray(irow, dtype=np.int64)
+        icol = np.asarray(icol, dtype=np.int64)
         qdata = np.asarray(qdata)
 
         if sort_indices:
@@ -1775,7 +1868,7 @@ class BinaryQuadraticModel:
         try:
             self.data.update(other.data)
             return
-        except NotImplementedError:
+        except (NotImplementedError, AttributeError):
             # methods can defer this
             pass
 

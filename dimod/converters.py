@@ -11,13 +11,14 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 """
 Functions that convert binary quadratic models to and from other formats.
 """
 
-from dimod.bqm.adjdictbqm import AdjDictBQM
+import warnings
+
+from dimod.binary.binary_quadratic_model import BQM
 
 __all__ = ['to_networkx_graph', 'from_networkx_graph']
 
@@ -62,7 +63,8 @@ def to_networkx_graph(bqm,
 
 def from_networkx_graph(G, vartype=None,
                         node_attribute_name='bias', edge_attribute_name='bias',
-                        cls=AdjDictBQM):
+                        cls=None,
+                        dtype=object):
     """Create a binary quadratic model from a NetworkX graph.
 
     Args:
@@ -88,9 +90,7 @@ def from_networkx_graph(G, vartype=None,
             Attribute name for quadratic biases. If the edge does not have a
             matching attribute then the bias defaults to 0.
 
-        cls (type, optional):
-            The type of binary quadratic model to construct. Default is
-            :class:`.AdjDictBQM`.
+        dtype: The dtype of the binary quadratic model. Defaults to `object`.
 
     Returns:
         A binary quadratic model of type `cls`.
@@ -112,6 +112,9 @@ def from_networkx_graph(G, vartype=None,
         ...                                 edge_attribute_name='quadratic')
 
     """
+    if cls is not None:
+        warnings.warn("'cls' keyword argument is deprecated as of 0.10.0 and "
+                      "does nothing.")
     if vartype is None:
         if not hasattr(G, 'vartype'):
             msg = ("either 'vartype' argument must be provided or "
@@ -124,4 +127,4 @@ def from_networkx_graph(G, vartype=None,
                  for u, v, b in G.edges(data=edge_attribute_name, default=0)}
     offset = getattr(G, 'offset', 0)
 
-    return cls(linear, quadratic, offset, vartype)
+    return BQM(linear, quadratic, offset, vartype, dtype=dtype)

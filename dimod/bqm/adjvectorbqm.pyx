@@ -67,14 +67,14 @@ cdef class cyAdjVectorBQM:
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             obj, = args
-            if isinstance(obj, BQM):
+            if hasattr(args[0], 'vartype'):
                 self._init_bqm(obj)
             else:
                 self._init_number(0, obj)
         elif len(args) == 2:
             # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
             obj, vartype = args
-            if isinstance(obj, BQM):
+            if hasattr(args[0], 'vartype'):
                 self._init_bqm(obj, vartype)
             elif isinstance(obj, numbers.Integral):
                 self._init_number(obj, vartype)

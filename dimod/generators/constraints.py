@@ -95,6 +95,6 @@ def combinations(n, k, strength=1, vartype=BINARY):
     bqm = BinaryQuadraticModel.empty(BINARY)
     bqm.add_variables_from(((v, lbias) for v in variables))
     bqm.add_interactions_from(((u, v, qbias) for u, v in itertools.combinations(variables, 2)))
-    bqm.add_offset(strength*(k**2))
+    bqm.offset += strength*(k**2)
 
     return bqm.change_vartype(vartype, inplace=True)

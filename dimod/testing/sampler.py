@@ -100,7 +100,7 @@ def create_bqm_tests(sampler, max_num_variables=None):
     for BQM in BQM_SUBCLASSES:
         yield parameterized_method(test_sample, sampler(), BQM(h, J, 1.5, 'SPIN'),
                                    specifiers=['spin', BQM.__name__] + specifiers)
-        yield parameterized_method(test_sample, sampler(), BQM(Q, 1.5, 'BINARY'),
+        yield parameterized_method(test_sample, sampler(), BQM.from_qubo(Q, 1.5),
                                    specifiers=['binary', BQM.__name__] + specifiers)
 
     # 1 variable
@@ -126,7 +126,7 @@ def create_bqm_tests(sampler, max_num_variables=None):
     for BQM in BQM_SUBCLASSES:
         yield parameterized_method(test_sample, sampler(), BQM(h, J, 1.5, 'SPIN'),
                                    specifiers=['spin', BQM.__name__] + specifiers)
-        yield parameterized_method(test_sample, sampler(), BQM(Q, 1.5, 'BINARY'),
+        yield parameterized_method(test_sample, sampler(), BQM.from_qubo(Q, 1.5),
                                    specifiers=['binary', BQM.__name__] + specifiers)
 
     if max_num_variables < 2:
@@ -150,7 +150,7 @@ def create_bqm_tests(sampler, max_num_variables=None):
     for BQM in BQM_SUBCLASSES:
         yield parameterized_method(test_sample, sampler(), BQM(h, J, 3, 'SPIN'),
                                    specifiers=['spin', BQM.__name__] + specifiers)
-        yield parameterized_method(test_sample, sampler(), BQM(Q, 8, 'BINARY'),
+        yield parameterized_method(test_sample, sampler(), BQM.from_qubo(Q, 8),
                                    specifiers=['binary', BQM.__name__] + specifiers)
 
     if max_num_variables < 3:
@@ -174,7 +174,7 @@ def create_bqm_tests(sampler, max_num_variables=None):
     for BQM in BQM_SUBCLASSES:
         yield parameterized_method(test_sample, sampler(), BQM(h, J, -4., 'SPIN'),
                                    specifiers=['spin', BQM.__name__] + specifiers)
-        yield parameterized_method(test_sample, sampler(), BQM(Q, 16, 'BINARY'),
+        yield parameterized_method(test_sample, sampler(), BQM.from_qubo(Q, 16),
                                    specifiers=['binary', BQM.__name__] + specifiers)
 
 

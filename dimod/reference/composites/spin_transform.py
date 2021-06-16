@@ -111,7 +111,7 @@ class SpinReversalTransformComposite(Sampler, Composite):
 
         for ii in range(num_spin_reversal_transforms):
             # flip each variable with a 50% chance
-            for v in bqm:
+            for v in bqm.variables:
                 if random() > .5:
                     transform[v] = not transform[v]
                     flipped_bqm.flip_variable(v)
