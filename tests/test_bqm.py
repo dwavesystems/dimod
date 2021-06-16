@@ -1375,9 +1375,6 @@ class TestLen(unittest.TestCase):
 
 
 class TestNetworkxGraph(unittest.TestCase):
-    # developer note: these tests should be moved to converter tests when
-    # the methods are deprecated.
-
     def setUp(self):
         try:
             import networkx as nx
@@ -1388,7 +1385,8 @@ class TestNetworkxGraph(unittest.TestCase):
         import networkx as nx
         G = nx.Graph()
         G.vartype = 'SPIN'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
         self.assertEqual(len(bqm), 0)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
@@ -1396,7 +1394,8 @@ class TestNetworkxGraph(unittest.TestCase):
         import networkx as nx
         G = nx.complete_graph(5)
         G.vartype = 'BINARY'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
 
         self.assertIs(bqm.vartype, dimod.BINARY)
         self.assertEqual(set(bqm.variables), set(range(5)))
@@ -1409,7 +1408,8 @@ class TestNetworkxGraph(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
                                                     {'bc': 1, 'cd': -4},
                                                     offset=6)
-        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
         self.assertEqual(bqm, new)
 
     def test_to_networkx_graph(self):
@@ -1423,7 +1423,8 @@ class TestNetworkxGraph(unittest.TestCase):
                                            vartype=dimod.SPIN)
 
         # get the graph
-        BQM = model.to_networkx_graph()
+        with self.assertWarns(DeprecationWarning):
+            BQM = model.to_networkx_graph()
 
         self.assertEqual(set(graph), set(BQM))
         for u, v in graph.edges:

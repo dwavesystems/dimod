@@ -1164,6 +1164,48 @@ class BinaryQuadraticModel:
         return cls(h, J, offset, Vartype.SPIN)
 
     @classmethod
+    def from_networkx_graph(cls, G, vartype=None, node_attribute_name='bias',
+                            edge_attribute_name='bias'):
+        """Create a binary quadratic model from a NetworkX graph.
+
+        Args:
+            G (:obj:`networkx.Graph`):
+                A NetworkX graph with biases stored as node/edge attributes.
+
+            vartype (:class:`.Vartype`/str/set, optional):
+                Variable type for the binary quadratic model. Accepted input
+                values:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+                If not provided, the `G` should have a vartype attribute. If
+                `vartype` is provided and `G.vartype` exists then the argument
+                overrides the property.
+
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases. If the node does not have a
+                matching attribute then the bias defaults to 0.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases. If the edge does not have a
+                matching attribute then the bias defaults to 0.
+
+        Returns:
+            Binary quadratic model
+
+        .. note:: This method is deprecated. Use :func:`.from_networkx_graph`.
+
+        """
+        warnings.warn('BinaryQuadraticModel.from_networkx_graph() is deprecated since '
+                      'dimod 0.10.0, '
+                      'use dimod.from_networkx_graph(bqm) instead.',
+                      DeprecationWarning, stacklevel=2)
+        from dimod.converters import from_networkx_graph  # avoid circular import
+        return from_networkx_graph(G, vartype, node_attribute_name,
+                                   edge_attribute_name, cls=cls)
+
+    @classmethod
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0,
                           interactions=None):
         warnings.warn('BQM.from_numpy_matrix(M) is deprecated since dimod '
@@ -1669,6 +1711,31 @@ class BinaryQuadraticModel:
         """
         bqm = self.spin
         return dict(bqm.linear), dict(bqm.quadratic), bqm.offset
+
+    def to_networkx_graph(self, node_attribute_name='bias',
+                          edge_attribute_name='bias'):
+        """Convert a binary quadratic model to NetworkX graph format.
+
+        Args:
+            node_attribute_name (hashable, optional, default='bias'):
+                Attribute name for linear biases.
+
+            edge_attribute_name (hashable, optional, default='bias'):
+                Attribute name for quadratic biases.
+
+        Returns:
+            :class:`networkx.Graph`: A NetworkX graph with biases stored as
+            node/edge attributes.
+
+        .. note:: This method is deprecated. Use :func:`.to_networkx_graph`.
+
+        """
+        warnings.warn('BinaryQuadraticModel.to_networkx_graph() is deprecated since '
+                      'dimod 0.10.0, '
+                      'use bqm.to_networkx_graph() instead.',
+                      DeprecationWarning, stacklevel=2)
+        from dimod.converters import to_networkx_graph  # avoid circular import
+        return to_networkx_graph(self, node_attribute_name, edge_attribute_name)
 
     def to_numpy_matrix(self, variable_order=None):
         warnings.warn('bqm.to_numpy_matrix() is deprecated since dimod 0.10.0',
