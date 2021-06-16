@@ -294,17 +294,17 @@ class BinaryQuadraticModel:
             raise TypeError("A valid vartype or another bqm must be provided")
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
-            if isinstance(args[0], BinaryQuadraticModel):
+            if hasattr(args[0], 'vartype'):
                 self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
         elif len(args) == 2:
             # BQM(bqm, vartype), BQM(n, vartype) or BQM(M, vartype)
-            if isinstance(args[0], BinaryQuadraticModel):
-                self._init_bqm(args[0], vartype=args[1], dtype=dtype)
-            elif isinstance(args[0], Integral):
+            if isinstance(args[0], Integral):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
+            elif hasattr(args[0], 'vartype'):
+                self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             else:
                 self._init_components([], args[0], 0.0, args[1], dtype=dtype)
         elif len(args) == 3:
@@ -546,7 +546,7 @@ class BinaryQuadraticModel:
         return NotImplemented
 
     def __ne__(self, other):
-        return not self == other
+        return not self.is_equal(other)
 
     @property
     def adj(self) -> Adjacency:
@@ -1863,7 +1863,7 @@ class BinaryQuadraticModel:
         try:
             self.data.update(other.data)
             return
-        except NotImplementedError:
+        except (NotImplementedError, AttributeError):
             # methods can defer this
             pass
 

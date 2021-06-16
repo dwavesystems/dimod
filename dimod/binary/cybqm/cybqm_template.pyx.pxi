@@ -721,7 +721,7 @@ cdef class cyBQM_template(cyBQMBase):
 
         tmp = self.variables._pop()
 
-        assert tmp == v
+        assert tmp == v, f"{tmp} == {v}"
 
         return v
 

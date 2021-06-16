@@ -1068,6 +1068,14 @@ class TestFixVariable(unittest.TestCase):
         with self.assertRaises(ValueError):
             BQM('SPIN').fix_variable('a', -1)
 
+    @parameterized.expand(BQMs.items())
+    def test_bug(self, name, BQM):
+        bqm = BQM({1: 4.0, 2: -4.0, 3: 0.0, 4: 1.0, 5: -1.0},
+                  {(1, 0): -4.0, (3, 2): 4.0, (5, 4): -2.0}, 0.0, 'BINARY')
+        fixed = {2: 0, 3: 0, 4: 0, 5: 0}
+
+        bqm.fix_variables(fixed)  # should not raise an error
+
 
 class TestFixVariables(unittest.TestCase):
     @parameterized.expand(BQMs.items())

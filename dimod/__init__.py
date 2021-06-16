@@ -31,9 +31,6 @@ from dimod.roof_duality import fix_variables
 from dimod.binary import *
 import dimod.binary
 
-# from dimod.binary_quadratic_model import BinaryQuadraticModel, BQM
-# import dimod.binary_quadratic_model
-
 from dimod.discrete import *
 
 import dimod.testing

@@ -57,8 +57,7 @@ from functools import reduce
 
 import numpy as np
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.package_info import __version__
+from dimod import __version__
 from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
 
@@ -69,7 +68,7 @@ class DimodEncoder(json.JSONEncoder):
     """Subclass the JSONEncoder for dimod objects.
     """
     def default(self, obj):
-        if isinstance(obj, (SampleSet, BinaryQuadraticModel)):
+        if isinstance(obj, SampleSet):
             return obj.to_serializable()
 
         return json.JSONEncoder.default(self, obj)
