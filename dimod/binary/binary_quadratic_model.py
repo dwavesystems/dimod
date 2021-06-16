@@ -1827,8 +1827,8 @@ class BinaryQuadraticModel:
             icol.append(label_to_idx[v])
             qdata.append(bias)
 
-        irow = np.asarray(irow)
-        icol = np.asarray(icol)
+        irow = np.asarray(irow, dtype=np.int64)
+        icol = np.asarray(icol, dtype=np.int64)
         qdata = np.asarray(qdata)
 
         if sort_indices:

@@ -2514,6 +2514,8 @@ class TestToNumpyVectors(unittest.TestCase):
 
         np.testing.assert_array_equal(ldata, [0, 4, 8])
 
+        self.assertTrue(np.issubdtype(irow.dtype, np.integer))
+        self.assertTrue(np.issubdtype(icol.dtype, np.integer))
         self.assertEqual(len(irow), len(icol))
         self.assertEqual(len(icol), len(qdata))
         self.assertEqual(len(qdata), len(bqm.quadratic))
