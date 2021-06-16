@@ -1804,6 +1804,16 @@ class TestRemoveVariable(unittest.TestCase):
             bqm.remove_variable()
 
     @parameterized.expand(BQMs.items())
+    def test_multiple(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_variable('a')
+        bqm.add_variable('b')
+        bqm.add_variable('c')
+
+        bqm.remove_variables_from('ac')
+        self.assertEqual(list(bqm.variables), list('b'))
+
+    @parameterized.expand(BQMs.items())
     def test_provided(self, name, BQM):
         bqm = BQM('SPIN')
         bqm.add_variable('a')

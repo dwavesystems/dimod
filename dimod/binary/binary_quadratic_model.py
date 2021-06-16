@@ -1467,6 +1467,11 @@ class BinaryQuadraticModel:
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         return self.data.remove_variable
 
+    def remove_variables_from(self, variables: Iterable[Variable]):
+        """Remove the given variables from the binary quadratic model."""
+        for v in variables:
+            self.remove_variable(v)
+
     @forwarding_method
     def resize(self, n: int):
         return self.data.resize
