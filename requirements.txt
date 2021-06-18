@@ -1,2 +1,4 @@
 numpy==1.19.4
 cython==0.29.21
+
+reno==3.3.0  # for changelog
