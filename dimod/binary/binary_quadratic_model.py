@@ -276,7 +276,7 @@ class BinaryQuadraticModel:
     _DATA_CLASSES = {
         np.dtype(np.float32): cyBQM_float32,
         np.dtype(np.float64): cyBQM_float64,
-        np.dtype(np.object_): pyBQM,
+        np.dtype(object): pyBQM,
     }
 
     DEFAULT_DTYPE = np.float64
@@ -935,7 +935,7 @@ class BinaryQuadraticModel:
     def degree(self, v: Variable):
         return self.data.degree
 
-    def degrees(self, array: bool = False, dtype: DTypeLike = np.int
+    def degrees(self, array: bool = False, dtype: DTypeLike = int
                 ) -> Union[np.ndarray, Mapping[Variable, int]]:
         """Return the degrees of a binary quadratic model's variables.
 
