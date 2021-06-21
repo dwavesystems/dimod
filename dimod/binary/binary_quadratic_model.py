@@ -526,7 +526,12 @@ class BinaryQuadraticModel:
         return NotImplemented
 
     def __rsub__(self, other):
-        return self - other
+        # should only miss on number, not on BQM
+        if isinstance(other, Number):
+            new = -self  # makes a new one
+            new.offset += other
+            return new
+        return NotImplemented
 
     def __eq__(self, other):
         if isinstance(other, (Number, BinaryQuadraticModel)):
