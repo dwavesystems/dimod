@@ -16,7 +16,7 @@ from typing import Hashable, Union
 
 import numpy as np
 
-from dimod.vartypes import ExtendedVartypeLike, VartypeLike
+from dimod.vartypes import VartypeLike
 
 __all__ = ['Bias',
            'Variable',
