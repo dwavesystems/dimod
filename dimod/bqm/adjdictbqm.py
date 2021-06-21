@@ -221,7 +221,7 @@ class AdjDictBQM(ShapeableBQM):
             if isinstance(quadratic, np.ndarray):
                 dtype = quadratic.dtype
             else:
-                quadratic = np.asarray(quadratic, dtype=np.object)
+                quadratic = np.asarray(quadratic, dtype=object)
 
             D = np.atleast_2d(quadratic)
 
