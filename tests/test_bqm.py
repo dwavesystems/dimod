@@ -2139,6 +2139,8 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(u*(v-1), BQM({'u': -1}, {'uv': 1}, 0, 'SPIN'))
         self.assertEqual(-u, BQM({'u': -1}, {}, 0, 'SPIN'))
         self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'SPIN'))
+        self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'SPIN'))
+        self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'SPIN'))
 
 
 class TestToIsing(unittest.TestCase):
