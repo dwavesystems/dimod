@@ -612,6 +612,23 @@ class QuadraticModelBase {
         }
     }
 
+    /// Scale offset, linear biases, and interactions by a factor
+    void scale(double scale_factor) {
+        // adjust offset
+        offset() *= scale_factor;
+
+        // adjust linear biases and quadratic interactions
+        for (size_type u = 0; u < num_variables(); u++) {
+            linear_biases_[u] *= scale_factor;
+
+            auto begin = adj_[u].begin();
+            auto end = adj_[u].end();
+            for (auto nit = begin; nit != end; ++nit) {
+                (*nit).second *= scale_factor;
+            }
+        }
+    }
+
  protected:
     std::vector<bias_type> linear_biases_;
     std::vector<Neighborhood<bias_type, index_type>> adj_;

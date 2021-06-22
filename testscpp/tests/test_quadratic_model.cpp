@@ -38,6 +38,31 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
             }
         }
 
+        AND_GIVEN("a scale factor for biases and offset") {
+            double scale_factor = 5.5;
+
+            WHEN("we call scale on a filled BQM") {
+                bqm.offset() = 2;
+                bqm.resize(3);
+                bqm.linear(0) = 1;
+                bqm.linear(1) = 2;
+                bqm.linear(2) = 3;
+                bqm.set_quadratic(0,1,1);
+                bqm.set_quadratic(1,2,2);
+
+                bqm.scale(scale_factor);
+
+                THEN("all biases, interaction, and offset are scaled") {
+                    REQUIRE(bqm.offset() == 11.0);
+                    REQUIRE(bqm.linear(0) == 5.5);
+                    REQUIRE(bqm.linear(1) == 11.0);
+                    REQUIRE(bqm.linear(2) == 16.5);
+                    REQUIRE(bqm.quadratic(0,1) == 5.5);
+                    REQUIRE(bqm.quadratic(1,2) == 11.0);
+                }
+            }
+        }
+
         AND_GIVEN("some COO-formatted arrays") {
             int irow[4] = {0, 2, 0, 1};
             int icol[4] = {0, 2, 1, 2};
