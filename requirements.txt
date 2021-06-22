@@ -2,3 +2,5 @@ numpy==1.19.4
 cython==0.29.21
 
 reno==3.3.0  # for changelog
+
+setuptools>=46.4.0  # to support setup.cfg getting __version__
