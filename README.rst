@@ -57,24 +57,17 @@ Installation
 
 .. installation-start-marker
 
-Compatible with Python 3.5+:
+Compatible with Python 3.6+:
 
 .. code-block:: bash
 
     pip install dimod
 
-To install with optional components:
+To install from source (requires `pip>=10.0.0`):
 
 .. code-block:: bash
 
-    pip install dimod[all]
-
-To install from source:
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
-    python setup.py install
+    pip install .
 
 When developing on dimod, it is often convenient to build the extensions
 in place:
