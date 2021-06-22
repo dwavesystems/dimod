@@ -618,11 +618,11 @@ class QuadraticModelBase {
         offset() *= scale_factor;
 
         // adjust linear biases and quadratic interactions
-        for (size_type ui = 0; ui < num_variables(); ui++) {
-            linear_biases_[ui] *= scale_factor;
+        for (size_type u = 0; u < num_variables(); u++) {
+            linear_biases_[u] *= scale_factor;
 
-            auto begin = adj_[ui].begin();
-            auto end = adj_[ui].end();
+            auto begin = adj_[u].begin();
+            auto end = adj_[u].end();
             for (auto nit = begin; nit != end; ++nit) {
                 (*nit).second *= scale_factor;
             }
