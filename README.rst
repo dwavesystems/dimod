@@ -63,7 +63,7 @@ Compatible with Python 3.6+:
 
     pip install dimod
 
-To install from source (requires `pip>=10.0.0`):
+To install from source (requires ``pip>=10.0.0``):
 
 .. code-block:: bash
 
