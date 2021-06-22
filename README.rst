@@ -67,7 +67,8 @@ To install from source (requires ``pip>=10.0.0``):
 
 .. code-block:: bash
 
-    pip install .
+    pip install -r requirements.txt
+    python setup.py install
 
 When developing on dimod, it is often convenient to build the extensions
 in place:
@@ -79,6 +80,11 @@ in place:
 
 .. installation-end-marker
 
+License
+-------
+
+Released under the Apache License 2.0. See LICENSE file.
+
 Contributing
 ------------
 
@@ -88,8 +94,8 @@ has guidelines for contributing to Ocean packages.
 dimod includes some formatting customization in the
 `.clang-format <.clang-format>`_ and `setup.cfg <setup.cfg>`_ files.
 
-Reno
-~~~~
+Release Notes
+~~~~~~~~~~~~~
 
 dimod makes use of `reno <https://docs.openstack.org/reno/>`_ to manage its
 release notes.
@@ -107,8 +113,3 @@ Commit the file along with your changes.
 
 See reno's `user guide <https://docs.openstack.org/reno/latest/user/usage.html>`_
 for details.
-
-License
--------
-
-Released under the Apache License 2.0. See LICENSE file.
