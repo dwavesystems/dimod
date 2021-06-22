@@ -613,8 +613,7 @@ class QuadraticModelBase {
     }
 
     /// Scale offset, linear biases, and interactions by a factor
-    void scale(double scale_factor, int ignored_variables = NULL,
-               int ignored_interactions = NULL) {
+    void scale(double scale_factor) {
         // adjust offset
         offset() *= scale_factor;
 
