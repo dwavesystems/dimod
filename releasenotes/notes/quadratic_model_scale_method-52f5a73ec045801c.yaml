@@ -1,6 +1,5 @@
 ---
 features:
   - |
-    Add new `scale` method to `QuadraticModelBase`. Eventually to be ported to python
-    layer for performance reasons. Scales offset, linear biases, and quadratic interactions
+    Add `QuadraticModelBase::scale` method. Scales offset, linear biases, and quadratic biases
     by a provided scale factor.
