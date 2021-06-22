@@ -4,9 +4,6 @@
 .. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/dwavesystems/dimod
 
-.. image:: https://readthedocs.com/projects/d-wave-systems-dimod/badge/?version=latest
-    :target: https://docs.ocean.dwavesys.com/projects/dimod/en/latest/?badge=latest
-
 .. image:: https://circleci.com/gh/dwavesystems/dimod.svg?style=svg
     :target: https://circleci.com/gh/dwavesystems/dimod
 
