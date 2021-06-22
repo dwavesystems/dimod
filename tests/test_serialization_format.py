@@ -183,12 +183,12 @@ class TestSampleSet(unittest.TestCase):
 
     def test_discrete(self):
         ss = dimod.SampleSet.from_samples(([[0, 17, 236], [3, 321, 1]], 'abc'),
-                                          'DISCRETE', energy=[1, 2])
+                                          'INTEGER', energy=[1, 2])
         s = Formatter(width=79, depth=None).format(ss)
         target = '\n'.join(["  a   b   c energy num_oc.",
                             "0 0  17 236      1       1",
                             "1 3 321   1      2       1",
-                            "['DISCRETE', 2 rows, 2 samples, 3 variables]"])
+                            "['INTEGER', 2 rows, 2 samples, 3 variables]"])
 
         self.assertEqual(target, s)
 
@@ -197,13 +197,13 @@ class TestSampleSet(unittest.TestCase):
                                             [3, 321, 1],
                                             [4444444444, 312, 1],
                                             [4, 3, 3]], 'abc'),
-                                          'DISCRETE', energy=[1, 2, 3, 4])
+                                          'INTEGER', energy=[1, 2, 3, 4])
         s = Formatter(width=79, depth=2).format(ss)
         target = '\n'.join(["  a   b   c energy num_oc.",
                             "0 0  17 236      1       1",
                             "...",
                             "3 4   3   3      4       1",
-                            "['DISCRETE', 4 rows, 4 samples, 3 variables]"])
+                            "['INTEGER', 4 rows, 4 samples, 3 variables]"])
 
         self.assertEqual(target, s)
 
