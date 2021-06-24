@@ -673,7 +673,11 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return copy.deepcopy(self)
 
     @forwarding_method
-    def degree(self, v: Variable):
+    def degree(self, v: Variable) -> int:
+        """Return the degree of variable `v`.
+
+        The degree is the number of interactions that contain `v`.
+        """
         return self.data.degree
 
     def degrees(self, array: bool = False, dtype: DTypeLike = int
@@ -1017,7 +1021,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self.data.is_linear()
 
     @forwarding_method
-    def iter_neighborhood(self, v: Variable):
+    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
+        """Iterate over the neighbors and quadratic biases of a variable."""
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
@@ -1027,7 +1032,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         for v, _ in self.iter_neighborhood(u):
             yield v
 
-    def iter_quadratic(self, variables=None):
+    def iter_quadratic(self, variables=None) -> Iterator[Tuple[Variable, Variable, Bias]]:
+        """Iterate over the quadratic biases"""
         if variables is None:
             yield from self.data.iter_quadratic()
         else:
@@ -1268,6 +1274,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Set the quadratic bias of `(u, v)`.
+
+        Raises:
+            TypeError: If u or v is not hashable.
+
+        """
         return self.data.set_quadratic
 
     def to_coo(self, fp=None, vartype_header: bool = False):
