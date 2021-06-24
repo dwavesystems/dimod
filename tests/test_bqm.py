@@ -2860,6 +2860,11 @@ class TestViews(unittest.TestCase):
             del bqm.quadratic[0, 1]
 
     @parameterized.expand(BQMs.items())
+    def test_quadratic_items(self, name, BQM):
+        bqm = BQM({}, {'ab': 1, 'bc': 2, 'cd': 3}, 'SPIN')
+        self.assertEqual(dict(bqm.quadratic.items()), bqm.quadratic)
+
+    @parameterized.expand(BQMs.items())
     def test_quadratic_setitem(self, name, BQM):
         bqm = BQM({'ab': -1}, dimod.SPIN)
         bqm.quadratic[('a', 'b')] = 5

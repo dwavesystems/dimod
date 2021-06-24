@@ -13,9 +13,10 @@
 #    limitations under the License.
 
 import abc
+import io
 import operator
 
-from collections.abc import Callable, Iterable, Mapping, MutableMapping
+from collections.abc import Callable, ItemsView, Iterable, Mapping, MutableMapping
 from typing import Any, Collection, Iterator, Optional, Tuple
 
 from dimod.typing import Bias, Variable
@@ -170,6 +171,13 @@ class Linear(MutableMapping, TermsView):
         return self._model.reduce_linear(operator.add, start)
 
 
+class QuadraticItemsView(ItemsView):
+    # speed up iteration
+    def __iter__(self) -> Iterator[Tuple[Tuple[Variable, Variable], Bias]]:
+        for u, v, bias in self._mapping._model.iter_quadratic():
+            yield (u, v), bias
+
+
 class Quadratic(MutableMapping, TermsView):
     """Quadratic biases as a flat mapping.
 
@@ -207,6 +215,9 @@ class Quadratic(MutableMapping, TermsView):
 
     def __setitem__(self, uv: Tuple[Variable, Variable], bias: Bias):
         self._model.set_quadratic(*uv, bias)
+
+    def items(self) -> ItemsView:
+        return QuadraticItemsView(self)
 
     def max(self, *, default: Optional[Bias] = None) -> Bias:
         """Return the maximum quadratic bias."""
