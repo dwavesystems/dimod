@@ -76,7 +76,7 @@ class Neighborhood(Mapping, TermsView):
             pass
 
         if default is None:
-            raise ValueError("cannot find min of an empty sequence")
+            raise ValueError("cannot find max of an empty sequence")
 
         return default
 
@@ -150,7 +150,7 @@ class Linear(MutableMapping, TermsView):
             pass
 
         if default is None:
-            raise ValueError("cannot find min of an empty sequence")
+            raise ValueError("cannot find max of an empty sequence")
 
         return default
 
@@ -181,7 +181,7 @@ class QuadraticItemsView(ItemsView):
 class Quadratic(MutableMapping, TermsView):
     """Quadratic biases as a flat mapping.
 
-    Accessed like a dict, where keys are 2-tuples of varables, which represent
+    Accessed like a dict, where keys are 2-tuples of variables, which represent
     an interaction and values are the quadratic biases.
     """
     def __delitem__(self, uv: Tuple[Variable, Variable]):
@@ -227,7 +227,7 @@ class Quadratic(MutableMapping, TermsView):
             pass
 
         if default is None:
-            raise ValueError("cannot find min of an empty sequence")
+            raise ValueError("cannot find max of an empty sequence")
 
         return default
 
@@ -288,7 +288,7 @@ class QuadraticViewsMixin(abc.ABC):
     def quadratic(self) -> Quadratic:
         """Quadratic biases as a flat mapping.
 
-        Accessed like a dict, where keys are 2-tuples of varables, which
+        Accessed like a dict, where keys are 2-tuples of variables, which
         represent an interaction and values are the quadratic biases.
         """
         # we could use cached property but this is way simpler and doesn't
