@@ -21,9 +21,9 @@ from dimod.cyutilities import coo_sort
 
 class TestCOOSort(unittest.TestCase):
     def test_row(self):
-        row = np.asarray([3, 2, 1], dtype=np.int)
-        col = np.asarray([1, 2, 3], dtype=np.int)
-        data = np.asarray([13, 22, 13], dtype=np.float)
+        row = np.asarray([3, 2, 1], dtype=int)
+        col = np.asarray([1, 2, 3], dtype=int)
+        data = np.asarray([13, 22, 13], dtype=float)
 
         coo_sort(row, col, data)
 
@@ -41,7 +41,7 @@ class TestCOOSort(unittest.TestCase):
             rng.shuffle(row)
             rng.shuffle(col)
 
-            data = np.asarray(row*col, dtype=np.float)
+            data = np.asarray(row*col, dtype=float)
 
             coo_sort(row, col, data)
 

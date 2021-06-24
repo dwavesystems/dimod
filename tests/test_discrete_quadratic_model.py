@@ -392,7 +392,7 @@ class TestLinear(unittest.TestCase):
         [(np.dtype(dt).name, dt)
          for dt in [np.int8, np.int16, np.int32, np.int64,
                     np.uint8, np.uint16, np.uint32, np.uint64,
-                    np.float, np.double]])
+                    np.float32, np.float64]])
     def test_set_linear_offdtype(self, name, dtype):
         dqm = dimod.DQM()
         v = dqm.add_variable(5)
@@ -469,7 +469,7 @@ class TestQuadratic(unittest.TestCase):
         [(np.dtype(dt).name, dt)
          for dt in [np.int8, np.int16, np.int32, np.int64,
                     np.uint8, np.uint16, np.uint32, np.uint64,
-                    np.float, np.double]])
+                    np.float32, np.float64]])
     def test_set_quadratic_offdtype(self, name, dtype):
         dqm = dimod.DQM()
         u = dqm.add_variable(3)

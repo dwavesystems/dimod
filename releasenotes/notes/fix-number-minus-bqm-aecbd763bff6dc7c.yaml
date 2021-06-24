@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix subtracting a `BinaryQuadraticModel` from a number. Before it would
+    return `bqm - 1` rather than correctly returning `1 - bqm`.

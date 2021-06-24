@@ -817,6 +817,20 @@ class TestCoo(unittest.TestCase):
         self.assertEqual(bqm, new_bqm)
 
 
+class TestDegree(unittest.TestCase):
+    @parameterized.expand(BQM_CLSs.items())
+    def test_degrees(self, name, BQM):
+        bqm = BQM({}, {'ab': 1, 'bc': 1, 'ac': 1, 'ad': 1}, 'SPIN')
+        self.assertEqual(bqm.degrees(), {'a': 3, 'b': 2, 'c': 2, 'd': 1})
+
+    @parameterized.expand(BQM_CLSs.items())
+    def test_degrees_array(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_linear_from((v, 0) for v in 'abcd')
+        bqm.add_quadratic_from({'ab': 1, 'bc': 1, 'ac': 1, 'ad': 1})
+        np.testing.assert_array_equal(bqm.degrees(array=True), [3, 2, 2, 1])
+
+
 class TestDepreaction(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())
     def test_shapeable(self, name, BQM):
@@ -1053,6 +1067,14 @@ class TestFixVariable(unittest.TestCase):
     def test_missing_variable(self, name, BQM):
         with self.assertRaises(ValueError):
             BQM('SPIN').fix_variable('a', -1)
+
+    @parameterized.expand(BQMs.items())
+    def test_bug(self, name, BQM):
+        bqm = BQM({1: 4.0, 2: -4.0, 3: 0.0, 4: 1.0, 5: -1.0},
+                  {(1, 0): -4.0, (3, 2): 4.0, (5, 4): -2.0}, 0.0, 'BINARY')
+        fixed = {2: 0, 3: 0, 4: 0, 5: 0}
+
+        bqm.fix_variables(fixed)  # should not raise an error
 
 
 class TestFixVariables(unittest.TestCase):
@@ -1361,9 +1383,6 @@ class TestLen(unittest.TestCase):
 
 
 class TestNetworkxGraph(unittest.TestCase):
-    # developer note: these tests should be moved to converter tests when
-    # the methods are deprecated.
-
     def setUp(self):
         try:
             import networkx as nx
@@ -1374,7 +1393,8 @@ class TestNetworkxGraph(unittest.TestCase):
         import networkx as nx
         G = nx.Graph()
         G.vartype = 'SPIN'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
         self.assertEqual(len(bqm), 0)
         self.assertIs(bqm.vartype, dimod.SPIN)
 
@@ -1382,7 +1402,8 @@ class TestNetworkxGraph(unittest.TestCase):
         import networkx as nx
         G = nx.complete_graph(5)
         G.vartype = 'BINARY'
-        bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.BinaryQuadraticModel.from_networkx_graph(G)
 
         self.assertIs(bqm.vartype, dimod.BINARY)
         self.assertEqual(set(bqm.variables), set(range(5)))
@@ -1395,7 +1416,8 @@ class TestNetworkxGraph(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': .5},
                                                     {'bc': 1, 'cd': -4},
                                                     offset=6)
-        new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
+        with self.assertWarns(DeprecationWarning):
+            new = dimod.BinaryQuadraticModel.from_networkx_graph(bqm.to_networkx_graph())
         self.assertEqual(bqm, new)
 
     def test_to_networkx_graph(self):
@@ -1409,7 +1431,8 @@ class TestNetworkxGraph(unittest.TestCase):
                                            vartype=dimod.SPIN)
 
         # get the graph
-        BQM = model.to_networkx_graph()
+        with self.assertWarns(DeprecationWarning):
+            BQM = model.to_networkx_graph()
 
         self.assertEqual(set(graph), set(BQM))
         for u, v in graph.edges:
@@ -1781,6 +1804,16 @@ class TestRemoveVariable(unittest.TestCase):
             bqm.remove_variable()
 
     @parameterized.expand(BQMs.items())
+    def test_multiple(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.add_variable('a')
+        bqm.add_variable('b')
+        bqm.add_variable('c')
+
+        bqm.remove_variables_from('ac')
+        self.assertEqual(list(bqm.variables), list('b'))
+
+    @parameterized.expand(BQMs.items())
     def test_provided(self, name, BQM):
         bqm = BQM('SPIN')
         bqm.add_variable('a')
@@ -2106,6 +2139,8 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(u*(v-1), BQM({'u': -1}, {'uv': 1}, 0, 'SPIN'))
         self.assertEqual(-u, BQM({'u': -1}, {}, 0, 'SPIN'))
         self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'SPIN'))
+        self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'SPIN'))
+        self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'SPIN'))
 
 
 class TestToIsing(unittest.TestCase):
@@ -2491,6 +2526,8 @@ class TestToNumpyVectors(unittest.TestCase):
 
         np.testing.assert_array_equal(ldata, [0, 4, 8])
 
+        self.assertTrue(np.issubdtype(irow.dtype, np.integer))
+        self.assertTrue(np.issubdtype(icol.dtype, np.integer))
         self.assertEqual(len(irow), len(icol))
         self.assertEqual(len(icol), len(qdata))
         self.assertEqual(len(qdata), len(bqm.quadratic))
@@ -2756,6 +2793,12 @@ class TestViews(unittest.TestCase):
         bqm = BQM.from_ising({'a': -1, 'b': 2}, {'ab': 1, 'bc': 1})
         self.assertEqual(bqm.linear.sum(), 1)
         self.assertEqual(bqm.linear.sum(start=5), 6)
+
+    @parameterized.expand(BQM_CLSs.items())
+    def test_linear_update(self, name, BQM):
+        bqm = BQM('SPIN')
+        bqm.linear.update({'a': -1.0, 'b': 1.0, 'c': 1.0})
+        self.assertEqual(bqm.linear, {'a': -1.0, 'b': 1.0, 'c': 1.0})
 
     @parameterized.expand(BQM_CLSs.items())
     def test_neighborhood_max(self, name, BQM):

@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Stop using deprecated numpy aliases like `np.int`, `np.float`, and
+    `np.complex`.

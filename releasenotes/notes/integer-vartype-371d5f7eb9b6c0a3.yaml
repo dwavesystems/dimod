@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Add new `Vartype.INTEGER` variable type.
+upgrade:
+  - |
+    Make `dimod.vartypes.ExtendedVartype` an alias for
+    `dimod.vartypes.Vartype`. Also remove `ExtendedVartypeLike` from
+    `dimod.vartypes` and `dimod.typing`.

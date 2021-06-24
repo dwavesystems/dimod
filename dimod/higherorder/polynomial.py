@@ -175,7 +175,7 @@ class BinaryPolynomial(abc.MutableMapping):
         """Create a shallow copy."""
         return type(self)(self, self.vartype)
 
-    def energy(self, sample_like, dtype=np.float):
+    def energy(self, sample_like, dtype=float):
         """The energy of the given sample.
 
         Args:
@@ -193,7 +193,7 @@ class BinaryPolynomial(abc.MutableMapping):
         energy, = self.energies(sample_like, dtype=dtype)
         return energy
 
-    def energies(self, samples_like, dtype=np.float):
+    def energies(self, samples_like, dtype=float):
         """The energies of the given samples.
 
         Args:

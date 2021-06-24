@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 # version is used by serialization below so we need it before everything
-__version__ = '0.10.0.dev5'
+__version__ = '0.10.0.dev6'
 
 from dimod.bqm import *
 
@@ -28,8 +28,8 @@ import dimod.reference
 
 from dimod.roof_duality import fix_variables
 
-from dimod.binary_quadratic_model import BinaryQuadraticModel, BQM
-import dimod.binary_quadratic_model
+from dimod.binary import *
+import dimod.binary
 
 from dimod.discrete import *
 

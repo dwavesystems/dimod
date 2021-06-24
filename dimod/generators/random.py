@@ -179,8 +179,8 @@ def gnp_random_bqm(n, p, vartype,
         num_interactions += len(neighbors)
 
     # construct irow, icol
-    irow = np.empty(num_interactions, dtype=np.int)
-    icol = np.empty(num_interactions, dtype=np.int)
+    irow = np.empty(num_interactions, dtype=int)
+    icol = np.empty(num_interactions, dtype=int)
 
     q = 0
     for v, neighbors in enumerate(neighborhoods):

@@ -4,3 +4,5 @@ sphinx_rtd_theme
 breathe
 
 networkx==2.5
+
+reno[sphinx]==3.3.0

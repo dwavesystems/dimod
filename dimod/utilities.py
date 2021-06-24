@@ -289,12 +289,15 @@ def qubo_to_ising(Q, offset=0.0):
     return h, J, offset
 
 
-def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
+def resolve_label_conflict(mapping, existing, old_labels=None, new_labels=None):
     """Resolve a self-labeling conflict by creating an intermediate labeling.
 
     Args:
         mapping (dict):
             A dict mapping the current variable labels to new ones.
+
+        existing (set-like):
+            The existing labels.
 
         old_labels (set, optional, default=None):
             The keys of mapping. Can be passed in for performance reasons. These are not checked.
@@ -333,7 +336,7 @@ def resolve_label_conflict(mapping, old_labels=None, new_labels=None):
 
             # try to get a new unique label
             lbl = next(counter)
-            while lbl in new_labels or lbl in old_labels:
+            while lbl in new_labels or lbl in old_labels or lbl in existing:
                 lbl = next(counter)
 
             # add it to the mapping
@@ -378,7 +381,7 @@ def iter_safe_relabels(mapping, existing):
             raise ValueError(msg.format(v))
 
     if any(v in new_labels for v in old_labels):
-        yield from resolve_label_conflict(mapping, old_labels, new_labels)
+        yield from resolve_label_conflict(mapping, existing, old_labels, new_labels)
     else:
         yield mapping
 

@@ -145,6 +145,10 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         else:
             bqm = bqm.change_vartype(vartype, inplace=False)
 
+    # for backwards compatibility, add an info field
+    if not hasattr(bqm, 'info'):
+        bqm.info = {}
+
     bqm.info['reduction'] = {}
 
     # we want to be able to mutate the polynomial so copy. We treat this as a
@@ -215,7 +219,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             v, = term
             bqm.add_variable(v, bias)
         elif len(term) == 0:
-            bqm.add_offset(bias)
+            bqm.offset += bias
         else:
             # still has higher order terms, this shouldn't happen
             msg = ('Internal error: not all higher-order terms were reduced. '
