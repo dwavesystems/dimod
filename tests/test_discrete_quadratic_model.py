@@ -531,27 +531,25 @@ class TestConstraint(unittest.TestCase):
         expression = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
         constant = 0
         num_dqm_vars = dqm.num_variables()
-        slack_terms = dqm.add_linear_inequality_constraint(
-            expression,
-            lagrange_multiplier=1.0,
-            constant=constant,
-            label='inequality_0',
-            slack_method="log2",
-            lb=-40,
-            ub=-30)
-        self.assertTrue((len(slack_terms) == 0))
+        self.assertRaises(ValueError, dqm.add_linear_inequality_constraint,
+                          expression,
+                          lagrange_multiplier=1.0,
+                          constant=constant,
+                          label='inequality_0',
+                          slack_method="log2",
+                          lb=-40,
+                          ub=-30)
         self.assertTrue(dqm.num_variables() == num_dqm_vars)
 
-        slack_terms = dqm.add_linear_inequality_constraint(
-            expression,
-            lagrange_multiplier=1.0,
-            constant=5,
-            label='inequality_0',
-            slack_method="log2",
-            lb=-50,
-            ub=30)
+        self.assertWarns(Warning, dqm.add_linear_inequality_constraint,
+                         expression,
+                         lagrange_multiplier=1.0,
+                         constant=5,
+                         label='inequality_0',
+                         slack_method="log2",
+                         lb=-50,
+                         ub=30)
 
-        self.assertTrue((len(slack_terms) == 0))
         self.assertTrue(dqm.num_variables() == num_dqm_vars)
 
     def test_inequality_constraint_log2(self):

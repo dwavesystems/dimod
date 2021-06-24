@@ -2924,7 +2924,8 @@ class TestConstraint(unittest.TestCase):
         x = {}
         for i in range(num_variables):
             x[i] = bqm.add_variable('x_{i}'.format(i=i))
-        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2), ('slack_inequality0_2', 1)]
+        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2),
+                  ('slack_inequality0_2', 1)]
         slack_terms = bqm.add_linear_inequality_constraint(
             [(x[i], 2.0) for i in range(num_variables)],
             lagrange_multiplier=1.0, constant=-4.0, label='inequality0')
@@ -2942,10 +2943,12 @@ class TestConstraint(unittest.TestCase):
         x = {}
         for i in range(num_variables):
             x[i] = bqm.add_variable('x_{i}'.format(i=i))
-        slacks =[('slack_inequality0_0', 1), ('slack_inequality0_1', 2), ('slack_inequality0_2', 3), ('slack_inequality0_3', 4.0)]
+        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2),
+                  ('slack_inequality0_2', 3), ('slack_inequality0_3', 4.0)]
         slack_terms = bqm.add_linear_inequality_constraint(
             [(x[i], 2.0) for i in range(num_variables)],
-            lagrange_multiplier=1.0, constant=4.0, lb=8, ub=20, cross_zero=True, label='inequality0')
+            lagrange_multiplier=1.0, constant=4.0, lb=8, ub=20, cross_zero=True,
+            label='inequality0')
         self.assertTrue(slacks == slack_terms)
         for i in x:
             self.assertEqual(bqm.get_linear(x[i]), -36)
