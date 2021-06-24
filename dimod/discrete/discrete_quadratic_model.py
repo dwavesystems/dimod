@@ -33,11 +33,14 @@ from typing import List, Tuple, Union, Generator, Iterator
 
 LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
+
 __all__ = ['DiscreteQuadraticModel', 'DQM']
+
 
 # constants for serialization
 DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
+
 
 # todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 LegacyDQMVectors = namedtuple(
@@ -443,7 +446,7 @@ class DiscreteQuadraticModel:
                                      )
 
         # move to the end of the data section
-        file_like.seek(start + length, io.SEEK_SET)
+        file_like.seek(start+length, io.SEEK_SET)
 
         return obj
 
@@ -536,7 +539,7 @@ class DiscreteQuadraticModel:
             if len(labels) != obj._cydqm.num_variables():
                 raise ValueError(
                     "labels does not match the length of the DQM"
-                )
+                    )
 
             for v in labels:
                 obj.variables._append(v)
@@ -756,7 +759,7 @@ class DiscreteQuadraticModel:
 
         # record the length
         end = file.tell()
-        file.seek(start - 4)
+        file.seek(start-4)
         file.write(np.dtype('<u4').type(end - start).tobytes())
         file.seek(end)
 
@@ -866,7 +869,7 @@ class DiscreteQuadraticModel:
                 "Argument 'compressed' is deprecated and in future will raise "
                 "an exception; please use 'compress' instead.",
                 DeprecationWarning, stacklevel=2
-            )
+                )
             compress = compressed or compress
 
         self._to_file_numpy(file, compress)
