@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add `BinaryQuadraticModel.add_linear_inequality_constraint` and
+    `DiscreteQuadraticModel.add_linear_inequality_constraint` methods.
