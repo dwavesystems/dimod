@@ -22,8 +22,7 @@ import tempfile
 import warnings
 
 from numbers import Integral, Number
-from typing import Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
-
+from typing import Iterator, Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
 
 import numpy as np
 
@@ -43,6 +42,7 @@ from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
+from dimod.views.quadratic import QuadraticViewsMixin
 
 __all__ = ['BinaryQuadraticModel',
            'BQM',
@@ -56,221 +56,7 @@ __all__ = ['BinaryQuadraticModel',
 BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 
-class BQMView:
-    __slots__ = ['_bqm']
-
-    def __init__(self, bqm):
-        self._bqm = bqm
-
-    def __repr__(self):
-        # let's just print the whole (potentially massive) thing for now, in
-        # the future we'd like to do something a bit more clever (like hook
-        # into dimod's Formatter)
-        stream = io.StringIO()
-        stream.write('{')
-        last = len(self) - 1
-        for i, (key, value) in enumerate(self.items()):
-            stream.write(f'{key!r}: {value!r}')
-            if i != last:
-                stream.write(', ')
-        stream.write('}')
-        return stream.getvalue()
-
-
-class Neighborhood(abc.Mapping, BQMView):
-    __slots__ = ['_var']
-
-    def __init__(self, bqm, v):
-        super().__init__(bqm)
-        self._var = v
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_quadratic(self._var, v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        for v, _ in self._bqm.iter_neighborhood(self._var):
-            yield v
-
-    def __len__(self):
-        return self._bqm.degree(self._var)
-
-    def __setitem__(self, v, bias):
-        self._bqm.set_quadratic(self._var, v, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum quadratic bias of the neighborhood"""
-        try:
-            return self._bqm.reduce_neighborhood(self._var, max)
-        except TypeError as err:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum quadratic bias of the neighborhood"""
-        try:
-            return self._bqm.reduce_neighborhood(self._var, min)
-        except TypeError as err:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the quadratic biases of the neighborhood"""
-        return self._bqm.reduce_neighborhood(self._var, operator.add, start)
-
-
-class Adjacency(abc.Mapping, BQMView):
-    """Quadratic biases as a nested dict of dicts.
-
-    Accessed like a dict of dicts, where the keys of the outer dict are all
-    of the model's variables (e.g. `v`) and the values are the neighborhood of
-    `v`. Each neighborhood is a dict where the keys are the neighbors of `v`
-    and the values are their associated quadratic biases.
-    """
-    def __getitem__(self, v):
-        return Neighborhood(self._bqm, v)
-
-    def __iter__(self):
-        return iter(self._bqm.variables)
-
-    def __len__(self):
-        return self._bqm.num_variables
-
-
-class Linear(abc.MutableMapping, BQMView):
-    """Linear biases as a mapping.
-
-    Accessed like a dict, where keys are the variables of the binary quadratic
-    model and values are the linear biases.
-    """
-    def __delitem__(self, v):
-        try:
-            self._bqm.remove_variable(v)
-        except ValueError:
-            raise KeyError(repr(v))
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_linear(v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        yield from self._bqm.variables
-
-    def __len__(self):
-        return self._bqm.num_variables
-
-    def __setitem__(self, v, bias):
-        self._bqm.set_linear(v, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum linear bias."""
-        try:
-            return self._bqm.reduce_linear(max)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum linear bias."""
-        try:
-            return self._bqm.reduce_linear(min)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the linear biases."""
-        return self._bqm.reduce_linear(operator.add, start)
-
-
-class Quadratic(abc.MutableMapping, BQMView):
-    """Quadratic biases as a flat mapping.
-
-    Accessed like a dict, where keys are 2-tuples of varables, which represent
-    an interaction and values are the quadratic biases.
-    """
-    def __delitem__(self, uv):
-        try:
-            self._bqm.remove_interaction(*uv)
-        except ValueError:
-            raise KeyError(repr(uv))
-
-    def __eq__(self, other):
-        if not isinstance(other, abc.Mapping):
-            return NotImplemented
-
-        try:
-            return (len(self) == len(other) and
-                    all(self[key] == value for key, value in other.items()))
-        except KeyError:
-            return False
-
-    def __getitem__(self, uv):
-        try:
-            return self._bqm.get_quadratic(*uv)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        for u, v, _ in self._bqm.iter_quadratic():
-            yield u, v
-
-    def __len__(self):
-        return self._bqm.num_interactions
-
-    def __setitem__(self, uv, bias):
-        self._bqm.set_quadratic(*uv, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum quadratic bias."""
-        try:
-            return self._bqm.reduce_quadratic(max)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum quadratic bias."""
-        try:
-            return self._bqm.reduce_quadratic(min)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the quadratic biases."""
-        return self._bqm.reduce_quadratic(operator.add, start)
-
-
-class BinaryQuadraticModel:
+class BinaryQuadraticModel(QuadraticViewsMixin):
     """TODO"""
 
     _DATA_CLASSES = {
@@ -554,24 +340,6 @@ class BinaryQuadraticModel:
         return not self.is_equal(other)
 
     @property
-    def adj(self) -> Adjacency:
-        """Adjacency structure as a nested mapping of mapping.
-
-        Accessed like a dict of dicts, where the keys of the outer dict are all
-        of the model's variables (e.g. `v`) and the values are the neighborhood
-        of `v`. Each neighborhood is a dict where the keys are the neighbors of
-        `v` and the values are their associated quadratic biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._adj  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._adj = adj = Adjacency(self)
-        return adj
-
-    @property
     def binary(self) -> 'BinaryQuadraticModel':
         """Binary-valued version of the binary quadratic model.
 
@@ -603,22 +371,6 @@ class BinaryQuadraticModel:
         return self.data.dtype
 
     @property
-    def linear(self) -> Linear:
-        """Linear biases as a mapping.
-
-        Accessed like a dict, where keys are the variables of the binary
-        quadratic model and values are the linear biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._linear  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._linear = linear = Linear(self)
-        return linear
-
-    @property
     def offset(self) -> np.number:
         """Constant energy offset associated with the model."""
         return self.data.offset
@@ -639,22 +391,6 @@ class BinaryQuadraticModel:
     def num_variables(self) -> int:
         """Number of variables in the model."""
         return self.data.num_variables()
-
-    @property
-    def quadratic(self) -> Quadratic:
-        """Quadratic biases as a flat mapping.
-
-        Accessed like a dict, where keys are 2-tuples of varables, which
-        represent an interaction and values are the quadratic biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._quadratic  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._quadratic = quadratic = Quadratic(self)
-        return quadratic
 
     @property
     def shape(self) -> Tuple[int, int]:
@@ -937,7 +673,11 @@ class BinaryQuadraticModel:
         return copy.deepcopy(self)
 
     @forwarding_method
-    def degree(self, v: Variable):
+    def degree(self, v: Variable) -> int:
+        """Return the degree of variable `v`.
+
+        The degree is the number of interactions that contain `v`.
+        """
         return self.data.degree
 
     def degrees(self, array: bool = False, dtype: DTypeLike = int
@@ -1281,7 +1021,8 @@ class BinaryQuadraticModel:
         return self.data.is_linear()
 
     @forwarding_method
-    def iter_neighborhood(self, v: Variable):
+    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
+        """Iterate over the neighbors and quadratic biases of a variable."""
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
@@ -1291,7 +1032,8 @@ class BinaryQuadraticModel:
         for v, _ in self.iter_neighborhood(u):
             yield v
 
-    def iter_quadratic(self, variables=None):
+    def iter_quadratic(self, variables=None) -> Iterator[Tuple[Variable, Variable, Bias]]:
+        """Iterate over the quadratic biases"""
         if variables is None:
             yield from self.data.iter_quadratic()
         else:
@@ -1532,6 +1274,12 @@ class BinaryQuadraticModel:
 
     @forwarding_method
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Set the quadratic bias of `(u, v)`.
+
+        Raises:
+            TypeError: If u or v is not hashable.
+
+        """
         return self.data.set_quadratic
 
     def to_coo(self, fp=None, vartype_header: bool = False):
