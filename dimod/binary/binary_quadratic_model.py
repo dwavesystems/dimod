@@ -1246,7 +1246,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         if (
             ignored_variables, ignored_interactions, ignore_offset
-        ) == (None, None, False):
+        ) == (None, None, False) and isinstance(
+            self.data, (cyBQM_float32, cyBQM_float64)
+        ):
             self.data.scale(scalar)
             return
         
