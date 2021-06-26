@@ -270,7 +270,7 @@ file_parameterized = [('_'.join([dname, kname]), dqm, kwargs)
                       for kname, kwargs in _kwargs]
 
 
-class DQMComparer(unittest.TestCase):
+class TestFile(unittest.TestCase):
 
     def assertDQMEqual(self, dqm0, dqm1):
         self.assertEqual(dqm1.num_variables(), dqm0.num_variables())
@@ -287,9 +287,6 @@ class DQMComparer(unittest.TestCase):
             for v in dqm0.adj[u]:
                 self.assertEqual(dqm0.get_quadratic(u, v),
                                  dqm1.get_quadratic(u, v))
-
-
-class TestFile(DQMComparer):
 
     def test_bug(self):
         # https://github.com/dwavesystems/dimod/issues/730
@@ -878,7 +875,7 @@ class TestRelabel(unittest.TestCase):
         self.assertEqual(new.variables, ['b', 'a'])
 
 
-class TestCaseLabelDQM(DQMComparer):
+class TestCaseLabelDQM(unittest.TestCase):
     def test_conserved_behavior(self):
         dqm = dimod.CaseLabelDQM()
         u = dqm.add_variable(2)
@@ -1079,21 +1076,3 @@ class TestCaseLabelDQM(DQMComparer):
         self.assertEqual(dqm.get_quadratic_case(y, 1, x, 'red'), 10)
         self.assertEqual(dqm.get_quadratic_case(z, 1, x, 'green'), -10)
         self.assertEqual(dqm.get_quadratic_case(z, 1, y, 0), -20)
-
-    def test_from_to_file(self):
-        dqm = dimod.CaseLabelDQM()
-        x = dqm.add_variable(['red', 'green', 'blue'], shared_labels=True)
-        y = dqm.add_variable(['x1', 'x2', 'x3'])
-        z = dqm.add_variable(3)
-
-        dqm2 = dqm.from_file(dqm.to_file())
-        self.assertDQMEqual(dqm2, dqm)
-
-    def test_from_to_numpy_vectors(self):
-        dqm = dimod.CaseLabelDQM()
-        x = dqm.add_variable(['red', 'green', 'blue'], shared_labels=True)
-        y = dqm.add_variable(['x1', 'x2', 'x3'])
-        z = dqm.add_variable(3)
-
-        dqm2 = dqm.from_numpy_vectors(*dqm.to_numpy_vectors())
-        self.assertDQMEqual(dqm2, dqm)
