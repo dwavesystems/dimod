@@ -1144,3 +1144,10 @@ class CaseLabelDQM(DQM):
 
         else:
             return list(range_)
+
+    def to_file(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def from_file(cls, *args, **kwargs):
+        raise NotImplementedError
