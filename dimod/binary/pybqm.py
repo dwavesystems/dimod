@@ -186,8 +186,8 @@ class pyBQM:
             icol.append(label_to_idx[v])
             qdata.append(bias)
 
-        irow = np.asarray(irow)  # type: ignore[assignment]
-        icol = np.asarray(icol)  # type: ignore[assignment]
+        irow = np.asarray(irow, dtype=int)  # type: ignore[assignment]
+        icol = np.asarray(icol, dtype=int)  # type: ignore[assignment]
         qdata = np.asarray(qdata)  # type: ignore[assignment]
 
         energies = samples.dot(ldata)

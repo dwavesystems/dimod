@@ -42,6 +42,7 @@ Documentation
 
   intro/index
   reference/index
+  release_notes
 
 .. sdk-end-marker
 

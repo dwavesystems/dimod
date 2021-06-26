@@ -1,0 +1,11 @@
+---
+prelude: >
+    We began using `Reno <https://docs.openstack.org/reno/>`_ as a changelog
+    tool after the release of 0.10.0.dev6.
+    Content added before that release is not included.
+    See `releases <https://github.com/dwavesystems/dimod/releases>`_ for
+    previous release notes.
+
+features:
+  - |
+    Begin using reno for changelog.

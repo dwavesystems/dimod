@@ -128,6 +128,11 @@ class TestRelabel(unittest.TestCase):
 
         self.assertEqual(variables, Variables('ab'))
 
+    def test_swap(self):
+        variables = Variables([1, 0, 3, 4, 5])
+        variables._relabel({5: 3, 3: 5})
+        self.assertEqual(variables, [1, 0, 5, 4, 3])
+
 
 @parameterized_class(
     [dict(name='list', iterable=list(range(5))),

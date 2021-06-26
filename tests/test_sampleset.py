@@ -876,7 +876,7 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(sampleset, new)
 
     def test_numpy_variable_labels(self):
-        h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
+        h = {0: 0, 1: 1, np.int64(2): 2, np.float32(3): 3,
              fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,
              '6': 6}
 
@@ -885,7 +885,7 @@ class TestSerialization(unittest.TestCase):
         json.dumps(sampleset.to_serializable())
 
     def test_non_integer_samples_bool(self):
-        samples = np.ones((5, 5), dtype=np.bool)
+        samples = np.ones((5, 5), dtype=bool)
         sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
 
         new = dimod.SampleSet.from_serializable(sampleset.to_serializable())
@@ -893,7 +893,7 @@ class TestSerialization(unittest.TestCase):
         self.assertEqual(sampleset, new)
 
     def test_non_integer_samples_float(self):
-        samples = np.ones((5, 5), dtype=np.float)
+        samples = np.ones((5, 5), dtype=np.float32)
         sampleset = dimod.SampleSet.from_samples(samples, 'BINARY', 1)
 
         new = dimod.SampleSet.from_serializable(sampleset.to_serializable())

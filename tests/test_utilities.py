@@ -402,7 +402,7 @@ class TestAsIntegerArrays(unittest.TestCase):
 
 class TestAsNumericArrays(unittest.TestCase):
     def test_complex(self):
-        arr = np.ones(5, dtype=np.complex)
+        arr = np.ones(5, dtype=complex)
         with self.assertRaises(TypeError):
             dimod.utilities.asnumericarrays(arr)
 

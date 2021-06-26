@@ -470,7 +470,7 @@ class BQM(metaclass=abc.ABCMeta):
         """Return a copy."""
         return copy.deepcopy(self) if deep else copy.copy(self)
 
-    def degrees(self, array=False, dtype=np.int):
+    def degrees(self, array=False, dtype=int):
         """Return the degrees of a binary quadratic model's variables.
 
         Args:
@@ -1089,7 +1089,7 @@ class BQM(metaclass=abc.ABCMeta):
         return M
 
     def to_numpy_vectors(self, variable_order=None,
-                         dtype=np.float, index_dtype=np.intc,
+                         dtype=float, index_dtype=np.intc,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
         """Convert binary quadratic model to NumPy vectors.
