@@ -1076,3 +1076,12 @@ class TestCaseLabelDQM(unittest.TestCase):
         self.assertEqual(dqm.get_quadratic_case(y, 1, x, 'red'), 10)
         self.assertEqual(dqm.get_quadratic_case(z, 1, x, 'green'), -10)
         self.assertEqual(dqm.get_quadratic_case(z, 1, y, 0), -20)
+
+    def test_map_sample(self):
+        dqm = dimod.CaseLabelDQM()
+        x = dqm.add_variable(['red', 'green', 'blue'], shared_labels=True)
+        y = dqm.add_variable(['x1', 'x2', 'x3'])
+        z = dqm.add_variable(3)
+
+        self.assertEqual(dqm.map_sample({x: 0, y: 1, z: 2}),
+                         {x: 'red', 'x1': 0, 'x2': 1, 'x3': 0, z: 2})

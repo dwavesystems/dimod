@@ -1151,3 +1151,29 @@ class CaseLabelDQM(DQM):
     @classmethod
     def from_file(cls, *args, **kwargs):
         raise NotImplementedError
+
+    def map_sample(self, sample):
+        """Transform a sample to reflect case labels.
+
+        Args:
+            sample (dict): The sample to transform.
+
+        Returns:
+            The transformed sample.
+
+        """
+        new_sample = {}
+
+        for var, value in sample.items():
+            map_ = self._shared_case_label.get(var)
+            if map_:
+                new_sample[var] = map_[value]
+
+            elif var in self._unique_label_vars:
+                for case in range(self.num_cases(var)):
+                    new_sample[self._unique_case_label[(var, case)]] = (value == case)
+
+            else:
+                new_sample[var] = value
+
+        return new_sample
