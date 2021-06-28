@@ -2969,9 +2969,9 @@ class TestConstraint(unittest.TestCase):
             x[i] = bqm.add_variable('x_{i}'.format(i=i))
         slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2),
                   ('slack_inequality0_2', 1)]
+        terms = iter([(x[i], 2.0) for i in range(num_variables)])
         slack_terms = bqm.add_linear_inequality_constraint(
-            [(x[i], 2.0) for i in range(num_variables)],
-            lagrange_multiplier=1.0, constant=-4.0, label='inequality0')
+            terms, lagrange_multiplier=1.0, constant=-4.0, label='inequality0')
         self.assertTrue(slacks == slack_terms)
         for i in x:
             self.assertEqual(bqm.get_linear(x[i]), -12)

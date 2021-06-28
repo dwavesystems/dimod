@@ -274,27 +274,17 @@ class DiscreteQuadraticModel:
 
         if slack_method not in ['log2', 'log10']:
             raise ValueError(
-                r"expected slack_method to be 'log2' or 'log10', "
-                r"but got {slack_method!r}")
+                "expected slack_method to be 'log2' or 'log10', "
+                f"but got {slack_method!r}")
 
         if isinstance(terms, Iterator):
             terms = list(terms)
-
-        all_terms = [constant, lb, ub] + [v for _, _, v in terms]
-        for v in all_terms:
-            if isinstance(v, int):
-                pass
-            elif isinstance(v, float):
-                if not v.is_integer():
-                    warnings.warn(
-                        "For constraints with fractional coefficients, "
-                        "multiply both sides of the inequality by an "
-                        "appropriate factor of ten to attain or "
-                        "approximate integer coefficients. ")
-
-                    break
-            else:
-                raise ValueError("unexpected input value")
+        if int(constant) != constant or int(lb) != lb or int(ub) != ub or any(
+                int(bias) != bias for _, _, bias in terms):
+            warnings.warn("For constraints with fractional coefficients, "
+                          "multiply both sides of the inequality by an "
+                          "appropriate factor of ten to attain or "
+                          "approximate integer coefficients. ")
 
         terms_upper_bound = sum(v for _, _, v in terms if v > 0)
         terms_lower_bound = sum(v for _, _, v in terms if v < 0)
@@ -304,14 +294,14 @@ class DiscreteQuadraticModel:
         if terms_upper_bound <= ub_c and terms_lower_bound >= lb_c:
             warnings.warn(
                 f'Did not add constraint {label}.'
-                f' This constraint is feasible'
-                f' with any value for state variables.')
+                ' This constraint is feasible'
+                ' with any value for state variables.')
             return []
 
         if ub_c <= lb_c:
             raise ValueError(
                 f'The given constraint ({label}) is infeasible with any value'
-                f' for state variables.')
+                ' for state variables.')
 
         slack_upper_bound = int(ub_c - lb_c)
         if slack_upper_bound == 0:

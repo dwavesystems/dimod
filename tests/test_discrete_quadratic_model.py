@@ -557,25 +557,27 @@ class TestConstraint(unittest.TestCase):
         dqm.add_variable(5, label='x')
         dqm.add_variable(3, label='y')
         dqm.add_variable(4, label='w')
-
-        expression = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
-
+        expression_list = [('x', 1, -7.0), ('y', 2, -2.0), ('w', 3, 4.0)]
+        expression_iter = iter(expression_list)
         constant = 0
         ub = -3
         slack_terms = dqm.add_linear_inequality_constraint(
-            expression,
+            expression_iter,
             lagrange_multiplier=1.0,
             constant=constant,
             label='inequality_0',
             slack_method="log2",
             ub=ub)
 
-        expression_dict = {v: (c, b) for v, c, b in expression + slack_terms}
-        for cx, cy, cw, cs1, cs2, cs3 in itertools.product(range(5), range(3), range(4), range(2), range(2), range(2)):
+        expression_dict = {v: (c, b) for v, c, b in expression_list +
+                           slack_terms}
+        for cx, cy, cw, cs1, cs2, cs3 in itertools.product(
+                range(5), range(3), range(4), range(2), range(2), range(2)):
             s = -ub-constant
             state = {'x': cx, 'y': cy, 'w': cw,
-                     'slack_inequality_0_0': cs1, 'slack_inequality_0_1': cs2, 'slack_inequality_0_2': cs3}
-            for v, cv, bias in expression + slack_terms:
+                     'slack_inequality_0_0': cs1, 'slack_inequality_0_1': cs2,
+                     'slack_inequality_0_2': cs3}
+            for v, cv, bias in expression_list + slack_terms:
                 if expression_dict[v][0] == state[v]:
                     s += bias
             self.assertAlmostEqual(dqm.energy(state), s ** 2)
@@ -621,8 +623,10 @@ class TestConstraint(unittest.TestCase):
             label='ineq_0',
             slack_method="log10")
 
-        expression_dict = {(v, c): (c, b) for v, c, b in expression + slack_terms}
-        for cx, cy, cw, cs in itertools.product(range(5), range(3), range(4), range(7)):
+        expression_dict = {(v, c): (c, b) for v, c, b in expression +
+                           slack_terms}
+        for cx, cy, cw, cs in itertools.product(range(5), range(3), range(4),
+                                                range(7)):
             s = -ub - constant
             state = {'x': cx, 'y': cy, 'w': cw, 'slack_ineq_0_0': cs}
             for v, cv, bias in expression + slack_terms:
@@ -644,10 +648,13 @@ class TestConstraint(unittest.TestCase):
             label='ineq_0',
             slack_method="log10")
 
-        expression_dict = {(v, c): (c, b) for v, c, b in expression + slack_terms}
-        for cx, cs1, cs2, cs3 in itertools.product(range(5), range(10), range(10), range(7)):
+        expression_dict = {(v, c):
+                               (c, b) for v, c, b in expression + slack_terms}
+        for cx, cs1, cs2, cs3 in itertools.product(
+                range(5), range(10), range(10), range(7)):
             s = constant
-            state = {'x': cx, 'slack_ineq_0_0': cs1, 'slack_ineq_0_1': cs2, 'slack_ineq_0_2': cs3}
+            state = {'x': cx, 'slack_ineq_0_0': cs1, 'slack_ineq_0_1': cs2,
+                     'slack_ineq_0_2': cs3}
             for v, cv, bias in expression + slack_terms:
                 if expression_dict[v, cv][0] == state[v]:
                     s += bias
