@@ -50,3 +50,28 @@ Methods
    ~DiscreteQuadraticModel.set_quadratic_case
    ~DiscreteQuadraticModel.to_file
    ~DiscreteQuadraticModel.to_numpy_vectors
+
+CaseLabelDQM Class
+==================
+
+.. currentmodule:: dimod
+
+.. autoclass:: CaseLabelDQM
+
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   ~CaseLabelDQM.add_variable
+   ~CaseLabelDQM.get_cases
+   ~CaseLabelDQM.get_linear
+   ~CaseLabelDQM.get_linear_case
+   ~CaseLabelDQM.get_quadratic
+   ~CaseLabelDQM.get_quadratic_case
+   ~CaseLabelDQM.map_sample
+   ~CaseLabelDQM.set_linear
+   ~CaseLabelDQM.set_linear_case
+   ~CaseLabelDQM.set_quadratic
+   ~CaseLabelDQM.set_quadratic_case
