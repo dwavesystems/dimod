@@ -1225,8 +1225,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
-        """Multiply all the biases by the specified scalar. Default to C++
-        implementation with default args, otherwise fallback on Python.
+        """Multiply all the biases by the specified scalar. 
 
         Args:
             scalar (number):
@@ -1244,14 +1243,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 If True, the offset is not scaled.
 
         """
-        if (
-            ignored_variables, ignored_interactions, ignore_offset
-        ) == (None, None, False) and isinstance(
-            self.data, (cyBQM_float32, cyBQM_float64)
-        ):
-            self.data.scale(scalar)
-            return
-        
+        if ignored_variables is None and ignored_interactions is None \
+            and ignore_offset is False:
+            try:
+                self.data.scale(scalar)
+                return
+            except AttributeError:
+                pass
+
         if ignored_variables is None:
             ignored_variables = set()
         elif not isinstance(ignored_variables, abc.Container):

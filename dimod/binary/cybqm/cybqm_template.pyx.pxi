@@ -736,7 +736,7 @@ cdef class cyBQM_template(cyBQMBase):
         while self.variables.size() > n:
             self.variables._pop()
 
-    cpdef void scale(self, cython.double scalar):
+    cpdef void scale(self, bias_type scalar):
         self.cppbqm.scale(scalar)
 
     def set_linear(self, v, bias_type bias):
