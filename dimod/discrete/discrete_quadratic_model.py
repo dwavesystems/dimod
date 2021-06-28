@@ -353,15 +353,15 @@ class DiscreteQuadraticModel:
             quadratic (tuple): A three tuple containing:
 
                 - `irow`: A length
-                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
                   the case interactions were defined in a sparse matrix, these
                   would be the row indices.
                 - `icol`: A length
-                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
                   the case interactions were defined in a sparse matrix, these
                   would be the column indices.
                 - `quadratic_biases`: A length
-                  :meth:`~DiscreteQuadraticModel.num_interactions` array. If
+                  :meth:`~DiscreteQuadraticModel.num_case_interactions` array. If
                   the case interactions were defined in a sparse matrix, these
                   would be the values.
 
