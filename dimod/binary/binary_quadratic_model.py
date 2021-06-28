@@ -24,7 +24,6 @@ import warnings
 from numbers import Integral, Number
 from typing import Iterator, Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
 
-
 import numpy as np
 
 try:
