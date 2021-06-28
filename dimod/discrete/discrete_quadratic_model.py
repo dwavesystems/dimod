@@ -827,7 +827,9 @@ class CaseLabelDQM(DQM):
 
         >>> dqm = dimod.CaseLabelDQM()
         >>> dqm.add_variable({'x1', 'x2', 'x3'})
+        0
         >>> dqm.add_variable(['y1', 'y2', 'y3'])
+        1
 
         Set linear biases
 
