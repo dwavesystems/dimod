@@ -819,7 +819,7 @@ class CaseLabelDQM(DQM):
     1. Unique case labels are unique among variable labels and themselves.
 
     2. Shared case labels are unique among cases for a variable, but may be
-        reused among variables.
+       reused among variables.
 
     Examples:
 
