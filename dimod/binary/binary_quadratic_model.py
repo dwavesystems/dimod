@@ -465,13 +465,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             terms (iterable/iterator):
-                An iterable of 2-tuples, (variable, bias).
-                Each tuple is evaluated to the term (bias * variable).
-                All terms in the list are summed.
+                An iterable of 2-tuples, (variable, bias), with each tuple
+                constituting a term in :math:`\sum_{i} a_{i} x_{i},
+                with i being the length of the iterable.
             lagrange_multiplier:
-                The coefficient or the penalty strength. This value is
+                A weight or the penalty strength. This value is
                 multiplied by the entire constraint objective and added to the
-                bqm (it doesn't appear explicity in the equation above).
+                binary quadratic model (it doesn't appear explicitly in the
+                 equation above).
             constant:
                 The constant value of the constraint, C, in the equation above.
 
@@ -498,6 +499,112 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 self.add_quadratic(
                     u, v, 2 * lagrange_multiplier * ubias * vbias)
         self.offset += lagrange_multiplier * constant * constant
+
+    def add_linear_inequality_constraint(
+            self, terms: Iterable[Tuple[Variable, int]],
+            lagrange_multiplier: Bias,
+            label: str,
+            constant: int = 0,
+            lb: int = np.iinfo(np.int64).min,
+            ub: int = 0,
+            cross_zero: bool = False
+    ) -> Iterable[Tuple[Variable, int]]:
+        """Add a linear inequality constraint as a quadratic objective.
+
+        Adds a linear inequality constraint of the form:
+
+        math:'lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub'
+        to the binary quadratic model as a quadratic objective.
+        For constraints with fractional coefficients, multiply both sides of the
+        inequality by an appropriate factor of ten to attain or approximate
+        integer coefficients.
+
+        Args:
+            terms (iterable/iterator):
+                An iterable of 2-tuples, (variable, bias), with each tuple
+                constituting a term in :math:`\sum_{i} a_{i} x_{i},
+                with i being the length of the iterable.
+            lagrange_multiplier:
+                A weight or the penalty strength. This value is
+                multiplied by the entire constraint objective and added to the
+                binary quadratic model (it doesn't appear explicitly in the
+                equation above).
+            label:
+                Prefix used to label the slack variables used to create the new
+                objective.
+            constant:
+                The constant value of the constraint.
+            lb:
+                lower bound for the constraint
+            ub:
+                upper bound for the constraint
+            cross_zero:
+                When True, adds zero to the domain of constraint
+
+        Returns:
+            slack_terms:  An iterable of 2-tuples for the new slack variables
+             (variable, int), with each tuple constituting a term in
+             :math:`\sum_{i} b_{i} slack {i},
+             with i being the length of the iterable and b being the coefficient
+             for slack variable.
+        """
+
+        if isinstance(terms, Iterator):
+            terms = list(terms)
+
+        if int(constant) != constant or int(lb) != lb or int(ub) != ub or any(
+                int(bias) != bias for _, bias in terms):
+            warnings.warn("For constraints with fractional coefficients, "
+                          "multiply both sides of the inequality by an "
+                          "appropriate factor of ten to attain or "
+                          "approximate integer coefficients. ")
+
+        terms_upper_bound = sum(v for _, v in terms if v > 0)
+        terms_lower_bound = sum(v for _, v in terms if v < 0)
+        ub_c = min(terms_upper_bound, ub - constant)
+        lb_c = max(terms_lower_bound, lb - constant)
+
+        if terms_upper_bound <= ub_c and terms_lower_bound >= lb_c:
+            warnings.warn(
+                f'Did not add constraint {label}.'
+                ' This constraint is feasible'
+                ' with any value for state variables.')
+            return []
+
+        if ub_c <= lb_c:
+            raise ValueError(
+                f'The given constraint ({label}) is infeasible with any value'
+                ' for state variables.')
+
+        slack_upper_bound = int(ub_c - lb_c)
+        if slack_upper_bound == 0:
+            self.add_linear_equality_constraint(terms, lagrange_multiplier,
+                                                constant)
+            return []
+        else:
+            slack_terms = []
+            zero_constraint = False
+            if cross_zero:
+                if lb_c > 0 or ub_c < 0:
+                    if ub_c-slack_upper_bound > 0:
+                        zero_constraint = True
+
+            num_slack = int(np.floor(np.log2(slack_upper_bound)))
+            slack_coefficients = [2 ** j for j in range(num_slack)]
+            if slack_upper_bound - 2 ** num_slack >= 0:
+                slack_coefficients.append(slack_upper_bound - 2 ** num_slack + 1)
+
+            for j, s in enumerate(slack_coefficients):
+                sv = self.add_variable(f'slack_{label}_{j}')
+                slack_terms.append((sv, s))
+
+            if zero_constraint:
+                sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
+                slack_terms.append((sv, ub_c - slack_upper_bound))
+
+        self.add_linear_equality_constraint(terms + slack_terms,
+                                            lagrange_multiplier, -ub_c)
+        return slack_terms
 
     def add_linear_from(self, linear: Union[Iterable, Mapping]):
         """Add variables and linear biases to a binary quadratic model.

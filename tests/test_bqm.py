@@ -2966,6 +2966,45 @@ class TestConstraint(unittest.TestCase):
                         self.assertEqual(bqm.get_quadratic(x[i], x[j]), 2.0)
 
     @parameterized.expand(BQMs.items())
+    def test_inequality_constraint(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
+        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2),
+                  ('slack_inequality0_2', 1)]
+        terms = iter([(x[i], 2.0) for i in range(num_variables)])
+        slack_terms = bqm.add_linear_inequality_constraint(
+            terms, lagrange_multiplier=1.0, constant=-4.0, label='inequality0')
+        self.assertTrue(slacks == slack_terms)
+        for i in x:
+            self.assertEqual(bqm.get_linear(x[i]), -12)
+            for j in x:
+                if j > i:
+                    self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
+
+    @parameterized.expand(BQMs.items())
+    def test_inequality_constraint_cross_zero(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 5
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
+        slacks = [('slack_inequality0_0', 1), ('slack_inequality0_1', 2),
+                  ('slack_inequality0_2', 3), ('slack_inequality0_3', 4.0)]
+        slack_terms = bqm.add_linear_inequality_constraint(
+            [(x[i], 2.0) for i in range(num_variables)],
+            lagrange_multiplier=1.0, constant=4.0, lb=8, ub=20, cross_zero=True,
+            label='inequality0')
+        self.assertTrue(slacks == slack_terms)
+        for i in x:
+            self.assertEqual(bqm.get_linear(x[i]), -36)
+            for j in x:
+                if j > i:
+                    self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
+
+    @parameterized.expand(BQMs.items())
     def test_simple_constraint_iterator(self, name, BQM):
         bqm = BQM('BINARY')
         num_variables = 2

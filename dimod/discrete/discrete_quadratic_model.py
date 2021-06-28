@@ -29,7 +29,7 @@ from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.variables import Variables
-from typing import List, Tuple, Union, Generator
+from typing import List, Tuple, Union, Generator, Iterator
 
 LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
@@ -195,7 +195,6 @@ class DiscreteQuadraticModel:
     def offset(self, offset: float):
         self._cydqm.offset = offset
 
-
     def add_linear_equality_constraint(self, terms: LinearTriplets,
                                        lagrange_multiplier: float,
                                        constant: float):
@@ -216,6 +215,140 @@ class DiscreteQuadraticModel:
         index_terms = ((self.variables.index(v), c, x) for v, c, x in terms)
         self._cydqm.add_linear_equality_constraint(
             index_terms, lagrange_multiplier, constant)
+
+    def add_linear_inequality_constraint(self, terms: LinearTriplets,
+                                         lagrange_multiplier: float,
+                                         label: str,
+                                         constant: int = 0,
+                                         lb: int = np.iinfo(np.int64).min,
+                                         ub: int = 0,
+                                         slack_method: str = "log2",
+                                         cross_zero: bool = False)\
+            -> LinearTriplets:
+
+        """Add a linear inequality constraint as a quadratic objective.
+
+        Adds a linear inequality constraint of the form:
+
+        math:'lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub'
+        to the discrete quadratic model as a quadratic objective.
+        Coefficients should be integers.
+        For constraints with fractional coefficients, multiply both sides of
+        the inequality by an appropriate factor of ten to attain or approximate
+        integer coefficients.
+
+        Args:
+            terms:
+                A list of tuples of the type (variable, case, bias).
+                Each tuple is evaluated to the term (bias * variable_case).
+                All terms in the list are summed.
+            lagrange_multiplier:
+                A weight or the penalty strength. This value is multiplied by
+                the entire constraint objective and added to the
+                discrete quadratic model (it doesn't appear explicitly in the
++               equation above).
+            label:
+                Prefix used to label the slack variables used to create the new
+                objective.
+            constant:
+                The constant value of the constraint.
+            lb:
+                lower bound for the constraint
+            ub:
+                upper bound for the constraint
+            slack_method:
+                "The method for adding slack variables. Supported methods are:
+                - log2: Adds up to log2(ub - lb) number of dqm variables each
+                        with two cases to the constraint.
+                - log10: Adds log10 dqm variables each with up to 10 cases.
+            cross_zero:
+                 When True, adds zero to the domain of constraint
+
+        Returns:
+            slack_terms:  A list of tuples of the type (variable, case, bias)
+                for the new slack variables.
+                Each tuple is evaluated to the term (bias * variable_case).
+                All terms in the list are summed.
+
+       """
+
+        if slack_method not in ['log2', 'log10']:
+            raise ValueError(
+                "expected slack_method to be 'log2' or 'log10', "
+                f"but got {slack_method!r}")
+
+        if isinstance(terms, Iterator):
+            terms = list(terms)
+        if int(constant) != constant or int(lb) != lb or int(ub) != ub or any(
+                int(bias) != bias for _, _, bias in terms):
+            warnings.warn("For constraints with fractional coefficients, "
+                          "multiply both sides of the inequality by an "
+                          "appropriate factor of ten to attain or "
+                          "approximate integer coefficients. ")
+
+        terms_upper_bound = sum(v for _, _, v in terms if v > 0)
+        terms_lower_bound = sum(v for _, _, v in terms if v < 0)
+        ub_c = min(terms_upper_bound, ub - constant)
+        lb_c = max(terms_lower_bound, lb - constant)
+
+        if terms_upper_bound <= ub_c and terms_lower_bound >= lb_c:
+            warnings.warn(
+                f'Did not add constraint {label}.'
+                ' This constraint is feasible'
+                ' with any value for state variables.')
+            return []
+
+        if ub_c <= lb_c:
+            raise ValueError(
+                f'The given constraint ({label}) is infeasible with any value'
+                ' for state variables.')
+
+        slack_upper_bound = int(ub_c - lb_c)
+        if slack_upper_bound == 0:
+            self.add_linear_equality_constraint(terms, lagrange_multiplier,
+                                                constant)
+            return []
+        else:
+            slack_terms = []
+            zero_constraint = False
+            if cross_zero:
+                if lb_c > 0 or ub_c < 0:
+                    zero_constraint = True
+
+            if slack_method == "log2":
+                num_slack = int(np.floor(np.log2(slack_upper_bound)))
+                slack_coefficients = [2 ** j for j in range(num_slack)]
+                if slack_upper_bound - 2 ** num_slack >= 0:
+                    slack_coefficients.append(
+                        slack_upper_bound - 2 ** num_slack + 1)
+
+                for j, s in enumerate(slack_coefficients):
+                    sv = self.add_variable(2, f'slack_{label}_{j}')
+                    slack_terms.append((sv, 1, s))
+
+                if zero_constraint:
+                    sv = self.add_variable(2, f'slack_{label}_{num_slack + 1}')
+                    slack_terms.append((sv, 1, ub_c))
+
+            elif slack_method == "log10":
+                num_dqm_vars = int(np.ceil(np.log10(slack_upper_bound+1)))
+                for j in range(num_dqm_vars):
+                    slack_term = list(range(0, min(slack_upper_bound + 1,
+                                                   10 ** (j + 1)), 10 ** j))[1:]
+                    if j < num_dqm_vars - 1 or not zero_constraint:
+                        sv = self.add_variable(len(slack_term) + 1,
+                                               f'slack_{label}_{j}')
+                    else:
+                        sv = self.add_variable(len(slack_term) + 2,
+                                               f'slack_{label}_{j}')
+                    for i, val in enumerate(slack_term):
+                        slack_terms.append((sv, i + 1, val))
+                if zero_constraint:
+                    slack_terms.append((sv, len(slack_term) + 1, ub_c))
+
+            self.add_linear_equality_constraint(terms + slack_terms,
+                                                lagrange_multiplier, -ub_c)
+            return slack_terms
 
     def add_variable(self, num_cases, label=None):
         """Add a discrete variable.
