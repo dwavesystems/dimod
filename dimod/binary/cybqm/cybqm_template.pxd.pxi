@@ -72,6 +72,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         size_type num_interactions(index_type)
         bint remove_interaction(index_type, index_type) except +
         void resize(index_type)
+        void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except +
         cppVartype& vartype()
 
@@ -100,3 +101,4 @@ cdef class cyBQM_template(cyBQMBase):
     cpdef Py_ssize_t num_interactions(self)
     cpdef Py_ssize_t num_variables(self)
     cpdef Py_ssize_t resize(self, Py_ssize_t) except -1
+    cpdef void scale(self, bias_type)

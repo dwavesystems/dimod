@@ -1225,7 +1225,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
-        """Multiply all the biases by the specified scalar.
+        """Multiply all the biases by the specified scalar. 
 
         Args:
             scalar (number):
@@ -1243,7 +1243,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 If True, the offset is not scaled.
 
         """
-        # this could be cythonized for performance
+        if ignored_variables is None and ignored_interactions is None \
+            and ignore_offset is False:
+            try:
+                self.data.scale(scalar)
+                return
+            except AttributeError:
+                pass
 
         if ignored_variables is None:
             ignored_variables = set()
