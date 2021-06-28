@@ -1148,10 +1148,6 @@ class CaseLabelDQM(DQM):
     def to_file(self, *args, **kwargs):
         raise NotImplementedError
 
-    @classmethod
-    def from_file(cls, *args, **kwargs):
-        raise NotImplementedError
-
     def map_sample(self, sample):
         """Transform a sample to reflect case labels.
 
