@@ -596,4 +596,134 @@ SCENARIO("Neighborhood can be manipulated") {
         }
     }
 }
+
+SCENARIO("A small quadratic model can be manipulated", "[qm]") {
+    GIVEN("An empty quadratic model with float biases") {
+        auto qm = QuadraticModel<float>();
+
+        WHEN("an integer, spin and binary variable are added without explicit "
+             "bounds") {
+            auto v_int = qm.add_variable(Vartype::INTEGER);
+            auto v_bin = qm.add_variable(Vartype::BINARY);
+            auto v_spn = qm.add_variable(Vartype::SPIN);
+
+            THEN("the defaults bounds chosen appropriately") {
+                REQUIRE(qm.num_variables() == 3);
+
+                CHECK(qm.vartype(v_int) == Vartype::INTEGER);
+                CHECK(qm.lower_bound(v_int) == 0);
+                CHECK(qm.upper_bound(v_int) == 16777215);
+
+                CHECK(qm.vartype(v_bin) == Vartype::BINARY);
+                CHECK(qm.lower_bound(v_bin) == 0);
+                CHECK(qm.upper_bound(v_bin) == 1);
+
+                CHECK(qm.vartype(v_spn) == Vartype::SPIN);
+                CHECK(qm.lower_bound(v_spn) == -1);
+                CHECK(qm.upper_bound(v_spn) == 1);
+            }
+        }
+    }
+
+    GIVEN("An empty quadratic model with double biases") {
+        auto qm = QuadraticModel<double>();
+
+        WHEN("an integer, spin and binary variable are added without explicit "
+             "bounds") {
+            auto v_int = qm.add_variable(Vartype::INTEGER);
+            auto v_bin = qm.add_variable(Vartype::BINARY);
+            auto v_spn = qm.add_variable(Vartype::SPIN);
+
+            THEN("the defaults bounds chosen appropriately") {
+                REQUIRE(qm.num_variables() == 3);
+
+                CHECK(qm.vartype(v_int) == Vartype::INTEGER);
+                CHECK(qm.lower_bound(v_int) == 0);
+                CHECK(qm.upper_bound(v_int) == 9007199254740991);
+
+                CHECK(qm.vartype(v_bin) == Vartype::BINARY);
+                CHECK(qm.lower_bound(v_bin) == 0);
+                CHECK(qm.upper_bound(v_bin) == 1);
+
+                CHECK(qm.vartype(v_spn) == Vartype::SPIN);
+                CHECK(qm.lower_bound(v_spn) == -1);
+                CHECK(qm.upper_bound(v_spn) == 1);
+            }
+
+            THEN("the linear biases default to 0 and there are no quadratic") {
+                REQUIRE(qm.num_variables() == 3);
+
+                CHECK(qm.linear(v_int) == 0);
+                CHECK(qm.linear(v_bin) == 0);
+                CHECK(qm.linear(v_spn) == 0);
+
+                CHECK(qm.num_interactions() == 0);
+                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_bin),
+                                std::out_of_range);
+                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn),
+                                std::out_of_range);
+                CHECK_THROWS_AS(qm.quadratic_at(v_bin, v_spn),
+                                std::out_of_range);
+            }
+
+            AND_WHEN("we set some quadratic biases") {
+                qm.set_quadratic(v_int, v_bin, 1.5);
+                qm.set_quadratic(v_bin, v_spn, -3);
+
+                THEN("we can read them back out") {
+                    REQUIRE(qm.num_variables() == 3);
+                    CHECK(qm.quadratic(v_int, v_bin) == 1.5);
+                    CHECK(qm.quadratic(v_bin, v_spn) == -3);
+                    CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn),
+                                    std::out_of_range);
+                }
+            }
+
+            AND_WHEN("we set some quadratic biases on self-loops") {
+                qm.set_quadratic(v_int, v_int, 1.5);
+                CHECK_THROWS_AS(qm.set_quadratic(v_bin, v_bin, -3),
+                                std::domain_error);
+                CHECK_THROWS_AS(qm.set_quadratic(v_spn, v_spn, -3),
+                                std::domain_error);
+
+                THEN("we can read them back out") {
+                    REQUIRE(qm.num_variables() == 3);
+                    CHECK(qm.quadratic(v_int, v_int) == 1.5);
+                }
+            }
+        }
+    }
+}
+
+SCENARIO("A quadratic model can be constructed from a binary quadratic model",
+         "[bqm]") {
+    GIVEN("A binary quadratic model") {
+        auto bqm = BinaryQuadraticModel<float>(3, Vartype::SPIN);
+        bqm.linear(0) = 4;
+        bqm.linear(2) = -2;
+        bqm.set_quadratic(0, 1, 1.5);
+        bqm.set_quadratic(1, 2, -3);
+        bqm.offset() = 5;
+
+        WHEN("a quadratic model is constructed from it") {
+            auto qm = QuadraticModel<float>(bqm);
+
+            THEN("the biases etc are passed in") {
+                REQUIRE(qm.num_variables() == 3);
+
+                CHECK(qm.linear(0) == 4);
+                CHECK(qm.linear(1) == 0);
+                CHECK(qm.linear(2) == -2);
+
+                CHECK(qm.vartype(0) == Vartype::SPIN);
+                CHECK(qm.vartype(1) == Vartype::SPIN);
+                CHECK(qm.vartype(2) == Vartype::SPIN);
+
+                CHECK(qm.quadratic(0, 1) == 1.5);
+                CHECK(qm.quadratic(1, 2) == -3);
+                CHECK_THROWS_AS(qm.quadratic_at(0, 2), std::out_of_range);
+            }
+        }
+    }
+}
 }  // namespace dimod

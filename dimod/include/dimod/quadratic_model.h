@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -480,6 +481,15 @@ class QuadraticModelBase {
 
     QuadraticModelBase() : offset_(0) {}
 
+    /// Add quadratic bias for the given variables.
+    void add_quadratic(index_type u, index_type v, bias_type bias) {
+        assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
+        assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
+
+        this->adj_[u][v] += bias;
+        this->adj_[v][u] += bias;
+    }
+
     /// Return True if the model has no quadratic biases.
     bool is_linear() const {
         for (auto it = adj_.begin(); it != adj_.end(); ++it) {
@@ -627,6 +637,14 @@ class QuadraticModelBase {
                 (*nit).second *= scale_factor;
             }
         }
+    }
+
+    void set_quadratic(index_type u, index_type v, bias_type bias) {
+        assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
+        assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
+
+        this->adj_[u][v] = bias;
+        this->adj_[v][u] = bias;
     }
 
  protected:
@@ -873,6 +891,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     /// Add quadratic bias for the given variables.
     void add_quadratic(index_type u, index_type v, bias_type bias) {
         if (u == v) {
+            assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
             if (vartype_ == Vartype::BINARY) {
                 base_type::linear(u) += bias;
             } else if (vartype_ == Vartype::SPIN) {
@@ -881,8 +900,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
                 throw std::logic_error("unknown vartype");
             }
         } else {
-            base_type::adj_[u][v] += bias;
-            base_type::adj_[v][u] += bias;
+            base_type::add_quadratic(u, v, bias);
         }
     }
 
@@ -1079,8 +1097,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             throw std::domain_error(
                     "Cannot set the quadratic bias of a variable with itself");
         } else {
-            base_type::adj_[u][v] = bias;
-            base_type::adj_[v][u] = bias;
+            base_type::set_quadratic(u, v, bias);
         }
     }
 
@@ -1093,6 +1110,123 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
  private:
     Vartype vartype_;
 };
+
+template<class T>
+struct VarInfo {
+    Vartype vartype;
+    T lb;
+    T ub;
+
+    VarInfo(Vartype vartype, T lb, T ub) : vartype(vartype), lb(lb), ub(ub) {}
+};
+
+template <class Bias, class Index = int>
+class QuadraticModel : public QuadraticModelBase<Bias, Index> {
+ public:
+    /// The type of the base class.
+    using base_type = QuadraticModelBase<Bias, Index>;
+
+    /// The first template parameter (Bias).
+    using bias_type = Bias;
+
+    /// The second template parameter (Index).
+    using index_type = Index;
+
+    /// Unsigned integral that can represent non-negative values.
+    using size_type = typename base_type::size_type;
+
+    QuadraticModel() : base_type(), varinfo_() {}
+
+    template <class B, class T>
+    explicit QuadraticModel(const BinaryQuadraticModel<B, T>& bqm)
+            : base_type(bqm) {
+        if (bqm.vartype() == Vartype::SPIN) {
+            this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
+                                  VarInfo<bias_type>(Vartype::SPIN, -1, 1));
+        } else if (bqm.vartype() == Vartype::BINARY) {
+            this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
+                                  VarInfo<bias_type>(Vartype::BINARY, 0, 1));
+        } else {
+            throw std::logic_error("unexpected vartype");
+        }
+    }
+
+    void add_quadratic(index_type u, index_type v, bias_type bias) {
+        if (u == v) {
+            assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
+            auto vartype = this->vartype(u);
+            if (vartype == Vartype::BINARY) {
+                base_type::linear(u) += bias;
+            } else if (vartype == Vartype::SPIN) {
+                base_type::offset_ += bias;
+            } else if (vartype == Vartype::INTEGER) {
+                base_type::add_quadratic(u, u, bias);
+            } else {
+                throw std::logic_error("unknown vartype");
+            }
+        } else {
+            base_type::add_quadratic(u, v, bias);
+        }
+    }
+
+    index_type add_variable(Vartype vartype) {
+        bias_type lb;
+        bias_type ub;
+        if (vartype == Vartype::BINARY) {
+            lb = 0;
+            ub = 1;
+        } else if (vartype == Vartype::SPIN) {
+            lb = -1;
+            ub = 1;
+        } else if (vartype == Vartype::INTEGER) {
+            ub = this->max_integer();
+            lb = 0;
+        } else {
+            throw std::logic_error("unknown vartype");
+        }
+        return this->add_variable(vartype, lb, ub);
+    }
+
+    index_type add_variable(Vartype vartype, bias_type lb, bias_type ub) {
+        assert(lb <= ub);
+        assert(lb >= -this->max_integer());
+        assert(ub <= this->max_integer());
+
+        index_type v = this->num_variables();
+
+        varinfo_.emplace_back(vartype, lb, ub);
+        this->linear_biases_.resize(v + 1);
+        this->adj_.resize(v + 1);
+
+        return v;
+    }
+
+    const bias_type& lower_bound(index_type v) const { return varinfo_[v].lb; }
+
+    constexpr bias_type max_integer() {
+        return ((std::int64_t)1 << (std::numeric_limits<bias_type>::digits)) -
+               1;
+    }
+
+    void set_quadratic(index_type u, index_type v, bias_type bias) {
+        if (u == v && (this->vartype(u) == Vartype::SPIN ||
+                       this->vartype(u) == Vartype::BINARY)) {
+            throw std::domain_error(
+                    "Cannot set the quadratic bias of a spin or binary "
+                    "variable with itself");
+        } else {
+            base_type::set_quadratic(u, v, bias);
+        }
+    }
+
+    const bias_type& upper_bound(index_type v) const { return varinfo_[v].ub; }
+
+    const Vartype& vartype(index_type v) const { return varinfo_[v].vartype; }
+
+ private:
+    std::vector<VarInfo<bias_type>> varinfo_;
+};
+
 
 template <class B, class N>
 std::ostream& operator<<(std::ostream& os,
