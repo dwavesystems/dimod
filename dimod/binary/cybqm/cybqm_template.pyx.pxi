@@ -27,10 +27,12 @@ import numpy as np
 from cython.operator cimport postincrement as inc, dereference as deref
 from libcpp.unordered_map cimport unordered_map
 from libcpp.unordered_set cimport unordered_set
+from libcpp.vector cimport vector
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
+from dimod.libcpp cimport cppVartype
 from dimod.sampleset import as_samples
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.variables import Variables

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Create `dimod/libcpp.pxd` Cython header file. This allows user to `cimport`
+    C++ classes and functions defined in `dimod/include/`
