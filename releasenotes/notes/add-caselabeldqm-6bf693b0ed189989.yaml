@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add `CaseLabelDQM` class.  Provides means of labeling cases of
+    discrete variables.
