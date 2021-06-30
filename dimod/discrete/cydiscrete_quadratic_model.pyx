@@ -25,6 +25,8 @@ import numpy as np
 
 from dimod.utilities import asintegerarrays, asnumericarrays
 
+BIAS_DTYPE = np.float64
+INDEX_DTYPE = np.int32
 
 # developer note: for whatever reason this is the only way we can sort a vector
 # of structs in clang. If we do it in pure cython we get segmentation faults
@@ -60,8 +62,8 @@ cdef class cyDiscreteQuadraticModel:
     def __init__(self):
         self.case_starts_.push_back(0)
 
-        self.dtype = np.float64
-        self.case_dtype = np.int64
+        self.dtype = np.dtype(BIAS_DTYPE)
+        self.case_dtype = np.dtype(INDEX_DTYPE)
 
         self.offset = 0
 
