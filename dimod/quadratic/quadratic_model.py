@@ -15,7 +15,8 @@
 from collections.abc import Callable
 from copy import deepcopy
 from numbers import Number
-from typing import Any, Dict, Iterator, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -40,6 +41,9 @@ if TYPE_CHECKING:
 __all__ = ['QuadraticModel', 'QM', 'Integer']
 
 
+Vartypes = Union[Mapping[Variable, Vartype], Iterable[Tuple[Variable, VartypeLike]]]
+
+
 class QuadraticModel(QuadraticViewsMixin):
     _DATA_CLASSES = {
         np.dtype(np.float32): cyQM_float32,
@@ -49,15 +53,43 @@ class QuadraticModel(QuadraticViewsMixin):
     DEFAULT_DTYPE = np.float64
     """The default dtype used to construct the class."""
 
-    def __init__(self, *, dtype: Optional[DTypeLike] = None):
+    def __init__(self,
+                 linear: Optional[Mapping[Variable, Bias]] = None,
+                 quadratic: Optional[Mapping[Tuple[Variable, Variable], Bias]] = None,
+                 offset: Bias = 0,
+                 vartypes: Optional[Vartypes] = None,
+                 *,
+                 dtype: Optional[DTypeLike] = None):
         dtype = np.dtype(self.DEFAULT_DTYPE) if dtype is None else np.dtype(dtype)
         self.data = self._DATA_CLASSES[np.dtype(dtype)]()
+
+        if vartypes is not None:
+            if isinstance(vartypes, Mapping):
+                vartypes = vartypes.items()
+            for v, vartype in vartypes:
+                self.add_variable(vartype, v)
+                self.set_linear(v, 0)
+
+        # todo: in the future we can support more types for construction, but
+        # let's keep it simple for now
+        if linear is not None:
+            for v, bias in linear.items():
+                self.add_linear(v, bias)
+        if quadratic is not None:
+            for (u, v), bias in quadratic.items():
+                self.add_quadratic(u, v, bias)
+        self.offset += offset
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> 'QuadraticModel':
         new = type(self).__new__(type(self))
         new.data = deepcopy(self.data, memo)
         memo[id(self)] = new
         return new
+
+    def __repr__(self):
+        vartypes = {v: self.vartype(v).name for v in self.variables}
+        return (f"{type(self).__name__}({self.linear}, {self.quadratic}, "
+                f"{self.offset}, {vartypes}, dtype={self.dtype.name!r})")
 
     def __add__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         # in python 3.8+ we could do this is functools.singledispatchmethod
@@ -95,6 +127,8 @@ class QuadraticModel(QuadraticViewsMixin):
                 raise TypeError(
                     "cannot multiply QMs with interactions")
 
+            # todo: performance
+
             new = type(self)(dtype=self.dtype)
 
             for v in self.variables:
@@ -108,10 +142,15 @@ class QuadraticModel(QuadraticViewsMixin):
             for u, ubias in self.linear.items():
                 for v, vbias in other.linear.items():
                     if u == v:
-                        if self.vartype is Vartype.BINARY:
+                        u_vartype = self.vartype(u)
+                        if u_vartype is Vartype.BINARY:
                             new.add_linear(u, ubias*vbias)
-                        else:
+                        elif u_vartype is Vartype.SPIN:
                             new.offset += ubias * vbias
+                        elif u_vartype is Vartype.INTEGER:
+                            new.add_quadratic(u, v, ubias*vbias)
+                        else:
+                            raise RuntimeError("unexpected vartype")
                     else:
                         new.add_quadratic(u, v, ubias * vbias)
 
@@ -140,7 +179,9 @@ class QuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __neg__(self: 'QuadraticModel') -> 'QuadraticModel':
-        raise NotImplementedError
+        new = self.copy()
+        new.scale(-1)
+        return new
 
     def __sub__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
@@ -265,6 +306,20 @@ class QuadraticModel(QuadraticViewsMixin):
     def get_quadratic(self, u: Variable, v: Variable,
                       default: Optional[Bias] = None) -> Bias:
         return self.data.get_quadratic
+
+    def is_equal(self, other):
+        """Return True if the given model has the same variables, vartypes and biases."""
+        if isinstance(other, Number):
+            return not self.num_variables and self.offset == other
+        # todo: performance
+        try:
+            return (self.shape == other.shape  # redundant, fast to check
+                    and self.offset == other.offset
+                    and self.linear == other.linear
+                    and all(self.vartype(v) == other.vartype(v) for v in self.variables)
+                    and self.adj == other.adj)
+        except AttributeError:
+            return False
 
     def is_linear(self) -> bool:
         """Return True if the model has no quadratic interactions."""

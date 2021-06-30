@@ -21,7 +21,7 @@ from parameterized import parameterized
 
 import dimod
 
-from dimod import Integer, QM, QuadraticModel
+from dimod import Spin, Binary, Integer, QM, QuadraticModel
 
 
 VARTYPES = dict(BINARY=dimod.BINARY, SPIN=dimod.SPIN, INTEGER=dimod.INTEGER)
@@ -62,6 +62,21 @@ class TestAddVariable(unittest.TestCase):
             qm.add_variable(vartype1, u)
 
 
+class TestAddQuadratic(unittest.TestCase):
+    def test_self_loop_spin(self):
+        qm = QM(vartypes={'i': 'INTEGER', 's': 'SPIN', 'x': 'BINARY'})
+        with self.subTest('BINARY'):
+            with self.assertRaises(ValueError):
+                qm.add_quadratic('x', 'x', 1)
+        with self.subTest('INTEGER'):
+            qm.add_quadratic('i', 'i', 1)
+            self.assertEqual(qm.get_quadratic('i', 'i'), 1)
+            self.assertEqual(qm.quadratic, {('i', 'i'): 1})
+        with self.subTest('SPIN'):
+            with self.assertRaises(ValueError):
+                qm.add_quadratic('s', 's', 1)
+
+
 class TestAlias(unittest.TestCase):
     def test_alias(self):
         self.assertIs(QM, QuadraticModel)
@@ -76,6 +91,25 @@ class TestConstruction(unittest.TestCase):
     def test_empty_offset(self):
         self.assertEqual(QM().offset, 0)
         self.assertEqual(QM(dtype=np.float64).offset.dtype, np.float64)
+
+
+class TestDegree(unittest.TestCase):
+    def test_degree(self):
+        qm = QM()
+        i = qm.add_variable('INTEGER')
+        j = qm.add_variable('INTEGER')
+        x = qm.add_variable('BINARY')
+
+        qm.set_linear(i, 1.5)
+        qm.set_linear(x, -2)
+
+        qm.set_quadratic(i, j, 1)
+        qm.set_quadratic(j, j, 5)
+        qm.set_quadratic(x, i, 7)
+
+        self.assertEqual(qm.degree(i), 2)
+        self.assertEqual(qm.degree(j), 2)
+        self.assertEqual(qm.degree(x), 1)
 
 
 class TestOffset(unittest.TestCase):
@@ -114,14 +148,39 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(qm.num_variables, 0)
         self.assertEqual(new.num_variables, 0)
 
+    def test_isub(self):
+        qm = Integer('i')
+        qm -= Integer('j')
+        qm -= 5
+        self.assertTrue(
+            qm.is_equal(QM({'i': 1, 'j': -1}, {}, -5, {'i': 'INTEGER', 'j': 'INTEGER'})))
 
-class TestUpdate(unittest.TestCase):
-    pass
-    # @parameterized.expand(
-    #     itertools.combinations_with_replacement(VARTYPES.values(), 2))
-    # def test_cross_vartype_disjoint(self, vt0, vt1):
-    #     qm0 = QuadraticModel()
-    #     u, v, w = qm0.add_variables(vt0, 'uvw')
+    def test_expressions(self):
+        i = Integer('i')
+        j = Integer('j')
+
+        self.assertTrue((i*j).is_equal(QM({}, {'ij': 1}, 0, {'i': 'INTEGER', 'j': 'INTEGER'})))
+        self.assertTrue((i*i).is_equal(QM({}, {'ii': 1}, 0, {'i': 'INTEGER'})))
+        self.assertTrue(((2*i)*(3*i)).is_equal(QM({}, {'ii': 6}, 0, {'i': 'INTEGER'})))
+        self.assertTrue((i + j).is_equal(QM({'i': 1, 'j': 1}, {}, 0,
+                                            {'i': 'INTEGER', 'j': 'INTEGER'})))
+        self.assertTrue((i + 2*j).is_equal(QM({'i': 1, 'j': 2}, {}, 0,
+                                              {'i': 'INTEGER', 'j': 'INTEGER'})))
+        self.assertTrue((i - 2*j).is_equal(QM({'i': 1, 'j': -2}, {}, 0,
+                                              {'i': 'INTEGER', 'j': 'INTEGER'})))
+        self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'INTEGER'})))
+        self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'INTEGER'})))
+        self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'INTEGER'})))
+
+    def test_expression_mixed_smoke(self):
+        i = Integer('i')
+        j = Integer('j')
+        x = Binary('x')
+        y = Binary('y')
+        s = Spin('s')
+        t = Spin('t')
+
+        exp = i + j + x + y + s + t + i*j + s*i + x*j + (s + 1)*(1 - j)
 
 
 class TestViews(unittest.TestCase):
@@ -156,3 +215,28 @@ class TestViews(unittest.TestCase):
         self.assertEqual(qm.linear, {'a': 0, 'b': 0, 'c': 0})
         self.assertEqual(qm.quadratic, {'ab': 1, 'bc': 2})
         self.assertEqual(qm.adj, {'a': {'b': 1}, 'b': {'a': 1, 'c': 2}, 'c': {'b': 2}})
+
+    def test_min_max_sum(self):
+        qm = QM()
+        i = qm.add_variable('INTEGER')
+        j = qm.add_variable('INTEGER')
+        x = qm.add_variable('BINARY')
+
+        qm.set_linear(i, 1.5)
+        qm.set_linear(x, -2)
+
+        qm.set_quadratic(i, j, 1)
+        qm.set_quadratic(j, j, 5)
+        qm.set_quadratic(x, i, 7)
+
+        self.assertEqual(qm.linear.max(), 1.5)
+        self.assertEqual(qm.linear.min(), -2)
+        self.assertEqual(qm.linear.sum(), -.5)
+
+        self.assertEqual(qm.quadratic.max(), 7)
+        self.assertEqual(qm.quadratic.min(), 1)
+        self.assertEqual(qm.quadratic.sum(), 13)
+
+        self.assertEqual(qm.adj[j].max(), 5)
+        self.assertEqual(qm.adj[j].min(), 1)
+        self.assertEqual(qm.adj[j].sum(), 6)

@@ -12,6 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import operator
+
 from copy import deepcopy
 
 from cython.operator cimport preincrement as inc, dereference as deref
@@ -60,11 +62,12 @@ cdef class cyQM_template(cyQMBase):
         self._add_linear(vi, bias)
 
     def add_quadratic(self, u, v, bias_type bias):
-        if u == v:
-            raise NotImplementedError
-
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
+
+        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+            raise ValueError(f"{u!r} cannot have an interaction with itself")
+
         self.cppqm.add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None):
@@ -96,6 +99,10 @@ cdef class cyQM_template(cyQMBase):
         else:
             raise TypeError(f"unexpected vartype {vartype!r}")
 
+    def degree(self, v):
+        cdef Py_ssize_t vi = self.variables.index(v)
+        return self.cppqm.num_interactions(vi)
+
     def get_linear(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
         cdef bias_type bias = self.cppqm.linear(vi)
@@ -105,10 +112,9 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi:
-            raise NotImplementedError  # todo
+        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+            raise ValueError(f"{u!r} cannot have an interaction with itself")
 
-        # todo: catch error
         cdef bias_type bias
         try:
             bias = self.cppqm.quadratic_at(ui, vi)
@@ -151,6 +157,125 @@ cdef class cyQM_template(cyQMBase):
     cpdef Py_ssize_t num_variables(self):
         return self.cppqm.num_variables()
 
+    def reduce_linear(self, function, initializer=None):
+        if self.num_variables() == 0 and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_linear() on an empty BQM")
+
+        cdef Py_ssize_t start, vi
+        cdef bias_type value, tmp
+
+        if initializer is None:
+            start = 1
+            value = self.cppqm.linear(0)
+        else:
+            start = 0
+            value = initializer
+
+        # speed up a few common cases
+        if function is operator.add:
+            for vi in range(start, self.num_variables()):
+                value += self.cppqm.linear(vi)
+        elif function is max:
+            for vi in range(start, self.num_variables()):
+                tmp = self.cppqm.linear(vi)
+                if tmp > value:
+                    value = tmp
+        elif function is min:
+            for vi in range(start, self.num_variables()):
+                tmp = self.cppqm.linear(vi)
+                if tmp < value:
+                    value = tmp
+        else:
+            for vi in range(start, self.num_variables()):
+                value = function(value, self.cppqm.linear(vi))
+
+        return as_numpy_float(value)
+
+    def reduce_neighborhood(self, u, function, initializer=None):
+        cdef Py_ssize_t ui = self.variables.index(u)
+
+        if self.cppqm.num_interactions(ui) == 0 and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_neighborhood() on an empty neighbhorhood")
+
+        cdef bias_type value, tmp
+
+        span = self.cppqm.neighborhood(ui)
+
+        if initializer is None:
+            value = deref(span.first).second
+            inc(span.first)
+        else:
+            value = initializer
+
+        # speed up a few common cases
+        if function is operator.add:
+            while span.first != span.second:
+                value += deref(span.first).second
+                inc(span.first)
+        elif function is max:
+            while span.first != span.second:
+                tmp = deref(span.first).second
+                if tmp > value:
+                    value = tmp
+                inc(span.first)
+        elif function is min:
+            while span.first != span.second:
+                tmp = deref(span.first).second
+                if tmp < value:
+                    value = tmp
+                inc(span.first)
+        else:
+            while span.first != span.second:
+                value = function(value, deref(span.first).second)
+                inc(span.first)
+
+        return as_numpy_float(value)
+
+    def reduce_quadratic(self, function, initializer=None):
+
+        if self.cppqm.is_linear() and initializer is None:
+            # feels like this should be a ValueError but python raises
+            # TypeError so...
+            raise TypeError("reduce_quadratic() on a linear model")
+
+        cdef bias_type value, tmp
+
+        start = self.cppqm.cbegin_quadratic()
+
+        if initializer is None:
+            value = deref(start).bias
+            inc(start)
+        else:
+            value = initializer
+
+        # handle a few common cases
+        if function is operator.add:
+            while start != self.cppqm.cend_quadratic():
+                value += deref(start).bias
+                inc(start)
+        elif function is max:
+            while start != self.cppqm.cend_quadratic():
+                tmp = deref(start).bias
+                if tmp > value:
+                    value = tmp
+                inc(start)
+        elif function is min:
+            while start != self.cppqm.cend_quadratic():
+                tmp = deref(start).bias
+                if tmp < value:
+                    value = tmp
+                inc(start)
+        else:
+            while start != self.cppqm.cend_quadratic():
+                value = function(value, deref(start).bias)
+                inc(start)
+
+        return as_numpy_float(value)
+
     cpdef void scale(self, bias_type scalar):
         self.cppqm.scale(scalar)
 
@@ -162,8 +287,8 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi:
-            raise NotImplementedError  # todo
+        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+            raise ValueError(f"{u!r} cannot have an interaction with itself")
         
         self.cppqm.set_quadratic(ui, vi, bias)
 
