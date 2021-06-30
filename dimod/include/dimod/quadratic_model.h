@@ -803,6 +803,11 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         return count / 2;
     }
 
+    /// The number of other variables `v` interacts with.
+    size_type num_interactions(index_type v) const {
+        return base_type::num_interactions(v);
+    }
+
     /// Resize the binary quadratic model to contain n variables.
     void resize(index_type n) {
         if (n < (index_type)base_type::num_variables()) {
