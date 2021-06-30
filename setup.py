@@ -59,6 +59,7 @@ setup(
          'dimod/cyutilities.pyx',
          'dimod/cyvariables.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',
+         'dimod/quadratic/cyqm/*.pyx',
          ],
         annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),

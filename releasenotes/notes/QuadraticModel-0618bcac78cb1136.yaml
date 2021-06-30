@@ -1,0 +1,13 @@
+---
+prelude: >
+    Add `QuadraticModel` implementation to Python, Cython and C++.
+    Quadratic models can be represented by a degree 2 polynomial over binary,
+    spin and integer variables.
+features:
+  - |
+    Add new `QuadraticModel` class for creating quadratic models.
+upgrade:
+  - |
+    Symbolically multiplying, subtracting and adding `BinaryQuadraticModel`s
+    with different vartypes now creates a `QuadraticModel` rather than raising
+    an error.

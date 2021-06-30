@@ -49,6 +49,9 @@ import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
+from dimod.quadratic import *
+import dimod.quadratic
+
 from dimod.traversal import *
 
 from dimod.sampleset import *
