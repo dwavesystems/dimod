@@ -692,6 +692,33 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
                 }
             }
         }
+
+        WHEN("we add an integer variable with a self-loops") {
+            auto v = qm.add_variable(Vartype::INTEGER);
+
+            qm.set_quadratic(v, v, 1.5);
+
+            THEN("it is accounted for correctly in num_interactions") {
+                CHECK(qm.num_interactions() == 1);
+            }
+            THEN("we can retrieve the quadratic bias") {
+                CHECK(qm.quadratic(v, v) == 1.5);
+            }
+
+            AND_WHEN("we add another variable with another self-loop") {
+                auto u = qm.add_variable(Vartype::INTEGER);
+
+                qm.add_quadratic(u, u, -2);
+
+                THEN("it is accounted for correctly in num_interactions") {
+                    CHECK(qm.num_interactions() == 2);
+                }
+                THEN("we can retrieve the quadratic bias") {
+                    CHECK(qm.quadratic(v, v) == 1.5);
+                    CHECK(qm.quadratic(u, u) == -2);
+                }
+            }
+        }
     }
 }
 

@@ -139,6 +139,12 @@ class Neighborhood {
         return iterator(this, std::distance(neighbors.begin(), it));
     }
 
+    /// Return an iterator to the first element that does not come before `v`.
+    const_iterator lower_bound(index_type v) const {
+        auto it = std::lower_bound(neighbors.cbegin(), neighbors.cend(), v);
+        return const_iterator(this, std::distance(neighbors.begin(), it));
+    }
+
     /**
      * Return the bias at neighbor `v` or the default value.
      *
@@ -260,7 +266,9 @@ class QuadraticModelBase {
         assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
 
         this->adj_[u][v] += bias;
-        this->adj_[v][u] += bias;
+        if (u != v) {
+            this->adj_[v][u] += bias;
+        }
     }
 
     /// Return True if the model has no quadratic biases.
@@ -366,14 +374,22 @@ class QuadraticModelBase {
     /// Return the number of variables in the quadratic model.
     size_type num_variables() const { return linear_biases_.size(); }
 
-    /// Return the number of interactions in the quadratic model.
+    /**
+     *  Return the number of interactions in the quadratic model.
+     *
+     * `O(num_variables*log(num_variables))` complexity.
+     */
     size_type num_interactions() const {
         size_type count = 0;
+        for (size_type v = 0; v < this->num_variables(); ++v) {
+            count += this->adj_[v].size();
 
-        for (auto it = adj_.begin(); it != adj_.end(); ++it) {
-            count += (*it).size();
+            // account for self-loops
+            auto lb = this->adj_[v].lower_bound(v);
+            if (lb != this->adj_[v].cend() && lb->first == v) {
+                count += 1;
+            }
         }
-
         return count / 2;
     }
 
@@ -417,7 +433,9 @@ class QuadraticModelBase {
         assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
 
         this->adj_[u][v] = bias;
-        this->adj_[v][u] = bias;
+        if (u != v) {
+            this->adj_[v][u] = bias;
+        }
     }
 
  protected:
@@ -768,6 +786,21 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
 
         vartype_ = vartype;
+    }
+
+    /**
+     *  Return the number of interactions in the quadratic model.
+     * 
+     * `O(num_variables)` complexity.
+     */
+    size_type num_interactions() const {
+        // we can do better than QuadraticModelBase by not needing to account
+        // for self-loops
+        size_type count = 0;
+        for (auto it = this->adj_.begin(); it != this->adj_.end(); ++it) {
+            count += it->size();
+        }
+        return count / 2;
     }
 
     /// Resize the binary quadratic model to contain n variables.
