@@ -20,12 +20,11 @@ from libcpp.vector cimport vector
 
 cimport numpy as np
 
-# from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
 from dimod.libcpp cimport cppBinaryQuadraticModel
 from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
 ctypedef np.float64_t bias_type
-ctypedef np.int32_t index_type  # todo: int32
+ctypedef np.int32_t index_type
 
 ctypedef fused Unsigned:
     np.uint8_t
