@@ -53,14 +53,17 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void add_quadratic(index_type, index_type, bias_type) except +
         void add_quadratic[T](const T dense[], index_type)
         void add_quadratic[ItRow, ItCol, ItBias](ItRow, ItCol, ItBias, index_type) except +
+        index_type add_variable()
         const_quadratic_iterator cbegin_quadratic()
         const_quadratic_iterator cend_quadratic()
         void change_vartype(cppVartype)
         bint is_linear()
         bias_type& linear(index_type)
         bias_type& offset()
+        bias_type quadratic(index_type, index_type)
         bias_type quadratic_at(index_type, index_type) except +
-        pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
+        pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(index_type)
+        pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(index_type, index_type)
         size_type num_variables()
         size_type num_interactions()
         size_type num_interactions(index_type)

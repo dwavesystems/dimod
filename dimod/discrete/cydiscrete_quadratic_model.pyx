@@ -71,6 +71,11 @@ cdef class cyDiscreteQuadraticModel:
     def adj(self):
         return self.adj_
 
+    cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
+        # unsafe version of .set_linear
+        cdef bias_type *b = &(self.cppbqm.linear(vi))
+        b[0] = bias
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def add_linear_equality_constraint(self, object terms,
@@ -121,7 +126,8 @@ cdef class cyDiscreteQuadraticModel:
             # finally advance result and delete the rest of the vector
             cppterms.erase(preinc(result), cppterms.end())
 
-        # add the biases to the BQM, not worrying about order or duplication
+
+        # add the biases to the BQM
         cdef Py_ssize_t num_terms = cppterms.size()
 
         cdef index_type u
@@ -134,7 +140,7 @@ cdef class cyDiscreteQuadraticModel:
             u_bias = cppterms[i].bias
 
             lbias = lagrange_multiplier * u_bias * (2 * constant + u_bias)
-            self.bqm_.set_linear(cu, lbias + self.bqm_.get_linear(cu))
+            self._set_linear(cu, lbias + self.cppbqm.linear(cu))
 
             for j in range(i + 1, num_terms):
                 cv = cppterms[j].case
@@ -147,20 +153,12 @@ cdef class cyDiscreteQuadraticModel:
 
                 qbias = 2 * lagrange_multiplier * u_bias * v_bias
 
-                # cython gets confused about pairs so we do some contortions
-                self.bqm_.adj[cu].first.resize(self.bqm_.adj[cu].first.size() + 1)
-                self.bqm_.adj[cu].first.back().first = cv
-                self.bqm_.adj[cu].first.back().second = qbias
+                self.cppbqm.add_quadratic(cu, cv, qbias)
 
-                self.bqm_.adj[cv].first.resize(self.bqm_.adj[cv].first.size() + 1)
-                self.bqm_.adj[cv].first.back().first = cu
-                self.bqm_.adj[cv].first.back().second = qbias
-
-        # now de-duplicate the BQM and track the variables we used
+        # now track the variables we used
         cdef unordered_set[index_type] variable_set
         for i in range(cppterms.size()):
             variable_set.insert(cppterms[i].variable)
-            self.bqm_.normalize_neighborhood(cppterms[i].case)
 
         # sort the variables.
         cdef vector[index_type] variables
@@ -213,16 +211,16 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t i
         for i in range(num_cases):
-            self.bqm_.add_variable()
+            self.cppbqm.add_variable()
 
-        self.case_starts_.push_back(self.bqm_.num_variables())
+        self.case_starts_.push_back(self.cppbqm.num_variables())
 
         return v
 
     def copy(self):
         cdef cyDiscreteQuadraticModel dqm = type(self)()
 
-        dqm.bqm_ = self.bqm_
+        dqm.cppbqm = self.cppbqm
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
         dqm.offset = self.offset
@@ -258,7 +256,7 @@ cdef class cyDiscreteQuadraticModel:
 
                 cu = self.case_starts_[u] + case_u
 
-                energies[si] += self.bqm_.get_linear(cu)
+                energies[si] += self.cppbqm.linear(cu)
 
                 for vi in range(self.adj_[u].size()):
                     v = self.adj_[u][vi]
@@ -271,10 +269,7 @@ cdef class cyDiscreteQuadraticModel:
 
                     cv = self.case_starts_[v] + case_v
 
-                    out = self.bqm_.get_quadratic(cu, cv)
-
-                    if out.second:
-                        energies[si] += out.first
+                    energies[si] += self.cppbqm.quadratic(cu, cv)
 
         return energies
 
@@ -326,34 +321,34 @@ cdef class cyDiscreteQuadraticModel:
 
         # set the BQM
         if num_interactions:
-            dqm.bqm_ = cppAdjVectorBQM[index_type, bias_type](
+            dqm.cppbqm.add_quadratic(
                 &irow[0], &icol[0], &quadratic_biases[0],
-                num_interactions, True)
+                num_interactions)
 
         # add the linear biases
-        while dqm.bqm_.num_variables() < num_cases:
-            dqm.bqm_.add_variable()
+        while dqm.cppbqm.num_variables() < num_cases:
+            dqm.cppbqm.add_variable()
         for ci in range(num_cases):
-            dqm.bqm_.set_linear(ci, linear_biases[ci])
+            dqm._set_linear(ci, linear_biases[ci])
 
         # set the case starts
         dqm.case_starts_.resize(case_starts.shape[0] + 1)
         for v in range(case_starts.shape[0]):
             dqm.case_starts_[v] = case_starts[v]
-        dqm.case_starts_[case_starts.shape[0]] = dqm.bqm_.num_variables()
+        dqm.case_starts_[case_starts.shape[0]] = dqm.cppbqm.num_variables()
 
         # and finally the adj. This is not really the memory bottleneck so
         # we can build an intermediate (unordered) set version
         cdef vector[unordered_set[index_type]] adjset
         adjset.resize(num_variables)
         u = 0
-        for ci in range(dqm.bqm_.num_variables()):
+        for ci in range(dqm.cppbqm.num_variables()):
             
             # we've been careful so don't need ui < case_starts.size() - 1
             while ci >= dqm.case_starts_[u+1]:
                 u += 1
 
-            span = dqm.bqm_.neighborhood(ci)
+            span = dqm.cppbqm.neighborhood(ci)
 
             v = 0
             while span.first != span.second:
@@ -377,7 +372,7 @@ cdef class cyDiscreteQuadraticModel:
         # do one last final check for self-loops within a variable
         for v in range(num_variables):
             for ci in range(dqm.case_starts_[v], dqm.case_starts_[v+1]):
-                span2 = dqm.bqm_.neighborhood(ci, dqm.case_starts_[v])
+                span2 = dqm.cppbqm.neighborhood(ci, dqm.case_starts_[v])
                 if span2.first == span2.second:
                     continue
                 if deref(span2.first).first < dqm.case_starts_[v+1]:
@@ -422,7 +417,7 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t c
         for c in range(num_cases):
-            biases_view[c] = self.bqm_.get_linear(self.case_starts_[v] + c)
+            biases_view[c] = self.cppbqm.linear(self.case_starts_[v] + c)
 
         return biases
 
@@ -436,7 +431,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        return self.bqm_.get_linear(self.case_starts_[v] + case)
+        return self.cppbqm.linear(self.case_starts_[v] + case)
 
     def get_quadratic(self, index_type u, index_type v, bint array=False):
 
@@ -462,7 +457,7 @@ cdef class cyDiscreteQuadraticModel:
 
             for ci in range(self.case_starts_[u], self.case_starts_[u+1]):
 
-                span = self.bqm_.neighborhood(ci, self.case_starts_[v])
+                span = self.cppbqm.neighborhood(ci, self.case_starts_[v])
 
                 while (span.first != span.second and deref(span.first).first < self.case_starts_[v+1]):
                     case_u = ci - self.case_starts_[u]
@@ -477,7 +472,7 @@ cdef class cyDiscreteQuadraticModel:
 
             for ci in range(self.case_starts_[u], self.case_starts_[u+1]):
 
-                span = self.bqm_.neighborhood(ci, self.case_starts_[v])
+                span = self.cppbqm.neighborhood(ci, self.case_starts_[v])
 
                 while (span.first != span.second and deref(span.first).first < self.case_starts_[v+1]):
                     case_u = ci - self.case_starts_[u]
@@ -508,7 +503,7 @@ cdef class cyDiscreteQuadraticModel:
         cdef index_type cu = self.case_starts_[u] + case_u
         cdef index_type cv = self.case_starts_[v] + case_v
 
-        return self.bqm_.get_quadratic(cu, cv).first 
+        return self.cppbqm.quadratic(cu, cv)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -517,7 +512,7 @@ cdef class cyDiscreteQuadraticModel:
         the total number of cases in the DQM.
         """
         if v < 0:
-            return self.bqm_.num_variables()
+            return self.cppbqm.num_variables()
 
         if v >= self.num_variables():
             raise ValueError("unknown variable {}".format(v))
@@ -526,7 +521,7 @@ cdef class cyDiscreteQuadraticModel:
 
     cpdef Py_ssize_t num_case_interactions(self):
         """The total number of case interactions."""
-        return self.bqm_.num_interactions()
+        return self.cppbqm.num_interactions()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -554,7 +549,7 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t c
         for c in range(biases.shape[0]):
-            self.bqm_.set_linear(self.case_starts_[v] + c, biases[c])
+            self._set_linear(self.case_starts_[v] + c, biases[c])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -568,7 +563,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        self.bqm_.set_linear(self.case_starts_[v] + case, b)
+        self._set_linear(self.case_starts_[v] + case, b)
 
     def set_quadratic(self, index_type u, index_type v, biases):
 
@@ -603,7 +598,7 @@ cdef class cyDiscreteQuadraticModel:
                 cu = self.case_starts_[u] + case_u
                 cv = self.case_starts_[v] + case_v
 
-                self.bqm_.set_quadratic(cu, cv, bias)
+                self.cppbqm.set_quadratic(cu, cv, bias)
         else:
             
             biases_view = np.asarray(biases, dtype=self.dtype).reshape(num_cases_u, num_cases_v)
@@ -616,7 +611,7 @@ cdef class cyDiscreteQuadraticModel:
                      bias = biases_view[case_u, case_v]
 
                      if bias:
-                         self.bqm_.set_quadratic(cu, cv, bias)
+                         self.cppbqm.set_quadratic(cu, cv, bias)
 
         # track in adjacency
         low = lower_bound(self.adj_[u].begin(), self.adj_[u].end(), v)
@@ -650,7 +645,7 @@ cdef class cyDiscreteQuadraticModel:
         cdef index_type cu = self.case_starts_[u] + case_u
         cdef index_type cv = self.case_starts_[v] + case_v
 
-        self.bqm_.set_quadratic(cu, cv, bias)
+        self.cppbqm.set_quadratic(cu, cv, bias)
 
         # track in adjacency
         low = lower_bound(self.adj_[u].begin(), self.adj_[u].end(), v)
@@ -674,10 +669,10 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t ci = 0
         cdef Py_ssize_t qi = 0
-        for ci in range(self.bqm_.num_variables()):
-            ldata[ci] = self.bqm_.linear(ci)
+        for ci in range(self.cppbqm.num_variables()):
+            ldata[ci] = self.cppbqm.linear(ci)
 
-            span = self.bqm_.neighborhood(ci)
+            span = self.cppbqm.neighborhood(ci)
             while span.first != span.second and deref(span.first).first < ci:
 
                 irow[qi] = ci
@@ -692,7 +687,7 @@ cdef class cyDiscreteQuadraticModel:
         
         cdef Py_ssize_t num_variables = self.num_variables()
         cdef Py_ssize_t num_cases = self.num_cases()
-        cdef Py_ssize_t num_interactions = self.bqm_.num_interactions()
+        cdef Py_ssize_t num_interactions = self.cppbqm.num_interactions()
 
         # use the minimum sizes of the various index types. We combine for
         # variables and cases and exclude int8 to keep the total number of
