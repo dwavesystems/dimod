@@ -2128,6 +2128,20 @@ class TestSymbolic(unittest.TestCase):
         with self.assertRaises(TypeError):
             bqm *= 'a'
 
+    def test_expressions_binary(self):
+        u = Binary('u')
+        v = Binary('v')
+
+        BQM = BinaryQuadraticModel
+
+        self.assertEqual(u*v, BQM({}, {'uv': 1}, 0, 'BINARY'))
+        self.assertEqual(u*u, BQM({'u': 1}, {}, 0, 'BINARY'))
+        self.assertEqual(u*(v-1), BQM({'u': -1}, {'uv': 1}, 0, 'BINARY'))
+        self.assertEqual(-u, BQM({'u': -1}, {}, 0, 'BINARY'))
+        self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'BINARY'))
+        self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'BINARY'))
+        self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'BINARY'))
+
     def test_expressions_spin(self):
         u = Spin('u')
         v = Spin('v')
