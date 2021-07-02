@@ -39,12 +39,12 @@ cdef class cyDiscreteQuadraticModel:
     cdef vector[index_type] case_starts_  # len(adj_) + 1
     cdef vector[vector[index_type]] adj_
 
-    cdef public bias_type offset
-
     cdef readonly object dtype
     cdef readonly object case_dtype
 
+    cdef void _add_offset(self, bias_type offset)
     cdef void _set_linear(self, Py_ssize_t, bias_type)
+    cdef void _set_offset(self, bias_type offset)
     cpdef Py_ssize_t add_variable(self, Py_ssize_t) except -1
     cpdef bias_type[:] energies(self, index_type[:, :])
     cpdef bias_type get_linear_case(self, index_type, index_type) except? -45.3

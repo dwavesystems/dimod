@@ -24,6 +24,7 @@ from libcpp.unordered_set cimport unordered_set
 import numpy as np
 
 from dimod.utilities import asintegerarrays, asnumericarrays
+from dimod.cyutilities cimport as_numpy_float
 
 BIAS_DTYPE = np.float64
 INDEX_DTYPE = np.int32
@@ -65,23 +66,38 @@ cdef class cyDiscreteQuadraticModel:
         self.dtype = np.dtype(BIAS_DTYPE)
         self.case_dtype = np.dtype(INDEX_DTYPE)
 
-        self.offset = 0
-
     @property
     def adj(self):
         return self.adj_
+
+    @property
+    def offset(self):
+        cdef bias_type offset = self.cppbqm.offset()
+        return as_numpy_float(offset)
+
+    @offset.setter
+    def offset(self, bias_type offset):
+        self._set_offset(offset)
+
+    cdef void _add_offset(self, bias_type offset):
+        cdef bias_type *off = &(self.cppbqm.offset())
+        off[0] += offset
 
     cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
         # unsafe version of .set_linear
         cdef bias_type *b = &(self.cppbqm.linear(vi))
         b[0] = bias
 
+    cdef void _set_offset(self, bias_type offset):
+        cdef bias_type *off = &(self.cppbqm.offset())
+        off[0] = offset
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def add_linear_equality_constraint(self, object terms,
                                        bias_type lagrange_multiplier, bias_type constant):
         # adjust energy offset
-        self.offset += lagrange_multiplier * constant * constant
+        self._add_offset(lagrange_multiplier * constant * constant)
 
         # resolve the terms from a python object into a C++ object
         cdef vector[LinearTerm] cppterms
@@ -223,7 +239,7 @@ cdef class cyDiscreteQuadraticModel:
         dqm.cppbqm = self.cppbqm
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
-        dqm.offset = self.offset
+        dqm._set_offset(self.cppbqm.offset())
 
         return dqm
 
@@ -379,7 +395,7 @@ cdef class cyDiscreteQuadraticModel:
                     raise ValueError("A variable has a self-loop")
 
         # add provided offset to dqm
-        dqm.offset = offset
+        dqm._set_offset(offset)
 
         return dqm
 
