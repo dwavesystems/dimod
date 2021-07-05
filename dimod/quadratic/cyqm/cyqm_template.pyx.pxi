@@ -16,10 +16,13 @@ import operator
 
 from copy import deepcopy
 
+cimport cython
+
 from cython.operator cimport preincrement as inc, dereference as deref
+from libcpp.cast cimport static_cast
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float
+from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
@@ -52,6 +55,110 @@ cdef class cyQM_template(cyQMBase):
         cdef bias_type *b = &(self.cppqm.linear(vi))
         b[0] += bias
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ilinear(self):
+        """Return the linear biases in a numpy array."""
+        cdef bias_type[:] ldata = np.empty(self.num_variables(), dtype=self.dtype)
+        cdef Py_ssize_t vi
+        for vi in range(self.num_variables()):
+            ldata[vi] = self.cppqm.linear(vi)
+        return ldata
+
+    def _ilower_triangle(self, Py_ssize_t vi):
+        cdef Py_ssize_t degree = self.cppqm.num_interactions(vi)
+
+        dtype = np.dtype([('v', self.index_dtype), ('b', self.dtype)],
+                         align=False)
+        neighbors = np.empty(degree, dtype=dtype)
+
+        cdef index_type[:] index_view = neighbors['v']
+        cdef bias_type[:] bias_view = neighbors['b']
+
+        span = self.cppqm.neighborhood(vi)
+        cdef Py_ssize_t i = 0
+        while span.first != span.second:
+            if deref(span.first).first > vi:
+                break
+            index_view[i] = deref(span.first).first
+            bias_view[i] = deref(span.first).second
+
+            i += 1
+            inc(span.first)
+
+        return neighbors[:i]
+
+    def _ilower_triangle_load(self, Py_ssize_t vi, Py_ssize_t num_neighbors, buff):
+        dtype = np.dtype([('v', self.index_dtype), ('b', self.dtype)],
+                         align=False)
+
+        arr = np.frombuffer(buff[:dtype.itemsize*num_neighbors], dtype=dtype)
+        cdef const index_type[:] index_view = arr['v']
+        cdef const bias_type[:] bias_view = arr['b']
+
+        cdef Py_ssize_t i
+        for i in range(num_neighbors):
+            self.cppqm.add_quadratic(vi, index_view[i], bias_view[i])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ivartypes(self):
+        cdef Py_ssize_t num_variables = self.num_variables()
+
+        # we could use the bias_type size to determine the vartype dtype to get
+        # more alignment, but it complicates the code, so let's keep it simple
+        dtype = np.dtype([('vartype', np.int8),
+                          ('lb', BIAS_DTYPE), ('ub', BIAS_DTYPE)],
+                         align=False)
+        arr = np.empty(num_variables, dtype)
+
+        cdef np.int8_t[:] vartype_view = arr['vartype']
+        cdef bias_type[:] lb_view = arr['lb']
+        cdef bias_type[:] ub_view = arr['ub']
+
+        cdef Py_ssize_t vi
+        for vi in range(self.num_variables()):
+            vartype_view[vi] = self.cppqm.vartype(vi)
+            lb_view[vi] = self.cppqm.lower_bound(vi)
+            ub_view[vi] = self.cppqm.upper_bound(vi)
+
+        return memoryview(arr).cast('B')
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ivartypes_load(self, buff, Py_ssize_t num_variables):
+        if self.num_variables():
+            raise RuntimeError("cannot load vartypes into a model with variables")
+
+        # use the bias size to determine the vartype size since we're not
+        # letting numpy handle the alignment
+        dtype = np.dtype([('vartype', np.int8),
+                          ('lb', BIAS_DTYPE), ('ub', BIAS_DTYPE)],
+                         align=False)
+
+        arr = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
+        cdef const np.int8_t[:] vartype_view = arr['vartype']
+        cdef const bias_type[:] lb_view = arr['lb']
+        cdef const bias_type[:] ub_view = arr['ub']
+
+        cdef Py_ssize_t vi
+        cdef cppVartype cpp_vartype
+        for vi in range(num_variables):
+            # I hate that we have to do this manually, but cython doesn't
+            # really like static_cast in this context
+            if vartype_view[vi] == 0:
+                cpp_vartype = cppVartype.BINARY
+            elif vartype_view[vi] == 1:
+                cpp_vartype = cppVartype.SPIN
+            elif vartype_view[vi] == 2:
+                cpp_vartype = cppVartype.INTEGER
+            else:
+                raise RuntimeError
+            self.cppqm.add_variable(cpp_vartype, lb_view[vi], ub_view[vi])
+
+        while self.variables.size() < self.cppqm.num_variables():
+            self.variables._append()
+
     cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
         # unsafe version of .set_linear
         cdef bias_type *b = &(self.cppqm.linear(vi))
@@ -61,6 +168,19 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t vi = self.variables.index(v)
         self._add_linear(vi, bias)
 
+    def add_linear_from_array(self, ConstNumeric[:] linear):
+        cdef Py_ssize_t length = linear.shape[0]
+        cdef Py_ssize_t vi
+
+        if self.variables._is_range():
+            if length > self.num_variables():
+                raise ValueError("variables must already exist")
+            for vi in range(length):
+                self._add_linear(vi, linear[vi])
+        else:
+            for vi in range(length):
+                self.add_linear(vi, linear[vi])
+
     def add_quadratic(self, u, v, bias_type bias):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
@@ -69,6 +189,24 @@ cdef class cyQM_template(cyQMBase):
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
         self.cppqm.add_quadratic(ui, vi, bias)
+
+    def add_quadratic_from_arrays(self,
+                                  ConstInteger[::1] irow, ConstInteger[::1] icol,
+                                  ConstNumeric[::1] qdata):
+        if not irow.shape[0] == icol.shape[0] == qdata.shape[0]:
+            raise ValueError("quadratic vectors should be equal length")
+        cdef Py_ssize_t length = irow.shape[0]
+
+        cdef Py_ssize_t vi
+        if self.variables._is_range():
+            if length > self.num_variables():
+                raise ValueError("variables must already exist")
+
+            for vi in range(length):
+                self.cppqm.add_quadratic(irow[vi], icol[vi], qdata[vi])
+        else:
+            for vi in range(length):
+                self.add_quadratic(irow[vi], icol[vi], qdata[vi])
 
     def add_variable(self, vartype, label=None):
         # as_vartype will raise for unsupported vartypes
@@ -156,6 +294,12 @@ cdef class cyQM_template(cyQMBase):
 
     cpdef Py_ssize_t num_variables(self):
         return self.cppqm.num_variables()
+
+    def relabel_variables(self, mapping):
+        self.variables._relabel(mapping)
+
+    def relabel_variables_as_integers(self):
+        return self.variables._relabel_as_integers()
 
     def reduce_linear(self, function, initializer=None):
         if self.num_variables() == 0 and initializer is None:

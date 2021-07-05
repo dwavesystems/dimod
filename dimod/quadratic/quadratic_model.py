@@ -12,10 +12,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import struct
+import tempfile
+
 from collections.abc import Callable
 from copy import deepcopy
 from numbers import Number
 from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Tuple, Union
+from typing import BinaryIO, ByteString
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -28,6 +32,9 @@ except ImportError:
 
 from dimod.decorators import forwarding_method
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
+from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
+from dimod.serialization.fileview import VariablesSection, Section
+from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import Variable, Bias, VartypeLike
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -41,7 +48,72 @@ if TYPE_CHECKING:
 __all__ = ['QuadraticModel', 'QM', 'Integer']
 
 
+QM_MAGIC_PREFIX = b'DIMODQM'
+
+
 Vartypes = Union[Mapping[Variable, Vartype], Iterable[Tuple[Variable, VartypeLike]]]
+
+
+class LinearSection(Section):
+    """Serializes the linear biases of a quadratic model."""
+    magic = b'LINB'
+
+    def __init__(self, qm: 'QuadraticModel'):
+        self.quadratic_model = qm
+
+    def dump_data(self):
+        return memoryview(self.quadratic_model.data._ilinear()).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype, num_variables):
+        arr = np.frombuffer(data[:num_variables*np.dtype(dtype).itemsize], dtype=dtype)
+        return arr
+
+
+class NeighborhoodSection(Section):
+    magic = b'NEIG'
+
+    def __init__(self, qm: 'QuadraticModel'):
+        self.quadratic_model = qm
+
+    def dump_data(self, *, vi: int):
+        arr = self.quadratic_model.data._ilower_triangle(vi)
+        return (struct.pack('<q', arr.shape[0]) + memoryview(arr).cast('B'))
+
+    @classmethod
+    def loads_data(self, data):
+        return struct.unpack('<q', data[:8])[0], data[8:]
+
+
+class OffsetSection(Section):
+    """Serializes the offset of a quadratic model."""
+    magic = b'OFFS'
+
+    def __init__(self, qm: 'QuadraticModel'):
+        self.quadratic_model = qm
+
+    def dump_data(self):
+        return memoryview(self.quadratic_model.offset).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype):
+        arr = np.frombuffer(data[:np.dtype(dtype).itemsize], dtype=dtype)
+        return arr[0]
+
+
+class VartypesSection(Section):
+    """Serializes the vartypes of a quadratic model."""
+    magic = b'VTYP'
+
+    def __init__(self, qm: 'QuadraticModel'):
+        self.quadratic_model = qm
+
+    def dump_data(self):
+        return self.quadratic_model.data._ivartypes()
+
+    @classmethod
+    def loads_data(self, data):
+        return data
 
 
 class QuadraticModel(QuadraticViewsMixin):
@@ -297,6 +369,50 @@ class QuadraticModel(QuadraticViewsMixin):
 
         return obj
 
+    @classmethod
+    def from_file(cls, fp: Union[BinaryIO, ByteString]):
+        """Construct a QM from a file-like object.
+
+        The inverse of :meth:`~QuadraticModel.to_file`.
+        """
+        if isinstance(fp, ByteString):
+            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+        else:
+            file_like = fp
+
+        header_info = read_header(file_like, QM_MAGIC_PREFIX)
+
+        num_variables, num_interactions = header_info.data['shape']
+        dtype = np.dtype(header_info.data['dtype'])
+        itype = np.dtype(header_info.data['itype'])
+
+        if header_info.version > (2, 0):
+            raise ValueError("cannot load a QM serialized with version "
+                             f"{header_info.version!r}, "
+                             "try upgrading your dimod version")
+
+        obj = cls(dtype=dtype)
+
+        # the vartypes
+        obj.data._ivartypes_load(VartypesSection.load(file_like), num_variables)
+
+        # offset
+        obj.offset += OffsetSection.load(file_like, dtype=dtype)
+
+        # linear
+        obj.data.add_linear_from_array(
+            LinearSection.load(file_like, dtype=dtype, num_variables=num_variables))
+
+        # quadratic
+        for vi in range(num_variables):
+            obj.data._ilower_triangle_load(vi, *NeighborhoodSection.load(file_like))
+
+        # labels (if applicable)
+        if header_info.data['variables']:
+            obj.relabel_variables(dict(enumerate(VariablesSection.load(file_like))))
+
+        return obj
+
     @forwarding_method
     def get_linear(self, v: Variable) -> Bias:
         """Get the linear bias of `v`."""
@@ -357,6 +473,22 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.reduce_quadratic
 
+    def relabel_variables(self, mapping: Mapping[Variable, Variable],
+                          inplace: bool = True) -> 'QuadraticModel':
+        if not inplace:
+            return self.copy().relabel_variables(mapping, inplace=True)
+
+        self.data.relabel_variables(mapping)
+        return self
+
+    def relabel_variables_as_integers(self, inplace: bool = True
+                                      ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
+        if not inplace:
+            return self.copy().relabel_variables_as_integers(inplace=True)
+
+        mapping = self.data.relabel_variables_as_integers()
+        return self, mapping
+
     def remove_interaction(self, u: Variable, v: Variable):
         # This is needed for the views, but I am not sure how often users are
         # removing variables/interactions. For now let's leave it here so
@@ -391,6 +523,86 @@ class QuadraticModel(QuadraticViewsMixin):
 
         """
         return self.data.set_quadratic
+
+    def to_file(self, *,
+                spool_size: int = int(1e9),
+                ) -> tempfile.SpooledTemporaryFile:
+        """Serialize the QM to a file-like object.
+
+        Args:
+            spool_size: Defines the `max_size` passed to the constructor of
+                :class:`tempfile.SpooledTemporaryFile`. Determines whether
+                the returned file-like's contents will be kept on disk or in
+                memory.
+
+        Format Specification (Version 1.0):
+
+            This format is inspired by the `NPY format`_
+
+            The first 7 bytes are a magic string: exactly "DIMODQM".
+
+            The next 1 byte is an unsigned byte: the major version of the file
+            format.
+
+            The next 1 byte is an unsigned byte: the minor version of the file
+            format.
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the header data HEADER_LEN.
+
+            The next HEADER_LEN bytes form the header data. This is a
+            json-serialized dictionary. The dictionary is exactly:
+
+            .. code-block:: python
+
+                data = dict(shape=qm.shape,
+                            dtype=qm.dtype.name,
+                            itype=qm.data.index_dtype.name,
+                            type=type(qm).__name__,
+                            variables=not qm.variables._is_range(),
+                            )
+
+            it is terminated by a newline character and padded with spaces to
+            make the entire length of the entire header divisible by 64.
+
+            The binary quadratic model data comes after the header.
+
+        .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
+
+        """
+        # todo: document the serialization format sections
+
+        file = SpooledTemporaryFile(max_size=spool_size)
+
+        data = dict(shape=self.shape,
+                    dtype=self.dtype.name,
+                    itype=self.data.index_dtype.name,
+                    type=type(self).__name__,
+                    variables=not self.variables._is_range(),
+                    )
+
+        write_header(file, QM_MAGIC_PREFIX, data, version=(1, 0))
+
+        # the vartypes
+        file.write(VartypesSection(self).dumps())
+
+        # offset
+        file.write(OffsetSection(self).dumps())
+
+        # linear
+        file.write(LinearSection(self).dumps())
+
+        # quadraic
+        neighborhood_section = NeighborhoodSection(self)
+        for vi in range(self.num_variables):
+            file.write(neighborhood_section.dumps(vi=vi))
+
+        # the labels (if needed)
+        if data['variables']:
+            file.write(VariablesSection(self.variables).dumps())
+
+        file.seek(0)
+        return file
 
     def update(self, other: 'QuadraticModel'):
         # this can be improved a great deal with c++, but for now let's use
