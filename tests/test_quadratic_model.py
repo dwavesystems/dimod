@@ -13,6 +13,8 @@
 #    limitations under the License.
 
 import itertools
+import shutil
+import tempfile
 import unittest
 
 import numpy as np
@@ -110,6 +112,43 @@ class TestDegree(unittest.TestCase):
         self.assertEqual(qm.degree(i), 2)
         self.assertEqual(qm.degree(j), 2)
         self.assertEqual(qm.degree(x), 1)
+
+
+class TestFileSerialization(unittest.TestCase):
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_empty(self, dtype):
+        qm = QM()
+
+        with tempfile.TemporaryFile() as tf:
+            with qm.to_file() as qmf:
+                shutil.copyfileobj(qmf, tf)
+            tf.seek(0)
+            new = QM.from_file(tf)
+
+        self.assertTrue(qm.is_equal(new))
+        self.assertEqual(qm.dtype, new.dtype)
+
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_3var(self, dtype):
+        qm = QM()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('SPIN', 's')
+
+        qm.set_linear('i', 3)
+        qm.set_quadratic('s', 'i', 2)
+        qm.set_quadratic('x', 's', -2)
+        qm.set_quadratic('i', 'i', 5)
+        qm.offset = 7
+
+        with tempfile.TemporaryFile() as tf:
+            with qm.to_file() as qmf:
+                shutil.copyfileobj(qmf, tf)
+            tf.seek(0)
+            new = QM.from_file(tf)
+
+        self.assertTrue(qm.is_equal(new))
+        self.assertEqual(qm.dtype, new.dtype)
 
 
 class TestOffset(unittest.TestCase):

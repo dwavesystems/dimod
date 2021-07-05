@@ -75,7 +75,7 @@ class Section(abc.ABC):
         """Returns a bytes-like object encoding the relevant data."""
         pass
 
-    def dumps(self):
+    def dumps(self, **kwargs):
         """Wraps .dump_data to include the identifier and section length."""
         magic = self.magic
 
@@ -86,7 +86,7 @@ class Section(abc.ABC):
 
         length = bytes(4)  # placeholder 4 bytes for length
 
-        data = self.dump_data()
+        data = self.dump_data(**kwargs)
 
         data_length = len(data)
 
@@ -104,14 +104,14 @@ class Section(abc.ABC):
         return b''.join(parts)
 
     @classmethod
-    def load(cls, fp):
+    def load(cls, fp, **kwargs):
         """Wraps .loads_data and checks the identifier and length."""
         magic = fp.read(len(cls.magic))
         if magic != cls.magic:
             raise ValueError("unknown subheader, expected {} but recieved "
                              "{}".format(cls.magic, magic))
         length = np.frombuffer(fp.read(4), '<u4')[0]
-        return cls.loads_data(fp.read(int(length)))
+        return cls.loads_data(fp.read(int(length)), **kwargs)
 
 
 class VariablesSection(Section):
