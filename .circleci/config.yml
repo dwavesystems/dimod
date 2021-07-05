@@ -334,17 +334,19 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
+            python -m pip install delvewheel
             python setup.py bdist_wheel
+            delvewheel repair -w ./delvewheel ./dist/*
 
       - store_artifacts:
-          path: ./dist
+          path: ./delvewheel
 
       - run: &win-twine-template
           name: install twine and deploy
           command: |
             env\Scripts\activate.ps1
             python -m pip install twine
-            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
+            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./delvewheel/*
 
 
   test-doctest:
