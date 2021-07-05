@@ -18,9 +18,9 @@ import tempfile
 import uuid
 import zipfile
 
-from collections.abc import Iterable
 from numbers import Number
-from typing import Hashable, Optional, Union, BinaryIO, ByteString
+from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection
+# from typing import Iterable as Iterable_t
 
 import numpy as np
 
@@ -69,8 +69,13 @@ class ConstrainedQuadraticModel:
         self.labels = Variables()
         self.constraints = {}
 
+        # discrete variable tracking, we probably can do this with less memory
+        # but for now let's keep it simple
+        self.discrete: Set[Hashable] = set()  # collection of discrete constraints
+        self._discrete: Set[Variable] = set()  # collection of all variables used in discrete
+
     @property
-    def objective(self) -> BinaryQuadraticModel:
+    def objective(self) -> Union[BinaryQuadraticModel, QuadraticModel]:
         """The objective to be minimized."""
         try:
             return self._objective
@@ -78,18 +83,18 @@ class ConstrainedQuadraticModel:
             pass
 
         objective = BinaryQuadraticModel('BINARY')
-        self._objective: BinaryQuadraticModel = objective
+        self._objective: Union[BinaryQuadraticModel, QuadraticModel] = objective
         return objective
 
-    def add_constraint(self, data, *args, **kwargs):
+    def add_constraint(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add constraints."""
         # in python 3.8+ we can use singledispatchmethod
         if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
-            self.add_constraint_from_model(data, *args, **kwargs)
+            return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
-            self.add_constraint_from_comparison(data, *args, **kwargs)
+            return self.add_constraint_from_comparison(data, *args, **kwargs)
         elif isinstance(data, Iterable):
-            self.add_constraint_from_iterable(data, *args, **kwargs)
+            return self.add_constraint_from_iterable(data, *args, **kwargs)
         else:
             raise NotImplementedError
 
@@ -230,6 +235,39 @@ class ConstrainedQuadraticModel:
         return self.add_constraint_from_model(
             qm, sense, rhs=rhs, label=label, copy=False)
 
+    def add_discrete(self, variables: Collection[Variable]):
+        """Add a iterable of binary variables as a disjoint one-hot constraint.
+
+        Adds a special kind of one-hot constraint. These one-hot constraints
+        must be disjoint, that is they must not have any overlapping variables.
+
+        Args:
+            variables: An iterable of variables.
+
+        Raises:
+            ValueError: If any of the given variables have already been added
+                to the model with any vartype other than `BINARY`.
+
+            ValueError: If any of the given variables are already used in
+                another discrete variable.
+
+        """
+        for v in variables:
+            if v in self._discrete:
+                # todo: language around discrete variables?
+                raise ValueError(f"variable {v!r} is already used in a discrete variable")
+            elif v in self.variables and self.vartype(v) != Vartype.BINARY:
+                raise ValueError(f"variable {v!r} has already been added but is not BINARY")
+
+        # we can! So add them
+        for v in variables:
+            self.add_variable(v, Vartype.BINARY)
+        self._discrete.update(variables)
+
+        bqm = BinaryQuadraticModel('BINARY', dtype=np.float32)
+        bqm.add_variables_from((v, 1) for v in variables)
+        self.discrete.add(self.add_constraint(bqm == 1))
+
     def add_variable(self, v: Variable, vartype: VartypeLike):
         """Add a variable to the model."""
         if self.variables.count(v):
@@ -274,8 +312,11 @@ class ConstrainedQuadraticModel:
                 lhs = load(zf.read(f"constraints/{constraint}/lhs"))
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
                 sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
+                discrete = any(zf.read(f"constraints/{constraint}/discrete"))
                 label = deserialize_variable(json.loads(constraint))
                 cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
+                if discrete:
+                    cqm.discrete.add(label)
 
         return cqm
 
@@ -286,20 +327,25 @@ class ConstrainedQuadraticModel:
                           for const in self.constraints.values())
         return num_biases
 
-    def set_objective(self, bqm: BinaryQuadraticModel):
+    def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
         """Set the objective of the constrained quadratic model."""
         variables = self.variables
 
-        vartype = bqm.vartype
-        for v in bqm.variables:
-            if v in variables and variables.vartype(v) != vartype:
+        if isinstance(objective, BinaryQuadraticModel):
+            def vartype(v):
+                return objective.vartype
+        else:
+            vartype = objective.vartype
+
+        for v in objective.variables:
+            if v in variables and variables.vartype(v) != vartype(v):
                 raise ValueError(f"mismatch between variable {v!r}")
 
         # ok, everything checks out so let's add it
-        for v in bqm.variables:
-            variables._append(vartype, v, permissive=True)
+        for v in objective.variables:
+            variables._append(vartype(v), v, permissive=True)
 
-        self._objective = bqm
+        self._objective = objective
 
     def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.
@@ -345,7 +391,8 @@ class ConstrainedQuadraticModel:
             `constraints` directory will contain one subdirectory for each
             constraint, each containing `lhs`, `rhs` and `sense` encoding
             the `lhs` as a fileview, the `rhs` as a float and the sense
-            as a string.
+            as a string. Each directory will also contain a `discrete` file,
+            encoding whether the constraint represents a discrete variable.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -380,6 +427,9 @@ class ConstrainedQuadraticModel:
 
                 sense = bytes(constraint.sense.value, 'ascii')
                 zf.writestr(f'constraints/{lstr}/sense', sense)
+
+                discrete = bytes((label in self.discrete,))
+                zf.writestr(f'constraints/{lstr}/discrete', discrete)
 
         file.seek(0)
         return file
