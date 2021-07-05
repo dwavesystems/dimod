@@ -117,6 +117,8 @@ dimod/binary/cybqm/*.cpp
 dimod/binary/cybqm/*.html
 dimod/discrete/*.cpp
 dimod/discrete/*.html
+dimod/quadratic/cyqm/*.cpp
+dimod/quadratic/cyqm/*.html
 tests/*.cpp
 tests/*.html
 

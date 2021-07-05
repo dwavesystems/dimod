@@ -24,7 +24,7 @@ cimport cython
 
 import numpy as np
 
-from cython.operator cimport postincrement as inc, dereference as deref
+from cython.operator cimport preincrement as inc, dereference as deref
 from libcpp.unordered_map cimport unordered_map
 from libcpp.unordered_set cimport unordered_set
 from libcpp.vector cimport vector
@@ -495,7 +495,7 @@ cdef class cyBQM_template(cyBQMBase):
         except IndexError:
             if default is None:
                 # out of range error is automatically converted to IndexError
-                raise ValueError(f"{u!r} and {v!r} have no interaction")
+                raise ValueError(f"{u!r} and {v!r} have no interaction") from None
             bias = default
         return as_numpy_float(bias)
 

@@ -69,3 +69,42 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except +
         cppVartype& vartype()
+
+    cdef cppclass cppQuadraticModel "dimod::QuadraticModel" [Bias, Index]:
+        ctypedef Bias bias_type
+        ctypedef size_t size_type
+        ctypedef Index index_type
+
+        cppclass const_neighborhood_iterator:
+            pair[index_type, bias_type] operator*()
+            const_neighborhood_iterator operator++()
+            const_neighborhood_iterator operator--()
+            bint operator==(const_neighborhood_iterator)
+            bint operator!=(const_neighborhood_iterator)
+
+        cppclass const_quadratic_iterator:
+            cppclass value_type:
+                index_type u
+                index_type v
+                bias_type bias
+
+            value_type operator*()
+            const_quadratic_iterator operator++()
+            bint operator==(const_quadratic_iterator&)
+            bint operator!=(const_quadratic_iterator&)
+
+        void add_quadratic(index_type, index_type, bias_type) except +
+        index_type add_variable(cppVartype) except+
+        const_quadratic_iterator cbegin_quadratic()
+        const_quadratic_iterator cend_quadratic()
+        bint is_linear()
+        bias_type& linear(index_type)
+        pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
+        size_type num_variables()
+        size_type num_interactions()
+        size_type num_interactions(index_type)
+        bias_type& offset()
+        bias_type quadratic_at(index_type, index_type) except +
+        void scale(bias_type)
+        void set_quadratic(index_type, index_type, bias_type)
+        const cppVartype& vartype(index_type)
