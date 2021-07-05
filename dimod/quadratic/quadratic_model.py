@@ -653,3 +653,6 @@ def Integer(label: Variable, bias: Bias = 1,
     v = qm.add_variable(Vartype.INTEGER, label)
     qm.set_linear(v, bias)
     return qm
+
+# register fileview loader
+load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)

@@ -76,13 +76,14 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(bqm, '<=')
         cqm.add_constraint(bqm, '>=')
         cqm.set_objective(BQM({'c': -1}, {}, 'SPIN'))
+        cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
 
         new = CQM.from_file(cqm.to_file())
 
         self.assertEqual(cqm.objective, new.objective)
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
-            self.assertEqual(constraint.lhs, new.constraints[label].lhs)
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
 
