@@ -209,8 +209,7 @@ jobs:
 
   build-osx:
     working_directory: ~/osx-wheels
-    macos:
-      "12.5.0"
+    macos: '~> 12.4'
     parameters:
       python-version:
         type: string
