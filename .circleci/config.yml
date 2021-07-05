@@ -210,7 +210,7 @@ jobs:
   build-osx:
     working_directory: ~/osx-wheels
     macos:
-      '=> 12.5' # would match the latest 12.x release
+      '~> 12.5' # would match the latest 12.x release
     parameters:
       python-version:
         type: string
