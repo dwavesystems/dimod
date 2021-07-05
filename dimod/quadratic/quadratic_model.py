@@ -35,6 +35,7 @@ from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import VariablesSection, Section
 from dimod.serialization.fileview import load, read_header, write_header
+from dimod.sym import Eq, Ge, Le, Comparison
 from dimod.typing import Variable, Bias, VartypeLike
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
@@ -286,6 +287,21 @@ class QuadraticModel(QuadraticViewsMixin):
             new.scale(-1)
             new += other
             return new
+        return NotImplemented
+
+    def __eq__(self, other: Number) -> Comparison:
+        if isinstance(other, Number):
+            return Eq(self, other)
+        return NotImplemented
+
+    def __ge__(self, other: Bias) -> Comparison:
+        if isinstance(other, Number):
+            return Ge(self, other)
+        return NotImplemented
+
+    def __le__(self, other: Bias) -> Comparison:
+        if isinstance(other, Number):
+            return Le(self, other)
         return NotImplemented
 
     @property
@@ -637,3 +653,6 @@ def Integer(label: Variable, bias: Bias = 1,
     v = qm.add_variable(Vartype.INTEGER, label)
     qm.set_linear(v, bias)
     return qm
+
+# register fileview loader
+load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)
