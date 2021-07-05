@@ -232,12 +232,20 @@ jobs:
       
     steps:
       - checkout
-
+      - restore_cache:
+          keys:
+            - pip-packages-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: create bdist_wheel
           command: |
-            pip3 install cibuildwheel
+            python3 -m venv .venv
+            source .venv/bin/activate
+            python -m pip install cibuildwheel
             cibuildwheel --output-dir ./dist
+      - save-cache:
+          key: pip-packages-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - ".venv"
       - store_artifacts:
           path: ./dist
 
@@ -247,8 +255,6 @@ jobs:
             
   deploy-osx:
     working_directory: ~/osx-wheels
-    macos:
-      xcode: "12.2.0"
     steps:
       - attach_workspace:
           at: dist
@@ -258,7 +264,9 @@ jobs:
       - run:
           name: deploy
           command: |
-            pip3 install twine
+            python -m virtualenv env
+            . env/bin/activate
+            python -m install twine
             twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*.whl
 
   test-win:
