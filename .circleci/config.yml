@@ -208,56 +208,39 @@ jobs:
             codecov
 
   deploy-osx:
-    parameters:
-      python-version:
-        type: string
-
+    working_directory: ~/osx-wheels
     macos:
       xcode: "12.2.0"
 
     environment:
       HOMEBREW_NO_AUTO_UPDATE: 1
-
-      # Force (lie about) macOS 10.9 binary compatibility.
-      # Needed for properly versioned wheels.
-      # See: https://github.com/MacPython/wiki/wiki/Spinning-wheels
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
+      
+      # For cibuildwheel options
+      CIBW_PLATFORM: macos
+      CIBW_BUILD: cp3*-macosx_*
+      CIBW_ARCHS: "x86_64 universal2 arm64"
+      CIBW_ENVIRONMENT: "CFLAGS='-Ofast -pipe -flto' CXXFLAGS='-Ofast -pipe -flto' BUILD_TIME=$(date)"
+      CIBW_BEFORE_BUILD: "pip install -r requirements.txt"
+      CIBW_ENVIRONMENT_MACOS: 
+            CPPFLAGS="$CPPFLAGS -Xpreprocessor -fopenmp"
+            CFLAGS="$CFLAGS -I/usr/local/opt/libomp/include"
+            CXXFLAGS="$CXXFLAGS -I/usr/local/opt/libomp/include"
+            LDFLAGS="$LDFLAGS -Wl,-rpath,/usr/local/opt/libomp/lib -L/usr/local/opt/libomp/lib -lomp"
+      CIBW_BEFORE_ALL_MACOS: brew install libomp
+      
     steps:
       - checkout
 
       - run:
-          name: install pyenv
-          command: |
-            brew install pyenv
-
-      - restore_cache:
-          keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run:
-          name: install python
-          command: |
-            pyenv install << parameters.python-version>> -s
-
-      - save_cache:
-          paths:
-            - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run: *osx-install-template
-
-      - run:
           name: create bdist_wheel
           command: |
-            . env/bin/activate
-            python setup.py bdist_wheel
+            pip3 install cibuildwheel
+            cibuildwheel --output-dir ./dist
 
       - run:
           name: deploy
           command: |
-            . env/bin/activate
-            python -m pip install twine
+            pip3 install twine
             twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
 
   test-win:
@@ -487,9 +470,6 @@ workflows:
               only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
             branches:
               ignore: /.*/
-          matrix:
-            parameters:
-              python-version: ["3.6.8", "3.7.5", "3.8.6", "3.9.0"]
       - deploy-win:
           filters:
             tags:
