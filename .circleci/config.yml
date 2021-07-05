@@ -219,10 +219,10 @@ jobs:
       # For cibuildwheel options
       CIBW_PLATFORM: macos
       CIBW_BUILD: cp<< parameters.python-version>>-*
-      CIBW_ARCHS: "x86_64 arm64 universal2" #universal2
+      CIBW_ARCHS: "x86_64 arm64" #universal2
       CIBW_ENVIRONMENT: 
            MACOSX_DEPLOYMENT_TARGET="11.0"
-      CIBW_BEFORE_BUILD: "pip install -r requirements.txt && pip install --force-reinstall --upgrade --no-binary :all: cython"
+      CIBW_BEFORE_BUILD: "pip install -r requirements.txt && pip install --upgrade --no-binary :all: cython"
       CIBW_ENVIRONMENT_MACOS: 
             CPPFLAGS="$CPPFLAGS -Xpreprocessor -fopenmp"
             CFLAGS="$CFLAGS -Ofast -pipe -lcblas -lclapack -flto -I/usr/local/opt/libomp/include -framework Accelerate"
@@ -231,6 +231,7 @@ jobs:
       CIBW_BEFORE_ALL_MACOS: brew install libomp 
       CIBW_REPAIR_WHEEL_COMMAND_MACOS: "delocate-listdeps --all --depending {wheel} && delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
       CIBW_DEPENDENCY_VERSIONS_MACOS: latest
+      CIBW_BUILD_VERBOSITY: 1
       
     steps:
       - checkout
