@@ -346,6 +346,21 @@ class QuadraticModelBase {
     }
 
     /**
+     * The neighborhood of variable `v`.
+     *
+     * @param A variable `v`.
+     * @param The neighborhood will start with the first out variable that
+     * does not compare less than `start`.
+     *
+     * @returns A pair of iterators pointing to the start and end of the
+     *     neighborhood.
+     */
+    std::pair<const_neighborhood_iterator, const_neighborhood_iterator>
+    neighborhood(index_type u, index_type start) const {
+        return std::make_pair(adj_[u].lower_bound(start), adj_[u].cend());
+    }
+
+    /**
      * Return the quadratic bias associated with `u`, `v`.
      *
      * If `u` and `v` do not have a quadratic bias, returns 0.
@@ -745,6 +760,13 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
                 base_type::adj_[i].sort_and_sum();
             }
         }
+    }
+
+    /// Add one (disconnected) variable to the BQM and return its index.
+    index_type add_variable() {
+        index_type vi = this->num_variables();
+        this->resize(vi + 1);
+        return vi;
     }
 
     /// Change the vartype of the binary quadratic model
