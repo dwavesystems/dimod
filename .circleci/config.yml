@@ -232,9 +232,7 @@ jobs:
       
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - pip-packages-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
+
       - run:
           name: create bdist_wheel
           command: |
@@ -242,10 +240,6 @@ jobs:
             source .venv/bin/activate
             python -m pip install cibuildwheel
             cibuildwheel --output-dir ./dist
-      - save-cache:
-          key: pip-packages-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-          paths:
-            - ~/osx-wheels/.venv
             
       - store_artifacts:
           path: ./dist
