@@ -220,7 +220,7 @@ jobs:
       # For cibuildwheel options
       CIBW_PLATFORM: macos
       CIBW_BUILD: cp<< parameters.python-version>>-macosx_*
-      CIBW_ARCHS: "x86_64 arm64"
+      CIBW_ARCHS: "x86_64 arm64 universal2"
       CIBW_ENVIRONMENT: "CFLAGS='-Ofast -pipe -flto' CXXFLAGS='-Ofast -pipe -flto' BUILD_TIME=$(date)"
       CIBW_BEFORE_BUILD: "pip install -r requirements.txt"
       CIBW_ENVIRONMENT_MACOS: 
@@ -232,6 +232,10 @@ jobs:
       
     steps:
       - checkout
+      
+      - restore_cache:
+          keys:
+            - venv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
 
       - run:
           name: create bdist_wheel
@@ -239,30 +243,36 @@ jobs:
             python3 -m venv .venv
             source .venv/bin/activate
             python -m pip install cibuildwheel
-            cibuildwheel --output-dir ./dist
-            
+            cibuildwheel --output-dir ./whealhouse
+      - save_cache:
+          paths:
+            - ~/osx-wheels/.venv
+          key: venv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
+          
       - store_artifacts:
-          path: ./dist
+          path: ./whealhouse
 
       - persist_to_workspace:
-          root: ~/osx-wheels/dist
+          root: ~/osx-wheels/whealhouse
           paths: . 
             
   deploy-osx:
+    macos:
+      xcode: "12.2.0"
     working_directory: ~/osx-wheels
     steps:
       - attach_workspace:
-          at: dist
+          at: whealhouse
 
       - store_artifacts:
-          path: ./dist
+          path: ./whealhouse
       - run:
           name: deploy
           command: |
             python -m virtualenv env
             . env/bin/activate
             python -m install twine
-            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*.whl
+            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./whealhouse/*.whl
 
   test-win:
     parameters:
