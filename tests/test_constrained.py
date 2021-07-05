@@ -68,6 +68,12 @@ class TestAddConstraint(unittest.TestCase):
         cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)], sense='<=')
 
 
+class TestAddDiscrete(unittest.TestCase):
+    def test_simple(self):
+        cqm = CQM()
+        cqm.add_discrete('abc')
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()
@@ -89,6 +95,26 @@ class TestSerialization(unittest.TestCase):
 
     def test_functional_empty(self):
         new = CQM.from_file(CQM().to_file())
+
+    def test_functional_discrete(self):
+        cqm = CQM()
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=')
+        cqm.add_constraint(bqm, '>=')
+        cqm.set_objective(Integer('c'))
+        cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
+        cqm.add_discrete('efg')
+
+        new = CQM.from_file(cqm.to_file())
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+        self.assertSetEqual(cqm.discrete, new.discrete)
 
 
 class TestSetObjective(unittest.TestCase):
