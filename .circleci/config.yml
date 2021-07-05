@@ -220,7 +220,7 @@ jobs:
       # For cibuildwheel options
       CIBW_PLATFORM: macos
       CIBW_BUILD: cp<< parameters.python-version>>-macosx_*
-      CIBW_ARCHS: "x86_64 universal2 arm64"
+      CIBW_ARCHS: "x86_64 arm64"
       CIBW_ENVIRONMENT: "CFLAGS='-Ofast -pipe -flto' CXXFLAGS='-Ofast -pipe -flto' BUILD_TIME=$(date)"
       CIBW_BEFORE_BUILD: "pip install -r requirements.txt"
       CIBW_ENVIRONMENT_MACOS: 
@@ -234,7 +234,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - pip-packages-{{ .Environment.CIRCLE_JOB }}
+            - pip-packages-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
       - run:
           name: create bdist_wheel
           command: |
@@ -243,9 +243,10 @@ jobs:
             python -m pip install cibuildwheel
             cibuildwheel --output-dir ./dist
       - save-cache:
-          key: pip-packages-{{ .Environment.CIRCLE_JOB }}
+          key: pip-packages-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
           paths:
-            - ".venv"
+            - ~/osx-wheels/.venv
+            
       - store_artifacts:
           path: ./dist
 
