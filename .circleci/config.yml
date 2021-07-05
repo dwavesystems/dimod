@@ -222,7 +222,7 @@ jobs:
       CIBW_ARCHS: "x86_64 arm64 universal2" #universal2
       CIBW_ENVIRONMENT: 
            MACOSX_DEPLOYMENT_TARGET="11.0"
-      CIBW_BEFORE_BUILD: pip install --platform macosx_universal2 --platform macosx_x86_64 --platform macosx_arm64 -r requirements.txt && pip install --upgrade --platform macosx_universal2 --platform macosx_x86_64 --platform macosx_arm64 cython 
+      CIBW_BEFORE_BUILD: pip install --only-binary=:all -r requirements.txt && pip install --upgrade --only-binary=:all cython 
       CIBW_ENVIRONMENT_MACOS: 
             CPPFLAGS="$CPPFLAGS -Xpreprocessor -fopenmp"
             CFLAGS="$CFLAGS -Ofast -pipe -lcblas -lclapack -flto -I/usr/local/opt/libomp/include -framework Accelerate"
