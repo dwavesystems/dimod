@@ -72,9 +72,12 @@ setup(
         'numpy>=1.17.3,<2.0.0',  # keep synced with circle-ci, pyproject.toml
         ],
     setup_requires = [
-        'numpy==1.19.4', 
-        'cython==0.29.21', 
+        'numpy=>1.19.4,<2.0.0', 
+        'Cython>=0.29.21,<3.0', 
         'reno==3.3.0', 
         'setuptools>=46.4.0 ',
+        'setuptools',
+        'wheel', 
+        'pip',
         ]
 )
