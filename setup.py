@@ -72,14 +72,9 @@ setup(
         'numpy>=1.17.3,<2.0.0',  # keep synced with circle-ci, pyproject.toml
         ],
     setup_requires = [
-        'pyannotate',
-        'scikit-build',
-        'wheel',
-        'ninja',
-        'Cython',
-        'cmake',
-        'setuptools',
-        'pip',
-        'setuptools-git-versioning'
+        'numpy==1.19.4', 
+        'cython==0.29.21', 
+        'reno==3.3.0', 
+        'setuptools>=46.4.0 ',
         ]
 )
