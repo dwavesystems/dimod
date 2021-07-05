@@ -220,7 +220,7 @@ jobs:
       # For cibuildwheel options
       CIBW_PLATFORM: macos
       CIBW_BUILD: cp<< parameters.python-version>>-macosx_*
-      CIBW_ARCHS: "x86_64 arm64 universal2"
+      CIBW_ARCHS: "x86_64 arm64"
       CIBW_ENVIRONMENT: "CFLAGS='-Ofast -pipe -flto' CXXFLAGS='-Ofast -pipe -flto' BUILD_TIME=$(date)"
       CIBW_BEFORE_BUILD: "pip install -r requirements.txt"
       CIBW_ENVIRONMENT_MACOS: 
