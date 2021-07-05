@@ -31,7 +31,8 @@ jobs:
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.major == 3)"; then continue; fi;
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.minor == << parameters.python-minor >>)"; then continue; fi;
               "${PYBIN}/pip" install -r requirements.txt --only-binary=:all:
-              "${PYBIN}/pip" wheel . -w ./wheelhouse
+              "${PYBIN}/python" setup.py build 
+              "${PYBIN}/python" setup.py bdist_wheel --bdist-dir=./wheelhouse
             done
 
       - run:
