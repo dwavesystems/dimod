@@ -210,7 +210,7 @@ jobs:
   build-osx:
     working_directory: ~/osx-wheels
     macos:
-      xcode: "12.2.0"
+      '=> 12.5' # would match the latest 12.x release
     parameters:
       python-version:
         type: string
@@ -235,7 +235,7 @@ jobs:
       
       - restore_cache:
           keys:
-            - venv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
+            - venv-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: create bdist_wheel
@@ -247,7 +247,7 @@ jobs:
       - save_cache:
           paths:
             - ~/osx-wheels/.venv
-          key: venv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
+          key: venv-{{ .Environment.CIRCLE_JOB }}
           
       - store_artifacts:
           path: ./whealhouse
