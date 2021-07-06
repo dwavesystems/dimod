@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
+
 """
 Samplers can be composed. The `composite pattern <https://en.wikipedia.org/wiki/Composite_pattern>`_
 allows layers of pre- and post-processing to be applied to binary quadratic programs without needing

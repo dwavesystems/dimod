@@ -11,8 +11,6 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
 
 # developer note: It is hard to provide code examples for these because doing
 # so will overwrite the settings in sphinx's setup.
