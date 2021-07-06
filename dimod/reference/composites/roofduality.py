@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 """A composite that uses the roof duality algorithm [#bht]_ [#bh]_ to fix some
 variables in the binary quadratic model before passing it on to its child
 sampler.

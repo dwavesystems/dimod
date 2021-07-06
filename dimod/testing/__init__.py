@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 """The testing subpackage contains functions for verifying and testing dimod
 objects. Testing objects/functions can be imported from the :mod:`dimod.testing`
 namespace. For example:
@@ -20,5 +19,6 @@ namespace. For example:
 >>> from dimod.testing import assert_sampler_api
 
 """
+
 from dimod.testing.asserts import *
 from dimod.testing.sampler import *

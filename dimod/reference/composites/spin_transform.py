@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
+
 """
 On the D-Wave system, coupling :math:`J_{i,j}` adds a small bias to qubits :math:`i` and
 :math:`j` due to leakage. This can become significant for chained qubits. Additionally,
