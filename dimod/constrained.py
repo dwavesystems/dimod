@@ -24,7 +24,8 @@ from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Co
 
 import numpy as np
 
-from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin
+from dimod.core.bqm import BQM as BQMabc
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.quadratic import QuadraticModel
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
@@ -89,7 +90,7 @@ class ConstrainedQuadraticModel:
     def add_constraint(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add constraints."""
         # in python 3.8+ we can use singledispatchmethod
-        if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
             return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_constraint_from_comparison(data, *args, **kwargs)
@@ -136,7 +137,8 @@ class ConstrainedQuadraticModel:
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
-        if isinstance(qm, BinaryQuadraticModel):
+        if isinstance(qm, (BinaryQuadraticModel, BQMabc)):
+            qm = as_bqm(qm, copy=False)  # handle legacy BQM types
             vartype = qm.vartype
             for v in qm.variables:
                 if v in variables and variables.vartype(v) != vartype:
@@ -331,7 +333,9 @@ class ConstrainedQuadraticModel:
         """Set the objective of the constrained quadratic model."""
         variables = self.variables
 
-        if isinstance(objective, BinaryQuadraticModel):
+        if isinstance(objective, (BinaryQuadraticModel, BQMabc)):
+            objective = as_bqm(objective, copy=False)  # handle legacy BQM types
+
             def vartype(v):
                 return objective.vartype
         else:

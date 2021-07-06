@@ -74,6 +74,17 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
+class TestAdjVector(unittest.TestCase):
+    # this will be deprecated in the future
+    def test_construction(self):
+        cqm = CQM()
+
+        cqm.set_objective(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'))
+        label = cqm.add_constraint(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'), sense='==', rhs=1)
+        self.assertIsInstance(cqm.objective, BQM)
+        self.assertIsInstance(cqm.constraints[label].lhs, BQM)
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()
