@@ -23,6 +23,7 @@ from libcpp.cast cimport static_cast
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric
+from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
@@ -54,6 +55,63 @@ cdef class cyQM_template(cyQMBase):
         # unsafe version of .add_linear
         cdef bias_type *b = &(self.cppqm.linear(vi))
         b[0] += bias
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef cython.floating[::1] _energies(self,
+                                        object samples_like,
+                                        cython.floating signal=0):
+        samples, labels = as_samples(samples_like, dtype=np.int64)
+
+        cdef np.int64_t[:, :] samples_view = samples
+
+        cdef Py_ssize_t num_samples = samples_view.shape[0]
+        cdef Py_ssize_t num_variables = samples_view.shape[1]
+
+        if num_variables != self.num_variables():
+            raise ValueError("inconsistent number of variables")
+        if num_variables != len(labels):
+            # an internal error to as_samples. We do this check because
+            # the boundscheck is off
+            raise RuntimeError(
+                "as_samples returned an inconsistent samples/variables")
+
+        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(num_variables, dtype=np.intp)
+        cdef Py_ssize_t si
+        for si in range(num_variables):
+            v = labels[si]  # python label
+            bqm_to_sample[self.variables.index(v)] = si
+
+        cdef cython.floating[::1] energies
+        if cython.floating is float:
+            energies = np.empty(num_samples, dtype=np.float32)
+        else:
+            energies = np.empty(num_samples, dtype=np.float64)
+
+        # alright, now let's calculate some energies!
+        cdef np.int8_t uspin, vspin
+        cdef Py_ssize_t ui, vi
+        for si in range(num_samples):
+            # offset
+            energies[si] = self.cppqm.offset()
+
+            for ui in range(num_variables):
+                uspin = samples_view[si, bqm_to_sample[ui]]
+
+                # linear
+                energies[si] += self.cppqm.linear(ui) * uspin;
+
+                span = self.cppqm.neighborhood(ui)
+                while span.first != span.second and deref(span.first).first < ui:
+                    vi = deref(span.first).first
+
+                    vspin = samples_view[si, bqm_to_sample[vi]]
+
+                    energies[si] += uspin * vspin * deref(span.first).second
+
+                    inc(span.first)
+
+        return energies
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -240,6 +298,15 @@ cdef class cyQM_template(cyQMBase):
     def degree(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
         return self.cppqm.num_interactions(vi)
+
+    def energies(self, samples_like, dtype=None):
+        dtype = self.dtype if dtype is None else np.dtype(dtype)
+        if dtype == np.float64:
+            return np.asarray(self._energies[np.float64_t](samples_like))
+        elif dtype == np.float32:
+            return np.asarray(self._energies[np.float32_t](samples_like))
+        else:
+            raise ValueError("dtype must be None or a floating type.")
 
     def get_linear(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)

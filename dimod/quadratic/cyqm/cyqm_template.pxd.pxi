@@ -15,6 +15,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+cimport cython
+
 from dimod.cyvariables cimport cyVariables
 from dimod.quadratic.cyqm.cyqm_base cimport cyQMBase
 from dimod.libcpp cimport cppQuadraticModel, cppVartype
@@ -28,6 +30,7 @@ cdef class cyQM_template(cyQMBase):
     cdef readonly cyVariables variables
 
     cdef void _add_linear(self, Py_ssize_t, bias_type)
+    cdef cython.floating[::1] _energies(self, object samples_like, cython.floating signal=*)
     cdef void _set_linear(self, Py_ssize_t, bias_type)
     cdef cppVartype cppvartype(self, object) except? cppVartype.SPIN
     cpdef bint is_linear(self)
