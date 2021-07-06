@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import copy
 import functools
 
 from collections.abc import Collection, Iterator, Callable, Sequence
@@ -57,6 +58,9 @@ class VartypeView:
     def __init__(self, data, vartype: Vartype):
         self.data = data
         self._vartype = vartype
+
+    def __copy__(self):
+        return type(self)(copy.copy(self.data), self.vartype)
 
     @property
     def dtype(self) -> np.dtype:
