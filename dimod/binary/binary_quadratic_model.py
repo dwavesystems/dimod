@@ -172,7 +172,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         cls.DEFAULT_DTYPE = np.dtype(default_dtype)
 
     def __copy__(self):
-        return type(self)(self)
+        new = type(self).__new__(type(self))
+        new.data = copy.copy(self.data)
+        return new
 
     def __deepcopy__(self, memo):
         new = type(self).__new__(type(self))
@@ -797,7 +799,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def copy(self, deep=False):
         """Return a copy."""
-        return copy.deepcopy(self)
+        if deep:
+            return copy.deepcopy(self)
+        else:
+            return copy.copy(self)
 
     @forwarding_method
     def degree(self, v: Variable) -> int:
