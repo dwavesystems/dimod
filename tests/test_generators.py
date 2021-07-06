@@ -447,6 +447,24 @@ class TestKnapsack(unittest.TestCase):
         self.assertEqual(len(cqm.variables), num_items)
         self.assertEqual(len(cqm.constraints), 1)
 
+    def test_infeasible(self):
+        num_items = 10
+        cqm = dimod.generators.knapsack(num_items=num_items)
+
+        # create an infeasible state, by selecting all the items
+        x = {i: 1 for i in cqm.variables}
+        lhs = cqm.constraints['capacity'].lhs.energy(x)
+        self.assertGreater(lhs, 0)
+
+    def test_feasible(self):
+        num_items = 10
+        cqm = dimod.generators.knapsack(num_items=num_items)
+
+        # create feasible state, by not selecting any item
+        x = {i: 0 for i in cqm.variables}
+        lhs = cqm.constraints['capacity'].lhs.energy(x)
+        self.assertLessEqual(lhs, 0)
+
 
 class TestBinPacking(unittest.TestCase):
 
@@ -455,6 +473,37 @@ class TestBinPacking(unittest.TestCase):
         cqm = dimod.generators.bin_packing(num_items=num_items)
         self.assertEqual(len(cqm.variables), num_items*(num_items+1))
         self.assertEqual(len(cqm.constraints), 2*num_items)
+
+    def test_infeasible(self):
+        num_items = 10
+        cqm = dimod.generators.bin_packing(num_items=num_items)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(i, j): 1 for j in range(num_items)}
+            lhs = cqm.constraints['item_placing_{}'.format(i)].lhs.energy(x)
+            self.assertGreater(lhs, 0)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(j, i): 1 for j in range(num_items)}
+            x['y_{}'.format(i)] = 1
+            lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
+            self.assertGreater(lhs, 0)
+
+    def test_feasible(self):
+        num_items = 10
+        cqm = dimod.generators.bin_packing(num_items=num_items)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(i, j): 0 for j in range(1, num_items)}
+            x['x_{}_0'.format(i)] = 1
+            lhs = cqm.constraints['item_placing_{}'.format(i)].lhs.energy(x)
+            self.assertLessEqual(lhs, 0)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(j, i): 0 for j in range(num_items)}
+            x['y_{}'.format(i)] = 1
+            lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
+            self.assertLessEqual(lhs, 0)
 
 
 class TestMultiKnapsack(unittest.TestCase):
@@ -466,4 +515,33 @@ class TestMultiKnapsack(unittest.TestCase):
         self.assertEqual(len(cqm.variables), num_items*num_bins)
         self.assertEqual(len(cqm.constraints), num_bins+num_items)
 
+    def test_infeasible(self):
+        num_items = 10
+        cqm = dimod.generators.bin_packing(num_items=num_items)
 
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(i, j): 1 for j in range(num_items)}
+            lhs = cqm.constraints['item_placing_{}'.format(i)].lhs.energy(x)
+            self.assertGreater(lhs, 0)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(j, i): 1 for j in range(num_items)}
+            x['y_{}'.format(i)] = 1
+            lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
+            self.assertGreater(lhs, 0)
+
+    def test_feasible(self):
+        num_items = 10
+        cqm = dimod.generators.bin_packing(num_items=num_items)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(i, j): 0 for j in range(1, num_items)}
+            x['x_{}_0'.format(i)] = 1
+            lhs = cqm.constraints['item_placing_{}'.format(i)].lhs.energy(x)
+            self.assertLessEqual(lhs, 0)
+
+        for i in range(num_items):
+            x = {'x_{}_{}'.format(j, i): 0 for j in range(num_items)}
+            x['y_{}'.format(i)] = 1
+            lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
+            self.assertLessEqual(lhs, 0)
