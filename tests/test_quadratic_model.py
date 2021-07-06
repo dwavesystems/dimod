@@ -114,6 +114,17 @@ class TestDegree(unittest.TestCase):
         self.assertEqual(qm.degree(x), 1)
 
 
+class TestEnergies(unittest.TestCase):
+    def test_spin_bin(self):
+        x = Binary('x')
+        s = Spin('s')
+
+        self.assertEqual((2*x*s).energy({'x': 1, 's': 1}), 2)
+        self.assertEqual((2*x*s).energy({'x': 1, 's': -1}), -2)
+        self.assertEqual((2*x*s).energy({'x': 0, 's': 1}), 0)
+        self.assertEqual((2*x*s+1).energy({'x': 0, 's': -1}), 1)
+
+
 class TestFileSerialization(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
@@ -158,6 +169,48 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(qm.offset, 5)
         qm.offset -= 2
         self.assertEqual(qm.offset, 3)
+
+
+class TestSpinToBinary(unittest.TestCase):
+    def test_triangle(self):
+        qm = QM()
+        qm.add_variables_from('SPIN', 'rstu')
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('INTEGER', 'i')
+
+        qm.quadratic['sx'] = 5
+        qm.quadratic['si'] = -3
+        qm.quadratic['xi'] = 23
+        qm.quadratic['ti'] = -7
+        qm.quadratic['xu'] = 3
+        qm.quadratic['rs'] = -12
+
+        qm.offset = 1.5
+        qm.linear['r'] = 5
+        qm.linear['x'] = -4
+        qm.linear['i'] = .25
+
+        new = qm.spin_to_binary(inplace=False)
+
+        rng = np.random.default_rng(42)
+
+        for _ in range(10):
+            sample = {}
+            for v in qm.variables:
+                if qm.vartype(v) == dimod.BINARY:
+                    sample[v] = rng.choice((0, 1))
+                elif qm.vartype(v) == dimod.SPIN:
+                    sample[v] = rng.choice((-1, 1))
+                elif qm.vartype(v) == dimod.INTEGER:
+                    sample[v] = rng.choice(10)
+
+            energy = qm.energy(sample)
+
+            for v in qm.variables:
+                if qm.vartype(v) == dimod.SPIN:
+                    sample[v] = (sample[v] + 1) // 2
+
+            self.assertEqual(energy, new.energy(sample))
 
 
 class TestSymbolic(unittest.TestCase):

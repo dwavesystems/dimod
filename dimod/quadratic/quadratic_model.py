@@ -38,7 +38,7 @@ from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le, Comparison
 from dimod.typing import Variable, Bias, VartypeLike
 from dimod.variables import Variables
-from dimod.vartypes import Vartype
+from dimod.vartypes import Vartype, as_vartype
 from dimod.views.quadratic import QuadraticViewsMixin
 
 if TYPE_CHECKING:
@@ -356,6 +356,11 @@ class QuadraticModel(QuadraticViewsMixin):
         """Add a quadratic term."""
         return self.data.add_variable
 
+    def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
+        vartype = as_vartype(vartype, extended=True)
+        for v in variables:
+            self.add_variable(vartype, v)
+
     def copy(self):
         """Return a copy."""
         return deepcopy(self)
@@ -367,6 +372,28 @@ class QuadraticModel(QuadraticViewsMixin):
         The degree is the number of interactions that contain `v`.
         """
         return self.data.degree
+
+    def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
+        return self.data.energies(samples_like, dtype=dtype)
+
+    def energy(self, sample, dtype=None) -> Bias:
+        """Determine the energy of the given sample.
+
+        Args:
+            samples_like (samples_like):
+                Raw sample. `samples_like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the energy. Matches
+                :attr:`.dtype` by default.
+
+        Returns:
+            The energy.
+
+        """
+        energy, = self.energies(sample, dtype=dtype)
+        return energy
 
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
@@ -539,6 +566,27 @@ class QuadraticModel(QuadraticViewsMixin):
 
         """
         return self.data.set_quadratic
+
+    def spin_to_binary(self, inplace: bool = False) -> 'QuadraticModel':
+        """Convert any SPIN variables to BINARY."""
+        if not inplace:
+            return self.copy().spin_to_binary(inplace=True)
+
+        for s in self.variables:
+            if self.vartype(s) != Vartype.SPIN:
+                continue
+
+            # quadratic
+            for t, qbias in self.iter_neighborhood(s):
+                self.set_quadratic(s, t, 2*qbias)
+                self.add_linear(t, -qbias)
+
+            # linear
+            lbias = self.get_linear(s)
+            self.set_linear(s, 2*lbias)
+            self.offset -= lbias
+
+        return self
 
     def to_file(self, *,
                 spool_size: int = int(1e9),
