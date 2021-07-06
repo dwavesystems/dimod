@@ -66,9 +66,3 @@ def knapsack(num_items, seed=32, value_range=(10, 30), weight_range=(10, 30), ti
     model.add_constraint(constraint, sense="<=", label='capacity')
 
     return model
-
-
-if __name__ == "__main__":
-
-    cqm = knapsack(10)
-    print(cqm.variables)

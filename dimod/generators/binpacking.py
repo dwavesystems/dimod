@@ -72,8 +72,3 @@ def bin_packing(num_items, seed=32, weight_range=(10, 30)):
 
     return model
 
-
-if __name__ == "__main__":
-
-    cqm = bin_packing(10)
-    print(cqm.variables)
