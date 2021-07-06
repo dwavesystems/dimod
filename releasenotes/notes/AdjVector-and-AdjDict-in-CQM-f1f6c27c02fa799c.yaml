@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Add support for `AdjVectorBQM` and `AdjDictBQM` in
+    `ConstrainedQuadraticModel`.
