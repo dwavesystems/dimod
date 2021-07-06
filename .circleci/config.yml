@@ -30,7 +30,6 @@ jobs:
             for PYBIN in /opt/python/*/bin; do
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.major == 3)"; then continue; fi;
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.minor == << parameters.python-minor >>)"; then continue; fi;
-              "${PYBIN}/pip" install -r requirements.txt --only-binary=:all:
               "${PYBIN}/pip" wheel . -w ./wheelhouse
             done
 
@@ -334,19 +333,17 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
-            python -m pip install delvewheel
             python setup.py bdist_wheel
-            delvewheel repair -w ./delvewheel ./dist/*
 
       - store_artifacts:
-          path: ./delvewheel
+          path: ./dist
 
       - run: &win-twine-template
           name: install twine and deploy
           command: |
             env\Scripts\activate.ps1
             python -m pip install twine
-            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./delvewheel/*
+            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
 
 
   test-doctest:
@@ -415,9 +412,6 @@ workflows:
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              # We could build for 32bit as well, but since we don't have any
-              # way to test it and it slows down compilation, we don't for
-              # now.
               architecture: ["x86_64"]
       - test-linux:
           # We could break each of these out into seperate jobs so that we
@@ -467,7 +461,7 @@ workflows:
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              architecture: ["x86_64", "i686"]
+              architecture: ["x86_64"]
       - build-sdist:
           filters:
             tags:
