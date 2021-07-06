@@ -29,6 +29,7 @@ cdef class cyVariables:
     cpdef object _extend(self, object iterable, bint permissive=*)
     cpdef bint _is_range(self)
     cpdef object _pop(self)
+    cpdef cyVariables copy(self)
     cdef Py_ssize_t _count_int(self, object) except -1
     cpdef Py_ssize_t count(self, object) except -1
     cpdef Py_ssize_t index(self, object, bint permissive=*) except -1

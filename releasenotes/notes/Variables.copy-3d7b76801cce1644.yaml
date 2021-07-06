@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``Variables.copy`` method, implemented as a ``cpdef`` method for Cython
+    and Python access.
+fixes:
+  - |
+    Fix shallow copies of ``Variables`` objects when using ``copy.copy``.
