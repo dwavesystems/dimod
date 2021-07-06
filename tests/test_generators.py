@@ -437,3 +437,33 @@ class TestDoped(unittest.TestCase):
         total = len(bqm.quadratic)
         fm = sum([val == -1 for val in bqm.quadratic.values()])
         self.assertAlmostEqual(fm / total, 0.3, places=2)
+
+
+class TestKnapsack(unittest.TestCase):
+
+    def test_model(self):
+        num_items = 10
+        cqm = dimod.generators.knapsack(num_items=num_items)
+        self.assertEqual(len(cqm.variables), num_items)
+        self.assertEqual(len(cqm.constraints), 1)
+
+
+class TestBinPacking(unittest.TestCase):
+
+    def test_model(self):
+        num_items = 10
+        cqm = dimod.generators.bin_packing(num_items=num_items)
+        self.assertEqual(len(cqm.variables), num_items*(num_items+1))
+        self.assertEqual(len(cqm.constraints), 2*num_items)
+
+
+class TestMultiKnapsack(unittest.TestCase):
+
+    def test_model(self):
+        num_items = 20
+        num_bins = 10
+        cqm = dimod.generators.multi_knapsack(num_items=num_items, num_bins=num_bins)
+        self.assertEqual(len(cqm.variables), num_items*num_bins)
+        self.assertEqual(len(cqm.constraints), num_bins+num_items)
+
+
