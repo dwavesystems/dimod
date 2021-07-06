@@ -30,7 +30,6 @@ jobs:
             for PYBIN in /opt/python/*/bin; do
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.major == 3)"; then continue; fi;
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.minor == << parameters.python-minor >>)"; then continue; fi;
-              "${PYBIN}/pip" install -r requirements.txt --only-binary=:all:
               "${PYBIN}/pip" wheel . -w ./wheelhouse
             done
 
@@ -413,9 +412,6 @@ workflows:
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              # We could build for 32bit as well, but since we don't have any
-              # way to test it and it slows down compilation, we don't for
-              # now.
               architecture: ["x86_64"]
       - test-linux:
           # We could break each of these out into seperate jobs so that we
@@ -465,7 +461,7 @@ workflows:
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              architecture: ["x86_64", "i686"]
+              architecture: ["x86_64"]
       - build-sdist:
           filters:
             tags:
