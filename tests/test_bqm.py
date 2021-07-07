@@ -1936,7 +1936,7 @@ class TestRelabel(unittest.TestCase):
         vartype = dimod.SPIN
         test = BQM(linear, quadratic, offset, vartype)
 
-        self.assertEqual(new, test)
+        self.assertTrue(new.is_almost_equal(test))
 
     @parameterized.expand(BQMs.items())
     def test_overlap(self, name, BQM):
@@ -1957,7 +1957,7 @@ class TestRelabel(unittest.TestCase):
         # should have stayed the same
         assert_consistent_bqm(test)
         assert_consistent_bqm(bqm)
-        self.assertEqual(test, bqm)
+        self.assertTrue(test.is_almost_equal(bqm))
 
     @parameterized.expand(BQMs.items())
     def test_identity(self, name, BQM):
@@ -1975,7 +1975,7 @@ class TestRelabel(unittest.TestCase):
         # should have stayed the same
         assert_consistent_bqm(old)
         assert_consistent_bqm(bqm)
-        self.assertEqual(old, bqm)
+        self.assertTrue(old.is_almost_equal(bqm))
 
     @parameterized.expand(BQMs.items())
     def test_partial_relabel_copy(self, name, BQM):
