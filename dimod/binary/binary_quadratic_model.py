@@ -14,6 +14,7 @@
 
 import collections.abc as abc
 import copy
+import functools
 import itertools
 import io
 import json
@@ -1134,6 +1135,33 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                       'use v in bqm.variables instead.', 
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
+
+    def is_almost_equal(self, other: Union['BinaryQuadraticModel', Bias], places=7) -> bool:
+        """Test if the given BQM's biases are almost equal.
+
+        Test whether each bias in the binary quadratic model is approximately
+        equal to each bias in `other`. Approximate equality is calculated by
+        passing the difference to :func:`round`. `places` determines the
+        number of decimal places.
+        """
+        if isinstance(other, Number):
+            return not (self.num_variables or round(self.offset - other, places))
+
+        def eq(a, b):
+            return not round(a - b, places)
+
+        try:
+            return (self.vartype == other.vartype
+                    and self.shape == other.shape
+                    and eq(self.offset, other.offset)
+                    and all(eq(self.get_linear(v), other.get_linear(v))
+                            for v in self.variables)
+                    and all(eq(bias, other.get_quadratic(u, v))
+                            for u, v, bias in self.iter_quadratic())
+                    )
+        except (AttributeError, ValueError):
+            # it's not a BQM or variables/interactions don't match
+            return False
 
     def is_equal(self, other):
         if isinstance(other, Number):

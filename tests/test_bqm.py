@@ -1327,6 +1327,33 @@ class TestGetQuadratic(unittest.TestCase):
         self.assertIsInstance(bqm.get_quadratic(2, 0), dtype)
 
 
+class TestIsAlmostEqual(unittest.TestCase):
+    def test_number(self):
+        bqm = BinaryQuadraticModel('SPIN')
+        bqm.offset = 1.01
+        self.assertTrue(bqm.is_almost_equal(1, places=1))
+        self.assertFalse(bqm.is_almost_equal(1, places=2))
+        self.assertTrue(bqm.is_almost_equal(1.01, places=2))
+
+    def test_bqm(self):
+        bqm = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1.01, 'SPIN')
+
+        # different quadratic bias
+        other = BinaryQuadraticModel({'a': 1.01}, {'ab': 1}, 1.01, 'SPIN')
+        self.assertTrue(bqm.is_almost_equal(other, places=1))
+        self.assertFalse(bqm.is_almost_equal(other, places=2))
+
+        # different linear biases
+        other = BinaryQuadraticModel({'a': 1.}, {'ab': 1.01}, 1.01, 'SPIN')
+        self.assertTrue(bqm.is_almost_equal(other, places=1))
+        self.assertFalse(bqm.is_almost_equal(other, places=2))
+
+        # different offset
+        other = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1, 'SPIN')
+        self.assertTrue(bqm.is_almost_equal(other, places=1))
+        self.assertFalse(bqm.is_almost_equal(other, places=2))
+
+
 class TestIsLinear(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_no_variables(self, name, BQM):
