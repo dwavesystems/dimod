@@ -60,9 +60,9 @@ class VartypeView:
         self._vartype = vartype
 
     def __copy__(self):
-        # since we'd need to copy he underlying data anyway, let's just return
+        # since we'd need to copy the underlying data anyway, let's just return
         # that instead. It doesn't really make sense to maintain the view
-        # of a detatched copy.
+        # of a detached copy.
         new = copy.copy(self.data)
         new.change_vartype(self.vartype)
         return new
