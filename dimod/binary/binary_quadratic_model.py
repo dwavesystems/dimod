@@ -14,7 +14,6 @@
 
 import collections.abc as abc
 import copy
-import functools
 import itertools
 import io
 import json
