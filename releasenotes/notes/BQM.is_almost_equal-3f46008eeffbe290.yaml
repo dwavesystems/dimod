@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``BinaryQuadraticModel.is_almost_equal`` method for testing approximate
+    equality to other binary quadratic models.

@@ -52,6 +52,14 @@ class pyBQM:
     def vartype(self):
         return self._vartype
 
+    def __copy__(self):
+        new = type(self)(self.vartype)
+        adj = new._adj
+        for v, neighborhood in self._adj.items():
+            adj[v] = neighborhood.copy()
+        new.offset = self.offset
+        return new
+
     def add_linear(self, v: Variable, bias: Any):
         self._adj.setdefault(v, dict())
         zero = type(bias)()

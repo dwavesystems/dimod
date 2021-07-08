@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix shallow copies of ``BinaryQuadraticModel`` with ``object`` dtype  when
+    using ``copy.copy``.

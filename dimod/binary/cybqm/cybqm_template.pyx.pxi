@@ -53,11 +53,17 @@ cdef class cyBQM_template(cyBQMBase):
         self.change_vartype(vartype)
         self.variables = Variables()
 
-    def __deepcopy__(self, memo):
+    def __copy__(self):
         cdef cyBQM_template new = type(self)(self.vartype)
         new.cppbqm = self.cppbqm
-        new.variables = copy.deepcopy(self.variables, memo)
+        new.variables = self.variables.copy()
+        return new
+
+    def __deepcopy__(self, memo):
+        cdef cyBQM_template new = type(self)(self.vartype)
         memo[id(self)] = new
+        new.cppbqm = self.cppbqm
+        new.variables = copy.deepcopy(self.variables, memo)
         return new
 
     def __reduce__(self):
