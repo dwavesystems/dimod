@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Implement rule of five for ``dimod::NeighborhoodIterator``,
+    ``dimod::ConstNeighborhoodIterator``, and ``dimod::ConstQuadraticIterator``.
+    This fixes double frees caused by the default copy constructor copying
+    information that is not intended to be shared.
