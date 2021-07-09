@@ -127,6 +127,25 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.sense, new.constraints[label].sense)
         self.assertSetEqual(cqm.discrete, new.discrete)
 
+    def test_header(self):
+        from dimod.serialization.fileview import read_header
+
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.set_objective(x + 3*i + s*x)
+        cqm.add_constraint(x*s + x <= 5)
+        cqm.add_constraint(i*i + i*s <= 4)
+
+        header_info = read_header(cqm.to_file(), b'DIMODCQM')
+
+        self.assertEqual(header_info.data,
+                         {'num_biases': 11, 'num_constraints': 2,
+                          'num_quadratic_variables': 4, 'num_variables': 3})
+
 
 class TestSetObjective(unittest.TestCase):
     def test_empty(self):

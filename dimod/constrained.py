@@ -329,6 +329,15 @@ class ConstrainedQuadraticModel:
                           for const in self.constraints.values())
         return num_biases
 
+    def num_quadratic_variables(self) -> int:
+        """Return the total number of variables with at least one quadratic
+        interaction accross all constraints."""
+        count = 0
+        for const in self.constraints.values():
+            lhs = const.lhs
+            count += sum(lhs.degree(v) > 0 for v in lhs.variables)
+        return count
+
     def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
         """Set the objective of the constrained quadratic model."""
         variables = self.variables
@@ -360,7 +369,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.0):
+        Format Specification (Version 1.1):
 
             This format is inspired by the `NPY format`_
 
@@ -383,6 +392,7 @@ class ConstrainedQuadraticModel:
                 dict(num_variables=len(cqm.variables),
                      num_constraints=len(cqm.constraints),
                      num_biases=cqm.num_biases(),
+                     num_quadratic_variables=cqm.num_quadratic_variables(),
                      )
 
             it is terminated by a newline character and padded with spaces to
@@ -398,6 +408,11 @@ class ConstrainedQuadraticModel:
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
 
+        Format Specification (Version 1.0):
+
+            This format is the same as Version 1.1, except that the data dict
+            does not have `num_quadratic_variables`.
+
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
         """
@@ -406,9 +421,10 @@ class ConstrainedQuadraticModel:
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
                     num_biases=self.num_biases(),
+                    num_quadratic_variables=self.num_quadratic_variables(),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 0))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 1))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
