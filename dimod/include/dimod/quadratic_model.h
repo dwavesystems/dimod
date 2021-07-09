@@ -302,7 +302,7 @@ class QuadraticModelBase {
     bias_type energy(Iter sample_start) {
         bias_type en = offset();
 
-        for (size_type u = 0; u < num_variables(); ++u) {
+        for (index_type u = 0; u < static_cast<index_type>(num_variables()); ++u) {
             auto u_val = *(sample_start + u);
 
             en += u_val * linear(u);
@@ -396,7 +396,7 @@ class QuadraticModelBase {
      */
     size_type num_interactions() const {
         size_type count = 0;
-        for (size_type v = 0; v < this->num_variables(); ++v) {
+        for (index_type v = 0; v < static_cast<index_type>(this->num_variables()); ++v) {
             count += this->adj_[v].size();
 
             // account for self-loops

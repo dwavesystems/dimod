@@ -66,10 +66,12 @@ class NeighborhoodIterator {
 
     NeighborhoodIterator<Bias, Index>& operator=(
             NeighborhoodIterator<Bias, Index> const& other) {
-        if (this == &other) return *this;
-        neighborhood_ptr_ = other.neighborhood_ptr_;
-        i_ = other.i_;
-        update_pair();  // handles pair_ptr_
+        if (this != &other) {
+            neighborhood_ptr_ = other.neighborhood_ptr_;
+            i_ = other.i_;
+            update_pair();  // handles pair_ptr_
+        }
+        return *this;
     }
 
     NeighborhoodIterator<Bias, Index>& operator=(
@@ -218,10 +220,12 @@ class ConstNeighborhoodIterator {
 
     ConstNeighborhoodIterator<Bias, Index>& operator=(
             ConstNeighborhoodIterator<Bias, Index> const& other) {
-        if (this == &other) return *this;
-        neighborhood_ptr_ = other.neighborhood_ptr_;
-        i_ = other.i_;
-        update_pair();  // handles pair_ptr_
+        if (this != &other) {
+            neighborhood_ptr_ = other.neighborhood_ptr_;
+            i_ = other.i_;
+            update_pair();  // handles pair_ptr_
+        }
+        return *this;
     }
 
     ConstNeighborhoodIterator<Bias, Index>& operator=(
@@ -372,11 +376,13 @@ class ConstQuadraticIterator {
 
     ConstQuadraticIterator<Bias, Index>& operator=(
             ConstQuadraticIterator<Bias, Index> const& other) {
-        if (this == &other) return *this;
-        qm_ptr_ = other.qm_ptr_;
-        v_ = other.v_;
-        i_ = other.i_;
-        advance();  // handles term_ptr_
+        if (this != &other) {
+            qm_ptr_ = other.qm_ptr_;
+            v_ = other.v_;
+            i_ = other.i_;
+            advance();  // handles term_ptr_
+        }
+        return *this;
     }
 
     ConstQuadraticIterator<Bias, Index>& operator=(
@@ -417,8 +423,8 @@ class ConstQuadraticIterator {
 
     value_type* term_ptr_;  // owned by this iterator
 
-    // clear the current term and advance from the current position (inclusive)
-    // we traverse the lower triangle (including self-loops)
+    // clear the current term and advance from the current position
+    // (inclusive) we traverse the lower triangle (including self-loops)
     void advance() {
         if (term_ptr_) {
             delete term_ptr_;
