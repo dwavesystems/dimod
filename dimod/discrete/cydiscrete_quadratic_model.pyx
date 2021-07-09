@@ -293,11 +293,11 @@ cdef class cyDiscreteQuadraticModel:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _from_numpy_vectors(cls,
-                            Integral32plus[::1] case_starts,
-                            Numeric32plus[::1] linear_biases,
-                            Integral32plus[::1] irow,
-                            Integral32plus[::1] icol,
-                            Numeric32plus[::1] quadratic_biases,
+                            Integer[::1] case_starts,
+                            Numeric[::1] linear_biases,
+                            Integer[::1] irow,
+                            Integer[::1] icol,
+                            Numeric[::1] quadratic_biases,
                             bias_type offset):
         """Equivalent of from_numpy_vectors with fused types."""
 

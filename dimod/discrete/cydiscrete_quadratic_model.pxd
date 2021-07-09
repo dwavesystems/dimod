@@ -21,7 +21,7 @@ from libcpp.vector cimport vector
 cimport numpy as np
 
 from dimod.libcpp cimport cppBinaryQuadraticModel
-from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
+from dimod.cyutilities cimport Numeric, Integer
 
 ctypedef np.float64_t bias_type
 ctypedef np.int32_t index_type
