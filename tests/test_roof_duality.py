@@ -16,11 +16,17 @@ import unittest
 
 import dimod
 
-from dimod import fix_variables
+try:
+    from dimod import fix_variables
+except ImportError:
+    cpp = False
+else:
+    cpp = True
 
 
-# class TestFixVariables(unittest.TestCase):
-#     def test_3path(self):
-#         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
-#         fixed = dimod.fix_variables(bqm)
-#         self.assertEqual(fixed, {'a': -1, 'b': -1, 'c': 1})
+@unittest.skipUnless(cpp, "no cpp extensions built")
+class TestFixVariables(unittest.TestCase):
+    def test_3path(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
+        fixed = dimod.fix_variables(bqm)
+        self.assertEqual(fixed, {'a': -1, 'b': -1, 'c': 1})
