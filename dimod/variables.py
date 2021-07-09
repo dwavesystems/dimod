@@ -35,7 +35,6 @@ from operator import eq
 from pprint import PrettyPrinter
 
 from dimod.cyvariables import cyVariables
-from dimod.decorators import lockable_method
 
 
 __all__ = ['Variables']
