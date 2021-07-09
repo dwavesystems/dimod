@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    Remove ``dimod.utils.LockableDict`` and
+    ``dimod.decorators.lockable_method``. Also ``SampleSet.is_writeable`` can
+    no longer be set to ``False``.
+deprecations:
+  - |
+    ``SampleSet.is_writeable`` is deprecated and now always returns True.

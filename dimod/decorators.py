@@ -31,7 +31,6 @@ __all__ = ['nonblocking_sample_method',
            'bqm_structured',
            'vartype_argument',
            'graph_argument',
-           'lockable_method',
            'forwarding_method',
            ]
 
@@ -421,21 +420,6 @@ def graph_argument(*arg_names, **options):
         return new_f
 
     return _graph_arg
-
-
-def lockable_method(f):
-    """Method decorator for objects with an is_writeable flag.
-
-    If wrapped method is called, and the associated object's `is_writeable`
-    attribute is set to True, a :exc:`.exceptions.WriteableError` is raised.
-
-    """
-    @wraps(f)
-    def _check_writeable(obj, *args, **kwds):
-        if not obj.is_writeable:
-            raise WriteableError
-        return f(obj, *args, **kwds)
-    return _check_writeable
 
 
 _NOT_FOUND = object()
