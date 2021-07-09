@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    ``AdjVectorBQM`` and ``AdjDictBQM`` are deprecated and will be removed in
+    dimod 0.11.0. Use ``BinaryQuadraticModel`` with ``dtype=np.float64`` and
+    ``dtype=object`` respectively.
