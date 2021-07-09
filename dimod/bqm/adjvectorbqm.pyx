@@ -17,6 +17,7 @@
 
 import collections.abc as abc
 import numbers
+import warnings
 
 cimport cython
 
@@ -56,6 +57,9 @@ cdef class cyAdjVectorBQM:
 
 
     def __init__(self, *args, vartype=None):
+        warnings.warn("AdjVectorBQM(..) is deprecated and will be removed in dimod 0.11.0, "
+                      "please use BinaryQuadratic(.., dtype=np.float64) instead",
+                      DeprecationWarning, stacklevel=2)
 
         if vartype is not None:
             # pass in as a positional argument

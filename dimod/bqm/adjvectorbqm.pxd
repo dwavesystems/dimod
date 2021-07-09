@@ -21,6 +21,8 @@ from dimod.bqm.common cimport VarIndex, Bias
 cdef class cyAdjVectorBQM:
     """A binary quadratic model where the neighborhoods are C++ vectors.
 
+    `AdjVectorBQM` is deprecated. Use :class:`BinaryQuadraticModel` instead.
+
     Can be created in several ways:
 
         AdjVectorBQM(vartype)
