@@ -63,6 +63,23 @@ class TestAddVariable(unittest.TestCase):
         with self.assertRaises(TypeError):
             qm.add_variable(vartype1, u)
 
+    def test_add_integer_with_ub_lb(self):
+        qm = QM()
+
+        h = qm.add_variable('INTEGER', 'h')
+        i = qm.add_variable('INTEGER', 'i', lower_bound=-1)
+        j = qm.add_variable('INTEGER', 'j', upper_bound=103)
+        k = qm.add_variable('INTEGER', 'k', lower_bound=-50, upper_bound=50)
+
+        self.assertEqual(qm.lower_bound(i), -1)
+        self.assertEqual(qm.upper_bound(i), qm.upper_bound(h))
+
+        self.assertEqual(qm.lower_bound(j), qm.lower_bound(h))
+        self.assertEqual(qm.upper_bound(j), 103)
+
+        self.assertEqual(qm.lower_bound(k), -50)
+        self.assertEqual(qm.upper_bound(k), 50)
+
 
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):

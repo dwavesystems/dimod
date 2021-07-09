@@ -352,8 +352,35 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,
-                     v: Optional[Variable] = None, bias: Bias = 0) -> Variable:
-        """Add a quadratic term."""
+                     v: Optional[Variable] = None,
+                     *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> Variable:
+        """Add a variable to the quadratic model.
+
+        Args:
+            vartype:
+                Variable type. One of:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+
+            label:
+                A label for the variable. Defaults to the length of the
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
+
+            lower_bound:
+                A lower bound on the variable. Ignored when the variable is
+                not :class:`Vartype.INTEGER`.
+
+            upper_bound:
+                An upper bound on the variable. Ignored when the variable is
+                not :class:`Vartype.INTEGER`.
+
+        Returns:
+            The variable label.
+
+        """
         return self.data.add_variable
 
     def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
@@ -492,6 +519,11 @@ class QuadraticModel(QuadraticViewsMixin):
     @forwarding_method
     def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
         return self.data.iter_quadratic
+
+    @forwarding_method
+    def lower_bound(self, v: Variable) -> Bias:
+        """Return the lower bound on variable `v`."""
+        return self.data.lower_bound
 
     @forwarding_method
     def reduce_linear(self, function: Callable,
@@ -683,6 +715,11 @@ class QuadraticModel(QuadraticViewsMixin):
             self.add_quadratic(u, v, bias)
 
         self.offset += other.offset
+
+    @forwarding_method
+    def upper_bound(self, v: Variable) -> Bias:
+        """Return the upper bound on variable `v`."""
+        return self.data.upper_bound
 
     @forwarding_method
     def vartype(self, v: Variable) -> Vartype:

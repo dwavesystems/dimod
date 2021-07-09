@@ -266,7 +266,7 @@ cdef class cyQM_template(cyQMBase):
             for vi in range(length):
                 self.add_quadratic(irow[vi], icol[vi], qdata[vi])
 
-    def add_variable(self, vartype, label=None):
+    def add_variable(self, vartype, label=None, *, lower_bound=0, upper_bound=None):
         # as_vartype will raise for unsupported vartypes
         vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
@@ -277,9 +277,27 @@ cdef class cyQM_template(cyQMBase):
                 raise TypeError(f"variable {label} already exists with a different vartype")
             return label
 
-        # we're adding a new one
+        cdef bias_type lb = lower_bound
+        cdef bias_type ub
+        if cppvartype == cppVartype.INTEGER and (lb != 0 or upper_bound is not None):
+            if lb < -self.cppqm.max_integer():
+                raise ValueError(f"lower_bound cannot be less than {-self.cppqm.max_integer()}")
+
+            if upper_bound is None:
+                ub = self.cppqm.max_integer()
+            else:
+                ub = upper_bound
+                if ub > self.cppqm.max_integer():
+                    raise ValueError(f"upper_bound cannot be greater than {self.cppqm.max_integer()}")
+
+            if lb > ub:
+                raise ValueError("lower_bound must be less than or equal to upper_bound")
+
+            self.cppqm.add_variable(cppvartype, lb, ub)
+        else:
+            self.cppqm.add_variable(cppvartype)
+
         self.variables._append(label)
-        self.cppqm.add_variable(cppvartype)
 
         assert self.cppqm.num_variables() == self.variables.size()
 
@@ -355,6 +373,10 @@ cdef class cyQM_template(cyQMBase):
             v = self.variables.at(deref(it).v)
             yield u, v, as_numpy_float(deref(it).bias)
             inc(it)
+
+    def lower_bound(self, v):
+        cdef Py_ssize_t vi = self.variables.index(v)
+        return as_numpy_float(self.cppqm.lower_bound(vi))
 
     cpdef Py_ssize_t num_interactions(self):
         return self.cppqm.num_interactions()
@@ -502,6 +524,10 @@ cdef class cyQM_template(cyQMBase):
             raise ValueError(f"{u!r} cannot have an interaction with itself")
         
         self.cppqm.set_quadratic(ui, vi, bias)
+
+    def upper_bound(self, v):
+        cdef Py_ssize_t vi = self.variables.index(v)
+        return as_numpy_float(self.cppqm.upper_bound(vi))
 
     def vartype(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
