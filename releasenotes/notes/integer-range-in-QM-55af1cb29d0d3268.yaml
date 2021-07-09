@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Support specifying lower and upper bounds for integer variables in
+    quadratic models:
+
+      * Add ``lower_bound`` and ``upper_bound`` keyword arguments to
+        ``QuadraticModel.add_variable``.
+      * Add ``QuadraticModel.lower_bound`` and ``QuadraticModel.upper_bound``
+        methods.
