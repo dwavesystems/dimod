@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 # version is used by serialization below so we need it before everything
-__version__ = '0.10.0.dev8'
+__version__ = '0.10.0.dev9'
 
 from dimod.bqm import *
 
