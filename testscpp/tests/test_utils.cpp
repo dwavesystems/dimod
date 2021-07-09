@@ -77,7 +77,7 @@ namespace utils {
 
             std::shuffle(control.begin(), control.end(), generator);
 
-            for (int i = 0; i < control.size(); i++) {
+            for (std::size_t i = 0; i < control.size(); i++) {
                 response[i] = control[i];
                 v_pair[i] = {control[i], response[i]};
             }
