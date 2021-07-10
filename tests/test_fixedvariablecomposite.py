@@ -24,61 +24,75 @@ from dimod import BinaryQuadraticModel
 from dimod import FixedVariableComposite, ExactSolver, RoofDualityComposite
 from dimod import SampleSet
 
-
-@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(ExactSolver()))
-@dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(dimod.NullSampler()))
-class TestFixedVariableComposite(unittest.TestCase):
-
-    def test_instantiation_smoketest(self):
-        sampler = FixedVariableComposite(ExactSolver())
-
-        dtest.assert_sampler_api(sampler)
-
-    def test_sample(self):
-        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
-                                   {(1, 4): -0.6},
-                                   0,
-                                   vartype=Vartype.SPIN)
-
-        fixed_variables = {1: -1}
-        sampler = FixedVariableComposite(ExactSolver())
-        response = sampler.sample(bqm, fixed_variables=fixed_variables)
-
-        self.assertEqual(response.first.sample, {4: -1, 1: -1})
-        self.assertAlmostEqual(response.first.energy, 1.2)
-
-    def test_empty_bqm(self):
-        bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
-                                   {(1, 4): -0.6},
-                                   0,
-                                   vartype=Vartype.SPIN)
-
-        fixed_variables = {1: -1, 4: -1}
-        sampler = FixedVariableComposite(ExactSolver())
-        response = sampler.sample(bqm, fixed_variables=fixed_variables)
-        self.assertIsInstance(response, SampleSet)
-
-    def test_empty_fix(self):
-        linear = {1: -1.3, 4: -0.5}
-        quadratic = {(1, 4): -0.6}
-
-        sampler = FixedVariableComposite(ExactSolver())
-        response = sampler.sample_ising(linear, quadratic)
-        self.assertIsInstance(response, SampleSet)
-
-        self.assertEqual(response.first.sample, {4: 1, 1: 1})
-        self.assertAlmostEqual(response.first.energy, -2.4)
+try:
+    import dwave.preprocessing as preprocessing
+except ImportError:
+    preprocessing = False
 
 
-@dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(ExactSolver()))
-@dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(dimod.NullSampler()))
+if preprocessing:
+    @dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(ExactSolver()))
+    @dimod.testing.load_sampler_bqm_tests(FixedVariableComposite(dimod.NullSampler()))
+    class TestFixedVariableComposite(unittest.TestCase):
+
+        def test_instantiation_smoketest(self):
+            with self.assertWarns(DeprecationWarning):
+                sampler = FixedVariableComposite(ExactSolver())
+
+            dtest.assert_sampler_api(sampler)
+
+        def test_sample(self):
+            bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                       {(1, 4): -0.6},
+                                       0,
+                                       vartype=Vartype.SPIN)
+
+            fixed_variables = {1: -1}
+            with self.assertWarns(DeprecationWarning):
+                sampler = FixedVariableComposite(ExactSolver())
+            response = sampler.sample(bqm, fixed_variables=fixed_variables)
+
+            self.assertEqual(response.first.sample, {4: -1, 1: -1})
+            self.assertAlmostEqual(response.first.energy, 1.2)
+
+        def test_empty_bqm(self):
+            bqm = BinaryQuadraticModel({1: -1.3, 4: -0.5},
+                                       {(1, 4): -0.6},
+                                       0,
+                                       vartype=Vartype.SPIN)
+
+            fixed_variables = {1: -1, 4: -1}
+            with self.assertWarns(DeprecationWarning):
+                sampler = FixedVariableComposite(ExactSolver())
+            response = sampler.sample(bqm, fixed_variables=fixed_variables)
+            self.assertIsInstance(response, SampleSet)
+
+        def test_empty_fix(self):
+            linear = {1: -1.3, 4: -0.5}
+            quadratic = {(1, 4): -0.6}
+
+            with self.assertWarns(DeprecationWarning):
+                sampler = FixedVariableComposite(ExactSolver())
+            with self.assertWarns(UserWarning):
+                response = sampler.sample_ising(linear, quadratic)
+            self.assertIsInstance(response, SampleSet)
+
+            self.assertEqual(response.first.sample, {4: 1, 1: 1})
+            self.assertAlmostEqual(response.first.energy, -2.4)
+
+
+# @dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(ExactSolver()))
+# @dimod.testing.load_sampler_bqm_tests(RoofDualityComposite(dimod.NullSampler()))
+@unittest.skipUnless(preprocessing, 'Need dwave-preprocessing')
 class TestRoofDualityComposite(unittest.TestCase):
     def test_construction(self):
-        sampler = RoofDualityComposite(dimod.ExactSolver())
+        with self.assertWarns(DeprecationWarning):
+            sampler = RoofDualityComposite(dimod.ExactSolver())
         dtest.assert_sampler_api(sampler)
 
     def test_3path(self):
-        sampler = RoofDualityComposite(dimod.ExactSolver())
+        with self.assertWarns(DeprecationWarning):
+            sampler = RoofDualityComposite(dimod.ExactSolver())
         sampleset = sampler.sample_ising({'a': 10},  {'ab': -1, 'bc': 1})
 
         # all should be fixed, so should just see one
@@ -86,7 +100,8 @@ class TestRoofDualityComposite(unittest.TestCase):
         self.assertEqual(set(sampleset.variables), set('abc'))
 
     def test_triangle(self):
-        sampler = RoofDualityComposite(dimod.ExactSolver())
+        with self.assertWarns(DeprecationWarning):
+            sampler = RoofDualityComposite(dimod.ExactSolver())
 
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1, 'bc': -1, 'ac': -1})
 
@@ -97,7 +112,8 @@ class TestRoofDualityComposite(unittest.TestCase):
         dimod.testing.assert_response_energies(sampleset, bqm)
 
     def test_triangle_sampling_mode_off(self):
-        sampler = RoofDualityComposite(dimod.ExactSolver())
+        with self.assertWarns(DeprecationWarning):
+            sampler = RoofDualityComposite(dimod.ExactSolver())
 
         bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1, 'bc': -1, 'ac': -1})
 

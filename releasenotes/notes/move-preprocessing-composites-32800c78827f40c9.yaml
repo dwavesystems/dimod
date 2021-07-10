@@ -1,0 +1,15 @@
+---
+deprecations:
+  - |
+    Some composites have been migrated to ``dwave-preprocessing``. The affected
+    composites:
+
+    * ``ClipComposite``
+    * ``ConnectedComponentsComposite``
+    * ``FixedVariableComposite``
+    * ``RoofDualityComposite``
+    * ``ScaleComposite``
+    * ``SpinReversalTransformComposite``
+
+    you no longer can use the composites without having ``dwave-preprocessing``
+    installed. Using them with it installed results in a deprecation warning.

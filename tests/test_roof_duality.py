@@ -17,16 +17,15 @@ import unittest
 import dimod
 
 try:
-    from dimod import fix_variables
+    import dwave.preprocessing as preprocessing
 except ImportError:
-    cpp = False
-else:
-    cpp = True
+    preprocessing = False
 
 
-@unittest.skipUnless(cpp, "no cpp extensions built")
+@unittest.skipUnless(preprocessing, "dwave-preprocessing must be installed")
 class TestFixVariables(unittest.TestCase):
     def test_3path(self):
         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
-        fixed = dimod.fix_variables(bqm)
+        with self.assertWarns(DeprecationWarning):
+            fixed = dimod.fix_variables(bqm)
         self.assertEqual(fixed, {'a': -1, 'b': -1, 'c': 1})

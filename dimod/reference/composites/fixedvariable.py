@@ -16,21 +16,21 @@
 A composite that fixes the variables provided and removes them from the binary
 quadratic model before sending to its child sampler.
 """
-import numpy as np
+import warnings
 
-from dimod.binary.binary_quadratic_model import as_bqm
-from dimod.core.composite import ComposedSampler
-from dimod.sampleset import SampleSet, append_variables
+try:
+    from dwave.preprocessing import FixVariablesComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as FixVariablesComposite
 
+from dimod.reference.composites._preprocessing import NotFound
 
 __all__ = ['FixedVariableComposite']
 
 
-class FixedVariableComposite(ComposedSampler):
+class FixedVariableComposite(FixVariablesComposite):
     """Composite to fix variables of a problem to provided.
 
-    Fixes variables of a binary quadratic model (BQM) and modifies linear and
-    quadratic terms accordingly. Returned samples include the fixed variable
 
     Args:
        sampler (:obj:`dimod.Sampler`):
@@ -48,23 +48,26 @@ class FixedVariableComposite(ComposedSampler):
        >>> sampleset = sampler.sample_ising(h, J, fixed_variables={1: -1})
 
     """
+    def __init__(self, child):
+        if isinstance(self, NotFound):
+            # we recommend --no-deps because its dependencies are the same as
+            # dimods and it would be a circular install otherwise
+            raise TypeError(
+                f"{type(self).__name__!r} has been moved to dwave-preprocessing. "
+                "You must install dwave-preprocessing in order to use it. "
+                "You can do so with "
+                "'pip install \"dwave-preprocessing<0.4\" --no-deps'.",
+                )
 
-    def __init__(self, child_sampler):
-        self._children = [child_sampler]
+        # otherwise warn about it's new location but let it proceed
+        warnings.warn(
+            f"{type(self).__name__!s} has been deprecated and will be removed from dimod 0.11.0. "
+            "You can get similar functionality in dwave-preprocessing "
+            " To avoid this warning, import 'from dwave.preprocessing import FixVariablesComposite'.",
+            DeprecationWarning, stacklevel=2
+            )
 
-    @property
-    def children(self):
-        return self._children
-
-    @property
-    def parameters(self):
-        params = self.child.parameters.copy()
-        params['fixed_variables'] = []
-        return params
-
-    @property
-    def properties(self):
-        return {'child_properties': self.child.properties.copy()}
+        super().__init__(child, algorithm='explicit')
 
     def sample(self, bqm, fixed_variables=None, **parameters):
         """Sample from the provided binary quadratic model.
@@ -83,31 +86,4 @@ class FixedVariableComposite(ComposedSampler):
             :obj:`dimod.SampleSet`
 
         """
-
-        if not fixed_variables:  # None is falsey
-            return self.child.sample(bqm, **parameters)
-
-        # make sure that we're shapeable and that we have a BQM we can mutate
-        bqm_copy = as_bqm(bqm, copy=True)
-
-        bqm_copy.fix_variables(fixed_variables)
-
-        sampleset = self.child.sample(bqm_copy, **parameters)
-
-        def _hook(sampleset):
-            # make RoofDualityComposite non-blocking
-
-            if sampleset.variables:
-                if len(sampleset):
-                    return append_variables(sampleset, fixed_variables)
-                else:
-                    return sampleset.from_samples_bqm((np.empty((0, len(bqm))),
-                                                       bqm.variables), bqm=bqm)
-
-            # there are only fixed variables, make sure that the correct number
-            # of samples are returned
-            samples = [fixed_variables]*max(len(sampleset), 1)
-
-            return sampleset.from_samples_bqm(samples, bqm=bqm)
-
-        return SampleSet.from_future(sampleset, _hook)
+        return super().sample(bqm, fixed_variables=fixed_variables, **parameters)

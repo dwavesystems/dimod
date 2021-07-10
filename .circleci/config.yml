@@ -119,6 +119,14 @@ jobs:
             cd tests/
             python -m unittest
 
+      - run:
+          name: run tests with dwave-preprocessing
+          command: |
+            . env/bin/activate
+            pip install 'dwave-preprocessing<0.4' --no-deps
+            cd tests/
+            python -m unittest
+
   deploy-linux:
     docker:
       - image: circleci/python:3.9-buster
@@ -366,6 +374,7 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r docs/requirements.txt
+            pip install dwave-preprocessing --no-deps
 
       - run: *unix-build-ext-template
 
