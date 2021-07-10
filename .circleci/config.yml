@@ -195,6 +195,14 @@ jobs:
             pip install -r requirements.txt
             pip install -r tests/requirements.txt
 
+      # do this as an extra step since we want --no-deps and since it will
+      # be removed relatively soon
+      - run:
+          name: install dwave-preprocessing
+          command: |
+            . env/bin/activate
+            pip install 'dwave-preprocessing<0.4' --no-deps
+
       - run: &unix-build-ext-template
           name: build
           command: |
@@ -298,6 +306,14 @@ jobs:
             python --version
             pip install -r requirements.txt
             pip install -r tests\requirements.txt
+
+      # do this as an extra step since we want --no-deps and since it will
+      # be removed relatively soon
+      - run:
+          name: install dwave-preprocessing
+          command: |
+            env\Scripts\activate.ps1
+            pip install 'dwave-preprocessing<0.4' --no-deps
 
       - run:
           name: build extension
