@@ -56,10 +56,11 @@ cdef class cyAdjVectorBQM:
         self.offset_ = 0
 
 
-    def __init__(self, *args, vartype=None):
-        warnings.warn("AdjVectorBQM(..) is deprecated and will be removed in dimod 0.11.0, "
-                      "please use BinaryQuadratic(.., dtype=np.float64) instead",
-                      DeprecationWarning, stacklevel=2)
+    def __init__(self, *args, vartype=None, _ignore_warning=False):
+        if not _ignore_warning:
+            warnings.warn("AdjVectorBQM(..) is deprecated and will be removed in dimod 0.11.0, "
+                          "please use BinaryQuadratic(.., dtype=np.float64) instead",
+                          DeprecationWarning, stacklevel=2)
 
         if vartype is not None:
             # pass in as a positional argument
@@ -242,7 +243,7 @@ cdef class cyAdjVectorBQM:
         self.vartype = as_vartype(vartype)
 
     def __copy__(self):
-        cdef cyAdjVectorBQM bqm = type(self)(self.vartype)
+        cdef cyAdjVectorBQM bqm = type(self)(self.vartype, _ignore_warning=True)
 
         bqm.bqm_ = self.bqm_
         bqm.offset_ = self.offset_
