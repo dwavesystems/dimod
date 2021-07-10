@@ -19,102 +19,115 @@ import dimod
 
 from dimod import ScaleComposite
 
+try:
+    import dwave.preprocessing as preprocessing
+except ImportError:
+    preprocessing = False
 
-@dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.ExactSolver()))
-@dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.NullSampler()))
-class TestScaleComposite(unittest.TestCase):
-    def test_api(self):
-        sampler = ScaleComposite(dimod.ExactSolver())
-        dimod.testing.assert_sampler_api(sampler)
 
-    def test_bias_range(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 3.2}, 1.5)
+if preprocessing:
+    @dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.ExactSolver()))
+    @dimod.testing.load_sampler_bqm_tests(ScaleComposite(dimod.NullSampler()))
+    class TestScaleComposite(unittest.TestCase):
+        def test_api(self):
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.ExactSolver())
+            dimod.testing.assert_sampler_api(sampler)
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_bias_range(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 3.2}, 1.5)
 
-        sampleset = sampler.sample(bqm, bias_range=[-2, 2])
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, bias_range=[-2, 2])
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
-                                              {('a', 'b'): 1.6}, .75))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
 
-    def test_bias_ranges(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 4}, 1.5)
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
+                                                  {('a', 'b'): 1.6}, .75))
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_bias_ranges(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 4}, 1.5)
 
-        sampleset = sampler.sample(bqm, bias_range=[-3, 3],
-                                   quadratic_range=[-2, 2])
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, bias_range=[-3, 3],
+                                       quadratic_range=[-2, 2])
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
-                                              {('a', 'b'): 2}, .75))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
 
-    def test_ignored_interactions(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 3.2, ('b', 'c'): 1}, 1.5)
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
+                                                  {('a', 'b'): 2}, .75))
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_ignored_interactions(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 3.2, ('b', 'c'): 1}, 1.5)
 
-        sampleset = sampler.sample(bqm, scalar=.5,
-                                   ignored_interactions=[('b', 'c')])
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, scalar=.5,
+                                       ignored_interactions=[('b', 'c')])
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
-                                              {'ab': 1.6, 'bc': 1}, .75))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
 
-    def test_ignored_offset(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 3.2}, 1.5)
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
+                                                  {'ab': 1.6, 'bc': 1}, .75))
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_ignored_offset(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 3.2}, 1.5)
 
-        sampleset = sampler.sample(bqm, scalar=.5, ignore_offset=True)
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, scalar=.5, ignore_offset=True)
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
-                                              {('a', 'b'): 1.6}, 1.5))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
 
-    def test_ignored_variables(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 3.2}, 1.5)
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
+                                                  {('a', 'b'): 1.6}, 1.5))
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_ignored_variables(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 3.2}, 1.5)
 
-        sampleset = sampler.sample(bqm, scalar=.5, ignored_variables='a')
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, scalar=.5, ignored_variables='a')
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -4.0, 'b': -2.0},
-                                              {('a', 'b'): 1.6}, .75))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
 
-    def test_scalar(self):
-        bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
-                                   {('a', 'b'): 3.2}, 1.5)
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -4.0, 'b': -2.0},
+                                                  {('a', 'b'): 1.6}, .75))
 
-        sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
+        def test_scalar(self):
+            bqm = dimod.BQM.from_ising({'a': -4.0, 'b': -4.0},
+                                       {('a', 'b'): 3.2}, 1.5)
 
-        sampleset = sampler.sample(bqm, scalar=.5)
+            with self.assertWarns(DeprecationWarning):
+                sampler = ScaleComposite(dimod.TrackingComposite(dimod.ExactSolver()))
 
-        # check that everything was restored properly
-        dimod.testing.assert_sampleset_energies(sampleset, bqm)
+            sampleset = sampler.sample(bqm, scalar=.5)
 
-        self.assertEqual(sampler.child.input['bqm'],
-                         dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
-                                              {('a', 'b'): 1.6}, .75))
+            # check that everything was restored properly
+            dimod.testing.assert_sampleset_energies(sampleset, bqm)
+
+            self.assertEqual(sampler.child.input['bqm'],
+                             dimod.BQM.from_ising({'a': -2.0, 'b': -2.0},
+                                                  {('a', 'b'): 1.6}, .75))

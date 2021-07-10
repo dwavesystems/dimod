@@ -19,9 +19,15 @@ import random
 import dimod
 import dimod.testing as dit
 
+try:
+    import dwave.preprocessing as preprocessing
+except ImportError:
+    preprocessing = False
+
 
 # @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.ExactSolver()))
 # @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.RandomSampler()))
+@unittest.skipUnless(preprocessing, "need dwave-preprocessing")
 class TestSpinTransformComposite(unittest.TestCase):
     def test_instantiation(self):
         for factory in [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]:

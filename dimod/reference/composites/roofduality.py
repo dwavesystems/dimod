@@ -23,14 +23,19 @@ sampler.
     Mathematics 123, (2002), pp. 155-225
 
 """
+import warnings
 
-from dimod.reference.composites.fixedvariable import FixedVariableComposite
-from dimod.roof_duality import fix_variables
+try:
+    from dwave.preprocessing import FixVariablesComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as FixVariablesComposite
+
+from dimod.reference.composites._preprocessing import NotFound
 
 __all__ = ['RoofDualityComposite']
 
 
-class RoofDualityComposite(FixedVariableComposite):
+class RoofDualityComposite(FixVariablesComposite):
     """Uses roof duality to assign some variables before invoking child sampler.
 
     Uses the :func:`~dimod.roof_duality.fix_variables` function to determine
@@ -43,18 +48,29 @@ class RoofDualityComposite(FixedVariableComposite):
             variables have been fixed.
 
     """
+    def __init__(self, child):
+        if isinstance(self, NotFound):
+            # we recommend --no-deps because its dependencies are the same as
+            # dimods and it would be a circular install otherwise
+            raise TypeError(
+                f"{type(self).__name__!r} has been moved to dwave-preprocessing. "
+                "You must install dwave-preprocessing in order to use it. "
+                "You can do so with "
+                "'pip install \"dwave-preprocessing<0.4\" --no-deps'.",
+                )
 
-    @property
-    def parameters(self):
-        params = self.child.parameters.copy()
-        params['sampling_mode'] = []
-        return params
+        # otherwise warn about it's new location but let it proceed
+        warnings.warn(
+            f"{type(self).__name__!s} has been deprecated and will be removed from dimod 0.11.0. "
+            "You can get similar functionality in dwave-preprocessing "
+            " To avoid this warning, import 'from dwave.preprocessing import FixVariablesComposite'.",
+            DeprecationWarning, stacklevel=2
+            )
+
+        super().__init__(child, algorithm='roof_duality')
 
     def sample(self, bqm, sampling_mode=True, **parameters):
         """Sample from the provided binary quadratic model.
-
-        Uses the :func:`~dimod.roof_duality.fix_variables` function to determine
-        which variables to fix.
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):
@@ -73,6 +89,4 @@ class RoofDualityComposite(FixedVariableComposite):
             :obj:`dimod.SampleSet`
 
         """
-        # use roof-duality to decide which variables to fix
-        parameters['fixed_variables'] = fix_variables(bqm, sampling_mode=sampling_mode)
-        return super(RoofDualityComposite, self).sample(bqm, **parameters)
+        return super().sample(bqm, strict=sampling_mode, **parameters)
