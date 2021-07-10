@@ -479,7 +479,7 @@ workflows:
       - build-manylinux:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           name: build-manylinux1_<< matrix.architecture >>-py3<< matrix.python-minor >>
@@ -490,13 +490,13 @@ workflows:
       - build-sdist:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
       - deploy-linux:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           requires:
@@ -505,7 +505,7 @@ workflows:
       - deploy-osx:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           matrix:
@@ -514,7 +514,7 @@ workflows:
       - deploy-win:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           matrix:
