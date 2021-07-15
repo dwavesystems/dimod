@@ -179,6 +179,27 @@ class TestFileSerialization(unittest.TestCase):
         self.assertEqual(qm.dtype, new.dtype)
 
 
+class TestFromBQM(unittest.TestCase):
+    BQMs = dict(DictBQM=dimod.DictBQM,
+                Float32BQM=dimod.Float32BQM,
+                Float64BQM=dimod.Float64BQM,
+                )
+
+    @parameterized.expand(BQMs.items())
+    def test(self, _, BQM):
+        for vartype in ['SPIN', 'BINARY']:
+            with self.subTest(vartype):
+                bqm = BQM({'a': 1}, {'ab': 2, 'bc': 3}, 4, vartype)
+                qm = QuadraticModel.from_bqm(bqm)
+
+                self.assertEqual(bqm.linear, qm.linear)
+                self.assertEqual(bqm.quadratic, qm.quadratic)
+                self.assertEqual(bqm.offset, qm.offset)
+
+                for v in bqm.variables:
+                    self.assertIs(qm.vartype(v), bqm.vartype)
+
+
 class TestOffset(unittest.TestCase):
     def test_setting(self):
         qm = QM()

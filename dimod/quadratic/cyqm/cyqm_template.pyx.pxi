@@ -326,6 +326,29 @@ cdef class cyQM_template(cyQMBase):
         else:
             raise ValueError("dtype must be None or a floating type.")
 
+    @classmethod
+    def from_cybqm(cls, cyBQM bqm):
+
+        cdef cyQM_template qm = cls()
+
+        qm.offset = bqm.offset
+
+        # linear
+        cdef Py_ssize_t vi
+        cdef cppVartype vartype = bqm.cppbqm.vartype()
+        for vi in range(bqm.num_variables()):
+            qm.cppqm.add_variable(vartype)
+            qm._set_linear(vi, bqm.cppbqm.linear(vi))
+        qm.variables._extend(bqm.variables)
+
+        # quadratic
+        it = bqm.cppbqm.cbegin_quadratic()
+        while it != bqm.cppbqm.cend_quadratic():
+            qm.cppqm.set_quadratic(deref(it).u, deref(it).v, deref(it).bias)
+            inc(it)
+
+        return qm
+
     def get_linear(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
         cdef bias_type bias = self.cppqm.linear(vi)

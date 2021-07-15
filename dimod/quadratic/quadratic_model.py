@@ -424,11 +424,17 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
-        obj = cls(dtype=bqm.dtype)
+        obj = cls.__new__(cls)
 
-        # this can be improved a great deal with c++, but for now let's use
-        # the python fallback for everything
+        try:
+            obj.data = obj._DATA_CLASSES[np.dtype(bqm.dtype)].from_cybqm(bqm.data)
+        except (TypeError, KeyError):
+            # not a cybqm or unsupported dtype
+            obj = cls()
+        else:
+            return obj
 
+        # fallback to python
         for v in bqm.variables:
             obj.set_linear(obj.add_variable(bqm.vartype, v), bqm.get_linear(v))
 
