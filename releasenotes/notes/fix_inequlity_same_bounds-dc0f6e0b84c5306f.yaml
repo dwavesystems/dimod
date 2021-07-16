@@ -2,5 +2,5 @@
 fixes:
   - |
     Fix wrong behaviour when the lower bound (lb) equals the upper bound (lb)
-    in `add_linear_equality_constraint`. Correct behaviour is to add constraint
+    in ``add_linear_equality_constraint``. Correct behaviour is to add constraint
     as eqaulity when lb is equal ub.
