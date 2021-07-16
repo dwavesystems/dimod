@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add an optional ``label`` keyword argument to
+    ``ConstrainedQuadraticModel.add_discrete``. The method also now returns
+    the assigned label, whether supplied or generated. This is consistent with
+    ``ConstrainedQuadraticModel.add_constraint``.
+  
