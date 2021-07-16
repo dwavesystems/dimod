@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Use C++ `BinaryQuadraticModel` rather than `AdjVectorBQM` as the underlying
+    object in `cyDiscreteQuadraticModel`. This means that the underlying
+    implementation is now version controlled.
+upgrade:
+  - |
+    Use C++ `BinaryQuadraticModel` rather than `AdjVectorBQM` as the underlying
+    object in `cyDiscreteQuadraticModel`. Any code that relied on the old
+    `AdjVectorBQM` implementation will need to be upgraded.

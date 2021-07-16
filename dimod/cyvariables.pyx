@@ -38,6 +38,14 @@ cdef class cyVariables:
     def __contains__(self, v):
         return bool(self.count(v))
 
+    def __copy__(self):
+        return self.copy()
+    
+    # we can almost make __deepcopy__ just call __copy__ because
+    # most potential variable types (str, int, tuple) are atomic. However
+    # atomic is a strict subset of hashable (e.g. frozenset), so we fall back
+    # on the default __deepcopy__
+
     # todo: support slices
     def __getitem__(self, Py_ssize_t idx):
         return self.at(idx)
@@ -217,6 +225,14 @@ cdef class cyVariables:
                 v = <object>obj  # correctly handles the ref count
 
         return v
+
+    cpdef cyVariables copy(self):
+        """Return a copy of the Variables object."""
+        cpdef cyVariables new = self.__new__(type(self))
+        new._index_to_label = dict(self._index_to_label)
+        new._label_to_index = dict(self._label_to_index)
+        new._stop = self._stop
+        return new
 
     cdef Py_ssize_t _count_int(self, object v) except -1:
         # only works when v is an int

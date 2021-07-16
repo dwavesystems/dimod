@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``num_quadratic_variables`` to the header of the file created by
+    ``ConstrainedQuadraticModel.to_file``. This increments the version to 1.1.

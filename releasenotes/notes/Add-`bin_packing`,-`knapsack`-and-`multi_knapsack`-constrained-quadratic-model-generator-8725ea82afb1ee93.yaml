@@ -1,0 +1,6 @@
+---
+
+features:
+  - |
+    Add `bin_packing`, `knapsack` and `multi_knapsack` constrained quadratic
+    model generators.

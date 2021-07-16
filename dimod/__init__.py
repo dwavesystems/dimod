@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 # version is used by serialization below so we need it before everything
-__version__ = '0.10.0.dev6'
+__version__ = '0.10.0'
 
 from dimod.bqm import *
 
@@ -48,6 +48,9 @@ from dimod.higherorder import make_quadratic, poly_energy, poly_energies, Binary
 import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__
+
+from dimod.quadratic import *
+import dimod.quadratic
 
 from dimod.traversal import *
 

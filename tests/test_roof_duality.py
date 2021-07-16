@@ -11,17 +11,21 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
+
 import unittest
 
 import dimod
 
-from dimod import fix_variables
+try:
+    import dwave.preprocessing as preprocessing
+except ImportError:
+    preprocessing = False
 
 
-# class TestFixVariables(unittest.TestCase):
-#     def test_3path(self):
-#         bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
-#         fixed = dimod.fix_variables(bqm)
-#         self.assertEqual(fixed, {'a': -1, 'b': -1, 'c': 1})
+@unittest.skipUnless(preprocessing, "dwave-preprocessing must be installed")
+class TestFixVariables(unittest.TestCase):
+    def test_3path(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({'a': 10}, {'ab': -1, 'bc': 1})
+        with self.assertWarns(DeprecationWarning):
+            fixed = dimod.fix_variables(bqm)
+        self.assertEqual(fixed, {'a': -1, 'b': -1, 'c': 1})

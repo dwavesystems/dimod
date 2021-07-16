@@ -30,7 +30,6 @@ jobs:
             for PYBIN in /opt/python/*/bin; do
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.major == 3)"; then continue; fi;
               if "${PYBIN}/python" -c "import sys; sys.exit(sys.version_info.minor == << parameters.python-minor >>)"; then continue; fi;
-              "${PYBIN}/pip" install -r requirements.txt --only-binary=:all:
               "${PYBIN}/pip" wheel . -w ./wheelhouse
             done
 
@@ -120,6 +119,14 @@ jobs:
             cd tests/
             python -m unittest
 
+      - run:
+          name: run tests with dwave-preprocessing
+          command: |
+            . env/bin/activate
+            pip install 'dwave-preprocessing<0.4' --no-deps
+            cd tests/
+            python -m unittest
+
   deploy-linux:
     docker:
       - image: circleci/python:3.9-buster
@@ -187,6 +194,14 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r tests/requirements.txt
+
+      # do this as an extra step since we want --no-deps and since it will
+      # be removed relatively soon
+      - run:
+          name: install dwave-preprocessing
+          command: |
+            . env/bin/activate
+            pip install 'dwave-preprocessing<0.4' --no-deps
 
       - run: &unix-build-ext-template
           name: build
@@ -292,6 +307,14 @@ jobs:
             pip install -r requirements.txt
             pip install -r tests\requirements.txt
 
+      # do this as an extra step since we want --no-deps and since it will
+      # be removed relatively soon
+      - run:
+          name: install dwave-preprocessing
+          command: |
+            env\Scripts\activate.ps1
+            pip install 'dwave-preprocessing<0.4' --no-deps
+
       - run:
           name: build extension
           command: |
@@ -367,6 +390,7 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r docs/requirements.txt
+            pip install dwave-preprocessing --no-deps
 
       - run: *unix-build-ext-template
 
@@ -413,9 +437,6 @@ workflows:
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              # We could build for 32bit as well, but since we don't have any
-              # way to test it and it slows down compilation, we don't for
-              # now.
               architecture: ["x86_64"]
       - test-linux:
           # We could break each of these out into seperate jobs so that we
@@ -458,24 +479,24 @@ workflows:
       - build-manylinux:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           name: build-manylinux1_<< matrix.architecture >>-py3<< matrix.python-minor >>
           matrix:
             parameters:
               python-minor: [6, 7, 8, 9]
-              architecture: ["x86_64", "i686"]
+              architecture: ["x86_64"]
       - build-sdist:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
       - deploy-linux:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           requires:
@@ -484,7 +505,7 @@ workflows:
       - deploy-osx:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           matrix:
@@ -493,7 +514,7 @@ workflows:
       - deploy-win:
           filters:
             tags:
-              only: /^[0-9]+(\.[0-9]+)*(\.dev([0-9]+)?)?$/
+              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           matrix:

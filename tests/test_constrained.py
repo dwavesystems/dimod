@@ -16,8 +16,7 @@ import unittest
 
 import dimod
 
-from dimod.binary import BQM, Spin, Binary
-from dimod.constrained import CQM
+from dimod import BQM, Spin, Binary, CQM, Integer
 
 
 class TestAddConstraint(unittest.TestCase):
@@ -46,13 +45,44 @@ class TestAddConstraint(unittest.TestCase):
 
         cqm.add_constraint(2*a*b + b*c - c + 1 <= 1)
 
+    def test_symbolic_mixed(self):
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.add_constraint(2*i + s + x <= 2)
+
+        self.assertIs(cqm.vartype('x'), dimod.BINARY)
+        self.assertIs(cqm.vartype('s'), dimod.SPIN)
+        self.assertIs(cqm.vartype('i'), dimod.INTEGER)
+
     def test_terms(self):
         cqm = CQM()
 
         a = cqm.add_variable('a', 'BINARY')
         b = cqm.add_variable('b', 'BINARY')
+        c = cqm.add_variable('c', 'INTEGER')
 
-        cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,)], sense='<=')
+        cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)], sense='<=')
+
+
+class TestAddDiscrete(unittest.TestCase):
+    def test_simple(self):
+        cqm = CQM()
+        cqm.add_discrete('abc')
+
+
+class TestAdjVector(unittest.TestCase):
+    # this will be deprecated in the future
+    def test_construction(self):
+        cqm = CQM()
+
+        cqm.set_objective(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'))
+        label = cqm.add_constraint(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'), sense='==', rhs=1)
+        self.assertIsInstance(cqm.objective, BQM)
+        self.assertIsInstance(cqm.constraints[label].lhs, BQM)
 
 
 class TestSerialization(unittest.TestCase):
@@ -63,18 +93,58 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(bqm, '<=')
         cqm.add_constraint(bqm, '>=')
         cqm.set_objective(BQM({'c': -1}, {}, 'SPIN'))
+        cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
 
         new = CQM.from_file(cqm.to_file())
 
         self.assertEqual(cqm.objective, new.objective)
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
-            self.assertEqual(constraint.lhs, new.constraints[label].lhs)
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
 
     def test_functional_empty(self):
         new = CQM.from_file(CQM().to_file())
+
+    def test_functional_discrete(self):
+        cqm = CQM()
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=')
+        cqm.add_constraint(bqm, '>=')
+        cqm.set_objective(Integer('c'))
+        cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
+        cqm.add_discrete('efg')
+
+        new = CQM.from_file(cqm.to_file())
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+        self.assertSetEqual(cqm.discrete, new.discrete)
+
+    def test_header(self):
+        from dimod.serialization.fileview import read_header
+
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.set_objective(x + 3*i + s*x)
+        cqm.add_constraint(x*s + x <= 5)
+        cqm.add_constraint(i*i + i*s <= 4)
+
+        header_info = read_header(cqm.to_file(), b'DIMODCQM')
+
+        self.assertEqual(header_info.data,
+                         {'num_biases': 11, 'num_constraints': 2,
+                          'num_quadratic_variables': 4, 'num_variables': 3})
 
 
 class TestSetObjective(unittest.TestCase):

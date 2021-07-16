@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add `ConstrainedQuadraticModel.add_discrete` method. This allows users to
+    create a discrete variable via a one-hot constraint. A disjoint set of
+    discrete variables are tracked by the `CQM` and serialized.

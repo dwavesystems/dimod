@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    You can now install preprocessing as part of the dimod install with
+    ``pip install dimod[preprocessing]``

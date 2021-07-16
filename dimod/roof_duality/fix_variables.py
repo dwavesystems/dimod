@@ -11,8 +11,9 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
+
+import warnings
+
 from dimod.vartypes import Vartype
 
 
@@ -46,5 +47,14 @@ def fix_variables(bqm, sampling_mode=True):
         (2002), pp. 155-225
 
     """
-    # todo: add temporary dependency on dwave-preprocessing
-    raise NotImplementedError
+    try:
+        from dwave.preprocessing import roof_duality
+    except ImportError:
+        raise TypeError("you must install dwave-preprocessing to use this function") from None
+
+    warnings.warn("fix_variables() is deprecated and will be removed in dimod 0.11.0, "
+                  "please install dwave-preprocessing and use dwave.preprocessing.roof_duality "
+                  "instead", DeprecationWarning, stacklevel=2)
+
+    _, mapping = roof_duality(bqm, strict=sampling_mode)
+    return mapping

@@ -36,12 +36,14 @@ from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method
+from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
 from dimod.typing import Bias, Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
+from dimod.views.quadratic import QuadraticViewsMixin
 
 __all__ = ['BinaryQuadraticModel',
            'BQM',
@@ -55,221 +57,7 @@ __all__ = ['BinaryQuadraticModel',
 BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 
-class BQMView:
-    __slots__ = ['_bqm']
-
-    def __init__(self, bqm):
-        self._bqm = bqm
-
-    def __repr__(self):
-        # let's just print the whole (potentially massive) thing for now, in
-        # the future we'd like to do something a bit more clever (like hook
-        # into dimod's Formatter)
-        stream = io.StringIO()
-        stream.write('{')
-        last = len(self) - 1
-        for i, (key, value) in enumerate(self.items()):
-            stream.write(f'{key!r}: {value!r}')
-            if i != last:
-                stream.write(', ')
-        stream.write('}')
-        return stream.getvalue()
-
-
-class Neighborhood(abc.Mapping, BQMView):
-    __slots__ = ['_var']
-
-    def __init__(self, bqm, v):
-        super().__init__(bqm)
-        self._var = v
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_quadratic(self._var, v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        for v, _ in self._bqm.iter_neighborhood(self._var):
-            yield v
-
-    def __len__(self):
-        return self._bqm.degree(self._var)
-
-    def __setitem__(self, v, bias):
-        self._bqm.set_quadratic(self._var, v, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum quadratic bias of the neighborhood"""
-        try:
-            return self._bqm.reduce_neighborhood(self._var, max)
-        except TypeError as err:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum quadratic bias of the neighborhood"""
-        try:
-            return self._bqm.reduce_neighborhood(self._var, min)
-        except TypeError as err:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the quadratic biases of the neighborhood"""
-        return self._bqm.reduce_neighborhood(self._var, operator.add, start)
-
-
-class Adjacency(abc.Mapping, BQMView):
-    """Quadratic biases as a nested dict of dicts.
-
-    Accessed like a dict of dicts, where the keys of the outer dict are all
-    of the model's variables (e.g. `v`) and the values are the neighborhood of
-    `v`. Each neighborhood is a dict where the keys are the neighbors of `v`
-    and the values are their associated quadratic biases.
-    """
-    def __getitem__(self, v):
-        return Neighborhood(self._bqm, v)
-
-    def __iter__(self):
-        return iter(self._bqm.variables)
-
-    def __len__(self):
-        return self._bqm.num_variables
-
-
-class Linear(abc.MutableMapping, BQMView):
-    """Linear biases as a mapping.
-
-    Accessed like a dict, where keys are the variables of the binary quadratic
-    model and values are the linear biases.
-    """
-    def __delitem__(self, v):
-        try:
-            self._bqm.remove_variable(v)
-        except ValueError:
-            raise KeyError(repr(v))
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_linear(v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        yield from self._bqm.variables
-
-    def __len__(self):
-        return self._bqm.num_variables
-
-    def __setitem__(self, v, bias):
-        self._bqm.set_linear(v, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum linear bias."""
-        try:
-            return self._bqm.reduce_linear(max)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum linear bias."""
-        try:
-            return self._bqm.reduce_linear(min)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the linear biases."""
-        return self._bqm.reduce_linear(operator.add, start)
-
-
-class Quadratic(abc.MutableMapping, BQMView):
-    """Quadratic biases as a flat mapping.
-
-    Accessed like a dict, where keys are 2-tuples of varables, which represent
-    an interaction and values are the quadratic biases.
-    """
-    def __delitem__(self, uv):
-        try:
-            self._bqm.remove_interaction(*uv)
-        except ValueError:
-            raise KeyError(repr(uv))
-
-    def __eq__(self, other):
-        if not isinstance(other, abc.Mapping):
-            return NotImplemented
-
-        try:
-            return (len(self) == len(other) and
-                    all(self[key] == value for key, value in other.items()))
-        except KeyError:
-            return False
-
-    def __getitem__(self, uv):
-        try:
-            return self._bqm.get_quadratic(*uv)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        for u, v, _ in self._bqm.iter_quadratic():
-            yield u, v
-
-    def __len__(self):
-        return self._bqm.num_interactions
-
-    def __setitem__(self, uv, bias):
-        self._bqm.set_quadratic(*uv, bias)
-
-    def max(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the maximum quadratic bias."""
-        try:
-            return self._bqm.reduce_quadratic(max)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def min(self, *, default: Optional[Bias] = None) -> Bias:
-        """Return the minimum quadratic bias."""
-        try:
-            return self._bqm.reduce_quadratic(min)
-        except TypeError:
-            pass
-
-        if default is None:
-            raise ValueError("cannot find min of an empty sequence")
-
-        return default
-
-    def sum(self, start=0):
-        """Return the sum of the quadratic biases."""
-        return self._bqm.reduce_quadratic(operator.add, start)
-
-
-class BinaryQuadraticModel:
+class BinaryQuadraticModel(QuadraticViewsMixin):
     """TODO"""
 
     _DATA_CLASSES = {
@@ -384,7 +172,9 @@ class BinaryQuadraticModel:
         cls.DEFAULT_DTYPE = np.dtype(default_dtype)
 
     def __copy__(self):
-        return type(self)(self)
+        new = type(self).__new__(type(self))
+        new.data = copy.copy(self.data)
+        return new
 
     def __deepcopy__(self, memo):
         new = type(self).__new__(type(self))
@@ -402,27 +192,30 @@ class BinaryQuadraticModel:
                                                      self.offset,
                                                      self.vartype.name)
 
-    def __add__(self, other: Union['BinaryQuadraticModel', Bias]):
-        # in python 3.8+ we could do this is functools.singledispatchmethod
+    # todo: singledisptach in 3.8
+    def __add__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
-                # future: return QuadraticModel
-                raise TypeError("cannot add BQMs with different vartypes")
-            new = self.copy()
-            new.update(other)
-            return new
+                # promote to QM
+                qm = QuadraticModel.from_bqm(self)
+                qm += QuadraticModel.from_bqm(other)
+                return qm
+            bqm = self.copy()
+            bqm.update(other)
+            return bqm
+        if isinstance(other, QuadraticModel):
+            return QuadraticModel.from_bqm(self) + other
         if isinstance(other, Number):
-            new = self.copy()
-            new.offset += other
-            return new
+            bqm = self.copy()
+            bqm.offset += other
+            return bqm
+
         return NotImplemented
 
-    def __iadd__(self, other: Union['BinaryQuadraticModel', Bias]):
-        # in python 3.8+ we could do this is functools.singledispatchmethod
+    def __iadd__(self, other: Union['BQM', Bias]) -> 'BQM':
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
-                # future: return QuadraticModel
-                raise TypeError("cannot add BQMs with different vartypes")
+                return NotImplemented  # fallback on __add__
             self.update(other)
             return self
         if isinstance(other, Number):
@@ -430,21 +223,26 @@ class BinaryQuadraticModel:
             return self
         return NotImplemented
 
-    def __radd__(self, other: Union['BinaryQuadraticModel', Bias]):
-        return self + other
+    def __radd__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
+        if isinstance(other, Number):
+            return self + other  # communative
+        if isinstance(other, QuadraticModel):
+            # promote to QM
+            qm = other.copy()
+            qm += QuadraticModel.from_bqm(self)
+            return qm
+        return NotImplemented
 
-    def __mul__(self, other: Union['BinaryQuadraticModel', Bias]):
-        # in python 3.8+ we could do this is functools.singledispatchmethod
+    def __mul__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, BinaryQuadraticModel):
             if not (self.is_linear() and other.is_linear()):
                 raise TypeError(
                     "cannot multiply BQMs with interactions")
             elif other.num_variables and other.vartype != self.vartype:
-                # future: return QuadraticModel
-                raise TypeError(
-                    "cannot multiply BQMs with different vartypes")
+                # promote self
+                return QuadraticModel.from_bqm(self) * other
 
-            new = self.empty(self.vartype)
+            bqm = self.empty(self.vartype)
 
             self_offset = self.offset
             other_offset = other.offset
@@ -453,68 +251,78 @@ class BinaryQuadraticModel:
                 for v, vbias in other.linear.items():
                     if u == v:
                         if self.vartype is Vartype.BINARY:
-                            new.add_linear(u, ubias*vbias)
+                            bqm.add_linear(u, ubias*vbias)
                         else:
-                            new.offset += ubias * vbias
+                            bqm.offset += ubias * vbias
                     else:
-                        new.add_quadratic(u, v, ubias * vbias)
+                        bqm.add_quadratic(u, v, ubias * vbias)
 
-                new.add_linear(u, ubias * other_offset)
+                bqm.add_linear(u, ubias * other_offset)
 
             for v, bias in other.linear.items():
-                new.add_linear(v, bias*self_offset)
+                bqm.add_linear(v, bias*self_offset)
 
-            return new
-
+            return bqm
+        if isinstance(other, QuadraticModel):
+            # promote to QM
+            qm = QuadraticModel.from_bqm(self)
+            qm *= other
+            return qm
         if isinstance(other, Number):
-            new = self.copy()
-            new.scale(other)
-            return new
+            bqm = self.copy()
+            bqm.scale(other)
+            return bqm
         return NotImplemented
 
-    def __imul__(self, other: Bias):  # type: ignore[misc]
+    def __imul__(self, other: Bias) -> 'BQM':
         # in-place multiplication is only defined for numbers
         if isinstance(other, Number):
             self.scale(other)
             return self
         return NotImplemented
 
-    def __rmul__(self, other: Union['BinaryQuadraticModel', Bias]):
-        return self * other
+    def __rmul__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
+        if isinstance(other, Number):
+            return self * other  # communative
+        if isinstance(other, QuadraticModel):
+            # promote self to QM
+            qm = QuadraticModel.from_bqm(self)
+            qm *= other
+            return qm
+        return NotImplemented
 
-    def __neg__(self):
+    def __neg__(self: 'BinaryQuadraticModel') -> 'BinaryQuadraticModel':
         new = self.copy()
         new.scale(-1)
         return new
 
-    def __pos__(self):
+    def __pos__(self: 'BinaryQuadraticModel') -> 'BinaryQuadraticModel':
         return self
 
-    def __sub__(self, other: Union['BinaryQuadraticModel', Bias]):
-        # in python 3.8+ we could do this is functools.singledispatchmethod
+    def __sub__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
-                # future: return QuadraticModel
-                raise TypeError(
-                    "cannot subtract BQMs with different vartypes")
-            new = self.copy()
-            new.scale(-1)
-            new.update(other)
-            new.scale(-1)
-            return new
+                qm = QuadraticModel.from_bqm(self)
+                qm -= QuadraticModel.from_bqm(other)
+                return qm
+            bqm = self.copy()
+            bqm.scale(-1)
+            bqm.update(other)
+            bqm.scale(-1)
+            return bqm
+        if isinstance(other, QuadraticModel):
+            # promote self to QM
+            return QuadraticModel.from_bqm(self) - other
         if isinstance(other, Number):
-            new = self.copy()
-            new.offset -= other
-            return new
+            bqm = self.copy()
+            bqm.offset -= other
+            return bqm
         return NotImplemented
 
-    def __isub__(self, other: Union['BinaryQuadraticModel', Bias]):
-        # in python 3.8+ we could do this is functools.singledispatchmethod
+    def __isub__(self, other: Union['BQM', Bias]) -> 'BQM':
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
-                # future: return QuadraticModel
-                raise TypeError(
-                    "cannot subtract BQMs with different vartypes")
+                return NotImplemented  # fallback on __sub__
             self.scale(-1)
             self.update(other)
             self.scale(-1)
@@ -524,20 +332,21 @@ class BinaryQuadraticModel:
             return self
         return NotImplemented
 
-    def __rsub__(self, other):
-        # should only miss on number, not on BQM
+    def __rsub__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, Number):
-            new = -self  # makes a new one
-            new.offset += other
-            return new
+            bqm = -self  # makes a new one
+            bqm.offset += other
+            return bqm
+        if isinstance(other, QuadraticModel):
+            # promote to QM
+            return other - QuadraticModel.from_bqm(self)
         return NotImplemented
 
     def __eq__(self, other):
-        if isinstance(other, (Number, BinaryQuadraticModel)):
+        if isinstance(other, Number):
             return Eq(self, other)
-        # Old version of BQM returned False for unknown types, so we keep doing
-        # the here for backwards compatibility
-        return False
+        # support equality for backwards compatibility
+        return self.is_equal(other)
 
     def __ge__(self, other: Bias):
         if isinstance(other, Number):
@@ -551,24 +360,6 @@ class BinaryQuadraticModel:
 
     def __ne__(self, other):
         return not self.is_equal(other)
-
-    @property
-    def adj(self) -> Adjacency:
-        """Adjacency structure as a nested mapping of mapping.
-
-        Accessed like a dict of dicts, where the keys of the outer dict are all
-        of the model's variables (e.g. `v`) and the values are the neighborhood
-        of `v`. Each neighborhood is a dict where the keys are the neighbors of
-        `v` and the values are their associated quadratic biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._adj  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._adj = adj = Adjacency(self)
-        return adj
 
     @property
     def binary(self) -> 'BinaryQuadraticModel':
@@ -602,22 +393,6 @@ class BinaryQuadraticModel:
         return self.data.dtype
 
     @property
-    def linear(self) -> Linear:
-        """Linear biases as a mapping.
-
-        Accessed like a dict, where keys are the variables of the binary
-        quadratic model and values are the linear biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._linear  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._linear = linear = Linear(self)
-        return linear
-
-    @property
     def offset(self) -> np.number:
         """Constant energy offset associated with the model."""
         return self.data.offset
@@ -638,22 +413,6 @@ class BinaryQuadraticModel:
     def num_variables(self) -> int:
         """Number of variables in the model."""
         return self.data.num_variables()
-
-    @property
-    def quadratic(self) -> Quadratic:
-        """Quadratic biases as a flat mapping.
-
-        Accessed like a dict, where keys are 2-tuples of varables, which
-        represent an interaction and values are the quadratic biases.
-        """
-        # we could use cached property but this is way simpler and doesn't
-        # break the docs
-        try:
-            return self._quadratic  # type: ignore[has-type]
-        except AttributeError:
-            pass
-        self._quadratic = quadratic = Quadratic(self)
-        return quadratic
 
     @property
     def shape(self) -> Tuple[int, int]:
@@ -1040,10 +799,17 @@ class BinaryQuadraticModel:
 
     def copy(self, deep=False):
         """Return a copy."""
-        return copy.deepcopy(self)
+        if deep:
+            return copy.deepcopy(self)
+        else:
+            return copy.copy(self)
 
     @forwarding_method
-    def degree(self, v: Variable):
+    def degree(self, v: Variable) -> int:
+        """Return the degree of variable `v`.
+
+        The degree is the number of interactions that contain `v`.
+        """
         return self.data.degree
 
     def degrees(self, array: bool = False, dtype: DTypeLike = int
@@ -1369,6 +1135,33 @@ class BinaryQuadraticModel:
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
+    def is_almost_equal(self, other: Union['BinaryQuadraticModel', Bias], places=7) -> bool:
+        """Test if the given BQM's biases are almost equal.
+
+        Test whether each bias in the binary quadratic model is approximately
+        equal to each bias in `other`. Approximate equality is calculated by
+        passing the difference to :func:`round`. `places` determines the
+        number of decimal places.
+        """
+        if isinstance(other, Number):
+            return not (self.num_variables or round(self.offset - other, places))
+
+        def eq(a, b):
+            return not round(a - b, places)
+
+        try:
+            return (self.vartype == other.vartype
+                    and self.shape == other.shape
+                    and eq(self.offset, other.offset)
+                    and all(eq(self.get_linear(v), other.get_linear(v))
+                            for v in self.variables)
+                    and all(eq(bias, other.get_quadratic(u, v))
+                            for u, v, bias in self.iter_quadratic())
+                    )
+        except (AttributeError, ValueError):
+            # it's not a BQM or variables/interactions don't match
+            return False
+
     def is_equal(self, other):
         if isinstance(other, Number):
             return not self.num_variables and self.offset == other
@@ -1387,7 +1180,8 @@ class BinaryQuadraticModel:
         return self.data.is_linear()
 
     @forwarding_method
-    def iter_neighborhood(self, v: Variable):
+    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
+        """Iterate over the neighbors and quadratic biases of a variable."""
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
@@ -1397,7 +1191,8 @@ class BinaryQuadraticModel:
         for v, _ in self.iter_neighborhood(u):
             yield v
 
-    def iter_quadratic(self, variables=None):
+    def iter_quadratic(self, variables=None) -> Iterator[Tuple[Variable, Variable, Bias]]:
+        """Iterate over the quadratic biases"""
         if variables is None:
             yield from self.data.iter_quadratic()
         else:
@@ -1437,7 +1232,8 @@ class BinaryQuadraticModel:
         return iter(self.variables)
 
     @forwarding_method
-    def get_linear(self, v: Variable):
+    def get_linear(self, v: Variable) -> Bias:
+        """Get the linear bias of `v`."""
         return self.data.get_linear
 
     @forwarding_method
@@ -1589,7 +1385,7 @@ class BinaryQuadraticModel:
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
-        """Multiply all the biases by the specified scalar.
+        """Multiply all the biases by the specified scalar. 
 
         Args:
             scalar (number):
@@ -1607,7 +1403,13 @@ class BinaryQuadraticModel:
                 If True, the offset is not scaled.
 
         """
-        # this could be cythonized for performance
+        if ignored_variables is None and ignored_interactions is None \
+            and ignore_offset is False:
+            try:
+                self.data.scale(scalar)
+                return
+            except AttributeError:
+                pass
 
         if ignored_variables is None:
             ignored_variables = set()
@@ -1634,10 +1436,22 @@ class BinaryQuadraticModel:
 
     @forwarding_method
     def set_linear(self, v: Variable, bias: Bias):
+        """Set the linear bias of `v`.
+
+        Raises:
+            TypeError: If `v` is not hashable.
+
+        """
         return self.data.set_linear
 
     @forwarding_method
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Set the quadratic bias of `(u, v)`.
+
+        Raises:
+            TypeError: If `u` or `v` is not hashable.
+
+        """
         return self.data.set_quadratic
 
     def to_coo(self, fp=None, vartype_header: bool = False):

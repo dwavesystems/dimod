@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import collections.abc as abc
+import copy
 import decimal
 import fractions
 import itertools
@@ -33,6 +34,24 @@ class TestAppend(unittest.TestCase):
         variables._append()
 
         self.assertEqual(variables, [1, 0, 2])
+
+
+class TestCopy(unittest.TestCase):
+    def test_copy(self):
+        variables = Variables('abc')
+        new = copy.copy(variables)
+        variables._relabel({'a': 0})  # should not change the copy
+        self.assertIsNot(new, variables)
+        self.assertEqual(new, 'abc')
+        self.assertIsInstance(new, Variables)
+
+    def test_deepcopy_memo(self):
+        variables = Variables('abc')
+        new = copy.deepcopy([variables, variables])
+        self.assertIs(new[0], new[1])
+        self.assertIsNot(new[0], variables)
+        self.assertIsInstance(new[0], Variables)
+
 
 class TestDuplicates(unittest.TestCase):
     def test_duplicates(self):

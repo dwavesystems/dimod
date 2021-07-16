@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add support for quadratic model objectives and constraints in constrained
+    quadratic models. Previously CQMs only supported binary quadratic models.

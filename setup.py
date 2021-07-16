@@ -59,6 +59,7 @@ setup(
          'dimod/cyutilities.pyx',
          'dimod/cyvariables.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',
+         'dimod/quadratic/cyqm/*.pyx',
          ],
         annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),
@@ -70,4 +71,5 @@ setup(
     install_requires=[
         'numpy>=1.17.3,<2.0.0',  # keep synced with circle-ci, pyproject.toml
         ],
+    extras_require=dict(preprocessing='dwave-preprocessing>=0.3,<0.4'),
 )

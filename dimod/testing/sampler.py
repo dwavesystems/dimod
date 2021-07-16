@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 import collections.abc
 import functools
 import warnings
@@ -23,9 +22,9 @@ __all__ = ['load_sampler_bqm_tests']
 
 # in the future we may want a way for folks to load new BQM classes into this
 # framework
-BQM_SUBCLASSES = [dimod.AdjDictBQM,
-                  dimod.AdjVectorBQM,
-                  dimod.BinaryQuadraticModel,
+BQM_SUBCLASSES = [dimod.Float32BQM,
+                  dimod.Float64BQM,
+                  dimod.DictBQM,
                   ]
 
 
@@ -34,7 +33,7 @@ def test_sample(self, sampler, bqm):
 
     self.assertEqual(set(sampleset.variables), set(bqm.variables))
     self.assertIs(sampleset.vartype, bqm.vartype)
-    dimod.testing.assert_sampleset_energies(sampleset, bqm)
+    dimod.testing.assert_sampleset_energies(sampleset, bqm, precision=4)
 
 
 def test_sample_ising(self, sampler, h, J):

@@ -11,9 +11,9 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 import collections.abc as abc
+import warnings
 
 from collections import OrderedDict
 from copy import deepcopy
@@ -37,6 +37,9 @@ __all__ = ['AdjDictBQM']
 
 class AdjDictBQM(ShapeableBQM):
     """A binary quadratic model structured as a dict-of-dicts.
+
+    `AdjVectorBQM` is deprecated. Use :class:`BinaryQuadraticModel` with
+    `object` dtype instead.
 
     Can be created in several ways:
 
@@ -130,6 +133,9 @@ class AdjDictBQM(ShapeableBQM):
     # are offsets and reference it here
 
     def __init__(self, *args, vartype=None):
+        warnings.warn("AdjDictBQM(..) is deprecated and will be removed in dimod 0.11.0, "
+                      "please use BinaryQuadratic(.., dtype=object) instead",
+                      DeprecationWarning, stacklevel=2)
 
         if vartype is not None:
             # pass in as a positional argument
@@ -390,9 +396,9 @@ class AdjDictBQM(ShapeableBQM):
         return self
 
     def __copy__(self):
-        # We want to make new nested dictionaries, but keep the biases
-        # in case they are mutable (e.g. sympy variables)
-        return type(self)(self)
+        # deep copy is more than we need but it works and this class is
+        # deprecated anyway
+        return deepcopy(self)
 
     def degree(self, v):
         """Return degree of the specified variable.

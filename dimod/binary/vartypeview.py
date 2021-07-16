@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import copy
 import functools
 
 from collections.abc import Collection, Iterator, Callable, Sequence
@@ -57,6 +58,14 @@ class VartypeView:
     def __init__(self, data, vartype: Vartype):
         self.data = data
         self._vartype = vartype
+
+    def __copy__(self):
+        # since we'd need to copy the underlying data anyway, let's just return
+        # that instead. It doesn't really make sense to maintain the view
+        # of a detached copy.
+        new = copy.copy(self.data)
+        new.change_vartype(self.vartype)
+        return new
 
     @property
     def dtype(self) -> np.dtype:

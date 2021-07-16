@@ -24,13 +24,15 @@ cimport cython
 
 import numpy as np
 
-from cython.operator cimport postincrement as inc, dereference as deref
+from cython.operator cimport preincrement as inc, dereference as deref
 from libcpp.unordered_map cimport unordered_map
 from libcpp.unordered_set cimport unordered_set
+from libcpp.vector cimport vector
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
+from dimod.libcpp cimport cppVartype
 from dimod.sampleset import as_samples
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.variables import Variables
@@ -51,11 +53,17 @@ cdef class cyBQM_template(cyBQMBase):
         self.change_vartype(vartype)
         self.variables = Variables()
 
-    def __deepcopy__(self, memo):
+    def __copy__(self):
         cdef cyBQM_template new = type(self)(self.vartype)
         new.cppbqm = self.cppbqm
-        new.variables = copy.deepcopy(self.variables, memo)
+        new.variables = self.variables.copy()
+        return new
+
+    def __deepcopy__(self, memo):
+        cdef cyBQM_template new = type(self)(self.vartype)
         memo[id(self)] = new
+        new.cppbqm = self.cppbqm
+        new.variables = copy.deepcopy(self.variables, memo)
         return new
 
     def __reduce__(self):
@@ -493,7 +501,7 @@ cdef class cyBQM_template(cyBQMBase):
         except IndexError:
             if default is None:
                 # out of range error is automatically converted to IndexError
-                raise ValueError(f"{u!r} and {v!r} have no interaction")
+                raise ValueError(f"{u!r} and {v!r} have no interaction") from None
             bias = default
         return as_numpy_float(bias)
 
@@ -735,6 +743,9 @@ cdef class cyBQM_template(cyBQMBase):
             self.variables._append()
         while self.variables.size() > n:
             self.variables._pop()
+
+    cpdef void scale(self, bias_type scalar):
+        self.cppbqm.scale(scalar)
 
     def set_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self._index(v, permissive=True)

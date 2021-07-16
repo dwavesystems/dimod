@@ -14,13 +14,14 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 from dimod.bqm.cppbqm cimport AdjVectorBQM as cppAdjVectorBQM
 from dimod.bqm.common cimport VarIndex, Bias
 
 cdef class cyAdjVectorBQM:
     """A binary quadratic model where the neighborhoods are C++ vectors.
+
+    `AdjVectorBQM` is deprecated. Use :class:`BinaryQuadraticModel` instead.
 
     Can be created in several ways:
 

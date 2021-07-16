@@ -11,8 +11,6 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ================================================================================================
 
 import unittest
 import itertools
@@ -21,14 +19,21 @@ import random
 import dimod
 import dimod.testing as dit
 
+try:
+    import dwave.preprocessing as preprocessing
+except ImportError:
+    preprocessing = False
+
 
 # @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.ExactSolver()))
 # @dimod.testing.load_sampler_bqm_tests(dimod.SpinReversalTransformComposite(dimod.RandomSampler()))
+@unittest.skipUnless(preprocessing, "need dwave-preprocessing")
 class TestSpinTransformComposite(unittest.TestCase):
     def test_instantiation(self):
         for factory in [dimod.ExactSolver, dimod.RandomSampler, dimod.SimulatedAnnealingSampler]:
 
-            sampler = dimod.SpinReversalTransformComposite(factory())
+            with self.assertWarns(DeprecationWarning):
+                sampler = dimod.SpinReversalTransformComposite(factory())
 
             dit.assert_sampler_api(sampler)
             dit.assert_composite_api(sampler)

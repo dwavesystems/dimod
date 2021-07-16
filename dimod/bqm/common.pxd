@@ -14,8 +14,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 cimport numpy as np
 
 # Developer note: we'd like to use fused types here, which would allow us to

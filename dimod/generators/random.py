@@ -16,7 +16,6 @@ import collections.abc as abc
 
 import numpy as np
 
-from dimod.bqm import AdjVectorBQM
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 
@@ -24,7 +23,7 @@ __all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint']
 
 
 def gnm_random_bqm(variables, num_interactions, vartype, *,
-                   cls=AdjVectorBQM,
+                   cls=BinaryQuadraticModel,
                    random_state=None,
                    bias_generator=None):
     """Generate a random BQM with a fixed number of variables and interactions.
@@ -44,7 +43,7 @@ def gnm_random_bqm(variables, num_interactions, vartype, *,
 
         cls (type, optional):
             Binary quadratic model class to build from. Default is
-            :class:`.AdjVectorBQM`.
+            :class:`.BinaryQuadraticModel`.
 
         random_state (:class:`numpy.random.RandomState`/int, optional):
             A random seed or a random state generator. Used for generating
@@ -118,7 +117,7 @@ def gnm_random_bqm(variables, num_interactions, vartype, *,
 
 
 def gnp_random_bqm(n, p, vartype,
-                   cls=AdjVectorBQM,
+                   cls=BinaryQuadraticModel,
                    random_state=None, bias_generator=None):
     """Generate a BQM structured as an Erdős-Rényi graph.
 
@@ -137,7 +136,7 @@ def gnp_random_bqm(n, p, vartype,
 
         cls (type, optional):
             Binary quadratic model class to build from. Default is
-            :class:`.AdjVectorBQM`.
+            :class:`.BinaryQuadraticModel`.
 
         random_state (:class:`numpy.random.RandomState`/int, optional):
             A random seed or a random state generator. Used for generating

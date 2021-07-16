@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 import base64
 import copy
 import itertools
@@ -26,7 +25,6 @@ import numpy as np
 from numpy.lib import recfunctions
 from warnings import warn
 
-from dimod.decorators import lockable_method
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
 from dimod.serialization.utils import (pack_samples as _pack_samples,
@@ -35,7 +33,6 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        deserialize_ndarray,
                                        serialize_ndarrays,
                                        deserialize_ndarrays)
-from dimod.utilities import LockableDict
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
@@ -513,7 +510,7 @@ class SampleSet(abc.Iterable, abc.Sized):
                    "and labels ({})").format(num_variables, len(variables))
             raise ValueError(msg)
 
-        self._info = LockableDict(info)
+        self._info = dict(info)
 
         # vartype is checked by vartype_argument decorator
         self._vartype = vartype
@@ -891,16 +888,14 @@ class SampleSet(abc.Iterable, abc.Sized):
 
     @property
     def is_writeable(self):
-        return getattr(self, '_writeable', True)
+        warn("SampleSet.is_writeable is deprecated and always returns True",
+             DeprecationWarning, stacklevel=2)
+        return True
 
     @is_writeable.setter
     def is_writeable(self, b):
-        b = bool(b)  # cast
-
-        self._writeable = b
-
-        self.record.flags.writeable = b
-        self.info.is_writeable = b
+        if not b:
+            raise ValueError("SampleSet.is_writeable is deprecated and cannot be set False")
 
     ###############################################################################################
     # Views
@@ -1136,9 +1131,6 @@ class SampleSet(abc.Iterable, abc.Sized):
                 return sampleset.change_vartype(vartype, energy_offset)
             return self.from_future(self, hook)
 
-        if not self.is_writeable:
-            raise WriteableError("SampleSet is not writeable")
-
         vartype = as_vartype(vartype, extended=True)  # cast to correct vartype
 
         if energy_offset:
@@ -1158,7 +1150,6 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         return self
 
-    @lockable_method
     def relabel_variables(self, mapping, inplace=True):
         """Relabel the variables of a :class:`SampleSet` according to the specified mapping.
 

@@ -11,8 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# =============================================================================
+
 import collections.abc as abc
 
 import dimod
@@ -212,7 +211,8 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
             for v in bqm.variables:
                 assert v in sample, "bqm contains a variable not in sample"
 
-        assert round(bqm.energy(sample) - energy, precision) == 0
+        en = bqm.energy(sample)
+        assert round(en - energy, precision) == 0, f"{en} is not almost equal to {energy}"
 
 
 def assert_sampleset_energies_dqm(sampleset, dqm, precision=7):
