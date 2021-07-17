@@ -117,7 +117,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         self.offset = offset
 
-        vartype = self.data.vartype
+        vartype = self.vartype
 
         if isinstance(quadratic, (abc.Mapping, abc.Iterator)):
             if isinstance(quadratic, abc.Mapping):
@@ -456,7 +456,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
         """
-        return self.data.vartype
+        return self.data.vartype()
 
     @classmethod
     def shapeable(cls) -> bool:

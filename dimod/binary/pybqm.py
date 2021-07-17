@@ -48,12 +48,8 @@ class pyBQM:
     def variables(self) -> Collection:
         return KeysView(self._adj)
 
-    @property
-    def vartype(self):
-        return self._vartype
-
     def __copy__(self):
-        new = type(self)(self.vartype)
+        new = type(self)(self._vartype)
         adj = new._adj
         for v, neighborhood in self._adj.items():
             adj[v] = neighborhood.copy()
@@ -102,11 +98,11 @@ class pyBQM:
                     self.add_quadratic(u, v, quadratic[u, v])
 
         # now handle the linear
-        if self.vartype is Vartype.SPIN:
+        if self._vartype is Vartype.SPIN:
             for v in range(num_variables):
                 # since s*s == 1
                 self.offset += quadratic[v, v]
-        elif self.vartype is Vartype.BINARY:
+        elif self._vartype is Vartype.BINARY:
             for v in range(num_variables):
                 # since x*x == x
                 self.add_linear(v, quadratic[v, v])
@@ -133,7 +129,7 @@ class pyBQM:
         vartype = as_vartype(vartype)
 
         # in place and we are already correct, so nothing to do
-        if self.vartype == vartype:
+        if self._vartype == vartype:
             return self
 
         if vartype == Vartype.BINARY:
@@ -347,3 +343,6 @@ class pyBQM:
 
     def update(self, *args, **kwargs):
         raise NotImplementedError  # defer to the caller
+
+    def vartype(self, v: Optional[Variable] = None) -> Vartype:
+        return self._vartype
