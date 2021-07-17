@@ -857,6 +857,21 @@ class TestDepreaction(unittest.TestCase):
             self.assertFalse(bqm.has_variable(2))
 
 
+class TestDictBQM(unittest.TestCase):
+    def test_numeric_required_args(self):
+        bqm = DictBQM('SPIN')
+
+        class N(float):
+            def __init__(self, a):  # required argument
+                pass
+
+        bqm.add_linear('a', N(1))
+        bqm.add_quadratic('a', 'b', N(2))
+
+        self.assertEqual(bqm.linear, {'a': 1, 'b': 0})
+        self.assertEqual(bqm.quadratic, {('a', 'b'): 2})
+
+
 class TestCopy(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_copy(self, name, BQM):
