@@ -313,6 +313,10 @@ cdef class cyQM_template(cyQMBase):
         else:
             raise TypeError(f"unexpected vartype {vartype!r}")
 
+    cdef const cppQuadraticModel[bias_type, index_type]* data(self):
+        """Return a pointer to the C++ QuadraticModel."""
+        return &self.cppqm
+
     def degree(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
         return self.cppqm.num_interactions(vi)

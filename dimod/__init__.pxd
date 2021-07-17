@@ -12,4 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dimod.bqm cimport *
+from dimod.binary cimport *
+cimport dimod.binary
+
+from dimod.quadratic cimport *
+cimport dimod.quadratic

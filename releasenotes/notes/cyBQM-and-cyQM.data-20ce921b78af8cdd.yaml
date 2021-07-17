@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``.data()`` method to ``cyQM_template`` and ``cyBQM_template`` that
+    returns a const pointer to the underlying C++ ``QuadraticModel`` and
+    ``BinaryQuadraticModel`` respectively.

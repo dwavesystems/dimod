@@ -54,13 +54,13 @@ cdef class cyBQM_template(cyBQMBase):
         self.variables = Variables()
 
     def __copy__(self):
-        cdef cyBQM_template new = type(self)(self.vartype)
+        cdef cyBQM_template new = type(self)(self.vartype())
         new.cppbqm = self.cppbqm
         new.variables = self.variables.copy()
         return new
 
     def __deepcopy__(self, memo):
-        cdef cyBQM_template new = type(self)(self.vartype)
+        cdef cyBQM_template new = type(self)(self.vartype())
         memo[id(self)] = new
         new.cppbqm = self.cppbqm
         new.variables = copy.deepcopy(self.variables, memo)
@@ -70,7 +70,7 @@ cdef class cyBQM_template(cyBQMBase):
         ldata, qdata, off, labels = self.to_numpy_vectors(return_labels=True)
         return (
             type(self).from_numpy_vectors,
-            (ldata, qdata, off, self.vartype, labels))
+            (ldata, qdata, off, self.vartype(), labels))
 
     @property
     def offset(self):
@@ -80,19 +80,6 @@ cdef class cyBQM_template(cyBQMBase):
     @offset.setter
     def offset(self, bias_type offset):
         self._set_offset(offset)
-
-    @property
-    def vartype(self):
-        """The model's variable type.
-
-        One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
-        """
-        if self.cppbqm.vartype() == cppVartype.BINARY:
-            return Vartype.BINARY
-        elif self.cppbqm.vartype() == cppVartype.SPIN:
-            return Vartype.SPIN
-        else:
-            raise RuntimeError("unknown vartype")
 
     cdef void _add_linear(self, Py_ssize_t vi, bias_type bias):
         # unsafe version of .add_linear
@@ -319,6 +306,10 @@ cdef class cyBQM_template(cyBQMBase):
             self.cppbqm.change_vartype(cppVartype.SPIN)
         else:
             raise RuntimeError("unknown vartype", vartype)
+
+    cdef const cppBinaryQuadraticModel[bias_type, index_type]* data(self):
+        """Return a pointer to the C++ BinaryQuadraticModel."""
+        return &self.cppbqm
 
     def degree(self, v):
         cdef Py_ssize_t vi = self._index(v)
@@ -858,3 +849,15 @@ cdef class cyBQM_template(cyBQMBase):
         except TypeError:
             # if other is not a cybqm, defer back to the caller
             raise NotImplementedError from None
+
+    def vartype(self, v=None):
+        """The model's variable type.
+
+        One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+        """
+        if self.cppbqm.vartype() == cppVartype.BINARY:
+            return Vartype.BINARY
+        elif self.cppbqm.vartype() == cppVartype.SPIN:
+            return Vartype.SPIN
+        else:
+            raise RuntimeError("unknown vartype")
