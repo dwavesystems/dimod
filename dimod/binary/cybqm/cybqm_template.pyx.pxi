@@ -307,6 +307,10 @@ cdef class cyBQM_template(cyBQMBase):
         else:
             raise RuntimeError("unknown vartype", vartype)
 
+    cdef const cppBinaryQuadraticModel[bias_type, index_type]* data(self):
+        """Return a pointer to the C++ BinaryQuadraticModel."""
+        return &self.cppbqm
+
     def degree(self, v):
         cdef Py_ssize_t vi = self._index(v)
         return self.cppbqm.num_interactions(vi)
