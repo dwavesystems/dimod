@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix case where adding linear and quadratic biases whose class requires
+    arguments on construction to a ``BinaryQuadraticModel`` with ``object``
+    dtype could fail.

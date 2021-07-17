@@ -58,7 +58,10 @@ class pyBQM:
 
     def add_linear(self, v: Variable, bias: Any):
         self._adj.setdefault(v, dict())
-        zero = type(bias)()
+        try:
+            zero = type(bias)()  # try to preserve the type
+        except TypeError:
+            zero = 0  # sometimes it cannot be constructed with no arguments
         self._adj[v][v] = self._adj[v].get(v, zero) + bias
 
     def add_linear_equality_constraint(self, *args, **kwargs):
@@ -72,7 +75,10 @@ class pyBQM:
         if u == v:
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
-        zero = type(bias)()
+        try:
+            zero = type(bias)()  # try to preserve the type
+        except TypeError:
+            zero = 0  # sometimes it cannot be constructed with no arguments
 
         # derive the linear types to match quadratic. This might not always
         # be what we want but it's as good a guess as any
