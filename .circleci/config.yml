@@ -113,7 +113,7 @@ jobs:
             python -m venv env
             . env/bin/activate
             pip install -r tests/requirements.txt
-            pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=all
+            pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
             pip install dimod --no-index -f dist/ --no-deps --force-reinstall
 
       - run:
@@ -463,11 +463,13 @@ workflows:
               python-version: *python-versions
             exclude:
               - numpy-version: <1.21
-                image: 3.6.8
+                python-version: 3.6.8
               - numpy-version: <1.19
-                image: 3.9.4
+                python-version: 3.9.4
               - numpy-version: <1.18
-                image: 3.9.4
+                python-version: 3.9.4
+              - numpy-version: ==1.17.3
+                python-version: 3.9.4
       - test-osx:
           matrix:
             parameters:
