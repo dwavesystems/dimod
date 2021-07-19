@@ -104,7 +104,7 @@ jobs:
           command: |
             . env/bin/activate
             cd tests/
-            python -m unittest
+            coverage run --source=dimod --append -m unittest
 
       - run:
           name: run tests with dwave-preprocessing
@@ -112,7 +112,14 @@ jobs:
             . env/bin/activate
             pip install 'dwave-preprocessing<0.4' --no-deps
             cd tests/
-            python -m unittest
+            coverage run --source=dimod --append -m unittest
+
+      - run:
+          name: codecov
+          command: |
+            . env/bin/activate
+            cd tests/
+            codecov
 
   deploy-linux:
     docker:
