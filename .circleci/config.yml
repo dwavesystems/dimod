@@ -73,6 +73,23 @@ jobs:
           root: ~/build/dist/
           paths: .
 
+  test-sdist:
+    docker:
+      - image: circleci/python:3.9
+
+    steps:
+      - checkout
+
+      - attach_workspace:
+          at: dist
+
+      - run:
+          name: install from sdist
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install dist/dimod*.tar.gz
+
   test-linux:
     parameters:
       python-version:
@@ -461,6 +478,9 @@ workflows:
               python-version: *python-versions
               architecture: ["", "x86"]
       - build-sdist
+      - test-sdist:
+          requires:
+            - build-sdist
       - test-doctest
       - test-linux-cpp11
 
