@@ -624,6 +624,8 @@ class QuadraticModel(QuadraticViewsMixin):
             self.set_linear(s, 2*lbias)
             self.offset -= lbias
 
+            self.variables.vartype
+
         return self
 
     def to_file(self, *,

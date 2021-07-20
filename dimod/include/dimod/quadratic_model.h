@@ -961,6 +961,55 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
         return v;
     }
 
+    /// Change the vartype of `v`, updating the biases appropriately.
+    void change_vartype(Vartype vartype, index_type v) {
+        if (vartype == this->vartype(v)) return;  // nothing to do
+
+        if (this->vartype(v) == Vartype::BINARY && vartype == Vartype::SPIN) {
+            // binary to spin
+            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end();
+                 ++it) {
+                this->linear(it->first) += it->second / 2;
+                this->adj_[it->first][v] /= 2;  // log(n)
+                it->second /= 2;
+            }
+            this->offset() += this->linear(v) / 2;
+            this->linear(v) /= 2;
+
+            this->vartype(v) = Vartype::SPIN;
+            this->lower_bound(v) = -1;
+            this->upper_bound(v) = +1;
+        } else if (this->vartype(v) == Vartype::SPIN &&
+                   vartype == Vartype::BINARY) {
+            // spin to binary
+            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end();
+                 ++it) {
+                this->linear(it->first) -= it->second;
+                this->adj_[it->first][v] *= 2;  // log(n)
+                it->second *= 2;
+            }
+            this->offset() -= this->linear(v);
+            this->linear(v) *= 2;
+
+            this->vartype(v) = Vartype::BINARY;
+            this->lower_bound(v) = 0;
+            this->upper_bound(v) = 1;
+        } else if (this->vartype(v) == Vartype::BINARY &&
+                   vartype == Vartype::INTEGER) {
+            // binary to integer
+            this->varinfo_[v].vartype = Vartype::INTEGER;
+        } else if (this->vartype(v) == Vartype::SPIN &&
+                   vartype == Vartype::INTEGER) {
+            // spin to integer (via spin to binary)
+            this->change_vartype(Vartype::BINARY, v);
+            this->change_vartype(Vartype::INTEGER, v);
+        } else {
+            throw std::logic_error("invalid vartype change");
+        }
+    }
+
+    bias_type& lower_bound(index_type v) { return varinfo_[v].lb; }
+
     const bias_type& lower_bound(index_type v) const { return varinfo_[v].lb; }
 
     constexpr bias_type max_integer() {
@@ -979,7 +1028,11 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
     }
 
+    bias_type& upper_bound(index_type v) { return varinfo_[v].ub; }
+
     const bias_type& upper_bound(index_type v) const { return varinfo_[v].ub; }
+
+    Vartype& vartype(index_type v) { return varinfo_[v].vartype; }
 
     const Vartype& vartype(index_type v) const { return varinfo_[v].vartype; }
 

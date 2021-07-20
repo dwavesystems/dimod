@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add C++ ``dimod::QuadraticModel::change_vartype()`` method. Also add
+    non-const versions of ``dimod::QuadraticModel::vartype()``,
+    ``dimod::QuadraticModel::lower_bound()``, and
+    ``dimod::QuadraticModel::upper_bound()``.
