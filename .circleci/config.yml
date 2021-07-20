@@ -429,7 +429,7 @@ jobs:
   test-linux-cpp11:
     docker:
       # just use a python image, all we really want is debian
-      - image: circleci/python:3.6-jessie
+      - image: circleci/python:3.6
 
     working_directory: ~/repo
 
@@ -439,6 +439,15 @@ jobs:
           name: run cpp tests
           command: |
             make -C testscpp/ --always-make
+
+      - run:
+          name: codecov
+          command: |
+            cd testscpp/
+            python -m venv env
+            . env/bin/activate
+            pip install codecov
+            codecov
 
 workflows:
   tests:
