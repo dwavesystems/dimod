@@ -276,6 +276,7 @@ jobs:
           name: create bdist_wheel
           command: |
             . env/bin/activate
+            python -m pip install wheel
             python setup.py bdist_wheel
 
       - run:
@@ -366,6 +367,7 @@ jobs:
           name: create wheel
           command: |
             env\Scripts\activate.ps1
+            python -m pip install wheel
             python setup.py bdist_wheel
 
       - store_artifacts:
