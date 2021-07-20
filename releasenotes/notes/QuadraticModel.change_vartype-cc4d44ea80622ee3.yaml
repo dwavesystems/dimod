@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``QuadraticModel.change_vartype()`` method.
+fixes:
+  - |
+    Fix ``QuadraticModel.spin_to_binary`` not correctly updating the variable
+    type of the changed variables.
