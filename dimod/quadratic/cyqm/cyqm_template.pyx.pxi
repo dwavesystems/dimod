@@ -303,6 +303,16 @@ cdef class cyQM_template(cyQMBase):
 
         return self.variables.at(-1)
 
+    def change_vartype(self, vartype, v):
+        vartype = as_vartype(vartype, extended=True)
+        cdef Py_ssize_t vi = self.variables.index(v)
+        try:
+            self.cppqm.change_vartype(self.cppvartype(vartype), vi)
+        except RuntimeError:
+            # c++ logic_error
+            raise TypeError(f"cannot change vartype {self.vartype(v).name!r} "
+                            f"to {vartype.name!r}") from None
+
     cdef cppVartype cppvartype(self, object vartype) except? cppVartype.SPIN:
         if vartype is Vartype.SPIN:
             return cppVartype.SPIN

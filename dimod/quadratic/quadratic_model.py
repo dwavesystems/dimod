@@ -388,6 +388,27 @@ class QuadraticModel(QuadraticViewsMixin):
         for v in variables:
             self.add_variable(vartype, v)
 
+    def change_vartype(self, vartype: VartypeLike, v: Variable) -> "QuadraticModel":
+        """Change the variable type of the given variable, updating the biases.
+
+        Example:
+            >>> qm = dimod.QuadraticModel()
+            >>> a = qm.add_variable('SPIN', 'a')
+            >>> qm.set_linear(a, 1.5)
+            >>> qm.energy({a: +1})
+            1.5
+            >>> qm.energy({a: -1})
+            -1.5
+            >>> qm.change_vartype('BINARY', a)
+            >>> qm.energy({a: 1})
+            1.5
+            >>> qm.energy({a: 0})
+            -1.5
+
+        """
+        self.data.change_vartype(vartype, v)
+        return self
+
     def copy(self):
         """Return a copy."""
         return deepcopy(self)
@@ -611,20 +632,8 @@ class QuadraticModel(QuadraticViewsMixin):
             return self.copy().spin_to_binary(inplace=True)
 
         for s in self.variables:
-            if self.vartype(s) != Vartype.SPIN:
-                continue
-
-            # quadratic
-            for t, qbias in self.iter_neighborhood(s):
-                self.set_quadratic(s, t, 2*qbias)
-                self.add_linear(t, -qbias)
-
-            # linear
-            lbias = self.get_linear(s)
-            self.set_linear(s, 2*lbias)
-            self.offset -= lbias
-
-            self.variables.vartype
+            if self.vartype(s) is Vartype.SPIN:
+                self.change_vartype(Vartype.BINARY, s)
 
         return self
 
