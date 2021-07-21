@@ -296,7 +296,7 @@ class DiscreteQuadraticModel:
                 ' with any value for state variables.')
             return []
 
-        if ub_c <= lb_c:
+        if ub_c < lb_c:
             raise ValueError(
                 f'The given constraint ({label}) is infeasible with any value'
                 ' for state variables.')

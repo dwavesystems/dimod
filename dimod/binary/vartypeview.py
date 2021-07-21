@@ -38,14 +38,14 @@ def view_method(f):
     @functools.wraps(f)
     def wrapper(obj, *args, **kwargs):
         # explicitly check that we're getting the expected vartype combinations
-        if obj._vartype == obj.data.vartype:
+        if obj._vartype == obj.data.vartype():
             # if the vartype matches, just use the underlying data method
             return getattr(obj.data, f.__name__)(*args, **kwargs)
 
-        elif obj.data.vartype is SPIN and obj._vartype is BINARY:
+        elif obj.data.vartype() is SPIN and obj._vartype is BINARY:
             return f(obj, *args, **kwargs)
 
-        elif obj.data.vartype is BINARY and obj._vartype is SPIN:
+        elif obj.data.vartype() is BINARY and obj._vartype is SPIN:
             return f(obj, *args, **kwargs)
 
         else:
@@ -64,7 +64,7 @@ class VartypeView:
         # that instead. It doesn't really make sense to maintain the view
         # of a detached copy.
         new = copy.copy(self.data)
-        new.change_vartype(self.vartype)
+        new.change_vartype(self._vartype)
         return new
 
     @property
@@ -76,19 +76,15 @@ class VartypeView:
         return self.data.variables
 
     @property
-    def vartype(self) -> Vartype:
-        return self._vartype
-
-    @property
     def offset(self) -> Bias:
-        if self._vartype == self.data.vartype:
+        if self._vartype == self.data.vartype():
             return self.data.offset
-        elif self._vartype is BINARY and self.data.vartype is SPIN:
+        elif self._vartype is BINARY and self.data.vartype() is SPIN:
             # binary <- spin
             return (self.data.offset
                     - self.data.reduce_linear(add, 0)
                     + self.data.reduce_quadratic(add, 0))
-        elif self._vartype is SPIN and self.data.vartype is BINARY:
+        elif self._vartype is SPIN and self.data.vartype() is BINARY:
             # spin <- binary
             return (self.data.offset
                     + self.data.reduce_linear(add, 0) / 2
@@ -100,10 +96,10 @@ class VartypeView:
     def offset(self, bias: Bias):
         if self._vartype == self.data.vartype:
             self.data.offset = bias
-        elif self._vartype is BINARY and self.data.vartype is SPIN:
+        elif self._vartype is BINARY and self.data.vartype() is SPIN:
             # binary <- spin
             self.data.offset += bias - self.offset  # use the difference
-        elif self._vartype is SPIN and self.data.vartype is BINARY:
+        elif self._vartype is SPIN and self.data.vartype() is BINARY:
             # spin <- binary
             self.data.offset += bias - self.offset  # use the difference
         else:
@@ -272,3 +268,6 @@ class VartypeView:
 
     def update(self, *args, **kwargs):
         raise NotImplementedError  # defer to the caller
+
+    def vartype(self, v: Optional[Variable] = None) -> Vartype:
+        return self._vartype

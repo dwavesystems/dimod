@@ -33,6 +33,7 @@ cdef class cyQM_template(cyQMBase):
     cdef cython.floating[::1] _energies(self, object samples_like, cython.floating signal=*)
     cdef void _set_linear(self, Py_ssize_t, bias_type)
     cdef cppVartype cppvartype(self, object) except? cppVartype.SPIN
+    cdef const cppQuadraticModel[bias_type, index_type]* data(self)
     cpdef bint is_linear(self)
     cpdef void scale(self, bias_type)
     cpdef Py_ssize_t num_interactions(self)

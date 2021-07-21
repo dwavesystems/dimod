@@ -753,4 +753,84 @@ SCENARIO("A quadratic model can be constructed from a binary quadratic model",
         }
     }
 }
+
+SCENARIO("The variables of a quadratic model can have their vartypes changed",
+         "[qm]") {
+    GIVEN("A quadratic model with a spin and a binary variable") {
+        auto qm = QuadraticModel<double>();
+        auto s = qm.add_variable(Vartype::SPIN);
+        auto x = qm.add_variable(Vartype::BINARY);
+
+        qm.linear(s) = 2;
+        qm.linear(x) = 4;
+        qm.set_quadratic(s, x, 3);
+
+        WHEN("The spin variable is changed to binary") {
+            qm.change_vartype(Vartype::BINARY, s);
+
+            THEN("the biases update appropriately") {
+                CHECK(qm.linear(s) == 4);
+                CHECK(qm.linear(x) == 1);
+                CHECK(qm.quadratic(s, x) == 6);
+                CHECK(qm.quadratic(x, s) == 6);
+                CHECK(qm.offset() == -2);
+
+                CHECK(qm.upper_bound(s) == 1);
+                CHECK(qm.lower_bound(s) == 0);
+                CHECK(qm.vartype(s) == Vartype::BINARY);
+            }
+        }
+
+        WHEN("The binary variable is changed to spin") {
+            CHECK(qm.linear(s) == 2);
+            CHECK(qm.linear(x) == 4);
+
+            qm.change_vartype(Vartype::SPIN, x);
+            auto t = x;
+
+            THEN("the biases update appropriately") {
+                CHECK(qm.linear(s) == 7. / 2);
+                CHECK(qm.linear(t) == 2);
+                CHECK(qm.quadratic(s, t) == 3. / 2);
+                CHECK(qm.quadratic(t, s) == 3. / 2);
+                CHECK(qm.offset() == 2);
+
+                CHECK(qm.upper_bound(t) == +1);
+                CHECK(qm.lower_bound(t) == -1);
+                CHECK(qm.vartype(t) == Vartype::SPIN);
+            }
+        }
+        WHEN("The spin variable is changed to integer") {
+            qm.change_vartype(Vartype::INTEGER, s);
+
+            THEN("the biases update appropriately") {
+                CHECK(qm.linear(s) == 4);
+                CHECK(qm.linear(x) == 1);
+                CHECK(qm.quadratic(s, x) == 6);
+                CHECK(qm.quadratic(x, s) == 6);
+                CHECK(qm.offset() == -2);
+
+                CHECK(qm.upper_bound(s) == 1);
+                CHECK(qm.lower_bound(s) == 0);
+                CHECK(qm.vartype(s) == Vartype::INTEGER);
+            }
+        }
+
+        WHEN("The vartype  and bounds are changed manually ") {
+            qm.vartype(s) = Vartype::BINARY;
+            qm.lower_bound(s) = -2;
+            qm.upper_bound(s) = 2;
+
+            THEN("the biases do not update") {
+                CHECK(qm.linear(s) == 2);
+                CHECK(qm.linear(x) == 4);
+                CHECK(qm.quadratic(s, x) == 3);
+                CHECK(qm.offset() == 0);
+                CHECK(qm.vartype(s) == Vartype::BINARY);
+                CHECK(qm.lower_bound(s) == -2);
+                CHECK(qm.upper_bound(s) == 2);
+            }
+        }
+    }
+}
 }  // namespace dimod

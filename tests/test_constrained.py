@@ -73,6 +73,12 @@ class TestAddDiscrete(unittest.TestCase):
         cqm = CQM()
         cqm.add_discrete('abc')
 
+    def test_label(self):
+        cqm = CQM()
+        label = cqm.add_discrete('abc', label='hello')
+        self.assertEqual(label, 'hello')
+        self.assertEqual(cqm.variables, 'abc')
+
 
 class TestAdjVector(unittest.TestCase):
     # this will be deprecated in the future

@@ -237,7 +237,8 @@ class ConstrainedQuadraticModel:
         return self.add_constraint_from_model(
             qm, sense, rhs=rhs, label=label, copy=False)
 
-    def add_discrete(self, variables: Collection[Variable]):
+    def add_discrete(self, variables: Collection[Variable],
+                     label: Optional[Hashable] = None) -> Hashable:
         """Add a iterable of binary variables as a disjoint one-hot constraint.
 
         Adds a special kind of one-hot constraint. These one-hot constraints
@@ -254,6 +255,9 @@ class ConstrainedQuadraticModel:
                 another discrete variable.
 
         """
+        if label is not None and label in self.constraints:
+            raise ValueError("a constraint with that label already exists")
+
         for v in variables:
             if v in self._discrete:
                 # todo: language around discrete variables?
@@ -268,7 +272,9 @@ class ConstrainedQuadraticModel:
 
         bqm = BinaryQuadraticModel('BINARY', dtype=np.float32)
         bqm.add_variables_from((v, 1) for v in variables)
-        self.discrete.add(self.add_constraint(bqm == 1))
+        label = self.add_constraint(bqm == 1, label=label)
+        self.discrete.add(label)
+        return label
 
     def add_variable(self, v: Variable, vartype: VartypeLike):
         """Add a variable to the model."""

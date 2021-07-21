@@ -100,6 +100,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         index_type add_variable(cppVartype) except+
         index_type add_variable(cppVartype, bias_type, bias_type) except +
         const_quadratic_iterator cbegin_quadratic()
+        void change_vartype(cppVartype, index_type) except +
         const_quadratic_iterator cend_quadratic()
         bint is_linear()
         bias_type& linear(index_type)

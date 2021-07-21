@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    ``cyBQM`` and ``cyQM`` fused types can now be cimported from the ``dimod``
+    namespace.
+upgrade:
+  - |
+    ``from dimod cimport cyBQM`` now is a fused type containing
+    ``cyBQM_float32`` and ``cyBQM_float64``. You can use the ``cyBQM``
+    containing ``cyAdjVectorBQM`` with ``from dimod.bqm cimport cyBQM``.

@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    ``BinaryQuadraticModel.data.vartype()`` is now accessed as a method rather
+    than as an attribute. This is consistent with
+    ``QuadraticModel.data.vartype()``.

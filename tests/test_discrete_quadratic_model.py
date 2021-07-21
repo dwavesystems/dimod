@@ -552,6 +552,24 @@ class TestConstraint(unittest.TestCase):
 
         self.assertTrue(dqm.num_variables() == num_dqm_vars)
 
+    def test_inequality_constraint_equality(self):
+        dqm = dimod.DQM()
+        expr = [((1669427, 0), 1, 1), ((1669427, 0), 2, 1),
+                ((1669427, 0), 3, 1), ((1669427, 0), 4, 1),
+               ]
+        # we want 1 <= sum(expr) <= 1
+        for i, j, k in expr:
+            if i not in dqm.variables:
+                dqm.add_variable(10, i)
+        slack_terms = dqm.add_linear_inequality_constraint(expr,
+                                             constant=0,
+                                             lb=1,
+                                             ub=1,
+                                             lagrange_multiplier=1,
+                                             label="test")
+
+        self.assertTrue(len(slack_terms) == 0)
+
     def test_inequality_constraint_log2(self):
         dqm = dimod.DQM()
         dqm.add_variable(5, label='x')

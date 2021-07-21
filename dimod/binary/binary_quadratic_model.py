@@ -117,7 +117,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         self.offset = offset
 
-        vartype = self.data.vartype
+        vartype = self.vartype
 
         if isinstance(quadratic, (abc.Mapping, abc.Iterator)):
             if isinstance(quadratic, abc.Mapping):
@@ -456,7 +456,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
         """
-        return self.data.vartype
+        return self.data.vartype()
 
     @classmethod
     def shapeable(cls) -> bool:
@@ -593,7 +593,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 ' with any value for state variables.')
             return []
 
-        if ub_c <= lb_c:
+        if ub_c < lb_c:
             raise ValueError(
                 f'The given constraint ({label}) is infeasible with any value'
                 ' for state variables.')

@@ -48,12 +48,8 @@ class pyBQM:
     def variables(self) -> Collection:
         return KeysView(self._adj)
 
-    @property
-    def vartype(self):
-        return self._vartype
-
     def __copy__(self):
-        new = type(self)(self.vartype)
+        new = type(self)(self._vartype)
         adj = new._adj
         for v, neighborhood in self._adj.items():
             adj[v] = neighborhood.copy()
@@ -62,7 +58,10 @@ class pyBQM:
 
     def add_linear(self, v: Variable, bias: Any):
         self._adj.setdefault(v, dict())
-        zero = type(bias)()
+        try:
+            zero = type(bias)()  # try to preserve the type
+        except TypeError:
+            zero = 0  # sometimes it cannot be constructed with no arguments
         self._adj[v][v] = self._adj[v].get(v, zero) + bias
 
     def add_linear_equality_constraint(self, *args, **kwargs):
@@ -76,7 +75,10 @@ class pyBQM:
         if u == v:
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
-        zero = type(bias)()
+        try:
+            zero = type(bias)()  # try to preserve the type
+        except TypeError:
+            zero = 0  # sometimes it cannot be constructed with no arguments
 
         # derive the linear types to match quadratic. This might not always
         # be what we want but it's as good a guess as any
@@ -102,11 +104,11 @@ class pyBQM:
                     self.add_quadratic(u, v, quadratic[u, v])
 
         # now handle the linear
-        if self.vartype is Vartype.SPIN:
+        if self._vartype is Vartype.SPIN:
             for v in range(num_variables):
                 # since s*s == 1
                 self.offset += quadratic[v, v]
-        elif self.vartype is Vartype.BINARY:
+        elif self._vartype is Vartype.BINARY:
             for v in range(num_variables):
                 # since x*x == x
                 self.add_linear(v, quadratic[v, v])
@@ -133,7 +135,7 @@ class pyBQM:
         vartype = as_vartype(vartype)
 
         # in place and we are already correct, so nothing to do
-        if self.vartype == vartype:
+        if self._vartype == vartype:
             return self
 
         if vartype == Vartype.BINARY:
@@ -347,3 +349,6 @@ class pyBQM:
 
     def update(self, *args, **kwargs):
         raise NotImplementedError  # defer to the caller
+
+    def vartype(self, v: Optional[Variable] = None) -> Vartype:
+        return self._vartype

@@ -101,6 +101,23 @@ class TestAlias(unittest.TestCase):
         self.assertIs(QM, QuadraticModel)
 
 
+class TestChangeVartype(unittest.TestCase):
+    def test_simple(self):
+        qm = QM()
+        a = qm.add_variable('SPIN', 'a')
+        qm.set_linear(a, 1.5)
+        qm.change_vartype('BINARY', a)
+        self.assertEqual(qm.energy({a: 1}), 1.5)
+        self.assertEqual(qm.energy({a: 0}), -1.5)
+        self.assertIs(qm.vartype(a), dimod.BINARY)
+
+    def test_invalid(self):
+        qm = QM()
+        a = qm.add_variable('INTEGER', 'a')
+        with self.assertRaises(TypeError):
+            qm.change_vartype('SPIN', a)
+
+
 class TestConstruction(unittest.TestCase):
     def test_dtype(self):
         self.assertEqual(QM().dtype, np.float64)  # default
@@ -249,6 +266,9 @@ class TestSpinToBinary(unittest.TestCase):
                     sample[v] = (sample[v] + 1) // 2
 
             self.assertEqual(energy, new.energy(sample))
+
+        self.assertIs(qm.vartype('r'), dimod.SPIN)
+        self.assertIs(new.vartype('r'), dimod.BINARY)
 
 
 class TestSymbolic(unittest.TestCase):
