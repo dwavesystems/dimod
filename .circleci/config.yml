@@ -26,6 +26,10 @@ jobs:
       - checkout
 
       - run:
+          name: Fix git checkout
+          command: git reset --hard
+
+      - run:
           name: Build wheels
           command: |
             for py in /opt/python/cp*/bin/python; do
@@ -454,7 +458,7 @@ workflows:
           name: test-linux-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
           # We could break each of these out into seperate jobs so that we
           # don't need to wait for the entire above matrix to complete, but
-          # this is cleaner
+          # this is cleaner.
           requires:
             - build-manylinux
           matrix:
