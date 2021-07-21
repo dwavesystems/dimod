@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix energy calculation when the lower bound (lb) equals the upper bound (lb)
+    in ``add_linear_equality_constraint``.
