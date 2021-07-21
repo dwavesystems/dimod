@@ -26,6 +26,10 @@ jobs:
       - checkout
 
       - run:
+          name: Fix git checkout
+          command: git reset --hard
+
+      - run:
           name: Build wheels
           command: |
             for py in /opt/python/cp*/bin/python; do
