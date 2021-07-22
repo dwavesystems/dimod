@@ -89,7 +89,7 @@ cdef class cyQM_template(cyQMBase):
             energies = np.empty(num_samples, dtype=np.float64)
 
         # alright, now let's calculate some energies!
-        cdef np.int8_t uspin, vspin
+        cdef np.int64_t uspin, vspin
         cdef Py_ssize_t ui, vi
         for si in range(num_samples):
             # offset
