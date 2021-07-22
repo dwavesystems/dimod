@@ -577,6 +577,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     template <class B, class I, class T>
     void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
                  const std::vector<T>& mapping) {
+        if (bqm.num_variables() == 0)
+            // nothing to do, other BQM is empty
+            return;
+
         if (bqm.vartype() != this->vartype()) {
             // we could do this without the copy, but for now let's just do
             // it simply
