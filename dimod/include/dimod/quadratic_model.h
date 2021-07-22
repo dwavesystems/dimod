@@ -577,10 +577,6 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     template <class B, class I, class T>
     void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
                  const std::vector<T>& mapping) {
-        if (bqm.num_variables() == 0)
-            // nothing to do, other BQM is empty
-            return;
-
         if (bqm.vartype() != this->vartype()) {
             // we could do this without the copy, but for now let's just do
             // it simply
@@ -590,6 +586,13 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             return;
         }
 
+        // offset
+        this->offset() += bqm.offset();
+
+        if (bqm.num_variables() == 0)
+            // nothing else to do, other BQM is empty
+            return;
+
         // make sure we're big enough
         T max_v = *std::max_element(mapping.begin(),
                                     mapping.begin() + bqm.num_variables());
@@ -598,9 +601,6 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         } else if ((size_type)max_v >= this->num_variables()) {
             this->resize(max_v + 1);
         }
-
-        // offset
-        this->offset() += bqm.offset();
 
         // linear
         for (size_type v = 0; v < bqm.num_variables(); ++v) {
