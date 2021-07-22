@@ -3175,3 +3175,21 @@ class TestConstraint(unittest.TestCase):
 
             self.assertAlmostEqual(bqm.energy(sample),
                                    sum(sample[v]*b for v, b in terms)**2)
+
+
+class TestAddBQM(unittest.TestCase):
+    @parameterized.expand(itertools.product(BQMs.items(), BQMs.items()))
+    def test_add_empty_bqm(self, BQM_info0, BQM_info1):
+        name0, BQM0 = BQM_info0
+        name1, BQM1 = BQM_info1
+
+        for vtype0, vtype1 in itertools.product(*[("BINARY", "SPIN")]*2):
+            empty = BQM0(vtype0)
+            self.assertEqual(empty, empty + BQM1(vtype1))
+            self.assertEqual(empty.change_vartype(vtype1),
+                             BQM1(vtype1) + empty)
+
+            nonempty = BQM0([[1]], vtype0)
+            self.assertEqual(nonempty, nonempty + BQM1(vtype1))
+            self.assertEqual(nonempty.change_vartype(vtype1),
+                             BQM1(vtype1) + nonempty)
