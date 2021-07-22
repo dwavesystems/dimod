@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix energy calculation when the lower bound (lb) equals the upper bound (lb)
+    in ``DiscreteQuadraticModel.add_linear_inequality_constraint`` and
+    ``BinaryQuadraticModel.add_linear_inequality_constraint``.

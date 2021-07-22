@@ -304,7 +304,7 @@ class DiscreteQuadraticModel:
         slack_upper_bound = int(ub_c - lb_c)
         if slack_upper_bound == 0:
             self.add_linear_equality_constraint(terms, lagrange_multiplier,
-                                                constant)
+                                                -ub_c)
             return []
         else:
             slack_terms = []
