@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix ``QuadraticModel.energies`` when given samples with values greater
+    than the maximum value representable by an 8 bit integer. Previously
+    samples were incorrectly cast to 8 bit integers.

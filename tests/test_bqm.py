@@ -3061,6 +3061,40 @@ class TestConstraint(unittest.TestCase):
                     self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
 
     @parameterized.expand(BQMs.items())
+    def test_inequality_equality(self, name, BQM):
+        bqm1 = BQM('BINARY')
+        slacks = bqm1.add_linear_inequality_constraint(
+            [('a', 1), ('b', 1), ('c', 1)],
+            constant=-1,
+            lb=0,
+            ub=0,
+            lagrange_multiplier=1.0,
+            label='a'
+        )
+        self.assertTrue(len(slacks) == 0)
+
+        bqm2 = BQM('BINARY')
+        slacks = bqm2.add_linear_inequality_constraint(
+            [('a', 1), ('b', 1), ('c', 1)],
+            constant=0,
+            lb=1,
+            ub=1,
+            lagrange_multiplier=1.0,
+            label='a'
+        )
+        self.assertTrue(len(slacks) == 0)
+
+        bqm_equal = BQM('BINARY')
+        bqm_equal.add_linear_equality_constraint(
+            [('a', 1), ('b', 1), ('c', 1)],
+            constant=-1,
+            lagrange_multiplier=1.0)
+
+        self.assertTrue(len(slacks) == 0)
+        self.assertEqual(bqm_equal, bqm1)
+        self.assertEqual(bqm_equal, bqm2)
+
+    @parameterized.expand(BQMs.items())
     def test_simple_constraint_iterator(self, name, BQM):
         bqm = BQM('BINARY')
         num_variables = 2
@@ -3141,3 +3175,25 @@ class TestConstraint(unittest.TestCase):
 
             self.assertAlmostEqual(bqm.energy(sample),
                                    sum(sample[v]*b for v, b in terms)**2)
+
+
+class TestAddBQM(unittest.TestCase):
+    @parameterized.expand(itertools.product(BQMs.values(), repeat=2))
+    def test_add_empty_bqm(self, BQM0, BQM1):
+        for vtype0, vtype1 in itertools.product(*[("BINARY", "SPIN")]*2):
+            empty = BQM0(vtype0)
+            self.assertEqual(empty, empty + BQM1(vtype1))
+            self.assertEqual(empty.change_vartype(vtype1),
+                             BQM1(vtype1) + empty)
+
+            empty_offset = BQM0(vtype0)
+            empty_offset.offset = 3
+            self.assertEqual(empty_offset, empty_offset + BQM1(vtype1))
+            self.assertEqual(empty_offset.change_vartype(vtype1),
+                             BQM1(vtype1) + empty_offset)
+
+            nonempty = BQM0([[1]], vtype0)
+            nonempty.offset = 3
+            self.assertEqual(nonempty, nonempty + BQM1(vtype1))
+            self.assertEqual(nonempty.change_vartype(vtype1),
+                             BQM1(vtype1) + nonempty)

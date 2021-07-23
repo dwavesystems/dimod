@@ -158,6 +158,15 @@ class TestEnergies(unittest.TestCase):
         self.assertEqual((2*x*s).energy({'x': 0, 's': 1}), 0)
         self.assertEqual((2*x*s+1).energy({'x': 0, 's': -1}), 1)
 
+    def test_integer(self):
+        i = Integer('i')
+
+        for s in np.geomspace(1, i.upper_bound('i'), num=20, dtype=np.int64):
+            sample = {'i': s}
+            self.assertEqual(i.energy(sample), s)
+            sample = {'i': -s}
+            self.assertEqual(i.energy(sample), -s)
+
 
 class TestFileSerialization(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])

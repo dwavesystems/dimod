@@ -554,21 +554,54 @@ class TestConstraint(unittest.TestCase):
 
     def test_inequality_constraint_equality(self):
         dqm = dimod.DQM()
-        expr = [((1669427, 0), 1, 1), ((1669427, 0), 2, 1),
-                ((1669427, 0), 3, 1), ((1669427, 0), 4, 1),
-               ]
+
+        expr = [('a', 1, 1), ('b', 2, 1),
+                ('c', 3, 1)]
         # we want 1 <= sum(expr) <= 1
         for i, j, k in expr:
             if i not in dqm.variables:
-                dqm.add_variable(10, i)
-        slack_terms = dqm.add_linear_inequality_constraint(expr,
-                                             constant=0,
-                                             lb=1,
-                                             ub=1,
-                                             lagrange_multiplier=1,
-                                             label="test")
+                dqm.add_variable(4, i)
 
+        dqm1 = dqm.copy()
+        dqm_equal = dqm.copy()
+
+        slack_terms = \
+            dqm.add_linear_inequality_constraint(expr,
+                                                 constant=0,
+                                                 lb=1,
+                                                 ub=1,
+                                                 lagrange_multiplier=1,
+                                                 label="a")
+        self.assertEqual(len(slack_terms), 0)
+
+        slack_terms =\
+            dqm1.add_linear_inequality_constraint(expr,
+                                                  constant=-1,
+                                                  lb=0,
+                                                  ub=0,
+                                                  lagrange_multiplier=1,
+                                                  label="a")
         self.assertTrue(len(slack_terms) == 0)
+
+        dqm_equal.add_linear_equality_constraint(expr,
+                                                 constant=-1,
+                                                 lagrange_multiplier=1)
+        for j in [0, 1]:
+            check = dqm.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
+            check1 = \
+                dqm1.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
+            for i in range(len(check)):
+                self.assertAlmostEqual(check[i], 0)
+                self.assertAlmostEqual(check1[i], 0)
+
+        for k in range(3):
+            check = dqm.to_numpy_vectors()[2][k] -\
+                     dqm_equal.to_numpy_vectors()[2][k]
+            check1 = dqm1.to_numpy_vectors()[2][k] -\
+                     dqm_equal.to_numpy_vectors()[2][k]
+            for i in range(len(check)):
+                self.assertAlmostEqual(check[i], 0)
+                self.assertAlmostEqual(check1[i], 0)
 
     def test_inequality_constraint_log2(self):
         dqm = dimod.DQM()
