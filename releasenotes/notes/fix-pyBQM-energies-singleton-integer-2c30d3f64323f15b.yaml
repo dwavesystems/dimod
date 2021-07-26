@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix ``BinaryQuadraticModel.energies`` for a ``BQM`` with ``dtype=object``
+    and a single variable with an integer bias. Previously it would raise
+    a ``numpy.core._exceptions._UFuncOutputCastingError``.

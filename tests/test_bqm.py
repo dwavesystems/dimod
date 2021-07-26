@@ -980,6 +980,23 @@ class TestEnergies(unittest.TestCase):
         energies = bqm.energies(np.asarray(samples))
         np.testing.assert_array_almost_equal(energies, [0])
 
+    def test_bug922(self):
+        # https://github.com/dwavesystems/dimod/issues/922
+        bqm = BinaryQuadraticModel([1], [[0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
+
+        bqm = BinaryQuadraticModel([1], {}, 0, 'SPIN', dtype=object)
+        bqm.energies([1])
+
+        bqm = BinaryQuadraticModel([.1], {}, 0, 'SPIN', dtype=object)
+        bqm.energies([1])
+
+        bqm = BinaryQuadraticModel([.1], [[0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
+
+        bqm = BinaryQuadraticModel([1], [[.0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
+
     @parameterized.expand(BQMs.items())
     def test_dtype(self, name, BQM):
         arr = np.arange(9).reshape((3, 3))
