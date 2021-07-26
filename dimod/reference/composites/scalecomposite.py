@@ -22,6 +22,8 @@ from dimod.core.composite import ComposedSampler
 from dimod.decorators import nonblocking_sample_method
 from dimod.sampleset import SampleSet
 
+import warnings
+
 __all__ = ['ScaleComposite']
 
 
@@ -132,6 +134,35 @@ class ScaleComposite(ComposedSampler):
 
         if scalar == 0:
             raise ValueError('scalar must be non-zero')
+
+        min_range_lim = self.child.properties['per_qubit_coupling_range'][0]
+        max_range_lim = self.child.properties['per_qubit_coupling_range'][1]
+
+        total_coupling_range = {v: sum(bqm.adj[v].values()) 
+                                for v in bqm.variables}
+
+        min_coupling_range = min(total_coupling_range.values())
+        max_coupling_range = max(total_coupling_range.values())
+
+        if (min_coupling_range < min_range_lim
+                                       or max_coupling_range > max_range_lim):
+            warnings.warn(
+                f'The per_qubit_coupling_range is violated after scaling.'
+                ' The problem is rescaled with respect to the coupling range.'
+                ' No variables, interactions, or offset are ignored.')
+            
+            # undoing the previous scaling byrestoring the original bqm 
+            bqm = original_bqm.copy()
+
+            # rescaling 
+            inv_scalar = max(min_coupling_range / min_range_lim, 
+                             max_coupling_range / max_range_lim)
+            scalar = 1.0 / inv_scalar
+
+            bqm.scale(scalar,
+                      ignored_variables=[],
+                      ignored_interactions=[],
+                      ignore_offset=[])
 
         sampleset = self.child.sample(bqm, **parameters)
 
