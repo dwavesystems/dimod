@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Promote dwave-preprocessing to a full dependency of dimod to avoid issues 
+    that occur when dimod is a required package but dwave-preprocessing is not.
+upgrade:
+  - |
+    The ``preprocessing`` extra install argument has been removed.
