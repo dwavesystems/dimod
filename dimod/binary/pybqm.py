@@ -185,7 +185,10 @@ class pyBQM:
             raise ValueError("variable_order does not match the number of "
                              "variables")
 
-        ldata = np.asarray([self.get_linear(v) for v in labels])
+        ldata = np.asarray([self.get_linear(v) for v in labels], dtype=dtype)
+
+        if dtype is None and np.issubdtype(ldata.dtype, np.number):
+            ldata = np.asarray(ldata, dtype=np.float64)
 
         label_to_idx = {v: idx for idx, v in enumerate(labels)}
         irow = []
@@ -198,7 +201,7 @@ class pyBQM:
 
         irow = np.asarray(irow, dtype=int)  # type: ignore[assignment]
         icol = np.asarray(icol, dtype=int)  # type: ignore[assignment]
-        qdata = np.asarray(qdata)  # type: ignore[assignment]
+        qdata = np.asarray(qdata, dtype=dtype)  # type: ignore[assignment]
 
         energies = samples.dot(ldata)
         energies += (samples[:, irow]*samples[:, icol]).dot(qdata)
