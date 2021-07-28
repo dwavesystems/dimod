@@ -91,6 +91,35 @@ class TestAdjVector(unittest.TestCase):
         self.assertIsInstance(cqm.constraints[label].lhs, BQM)
 
 
+class TestBounds(unittest.TestCase):
+    def test_inconsistent(self):
+        i0 = Integer('i')
+        i1 = Integer('i', upper_bound=1)
+        i2 = Integer('i', lower_bound=-2)
+
+        cqm = CQM()
+        cqm.set_objective(i0)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(i1 <= 1)
+
+        cqm = CQM()
+        cqm.add_constraint(i0 <= 1)
+        with self.assertRaises(ValueError):
+            cqm.set_objective(i2)
+
+    def test_later_defn(self):
+        i0 = Integer('i')
+        i1 = Integer('i', upper_bound=1)
+
+        cqm = CQM()
+        cqm.add_variable('i', 'INTEGER')
+        cqm.set_objective(i0)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(i1 <= 1)
+
+        cqm.add_variable('i', 'INTEGER')
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()

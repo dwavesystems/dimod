@@ -19,8 +19,7 @@ import uuid
 import zipfile
 
 from numbers import Number
-from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection
-# from typing import Iterable as Iterable_t
+from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
 
 import numpy as np
 
@@ -45,17 +44,38 @@ class TypedVariables(Variables):
     def __init__(self):
         super().__init__()
         self.vartypes: list[Vartype] = []
+        self.lower_bounds: Dict[Variable, Float] = {}
+        self.upper_bounds: Dict[Variable, Float] = {}
 
-    def _append(self, vartype: VartypeLike, v: Optional[Variable] = None,
-                permissive: bool = False) -> Variable:
-        if permissive and v is not None and self.count(v):
-            if as_vartype(vartype, extended=True) != self.vartype(v):
-                raise ValueError("inconsistent vartype")
-            return v
+    def _append(self, vartype: VartypeLike, v: Variable,
+                *, lower_bound: Optional[Bias] = None,
+                upper_bound: Optional[Bias] = None) -> Variable:
+        """Add the variable if it is missing, otherwise check that it matches
+        the existing vartype/bounds.
+
+        Bounds are ignored when the vartype is SPIN or BINARY.
+        """
+        vartype = as_vartype(vartype, extended=True)
+
+        if self.count(v):
+            if vartype != self.vartypes[self.index(v)]:
+                raise TypeError(f"variable {v!r} already exists with a different vartype")
+            if vartype is not vartype.BINARY and vartype is not Vartype.SPIN:
+                if lower_bound is not None and lower_bound != self.lower_bounds.setdefault(v, lower_bound):
+                    raise ValueError(
+                        f"variable {v!r} has already been added with a different lower bound")
+                if upper_bound is not None and upper_bound != self.upper_bounds.setdefault(v, upper_bound):
+                    raise ValueError(
+                        f"variable {v!r} has already been added with a different lower bound")
         else:
             v = super()._append(v)
-            self.vartypes.append(as_vartype(vartype, extended=True))
-            return v
+            self.vartypes.append(vartype)
+            if lower_bound is not None:
+                self.lower_bounds[v] = lower_bound
+            if upper_bound is not None:
+                self.upper_bounds[v] = upper_bound
+
+        return v
 
     def _extend(self, *args, **kwargs):
         raise NotImplementedError
@@ -86,6 +106,23 @@ class ConstrainedQuadraticModel:
         objective = BinaryQuadraticModel('BINARY')
         self._objective: Union[BinaryQuadraticModel, QuadraticModel] = objective
         return objective
+
+    def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
+        # todo: singledispatchmethod in 3.8+
+        if isinstance(model, (BinaryQuadraticModel, BQMabc)):
+            vartype = model.vartype
+
+            for v in model.variables:
+                self.variables._append(vartype, v)
+
+        elif isinstance(model, QuadraticModel):
+            for v in model.variables:
+                # for spin, binary variables the bounds are ignored anyway
+                self.variables._append(model.vartype(v), v,
+                                       lower_bound=model.lower_bound(v),
+                                       upper_bound=model.upper_bound(v))
+        else:
+            raise TypeError("model should be a QuadraticModel or a BinaryQuadraticModel")
 
     def add_constraint(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add constraints."""
@@ -137,24 +174,10 @@ class ConstrainedQuadraticModel:
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
-        if isinstance(qm, (BinaryQuadraticModel, BQMabc)):
-            qm = as_bqm(qm, copy=False)  # handle legacy BQM types
-            vartype = qm.vartype
-            for v in qm.variables:
-                if v in variables and variables.vartype(v) != vartype:
-                    raise ValueError(f"{v!r} has already been added with "
-                                     f"vartype {variables.vartype(v).name}")
+        if isinstance(qm, BQMabc):
+            qm = as_bqm(qm)  # handle legacy BQMs
 
-            for v in qm.variables:
-                variables._append(vartype, v, permissive=True)
-        else:
-            for v in qm.variables:
-                if v in variables and variables.vartype(v) != qm.vartype(v):
-                    raise ValueError(f"{v!r} has already been added with "
-                                     f"vartype {variables.vartype(v).name}")
-
-            for v in qm.variables:
-                variables._append(qm.vartype(v), v, permissive=True)
+        self._add_variables_from(qm)
 
         if copy:
             qm = qm.copy()
@@ -266,14 +289,11 @@ class ConstrainedQuadraticModel:
                 raise ValueError(f"variable {v!r} has already been added but is not BINARY")
 
         # we can! So add them
-        for v in variables:
-            self.add_variable(v, Vartype.BINARY)
-        self._discrete.update(variables)
-
         bqm = BinaryQuadraticModel('BINARY', dtype=np.float32)
         bqm.add_variables_from((v, 1) for v in variables)
         label = self.add_constraint(bqm == 1, label=label)
         self.discrete.add(label)
+        self._discrete.update(variables)
         return label
 
     def add_variable(self, v: Variable, vartype: VartypeLike):
@@ -346,23 +366,10 @@ class ConstrainedQuadraticModel:
 
     def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
         """Set the objective of the constrained quadratic model."""
-        variables = self.variables
+        self._add_variables_from(objective)
 
-        if isinstance(objective, (BinaryQuadraticModel, BQMabc)):
-            objective = as_bqm(objective, copy=False)  # handle legacy BQM types
-
-            def vartype(v):
-                return objective.vartype
-        else:
-            vartype = objective.vartype
-
-        for v in objective.variables:
-            if v in variables and variables.vartype(v) != vartype(v):
-                raise ValueError(f"mismatch between variable {v!r}")
-
-        # ok, everything checks out so let's add it
-        for v in objective.variables:
-            variables._append(vartype(v), v, permissive=True)
+        if isinstance(objective, BQMabc):  # handle legacy BQMs
+            objective = as_bqm(objective)
 
         self._objective = objective
 
