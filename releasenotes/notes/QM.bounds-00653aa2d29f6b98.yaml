@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Add ``QuadraticModel.set_upper_bound`` and
+    ``QuadraticModel.set_lower_bound`` methods.
+fixes:
+  - |
+    When a ``QuadraticModel`` already has an integer variable, adding it
+    with ``QuadraticModel.add_variable`` with different lower or upper bounds
+    now correctly raises an exception. Likewise, adding or multiplying the
+    same variable symbolically with different bounds will also raise an
+    exception.

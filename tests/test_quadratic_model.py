@@ -80,6 +80,19 @@ class TestAddVariable(unittest.TestCase):
         self.assertEqual(qm.lower_bound(k), -50)
         self.assertEqual(qm.upper_bound(k), 50)
 
+    def test_add_integer_with_contradicting_ub_lb(self):
+        qm = QM()
+        qm.add_variable('INTEGER', 'i', lower_bound=-1, upper_bound=103)
+
+        with self.assertRaises(ValueError):
+            qm.add_variable('INTEGER', 'i', lower_bound=-2)
+
+        with self.assertRaises(ValueError):
+            qm.add_variable('INTEGER', 'i', upper_bound=10)
+
+        qm.add_variable('INTEGER', 'i', lower_bound=-1)
+        qm.add_variable('INTEGER', 'i', upper_bound=103, lower_bound=-1)
+
 
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
@@ -99,6 +112,96 @@ class TestAddQuadratic(unittest.TestCase):
 class TestAlias(unittest.TestCase):
     def test_alias(self):
         self.assertIs(QM, QuadraticModel)
+
+
+class TestBounds(unittest.TestCase):
+    def test_copy(self):
+        i = Integer('i', lower_bound=-10, upper_bound=10)
+
+        j = i.copy()
+
+        self.assertEqual(j.lower_bound('i'), -10)
+        self.assertEqual(j.upper_bound('i'), 10)
+
+    def test_inconsistent(self):
+        i0 = Integer('i', lower_bound=-7, upper_bound=14)
+        i1 = Integer('i', lower_bound=-7, upper_bound=140)
+
+        with self.assertRaises(ValueError):
+            i0 + i1
+
+        with self.assertRaises(ValueError):
+            i0 - i1
+
+        with self.assertRaises(ValueError):
+            i0*i1
+
+    @parameterized.expand([(np.float64,), (np.float32,)])
+    def test_set_lower_bound(self, dtype):
+        qm = QuadraticModel(dtype=dtype)
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        # cannot set less than max_integer
+        with self.assertRaises(ValueError):
+            qm.set_lower_bound('i', np.finfo(dtype).min)
+
+        # cannot set for non-integer
+        with self.assertRaises(ValueError):
+            qm.set_lower_bound('s', -2)
+        with self.assertRaises(ValueError):
+            qm.set_lower_bound('x', 10)
+
+        # cannot set one greater than the current upper bound
+        with self.assertRaises(ValueError):
+            qm.set_lower_bound('i', qm.upper_bound('i') + 1)
+
+        qm.set_lower_bound('i', -10)
+        self.assertEqual(qm.lower_bound('i'), -10)
+
+        qm.set_lower_bound('i', -11.3)
+        self.assertEqual(qm.lower_bound('i'), -11)
+
+    @parameterized.expand([(np.float64,), (np.float32,)])
+    def test_set_upper_bound(self, dtype):
+        qm = QuadraticModel(dtype=dtype)
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        # cannot set less than max_integer
+        with self.assertRaises(ValueError):
+            qm.set_upper_bound('i', np.finfo(dtype).max)
+
+        # cannot set for non-integer
+        with self.assertRaises(ValueError):
+            qm.set_upper_bound('s', -2)
+        with self.assertRaises(ValueError):
+            qm.set_upper_bound('x', 10)
+
+        # cannot set one less than the current lower bound
+        with self.assertRaises(ValueError):
+            qm.set_upper_bound('i', qm.lower_bound('i') - 1)
+
+        qm.set_upper_bound('i', 10)
+        self.assertEqual(qm.upper_bound('i'), 10)
+
+        qm.set_upper_bound('i', 11.3)
+        self.assertEqual(qm.upper_bound('i'), 11)
+
+    def test_symbolic_mul(self):
+        i = Integer('i', lower_bound=-10, upper_bound=10)
+        new = i*i
+
+        self.assertEqual(new.lower_bound('i'), -10)
+        self.assertEqual(new.upper_bound('i'), 10)
+
+    def test_symbolic_add(self):
+        i = Integer('i', lower_bound=-10, upper_bound=10)
+        new = i+i
+        self.assertEqual(new.lower_bound('i'), -10)
+        self.assertEqual(new.upper_bound('i'), 10)
 
 
 class TestChangeVartype(unittest.TestCase):

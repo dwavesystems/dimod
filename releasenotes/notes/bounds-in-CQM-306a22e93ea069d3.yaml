@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    When a ``ConstrainedQuadraticModel`` already has an integer variable,
+    adding it as part of a constraint or objective with different lower or
+    upper bounds now correctly raises an exception.

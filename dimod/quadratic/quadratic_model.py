@@ -205,9 +205,13 @@ class QuadraticModel(QuadraticViewsMixin):
             new = type(self)(dtype=self.dtype)
 
             for v in self.variables:
-                new.add_variable(self.vartype(v), v)
+                new.add_variable(self.vartype(v), v,
+                                 lower_bound=self.lower_bound(v),
+                                 upper_bound=self.upper_bound(v))
             for v in other.variables:
-                new.add_variable(other.vartype(v), v)
+                new.add_variable(other.vartype(v), v,
+                                 lower_bound=other.lower_bound(v),
+                                 upper_bound=other.upper_bound(v))
 
             self_offset = self.offset
             other_offset = other.offset
@@ -552,6 +556,14 @@ class QuadraticModel(QuadraticViewsMixin):
         """Return the lower bound on variable `v`."""
         return self.data.lower_bound
 
+    def set_lower_bound(self, v: Variable, lb: int):
+        """Set the lower bound for integer variable `v`."""
+        return self.data.set_lower_bound(v, lb)
+
+    def set_upper_bound(self, v: Variable, ub: int):
+        """Set the upper bound for integer variable `v`."""
+        return self.data.set_upper_bound(v, ub)
+
     @forwarding_method
     def reduce_linear(self, function: Callable,
                       initializer: Optional[Bias] = None) -> Any:
@@ -721,12 +733,21 @@ class QuadraticModel(QuadraticViewsMixin):
         # this can be improved a great deal with c++, but for now let's use
         # python for simplicity
 
-        if any(v in self.variables and self.vartype(v) != other.vartype(v)
-               for v in other.variables):
-            raise ValueError("given quadratic model has variables with conflicting vartypes")
+        for v in other.variables:
+            if v not in self.variables:
+                continue
+            if self.vartype(v) != other.vartype(v):
+                raise ValueError(f"conflicting vartypes: {v!r}")
+            if self.lower_bound(v) != other.lower_bound(v):
+                raise ValueError(f"conflicting lower bounds: {v!r}")
+            if self.upper_bound(v) != other.upper_bound(v):
+                raise ValueError(f"conflicting upper bounds: {v!r}")
 
         for v in other.variables:
-            self.add_linear(self.add_variable(other.vartype(v), v), other.get_linear(v))
+            self.add_linear(self.add_variable(other.vartype(v), v,
+                                              lower_bound=other.lower_bound(v),
+                                              upper_bound=other.upper_bound(v)),
+                            other.get_linear(v))
 
         for u, v, bias in other.iter_quadratic():
             self.add_quadratic(u, v, bias)
@@ -748,11 +769,12 @@ QM = QuadraticModel
 
 
 def Integer(label: Variable, bias: Bias = 1,
-            dtype: Optional[DTypeLike] = None) -> QuadraticModel:
+            dtype: Optional[DTypeLike] = None,
+            *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
     if label is None:
         raise TypeError("label cannot be None")
     qm = QM(dtype=dtype)
-    v = qm.add_variable(Vartype.INTEGER, label)
+    v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)
     return qm
 
