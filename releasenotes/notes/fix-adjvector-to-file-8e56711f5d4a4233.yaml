@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix (deprecated) ``AdjVectorBQM.to_file`` and ``AdjVectorBQM.from_file``.
+    See `#898 <https://github.com/dwavesystems/dimod/issues/898>`_.
