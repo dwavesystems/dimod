@@ -120,6 +120,25 @@ class TestBounds(unittest.TestCase):
         cqm.add_variable('i', 'INTEGER')
 
 
+class TestCopy(unittest.TestCase):
+    def test_deepcopy(self):
+        from copy import deepcopy
+
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.set_objective(i + s + x)
+        constraint = cqm.add_constraint(i + s + x <= 1)
+
+        new = deepcopy(cqm)
+
+        self.assertTrue(new.objective.is_equal(cqm.objective))
+        self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()

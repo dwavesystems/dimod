@@ -72,6 +72,10 @@ class Integers(Container):
         except TypeError:
             return False
 
+    def __deepcopy__(self, memo):
+        memo[id(self)] = self
+        return self
+
 
 integers = Integers()
 

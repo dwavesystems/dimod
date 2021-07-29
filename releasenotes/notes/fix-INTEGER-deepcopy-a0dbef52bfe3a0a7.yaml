@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Make ``dimod.INTEGER`` correctly deepcopy-able.
