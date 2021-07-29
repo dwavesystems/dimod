@@ -12,6 +12,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+Make dimod's C++ code available to Cython.
+
+If, for example, you wished to access dimod's C++ BinaryQuadraticModel
+implementation in an external library, you use
+
+>>> from dimod.libcpp cimport cppBinaryQuadraticModel
+
+A convention of prepending 'cpp' to the classes and types is followed in
+order to differentiate the C++ classes from Python and Cython classes.
+
+Note that in some cases the Cython declarations do not perfectly match the
+C++ ones because these declarations are only used by Cython as a guide to
+generate the relevant C++ code.
+
+"""
+
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 

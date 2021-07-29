@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    Remove ``dimod.meta`` namespace. Its functionality, ``SamplerABCMeta`` and
+    ``samplemixinmethod``, has been migrated to the ``dimod.core.sampler``
+    namespace.
