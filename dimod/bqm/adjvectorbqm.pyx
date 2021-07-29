@@ -592,8 +592,12 @@ cdef class cyAdjVectorBQM:
             :func:`~dimod.serialization.fileview.load`
 
         """
+        # this is not very efficient, but since AdjVectorBQM is deprecated
+        # simplicity trumps performance.
         from dimod.serialization.fileview import load
-        return load(file_like, cls=cls)
+        obj = cls.__new__(cls)
+        obj._init_bqm(load(file_like))
+        return obj
 
     @classmethod
     @cython.boundscheck(False)
@@ -1001,7 +1005,7 @@ cdef class cyAdjVectorBQM:
 
         self.bqm_.set_quadratic(ui, vi, b)
 
-    def to_file(self):
+    def to_file(self, *args, **kwargs):
         """View the BQM as a file-like object.
 
         See also:
@@ -1012,8 +1016,12 @@ cdef class cyAdjVectorBQM:
             :func:`~dimod.serialization.fileview.FileView`
 
         """
-        from dimod.serialization.fileview import FileView
-        return FileView(self)
+        # this is not very efficient, but since AdjVectorBQM is deprecated
+        # simplicity trumps performance.
+        # technically it will mis-mark the __type__ in the header, but
+        # since we ignore that on deserialization, it doesn't matter
+        from dimod.binary.binary_quadratic_model import BQM
+        return BQM(self, dtype=np.float64).to_file(*args, **kwargs)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
