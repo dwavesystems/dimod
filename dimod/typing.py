@@ -12,6 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+Type hints for common dimod inputs.
+"""
+
 from typing import Hashable, Union
 
 import numpy as np
@@ -20,7 +24,7 @@ from dimod.vartypes import VartypeLike
 
 __all__ = ['Bias',
            'Variable',
-           'VartypeLike', 'ExtendedVartypeLike',
+           'VartypeLike',
            ]
 
 
