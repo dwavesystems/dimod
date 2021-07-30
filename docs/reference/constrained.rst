@@ -1,0 +1,56 @@
+.. _cqm:
+
+============================
+Constrained Quadratic Models
+============================
+
+Class
+=====
+
+.. currentmodule:: dimod
+
+.. autoclass:: ConstrainedQuadraticModel
+
+.. autoclass:: CQM
+
+Attributes
+----------
+
+.. autosummary::
+   :toctree: generated/
+
+   ConstrainedQuadraticModel.constraints
+   ConstrainedQuadraticModel.objective
+   ConstrainedQuadraticModel.variables
+
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   ConstrainedQuadraticModel.add_constraint
+   ConstrainedQuadraticModel.add_constraint_from_comparison
+   ConstrainedQuadraticModel.add_constraint_from_iterable
+   ConstrainedQuadraticModel.add_constraint_from_model
+   ConstrainedQuadraticModel.add_discrete
+   ConstrainedQuadraticModel.add_variable
+   ConstrainedQuadraticModel.from_file
+   ConstrainedQuadraticModel.num_biases
+   ConstrainedQuadraticModel.num_quadratic_variables
+   ConstrainedQuadraticModel.set_objective
+   ConstrainedQuadraticModel.to_file
+   ConstrainedQuadraticModel.vartype
+
+
+Functions
+=========
+
+Generating constrained quadratic models:
+
+.. currentmodule:: dimod.generators
+
+.. autosummary::
+   :toctree: generated/
+
+   bin_packing

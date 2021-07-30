@@ -9,6 +9,7 @@ Reference Documentation
    :maxdepth: 2
 
    bqm
+   constrained
    sampler_composites/index
    sampleset
    dqm
