@@ -109,8 +109,8 @@ class ConstrainedQuadraticModel:
     :math:`C_{\rm ineq.}, C_{\rm eq,}` are the number of inequality and
     equality constraints respectively.
 
-    The objective and constraints as encoded as either :class:`.QuadraticModel`
-    or :class:`.BinaryQuadraticModel` depending on the variable types uses.
+    The objective and constraints are encoded as either :class:`.QuadraticModel`
+    or :class:`.BinaryQuadraticModel` depending on the variable types used.
 
     Example:
 
@@ -128,7 +128,7 @@ class ConstrainedQuadraticModel:
         >>> weights = [.9, .7, .2, .1]
         >>> capacity = 1
 
-        Let :math:`y_i` indicate that we used bin :math:`j`. We know that we
+        Let :math:`y_j` indicate that we used bin :math:`j`. We know that we
         will use four or fewer total bins.
 
         >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
@@ -164,7 +164,7 @@ class ConstrainedQuadraticModel:
 
         Finally, we need to enforce the limits on each bin. We can express
         this constraint, for a given bin :math:`j`, with
-        :math:`\sum_i x{i, j} * w_i <= c` where :math:`w_i` is the weight
+        :math:`\sum_i x_{i, j} * w_i <= c` where :math:`w_i` is the weight
         of item :math:`i` and :math:`c` is the capacity.
 
         >>> for j in range(len(weights)):

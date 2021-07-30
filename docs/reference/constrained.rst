@@ -30,9 +30,9 @@ Methods
    :toctree: generated/
 
    ConstrainedQuadraticModel.add_constraint
-   ConstrainedQuadraticModel.add_constraint_from_model
    ConstrainedQuadraticModel.add_constraint_from_comparison
    ConstrainedQuadraticModel.add_constraint_from_iterable
+   ConstrainedQuadraticModel.add_constraint_from_model
    ConstrainedQuadraticModel.add_discrete
    ConstrainedQuadraticModel.add_variable
    ConstrainedQuadraticModel.from_file
