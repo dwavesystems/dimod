@@ -15,7 +15,7 @@ When using such samplers to handle problems with constraints, you typically
 formulate the constraints as penalties: see
 :std:doc:`sysdocs_gettingstarted:doc_getting_started`.
 (:ref:`Constrained models <intro_cqm>`, such as the
-:class:`ConstrainedQuadraticModel`, can support constraints natively.)     
+:class:`ConstrainedQuadraticModel`, can support constraints natively.)
 
 Quadratic Models
 ================
@@ -31,12 +31,7 @@ models used by samplers such as the D-Wave system.
 
 For an introduction to BQMs, see :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
-dimod can represent BQMs with classes suited to different needs for
-performance and ease of use. Beginners might start with the simple Python
-:ref:`AdjDictBQM <adjdictbqm_dimod>` class (:class:`dimod.BinaryQuadraticModel`),
-and later switch to a higher-performing class with a C++ implementation.
-
-For descriptions of all supported BQM representations, see :ref:`bqm`.
+For a description of the BQM class and its methods, see :ref:`bqm`.
 
 BQM Generation
 --------------
