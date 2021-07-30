@@ -1,6 +1,27 @@
-.. _intro_bqm:
+.. _intro_qm:
 
-=======================
+===============================
+Quadratic Models: Unconstrained
+===============================
+
+:term:`Sampler`\ s such as D-Wave quantum computers accept unconstrained models
+(binary quadratic models, for D-Wave systems: binary because variables are
+represented by qubits that return two states and quadratic because you can
+configure coupling strengths between pairs of qubits). Hybrid quantum-classical
+samplers can accept non-binary models; for example, quadratic models with
+discrete variables.
+
+When using such samplers to handle problems with constraints, you typically
+formulate the constraints as penalties: see
+:std:doc:`sysdocs_gettingstarted:doc_getting_started`.
+(:ref:`Constrained models <intro_cqm>`, such as the
+:class:`ConstrainedQuadraticModel`, can support constraints natively.)     
+
+Quadratic Models
+================
+
+dimod provides a :term:`quadratic model` (QM) class
+
 Binary Quadratic Models
 =======================
 
@@ -18,7 +39,7 @@ and later switch to a higher-performing class with a C++ implementation.
 For descriptions of all supported BQM representations, see :ref:`bqm`.
 
 BQM Generation
-==============
+--------------
 
 The small four-node `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
 problem shown in this figure,
@@ -59,7 +80,7 @@ Additionally, dimod provides a variety of :ref:`BQM generators <bqm>`.
 >>> map_bqm = dimod.generators.random.ran_r(1, 7, cls=dimod.AdjVectorBQM)
 
 BQM Attributes
-==============
+--------------
 
 dimod's BQM objects provide access to a number of attributes and views. See the
 documentation for a particular type of BQM class under :ref:`bqm`.
@@ -71,7 +92,7 @@ documentation for a particular type of BQM class under :ref:`bqm`.
 [0, 1, 2, 3, 4, 5, 6]
 
 BQM Methods
-===========
+-----------
 
 BQMs support a large number of methods, many common, some particular to a class,
 described under the documentation for :ref:`each class <bqm>`, to enable you to
@@ -82,3 +103,11 @@ build and manipulate BQMs.
 >>> map_bqm.remove_interaction(5, 6)
 >>> map_bqm.num_interactions
 20
+
+Discrete Quadratic Models
+=========================
+
+For an introduction to DQMs, see :std:doc:`Discrete Quadratic Models <oceandocs:concepts/dqm>`.
+
+See examples of using `Leap <https://cloud.dwavesys.com/leap>`_ hybrid DQM
+solvers in the `dwave-examples GitHub repository <https://github.com/dwave-examples>`_.

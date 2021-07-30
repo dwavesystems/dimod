@@ -5,7 +5,7 @@ Samplers and Composites
 =======================
 
 dimod includes reference :term:`sampler`\ s and :term:`composite`\ s for processing
-binary quadratic models (and higher order models) and refining sampling, and for
+quadratic (and higher order) models and refining sampling, and for
 testing your code during development.
 
 For an introduction to samplers and composites, see
@@ -18,9 +18,10 @@ Using Samplers
 
 To find solutions to the small four-node
 `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
-BQM generated in :ref:`intro_bqm`, shown again in the figure below, you can use
-one of dimod's reference samplers: its :class:`~dimod.reference.samplers.ExactSolver`
-test sampler, for example, calculates the energy of all possible samples.
+BQM generated in the :ref:`intro_qm` section, shown again in the figure below,
+you can use one of dimod's reference samplers: its
+:class:`~dimod.reference.samplers.ExactSolver` test sampler, for example,
+calculates the energy of all possible samples.
 
 .. figure:: ../_images/four_node_star_graph.png
     :align: center
