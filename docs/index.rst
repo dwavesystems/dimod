@@ -9,14 +9,14 @@ dimod
   :end-before: index-end-marker1
 
 (For explanations of the terminology, see the
-:std:doc:`Ocean glossary <oceandocs:concepts/glossary>`.)
+:std:doc:`Ocean glossary <oceandocs:concepts/index>`.)
 
 Example Usage
 -------------
 
-dimod's :class:`~dimod.reference.samplers.ExactSolver` reference
-sampler, a test brute-force solver for small problems, finds all solutions
-of a two-variable QUBO.
+Find all solutions to a two-variable BQM using dimod's 
+:class:`~dimod.reference.samplers.ExactSolver` reference
+sampler, a brute-force solver useful for testing code on small problems.
 
 .. include:: README.rst
   :start-after: index-start-marker2
@@ -75,5 +75,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
-* :ref:`glossary`
