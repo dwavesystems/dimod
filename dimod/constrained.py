@@ -12,6 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+Constrained Quadratic Model class.
+"""
+
 import json
 import re
 import tempfile
@@ -85,15 +89,113 @@ class TypedVariables(Variables):
 
 
 class ConstrainedQuadraticModel:
-    def __init__(self):
-        self.variables = TypedVariables()
-        self.labels = Variables()
-        self.constraints = {}
+    r"""A constrained quadratic model.
 
+    Constrained quadratic models are problems of the form:
+
+    .. math::
+
+        \begin{align}
+            {\rm minimize:} \, & \sum_{i} a_i x_i + \sum_{i<j} b_{ij} x_i x_j + c, \\
+            {\rm subject}\,{\rm to:} \,
+            & \sum_i a_i^{(c)} x_i + \sum_{i<j} b_{ij}^{(c)} x_i x_j+ c^{(c)} \le 0,
+            \quad c=1, \dots, C_{\rm ineq.}, \\
+            & \sum_i a_i^{(d)} x_i + \sum_{i<j} b_{ij}^{(d)} x_i x_j + c^{(d)} = 0,
+            \quad d=1, \dots, C_{\rm eq.},
+        \end{align}
+
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    variables, :math:`a_{i}, b_{ij}, c` are real values and
+    :math:`C_{\rm ineq.}, C_{\rm eq,}` are the number of inequality and
+    equality constraints respectively.
+
+    The objective and constraints as encoded as either :class:`.QuadraticModel`
+    or :class:`.BinaryQuadraticModel` depending on the variable types uses.
+
+    Example:
+
+        Solve a simple `bin packing problem <https://w.wiki/3jz4>`_. In this
+        problem we wish to pack a set of items of different weights into
+        the smallest number of bins possible.
+
+        See :func:`~dimod.generators.bin_packing` for a general function to
+        generate bin packing problems. We follow the same naming conventions
+        in this example.
+
+        Let's start with four object weights and assume that each bin has a
+        capacity of 1.
+
+        >>> weights = [.9, .7, .2, .1]
+        >>> capacity = 1
+
+        Let :math:`y_i` indicate that we used bin :math:`j`. We know that we
+        will use four or fewer total bins.
+
+        >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
+
+        Let :math:`x_{i,j}` indicate that we put item :math:`i` in bin
+        :math:`j`.
+
+        >>> x = [[dimod.Binary(f'x_{i}_{j}') for j in range(len(weights))]
+        ...      for i in range(len(weights))]
+
+        Create an empty constrained quadratic model with no objective or
+        constraints.
+
+        >>> cqm = dimod.ConstrainedQuadraticModel()
+
+        We wish to minimize the number of bins used. Therefore our objective
+        is to minimize the value of :math:`\sum_j y_j`.
+
+        >>> cqm.set_objective(sum(y))
+
+        We also need to enforce the constraint that each item can only go
+        in one bin. We can express this constraint, for a given item :math:`i`,
+        with :math:`\sum_j x_{i, j} == 1`. Note that the label of each
+        constraint is returned so that we can access them in the future if
+        desired.
+
+        >>> for i in range(len(weights)):
+        ...     cqm.add_constraint(sum(x[i]) == 1, label=f'item_placing_{i}')
+        'item_placing_0'
+        'item_placing_1'
+        'item_placing_2'
+        'item_placing_3'
+
+        Finally, we need to enforce the limits on each bin. We can express
+        this constraint, for a given bin :math:`j`, with
+        :math:`\sum_i x{i, j} * w_i <= c` where :math:`w_i` is the weight
+        of item :math:`i` and :math:`c` is the capacity.
+
+        >>> for j in range(len(weights)):
+        ...     cqm.add_constraint(
+        ...         sum(weights[i] * x[i][j] for i in range(len(weights))) - y[j] * capacity <= 0,
+        ...         label=f'capacity_bin_{j}')
+        'capacity_bin_0'
+        'capacity_bin_1'
+        'capacity_bin_2'
+        'capacity_bin_3'
+
+    """
+    def __init__(self):
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
         self.discrete: Set[Hashable] = set()  # collection of discrete constraints
         self._discrete: Set[Variable] = set()  # collection of all variables used in discrete
+
+    @property
+    def constraints(self) -> Dict[Hashable, Comparison]:
+        """The constraints as a dictionary.
+
+        This dictionary and its contents should not be modified.
+        """
+        try:
+            return self._constraints
+        except AttributeError:
+            pass
+
+        self._constraints: Dict[Hashable, Comparison] = {}
+        return self._constraints
 
     @property
     def objective(self) -> Union[BinaryQuadraticModel, QuadraticModel]:
@@ -106,6 +208,17 @@ class ConstrainedQuadraticModel:
         objective = BinaryQuadraticModel('BINARY')
         self._objective: Union[BinaryQuadraticModel, QuadraticModel] = objective
         return objective
+
+    @property
+    def variables(self) -> Variables:
+        """The variables in use over the objective and all constraints."""
+        try:
+            return self._variables
+        except AttributeError:
+            pass
+
+        self._variables: TypedVariables = TypedVariables()
+        return self._variables
 
     def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
         # todo: singledispatchmethod in 3.8+
@@ -125,7 +238,16 @@ class ConstrainedQuadraticModel:
             raise TypeError("model should be a QuadraticModel or a BinaryQuadraticModel")
 
     def add_constraint(self, data, *args, **kwargs) -> Hashable:
-        """A convenience wrapper for other methods that add constraints."""
+        """A convenience wrapper for other methods that add constraints.
+
+        See also:
+            :meth:`~.ConstrainedQuadraticModel.add_constraint_from_model`
+
+            :meth:`~.ConstrainedQuadraticModel.add_constraint_from_comparison`
+
+            :meth:`~.ConstrainedQuadraticModel.add_constraint_from_iterable`
+
+        """
         # in python 3.8+ we can use singledispatchmethod
         if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
             return self.add_constraint_from_model(data, *args, **kwargs)
@@ -134,7 +256,7 @@ class ConstrainedQuadraticModel:
         elif isinstance(data, Iterable):
             return self.add_constraint_from_iterable(data, *args, **kwargs)
         else:
-            raise NotImplementedError
+            raise TypeError("unexpected data format")
 
     def add_constraint_from_model(self,
                                   qm: Union[BinaryQuadraticModel, QuadraticModel],
@@ -157,6 +279,9 @@ class ConstrainedQuadraticModel:
             copy: If `True`, the BQM is copied. This can be set to `False` to
                 improve performance, but subsequently mutating the bqm can
                 cause issues.
+
+        Returns:
+            The label of the added constraint.
 
         """
         variables = self.variables
@@ -209,6 +334,9 @@ class ConstrainedQuadraticModel:
                 improve performance, but subsequently mutating the model can
                 cause issues.
 
+        Returns:
+            The label of the added constraint.
+
         """
         if not isinstance(comp.rhs, Number):
             raise TypeError("comparison should have a numeric rhs")
@@ -237,6 +365,9 @@ class ConstrainedQuadraticModel:
 
             label: A label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
+
+        Returns:
+            The label of the added constraint.
 
         """
         # use quadratic model in the future
@@ -270,6 +401,12 @@ class ConstrainedQuadraticModel:
         Args:
             variables: An iterable of variables.
 
+            label: A label for the constraint. Must be unique. If no label
+                is provided, then one is generated using :mod:`uuid`.
+
+        Returns:
+            The label of the added constraint.
+
         Raises:
             ValueError: If any of the given variables have already been added
                 to the model with any vartype other than `BINARY`.
@@ -298,6 +435,7 @@ class ConstrainedQuadraticModel:
 
     def add_variable(self, v: Variable, vartype: VartypeLike):
         """Add a variable to the model."""
+        # todo: lower and upper bound
         if self.variables.count(v):
             if as_vartype(vartype, extended=True) != self.variables.vartype(v):
                 raise ValueError("given variable has already been added with a different vartype")
@@ -468,6 +606,7 @@ class ConstrainedQuadraticModel:
         return file
 
     def vartype(self, v: Variable) -> Vartype:
+        """The vartype of the given variable."""
         return self.variables.vartype(v)
 
 
