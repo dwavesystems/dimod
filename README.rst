@@ -15,8 +15,8 @@ dimod
 `dimod` is a shared API for samplers. It provides:
 
 * classes for quadratic models---such as the binary quadratic model (BQM) class that
-  contains Ising and quadratic unconstrained binary optimization (QUBO) models used
-  by samplers such as the D-Wave system---and higher-order (non-quadratic) models.
+  contains Ising and QUBO models used by samplers such as the D-Wave system---and
+  higher-order (non-quadratic) models.
 * reference examples of samplers and composed samplers.
 * `abstract base classes <https://docs.python.org/3/library/abc.html>`_ for
   constructing new samplers and composed samplers.
