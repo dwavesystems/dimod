@@ -329,6 +329,12 @@ class TestFromBQM(unittest.TestCase):
                     self.assertIs(qm.vartype(v), bqm.vartype)
 
 
+class TestInteger(unittest.TestCase):
+    def test_init_no_label(self):
+        integer_qm = Integer()
+        self.assertIsInstance(integer_qm.variables[0], str)
+
+
 class TestOffset(unittest.TestCase):
     def test_setting(self):
         qm = QM()

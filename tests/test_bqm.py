@@ -220,6 +220,12 @@ class TestAsBQM(unittest.TestCase):
             as_bqm(bqm, cls=123)
 
 
+class TestBinary(unittest.TestCase):
+    def test_init_no_label(self):
+        binary_bqm = Binary()
+        self.assertIsInstance(binary_bqm.variables[0], str)
+
+
 class TestChangeVartype(unittest.TestCase):
     def assertConsistentEnergies(self, spin, binary):
         """Brute force check that spin and binary bqms have idential energy
@@ -2144,6 +2150,12 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
+
+
+class TestSpin(unittest.TestCase):
+    def test_init_no_label(self):
+        spin_bqm = Binary()
+        self.assertIsInstance(spin_bqm.variables[0], str)
 
 
 class TestSymbolic(unittest.TestCase):
