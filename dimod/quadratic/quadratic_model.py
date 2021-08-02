@@ -14,6 +14,7 @@
 
 import struct
 import tempfile
+import uuid
 
 from collections.abc import Callable
 from copy import deepcopy
@@ -768,11 +769,11 @@ class QuadraticModel(QuadraticViewsMixin):
 QM = QuadraticModel
 
 
-def Integer(label: Variable, bias: Bias = 1,
+def Integer(label: Variable = None, bias: Bias = 1,
             dtype: Optional[DTypeLike] = None,
             *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
     if label is None:
-        raise TypeError("label cannot be None")
+        label = str(uuid.uuid4())
     qm = QM(dtype=dtype)
     v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)

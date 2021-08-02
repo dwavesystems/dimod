@@ -20,6 +20,7 @@ import json
 import operator
 import tempfile
 import warnings
+import uuid
 
 from numbers import Integral, Number
 from typing import Iterator, Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
@@ -1823,13 +1824,17 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
-def Binary(label: Variable, bias: Bias = 1,
+def Binary(label: Variable = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    if label is None:
+        label = str(uuid.uuid4())
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
-def Spin(label: Variable, bias: Bias = 1,
+def Spin(label: Variable = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    if label is None:
+        label = str(uuid.uuid4())
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
 
