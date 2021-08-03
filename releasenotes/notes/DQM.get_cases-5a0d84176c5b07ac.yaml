@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``DiscreteQuadraticModel.get_cases`` method to match
+    ``CaseLabelDQM.get_cases``.

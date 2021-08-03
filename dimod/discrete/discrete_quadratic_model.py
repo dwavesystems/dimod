@@ -537,6 +537,10 @@ class DiscreteQuadraticModel:
 
         return obj
 
+    def get_cases(self, v):
+        """The cases of variable `v` as a sequence"""
+        return range(self.num_cases(v))
+
     def get_linear(self, v):
         """The linear biases associated with variable `v`.
 
