@@ -92,8 +92,16 @@ def combinations(n, k, strength=1, vartype=BINARY):
     lbias = float(strength*(1 - 2*k))
     qbias = float(2*strength)
 
-    Q = np.triu(np.ones((n,n))*qbias, k=1)
+    if not isinstance(n, int):
+        num_vars = len(n)
+    else:
+        num_vars = n
+
+    Q = np.triu(np.ones((num_vars,num_vars))*qbias, k=1)
     np.fill_diagonal(Q, lbias)
-    bqm = BinaryQuadraticModel(Q, 'BINARY', offset=strength*(k**2))
+    bqm = BinaryQuadraticModel.from_qubo(Q, offset=strength*(k**2))
+
+    if not isinstance(n, int):
+        bqm.relabel_variables(dict(zip(range(len(n)), n)))
 
     return bqm.change_vartype(vartype, inplace=True)
