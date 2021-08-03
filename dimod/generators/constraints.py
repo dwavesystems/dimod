@@ -93,7 +93,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
     qbias = float(2*strength)
 
     Q = np.triu(np.ones((n,n))*qbias, k=1)
-    np.fill_diagonal(Q, np.asarray([lbias]*n))
+    np.fill_diagonal(Q, lbias)
     bqm = BinaryQuadraticModel(Q, 'BINARY', offset=strength*(k**2))
 
     return bqm.change_vartype(vartype, inplace=True)
