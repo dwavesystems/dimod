@@ -507,12 +507,11 @@ def unique_variable_labels(f):
 
     """
     @wraps(f)
-    def conditional_unique_label(*args, **kwargs):
-        if len(args) == 0 and len(kwargs) == 0:
-            qm = f(label=uuid.uuid4())
+    def conditional_unique_label(label = None, *args, **kwargs):
+        if label is None:
+            qm = f(label=uuid.uuid4(), *args, **kwargs)
             return qm
-        
-        qm = f(*args, **kwargs)
+        qm = f(label, *args, **kwargs)
         return qm
-
+        
     return conditional_unique_label
