@@ -2160,12 +2160,12 @@ class TestShape(unittest.TestCase):
 
 class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
-        spin_bqm = Binary()
+        spin_bqm = Spin()
         self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
 
     def test_no_label_collision(self):
-        bqm_1 = Binary()
-        bqm_2 = Binary()
+        bqm_1 = Spin()
+        bqm_2 = Spin()
         self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
 
 
