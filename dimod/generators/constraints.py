@@ -15,6 +15,8 @@
 import itertools
 import collections.abc as abc
 
+import numpy as np
+
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument, vartype_argument
 from dimod.vartypes import BINARY
@@ -91,9 +93,8 @@ def combinations(n, k, strength=1, vartype=BINARY):
     lbias = float(strength*(1 - 2*k))
     qbias = float(2*strength)
 
-    bqm = BinaryQuadraticModel.empty(BINARY)
-    bqm.add_variables_from(((v, lbias) for v in variables))
-    bqm.add_interactions_from(((u, v, qbias) for u, v in itertools.combinations(variables, 2)))
-    bqm.offset += strength*(k**2)
+    Q = np.triu(np.ones((n,n))*qbias, k=1)
+    np.fill_diagonal(Q, np.asarray([lbias]*n))
+    bqm = BinaryQuadraticModel(Q, 'BINARY', offset=strength*(k**2))
 
     return bqm.change_vartype(vartype, inplace=True)
