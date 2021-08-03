@@ -94,8 +94,13 @@ def combinations(n, k, strength=1, vartype=BINARY):
 
     if not isinstance(n, int):
         num_vars = len(n)
+        variables = n
     else:
         num_vars = n
+        try:
+            variables = range(n)
+        except TypeError:
+            raise TypeError('n should be a collection or an integer')
 
     Q = np.triu(np.ones((num_vars,num_vars))*qbias, k=1)
     np.fill_diagonal(Q, lbias)
