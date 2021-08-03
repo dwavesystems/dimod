@@ -36,7 +36,7 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
-from dimod.decorators import forwarding_method
+from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
@@ -1824,12 +1824,14 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
-def Binary(label: Variable = uuid.uuid4(), bias: Bias = 1,
+@unique_variable_labels
+def Binary(label: Variable = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
-def Spin(label: Variable = uuid.uuid4(), bias: Bias = 1,
+@unique_variable_labels
+def Spin(label: Variable = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
