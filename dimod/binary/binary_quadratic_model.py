@@ -1824,17 +1824,13 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
-def Binary(label: Variable = None, bias: Bias = 1,
+def Binary(label: Variable = uuid.uuid4(), bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    if label is None:
-        label = str(uuid.uuid4())
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
-def Spin(label: Variable = None, bias: Bias = 1,
+def Spin(label: Variable = uuid.uuid4(), bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    if label is None:
-        label = str(uuid.uuid4())
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
 

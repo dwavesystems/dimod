@@ -16,6 +16,7 @@ import itertools
 import shutil
 import tempfile
 import unittest
+import uuid
 
 import numpy as np
 
@@ -332,7 +333,7 @@ class TestFromBQM(unittest.TestCase):
 class TestInteger(unittest.TestCase):
     def test_init_no_label(self):
         integer_qm = Integer()
-        self.assertIsInstance(integer_qm.variables[0], str)
+        self.assertIsInstance(integer_qm.variables[0], uuid.UUID)
 
 
 class TestOffset(unittest.TestCase):

@@ -21,6 +21,7 @@ import shutil
 import tempfile
 import unittest
 import unittest.mock
+import uuid
 
 from collections import OrderedDict
 from functools import wraps
@@ -223,7 +224,7 @@ class TestAsBQM(unittest.TestCase):
 class TestBinary(unittest.TestCase):
     def test_init_no_label(self):
         binary_bqm = Binary()
-        self.assertIsInstance(binary_bqm.variables[0], str)
+        self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
 
 
 class TestChangeVartype(unittest.TestCase):
@@ -2155,7 +2156,7 @@ class TestShape(unittest.TestCase):
 class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
         spin_bqm = Binary()
-        self.assertIsInstance(spin_bqm.variables[0], str)
+        self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
 
 
 class TestSymbolic(unittest.TestCase):
