@@ -335,6 +335,11 @@ class TestInteger(unittest.TestCase):
         integer_qm = Integer()
         self.assertIsInstance(integer_qm.variables[0], uuid.UUID)
 
+    def test_no_label_collision(self):
+        qm_1 = Binary()
+        qm_2 = Binary()
+        self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
+
 
 class TestOffset(unittest.TestCase):
     def test_setting(self):
