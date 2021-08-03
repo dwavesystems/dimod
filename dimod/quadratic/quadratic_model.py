@@ -378,7 +378,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Add quadratic bias to an interaction between two variables."""
+        """Add quadratic bias to a pair of variables."""
         return self.data.add_quadratic
 
     @forwarding_method
@@ -629,7 +629,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables_as_integers(self, inplace: bool = True
                                       ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
-        """Relabel the variables as `[0, n)` returning the mapping."""
+        """Relabel the variables as `[0, n)` and return the mapping."""
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
