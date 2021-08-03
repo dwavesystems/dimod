@@ -12,8 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import itertools
 import collections.abc as abc
+
+import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument, vartype_argument
@@ -91,9 +92,21 @@ def combinations(n, k, strength=1, vartype=BINARY):
     lbias = float(strength*(1 - 2*k))
     qbias = float(2*strength)
 
-    bqm = BinaryQuadraticModel.empty(BINARY)
-    bqm.add_variables_from(((v, lbias) for v in variables))
-    bqm.add_interactions_from(((u, v, qbias) for u, v in itertools.combinations(variables, 2)))
-    bqm.offset += strength*(k**2)
+    if not isinstance(n, int):
+        num_vars = len(n)
+        variables = n
+    else:
+        num_vars = n
+        try:
+            variables = range(n)
+        except TypeError:
+            raise TypeError('n should be a collection or an integer')
+
+    Q = np.triu(np.ones((num_vars,num_vars))*qbias, k=1)
+    np.fill_diagonal(Q, lbias)
+    bqm = BinaryQuadraticModel.from_qubo(Q, offset=strength*(k**2))
+
+    if not isinstance(n, int):
+        bqm.relabel_variables(dict(zip(range(len(n)), n)))
 
     return bqm.change_vartype(vartype, inplace=True)
