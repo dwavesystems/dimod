@@ -14,7 +14,6 @@
 
 import struct
 import tempfile
-import uuid
 
 from collections.abc import Callable
 from copy import deepcopy
@@ -770,9 +769,22 @@ QM = QuadraticModel
 
 
 @unique_variable_labels
-def Integer(label: Variable = None, bias: Bias = 1,
+def Integer(label: Optional[Variable] = None, bias: Bias = 1,
             dtype: Optional[DTypeLike] = None,
             *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
+    """Return a :class:`.QuadraticModel` representing an integer variable.
+
+    Args:
+        label: Optional hashable label to identify the variable.
+        bias: The bias to apply to the variable.
+        dtype: Optional data type for the returned quadratic model.
+        lower_bound: Keyword-only argument to specify integer lower bound.
+        upper_bound: Keyword-only argument to specify integer upper bound.
+
+    Returns:
+        Instance of :class:`.QuadraticModel`.
+    
+    """
     qm = QM(dtype=dtype)
     v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)

@@ -20,7 +20,6 @@ import json
 import operator
 import tempfile
 import warnings
-import uuid
 
 from numbers import Integral, Number
 from typing import Iterator, Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
@@ -1825,14 +1824,36 @@ class Float64BQM(BQM, default_dtype=np.float64):
 
 
 @unique_variable_labels
-def Binary(label: Variable = None, bias: Bias = 1,
+def Binary(label: Optional[Variable] = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    """Return a :class:`.BinaryQuadraticModel` instance representing a binary variable.
+
+    Args:
+        label: Optional hashable label to identify the variable.
+        bias: The bias to apply to the variable.
+        dtype: Optional data type for the returned quadratic model.
+
+    Returns:
+        Instance of :class:`.BinaryQuadraticModel`.
+
+    """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
 @unique_variable_labels
-def Spin(label: Variable = None, bias: Bias = 1,
+def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    """Return a :class:`.BinaryQuadraticModel` instance representing a binary variable.
+
+    Args:
+        label: Optional hashable label to identify the variable.
+        bias: The bias to apply to the variable.
+        dtype: Optional data type for the returned quadratic model.
+
+    Returns:
+        Instance of :class:`.BinaryQuadraticModel`.
+
+    """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
 
