@@ -118,6 +118,18 @@ class VartypesSection(Section):
 
 
 class QuadraticModel(QuadraticViewsMixin):
+    r"""A quadratic model.
+
+    Quadratic models are problems of the form:
+
+    .. math::
+
+        E(x) = \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
+
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    variables and :math:`a_{i}, b_{ij}, c` are real values.
+
+    """
     _DATA_CLASSES = {
         np.dtype(np.float32): cyQM_float32,
         np.dtype(np.float64): cyQM_float64,
@@ -342,16 +354,31 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @property
     def variables(self) -> Variables:
-        """The variables of the quadratic model"""
+        """The variables of the quadratic model.
+
+        Examples:
+
+            >>> qm = dimod.QuadraticModel()
+            >>> qm.add_variable('INTEGER', 'i')
+            'i'
+            >>> qm.add_variable('BINARY')
+            1
+            >>> qm.add_variable('BINARY', 'y')
+            'y'
+            >>> qm.variables
+            Variables(['i', 1, 'y'])
+
+        """
         return self.data.variables
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
-        """Add a quadratic term."""
+        """Add a linear bias to an existing variable."""
         return self.data.add_linear
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Add quadratic bias to an interaction between two variables."""
         return self.data.add_quadratic
 
     @forwarding_method
@@ -388,6 +415,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.add_variable
 
     def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
+        """Add multiple variables of the same type to the quadratic model."""
         vartype = as_vartype(vartype, extended=True)
         for v in variables:
             self.add_variable(vartype, v)
@@ -404,6 +432,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm.energy({a: -1})
             -1.5
             >>> qm.change_vartype('BINARY', a)
+            QuadraticModel({'a': 3.0}, {}, -1.5, {'a': 'BINARY'}, dtype='float64')
             >>> qm.energy({a: 1})
             1.5
             >>> qm.energy({a: 0})
@@ -426,6 +455,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.degree
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
+        """Determine the energies of the given samples."""
         return self.data.energies(samples_like, dtype=dtype)
 
     def energy(self, sample, dtype=None) -> Bias:
@@ -449,6 +479,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
+        """Construct a quadratic model from a binary quadratic model."""
         obj = cls.__new__(cls)
 
         try:
@@ -524,7 +555,7 @@ class QuadraticModel(QuadraticViewsMixin):
                       default: Optional[Bias] = None) -> Bias:
         return self.data.get_quadratic
 
-    def is_equal(self, other):
+    def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
             return not self.num_variables and self.offset == other
@@ -589,6 +620,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables(self, mapping: Mapping[Variable, Variable],
                           inplace: bool = True) -> 'QuadraticModel':
+        """Relabel the variables according to the given mapping."""
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -597,6 +629,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables_as_integers(self, inplace: bool = True
                                       ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
+        """Relabel the variables as `[0, n)` returning the mapping."""
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
@@ -616,6 +649,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def scale(self, scalar: Bias):
+        """Scale the biases by the given number."""
         return self.data.scale
 
     @forwarding_method

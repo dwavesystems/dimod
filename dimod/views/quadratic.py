@@ -252,7 +252,7 @@ class QuadraticViewsMixin(abc.ABC):
 
     @property
     def adj(self) -> Adjacency:
-        """Adjacency structure as a nested mapping of mapping.
+        """Adjacency structure as a nested mapping of mappings.
 
         Accessed like a dict of dicts, where the keys of the outer dict are all
         of the model's variables (e.g. `v`) and the values are the neighborhood
