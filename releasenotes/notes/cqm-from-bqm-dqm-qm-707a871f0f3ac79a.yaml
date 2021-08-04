@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Add methods to construct a constrained quadratic model from other model
+    types:
+
+    * ``ConstrainedQuadraticModel.from_discrete_quadratic_model`` with an alias
+      ``ConstrainedQuadraticModel.from_dqm``
+    * ``ConstrainedQuadraticModel.from_quadratic_model`` with two aliases
+      ``ConstrainedQuadraticModel.from_qm`` and ``ConstrainedQuadraticModel.from_bqm``
+
+    See `#866 <https://github.com/dwavesystems/dimod/issues/866>`_.
