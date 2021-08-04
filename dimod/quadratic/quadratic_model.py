@@ -775,7 +775,8 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
     """Return a quadratic model with a single integer variable.
 
     Args:
-        label: Hashable label to identify the variable.
+        label: Hashable label to identify the variable. Defaults to a
+            generated :obj:`uuid.UUID`, rather than an integer label.
         bias: The bias to apply to the variable.
         dtype: Data type for the returned quadratic model.
         lower_bound: Keyword-only argument to specify integer lower bound.
