@@ -2,7 +2,6 @@
 features:
   - |
     Labels for :func:`.dimod.Spin`, :func:`.dimod.Binary`, and :func:`dimod.Integer`
-    are no longer required positional arguments. A new decorator has been added to 
-    `dimod.decorators` called :func:`dimod.decorators.unique_variable_labels` that
-    does an argument check and supplies a unique identifier via the uuid module.
+    are no longer required positional arguments. By default, unique labels are applied
+    via the uuid module.
     
