@@ -1826,12 +1826,12 @@ class Float64BQM(BQM, default_dtype=np.float64):
 @unique_variable_labels
 def Binary(label: Optional[Variable] = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    """Return a :class:`.BinaryQuadraticModel` instance representing a binary variable.
+    """Return a binary quadratic model with a single binary variable.
 
     Args:
-        label: Optional hashable label to identify the variable.
+        label: Hashable label to identify the variable.
         bias: The bias to apply to the variable.
-        dtype: Optional data type for the returned quadratic model.
+        dtype: Data type for the returned binary quadratic model.
 
     Returns:
         Instance of :class:`.BinaryQuadraticModel`.
@@ -1843,12 +1843,12 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
 @unique_variable_labels
 def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    """Return a :class:`.BinaryQuadraticModel` instance representing a spin variable.
+    """Return a binary quadratic model with a single spin variable.
 
     Args:
-        label: Optional hashable label to identify the variable.
+        label: Hashable label to identify the variable.
         bias: The bias to apply to the variable.
-        dtype: Optional data type for the returned quadratic model.
+        dtype: Data type for the returned binary quadratic model.
 
     Returns:
         Instance of :class:`.BinaryQuadraticModel`.

@@ -772,12 +772,12 @@ QM = QuadraticModel
 def Integer(label: Optional[Variable] = None, bias: Bias = 1,
             dtype: Optional[DTypeLike] = None,
             *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
-    """Return a :class:`.QuadraticModel` representing an integer variable.
+    """Return a quadratic model with a single integer variable.
 
     Args:
-        label: Optional hashable label to identify the variable.
+        label: Hashable label to identify the variable.
         bias: The bias to apply to the variable.
-        dtype: Optional data type for the returned quadratic model.
+        dtype: Data type for the returned quadratic model.
         lower_bound: Keyword-only argument to specify integer lower bound.
         upper_bound: Keyword-only argument to specify integer upper bound.
 
