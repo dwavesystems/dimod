@@ -24,59 +24,36 @@ For an introduction to CQMs, see
 
 For descriptions of the CQM class and its methods, see :ref:`cqm`.
 
-Model Generation
-================
+Model Construction
+==================
 
-dimod provides a variety of model generators.
+dimod provides a variety of model generators. These are especially useful for testing
+code and learning.
 
 Example: dimod CQM Generator
 ----------------------------
 
->>>
+This example creates a CQM representing a
+`knapsack problem <https://en.wikipedia.org/wiki/Knapsack_problem>`_` of ten
+items.
+
+>>> cqm = dimod.generators.knapsack(10)
 
 Typically you construct a model when reformulating your problem, using such
-techniques as those presented in
-:std:doc:`D-Wave's system documentation <oceandocs:doc_handbook>`.
+techniques as those presented in D-Wave's system documentation's
+:std:doc:`oceandocs:doc_handbook`.
 
-Example: CQM Construction
--------------------------
+Example: Formulating a CQM
+--------------------------
 
-The
-
-As mentioned above, for learning and testing with small BQMs, dimod's symbolic
-construction of CQMs is convenient:
+This example constructs a CQM from symbolic math, which is especially useful for
+learning and testing with small CQMs.
 
 >>> x = BINARY('x')
 >>> y = INTEGER('y')
 >>> cqm = dimod.CQM()
->>> cqm.add_()
+>>> objective = cqm.set_objective(x+y)
+>>> cqm.add_constraint(y <= 3)
 
-Especially for very large BQMs, you might read the data from a file using methods,
-such as :meth:`~dimod.bqm.adjvectorbqm.AdjVectorBQM.from_file` or others,
-described in the documentation of each class.
-
-Model Attributes
-================
-
-dimod's model objects provide access to a number of attributes and views. See the
-documentation for a particular type of model class.
-
-Example:
-----------------
-
->>> dict_bqm.shape
-(4, 3)
-
-
-Model Methods
-=============
-
-BQMs support a large number of methods, many common, some particular to a class,
-described under the documentation for :ref:`each class <bqm>`, to enable you to
-build and manipulate BQMs.
-
->>> map_bqm.num_interactions
-21
->>> map_bqm.remove_interaction(5, 6)
->>> map_bqm.num_interactions
-20
+For very large BQMs, you might read the data from a file or construct from a NumPy
+array.

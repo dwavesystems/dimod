@@ -61,6 +61,9 @@ code and learning.
 Example: dimod BQM Generator
 ----------------------------
 
+This example generates a BQM from a fully-connected graph (a clique) where all
+linear biases are zero and quadratic values are uniformly selected -1 or +1 values.
+
 >>> bqm = dimod.generators.random.ran_r(1, 7, cls=dimod.AdjVectorBQM)
 
 Typically you construct a model when reformulating your problem, using such
@@ -107,7 +110,7 @@ such as :meth:`~dimod.bqm.adjvectorbqm.AdjVectorBQM.from_file` or from NumPy arr
 Example: Interaction Between Integer Variables
 ----------------------------------------------
 
-This example constructs a QM with an interaction between to integer variables.
+This example constructs a QM with an interaction between two integer variables.
 
 >>> qm = QuadraticModel()
 >>> qm.add_variables_from('INTEGER', ['i', 'j'])
