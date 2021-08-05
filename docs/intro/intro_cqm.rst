@@ -55,5 +55,5 @@ learning and testing with small CQMs.
 >>> objective = cqm.set_objective(x+y)
 >>> cqm.add_constraint(y <= 3)
 
-For very large BQMs, you might read the data from a file or construct from a NumPy
+For very large models, you might read the data from a file or construct from a NumPy
 array.
