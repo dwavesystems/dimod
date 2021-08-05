@@ -35,6 +35,11 @@ Methods
    ConstrainedQuadraticModel.add_constraint_from_model
    ConstrainedQuadraticModel.add_discrete
    ConstrainedQuadraticModel.add_variable
+   ConstrainedQuadraticModel.from_bqm
+   ConstrainedQuadraticModel.from_discrete_quadratic_model
+   ConstrainedQuadraticModel.from_dqm
+   ConstrainedQuadraticModel.from_qm
+   ConstrainedQuadraticModel.from_quadratic_model
    ConstrainedQuadraticModel.from_file
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
