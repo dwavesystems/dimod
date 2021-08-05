@@ -22,7 +22,11 @@ import tempfile
 import warnings
 
 from numbers import Integral, Number
-from typing import Iterator, Hashable, Union, Tuple, Optional, Any, ByteString, BinaryIO, Iterable, Mapping, Callable, Sequence, MutableMapping
+from typing import (Any, BinaryIO, ByteString, Callable,
+                    Hashable, Iterable, Iterator,
+                    Mapping, MutableMapping, Optional, Sequence,
+                    Tuple, Union,
+                    )
 
 import numpy as np
 
@@ -51,7 +55,7 @@ __all__ = ['BinaryQuadraticModel',
            'Float32BQM',
            'Float64BQM',
            'as_bqm',
-           'Spin', 'Binary',
+           'Spin', 'Binary', 'Spins', 'Binaries',
            ]
 
 BQM_MAGIC_PREFIX = b'DIMODBQM'
@@ -1841,6 +1845,25 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
+def Binaries(labels: Union[int, Iterable[Variable]],
+             dtype: Optional[DTypeLike] = None) -> Iterator[BinaryQuadraticModel]:
+    """Yield binary quadratic models, each with a single binary variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned binary quadratic models.
+
+    Yields:
+        Binary quadratic models, each with a single binary variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Binary(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Binary(dtype=dtype) for _ in range(labels))
+
+
 @unique_variable_labels
 def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
@@ -1857,6 +1880,25 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
 
     """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
+
+
+def Spins(labels: Union[int, Iterable[Variable]],
+          dtype: Optional[DTypeLike] = None) -> Iterator[BinaryQuadraticModel]:
+    """Yield binary quadratic models, each with a single spin variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned binary quadratic models.
+
+    Yields:
+        Binary quadratic models, each with a single spin variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Spin(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Spin(dtype=dtype) for _ in range(labels))
 
 
 def as_bqm(*args, cls: None = None, copy: bool = False,

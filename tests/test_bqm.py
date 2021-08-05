@@ -225,7 +225,26 @@ class TestBinary(unittest.TestCase):
     def test_init_no_label(self):
         binary_bqm = Binary()
         self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
-    
+
+    def test_multiple_labelled(self):
+        x, y, z = dimod.Binaries('abc')
+
+        self.assertEqual(x.variables[0], 'a')
+        self.assertEqual(y.variables[0], 'b')
+        self.assertEqual(z.variables[0], 'c')
+        self.assertIs(x.vartype, dimod.BINARY)
+        self.assertIs(y.vartype, dimod.BINARY)
+        self.assertIs(z.vartype, dimod.BINARY)
+
+    def test_multiple_unlabelled(self):
+        x, y, z = dimod.Binaries(3)
+
+        self.assertNotEqual(x.variables[0], y.variables[0])
+        self.assertNotEqual(x.variables[0], z.variables[0])
+        self.assertIs(x.vartype, dimod.BINARY)
+        self.assertIs(y.vartype, dimod.BINARY)
+        self.assertIs(z.vartype, dimod.BINARY)
+
     def test_no_label_collision(self):
         bqm_1 = Binary()
         bqm_2 = Binary()
@@ -2162,6 +2181,25 @@ class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
         spin_bqm = Spin()
         self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
+
+    def test_multiple_labelled(self):
+        r, s, t = dimod.Spins('abc')
+
+        self.assertEqual(r.variables[0], 'a')
+        self.assertEqual(s.variables[0], 'b')
+        self.assertEqual(t.variables[0], 'c')
+        self.assertIs(s.vartype, dimod.SPIN)
+        self.assertIs(r.vartype, dimod.SPIN)
+        self.assertIs(t.vartype, dimod.SPIN)
+
+    def test_multiple_unlabelled(self):
+        r, s, t = dimod.Spins(3)
+
+        self.assertNotEqual(s.variables[0], r.variables[0])
+        self.assertNotEqual(s.variables[0], t.variables[0])
+        self.assertIs(s.vartype, dimod.SPIN)
+        self.assertIs(r.vartype, dimod.SPIN)
+        self.assertIs(t.vartype, dimod.SPIN)
 
     def test_no_label_collision(self):
         bqm_1 = Spin()
