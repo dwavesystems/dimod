@@ -1830,7 +1830,7 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
-            generated :obj:`uuid.UUID`, rather than an integer label.
+            generated :class:`uuid.UUID`, rather than an integer label.
         bias: The bias to apply to the variable.
         dtype: Data type for the returned binary quadratic model.
 
@@ -1848,7 +1848,7 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
-            generated :obj:`uuid.UUID`, rather than an integer label.
+            generated :class:`uuid.UUID`, rather than an integer label.
         bias: The bias to apply to the variable.
         dtype: Data type for the returned binary quadratic model.
 
