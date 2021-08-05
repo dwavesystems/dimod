@@ -35,7 +35,7 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
-from dimod.decorators import forwarding_method
+from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
@@ -1823,13 +1823,39 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
-def Binary(label: Variable, bias: Bias = 1,
+@unique_variable_labels
+def Binary(label: Optional[Variable] = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    """Return a binary quadratic model with a single binary variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID`, rather than an integer label.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned binary quadratic model.
+
+    Returns:
+        Instance of :class:`.BinaryQuadraticModel`.
+
+    """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
 
-def Spin(label: Variable, bias: Bias = 1,
+@unique_variable_labels
+def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
+    """Return a binary quadratic model with a single spin variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID`, rather than an integer label.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned binary quadratic model.
+
+    Returns:
+        Instance of :class:`.BinaryQuadraticModel`.
+
+    """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
 

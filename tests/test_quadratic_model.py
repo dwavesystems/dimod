@@ -16,6 +16,7 @@ import itertools
 import shutil
 import tempfile
 import unittest
+import uuid
 
 import numpy as np
 
@@ -327,6 +328,17 @@ class TestFromBQM(unittest.TestCase):
 
                 for v in bqm.variables:
                     self.assertIs(qm.vartype(v), bqm.vartype)
+
+
+class TestInteger(unittest.TestCase):
+    def test_init_no_label(self):
+        integer_qm = Integer()
+        self.assertIsInstance(integer_qm.variables[0], uuid.UUID)
+
+    def test_no_label_collision(self):
+        qm_1 = Integer()
+        qm_2 = Integer()
+        self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
 
 
 class TestOffset(unittest.TestCase):

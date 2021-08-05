@@ -21,6 +21,7 @@ import shutil
 import tempfile
 import unittest
 import unittest.mock
+import uuid
 
 from collections import OrderedDict
 from functools import wraps
@@ -218,6 +219,17 @@ class TestAsBQM(unittest.TestCase):
         bqm = BinaryQuadraticModel({'ab': -1}, dimod.BINARY)
         with self.assertWarns(DeprecationWarning):
             as_bqm(bqm, cls=123)
+
+
+class TestBinary(unittest.TestCase):
+    def test_init_no_label(self):
+        binary_bqm = Binary()
+        self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
+    
+    def test_no_label_collision(self):
+        bqm_1 = Binary()
+        bqm_2 = Binary()
+        self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
 
 
 class TestChangeVartype(unittest.TestCase):
@@ -2144,6 +2156,17 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
+
+
+class TestSpin(unittest.TestCase):
+    def test_init_no_label(self):
+        spin_bqm = Spin()
+        self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
+
+    def test_no_label_collision(self):
+        bqm_1 = Spin()
+        bqm_2 = Spin()
+        self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
 
 
 class TestSymbolic(unittest.TestCase):

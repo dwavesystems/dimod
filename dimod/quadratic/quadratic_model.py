@@ -30,7 +30,7 @@ except ImportError:
     ArrayLike = Any
     DTypeLike = Any
 
-from dimod.decorators import forwarding_method
+from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import VariablesSection, Section
@@ -802,11 +802,24 @@ class QuadraticModel(QuadraticViewsMixin):
 QM = QuadraticModel
 
 
-def Integer(label: Variable, bias: Bias = 1,
+@unique_variable_labels
+def Integer(label: Optional[Variable] = None, bias: Bias = 1,
             dtype: Optional[DTypeLike] = None,
             *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
-    if label is None:
-        raise TypeError("label cannot be None")
+    """Return a quadratic model with a single integer variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID`, rather than an integer label.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned quadratic model.
+        lower_bound: Keyword-only argument to specify integer lower bound.
+        upper_bound: Keyword-only argument to specify integer upper bound.
+
+    Returns:
+        Instance of :class:`.QuadraticModel`.
+    
+    """
     qm = QM(dtype=dtype)
     v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)

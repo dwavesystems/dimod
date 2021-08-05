@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Labels for ``dimod.Spin``, ``dimod.Binary``, and ``dimod.Integer``
+    are no longer required positional arguments. By default, unique labels are applied
+    via the `uuid <https://docs.python.org/3/library/uuid.html>`_ module.
+    
