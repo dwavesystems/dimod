@@ -112,6 +112,6 @@ Example: Interaction Between Integer Variables
 
 This example constructs a QM with an interaction between two integer variables.
 
->>> qm = QuadraticModel()
+>>> qm = dimod.QuadraticModel()
 >>> qm.add_variables_from('INTEGER', ['i', 'j'])
 >>> qm.add_quadratic('i', 'j', 1.5)
