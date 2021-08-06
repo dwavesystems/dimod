@@ -49,11 +49,11 @@ Example: Formulating a CQM
 This example constructs a CQM from symbolic math, which is especially useful for
 learning and testing with small CQMs.
 
->>> x = BINARY('x')
->>> y = INTEGER('y')
+>>> x = dimod.Binary('x')
+>>> y = dimod.Integer('y')
 >>> cqm = dimod.CQM()
 >>> objective = cqm.set_objective(x+y)
->>> cqm.add_constraint(y <= 3)
+>>> cqm.add_constraint(y <= 3)          # doctest: +IGNORE_RESULT
 
 For very large models, you might read the data from a file or construct from a NumPy
 array.
