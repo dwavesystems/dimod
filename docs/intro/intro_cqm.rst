@@ -17,7 +17,7 @@ Supported Models
 ================
 
 dimod provides a :term:`constrained quadratic model` (CQM) class that encodes
-a quadratic objective and one or more quadratic equality and inequality constraints.
+a quadratic objective and possibly one or more quadratic equality and inequality constraints.
 
 For an introduction to CQMs, see
 :std:doc:`Constrained Quadratic Models <oceandocs:concepts/cqm>`.
