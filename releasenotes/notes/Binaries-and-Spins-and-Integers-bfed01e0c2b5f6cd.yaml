@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``Binaries``, ``Spins`` and ``Integers`` functions.
+    See `#918 <https://github.com/dwavesystems/dimod/issues/918>`_.

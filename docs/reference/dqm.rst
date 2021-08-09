@@ -34,6 +34,7 @@ Methods
    ~DiscreteQuadraticModel.copy
    ~DiscreteQuadraticModel.from_file
    ~DiscreteQuadraticModel.from_numpy_vectors
+   ~DiscreteQuadraticModel.get_cases
    ~DiscreteQuadraticModel.get_linear
    ~DiscreteQuadraticModel.get_linear_case
    ~DiscreteQuadraticModel.get_quadratic

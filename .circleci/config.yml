@@ -118,20 +118,13 @@ jobs:
             . env/bin/activate
             pip install -r tests/requirements.txt
             pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
+            pip install 'dwave-preprocessing<0.4' --no-deps
             pip install dimod --no-index -f dist/ --no-deps --force-reinstall
 
       - run:
           name: run tests
           command: |
             . env/bin/activate
-            cd tests/
-            coverage run --source=dimod --append -m unittest
-
-      - run:
-          name: run tests with dwave-preprocessing
-          command: |
-            . env/bin/activate
-            pip install 'dwave-preprocessing<0.4' --no-deps
             cd tests/
             coverage run --source=dimod --append -m unittest
 
@@ -208,14 +201,6 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r tests/requirements.txt
-
-      # do this as an extra step since we want --no-deps and since it will
-      # be removed relatively soon
-      - run:
-          name: install dwave-preprocessing
-          command: |
-            . env/bin/activate
-            pip install 'dwave-preprocessing<0.4' --no-deps
 
       - run: &unix-build-ext-template
           name: build
@@ -321,14 +306,6 @@ jobs:
             pip install -r requirements.txt
             pip install -r tests\requirements.txt
 
-      # do this as an extra step since we want --no-deps and since it will
-      # be removed relatively soon
-      - run:
-          name: install dwave-preprocessing
-          command: |
-            env\Scripts\activate.ps1
-            pip install 'dwave-preprocessing<0.4' --no-deps
-
       - run:
           name: build extension
           command: |
@@ -405,7 +382,6 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r docs/requirements.txt
-            pip install dwave-preprocessing --no-deps
 
       - run: *unix-build-ext-template
 

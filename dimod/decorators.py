@@ -16,6 +16,7 @@
 import inspect
 import itertools
 import collections.abc as abc
+import uuid
 
 from functools import wraps
 from numbers import Integral
@@ -497,3 +498,21 @@ def forwarding_method(func):
         return method(*args, **kwargs)
 
     return wrapper
+
+def unique_variable_labels(f):
+    """Decorator to assign unique labels to variables when no label is passed.
+
+    Designed to be applied to variable methods, :meth:`.dimod.Binary`,
+    :meth:`.dimod.Spin`, :meth:`.dimod.Integer`.
+
+    """
+    @wraps(f)
+    def conditional_unique_label(label = None, *args, **kwargs):
+        if label is None:
+            qm = f(label=uuid.uuid4(), *args, **kwargs)
+            return qm
+        qm = f(label, *args, **kwargs)
+        return qm
+        
+    return conditional_unique_label
+    

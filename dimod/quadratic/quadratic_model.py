@@ -30,7 +30,7 @@ except ImportError:
     ArrayLike = Any
     DTypeLike = Any
 
-from dimod.decorators import forwarding_method
+from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import VariablesSection, Section
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from dimod import BinaryQuadraticModel
 
 
-__all__ = ['QuadraticModel', 'QM', 'Integer']
+__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers']
 
 
 QM_MAGIC_PREFIX = b'DIMODQM'
@@ -118,6 +118,18 @@ class VartypesSection(Section):
 
 
 class QuadraticModel(QuadraticViewsMixin):
+    r"""A quadratic model.
+
+    Quadratic models are problems of the form:
+
+    .. math::
+
+        E(x) = \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
+
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    variables and :math:`a_{i}, b_{ij}, c` are real values.
+
+    """
     _DATA_CLASSES = {
         np.dtype(np.float32): cyQM_float32,
         np.dtype(np.float64): cyQM_float64,
@@ -205,9 +217,13 @@ class QuadraticModel(QuadraticViewsMixin):
             new = type(self)(dtype=self.dtype)
 
             for v in self.variables:
-                new.add_variable(self.vartype(v), v)
+                new.add_variable(self.vartype(v), v,
+                                 lower_bound=self.lower_bound(v),
+                                 upper_bound=self.upper_bound(v))
             for v in other.variables:
-                new.add_variable(other.vartype(v), v)
+                new.add_variable(other.vartype(v), v,
+                                 lower_bound=other.lower_bound(v),
+                                 upper_bound=other.upper_bound(v))
 
             self_offset = self.offset
             other_offset = other.offset
@@ -338,16 +354,31 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @property
     def variables(self) -> Variables:
-        """The variables of the quadratic model"""
+        """The variables of the quadratic model.
+
+        Examples:
+
+            >>> qm = dimod.QuadraticModel()
+            >>> qm.add_variable('INTEGER', 'i')
+            'i'
+            >>> qm.add_variable('BINARY')
+            1
+            >>> qm.add_variable('BINARY', 'y')
+            'y'
+            >>> qm.variables
+            Variables(['i', 1, 'y'])
+
+        """
         return self.data.variables
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
-        """Add a quadratic term."""
+        """Add a linear bias to an existing variable."""
         return self.data.add_linear
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Add quadratic bias to a pair of variables."""
         return self.data.add_quadratic
 
     @forwarding_method
@@ -384,6 +415,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.add_variable
 
     def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
+        """Add multiple variables of the same type to the quadratic model."""
         vartype = as_vartype(vartype, extended=True)
         for v in variables:
             self.add_variable(vartype, v)
@@ -400,6 +432,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm.energy({a: -1})
             -1.5
             >>> qm.change_vartype('BINARY', a)
+            QuadraticModel({'a': 3.0}, {}, -1.5, {'a': 'BINARY'}, dtype='float64')
             >>> qm.energy({a: 1})
             1.5
             >>> qm.energy({a: 0})
@@ -422,6 +455,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.degree
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
+        """Determine the energies of the given samples."""
         return self.data.energies(samples_like, dtype=dtype)
 
     def energy(self, sample, dtype=None) -> Bias:
@@ -445,6 +479,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
+        """Construct a quadratic model from a binary quadratic model."""
         obj = cls.__new__(cls)
 
         try:
@@ -520,7 +555,7 @@ class QuadraticModel(QuadraticViewsMixin):
                       default: Optional[Bias] = None) -> Bias:
         return self.data.get_quadratic
 
-    def is_equal(self, other):
+    def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
             return not self.num_variables and self.offset == other
@@ -552,6 +587,14 @@ class QuadraticModel(QuadraticViewsMixin):
         """Return the lower bound on variable `v`."""
         return self.data.lower_bound
 
+    def set_lower_bound(self, v: Variable, lb: int):
+        """Set the lower bound for integer variable `v`."""
+        return self.data.set_lower_bound(v, lb)
+
+    def set_upper_bound(self, v: Variable, ub: int):
+        """Set the upper bound for integer variable `v`."""
+        return self.data.set_upper_bound(v, ub)
+
     @forwarding_method
     def reduce_linear(self, function: Callable,
                       initializer: Optional[Bias] = None) -> Any:
@@ -577,6 +620,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables(self, mapping: Mapping[Variable, Variable],
                           inplace: bool = True) -> 'QuadraticModel':
+        """Relabel the variables according to the given mapping."""
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -585,6 +629,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables_as_integers(self, inplace: bool = True
                                       ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
+        """Relabel the variables as `[0, n)` and return the mapping."""
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
@@ -604,6 +649,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def scale(self, scalar: Bias):
+        """Scale the biases by the given number."""
         return self.data.scale
 
     @forwarding_method
@@ -721,12 +767,21 @@ class QuadraticModel(QuadraticViewsMixin):
         # this can be improved a great deal with c++, but for now let's use
         # python for simplicity
 
-        if any(v in self.variables and self.vartype(v) != other.vartype(v)
-               for v in other.variables):
-            raise ValueError("given quadratic model has variables with conflicting vartypes")
+        for v in other.variables:
+            if v not in self.variables:
+                continue
+            if self.vartype(v) != other.vartype(v):
+                raise ValueError(f"conflicting vartypes: {v!r}")
+            if self.lower_bound(v) != other.lower_bound(v):
+                raise ValueError(f"conflicting lower bounds: {v!r}")
+            if self.upper_bound(v) != other.upper_bound(v):
+                raise ValueError(f"conflicting upper bounds: {v!r}")
 
         for v in other.variables:
-            self.add_linear(self.add_variable(other.vartype(v), v), other.get_linear(v))
+            self.add_linear(self.add_variable(other.vartype(v), v,
+                                              lower_bound=other.lower_bound(v),
+                                              upper_bound=other.upper_bound(v)),
+                            other.get_linear(v))
 
         for u, v, bias in other.iter_quadratic():
             self.add_quadratic(u, v, bias)
@@ -747,14 +802,47 @@ class QuadraticModel(QuadraticViewsMixin):
 QM = QuadraticModel
 
 
-def Integer(label: Variable, bias: Bias = 1,
-            dtype: Optional[DTypeLike] = None) -> QuadraticModel:
-    if label is None:
-        raise TypeError("label cannot be None")
+@unique_variable_labels
+def Integer(label: Optional[Variable] = None, bias: Bias = 1,
+            dtype: Optional[DTypeLike] = None,
+            *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
+    """Return a quadratic model with a single integer variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID`, rather than an integer label.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned quadratic model.
+        lower_bound: Keyword-only argument to specify integer lower bound.
+        upper_bound: Keyword-only argument to specify integer upper bound.
+
+    Returns:
+        Instance of :class:`.QuadraticModel`.
+
+    """
     qm = QM(dtype=dtype)
-    v = qm.add_variable(Vartype.INTEGER, label)
+    v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)
     return qm
+
+
+def Integers(labels: Union[int, Iterable[Variable]],
+             dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+    """Yield quadratic models, each with a single integer variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned quadratic models.
+
+    Yields:
+        Quadratic models, each with a single integer variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Integer(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Integer(dtype=dtype) for _ in range(labels))
 
 # register fileview loader
 load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)

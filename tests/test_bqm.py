@@ -21,6 +21,7 @@ import shutil
 import tempfile
 import unittest
 import unittest.mock
+import uuid
 
 from collections import OrderedDict
 from functools import wraps
@@ -218,6 +219,36 @@ class TestAsBQM(unittest.TestCase):
         bqm = BinaryQuadraticModel({'ab': -1}, dimod.BINARY)
         with self.assertWarns(DeprecationWarning):
             as_bqm(bqm, cls=123)
+
+
+class TestBinary(unittest.TestCase):
+    def test_init_no_label(self):
+        binary_bqm = Binary()
+        self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
+
+    def test_multiple_labelled(self):
+        x, y, z = dimod.Binaries('abc')
+
+        self.assertEqual(x.variables[0], 'a')
+        self.assertEqual(y.variables[0], 'b')
+        self.assertEqual(z.variables[0], 'c')
+        self.assertIs(x.vartype, dimod.BINARY)
+        self.assertIs(y.vartype, dimod.BINARY)
+        self.assertIs(z.vartype, dimod.BINARY)
+
+    def test_multiple_unlabelled(self):
+        x, y, z = dimod.Binaries(3)
+
+        self.assertNotEqual(x.variables[0], y.variables[0])
+        self.assertNotEqual(x.variables[0], z.variables[0])
+        self.assertIs(x.vartype, dimod.BINARY)
+        self.assertIs(y.vartype, dimod.BINARY)
+        self.assertIs(z.vartype, dimod.BINARY)
+
+    def test_no_label_collision(self):
+        bqm_1 = Binary()
+        bqm_2 = Binary()
+        self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
 
 
 class TestChangeVartype(unittest.TestCase):
@@ -979,6 +1010,23 @@ class TestEnergies(unittest.TestCase):
 
         energies = bqm.energies(np.asarray(samples))
         np.testing.assert_array_almost_equal(energies, [0])
+
+    def test_bug922(self):
+        # https://github.com/dwavesystems/dimod/issues/922
+        bqm = BinaryQuadraticModel([1], [[0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
+
+        bqm = BinaryQuadraticModel([1], {}, 0, 'SPIN', dtype=object)
+        bqm.energies([1])
+
+        bqm = BinaryQuadraticModel([.1], {}, 0, 'SPIN', dtype=object)
+        bqm.energies([1])
+
+        bqm = BinaryQuadraticModel([.1], [[0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
+
+        bqm = BinaryQuadraticModel([1], [[.0, 1], [0, 0]], 0, 'SPIN', dtype=object)
+        bqm.energies([0, 1])
 
     @parameterized.expand(BQMs.items())
     def test_dtype(self, name, BQM):
@@ -2127,6 +2175,36 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(BQM(dimod.SPIN).num_interactions, 0)
         self.assertEqual(BQM(0, dimod.SPIN).num_interactions, 0)
+
+
+class TestSpin(unittest.TestCase):
+    def test_init_no_label(self):
+        spin_bqm = Spin()
+        self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
+
+    def test_multiple_labelled(self):
+        r, s, t = dimod.Spins('abc')
+
+        self.assertEqual(r.variables[0], 'a')
+        self.assertEqual(s.variables[0], 'b')
+        self.assertEqual(t.variables[0], 'c')
+        self.assertIs(s.vartype, dimod.SPIN)
+        self.assertIs(r.vartype, dimod.SPIN)
+        self.assertIs(t.vartype, dimod.SPIN)
+
+    def test_multiple_unlabelled(self):
+        r, s, t = dimod.Spins(3)
+
+        self.assertNotEqual(s.variables[0], r.variables[0])
+        self.assertNotEqual(s.variables[0], t.variables[0])
+        self.assertIs(s.vartype, dimod.SPIN)
+        self.assertIs(r.vartype, dimod.SPIN)
+        self.assertIs(t.vartype, dimod.SPIN)
+
+    def test_no_label_collision(self):
+        bqm_1 = Spin()
+        bqm_2 = Spin()
+        self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
 
 
 class TestSymbolic(unittest.TestCase):

@@ -18,10 +18,7 @@ not specified, calculates it based on quadratic and bias ranges.
 
 """
 
-try:
-    from dwave.preprocessing import ScaleComposite as _ScaleComposite
-except ImportError:
-    from dimod.reference.composites._preprocessing import NotFound as _ScaleComposite
+from dwave.preprocessing import ScaleComposite as _ScaleComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 

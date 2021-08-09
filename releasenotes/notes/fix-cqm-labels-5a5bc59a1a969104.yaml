@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Remove unused ``ConstrainedQuadraticModel.labels`` instance variable.

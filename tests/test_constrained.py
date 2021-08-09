@@ -91,6 +91,116 @@ class TestAdjVector(unittest.TestCase):
         self.assertIsInstance(cqm.constraints[label].lhs, BQM)
 
 
+class TestBounds(unittest.TestCase):
+    def test_inconsistent(self):
+        i0 = Integer('i')
+        i1 = Integer('i', upper_bound=1)
+        i2 = Integer('i', lower_bound=-2)
+
+        cqm = CQM()
+        cqm.set_objective(i0)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(i1 <= 1)
+
+        cqm = CQM()
+        cqm.add_constraint(i0 <= 1)
+        with self.assertRaises(ValueError):
+            cqm.set_objective(i2)
+
+    def test_later_defn(self):
+        i0 = Integer('i')
+        i1 = Integer('i', upper_bound=1)
+
+        cqm = CQM()
+        cqm.add_variable('i', 'INTEGER')
+        cqm.set_objective(i0)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(i1 <= 1)
+
+        cqm.add_variable('i', 'INTEGER')
+
+
+class TestCopy(unittest.TestCase):
+    def test_deepcopy(self):
+        from copy import deepcopy
+
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.set_objective(i + s + x)
+        constraint = cqm.add_constraint(i + s + x <= 1)
+
+        new = deepcopy(cqm)
+
+        self.assertTrue(new.objective.is_equal(cqm.objective))
+        self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
+
+
+class TestFromDQM(unittest.TestCase):
+    def test_case_label(self):
+        dqm = dimod.CaseLabelDQM()
+        u = dqm.add_variable({'red', 'green', 'blue'}, shared_labels=True)
+        v = dqm.add_variable(['blue', 'yellow', 'brown'], label='v', shared_labels=True)
+        dqm.set_linear_case(u, 'red', 1)
+        dqm.set_linear_case(v, 'yellow', 2)
+        dqm.set_quadratic_case(u, 'green', v, 'blue', -0.5)
+        dqm.set_quadratic_case(u, 'blue', v, 'brown', -0.5)
+
+        cqm = CQM.from_discrete_quadratic_model(dqm)
+
+        self.assertTrue(cqm.objective.is_equal(
+            BQM({(0, 'blue'): 0.0, (0, 'red'): 1.0, (0, 'green'): 0.0,
+                 ('v', 'blue'): 0.0, ('v', 'brown'): 0.0, ('v', 'yellow'): 2.0},
+                {(('v', 'blue'), (0, 'green')): -0.5, (('v', 'brown'), (0, 'blue')): -0.5},
+                0.0, 'BINARY')))
+
+        self.assertEqual(set(cqm.constraints), set(dqm.variables))
+
+    def test_empty(self):
+        dqm = dimod.DiscreteQuadraticModel()
+
+        cqm = CQM.from_discrete_quadratic_model(dqm)
+
+        self.assertEqual(len(cqm.variables), 0)
+        self.assertEqual(len(cqm.constraints), 0)
+
+    def test_typical(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(4)
+        v = dqm.add_variable(3)
+        dqm.set_quadratic(u, v, {(0, 2): -1, (2, 1): 1})
+        dqm.set_linear(u, [0, 1, 2, 3])
+        dqm.offset = 5
+
+        cqm = CQM.from_discrete_quadratic_model(dqm)
+
+        self.assertEqual(cqm.variables, [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2)])
+
+        self.assertEqual(cqm.objective.linear,
+                         {(0, 0): 0, (0, 1): 1, (0, 2): 2, (0, 3): 3,
+                          (1, 1): 0, (1, 2): 0, (1, 0): 0})
+        self.assertEqual(cqm.objective.quadratic, {((1, 1), (0, 2)): 1.0, ((1, 2), (0, 0)): -1.0})
+        self.assertEqual(cqm.objective.offset, dqm.offset)
+
+        # keys of constraints are the variables of DQM
+        self.assertEqual(set(cqm.constraints), set(dqm.variables))
+
+
+class FromQM(unittest.TestCase):
+    def test_from_bqm(self):
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm = CQM.from_bqm(bqm)
+        self.assertEqual(cqm.objective, bqm)
+
+    def test_from_qm(self):
+        qm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN') + Integer('i')
+        cqm = CQM.from_quadratic_model(qm)
+        self.assertTrue(cqm.objective.is_equal(qm))
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()

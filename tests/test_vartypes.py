@@ -1,4 +1,4 @@
-# Copyright 2019 D-Wave Systems Inc.
+# Copyright 2021 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,22 +12,15 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-"""
-A composite that clips problem variables below and above threshold. if lower
-and upper bounds is not given it does nothing.
+import unittest
 
-"""
-
-from dwave.preprocessing import ClipComposite as _ClipComposite
-
-from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
+import dimod
 
 
-__all__ = ['ClipComposite']
+class TestCopy(unittest.TestCase):
+    def test_integer(self):
+        from copy import deepcopy
 
-
-class ClipComposite(DeprecatedToPreprocessing, _ClipComposite):
-    pass
-
-
-ClipComposite.__doc__ = _ClipComposite.__doc__
+        self.assertIs(dimod.BINARY, deepcopy(dimod.BINARY))
+        self.assertIs(dimod.INTEGER, deepcopy(dimod.INTEGER))
+        self.assertIs(dimod.SPIN, deepcopy(dimod.SPIN))

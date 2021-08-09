@@ -8,7 +8,8 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   bqm
+   constrained
+   quadratic
    sampler_composites/index
    sampleset
    dqm
