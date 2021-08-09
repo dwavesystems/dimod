@@ -67,6 +67,16 @@ class TestAddConstraint(unittest.TestCase):
 
         cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)], sense='<=')
 
+    def test_terms_integer_bounds(self):
+        # bug report: https://github.com/dwavesystems/dimod/issues/943
+        cqm = CQM()
+        i = Integer('i', lower_bound=-1, upper_bound=5)
+        cqm.set_objective(i)
+        label = cqm.add_constraint([('i', 1)], sense='<=')  # failing in #943
+
+        self.assertEqual(cqm.constraints[label].lhs.lower_bound('i'), -1)
+        self.assertEqual(cqm.constraints[label].lhs.upper_bound('i'), 5)
+
 
 class TestAddDiscrete(unittest.TestCase):
     def test_simple(self):
