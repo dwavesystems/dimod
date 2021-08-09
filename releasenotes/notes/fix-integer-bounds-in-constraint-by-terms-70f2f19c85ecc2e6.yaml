@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix adding constraints with integer variables via
+    ``ConstrainedQuadraticModel.add_constraint_from_iterable`` when those
+    integer variables have pre-existing lower or upper bounds. See
+    `#943 <https://github.com/dwavesystems/dimod/issues/943>`_.

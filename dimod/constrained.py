@@ -372,19 +372,31 @@ class ConstrainedQuadraticModel:
             The label of the added constraint.
 
         """
-        # use quadratic model in the future
         qm = QuadraticModel()
+
+        def _add_variable(v):
+            # handles vartype, and bounds
+            vartype = self.vartype(v)
+
+            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
+                # need to worry about bounds
+                qm.add_variable(vartype, v,
+                                lower_bound=self.variables.lower_bounds.get(v, 0),
+                                upper_bound=self.variables.upper_bounds.get(v))
+            else:
+                qm.add_variable(vartype, v)
+
         for *variables, bias in iterable:
             if len(variables) == 0:
                 qm.offset += bias
             elif len(variables) == 1:
                 v, = variables
-                qm.add_variable(self.vartype(v), v)
+                _add_variable(v)
                 qm.add_linear(v, bias)
             elif len(variables) == 2:
                 u, v = variables
-                qm.add_variable(self.vartype(u), u)
-                qm.add_variable(self.vartype(v), v)
+                _add_variable(u)
+                _add_variable(v)
                 qm.add_quadratic(u, v, bias)
             else:
                 raise ValueError("terms must be constant, linear or quadratic")
