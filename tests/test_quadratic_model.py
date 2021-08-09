@@ -335,6 +335,25 @@ class TestInteger(unittest.TestCase):
         integer_qm = Integer()
         self.assertIsInstance(integer_qm.variables[0], uuid.UUID)
 
+    def test_multiple_labelled(self):
+        i, j, k = dimod.Integers('ijk')
+
+        self.assertEqual(i.variables[0], 'i')
+        self.assertEqual(j.variables[0], 'j')
+        self.assertEqual(k.variables[0], 'k')
+        self.assertIs(i.vartype('i'), dimod.INTEGER)
+        self.assertIs(j.vartype('j'), dimod.INTEGER)
+        self.assertIs(k.vartype('k'), dimod.INTEGER)
+
+    def test_multiple_unlabelled(self):
+        i, j, k = dimod.Integers(3)
+
+        self.assertNotEqual(i.variables[0], j.variables[0])
+        self.assertNotEqual(i.variables[0], k.variables[0])
+        self.assertIs(i.vartype(i.variables[0]), dimod.INTEGER)
+        self.assertIs(j.vartype(j.variables[0]), dimod.INTEGER)
+        self.assertIs(k.vartype(k.variables[0]), dimod.INTEGER)
+
     def test_no_label_collision(self):
         qm_1 = Integer()
         qm_2 = Integer()

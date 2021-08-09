@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from dimod import BinaryQuadraticModel
 
 
-__all__ = ['QuadraticModel', 'QM', 'Integer']
+__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers']
 
 
 QM_MAGIC_PREFIX = b'DIMODQM'
@@ -818,12 +818,31 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
 
     Returns:
         Instance of :class:`.QuadraticModel`.
-    
+
     """
     qm = QM(dtype=dtype)
     v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)
     return qm
+
+
+def Integers(labels: Union[int, Iterable[Variable]],
+             dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+    """Yield quadratic models, each with a single integer variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned quadratic models.
+
+    Yields:
+        Quadratic models, each with a single integer variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Integer(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Integer(dtype=dtype) for _ in range(labels))
 
 # register fileview loader
 load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)
