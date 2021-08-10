@@ -21,7 +21,6 @@ import shutil
 import tempfile
 import unittest
 import unittest.mock
-import uuid
 
 from collections import OrderedDict
 from functools import wraps
@@ -224,7 +223,7 @@ class TestAsBQM(unittest.TestCase):
 class TestBinary(unittest.TestCase):
     def test_init_no_label(self):
         binary_bqm = Binary()
-        self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
+        self.assertIsInstance(binary_bqm.variables[0], str)
 
     def test_multiple_labelled(self):
         x, y, z = dimod.Binaries('abc')
@@ -2180,7 +2179,7 @@ class TestShape(unittest.TestCase):
 class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
         spin_bqm = Spin()
-        self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
+        self.assertIsInstance(spin_bqm.variables[0], str)
 
     def test_multiple_labelled(self):
         r, s, t = dimod.Spins('abc')
@@ -2205,6 +2204,11 @@ class TestSpin(unittest.TestCase):
         bqm_1 = Spin()
         bqm_2 = Spin()
         self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
+
+    def test_serializable_label(self):
+        import json
+        bqm = Spin()
+        json.dumps(bqm.variables.to_serializable())
 
 
 class TestSymbolic(unittest.TestCase):
