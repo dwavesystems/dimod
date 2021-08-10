@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Add ``quicksum`` function for faster summation of ``QuadraticModel`` and
+    ``BinaryQuadraticModel``. Python's built-in ``sum`` continues to work, but
+    ``quicksum`` will generally be faster when adding many objects.
+fixes:
+  - |
+    Return ``bool`` rather than ``numpy.bool_`` from
+    ``QuadraticModel.is_equal`` and ``BinaryQuadraticModel.is_equal`` when
+    comparing empty models to numbers.
