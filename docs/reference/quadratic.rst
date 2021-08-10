@@ -168,6 +168,16 @@ Methods
 Functions
 =========
 
+Adding models symbolically:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   quicksum
+
+
 Generating BQMs:
 
 .. currentmodule:: dimod.generators

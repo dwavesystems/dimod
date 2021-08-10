@@ -558,7 +558,7 @@ class QuadraticModel(QuadraticViewsMixin):
     def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
-            return not self.num_variables and self.offset == other
+            return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
             return (self.shape == other.shape  # redundant, fast to check

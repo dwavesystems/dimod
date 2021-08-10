@@ -56,6 +56,7 @@ __all__ = ['BinaryQuadraticModel',
            'Float64BQM',
            'as_bqm',
            'Spin', 'Binary', 'Spins', 'Binaries',
+           'quicksum',
            ]
 
 BQM_MAGIC_PREFIX = b'DIMODBQM'
@@ -1167,7 +1168,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def is_equal(self, other):
         if isinstance(other, Number):
-            return not self.num_variables and self.offset == other
+            return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
             return (self.vartype == other.vartype
@@ -1978,6 +1979,30 @@ def as_bqm(*args, cls: None = None, copy: bool = False,
                         return bqm
 
     return BinaryQuadraticModel(*args, dtype=dtype)
+
+
+def quicksum(iterable: Iterable[Union[BinaryQuadraticModel, QuadraticModel, Bias]]
+             ) -> Union[BinaryQuadraticModel, QuadraticModel]:
+    r"""Sum `iterable`'s items.
+
+    This function is an alternative to the built-in :func:`sum`. It will
+    generally be faster when adding many :class:`BinaryQuadraticModel`\s and
+    :class:`QuadraticModel`\s because it creates fewer intermediate objects.
+
+    """
+    iterable = iter(iterable)
+
+    try:
+        model = next(iterable)
+    except StopIteration:
+        return QuadraticModel()
+
+    model = copy.deepcopy(model)
+
+    for obj in iterable:
+        model += obj
+
+    return model
 
 
 # register fileview loader

@@ -15,7 +15,7 @@
 import itertools
 import unittest
 
-from dimod import Binary, Integer, Spin
+from dimod import Binary, Integer, Spin, quicksum
 
 
 class TestExpressions(unittest.TestCase):
@@ -46,3 +46,27 @@ class TestExpressions(unittest.TestCase):
 
         for t0, t1 in itertools.permutations([x, i, s, 1], 2):
             qm = t0 - t1
+
+
+class QuickSum(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(quicksum([]), 0)
+
+    def test_promotion(self):
+        x = Binary('x')
+        i = Integer('i')
+        s = Spin('s')
+
+        for perm in itertools.permutations([2*x, i, s, 1]):
+            qm = quicksum(perm)
+
+            self.assertEqual(qm.linear, {'x': 2, 'i': 1, 's': 1})
+            self.assertEqual(qm.offset, 1)
+            self.assertEqual(qm.quadratic, {})
+
+    def test_copy(self):
+        x = Binary('x')
+
+        newx = quicksum([x])
+
+        self.assertIsNot(newx, x)
