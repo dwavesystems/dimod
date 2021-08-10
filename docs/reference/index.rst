@@ -14,6 +14,7 @@ Reference Documentation
    sampler_composites/index
    sampleset
    utilities
+   symbolic
    variables
    vartypes
    exceptions
