@@ -420,7 +420,10 @@ class QuadraticModelBase {
     /// Remove the interaction if it exists
     bool remove_interaction(index_type u, index_type v) {
         if (adj_[u].erase(v)) {
-            return adj_[v].erase(u);  // should always be true
+            if (u != v) {
+                adj_[v].erase(u);
+            }
+            return true;
         } else {
             return false;
         }
