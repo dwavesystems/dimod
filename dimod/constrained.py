@@ -24,7 +24,7 @@ import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable
+from typing import Callable, MutableMapping
 
 import numpy as np
 
@@ -36,6 +36,7 @@ from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import Bias, Variable
+from dimod.utilities import new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
 
@@ -598,6 +599,80 @@ class ConstrainedQuadraticModel:
             objective = as_bqm(objective)
 
         self._objective = objective
+
+    def _substitute_self_loops_from_model(self, qm: Union[BinaryQuadraticModel, QuadraticModel],
+                                          mapping: MutableMapping[Variable, Variable]):
+        if isinstance(qm, BinaryQuadraticModel):
+            # bqms never have self-loops
+            return
+
+        for u in qm.variables:
+            vartype = qm.vartype(u)
+
+            # integer and binary variables never have self-loops
+            if vartype is Vartype.SPIN or vartype is Vartype.BINARY:
+                continue
+
+            try:
+                bias = qm.get_quadratic(u, u)
+            except ValueError:
+                # no self-loop
+                continue
+
+            lb = qm.lower_bound(u)
+            ub = qm.upper_bound(u)
+
+            if u not in mapping:
+                # we've never seen this integer before
+                new: Variable = new_label()
+
+                # on the off chance there are conflicts. Luckily self.variables
+                # is global accross all constraints/objective so we don't need
+                # to worry about accidentally picking something we'll regret
+                while new in self.constraints or new in self.variables:
+                    new = new_label()
+
+                mapping[u] = new
+
+                self.variables._append(vartype, new, lower_bound=lb, upper_bound=ub)
+
+                # we don't add the constraint yet because we don't want
+                # to modify self.constraints
+            else:
+                new = mapping[u]
+
+            qm.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
+
+            qm.add_quadratic(u, new, bias)
+            qm.remove_interaction(u, u)
+
+    def substitute_self_loops(self) -> Dict[Variable, Variable]:
+        """Replace any integer self-loops in the objective or constraints.
+
+        A self-loop :math:`i^2` is removed by introducing a new
+        variable :math:`j`, adding a constraint :math:`j == i`, and then
+        substitute :math:`i^2 == i*j`.
+
+        Acts on the objective and constraints in-place.
+
+        Returns:
+            A mapping from the integer variable labels to their introduced
+            counterparts. The same label is used for the constraint that
+            enforces the relationship.
+
+        """
+        mapping: Dict[Variable, Variable] = dict()
+
+        self._substitute_self_loops_from_model(self.objective, mapping)
+
+        for comparison in self.constraints.values():
+            self._substitute_self_loops_from_model(comparison.lhs, mapping)
+
+        # finally add the constraints for the variables
+        for v, new in mapping.items():
+            self.add_constraint([(v, 1), (new, -1)], rhs=0, sense='==', label=new)
+
+        return mapping
 
     def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.
