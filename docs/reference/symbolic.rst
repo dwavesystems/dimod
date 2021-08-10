@@ -30,7 +30,7 @@ You can express mathematical functions on these variables using Python functions
 as :func:`sum`:
 
 >>> sum([3*i, 2*i])
->>> QuadraticModel({'i': 5.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+QuadraticModel({'i': 5.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
 Example: BQM
 ============
@@ -46,7 +46,7 @@ Example: CQM
 ============
 
 This example uses symbolic math to set an objective (:math:`2i - 0.5ij + 10`)
-and constraints (:math:`xj <= 3` and :math:`i + j >= 1`) in a simple CQM. 
+and constraints (:math:`xj <= 3` and :math:`i + j >= 1`) in a simple CQM.
 
 >>> from dimod import Binary, Integer, ConstrainedQuadraticModel
 >>> x = Binary('x')
