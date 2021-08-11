@@ -93,7 +93,7 @@ class TypedVariables(Variables):
 class ConstrainedQuadraticModel:
     r"""A constrained quadratic model.
 
-    Constrained quadratic models represent problems of the form:
+    Constrained quadratic models are problems of the form:
 
     .. math::
 
