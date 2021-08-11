@@ -649,16 +649,16 @@ class ConstrainedQuadraticModel:
     def substitute_self_loops(self) -> Dict[Variable, Variable]:
         """Replace any integer self-loops in the objective or constraints.
 
-        A self-loop :math:`i^2` is removed by introducing a new
-        variable :math:`j`, adding a constraint :math:`j == i`, and then
-        substitute :math:`i^2 == i*j`.
+        Self-loop :math:`i^2` is removed by introducing a new variable
+        :math:`j` with interaction :math:`i*j` and adding constraint
+        :math:`j == i`.
 
         Acts on the objective and constraints in-place.
 
         Returns:
             A mapping from the integer variable labels to their introduced
-            counterparts. The same label is used for the constraint that
-            enforces the relationship.
+            counterparts. The constraint enforcing :math:`j == i` uses
+            the same label.
 
         """
         mapping: Dict[Variable, Variable] = dict()
