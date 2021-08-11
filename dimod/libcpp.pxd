@@ -129,6 +129,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         size_type num_interactions(index_type)
         bias_type& offset()
         bias_type quadratic_at(index_type, index_type) except +
+        bint remove_interaction(index_type, index_type) except +
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type)
         const bias_type& upper_bound(index_type)

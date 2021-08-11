@@ -636,12 +636,10 @@ class QuadraticModel(QuadraticViewsMixin):
         mapping = self.data.relabel_variables_as_integers()
         return self, mapping
 
+    @forwarding_method
     def remove_interaction(self, u: Variable, v: Variable):
-        # This is needed for the views, but I am not sure how often users are
-        # removing variables/interactions. For now let's leave it here so
-        # we satisfy the ABC and see if it comes up. If not, in the future we
-        # can consider removing __delitem__ from the various views.
-        raise NotImplementedError("not yet implemented - please open a feature request")
+        """Remove the interaction between `u` and `v`."""
+        return self.data.remove_interaction
 
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         # see note in remove_interaction
@@ -810,7 +808,7 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
-            generated :class:`uuid.UUID`, rather than an integer label.
+            generated :class:`uuid.UUID` as a string.
         bias: The bias to apply to the variable.
         dtype: Data type for the returned quadratic model.
         lower_bound: Keyword-only argument to specify integer lower bound.

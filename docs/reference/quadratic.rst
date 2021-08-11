@@ -65,6 +65,7 @@ Methods
    ~QuadraticModel.reduce_quadratic
    ~QuadraticModel.relabel_variables
    ~QuadraticModel.relabel_variables_as_integers
+   ~QuadraticModel.remove_interaction
    ~QuadraticModel.scale
    ~QuadraticModel.set_linear
    ~QuadraticModel.set_quadratic

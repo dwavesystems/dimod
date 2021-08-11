@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.substitute_self_loops`` method that replaces
+    integer self-loops by introducing a new variable and adding a constraint.

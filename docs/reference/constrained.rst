@@ -44,6 +44,7 @@ Methods
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
    ConstrainedQuadraticModel.set_objective
+   ConstrainedQuadraticModel.substitute_self_loops
    ConstrainedQuadraticModel.to_file
    ConstrainedQuadraticModel.vartype
 

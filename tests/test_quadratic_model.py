@@ -16,7 +16,6 @@ import itertools
 import shutil
 import tempfile
 import unittest
-import uuid
 
 import numpy as np
 
@@ -333,7 +332,7 @@ class TestFromBQM(unittest.TestCase):
 class TestInteger(unittest.TestCase):
     def test_init_no_label(self):
         integer_qm = Integer()
-        self.assertIsInstance(integer_qm.variables[0], uuid.UUID)
+        self.assertIsInstance(integer_qm.variables[0], str)
 
     def test_multiple_labelled(self):
         i, j, k = dimod.Integers('ijk')
@@ -367,6 +366,18 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(qm.offset, 5)
         qm.offset -= 2
         self.assertEqual(qm.offset, 3)
+
+
+class TestRemoveInteraction(unittest.TestCase):
+    def test_several(self):
+        i, j, k = dimod.Integers('ijk')
+        qm = i*i + i*j + i*k + j*k + k + 1
+        self.assertEqual(qm.num_interactions, 4)
+        qm.remove_interaction('i', 'i')
+        self.assertEqual(qm.num_interactions, 3)
+        qm.remove_interaction('i', 'k')
+        self.assertEqual(qm.num_interactions, 2)
+        self.assertEqual(qm.quadratic, {('j', 'i'): 1.0, ('k', 'j'): 1.0})
 
 
 class TestSpinToBinary(unittest.TestCase):

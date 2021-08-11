@@ -442,6 +442,13 @@ cdef class cyQM_template(cyQMBase):
     def relabel_variables(self, mapping):
         self.variables._relabel(mapping)
 
+    def remove_interaction(self, u, v):
+        cdef Py_ssize_t ui = self.variables.index(u)
+        cdef Py_ssize_t vi = self.variables.index(v)
+        
+        if not self.cppqm.remove_interaction(ui, vi):
+            raise ValueError(f"{u!r} and {v!r} have no interaction")
+
     def relabel_variables_as_integers(self):
         return self.variables._relabel_as_integers()
 
