@@ -267,6 +267,8 @@ Methods
    ~DiscreteQuadraticModel.add_linear_equality_constraint
    ~DiscreteQuadraticModel.add_variable
    ~DiscreteQuadraticModel.copy
+   ~DiscreteQuadraticModel.energies
+   ~DiscreteQuadraticModel.energy
    ~DiscreteQuadraticModel.from_file
    ~DiscreteQuadraticModel.from_numpy_vectors
    ~DiscreteQuadraticModel.get_cases
