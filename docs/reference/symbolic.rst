@@ -8,21 +8,27 @@ Symbolic Math
 You can construct a model, for example a CQM, from symbolic math, which is especially
 useful for learning and testing with small problems.
 
-dimod supports binary and integer variables:
+dimod enables easy incorporation of binary and integer variables as single-variable
+models. For example, you can represent such binary variables as follows:
 
->>> from dimod import Binary, Integer
->>> # Create binary variables
+>>> from dimod import Binary, Spin
 >>> x = Binary('x')
->>> y = Binary('y')
->>> # Create integer variables
->>> i = Integer('i')
->>> j = Integer('j')
+>>> s = Spin('s')
+>>> x
+BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'BINARY')
 
-Such variables are constructed as either BQMs or QMS, depending on the type of
+Similarly for integers:
+
+>>> from dimod import Integer
+>>> i = Integer('i')
+>>> i
+QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+The construction of such variables as either BQMs or QMS depends on the type of
 variable:
 
->>> 2*x
-BinaryQuadraticModel({'x': 2.0}, {}, 0.0, 'BINARY')
+>>> x + s
+QuadraticModel({'x': 1.0, 's': 1.0}, {}, 0.0, {'x': 'BINARY', 's': 'SPIN'}, dtype='float64')
 >>> 3*i - x
 QuadraticModel({'i': 3.0, 'x': -1.0}, {}, -0.0, {'i': 'INTEGER', 'x': 'BINARY'}, dtype='float64')
 
