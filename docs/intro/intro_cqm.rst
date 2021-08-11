@@ -34,7 +34,7 @@ Example: dimod CQM Generator
 ----------------------------
 
 This example creates a CQM representing a
-`knapsack problem <https://en.wikipedia.org/wiki/Knapsack_problem>`_` of ten
+`knapsack problem <https://en.wikipedia.org/wiki/Knapsack_problem>`_ of ten
 items.
 
 >>> cqm = dimod.generators.knapsack(10)

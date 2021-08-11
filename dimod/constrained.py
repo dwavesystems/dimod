@@ -99,8 +99,9 @@ class ConstrainedQuadraticModel:
     .. math::
 
         \begin{align}
-            {\rm minimize:} \, & \sum_{i} a_i x_i + \sum_{i<j} b_{ij} x_i x_j + c, \\
-            {\rm subject}\,{\rm to:} \,
+            \text{Minimize an objective:} & \\
+            & \sum_{i} a_i x_i + \sum_{i<j} b_{ij} x_i x_j + c, \\
+            \text{Subject to constraints:} & \\
             & \sum_i a_i^{(c)} x_i + \sum_{i<j} b_{ij}^{(c)} x_i x_j+ c^{(c)} \le 0,
             \quad c=1, \dots, C_{\rm ineq.}, \\
             & \sum_i a_i^{(d)} x_i + \sum_{i<j} b_{ij}^{(d)} x_i x_j + c^{(d)} = 0,
