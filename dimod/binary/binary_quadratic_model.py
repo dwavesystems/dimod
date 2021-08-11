@@ -63,7 +63,23 @@ BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 
 class BinaryQuadraticModel(QuadraticViewsMixin):
-    """TODO"""
+    r"""Binary quadratic model.
+
+    Binary quadratic models (BQMs) are problems of the form:
+
+    .. math::
+
+    E(\bf{v})
+    = \sum_{i=1} a_i v_i
+    + \sum_{i<j} b_{i,j} v_i v_j
+    + c
+    \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
+
+    where :math:`a_{i}, b_{ij}, c` are real values.
+
+    This class encodes Ising and quadratic unconstrained binary optimization
+    (QUBO) models used by samplers such as the D-Wave system.
+    """
 
     _DATA_CLASSES = {
         np.dtype(np.float32): cyBQM_float32,
@@ -1135,7 +1151,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def has_variable(self, v):
         warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0, '
-                      'use v in bqm.variables instead.', 
+                      'use v in bqm.variables instead.',
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
@@ -1389,7 +1405,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
-        """Multiply all the biases by the specified scalar. 
+        """Multiply all the biases by the specified scalar.
 
         Args:
             scalar (number):
