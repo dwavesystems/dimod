@@ -760,15 +760,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_variable(self, v: Optional[Variable] = None, bias: Bias = 0):
-        """Add a variable and its linear bias to a binary quadratic model.
+        """Add a variable to a binary quadratic model.
 
         Args:
-            v:
-                Variable label. If not provided, the next interger label
+            v: Variable label. If not provided, the next interger label
                 is used.
 
-            bias:
-                Linear bias for the added variable.
+            bias: Linear bias for the added variable.
         """
         return self.data.add_variable
 
@@ -1694,7 +1692,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         values are converted.
 
         Returns:
-            tuple: 3-tuple of form (``linear``, ``quadratic``, ``offset``), where
+            tuple: 3-tuple of form ``(linear, quadratic, offset)``, where
             ``linear`` is a dict of linear biases, ``quadratic`` is a dict of
             quadratic biases, and ``offset`` is a number that represents the
             constant offset of the binary quadratic model.
@@ -1852,7 +1850,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         values are converted.
 
         Returns:
-            tuple: 2-tuple of form ({(u, v): bias, ...}, ``offset``), where
+            tuple: 2-tuple of form ``({(u, v): bias, ...}, offset)``, where
             ``u``, ``v``, are binary-valued variables and ``bias`` is their associated coefficient, and ``offset`` is a number that represents the
             constant offset of the binary quadratic model.
         """
