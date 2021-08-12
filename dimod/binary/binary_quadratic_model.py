@@ -717,13 +717,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 bias. If a dict, should be of the form ``{(u, v): bias, ...}``
                 where ``u`` and ``v`` are variables in the model and ``bias`` is
                 the associated quadratic bias. Otherwise, should be an
-                iterable of ``(u, v, bias)``` triplets.
+                iterable of ``(u, v, bias)`` triplets.
                 If a variable is not present in the model, it is added.
                 If the interaction already exists, the bias is added.
 
         Raises:
             ValueError:
-                If any self-loops are given. E.g. ``(u, u, bias)``` is not a valid
+                If any self-loops are given. E.g. ``(u, u, bias)`` is not a valid
                 triplet.
 
         """
@@ -1078,7 +1078,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             h: Linear biases of the Ising problem. If a dict, should be of the
-                form ``{v: bias, ...}``` where ``v`` is a spin-valued variable and
+                form ``{v: bias, ...}`` where ``v`` is a spin-valued variable and
                 ``bias`` is its associated bias. If a list, it is treated as a
                 list of biases where the indices are the variable labels.
 
@@ -1170,7 +1170,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             Q: Coefficients of a quadratic unconstrained binary optimization
                 (QUBO) problem. Should be a dict of the form
-                ``{(u, v): bias, ...}``` where ``u``, ``v``, are binary-valued
+                ``{(u, v): bias, ...}`` where ``u``, ``v``, are binary-valued
                 variables and ``bias`` is their associated coefficient.
 
             offset (optional, default=0.0):
