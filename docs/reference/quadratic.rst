@@ -177,15 +177,14 @@ Methods
 BQM Functions
 -------------
 
-Adding models symbolically:
+Generic constructor:
 
-.. currentmodule:: dimod
+.. currentmodule:: dimod.binary
 
 .. autosummary::
    :toctree: generated/
 
-   quicksum
-
+   as_bqm
 
 Generating BQMs:
 
@@ -202,6 +201,15 @@ Generating BQMs:
    randint
    ran_r
    uniform
+
+Adding models symbolically:
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   quicksum
 
 Fixing variables:
 

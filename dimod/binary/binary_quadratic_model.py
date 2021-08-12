@@ -69,11 +69,11 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     .. math::
 
-    E(\bf{v})
-    = \sum_{i=1} a_i v_i
-    + \sum_{i<j} b_{i,j} v_i v_j
-    + c
-    \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
+        E(\bf{v})
+        = \sum_{i=1} a_i v_i
+        + \sum_{i<j} b_{i,j} v_i v_j
+        + c
+        \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
 
     where :math:`a_{i}, b_{ij}, c` are real values.
 
@@ -494,7 +494,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
-        """Add a quadratic term."""
+        """Add a linear term."""
         return self.data.add_linear
 
     def add_linear_equality_constraint(
@@ -672,6 +672,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self.add_linear(v, bias)
 
     def add_linear_from_array(self, linear: Sequence):
+        """Add linear biases from an array-like to a binary quadratic model.
+
+        Args:
+            linear:
+                A one-dimensional `array_like`_ of linear biases.
+        """
         ldata = np.asarray(linear)
 
         # cython has trouble with readonly buffers as of 0.29.22, in the
@@ -695,6 +701,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        """Add a quadratic bias between two variables."""
         return self.data.add_quadratic
 
     def add_interaction(self, *args, **kwargs):
@@ -737,7 +744,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             quadratic:
-                An square 2d `array-like`_ of quadratic biases.
+                An square 2d `array_like`_ of quadratic biases.
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -753,6 +760,16 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_variable(self, v: Optional[Variable] = None, bias: Bias = 0):
+        """Add a variable and its linear bias to a binary quadratic model.
+
+        Args:
+            v:
+                Variable label. If not provided, the next interger label
+                is used.
+
+            bias:
+                Linear bias for the added variable.
+        """
         return self.data.add_variable
 
     def change_vartype(self, vartype, inplace=True):
@@ -827,7 +844,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def degree(self, v: Variable) -> int:
-        """Return the degree of variable ``v``.
+        """Return the degree of a variable.
 
         The degree is the number of interactions that contain ``v``.
         """
@@ -861,6 +878,20 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return cls(vartype)
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None):
+        """Determine the energies of the given samples-like.
+
+        Args:
+            samples_like (samples_like):
+                Raw sample. `samples_like` is an extension of
+                NumPy's `array_like`_ structure. See :func:`.as_samples`.
+
+            dtype (data-type, optional, default=None):
+                Desired NumPy data type for the energy. Matches
+                :attr:`.dtype` by default.
+
+        Returns:
+            Energies for the samples.
+        """
         return self.data.energies(samples_like, dtype=dtype)
 
     def energy(self, sample, dtype=None):
@@ -869,7 +900,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             samples_like (samples_like):
                 Raw sample. `samples_like` is an extension of
-                NumPy's array_like structure. See :func:`.as_samples`.
+                NumPy's `array_like`_ structure. See :func:`.as_samples`.
 
             dtype (data-type, optional, default=None):
                 Desired NumPy data type for the energy. Matches
@@ -920,7 +951,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self.fix_variable(v, val)
 
     def flip_variable(self, v: Hashable):
-        """Flip variable ``v`` in a binary quadratic model."""
+        """Flip the specified variable in a binary quadratic model."""
         for u in self.adj[v]:
             self.spin.adj[v][u] *= -1
         self.spin.linear[v] *= -1
@@ -1124,6 +1155,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, *,
                            variable_order=None, dtype=np.float64):
+        """Create a binary quadratic model from NumPy vectors."""
         obj = super().__new__(cls)
         data_cls = cls._DATA_CLASSES[np.dtype(dtype)]
         obj.data = data_cls.from_numpy_vectors(
@@ -1260,6 +1292,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @forwarding_method
     def get_quadratic(self, u: Variable, v: Variable,
                       default: Optional[Bias] = None):
+        """Get the quadratic bias of a pair of variables."""
         return self.data.get_quadratic
 
     def normalize(self, bias_range=1, quadratic_range=None,
@@ -1365,6 +1398,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self.data.reduce_quadratic
 
     def relabel_variables(self, mapping, inplace=True):
+        """Relabel the variables of a binary quadratic model."""
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -1372,6 +1406,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self
 
     def relabel_variables_as_integers(self, inplace=True):
+        """Relabel to consecutive integers the variables of a binary quadratic model."""
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
@@ -1380,6 +1415,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def remove_interaction(self, u: Variable, v: Variable):
+        """Remove the interaction between a pair of variables."""
         return self.data.remove_interaction
 
     def remove_interactions_from(self, interactions: Iterable):
@@ -1395,6 +1431,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
+        """Remove the specified variable from a binary quadratic model."""
         return self.data.remove_variable
 
     def remove_variables_from(self, variables: Iterable[Variable]):
@@ -1404,6 +1441,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def resize(self, n: int):
+        """Reduce a binary quadratic model to the specified number of variables."""
         return self.data.resize
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
@@ -1729,7 +1767,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                          dtype=None, index_dtype=None,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-
+        """Save a binary quadratic model as NumPy vectors."""
         if dtype is not None:
             warnings.warn(
                 "The 'dtype' keyword argument is deprecated since dimod 0.10.0"
@@ -1808,11 +1846,22 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return tuple(ret)
 
     def to_qubo(self) -> Tuple[Mapping[Tuple[Variable, Variable], Bias], Bias]:
+        """Convert a binary quadratic model to QUBO format.
+
+        If the binary quadratic model's vartype is not :class:`.Vartype.BINARY`,
+        values are converted.
+
+        Returns:
+            tuple: 2-tuple of form ({(u, v): bias, ...}, ``offset``), where
+            ``u``, ``v``, are binary-valued variables and ``bias`` is their associated coefficient, and ``offset`` is a number that represents the
+            constant offset of the binary quadratic model.
+        """
         qubo = dict(self.binary.quadratic)
         qubo.update(((v, v), bias) for v, bias in self.binary.linear.items())
         return qubo, self.binary.offset
 
     def update(self, other):
+        """Not implemented."""
         try:
             self.data.update(other.data)
             return
