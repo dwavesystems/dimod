@@ -436,7 +436,7 @@ class ConstrainedQuadraticModel:
 
     def add_discrete(self, variables: Collection[Variable],
                      label: Optional[Hashable] = None) -> Hashable:
-        """Add a iterable of binary variables as a disjoint one-hot constraint.
+        """Add an iterable of binary variables as a disjoint one-hot constraint.
 
         Adds a special kind of one-hot constraint. These one-hot constraints
         must be disjoint, that is they must not have any overlapping variables.
@@ -444,11 +444,11 @@ class ConstrainedQuadraticModel:
         Args:
             variables: An iterable of variables.
 
-            label: A label for the constraint. Must be unique. If no label
+            label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
         Returns:
-            The label of the added constraint.
+            Label of the added constraint.
 
         Raises:
             ValueError: If any of the given variables have already been added
@@ -477,7 +477,24 @@ class ConstrainedQuadraticModel:
         return label
 
     def add_variable(self, v: Variable, vartype: VartypeLike):
-        """Add a variable to the model."""
+        """Add a variable to the model.
+
+        Args:
+            variable: A variable label.
+
+            vartype:
+                Variable type. One of:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, Integer
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
+
+        """
         # todo: lower and upper bound
         if self.variables.count(v):
             if as_vartype(vartype, extended=True) != self.variables.vartype(v):
@@ -549,7 +566,18 @@ class ConstrainedQuadraticModel:
     def from_quadratic_model(cls, qm: Union[QuadraticModel, BinaryQuadraticModel]
                              ) -> 'ConstrainedQuadraticModel':
         """Construct a constrained quadratic model from a quadratic model or
-        binary quadratic model."""
+        binary quadratic model.
+
+        Args:
+            qm: Binary quadratic model (BQM) or quadratic model (QM).
+
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, BinaryQuadraticModel
+            >>> bqm = BinaryQuadraticModel.from_ising({}, {'ab': 1, 'bc': 1, 'ac': 1})
+            >>> cqm = ConstrainedQuadraticModel().from_bqm(bqm)
+            >>> cqm.objective
+            BinaryQuadraticModel({'a': 0.0, 'b': 0.0, 'c': 0.0}, {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}, 0.0, 'SPIN')
+        """
         cqm = cls()
         cqm.set_objective(qm)
         return cqm
@@ -620,7 +648,18 @@ class ConstrainedQuadraticModel:
         return count
 
     def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
-        """Set the objective of the constrained quadratic model."""
+        """Set the objective of the constrained quadratic model.
+
+        Args:
+            objective: Binary quadratic model (BQM) or quadratic model (QM).
+
+        Examples:
+            >>> from dimod import Integer, ConstrainedQuadraticModel
+            >>> i = Integer('i')
+            >>> j = Integer('j')
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.set_objective(2*i - 0.5*i*j + 10)
+        """
         self._add_variables_from(objective)
 
         if isinstance(objective, BQMabc):  # handle legacy BQMs
@@ -684,10 +723,19 @@ class ConstrainedQuadraticModel:
         Acts on the objective and constraints in-place.
 
         Returns:
-            A mapping from the integer variable labels to their introduced
+            Mapping from the integer variable labels to their introduced
             counterparts. The constraint enforcing :math:`j == i` uses
             the same label.
 
+        Examples:
+            >>> from dimod import Integer, ConstrainedQuadraticModel
+            >>> i = Integer('i')
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i*i <=3, label="i squared")   # doctest: +IGNORE_RESULT
+            >>> cqm.substitute_self_loops()                      # doctest: +IGNORE_RESULT
+            >>> cqm.constraints   # doctest: +IGNORE_RESULT
+            {'i squared': QuadraticModel({'i': 0.0, 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 0.0}, {('cf651f3d-bdf8-4735-9139-eee0a32e217f', 'i'): 1.0}, 0.0, {'i': 'INTEGER', 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 'INTEGER'}, dtype='float64') <= 3,
+            'cf651f3d-bdf8-4735-9139-eee0a32e217f': QuadraticModel({'i': 1.0, 'cf651f3d-bdf8-4735-9139-eee0a32e217f': -1.0}, {}, 0.0, {'i': 'INTEGER', 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 'INTEGER'}, dtype='float64') == 0}
         """
         mapping: Dict[Variable, Variable] = dict()
 
