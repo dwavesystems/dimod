@@ -244,6 +244,12 @@ class ConstrainedQuadraticModel:
     def add_constraint(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add constraints.
 
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, Integers
+            >>> x, y = Integers(['x', 'y'])
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(x + y <= 3, label="Constrained xy range")   # doctest: +IGNORE_RESULT
+
         See also:
             :meth:`~.ConstrainedQuadraticModel.add_constraint_from_model`
 
@@ -286,6 +292,12 @@ class ConstrainedQuadraticModel:
 
         Returns:
             The label of the added constraint.
+
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, Binary
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> x = Binary('x')
+            >>> cqm.add_constraint_from_model(x, '>=', 0, "Min x")   # doctest: +IGNORE_RESULT
 
         """
         variables = self.variables
@@ -332,15 +344,20 @@ class ConstrainedQuadraticModel:
             comp: A comparison object.
 
             label: A label for the constraint. Must be unique. If no label
-                is provided, then one is generated using :mod:`uuid`.
+                is provided, one is generated using :mod:`uuid`.
 
-            copy: If `True`, the model is copied. This can be set to `False` to
+            copy: If `True`, the model is copied. You can set to `False` to
                 improve performance, but subsequently mutating the model can
                 cause issues.
 
         Returns:
-            The label of the added constraint.
+            Label of the added constraint.
 
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, Integers
+            >>> x = Integer('x')
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_constraint_from_comparison(x <= 3, label="Max x")   # doctest: +IGNORE_RESULT
         """
         if not isinstance(comp.rhs, Number):
             raise TypeError("comparison should have a numeric rhs")
@@ -372,6 +389,16 @@ class ConstrainedQuadraticModel:
 
         Returns:
             The label of the added constraint.
+
+        Examples:
+            >>> from dimod import ConstrainedQuadraticModel, Integer, Binary
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('j', 'INTEGER')   # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('x', 'BINARY')    # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('y', 'BINARY')    # doctest: +IGNORE_RESULT
+            >>> cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
+            ...         ('i', 'j', 1)], '<=', rhs=1, label="Constraint1")   # doctest: +IGNORE_RESULT
 
         """
         qm = QuadraticModel()
