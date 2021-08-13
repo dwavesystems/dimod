@@ -578,11 +578,15 @@ class ConstrainedQuadraticModel:
             qm: Binary quadratic model (BQM) or quadratic model (QM).
 
         Examples:
+            This example creates a CQM to minimize a triangular problem with the added
+            constraint that one of the variables must have value 1 in feasible solutions.
+
             >>> from dimod import ConstrainedQuadraticModel, BinaryQuadraticModel
             >>> bqm = BinaryQuadraticModel.from_ising({}, {'ab': 1, 'bc': 1, 'ac': 1})
             >>> cqm = ConstrainedQuadraticModel().from_bqm(bqm)
             >>> cqm.objective
             BinaryQuadraticModel({'a': 0.0, 'b': 0.0, 'c': 0.0}, {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}, 0.0, 'SPIN')
+            >>> label1 = cqm.add_constraint_from_model(BinaryQuadraticModel({'a': 0}, {}, 0, 'SPIN'), '>=', 0)
         """
         cqm = cls()
         cqm.set_objective(qm)
