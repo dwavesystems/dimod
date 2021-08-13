@@ -355,7 +355,7 @@ class ConstrainedQuadraticModel:
             Label of the added constraint.
 
         Examples:
-            >>> from dimod import ConstrainedQuadraticModel, Integers
+            >>> from dimod import ConstrainedQuadraticModel, Integer
             >>> i = Integer('i')
             >>> cqm = ConstrainedQuadraticModel()
             >>> cqm.add_constraint_from_comparison(i <= 3, label='Max i')
@@ -569,6 +569,10 @@ class ConstrainedQuadraticModel:
                              ) -> 'ConstrainedQuadraticModel':
         """Construct a constrained quadratic model from a quadratic model or
         binary quadratic model.
+
+        The specified model is set as the objective to be minimzed in the constructed
+        constrained quadratic model (CQM). You can then add constraints that any feasible
+        solutions should meet.
 
         Args:
             qm: Binary quadratic model (BQM) or quadratic model (QM).
