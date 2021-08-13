@@ -246,9 +246,10 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integers
-            >>> x, y = Integers(['x', 'y'])
+            >>> i, j = Integers(['i', 'j'])
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_constraint(x + y <= 3, label="Constrained xy range")   # doctest: +IGNORE_RESULT
+            >>> cqm.add_constraint(i + j <= 3, label='Constrained i-j range')
+            'Constrained i-j range'
 
         See also:
             :meth:`~.ConstrainedQuadraticModel.add_constraint_from_model`
@@ -297,8 +298,8 @@ class ConstrainedQuadraticModel:
             >>> from dimod import ConstrainedQuadraticModel, Binary
             >>> cqm = ConstrainedQuadraticModel()
             >>> x = Binary('x')
-            >>> cqm.add_constraint_from_model(x, '>=', 0, "Min x")   # doctest: +IGNORE_RESULT
-
+            >>> cqm.add_constraint_from_model(x, '>=', 0, 'Min x')
+            'Min x'
         """
         variables = self.variables
 
@@ -355,9 +356,10 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integers
-            >>> x = Integer('x')
+            >>> i = Integer('i')
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_constraint_from_comparison(x <= 3, label="Max x")   # doctest: +IGNORE_RESULT
+            >>> cqm.add_constraint_from_comparison(i <= 3, label='Max i')
+            'Max i'
         """
         if not isinstance(comp.rhs, Number):
             raise TypeError("comparison should have a numeric rhs")
@@ -397,8 +399,8 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_variable('j', 'INTEGER')   # doctest: +IGNORE_RESULT
             >>> cqm.add_variable('x', 'BINARY')    # doctest: +IGNORE_RESULT
             >>> cqm.add_variable('y', 'BINARY')    # doctest: +IGNORE_RESULT
-            >>> cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
-            ...         ('i', 'j', 1)], '<=', rhs=1, label="Constraint1")   # doctest: +IGNORE_RESULT
+            >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
+            ...                                           ('i', 'j', 1)], '<=', rhs=1)
 
         """
         qm = QuadraticModel()
@@ -731,7 +733,8 @@ class ConstrainedQuadraticModel:
             >>> from dimod import Integer, ConstrainedQuadraticModel
             >>> i = Integer('i')
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_constraint(i*i <=3, label="i squared")   # doctest: +IGNORE_RESULT
+            >>> cqm.add_constraint(i*i <=3, label='i squared')
+            'i squared'
             >>> cqm.substitute_self_loops()                      # doctest: +IGNORE_RESULT
             >>> cqm.constraints   # doctest: +IGNORE_RESULT
             {'i squared': QuadraticModel({'i': 0.0, 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 0.0}, {('cf651f3d-bdf8-4735-9139-eee0a32e217f', 'i'): 1.0}, 0.0, {'i': 'INTEGER', 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 'INTEGER'}, dtype='float64') <= 3,
