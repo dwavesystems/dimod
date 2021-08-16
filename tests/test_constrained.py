@@ -640,9 +640,3 @@ class TestCQMFromLPFile(unittest.TestCase):
 
             else:
                 raise KeyError('Not expected constraint: {}'.format(cname))
-
-
-if __name__ == "__main__":
-
-    unittest.main()
-
