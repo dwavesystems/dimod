@@ -108,7 +108,7 @@ class ConstrainedQuadraticModel:
             \quad d=1, \dots, C_{\rm eq.},
         \end{align}
 
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
     variables, :math:`a_{i}, b_{ij}, c` are real values and
     :math:`C_{\rm ineq.}, C_{\rm eq,}` are the number of inequality and
     equality constraints respectively.
