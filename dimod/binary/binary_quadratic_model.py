@@ -875,37 +875,42 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return cls(vartype)
 
-    def energies(self, samples_like, dtype: Optional[DTypeLike] = None):
+    def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
         """Determine the energies of the given samples-like.
 
         Args:
             samples_like (samples_like):
-                Raw sample. `samples_like` is an extension of
+                Raw samples. `samples_like` is an extension of
                 NumPy's `array_like`_ structure. See :func:`.as_samples`.
 
-            dtype (data-type, optional, default=None):
+            dtype:
                 Desired NumPy data type for the energy. Matches
                 :attr:`.dtype` by default.
 
         Returns:
             Energies for the samples.
+
+        .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
+
         """
         return self.data.energies(samples_like, dtype=dtype)
 
-    def energy(self, sample, dtype=None):
+    def energy(self, sample, dtype: Optional[DTypeLike] = None) -> Bias:
         """Determine the energy of the given sample.
 
         Args:
-            samples_like (samples_like):
+            sample (samples_like):
                 Raw sample. `samples_like` is an extension of
                 NumPy's `array_like`_ structure. See :func:`.as_samples`.
 
-            dtype (data-type, optional, default=None):
+            dtype:
                 Desired NumPy data type for the energy. Matches
                 :attr:`.dtype` by default.
 
         Returns:
             The energy.
+
+        .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
         """
         energy, = self.energies(sample, dtype=dtype)

@@ -329,19 +329,27 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t num_samples = samples_view.shape[0]
         cdef Py_ssize_t num_variables = samples_view.shape[1]
 
-        if num_variables != self.num_variables():
-            raise ValueError("inconsistent number of variables")
         if num_variables != len(labels):
-            # an internal error to as_samples. We do this check because
-            # the boundscheck is off
+            # as_samples should never return inconsistent sizes, but we do this
+            # check because the boundscheck is off and we otherwise might get
+            # segfaults
             raise RuntimeError(
                 "as_samples returned an inconsistent samples/variables")
 
-        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(num_variables, dtype=np.intp)
+        # get the indices of the BQM variables. Use -1 to signal that a
+        # variable's index has not yet been set
+        cdef Py_ssize_t[::1] bqm_to_sample = np.full(self.num_variables(), -1, dtype=np.intp)
         cdef Py_ssize_t si
         for si in range(num_variables):
-            v = labels[si]  # python label
-            bqm_to_sample[self.variables.index(v)] = si
+            v = labels[si]
+            if self.variables.count(v):
+                bqm_to_sample[self.variables.index(v)] = si
+
+        # make sure that all of the BQM variables are accounted for
+        for si in range(self.num_variables()):
+            if bqm_to_sample[si] == -1:
+                raise ValueError(
+                    f"missing variable {self.variables[si]!r} in sample(s)")
 
         cdef cython.floating[::1] energies
         if cython.floating is float:
@@ -356,7 +364,7 @@ cdef class cyBQM_template(cyBQMBase):
             # offset
             energies[si] = self.cppbqm.offset()
 
-            for ui in range(num_variables):
+            for ui in range(self.num_variables()):
                 uspin = samples_view[si, bqm_to_sample[ui]]
 
                 # linear

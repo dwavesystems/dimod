@@ -270,6 +270,27 @@ class TestEnergies(unittest.TestCase):
             sample = {'i': -s}
             self.assertEqual(i.energy(sample), -s)
 
+    def test_superset(self):
+        a = Integer('a')
+        b = Binary('b')
+
+        qm = a + a*b + 1.5
+
+        self.assertEqual(qm.energy({'a': 1, 'b': 1, 'c': 1}), 3.5)
+        self.assertEqual(qm.energy({'a': 1, 'b': 0, 'c': 1}), 2.5)
+
+    def test_subset(self):
+        a = Integer('a')
+        b = Binary('b')
+        c = Spin('c')
+
+        qm = a + a*b + c + 1.5
+
+        samples = {'a': 1, 'c': 1}
+
+        with self.assertRaises(ValueError):
+            qm.energy(samples)
+
 
 class TestFileSerialization(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])

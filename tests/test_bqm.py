@@ -1058,7 +1058,14 @@ class TestEnergies(unittest.TestCase):
             bqm.energies(samples)
 
     @parameterized.expand(BQMs.items())
-    def test_length(self, name, BQM):
+    def test_superset(self, name, BQM):
+        bqm = dimod.BQM({'a': 1}, {'ab': 1}, 1.5, 'BINARY')
+
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'c': 1}), 3.5)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 0, 'c': 1}), 2.5)
+
+    @parameterized.expand(BQMs.items())
+    def test_subset(self, name, BQM):
         arr = np.arange(9).reshape((3, 3))
         bqm = BQM(arr, dimod.BINARY)
 
