@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Add new binary quadratic model generators for simple logic gates:
+
+    * ``dimod.generators.and_gate``
+    * ``dimod.generators.fulladder_gate``
+    * ``dimod.generators.halfadder_gate``
+    * ``dimod.generators.or_gate``
+    * ``dimod.generators.xor_gate``
+
+    See `#951 <https://github.com/dwavesystems/dimod/issues/951>`_.

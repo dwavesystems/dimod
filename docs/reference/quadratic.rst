@@ -193,14 +193,19 @@ Generating BQMs:
 .. autosummary::
    :toctree: generated/
 
+   and_gate
    chimera_anticluster
    combinations
    frustrated_loop
+   fulladder_gate
    gnm_random_bqm
    gnp_random_bqm
+   halfadder_gate
+   or_gate
    randint
    ran_r
    uniform
+   xor_gate
 
 Adding models symbolically:
 
