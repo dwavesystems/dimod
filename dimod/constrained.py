@@ -1195,7 +1195,17 @@ load.register(CQM_MAGIC_PREFIX, ConstrainedQuadraticModel.from_file)
 def cqm_model_from_parse_output(parse_output: pyparsing.ParseResults,
                                 lower_bound_default,
                                 upper_bound_default) -> "ConstrainedQuadraticModel":
+    """
+    Constructs the CQM model from the parse results encoding the LP file
+    Args:
+        Args:
+        parse_output: the parse results encoding the LP file
+        lower_bound_default: the lower bound of the integer variables, in case they are not specified
+        upper_bound_default: the upper bound of the integer variables in case they are not specified
 
+    Returns:
+
+    """
     # get the variables info
     variables_info = get_variables(parse_output, lower_bound_default, upper_bound_default)
 
@@ -1280,22 +1290,20 @@ def get_variables(parse_output: pyparsing.ParseResults,
     """
     Returns set of variables and dict of variable types and bounds
     Args:
-        parse_output:
-
-        lower_bound_default:
-
-        upper_bound_default
+        parse_output: the parse results encoding the LP file
+        lower_bound_default: the lower bound of the integer variables, in case they are not specified
+        upper_bound_default: the upper bound of the integer variables in case they are not specified
 
     Returns:
-
+        a dictionary for each variable containing type, upper and lower bounds
     """
     # handle the default bounds
-    if lower_bound_default == "inf":
+    if lower_bound_default is None:
         lb_def = -infinity
     else:
         lb_def = lower_bound_default
 
-    if upper_bound_default == "inf":
+    if upper_bound_default is None:
         ub_def = infinity
     else:
         ub_def = upper_bound_default
@@ -1312,13 +1320,13 @@ def get_variables(parse_output: pyparsing.ParseResults,
             continue
 
         else:
-            if len(oe)==2:
+            if len(oe) == 2:
                 if oe.name != "":
                     all_vars.add(oe.name[0])
                 else:
                     # not supported yet.. although they can be replaced by CQM function
                     raise ValueError("pure quadratic terms are not supported, found {}^2".format(oe.squared_name[0]))
-            elif len(oe)==3:
+            elif len(oe) == 3:
                 all_vars.update([oe.name[0], oe.second_var_name[0]])
 
     # scan the constraints
