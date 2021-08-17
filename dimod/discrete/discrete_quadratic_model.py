@@ -259,6 +259,8 @@ class DiscreteQuadraticModel:
                 - log2: Adds up to log2(ub - lb) number of dqm variables each
                         with two cases to the constraint.
                 - log10: Adds log10 dqm variables each with up to 10 cases.
+                - linear: Adds one dqm variable for each constraint with linear
+                          number of cases.
             cross_zero:
                  When True, adds zero to the domain of constraint
 
@@ -270,9 +272,9 @@ class DiscreteQuadraticModel:
 
        """
 
-        if slack_method not in ['log2', 'log10']:
+        if slack_method not in ['log2', 'log10', 'linear']:
             raise ValueError(
-                "expected slack_method to be 'log2' or 'log10', "
+                "expected slack_method to be 'log2', 'log10' or 'linear' "
                 f"but got {slack_method!r}")
 
         if isinstance(terms, Iterator):
@@ -341,6 +343,18 @@ class DiscreteQuadraticModel:
                                                f'slack_{label}_{j}')
                     for i, val in enumerate(slack_term):
                         slack_terms.append((sv, i + 1, val))
+                if zero_constraint:
+                    slack_terms.append((sv, len(slack_term) + 1, ub_c))
+            elif slack_method == 'linear':
+                slack_term = list(range(slack_upper_bound + 1))
+                if not zero_constraint:
+                    sv = self.add_variable(len(slack_term) + 1,
+                                           f'slack_{label}')
+                else:
+                    sv = self.add_variable(len(slack_term) + 2,
+                                           f'slack_{label}')
+                for i, val in enumerate(slack_term):
+                    slack_terms.append((sv, i + 1, val))
                 if zero_constraint:
                     slack_terms.append((sv, len(slack_term) + 1, ub_c))
 

@@ -711,6 +711,34 @@ class TestConstraint(unittest.TestCase):
                     s += bias
             self.assertAlmostEqual(dqm.energy(state), s ** 2)
 
+    def test_inequality_constraint_linear(self):
+        dqm = dimod.DQM()
+        dqm.add_variable(2, label='x')
+        dqm.add_variable(2, label='y')
+        dqm.add_variable(2, label='w')
+
+        expression = [('x', 1, 10.0), ('y', 1, 10.0), ('w', 1, 10.0)]
+
+        constant = 0
+        ub = 28
+        lb = 3
+        slack_terms = dqm.add_linear_inequality_constraint(
+            expression,
+            lagrange_multiplier=1.0,
+            constant=constant,
+            ub=ub,
+            lb=lb,
+            label='c',
+            cross_zero=True,
+            slack_method="linear")
+
+        for i, (v, c, val) in enumerate(slack_terms):
+            if i < 26:
+                self.assertEqual(i, val)
+            else:
+                self.assertEqual(val, ub)
+
+
     def test_random_constraint(self):
         num_variables = 4
         cases = np.random.randint(3, 6, size=num_variables)
