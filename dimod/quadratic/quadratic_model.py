@@ -509,7 +509,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm = QuadraticModel()
             >>> qm.add_variables_from('BINARY', ['x', 'y'])
             >>> qm.add_quadratic('x', 'y', -2)
-            qm.energy(([1, 1], ['x', 'y']))
+            >>> qm.energy(([1, 1], ['x', 'y']))
             -2.0
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
@@ -654,7 +654,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm.add_quadratic('x', 'y', -2)
             >>> qm.add_quadratic('x', 'z', 2)
             >>> [variable for variable in qm.iter_quadratic()]
-            [('y', 'x', -2.0), ('z', 'x', -2.0)]
+            [('y', 'x', -2.0), ('z', 'x', 2.0)]
 
         """
         return self.data.iter_quadratic
