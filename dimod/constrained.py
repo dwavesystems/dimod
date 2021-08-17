@@ -859,23 +859,109 @@ class ConstrainedQuadraticModel:
     @classmethod
     def from_lp_file(cls,
                      fp: Union[BinaryIO, ByteString],
-                     lower_bound_default: Optional[int] = 0,
-                     upper_bound_default: Optional[int] = 1000) -> "ConstrainedQuadraticModel":
+                     lower_bound_default: Optional[int] = None,
+                     upper_bound_default: Optional[int] = None) -> "ConstrainedQuadraticModel":
         """
         Create a CQM model from a LP file.
         Args:
             fp: file-like object in the LP format
-            lower_bound_default: in case lower bounds for integer are not given, this will be the defaults
-            upper_bound_default: in case upper bounds for integer are not given, this will be the defaults
+            lower_bound_default: in case lower bounds for integer are not given, this will be the default
+            upper_bound_default: in case upper bounds for integer are not given, this will be the default
 
         Returns:
             The model encoded in the LP file, converted to ConstrainedQuadraticModel dimod object
         """
+        grammar = make_lp_grammar()
+        parse_output = grammar.parseFile(fp)
+        variables_info = get_variables(parse_output, lower_bound_default, upper_bound_default)
 
-        return cqm_model_from_lp_file(fp, lower_bound_default, upper_bound_default)
+        cqm = ConstrainedQuadraticModel()
+        x = {}
+
+        # add the objective
+        obj = QuadraticModel()
+        for i, n in enumerate(variables_info):
+            if variables_info[n].type == 'b':
+                x[n] = obj.add_variable('BINARY', n)
+            elif variables_info[n].type == 'i':
+                x[n] = obj.add_variable('INTEGER', n)
+                if variables_info[n].lb is not None:
+                    obj.set_lower_bound(n, variables_info[n].lb)
+                if variables_info[n].ub is not None:
+                    obj.set_upper_bound(n, variables_info[n].ub)
+            else:
+                raise ValueError("Unknown vartype: {}".format(variables_info[n].type))
+
+        # parse and set the objective
+        obj_coefficient = 1
+        for oe in parse_output.objective:
+
+            if isinstance(oe, str):
+                if oe in obj_senses.keys():
+                    obj_coefficient = obj_senses[oe]
+
+            else:
+                if len(oe) == 2:
+                    if oe.name != "":
+                        # linear term
+                        obj.set_linear(x[oe.name[0]], obj_coefficient * oe.coef)
+
+                    else:
+                        # this is a pure squared term
+                        if variables_info[x[oe.squared_name[0]]].type == 'b':
+                            obj.set_linear(x[oe.squared_name[0]], obj_coefficient * oe.coef * 0.5)
+                        elif variables_info[x[oe.squared_name[0]]].type == "i":
+                            obj.set_quadratic(x[oe.squared_name[0]], x[oe.squared_name[0]],
+                                              obj_coefficient * oe.coef * 0.5)
+                        else:
+                            raise TypeError("Unknown variable type: {}".format(x[oe.squared_name[0]]))
+
+                elif len(oe) == 3:
+                    # bilinear term
+                    obj.set_quadratic(x[oe.name[0]], x[oe.second_var_name[0]], obj_coefficient * oe.coef * 0.5)
+
+        cqm.set_objective(obj)
+
+        # adding constraints
+        for c in parse_output.constraints:
+
+            cname = c.name[0]
+            csense = constraint_symbols[c.sense]
+            ccoef = c.rhs
+
+            # add the constraint as a list of terms. It is
+            c_model = []
+
+            if c.lin_expr:
+
+                for le in c.lin_expr:
+                    c_model.append((x[le.name[0]], le.coef))
+
+            if c.quad_expr:
+
+                for qe in c.quad_expr:
+                    if qe.name != "":
+                        c_model.append((x[qe.name[0]], x[qe.second_var_name[0]], qe.coef))
+
+                    else:
+                        # this is a pure squared term
+                        if variables_info[x[qe.squared_name[0]]].type == 'b':
+                            c_model.append((x[qe.squared_name[0]], qe.coef))
+                        elif variables_info[x[qe.squared_name[0]]].type == "i":
+                            c_model.append((x[qe.squared_name[0]], x[qe.squared_name[0]], qe.coef))
+                        else:
+                            raise TypeError("Unknown variable type: {}".format(x[qe.squared_name[0]]))
+
+            # finally mode the RHS to the LHS with a minus sign
+            c_model.append((-ccoef,))
+
+            cqm.add_constraint(c_model, label=cname, sense=csense)
+
+        return cqm
 
 
 CQM = ConstrainedQuadraticModel
+
 
 class _Vartypes(abc.Sequence):
     """Support deprecated attribute on ``CQM.variables``"""
@@ -1177,96 +1263,3 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
 
 # register fileview loader
 load.register(CQM_MAGIC_PREFIX, ConstrainedQuadraticModel.from_file)
-
-
-def cqm_model_from_lp_file(fp: Union[BinaryIO, ByteString],
-                           lower_bound_default: Optional[int] = 0,
-                           upper_bound_default: Optional[int] = 1000) -> "ConstrainedQuadraticModel":
-    """
-    Constructs the CQM model from an LP file
-    Args:
-        fp: file-like object
-        lower_bound_default: lower bound for integer variables, if not provided in the LP file
-        upper_bound_default: upper bound for integer variables, if not provided in the LP file
-
-    Returns:
-        the CQM object from the LP file
-    """
-
-    grammar = make_lp_grammar()
-    parse_output = grammar.parseFile(fp)
-    variables_info = get_variables(parse_output, lower_bound_default, upper_bound_default)
-
-    cqm = ConstrainedQuadraticModel()
-    x = {}
-
-    # add the objective
-    obj = QuadraticModel()
-    num_binary_vars = 0
-    num_integer_vars = 0
-    for i, n in enumerate(variables_info):
-        if variables_info[n]["type"] == 'b':
-            x[n] = obj.add_variable('BINARY', n)
-            num_binary_vars += 1
-        elif variables_info[n]["type"] == 'i':
-            x[n] = obj.add_variable('INTEGER', n)
-            obj.set_lower_bound(n, variables_info[n]["lb"])
-            obj.set_upper_bound(n, variables_info[n]["ub"])
-            num_integer_vars += 1
-        else:
-            raise ValueError("Unknown vartype: {}".format(variables_info[n]["type"]))
-
-    # parse and set the objective
-    obj_coefficient = 1
-    for oe in parse_output.objective:
-
-        if isinstance(oe, str):
-            if oe in obj_senses.keys():
-                obj_coefficient = obj_senses[oe]
-
-        else:
-            if len(oe) == 2:
-                if oe.name != "":
-                    "linear term"
-                    obj.set_linear(x[oe.name[0]], obj_coefficient * oe.coef)
-
-                else:
-                    # this is a pure squared term
-                    raise NotImplementedError("pure squared term {}^2 is not supported yet".format(oe.squared_name[0]))
-
-            elif len(oe) == 3:
-                # bilinear term
-                obj.set_quadratic(x[oe.name[0]], x[oe.second_var_name[0]], obj_coefficient * oe.coef * 0.5)
-
-    cqm.set_objective(obj)
-
-    # adding constraints
-    for c in parse_output.constraints:
-
-        cname = c.name[0]
-        csense = constraint_symbols[c.sense]
-        ccoef = c.rhs
-
-        # add the constraint as a list of terms. It is
-        c_model = []
-
-        if c.lin_expr:
-
-            for le in c.lin_expr:
-                c_model.append((x[le.name[0]], le.coef))
-
-        if c.quad_expr:
-
-            for qe in c.quad_expr:
-                if qe.name != "":
-                    c_model.append((x[qe.name[0]], x[qe.second_var_name[0]], qe.coef))
-
-                else:
-                    raise NotImplementedError("pure squared term {}^2 is not supported yet".format(qe.squared_name[0]))
-
-        # finally mode the RHS to the LHS with a minus sign
-        c_model.append((- ccoef,))
-
-        cqm.add_constraint(c_model, label=cname, sense=csense)
-
-    return cqm
