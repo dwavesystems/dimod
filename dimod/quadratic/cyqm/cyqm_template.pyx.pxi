@@ -69,19 +69,27 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t num_samples = samples_view.shape[0]
         cdef Py_ssize_t num_variables = samples_view.shape[1]
 
-        if num_variables != self.num_variables():
-            raise ValueError("inconsistent number of variables")
         if num_variables != len(labels):
-            # an internal error to as_samples. We do this check because
-            # the boundscheck is off
+            # as_samples should never return inconsistent sizes, but we do this
+            # check because the boundscheck is off and we otherwise might get
+            # segfaults
             raise RuntimeError(
                 "as_samples returned an inconsistent samples/variables")
 
-        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(num_variables, dtype=np.intp)
+        # get the indices of the QM variables. Use -1 to signal that a
+        # variable's index has not yet been set
+        cdef Py_ssize_t[::1] qm_to_sample = np.full(self.num_variables(), -1, dtype=np.intp)
         cdef Py_ssize_t si
         for si in range(num_variables):
-            v = labels[si]  # python label
-            bqm_to_sample[self.variables.index(v)] = si
+            v = labels[si]
+            if self.variables.count(v):
+                qm_to_sample[self.variables.index(v)] = si
+
+        # make sure that all of the QM variables are accounted for
+        for si in range(self.num_variables()):
+            if qm_to_sample[si] == -1:
+                raise ValueError(
+                    f"missing variable {self.variables[si]!r} in sample(s)")
 
         cdef cython.floating[::1] energies
         if cython.floating is float:
@@ -96,8 +104,8 @@ cdef class cyQM_template(cyQMBase):
             # offset
             energies[si] = self.cppqm.offset()
 
-            for ui in range(num_variables):
-                uspin = samples_view[si, bqm_to_sample[ui]]
+            for ui in range(self.num_variables()):
+                uspin = samples_view[si, qm_to_sample[ui]]
 
                 # linear
                 energies[si] += self.cppqm.linear(ui) * uspin;
@@ -106,7 +114,7 @@ cdef class cyQM_template(cyQMBase):
                 while span.first != span.second and deref(span.first).first < ui:
                     vi = deref(span.first).first
 
-                    vspin = samples_view[si, bqm_to_sample[vi]]
+                    vspin = samples_view[si, qm_to_sample[vi]]
 
                     energies[si] += uspin * vspin * deref(span.first).second
 
@@ -441,6 +449,13 @@ cdef class cyQM_template(cyQMBase):
 
     def relabel_variables(self, mapping):
         self.variables._relabel(mapping)
+
+    def remove_interaction(self, u, v):
+        cdef Py_ssize_t ui = self.variables.index(u)
+        cdef Py_ssize_t vi = self.variables.index(v)
+        
+        if not self.cppqm.remove_interaction(ui, vi):
+            raise ValueError(f"{u!r} and {v!r} have no interaction")
 
     def relabel_variables_as_integers(self):
         return self.variables._relabel_as_integers()

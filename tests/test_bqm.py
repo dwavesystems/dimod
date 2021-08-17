@@ -21,7 +21,6 @@ import shutil
 import tempfile
 import unittest
 import unittest.mock
-import uuid
 
 from collections import OrderedDict
 from functools import wraps
@@ -224,7 +223,7 @@ class TestAsBQM(unittest.TestCase):
 class TestBinary(unittest.TestCase):
     def test_init_no_label(self):
         binary_bqm = Binary()
-        self.assertIsInstance(binary_bqm.variables[0], uuid.UUID)
+        self.assertIsInstance(binary_bqm.variables[0], str)
 
     def test_multiple_labelled(self):
         x, y, z = dimod.Binaries('abc')
@@ -1059,7 +1058,14 @@ class TestEnergies(unittest.TestCase):
             bqm.energies(samples)
 
     @parameterized.expand(BQMs.items())
-    def test_length(self, name, BQM):
+    def test_superset(self, name, BQM):
+        bqm = dimod.BQM({'a': 1}, {'ab': 1}, 1.5, 'BINARY')
+
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'c': 1}), 3.5)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 0, 'c': 1}), 2.5)
+
+    @parameterized.expand(BQMs.items())
+    def test_subset(self, name, BQM):
         arr = np.arange(9).reshape((3, 3))
         bqm = BQM(arr, dimod.BINARY)
 
@@ -2180,7 +2186,7 @@ class TestShape(unittest.TestCase):
 class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
         spin_bqm = Spin()
-        self.assertIsInstance(spin_bqm.variables[0], uuid.UUID)
+        self.assertIsInstance(spin_bqm.variables[0], str)
 
     def test_multiple_labelled(self):
         r, s, t = dimod.Spins('abc')
@@ -2205,6 +2211,11 @@ class TestSpin(unittest.TestCase):
         bqm_1 = Spin()
         bqm_2 = Spin()
         self.assertNotEqual(bqm_1.variables[0], bqm_2.variables[0])
+
+    def test_serializable_label(self):
+        import json
+        bqm = Spin()
+        json.dumps(bqm.variables.to_serializable())
 
 
 class TestSymbolic(unittest.TestCase):

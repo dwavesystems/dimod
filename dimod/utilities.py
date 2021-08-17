@@ -15,6 +15,7 @@
 import copy
 import os
 import itertools
+import uuid
 
 from functools import reduce
 
@@ -560,3 +561,8 @@ def asnumericarrays(*arrays, requirements=None, min_itemsize=None):
 
     return _astypearrays(arrays, requirements, min_itemsize,
                          [np.integer, np.floating])
+
+
+def new_label() -> str:
+    """Generate a new unique label as a string."""
+    return str(uuid.uuid4())

@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    ``QuadraticModel.energies``, ``QuadraticModel.energy``,
+    ``BinaryQuadraticModel.energies``, and ``BinaryQuadraticModel.energy`` now
+    all support samples containing a superset of the variables in the model.
+    Any variables not in the model are ignored when calculating the energy.
+fixes:
+  - |
+    ``BinaryQuadraticModel.energies`` now has consistent behaviour accross all
+    data types when given samples containing a superset of the variables in the
+    model. Previously binary quadratic models with ``object`` data type would
+    allow a superset of variables, while ``float64`` and ``float32`` would not.

@@ -544,3 +544,87 @@ class TestMultiKnapsack(unittest.TestCase):
             x['y_{}'.format(i)] = 1
             lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
             self.assertLessEqual(lhs, 0)
+
+
+class TestGates(unittest.TestCase):
+    def test_gates_no_aux(self):
+
+        def halfadder(a, b, sum_, carry):
+            return sum_ == (a ^ b) and carry == (a and b)
+
+        def fulladder(a, b, c, sum_, carry):
+            t = a + b + c
+            return carry == (t >= 2) and sum_ == (t % 2)
+
+        # the gates with no auxiliary variable are simple
+        gates = dict(AND=(dimod.generators.and_gate, lambda a, b, p: (a and b) == p, 3),
+                     OR=(dimod.generators.or_gate, lambda a, b, p: (a or b) == p, 3),
+                     HA=(dimod.generators.halfadder_gate, halfadder, 4),
+                     FA=(dimod.generators.fulladder_gate, fulladder, 5),
+                     )
+
+        for label, (generator, func, num_vars) in gates.items():
+            # test with default strength
+            with self.subTest(gate=label):
+                bqm = generator(*range(num_vars))
+
+                sampleset = dimod.ExactSolver().sample(bqm)
+                for sample, energy in sampleset.data(['sample', 'energy']):
+                    if func(*(sample[v] for v in range(num_vars))):
+                        self.assertEqual(energy, 0)
+                    else:
+                        self.assertGreaterEqual(energy, 1)
+
+                # also check that the gap is 1
+                self.assertIn(1, set(sampleset.record.energy))
+
+            with self.subTest(gate=label, strength=7.5):
+                bqm = generator(*range(num_vars), strength=7.5)
+
+                sampleset = dimod.ExactSolver().sample(bqm)
+                for sample, energy in sampleset.data(['sample', 'energy']):
+                    if func(*(sample[v] for v in range(num_vars))):
+                        self.assertEqual(energy, 0)
+                    else:
+                        self.assertGreaterEqual(energy, 7.5)
+
+                # also check that the gap is 7.5
+                self.assertIn(7.5, set(sampleset.record.energy))
+
+    def test_xor_gate(self):
+        bqm = dimod.generators.xor_gate('a', 'b', 'p', 'x')
+        self.assertEqual(list(bqm.variables), list('abpx'))
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        # we have an aux variable, so let's just check the ground states
+        # explicitly
+        self.assertEqual(bqm.energy({'a': 0, 'b': 0, 'p': 0, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 0, 'b': 1, 'p': 1, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 0, 'p': 1, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'p': 0, 'x': 1}), 0)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if sample['p'] != (sample['a'] ^ sample['b']):
+                self.assertGreaterEqual(energy, 1)
+
+        # also check that the gap is 1
+        self.assertIn(1, set(sampleset.record.energy))
+
+    def test_xor_gate_strength(self):
+        bqm = dimod.generators.xor_gate('a', 'b', 'p', 'x', strength=7.5)
+        self.assertEqual(list(bqm.variables), list('abpx'))
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        # we have an aux variable, so let's just check the ground states
+        # explicitly
+        self.assertEqual(bqm.energy({'a': 0, 'b': 0, 'p': 0, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 0, 'b': 1, 'p': 1, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 0, 'p': 1, 'x': 0}), 0)
+        self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'p': 0, 'x': 1}), 0)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if sample['p'] != (sample['a'] ^ sample['b']):
+                self.assertGreaterEqual(energy, 7.5)
+
+        # also check that the gap is 7.5
+        self.assertIn(7.5, set(sampleset.record.energy))

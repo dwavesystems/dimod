@@ -16,7 +16,6 @@
 import inspect
 import itertools
 import collections.abc as abc
-import uuid
 
 from functools import wraps
 from numbers import Integral
@@ -24,6 +23,7 @@ from numbers import Integral
 from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
+from dimod.utilities import new_label
 from dimod.vartypes import as_vartype
 
 __all__ = ['nonblocking_sample_method',
@@ -509,7 +509,7 @@ def unique_variable_labels(f):
     @wraps(f)
     def conditional_unique_label(label = None, *args, **kwargs):
         if label is None:
-            qm = f(label=uuid.uuid4(), *args, **kwargs)
+            qm = f(label=new_label(), *args, **kwargs)
             return qm
         qm = f(label, *args, **kwargs)
         return qm

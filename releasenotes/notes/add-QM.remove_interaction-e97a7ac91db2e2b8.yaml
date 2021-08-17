@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Implement ``QuadraticModel.remove_interaction`` method, previously it
+    raised a ``NotImplementedError`` error.
+fixes:
+  - |
+    ``dimod::QuadraticModelBase.remove_interaction`` now correctly returns
+    ``true`` when removing a self-loop.

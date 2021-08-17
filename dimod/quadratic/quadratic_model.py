@@ -455,23 +455,41 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.degree
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
-        """Determine the energies of the given samples."""
+        """Determine the energies of the given samples-like.
+
+        Args:
+            samples_like (samples_like):
+                Raw samples. `samples_like` is an extension of
+                NumPy's `array_like`_ structure. See :func:`.as_samples`.
+
+            dtype:
+                Desired NumPy data type for the energy. Matches
+                :attr:`.dtype` by default.
+
+        Returns:
+            Energies for the samples.
+
+        .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
+
+        """
         return self.data.energies(samples_like, dtype=dtype)
 
     def energy(self, sample, dtype=None) -> Bias:
         """Determine the energy of the given sample.
 
         Args:
-            samples_like (samples_like):
+            sample (samples_like):
                 Raw sample. `samples_like` is an extension of
-                NumPy's array_like structure. See :func:`.as_samples`.
+                NumPy's `array_like`_ structure. See :func:`.as_samples`.
 
-            dtype (data-type, optional, default=None):
+            dtype:
                 Desired NumPy data type for the energy. Matches
                 :attr:`.dtype` by default.
 
         Returns:
             The energy.
+
+        .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
         """
         energy, = self.energies(sample, dtype=dtype)
@@ -558,7 +576,7 @@ class QuadraticModel(QuadraticViewsMixin):
     def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
-            return not self.num_variables and self.offset == other
+            return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
             return (self.shape == other.shape  # redundant, fast to check
@@ -636,12 +654,10 @@ class QuadraticModel(QuadraticViewsMixin):
         mapping = self.data.relabel_variables_as_integers()
         return self, mapping
 
+    @forwarding_method
     def remove_interaction(self, u: Variable, v: Variable):
-        # This is needed for the views, but I am not sure how often users are
-        # removing variables/interactions. For now let's leave it here so
-        # we satisfy the ABC and see if it comes up. If not, in the future we
-        # can consider removing __delitem__ from the various views.
-        raise NotImplementedError("not yet implemented - please open a feature request")
+        """Remove the interaction between `u` and `v`."""
+        return self.data.remove_interaction
 
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         # see note in remove_interaction
@@ -810,7 +826,7 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
-            generated :class:`uuid.UUID`, rather than an integer label.
+            generated :class:`uuid.UUID` as a string.
         bias: The bias to apply to the variable.
         dtype: Data type for the returned quadratic model.
         lower_bound: Keyword-only argument to specify integer lower bound.

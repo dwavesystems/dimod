@@ -10,11 +10,11 @@ Reference Documentation
 
    constrained
    quadratic
+   higherorder
    sampler_composites/index
    sampleset
-   dqm
-   higherorder
    utilities
+   symbolic
    variables
    vartypes
    exceptions
