@@ -119,6 +119,7 @@ jobs:
             pip install -r tests/requirements.txt
             pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
             pip install 'dwave-preprocessing<0.4' --no-deps
+            pip install 'pyparsing' --no-deps
             pip install dimod --no-index -f dist/ --no-deps --force-reinstall
 
       - run:

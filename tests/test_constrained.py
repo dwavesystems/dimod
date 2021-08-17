@@ -465,7 +465,8 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_linear.lp')
 
-        cqm = CQM.from_lp_file(filepath)
+        with open(filepath) as f:
+            cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='wrong number of constraints')
@@ -493,7 +494,9 @@ class TestCQMFromLPFile(unittest.TestCase):
     def test_quadratic(self):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic.lp')
-        cqm = CQM.from_lp_file(filepath)
+
+        with open(filepath) as f:
+            cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 4, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
@@ -550,7 +553,9 @@ class TestCQMFromLPFile(unittest.TestCase):
 
     def test_integer(self):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_integer.lp')
-        cqm = CQM.from_lp_file(filepath)
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 5, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 5, msg='wrong number of constraints')

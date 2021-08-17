@@ -23,7 +23,6 @@ import tempfile
 import uuid
 import warnings
 import zipfile
-import pyparsing
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
@@ -45,7 +44,7 @@ from dimod.typing import Bias, Variable
 from dimod.utilities import new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
-from dimod.parsing_utilities import parse_lp_file, infinity, constraint_senses, obj_senses, constraint_symbols
+from dimod.serialization.lp import make_lp_grammar, get_variables, constraint_symbols, obj_senses
 
 __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
@@ -859,13 +858,13 @@ class ConstrainedQuadraticModel:
 
     @classmethod
     def from_lp_file(cls,
-                     filename: Union[str, bytes, PathLike],
+                     fp: Union[BinaryIO, ByteString],
                      lower_bound_default: Optional[int] = 0,
                      upper_bound_default: Optional[int] = 1000) -> "ConstrainedQuadraticModel":
         """
         Create a CQM model from a LP file.
         Args:
-            filename: name of the LP file to parse
+            fp: file-like object in the LP format
             lower_bound_default: in case lower bounds for integer are not given, this will be the defaults
             upper_bound_default: in case upper bounds for integer are not given, this will be the defaults
 
@@ -873,19 +872,7 @@ class ConstrainedQuadraticModel:
             The model encoded in the LP file, converted to ConstrainedQuadraticModel dimod object
         """
 
-        try:
-            lp_file = open(filename)
-            full_data_string = lp_file.read()
-            lp_file.close()
-        except IOError:
-            print("Could not find input lp file \"%s\"" % argv[1])
-            raise IOError
-
-        # parse the string with LP file grammar
-        parse_output = parse_lp_file(full_data_string)
-
-        # create and return the CQM model
-        return cqm_model_from_parse_output(parse_output, lower_bound_default, upper_bound_default)
+        return cqm_model_from_lp_file(fp, lower_bound_default, upper_bound_default)
 
 
 CQM = ConstrainedQuadraticModel
@@ -1192,21 +1179,22 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
 load.register(CQM_MAGIC_PREFIX, ConstrainedQuadraticModel.from_file)
 
 
-def cqm_model_from_parse_output(parse_output: pyparsing.ParseResults,
-                                lower_bound_default,
-                                upper_bound_default) -> "ConstrainedQuadraticModel":
+def cqm_model_from_lp_file(fp: Union[BinaryIO, ByteString],
+                           lower_bound_default: Optional[int] = 0,
+                           upper_bound_default: Optional[int] = 1000) -> "ConstrainedQuadraticModel":
     """
-    Constructs the CQM model from the parse results encoding the LP file
+    Constructs the CQM model from an LP file
     Args:
-        Args:
-        parse_output: the parse results encoding the LP file
-        lower_bound_default: the lower bound of the integer variables, in case they are not specified
-        upper_bound_default: the upper bound of the integer variables in case they are not specified
+        fp: file-like object
+        lower_bound_default: lower bound for integer variables, if not provided in the LP file
+        upper_bound_default: upper bound for integer variables, if not provided in the LP file
 
     Returns:
-
+        the CQM object from the LP file
     """
-    # get the variables info
+
+    grammar = make_lp_grammar()
+    parse_output = grammar.parseFile(fp)
     variables_info = get_variables(parse_output, lower_bound_default, upper_bound_default)
 
     cqm = ConstrainedQuadraticModel()
@@ -1282,98 +1270,3 @@ def cqm_model_from_parse_output(parse_output: pyparsing.ParseResults,
         cqm.add_constraint(c_model, label=cname, sense=csense)
 
     return cqm
-
-
-def get_variables(parse_output: pyparsing.ParseResults,
-                  lower_bound_default: int,
-                  upper_bound_default: int) -> Dict:
-    """
-    Returns set of variables and dict of variable types and bounds
-    Args:
-        parse_output: the parse results encoding the LP file
-        lower_bound_default: the lower bound of the integer variables, in case they are not specified
-        upper_bound_default: the upper bound of the integer variables in case they are not specified
-
-    Returns:
-        a dictionary for each variable containing type, upper and lower bounds
-    """
-    # handle the default bounds
-    if lower_bound_default is None:
-        lb_def = -infinity
-    else:
-        lb_def = lower_bound_default
-
-    if upper_bound_default is None:
-        ub_def = infinity
-    else:
-        ub_def = upper_bound_default
-
-    all_vars = set()
-    # default variable type for LP file
-    # should be continuous, even though
-    # they are not supported in CQMs
-    variables_info = defaultdict(lambda: {"type": "c", "lb": lb_def, "ub": ub_def})
-
-    # scan the objective
-    for oe in parse_output.objective:
-        if isinstance(oe, str):
-            continue
-
-        else:
-            if len(oe) == 2:
-                if oe.name != "":
-                    all_vars.add(oe.name[0])
-                else:
-                    # not supported yet.. although they can be replaced by CQM function
-                    raise ValueError("pure quadratic terms are not supported, found {}^2".format(oe.squared_name[0]))
-            elif len(oe) == 3:
-                all_vars.update([oe.name[0], oe.second_var_name[0]])
-
-    # scan the constraints
-    for c in parse_output.constraints:
-
-        # scan linear terms
-        if c.lin_expr:
-            all_vars.update([le.name[0] for le in c.lin_expr])
-
-        # scan quadratic terms of constraints
-        if c.quad_expr:
-            for qe in c.quad_expr:
-                if len(qe) == 3:
-                    all_vars.update([qe.name[0] for qe in c.quad_expr])
-                    all_vars.update([qe.second_var_name[0] for qe in c.quad_expr])
-                elif len(qe) == 2:
-                    # not supported yet
-                    raise ValueError("pure quadratic terms are not supported, found {}^2".format(qe.squared_name[0]))
-
-    # check the binary variables:
-    for n in parse_output.binaries:
-
-        variables_info[n]["ub"] = 1
-        variables_info[n]["lb"] = 0
-        variables_info[n]["type"] = 'b'
-
-    # check for integer variables
-    for n in parse_output.generals:
-        variables_info[n]["type"] = 'i'
-
-    # scan the bounds
-    for b in parse_output.bounds:
-
-        n = b.name[0]
-
-        # if b.free, default is fine
-        if b.leftbound:
-            if constraint_senses[b.sense] <= 0:  # NUM >= var
-                variables_info[n]["ub"] = b.leftbound[0]
-            if constraint_senses[b.sense] >= 0:  # NUM <= var
-                variables_info[n]["lb"] = b.leftbound[0]
-
-        if b.rightbound:
-            if constraint_senses[b.sense] <= 0:  # var >= NUM
-                variables_info[n]["lb"] = b.rightbound[1]
-
-            if constraint_senses[b.sense] >= 0:  # var <= NUM
-                variables_info[n]["ub"] = b.rightbound[1]
-
-    return variables_info
