@@ -676,6 +676,23 @@ class QuadraticModel(QuadraticViewsMixin):
     def reduce_linear(self, function: Callable,
                       initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the linear biases.
+
+        Args:
+            function: Function of two arguments to apply to the linear biases.
+
+            initializer: Prefixed to the iterable containig the linear biases or
+            used as the default if no linear biases are set in the quadratic model.
+
+        Examples:
+            >>> from operator import add
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
+            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
+            >>> qm = QuadraticModel.from_bqm(bqm)
+            >>> qm.reduce_linear(add)           # doctest:+SKIP
+            2.0
+
+        For information on the related functional programming method
+        see :func:`functools.reduce`.
         """
         return self.data.reduce_linear
 
