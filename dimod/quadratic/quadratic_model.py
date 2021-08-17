@@ -415,7 +415,14 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.add_variable
 
     def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
-        """Add multiple variables of the same type to the quadratic model."""
+        """Add multiple variables of the same type to the quadratic model.
+
+        Examples:
+            >>> from dimod import QuadraticModel, Binary
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+
+        """
         vartype = as_vartype(vartype, extended=True)
         for v in variables:
             self.add_variable(vartype, v)
@@ -448,9 +455,9 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def degree(self, v: Variable) -> int:
-        """Return the degree of variable `v`.
+        """Return the degree of specified variable.
 
-        The degree is the number of interactions that contain `v`.
+        The degree is the number of interactions that contain a variable, ``v``.
         """
         return self.data.degree
 
@@ -468,6 +475,14 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Returns:
             Energies for the samples.
+
+        Examples:
+            >>> from dimod import QuadraticModel, Binary
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+            >>> qm.add_quadratic('x', 'y', -2)
+            >>> qm.energies(([[1, 0], [0, 0], [1, 1]], ['x', 'y']))
+            array([ 0.,  0., -2.])
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -489,6 +504,14 @@ class QuadraticModel(QuadraticViewsMixin):
         Returns:
             The energy.
 
+        Examples:
+            >>> from dimod import QuadraticModel, Binary
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+            >>> qm.add_quadratic('x', 'y', -2)
+            qm.energy(([1, 1], ['x', 'y']))
+            -2.0
+
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
         """
@@ -497,7 +520,16 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
-        """Construct a quadratic model from a binary quadratic model."""
+        """Construct a quadratic model from a binary quadratic model.
+
+        Args:
+            bqm: Binary quadratic model from which to create the quadratic model.
+
+        Examples:
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel, as_bqm
+            >>> bqm = as_bqm({'a': 0.1, 'b': 0.2}, {'ab': -1}, 'SPIN')
+            >>> qm = QuadraticModel.from_bqm(bqm)
+        """
         obj = cls.__new__(cls)
 
         try:
@@ -565,12 +597,13 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def get_linear(self, v: Variable) -> Bias:
-        """Get the linear bias of `v`."""
+        """Get the linear bias of the specified variable."""
         return self.data.get_linear
 
     @forwarding_method
     def get_quadratic(self, u: Variable, v: Variable,
                       default: Optional[Bias] = None) -> Bias:
+        """Get the quadratic bias of the specified pair of variables."""
         return self.data.get_quadratic
 
     def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
@@ -593,24 +626,50 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
-        """Iterate over the neighbors and quadratic biases of a variable."""
+        """Iterate over the neighbors and quadratic biases of a variable.
+
+        Args:
+            v: Variable.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y', 'z'])
+            >>> qm.add_quadratic('x', 'y', -2)
+            >>> qm.add_quadratic('x', 'z', 2)
+            >>> [variable for variable in qm.iter_neighborhood('x')]
+            [('y', -2.0), ('z', 2.0)]
+
+        """
         return self.data.iter_neighborhood
 
     @forwarding_method
     def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
+        """Iterate over the interactions of a quadratic model.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y', 'z'])
+            >>> qm.add_quadratic('x', 'y', -2)
+            >>> qm.add_quadratic('x', 'z', 2)
+            >>> [variable for variable in qm.iter_quadratic()]
+            [('y', 'x', -2.0), ('z', 'x', -2.0)]
+
+        """
         return self.data.iter_quadratic
 
     @forwarding_method
     def lower_bound(self, v: Variable) -> Bias:
-        """Return the lower bound on variable `v`."""
+        """Return the lower bound on the specified variable."""
         return self.data.lower_bound
 
     def set_lower_bound(self, v: Variable, lb: int):
-        """Set the lower bound for integer variable `v`."""
+        """Set the lower bound for an integer variable."""
         return self.data.set_lower_bound(v, lb)
 
     def set_upper_bound(self, v: Variable, ub: int):
-        """Set the upper bound for integer variable `v`."""
+        """Set the upper bound for an integer variable."""
         return self.data.set_upper_bound(v, ub)
 
     @forwarding_method
