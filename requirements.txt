@@ -6,8 +6,4 @@ reno==3.3.0  # for changelog
 
 setuptools>=46.4.0  # to support setup.cfg getting __version__
 
-dimod~=0.10.5
 pyparsing~=2.4.7
-pandas~=1.1.1
-networkx~=2.5
-simplejson~=3.17.2
