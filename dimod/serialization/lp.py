@@ -15,7 +15,7 @@
 import typing
 
 from pyparsing import *
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 
 MINIMIZE = 1
@@ -186,22 +186,12 @@ def get_variables(parse_output: ParseResults,
     Returns:
         a dictionary for each variable containing type, upper and lower bounds
     """
-    # handle the default bounds
-    if lower_bound_default is None:
-        lb_def = -infinity
-    else:
-        lb_def = lower_bound_default
-
-    if upper_bound_default is None:
-        ub_def = infinity
-    else:
-        ub_def = upper_bound_default
-
     all_vars = set()
     # default variable type for LP file
     # should be continuous, even though
     # they are not supported in CQMs
-    variables_info = defaultdict(lambda: {"type": "c", "lb": lb_def, "ub": ub_def})
+    Var = namedtuple('Variable', ['type', 'lb', 'ub'])
+    variables_info = defaultdict(lambda: Var(type="c", lb=lower_bound_default, ub=upper_bound_default))
 
     # scan the objective
     for oe in parse_output.objective:
@@ -213,8 +203,7 @@ def get_variables(parse_output: ParseResults,
                 if oe.name != "":
                     all_vars.add(oe.name[0])
                 else:
-                    # not supported yet.. although they can be replaced by CQM function
-                    raise ValueError("pure quadratic terms are not supported, found {}^2".format(oe.squared_name[0]))
+                    all_vars.add(oe.squared_name[0])
             elif len(oe) == 3:
                 all_vars.update([oe.name[0], oe.second_var_name[0]])
 
@@ -232,19 +221,16 @@ def get_variables(parse_output: ParseResults,
                     all_vars.update([qe.name[0] for qe in c.quad_expr])
                     all_vars.update([qe.second_var_name[0] for qe in c.quad_expr])
                 elif len(qe) == 2:
-                    # not supported yet
-                    raise ValueError("pure quadratic terms are not supported, found {}^2".format(qe.squared_name[0]))
+                    all_vars.add(qe.squared_name[0])
 
     # check the binary variables:
     for n in parse_output.binaries:
 
-        variables_info[n]["ub"] = 1
-        variables_info[n]["lb"] = 0
-        variables_info[n]["type"] = 'b'
+        variables_info[n] = variables_info[n]._replace(type='b')
 
     # check for integer variables
     for n in parse_output.generals:
-        variables_info[n]["type"] = 'i'
+        variables_info[n] = variables_info[n]._replace(type='i')
 
     # scan the bounds
     for b in parse_output.bounds:
@@ -254,15 +240,15 @@ def get_variables(parse_output: ParseResults,
         # if b.free, default is fine
         if b.leftbound:
             if constraint_senses[b.sense] <= 0:  # NUM >= var
-                variables_info[n]["ub"] = b.leftbound[0]
+                variables_info[n] = variables_info[n]._replace(ub=b.leftbound[0])
             if constraint_senses[b.sense] >= 0:  # NUM <= var
-                variables_info[n]["lb"] = b.leftbound[0]
+                variables_info[n] = variables_info[n]._replace(lb=b.leftbound[0])
 
         if b.rightbound:
             if constraint_senses[b.sense] <= 0:  # var >= NUM
-                variables_info[n]["lb"] = b.rightbound[1]
+                variables_info[n] = variables_info[n]._replace(lb=b.rightbound[1])
 
             if constraint_senses[b.sense] >= 0:  # var <= NUM
-                variables_info[n]["ub"] = b.rightbound[1]
+                variables_info[n] = variables_info[n]._replace(ub=b.rightbound[1])
 
     return variables_info
