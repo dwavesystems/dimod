@@ -645,3 +645,42 @@ class TestCQMFromLPFile(unittest.TestCase):
 
             else:
                 raise KeyError('Not expected constraint: {}'.format(cname))
+
+    def test_pure_quadratic(self):
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_variables.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
+
+        # check the objective
+        self.assertAlmostEqual(cqm.objective.get_linear('x0'), 0.5,
+                               msg=' linear(x0) should be 0')
+        self.assertAlmostEqual(cqm.objective.get_linear('i0'), 0,
+                               msg=' linear(i0) should be 0')
+
+        self.assertAlmostEqual(cqm.objective.get_quadratic('i0', 'i0'), 0.5,
+                               msg='quad(i0, i0) should be 0.5')
+
+        for cname, cmodel in cqm.constraints.items():
+
+            if cname == 'c1':
+
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 1,
+                                       msg='constraint c1, linear(x0) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.offset, -1,
+                                       msg='constraint c1, offset should be -1')
+                self.assertTrue(cmodel.sense == Sense.Ge,
+                                msg='constraint c1, should be >= inequality')
+
+            elif cname == 'c2':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('i0'), 0,
+                                       msg='constraint c2, linear(i0) should be 0')
+                self.assertAlmostEqual(cmodel.lhs.get_quadratic('i0', 'i0'), 1,
+                                       msg='quad(i0, i0) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.offset, -25,
+                                       msg='constraint c2, offset should be -25')
+                self.assertTrue(cmodel.sense == Sense.Ge,
+                                msg='constraint c2, should be >= inequality')
