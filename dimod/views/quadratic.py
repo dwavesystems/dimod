@@ -255,9 +255,20 @@ class QuadraticViewsMixin(abc.ABC):
         """Adjacency structure as a nested mapping of mappings.
 
         Accessed like a dict of dicts, where the keys of the outer dict are all
-        of the model's variables (e.g. `v`) and the values are the neighborhood
-        of `v`. Each neighborhood is a dict where the keys are the neighbors of
-        `v` and the values are their associated quadratic biases.
+        of the model's variables (e.g. ``v``) and the values are the neighborhood
+        of ``v``. Each neighborhood is a dict where the keys are the neighbors of
+        ``v`` and the values are their associated quadratic biases.
+
+        Examples:
+            >>> from dimod import QuadraticModel, Binary, Integer
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+            >>> qm.add_variables_from('INTEGER', ['i', 'j'])
+            >>> qm.add_quadratic('i', 'j', 2)
+            >>> qm.add_quadratic('x', 'i', -1)
+            >>> qm.adj
+            {'x': {'i': -1.0}, 'y': {}, 'i': {'x': -1.0, 'j': 2.0}, 'j': {'i': 2.0}}
+
         """
         # we could use cached property but this is way simpler and doesn't
         # break the docs
@@ -274,6 +285,17 @@ class QuadraticViewsMixin(abc.ABC):
 
         Accessed like a dict, where keys are the variables of the model and
         values are the linear biases.
+
+        Examples:
+            >>> from dimod import QuadraticModel, Binary, Integer
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+            >>> qm.add_variables_from('INTEGER', ['i', 'j'])
+            >>> qm.add_linear('x', 0.5)
+            >>> qm.add_linear('i', -2)
+            >>> qm.linear
+            {'x': 0.5, 'y': 0.0, 'i': -2.0, 'j': 0.0}
+
         """
         # we could use cached property but this is way simpler and doesn't
         # break the docs
@@ -290,6 +312,16 @@ class QuadraticViewsMixin(abc.ABC):
 
         Accessed like a dict, where keys are 2-tuples of variables, which
         represent an interaction and values are the quadratic biases.
+
+        Examples:
+            >>> from dimod import QuadraticModel, Binary, Integer
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('BINARY', ['x', 'y'])
+            >>> qm.add_variables_from('INTEGER', ['i', 'j'])
+            >>> qm.add_quadratic('i', 'j', 2)
+            >>> qm.add_quadratic('x', 'i', -1)
+            >>> qm.quadratic
+            {('i', 'x'): -1.0, ('j', 'i'): 2.0}
         """
         # we could use cached property but this is way simpler and doesn't
         # break the docs
