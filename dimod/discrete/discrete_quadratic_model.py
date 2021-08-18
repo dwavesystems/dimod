@@ -346,7 +346,7 @@ class DiscreteQuadraticModel:
                 if zero_constraint:
                     slack_terms.append((sv, len(slack_term) + 1, ub_c))
             elif slack_method == 'linear':
-                slack_term = list(range(slack_upper_bound + 1))
+                slack_term = list(range(1, slack_upper_bound + 1))
                 if not zero_constraint:
                     sv = self.add_variable(len(slack_term) + 1,
                                            f'slack_{label}')

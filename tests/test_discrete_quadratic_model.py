@@ -733,11 +733,10 @@ class TestConstraint(unittest.TestCase):
             slack_method="linear")
 
         for i, (v, c, val) in enumerate(slack_terms):
-            if i < 26:
-                self.assertEqual(i, val)
+            if i < 25:
+                self.assertEqual(i+1, val)
             else:
                 self.assertEqual(val, ub)
-
 
     def test_random_constraint(self):
         num_variables = 4
