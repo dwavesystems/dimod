@@ -499,7 +499,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm = QuadraticModel()
             >>> qm.add_variables_from('BINARY', ['x', 'y'])
             >>> qm.add_quadratic('x', 'y', -2)
-            >>> qm.energies(([[1, 0], [0, 0], [1, 1]], ['x', 'y']))
+            >>> qm.energies([{'x': 1, 'y': 0}, {'x': 0, 'y': 0}, {'x': 1, 'y': 1}])
             array([ 0.,  0., -2.])
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
@@ -527,7 +527,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm = QuadraticModel()
             >>> qm.add_variables_from('BINARY', ['x', 'y'])
             >>> qm.add_quadratic('x', 'y', -2)
-            >>> qm.energy(([1, 1], ['x', 'y']))
+            >>> qm.energy([{'x': 1, 'y': 1}])
             -2.0
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
@@ -547,8 +547,8 @@ class QuadraticModel(QuadraticViewsMixin):
             Quadratic model.
 
         Examples:
-            >>> from dimod import QuadraticModel, BinaryQuadraticModel, as_bqm
-            >>> bqm = as_bqm({'a': 0.1, 'b': 0.2}, {'ab': -1}, 'SPIN')
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel
+            >>> bqm = BinaryQuadraticModel({'a': 0.1, 'b': 0.2}, {'ab': -1}, 'SPIN')
             >>> qm = QuadraticModel.from_bqm(bqm)
         """
         obj = cls.__new__(cls)
@@ -661,7 +661,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm.add_variables_from('BINARY', ['x', 'y', 'z'])
             >>> qm.add_quadratic('x', 'y', -2)
             >>> qm.add_quadratic('x', 'z', 2)
-            >>> [variable for variable in qm.iter_neighborhood('x')]
+            >>> list(qm.iter_neighborhood('x'))
             [('y', -2.0), ('z', 2.0)]
 
         """
@@ -680,7 +680,7 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> qm.add_variables_from('BINARY', ['x', 'y', 'z'])
             >>> qm.add_quadratic('x', 'y', -2)
             >>> qm.add_quadratic('x', 'z', 2)
-            >>> [variable for variable in qm.iter_quadratic()]
+            >>> list(qm.iter_quadratic())
             [('y', 'x', -2.0), ('z', 'x', 2.0)]
 
         """
@@ -716,11 +716,12 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Examples:
             >>> from operator import add
-            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
-            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
-            >>> qm = QuadraticModel.from_bqm(bqm)
-            >>> qm.reduce_linear(add)           # doctest:+SKIP
-            2.0
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel({'x': 0.5, 's': 1, 'i': 2},
+            ...                     {('x', 'i'): 2}, 0.0,
+            ...                     {'x': 'BINARY', 's': 'SPIN', 'i': 'INTEGER'})
+            >>> qm.reduce_linear(add)
+            3.5
 
         For information on the related functional programming method
         see :func:`functools.reduce`.
@@ -734,7 +735,6 @@ class QuadraticModel(QuadraticViewsMixin):
         associated with a single variable.
 
         Args:
-
             v: Variable in the quadratic model.
 
             function: Function of two arguments to apply to the quadratic biases
@@ -749,11 +749,12 @@ class QuadraticModel(QuadraticViewsMixin):
             quadratic biases.
 
         Examples:
-            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
-            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
-            >>> qm = QuadraticModel.from_bqm(bqm)
-            >>> qm.reduce_neighborhood(2, max)           # doctest:+SKIP
-            1.0
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel({'x': 0.5, 's': 1, 'i': 2},
+            ...                     {('x', 'i'): 2, ('s', 'i'): 3}, 0.0,
+            ...                     {'x': 'BINARY', 's': 'SPIN', 'i': 'INTEGER'})
+            >>> qm.reduce_neighborhood('i', max)
+            3.0
 
         For information on the related functional programming method
         see :func:`functools.reduce`.
@@ -777,11 +778,12 @@ class QuadraticModel(QuadraticViewsMixin):
             Result of applying the specified function to the quadratic biases.
 
         Examples:
-            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
-            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
-            >>> qm = QuadraticModel.from_bqm(bqm)
-            >>> qm.reduce_quadratic(min)           # doctest:+SKIP
-            -4.0
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel({'x': 0.5, 's': 1, 'i': 2},
+            ...                     {('x', 'i'): 2, ('s', 'i'): 3}, 0.0,
+            ...                     {'x': 'BINARY', 's': 'SPIN', 'i': 'INTEGER'})
+            >>> qm.reduce_quadratic(min)
+            2.0
 
         For information on the related functional programming method
         see :func:`functools.reduce`.
@@ -808,6 +810,8 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> bqm = generators.ran_r(1, 5)
             >>> qm = QuadraticModel.from_bqm(bqm)
             >>> qm_new = qm.relabel_variables({0: 'a', 1: 'b', 2: 'c'}, inplace=False)
+            >>> qm_new.variables
+            Variables(['a', 'b', 'c', 3, 4])
 
         """
         if not inplace:
