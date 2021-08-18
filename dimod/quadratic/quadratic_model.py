@@ -855,12 +855,27 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             scalar: Value by which to scale the biases of the quadratic model.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('INTEGER', ['i', 'j'])
+            >>> qm.set_linear('i', 2)
+            >>> qm.set_quadratic('i', 'j', -1)
+            >>> qm.scale(1.5)
+            >>> print(qm.get_linear('i'), qm.get_quadratic('i', 'j'))
+            3.0 -1.5
         """
         return self.data.scale
 
     @forwarding_method
     def set_linear(self, v: Variable, bias: Bias):
-        """Set the linear bias of `v`.
+        """Set the linear bias of a variable in the quadratic model.
+
+        Args:
+            v: Variable in the quadratic model.
+
+            bias: Linear bias to set for variable ``v``.
 
         Raises:
             TypeError: If `v` is not hashable.
@@ -870,16 +885,38 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Set the quadratic bias of `(u, v)`.
+        """Set the quadratic bias between a pair of variables in the quadratic model.
+
+        Args:
+            u: Variable in the quadratic model.
+
+            v: Variable in the quadratic model.
+
+            bias: Quadratic bias to set for interaction ``(u, v)``.
 
         Raises:
-            TypeError: If `u` or `v` is not hashable.
+            TypeError: If ``u`` or ``v`` is not hashable.
 
         """
         return self.data.set_quadratic
 
     def spin_to_binary(self, inplace: bool = False) -> 'QuadraticModel':
-        """Convert any SPIN variables to BINARY."""
+        """Convert any spin-valued variables to binary-valued.
+
+        Args:
+            inplace: If set to False, returns a new binary quadratic model
+                with spin-valued variables converted to binary-valued variables.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm = QuadraticModel()
+            >>> qm.add_variables_from('SPIN', ['s1', 's2'])
+            >>> qm.add_variable('BINARY', 'b')
+            'b'
+            >>> qm_b = qm.spin_to_binary(inplace=False)
+            >>> qm_b.vartype('s1')
+            <Vartype.BINARY: frozenset({0, 1})>
+        """
         if not inplace:
             return self.copy().spin_to_binary(inplace=True)
 
