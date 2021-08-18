@@ -1007,6 +1007,35 @@ class QuadraticModel(QuadraticViewsMixin):
         return file
 
     def update(self, other: 'QuadraticModel'):
+        """Update the quadratic model from another quadratic model.
+
+        Adds to the quadratic model the variables, linear biases, quadratic biases,
+        and offset of the specified quadratic model. Linear and quadratic biases
+        for variables that exist in both models are summed.
+
+        Args:
+            other: Another quadratic model.
+
+        Raises:
+            ValueError: If a variable exists in both quadratic models but has
+                different vartypes or, for integer variables, different bounds.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm1 = QuadraticModel({'s1': -2.0, 's2': 0.0, 's3': 0.0, 's0': 0.0},
+            ...         {('s2', 's1'): -1.0, ('s3', 's2'): 1.0}, 0.0,
+            ...         {'s1': 'SPIN', 's2': 'SPIN', 's3': 'SPIN', 's0': 'SPIN'},
+            ...         dtype='float64')
+            >>> qm2 = QuadraticModel({'s1': -2.0, 's2': 0.0, 's3': 0.0, 's4': -3.0},
+            ...         {('s2', 's1'): -1.0, ('s3', 's1'): 1.0}, 0.0,
+            ...         {'s1': 'SPIN', 's2': 'SPIN', 's3': 'SPIN', 's4': 'SPIN'},
+            ...         dtype='float64')
+            >>> qm1.update(qm2)
+            >>> print(qm1.get_linear('s0'), qm1.get_linear('s1'), qm1.get_linear('s4'))
+            0.0 -4.0 -3.0
+            >>> print(qm1.get_quadratic('s2', 's1'), qm1.get_quadratic('s3', 's1'))
+            -2.0 1.0
+        """
         # this can be improved a great deal with c++, but for now let's use
         # python for simplicity
 
@@ -1033,7 +1062,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def upper_bound(self, v: Variable) -> Bias:
-        """Return the upper bound on variable `v`."""
+        """Return the upper bound on the specified variable."""
         return self.data.upper_bound
 
     @forwarding_method
