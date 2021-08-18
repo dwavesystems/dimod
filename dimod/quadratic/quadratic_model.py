@@ -417,6 +417,15 @@ class QuadraticModel(QuadraticViewsMixin):
     def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
         """Add multiple variables of the same type to the quadratic model.
 
+        Args:
+            vartype: Variable type. One of:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+
+            variables: Iterable of variable labels.
+
         Examples:
             >>> from dimod import QuadraticModel, Binary
             >>> qm = QuadraticModel()
@@ -429,6 +438,15 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def change_vartype(self, vartype: VartypeLike, v: Variable) -> "QuadraticModel":
         """Change the variable type of the given variable, updating the biases.
+
+        Args:
+            vartype: Variable type. One of:
+
+                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+
+            v: Variable to change to the specified ``vartype``.
 
         Example:
             >>> qm = dimod.QuadraticModel()
@@ -502,7 +520,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 :attr:`.dtype` by default.
 
         Returns:
-            The energy.
+            Energy for the sample.
 
         Examples:
             >>> from dimod import QuadraticModel, Binary
@@ -524,6 +542,9 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             bqm: Binary quadratic model from which to create the quadratic model.
+
+        Returns:
+            Quadratic model.
 
         Examples:
             >>> from dimod import QuadraticModel, BinaryQuadraticModel, as_bqm
@@ -629,7 +650,10 @@ class QuadraticModel(QuadraticViewsMixin):
         """Iterate over the neighbors and quadratic biases of a variable.
 
         Args:
-            v: Variable.
+            v: Variable in the quadratic model.
+
+        Returns:
+            Neighbors of the specified variable and their quadratic biases.
 
         Examples:
             >>> from dimod import QuadraticModel
@@ -646,6 +670,9 @@ class QuadraticModel(QuadraticViewsMixin):
     @forwarding_method
     def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
         """Iterate over the interactions of a quadratic model.
+
+        Returns:
+            Interactions of the quadratic model and their biases.
 
         Examples:
             >>> from dimod import QuadraticModel
@@ -680,8 +707,12 @@ class QuadraticModel(QuadraticViewsMixin):
         Args:
             function: Function of two arguments to apply to the linear biases.
 
-            initializer: Prefixed to the iterable containig the linear biases or
-            used as the default if no linear biases are set in the quadratic model.
+            initializer: Prefixed in the calculation to the iterable containing
+                the linear biases or used as the default if no linear biases are
+                set in the quadratic model.
+
+        Returns:
+            Result of applying the specified function to the linear biases.
 
         Examples:
             >>> from operator import add
@@ -701,6 +732,31 @@ class QuadraticModel(QuadraticViewsMixin):
                             initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the quadratic biases
         associated with a single variable.
+
+        Args:
+
+            v: Variable in the quadratic model.
+
+            function: Function of two arguments to apply to the quadratic biases
+                of variable ``v``.
+
+            initializer: Prefixed in the calculation to the iterable containing
+                the quadratic biases or used as the default if variable ``v`` has
+                no quadratic biases.
+
+        Returns:
+            Result of applying the specified function to the specified variable's
+            quadratic biases.
+
+        Examples:
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
+            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
+            >>> qm = QuadraticModel.from_bqm(bqm)
+            >>> qm.reduce_neighborhood(2, max)           # doctest:+SKIP
+            1.0
+
+        For information on the related functional programming method
+        see :func:`functools.reduce`.
         """
         return self.data.reduce_neighborhood
 
@@ -709,12 +765,51 @@ class QuadraticModel(QuadraticViewsMixin):
                          initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the quadratic
         biases.
+
+        Args:
+            function: Function of two arguments to apply to the quadratic biases.
+
+            initializer: Prefixed in the calculation to the iterable containing
+                the quadratic biases or used as the default if no quadratic biases
+                are set in the quadratic model.
+
+        Returns:
+            Result of applying the specified function to the quadratic biases.
+
+        Examples:
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
+            >>> bqm = generators.randint(5, 'BINARY', low=-5, high=5)
+            >>> qm = QuadraticModel.from_bqm(bqm)
+            >>> qm.reduce_quadratic(min)           # doctest:+SKIP
+            -4.0
+
+        For information on the related functional programming method
+        see :func:`functools.reduce`.
         """
         return self.data.reduce_quadratic
 
     def relabel_variables(self, mapping: Mapping[Variable, Variable],
                           inplace: bool = True) -> 'QuadraticModel':
-        """Relabel the variables according to the given mapping."""
+        """Relabel the variables according to the given mapping.
+
+        Args:
+            mapping: Mapping of current variable labels to new ones. If an
+                incomplete mapping is provided, unmapped variables retain their
+                current labels.
+
+            inplace: If set to False, returns a new binary quadratic model
+                mapped to the new labels.
+
+        Returns:
+            The original or new quadratic model with updated variable labels.
+
+        Examples:
+            >>> from dimod import QuadraticModel, BinaryQuadraticModel, generators
+            >>> bqm = generators.ran_r(1, 5)
+            >>> qm = QuadraticModel.from_bqm(bqm)
+            >>> qm_new = qm.relabel_variables({0: 'a', 1: 'b', 2: 'c'}, inplace=False)
+
+        """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -723,7 +818,16 @@ class QuadraticModel(QuadraticViewsMixin):
 
     def relabel_variables_as_integers(self, inplace: bool = True
                                       ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
-        """Relabel the variables as `[0, n)` and return the mapping."""
+        """Relabel the variables as `[0, n)` and return the mapping.
+
+        Args:
+            inplace: If set to False, returns a new binary quadratic model
+                mapped to the new labels.
+
+        Returns:
+            The original or new quadratic model with updated variable labels.
+
+        """
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
@@ -732,7 +836,13 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def remove_interaction(self, u: Variable, v: Variable):
-        """Remove the interaction between `u` and `v`."""
+        """Remove the interaction between `u` and `v`.
+
+        Args:
+            u: Variable in the quadratic model.
+
+            v: Variable in the quadratic model.
+        """
         return self.data.remove_interaction
 
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
@@ -741,7 +851,11 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def scale(self, scalar: Bias):
-        """Scale the biases by the given number."""
+        """Scale the biases by the given number.
+
+        Args:
+            scalar: Value by which to scale the biases of the quadratic model.
+        """
         return self.data.scale
 
     @forwarding_method
