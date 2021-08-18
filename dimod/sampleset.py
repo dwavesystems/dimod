@@ -20,10 +20,18 @@ import numbers
 import collections.abc as abc
 
 from collections import namedtuple
+from typing import Any
 
 import numpy as np
 from numpy.lib import recfunctions
 from warnings import warn
+
+try:
+    import pandas as pd
+    from pandas import DataFrame
+except ImportError:
+    pd = None
+    DataFrame = Any
 
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
@@ -1614,15 +1622,18 @@ class SampleSet(abc.Iterable, abc.Sized):
     # Export to dataframe
     ###############################################################################################
 
-    def to_pandas_dataframe(self, sample_column=False):
+    def to_pandas_dataframe(self, sample_column: bool = False,
+                            empty_column_default: Any = None) -> DataFrame:
         """Convert a sample set to a Pandas DataFrame
 
         Args:
-            sample_column(bool, optional, default=False): If True, samples are
-            represented as a column of type dict.
+            sample_column: If True, samples are represented as a column of type dict.
+
+            empty_column_default: The default value for any data vectors with
+                shape ``(n, 0)``.
 
         Returns:
-            :obj:`pandas.DataFrame`
+            A data frame.
 
         Examples:
             >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
@@ -1638,7 +1649,8 @@ class SampleSet(abc.Iterable, abc.Sized):
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1
 
         """
-        import pandas as pd
+        if pd is None:
+            raise ImportError("pandas must be installed to use this method")
 
         if sample_column:
             df = pd.DataFrame(self.data(sorted_by=None, sample_dict_cast=True))
@@ -1649,6 +1661,11 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             for field in sorted(self.record.dtype.fields):  # sort for consistency
                 if field == 'sample':
+                    continue
+
+                if self.record[field].shape[0] and not self.record[field].size:
+                    # arrays with shape (n, 0) cannot be set to column values
+                    df.loc[:, field] = empty_column_default
                     continue
 
                 df.loc[:, field] = self.record[field]

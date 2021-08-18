@@ -948,6 +948,34 @@ class TestPandas(unittest.TestCase):
 
         pd.testing.assert_frame_equal(df, other, check_dtype=False)
 
+    def test_array_data_vector(self):
+        samples = dimod.SampleSet(
+            np.rec.array([([0.], 1., 1,  True, [1])],
+                         dtype=[('sample', '<f8', (1,)), ('energy', '<f8'),
+                                ('num_occurrences', '<i4'), ('thing1', '?'),
+                                ('thing2', '?', (1,))]),
+            ['a'], {}, 'INTEGER')
+
+        df = samples.to_pandas_dataframe()
+
+        self.assertEqual(list(df.columns), ['a', 'energy', 'num_occurrences', 'thing1', 'thing2'])
+
+    def test_empty_array_data_vector(self):
+        samples = dimod.SampleSet(
+            np.rec.array([([0.], 1., 1,  True, [])],
+                         dtype=[('sample', '<f8', (1,)), ('energy', '<f8'),
+                                ('num_occurrences', '<i4'), ('thing1', '?'),
+                                ('thing2', '?', (0,))]),
+            ['a'], {}, 'INTEGER')
+
+        df = samples.to_pandas_dataframe()
+        self.assertEqual(list(df.columns), ['a', 'energy', 'num_occurrences', 'thing1', 'thing2'])
+        self.assertTrue(np.isnan(df.loc[0, 'thing2']))
+
+        df = samples.to_pandas_dataframe(empty_column_default=105)
+        self.assertEqual(list(df.columns), ['a', 'energy', 'num_occurrences', 'thing1', 'thing2'])
+        self.assertEqual(df.loc[0, 'thing2'], 105)
+
 
 class TestFirst(unittest.TestCase):
     # SampleSet.first property

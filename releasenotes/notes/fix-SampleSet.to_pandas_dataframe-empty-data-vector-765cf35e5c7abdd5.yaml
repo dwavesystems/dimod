@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add ``empty_column_default`` keyword argument to ``SampleSet.to_pandas_dataframe``.
+fixes:
+  - |
+    Don't raise a ``ValueError`` when using ``SampleSet.to_pandas_dataframe``
+    on a sample set where one of the data vectors has shape ``(n, 0)``. The
+    user can now specify a default value with the ``empty_column_default``
+    keyword argument.
