@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``linear`` option as a new ``slack_method`` for
+    ``DiscreteQuadraticModel.add_linear_inequality_constraint`` method.
+    This will add only one discrete variable to an inequality constraint
+    with linear number of cases, according to right hand side value of the
+    constraint.
