@@ -17,6 +17,7 @@ from dimod.generators.chimera import *
 from dimod.generators.constraints import *
 from dimod.generators.fcl import *
 from dimod.generators.gates import *
+from dimod.generators.integer import *
 from dimod.generators.random import *
 from dimod.generators.knapsack import *
 from dimod.generators.binpacking import *

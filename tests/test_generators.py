@@ -628,3 +628,24 @@ class TestGates(unittest.TestCase):
 
         # also check that the gap is 7.5
         self.assertIn(7.5, set(sampleset.record.energy))
+
+
+class TestInteger(unittest.TestCase):
+    def test_exceptions(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.binary_encoding('v', .9)
+
+    def test_values(self):
+        sampler = dimod.ExactSolver()
+        for ub in [3, 7, 15, 2, 4, 8, 13, 11, 5]:
+            with self.subTest(upper_bound=ub):
+                bqm = dimod.generators.binary_encoding('v', ub)
+
+                sampleset = sampler.sample(bqm)
+
+                # we see all possible energies in range
+                self.assertEqual(set(sampleset.record.energy), set(range(ub+1)))
+
+                # the variable labels correspond to the energy
+                for sample, energy in sampleset.data(['sample', 'energy']):
+                    self.assertEqual(sum(v[1]*val for v, val in sample.items()), energy)

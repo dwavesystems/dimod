@@ -194,6 +194,7 @@ Generating BQMs:
    :toctree: generated/
 
    and_gate
+   binary_encoding
    chimera_anticluster
    combinations
    frustrated_loop
