@@ -31,7 +31,7 @@ def binary_encoding(v: Variable, upper_bound: int) -> BinaryQuadraticModel:
     Returns:
         A binary quadratic model. The variables in the BQM will be labelled
         with tuples of length two or three. The first value of the tuple will
-        be the variable label ``v`` provided. The second value will the the
+        be the variable label ``v`` provided. The second value will be the
         coefficient in the integer encoding. One of the variables will
         have a third value in the tuple, ``'msb'``. This is the variable
         occupying the position of the most significant bit. Though it may
