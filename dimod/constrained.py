@@ -861,8 +861,8 @@ class ConstrainedQuadraticModel:
                      fp: Union[BinaryIO, ByteString],
                      lower_bound_default: Optional[int] = None,
                      upper_bound_default: Optional[int] = None) -> "ConstrainedQuadraticModel":
-        """
-        Create a CQM model from a LP file.
+        """Create a CQM model from a LP file.
+
         Args:
             fp: file-like object in the LP format
             lower_bound_default: in case lower bounds for integer are not given, this will be the default
