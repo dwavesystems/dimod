@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add a generator, ``dimod.generators.binary_encoding``, to create a binary
+    quadratic model that encodes an integer.
