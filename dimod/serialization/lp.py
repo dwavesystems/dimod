@@ -34,8 +34,7 @@ infinity = 1E30
 
 
 def make_lp_grammar() -> And:
-    """Build the grammar of LP files
-    """
+    """Build the grammar of LP files"""
     # name char ranges for objective, constraint or variable
     all_name_chars = alphanums + "!\"#$%&()/,.;?@_'`{}|~"
     first_char = remove_strings(all_name_chars, nums)
@@ -160,8 +159,8 @@ def make_lp_grammar() -> And:
 
 
 def remove_strings(string, strings_to_remove):
-    """ Replace an iterable of strings in removables
-        if removables is a string, each character is removed """
+    """Replace an iterable of strings in removables
+       if removables is a string, each character is removed """
     for r in strings_to_remove:
         try:
             string = string.replace(r, "")
@@ -170,10 +169,11 @@ def remove_strings(string, strings_to_remove):
     return string
 
 
-def get_variables(parse_output: ParseResults,
-                  lower_bound_default: typing.Optional[int] = None,
-                  upper_bound_default: typing.Optional[int] = None) -> Dict:
-    """ Return set of variables and dict of variable types and bounds
+def get_variables_from_parsed_lp(parse_output: ParseResults,
+                                 lower_bound_default: typing.Optional[int] = None,
+                                 upper_bound_default: typing.Optional[int] = None) -> Dict:
+    """Return set of variables and dict of variable types and bounds
+
     Args:
         parse_output: the parse results encoding the LP file
         lower_bound_default: the lower bound of the integer variables, in case they are not specified

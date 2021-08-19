@@ -44,7 +44,7 @@ from dimod.typing import Bias, Variable
 from dimod.utilities import new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
-from dimod.serialization.lp import make_lp_grammar, get_variables, constraint_symbols, obj_senses
+from dimod.serialization.lp import make_lp_grammar, get_variables_from_parsed_lp, constraint_symbols, obj_senses
 
 __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
@@ -873,7 +873,7 @@ class ConstrainedQuadraticModel:
         """
         grammar = make_lp_grammar()
         parse_output = grammar.parseFile(fp)
-        variables_info = get_variables(parse_output, lower_bound_default, upper_bound_default)
+        variables_info = get_variables_from_parsed_lp(parse_output, lower_bound_default, upper_bound_default)
 
         cqm = ConstrainedQuadraticModel()
         x = {}
