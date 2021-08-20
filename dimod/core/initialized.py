@@ -106,28 +106,31 @@ class Initialized(abc.ABC):
             initial_states_variables = list(bqm.variables)
             initial_states_vartype = bqm.vartype
         else:
-            initial_states_array, initial_states_variables = \
-                as_samples(initial_states, copy=True)
-
             # confirm that the vartype matches and/or make it match
             if isinstance(initial_states, SampleSet):
                 initial_states_vartype = initial_states.vartype
             else:
                 # check based on values, defaulting to match the current bqm
-                initial_states_vartype = infer_vartype(initial_states_array) or bqm.vartype
+                initial_states_vartype = infer_vartype(initial_states) or bqm.vartype
+
+            # only create a copy of the initial states if vartype mismatch
+            copy = initial_states_vartype != bqm.vartype
+
+            initial_states_array, initial_states_variables = \
+                as_samples(initial_states, copy=copy)
 
             # confirm that the variables match
             if bqm.variables ^ initial_states_variables:
                 raise ValueError("mismatch between variables in "
                                  "'initial_states' and 'bqm'")
 
-        # match the vartype of the initial_states to the bqm
-        if initial_states_vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
-            initial_states_array += 1
-            initial_states_array //= 2
-        elif initial_states_vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
-            initial_states_array *= 2
-            initial_states_array -= 1
+            # match the vartype of the initial_states to the bqm
+            if initial_states_vartype is Vartype.SPIN and bqm.vartype is Vartype.BINARY:
+                initial_states_array += 1
+                initial_states_array //= 2
+            elif initial_states_vartype is Vartype.BINARY and bqm.vartype is Vartype.SPIN:
+                initial_states_array *= 2
+                initial_states_array -= 1
 
         # validate num_reads and/or infer them from initial_states
         if num_reads is None:
