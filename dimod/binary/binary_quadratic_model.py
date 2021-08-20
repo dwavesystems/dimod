@@ -283,6 +283,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             for v, bias in other.linear.items():
                 bqm.add_linear(v, bias*self_offset)
 
+            bqm.offset += self_offset*other_offset
+
             return bqm
         if isinstance(other, QuadraticModel):
             # promote to QM

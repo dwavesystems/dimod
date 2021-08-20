@@ -31,6 +31,16 @@ class TestExpressions(unittest.TestCase):
             self.assertEqual(qm.offset, 1)
             self.assertEqual(qm.quadratic, {})
 
+    def test_expressions(self):
+        i = Integer('i')
+        j = Integer('j')
+
+        qm = (i - 1)*(j - 1)
+
+        self.assertEqual(qm.linear, {'i': -1, 'j': -1})
+        self.assertEqual(qm.quadratic, {('i', 'j'): 1})
+        self.assertEqual(qm.offset, 1)
+
     def test_mul_permutations(self):
         x = Binary('x')
         i = Integer('i')
