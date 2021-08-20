@@ -107,7 +107,7 @@ class Initialized(abc.ABC):
             initial_states_vartype = bqm.vartype
         else:
             initial_states_array, initial_states_variables = \
-                as_samples(initial_states)
+                as_samples(initial_states, copy=True)
 
             # confirm that the vartype matches and/or make it match
             if isinstance(initial_states, SampleSet):

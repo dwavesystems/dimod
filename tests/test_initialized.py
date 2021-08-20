@@ -192,3 +192,14 @@ class TestGenerators(unittest.TestCase):
             initial_states=self.initial_states)
         self.assertEqual(len(init.initial_states), 2)
         self.assertEqual(init.num_reads, 2)
+
+    def test_mismatched_vartype(self):
+        """Input initial states are not modified when there is a mismatch between
+        the vartypes of bqm and initial_states."""
+
+        orig_sampleset = np.copy(self.initial_sampleset.record)
+        result = Initialized().parse_initial_states(
+            bqm=self.bqm.binary,
+            initial_states=self.initial_sampleset)
+
+        np.testing.assert_array_equal(orig_sampleset, self.initial_sampleset.record)
