@@ -264,9 +264,10 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         # it is much faster to just do this here.
         labels = list(samples_like.variables)
         if dtype is None:
-            return samples_like.record.sample, labels
+            arr = np.copy(samples_like.record.sample) if copy else samples_like.record.sample
+            return arr, labels
         else:
-            return samples_like.record.sample.astype(dtype), labels
+            return samples_like.record.sample.astype(dtype, copy=copy), labels
 
     if isinstance(samples_like, tuple) and len(samples_like) == 2:
         samples_like, labels = samples_like
@@ -282,13 +283,13 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
         raise TypeError('samples_like cannot be an iterator')
 
     if isinstance(samples_like, abc.Mapping):
-        return as_samples(([samples_like], labels), dtype=dtype)
+        return as_samples(([samples_like], labels), dtype=dtype, copy=copy, order=order)
 
     if (isinstance(samples_like, list) and samples_like and
             isinstance(samples_like[0], numbers.Number)):
         # this is not actually necessary but it speeds up the
         # samples_like = [1, 0, 1,...] case significantly
-        return as_samples(([samples_like], labels), dtype=dtype)
+        return as_samples(([samples_like], labels), dtype=dtype, copy=copy, order=order)
 
     if not isinstance(samples_like, np.ndarray):
         if any(isinstance(sample, abc.Mapping) for sample in samples_like):
