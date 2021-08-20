@@ -50,7 +50,7 @@ class Initialized(abc.ABC):
     def parse_initial_states(self, bqm,
                              initial_states=None,
                              initial_states_generator='random',
-                             num_reads=None, seed=None):
+                             num_reads=None, seed=None, copy_always=False):
         """Parses/generates initial states for an initialized sampler.
 
         Args:
@@ -58,39 +58,43 @@ class Initialized(abc.ABC):
                 The binary quadratic model.
 
             num_reads (int, optional, default=len(initial_states) or 1):
-                Number of reads. If `num_reads` is not explicitly given, it is
-                selected to match the number of initial states given.
-                If no initial states are given, it defaults to 1.
+                Number of reads. If ``num_reads`` is not explicitly given, it is
+                selected to match the number of initial states given. If no 
+                initial states are given, it defaults to 1.
 
             initial_states (samples-like, optional, default=None):
                 One or more samples, each defining an initial state for all the
                 problem variables. Initial states are given one per read, but
-                if fewer than `num_reads` initial states are defined,
+                if fewer than ``num_reads`` initial states are defined,
                 additional values are generated as specified by
-                `initial_states_generator`. See func:`.as_samples` for a
+                ``initial_states_generator``. See func:`.as_samples` for a
                 description of "samples-like".
 
             initial_states_generator ({'none', 'tile', 'random'}, optional, default='random'):
                 Defines the expansion of `initial_states` if fewer than
-                `num_reads` are specified:
+                ``num_reads`` are specified:
 
                 * "none":
                     If the number of initial states specified is smaller than
-                    `num_reads`, raises ValueError.
+                    ``num_reads``, raises ValueError.
 
                 * "tile":
                     Reuses the specified initial states if fewer than
-                    `num_reads` or truncates if greater.
+                    ``num_reads`` or truncates if greater.
 
                 * "random":
                     Expands the specified initial states with randomly
-                    generated states if fewer than `num_reads` or truncates if
+                    generated states if fewer than ``num_reads`` or truncates if
                     greater.
 
             seed (int (32-bit unsigned integer), optional):
                 Seed to use for the PRNG. Specifying a particular seed with a
                 constant set of parameters produces identical results. If not
                 provided, a random seed is chosen.
+
+            copy_always (bool, optional, default=False):
+                If True, then ``initial_states`` is guaranteed to be copied, 
+                otherwise it is only copied if necessary.
 
         Returns:
             A named tuple with `['initial_states', 'initial_states_generator',
@@ -113,11 +117,12 @@ class Initialized(abc.ABC):
                 # check based on values, defaulting to match the current bqm
                 initial_states_vartype = infer_vartype(initial_states) or bqm.vartype
 
-            # only create a copy of the initial states if vartype mismatch
-            copy = initial_states_vartype != bqm.vartype
+            if not copy_always:
+                # only copy if there's a vartype mismatch
+                copy_always = initial_states_vartype != bqm.vartype
 
             initial_states_array, initial_states_variables = \
-                as_samples(initial_states, copy=copy)
+                as_samples(initial_states, copy=copy_always)
 
             # confirm that the variables match
             if bqm.variables ^ initial_states_variables:

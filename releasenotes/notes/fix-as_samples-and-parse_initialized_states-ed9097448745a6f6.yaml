@@ -5,3 +5,7 @@ fixes:
     the ``copy`` argument is not ignored in ``as_samples`` and 
     ``Initialized.parse_initial_states`` does not modify any input data. 
     See `#861 <https://github.com/dwavesystems/dimod/issues/861>`_.
+
+features:
+  - |
+    Add ``copy_always`` parameter to ``Initialized.parse_initial_states``.
