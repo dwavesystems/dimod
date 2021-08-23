@@ -36,7 +36,8 @@ except ImportError:
 class Test_as_samples(unittest.TestCase):
     # tests for as_samples function
 
-    def test_copy_false(self):
+    def test_copy(self):
+        # Check case where samples_like is a tuple
         samples_like = np.ones((5, 5))
         labels = list('abcde')
         arr, lab = dimod.as_samples((samples_like, labels))
@@ -44,6 +45,25 @@ class Test_as_samples(unittest.TestCase):
         self.assertEqual(lab, list('abcde'))
         self.assertIs(labels, lab)
         self.assertTrue(np.shares_memory(arr, samples_like))
+
+        arr, lab = dimod.as_samples((samples_like, labels), copy=True)
+        self.assertFalse(np.shares_memory(arr, samples_like))
+
+        # Check case where samples_like is a dimod.SampleSet
+        sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
+                                                  {'a': +1, 'b': +1}],
+                                                  'SPIN',
+                                                  energy=[-1.0, 1.0])
+
+        arr, lab = dimod.as_samples(sampleset)
+        self.assertTrue(np.shares_memory(arr, sampleset.record.sample))
+        arr, lab = dimod.as_samples(sampleset, copy=True)
+        self.assertFalse(np.shares_memory(arr, sampleset.record.sample))
+
+        arr, lab = dimod.as_samples(sampleset, dtype=np.int8)
+        self.assertTrue(np.shares_memory(arr, sampleset.record.sample))
+        arr, lab = dimod.as_samples(sampleset, dtype=np.int8, copy=True)
+        self.assertFalse(np.shares_memory(arr, sampleset.record.sample))
 
     def test_dict_with_inconsistent_labels(self):
         with self.assertRaises(ValueError):
