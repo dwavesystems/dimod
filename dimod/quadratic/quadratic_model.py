@@ -376,10 +376,54 @@ class QuadraticModel(QuadraticViewsMixin):
         """Add a linear bias to an existing variable."""
         return self.data.add_linear
 
+    def add_linear_from(self, linear: Union[Mapping[Variable, Bias],
+                                            Iterable[Tuple[Variable, Bias]]]):
+        """Add linear biases.
+
+        Args:
+            linear:
+                A collection of variables and their associated linear biases.
+                If a dict, should be of the form ``{v: bias, ...}`` where ``v``
+                is a variable and ``bias`` is its associated linear bias.
+                Otherwise, should be an iterable of ``(v, bias)`` pairs.
+
+        """
+        add_linear = self.add_linear
+
+        if isinstance(linear, Mapping):
+            for v, bias in linear.items():
+                add_linear(v, bias)
+        else:
+            for v, bias in linear:
+                add_linear(v, bias)
+
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
         """Add quadratic bias to a pair of variables."""
         return self.data.add_quadratic
+
+    def add_quadratic_from(self, quadratic: Union[Mapping[Tuple[Variable, Variable], Bias],
+                                                  Iterable[Tuple[Variable, Variable, Bias]]]):
+        """Add quadratic biases.
+
+        Args:
+            quadratic:
+                Collection of interactions and their associated quadratic
+                bias. If a dict, should be of the form ``{(u, v): bias, ...}``
+                where ``u`` and ``v`` are variables in the model and ``bias`` is
+                the associated quadratic bias. Otherwise, should be an
+                iterable of ``(u, v, bias)`` triplets.
+                If the interaction already exists, the bias is added.
+
+        """
+        add_quadratic = self.data.add_quadratic
+
+        if isinstance(quadratic, Mapping):
+            for (u, v), bias in quadratic.items():
+                add_quadratic(u, v, bias)
+        else:
+            for u, v, bias in quadratic:
+                add_quadratic(u, v, bias)
 
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,

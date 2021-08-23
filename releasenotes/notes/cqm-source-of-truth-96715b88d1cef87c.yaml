@@ -1,0 +1,23 @@
+---
+features:
+  - |
+    Add ``QuadraticModel.add_quadratic_from()`` method.
+  - |
+    Add ``QuadraticModel.add_linear_from()`` method.
+  - |
+    Add ``ConstrainedQuadraticModel.lower_bound()`` and
+    ``ConstrainedQuadraticModel.upper_bound()`` methods.
+upgrade:
+  - |
+    ``QuadraticModel.objective`` is now always a ``QuadraticModel``. Previously
+    it could either be a ``BinaryQuadraticModel`` or a ``QuadraticModel``.
+  - |
+    ``QuadraticModel.objective`` now contains all variables in the constrained
+    quadratic model. Previously it could contain a subset of the variables.
+deprecations:
+  - |
+    Deprecate ``ConstrainedQuadraticModel.variables.vartypes``,
+    ``ConstrainedQuadraticModel.variables.lower_bounds``, and
+    ``ConstrainedQuadraticModel.variables.upper_bounds`` attributes.
+  - |
+    Deprecate ``ConstrainedQuadraticModel.variables.vartype()`` method.
