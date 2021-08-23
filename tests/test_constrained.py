@@ -96,9 +96,12 @@ class TestAdjVector(unittest.TestCase):
     def test_construction(self):
         cqm = CQM()
 
-        cqm.set_objective(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'))
-        label = cqm.add_constraint(dimod.AdjVectorBQM({'ab': 1}, 'SPIN'), sense='==', rhs=1)
-        self.assertIsInstance(cqm.objective, BQM)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.AdjVectorBQM({'ab': 1}, 'SPIN')
+
+        cqm.set_objective(bqm)
+        label = cqm.add_constraint(bqm, sense='==', rhs=1)
+        self.assertIsInstance(cqm.objective, dimod.QuadraticModel)
         self.assertIsInstance(cqm.constraints[label].lhs, BQM)
 
 
@@ -150,6 +153,34 @@ class TestCopy(unittest.TestCase):
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
 
 
+class TestDeprecated(unittest.TestCase):
+    def test_typedvariables(self):
+        cqm = CQM()
+
+        x = Binary('x')
+        s = Spin('s')
+        i = Integer('i')
+
+        cqm.set_objective(x + i)
+        cqm.add_constraint(i + s <= 1)
+
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(cqm.variables.lower_bounds, {'x': 0.0, 'i': 0.0, 's': -1.0})
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(cqm.variables.upper_bounds, {'x': 1.0, 'i': 9007199254740991.0, 's': 1})
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(len(cqm.variables.lower_bounds), 3)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(len(cqm.variables.upper_bounds), 3)
+
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(list(cqm.variables.vartypes),
+                             [dimod.BINARY, dimod.INTEGER, dimod.SPIN])
+
+        with self.assertWarns(DeprecationWarning):
+            self.assertIs(cqm.variables.vartype('x'), dimod.BINARY)
+
+
 class TestFromDQM(unittest.TestCase):
     def test_case_label(self):
         dqm = dimod.CaseLabelDQM()
@@ -162,11 +193,14 @@ class TestFromDQM(unittest.TestCase):
 
         cqm = CQM.from_discrete_quadratic_model(dqm)
 
-        self.assertTrue(cqm.objective.is_equal(
-            BQM({(0, 'blue'): 0.0, (0, 'red'): 1.0, (0, 'green'): 0.0,
-                 ('v', 'blue'): 0.0, ('v', 'brown'): 0.0, ('v', 'yellow'): 2.0},
-                {(('v', 'blue'), (0, 'green')): -0.5, (('v', 'brown'), (0, 'blue')): -0.5},
-                0.0, 'BINARY')))
+        self.assertEqual(cqm.objective.linear,
+                         {(0, 'blue'): 0.0, (0, 'red'): 1.0, (0, 'green'): 0.0,
+                          ('v', 'blue'): 0.0, ('v', 'brown'): 0.0, ('v', 'yellow'): 2.0})
+        self.assertEqual(cqm.objective.quadratic,
+                         {(('v', 'blue'), (0, 'green')): -0.5, (('v', 'brown'), (0, 'blue')): -0.5})
+        self.assertEqual(cqm.objective.offset, 0)
+        self.assertTrue(all(cqm.objective.vartype(v) is dimod.BINARY
+                            for v in cqm.objective.variables))
 
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
 
@@ -204,7 +238,7 @@ class FromQM(unittest.TestCase):
     def test_from_bqm(self):
         bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
         cqm = CQM.from_bqm(bqm)
-        self.assertEqual(cqm.objective, bqm)
+        self.assertTrue(cqm.objective.is_equal(dimod.QM.from_bqm(bqm)))
 
     def test_from_qm(self):
         qm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN') + Integer('i')
@@ -224,7 +258,7 @@ class TestSerialization(unittest.TestCase):
 
         new = CQM.from_file(cqm.to_file())
 
-        self.assertEqual(cqm.objective, new.objective)
+        self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
@@ -280,8 +314,8 @@ class TestSetObjective(unittest.TestCase):
 
     def test_set(self):
         cqm = CQM()
-        cqm.set_objective(Spin('a') * 5)
-        self.assertEqual(cqm.objective, Spin('a') * 5)
+        cqm.set_objective(Integer('a') * 5)
+        self.assertTrue(cqm.objective.is_equal(Integer('a') * 5))
 
 
 class TestSubstituteSelfLoops(unittest.TestCase):

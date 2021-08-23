@@ -189,7 +189,7 @@ class TestLoad(unittest.TestCase):
 
         new = load(cqm.to_file())
 
-        self.assertEqual(cqm.objective, new.objective)
+        self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertEqual(constraint.lhs, new.constraints[label].lhs)

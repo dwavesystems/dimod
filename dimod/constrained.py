@@ -16,15 +16,17 @@
 Constrained Quadratic Model class.
 """
 
+import collections.abc as abc
 import json
 import re
 import tempfile
 import uuid
+import warnings
 import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping
+from typing import Callable, MutableMapping, Iterator
 
 import numpy as np
 
@@ -44,51 +46,6 @@ __all__ = ['ConstrainedQuadraticModel', 'CQM']
 
 
 CQM_MAGIC_PREFIX = b'DIMODCQM'
-
-
-class TypedVariables(Variables):
-    """Tracks variable labels and the vartype of each variable."""
-    def __init__(self):
-        super().__init__()
-        self.vartypes: list[Vartype] = []
-        self.lower_bounds: Dict[Variable, Float] = {}
-        self.upper_bounds: Dict[Variable, Float] = {}
-
-    def _append(self, vartype: VartypeLike, v: Variable,
-                *, lower_bound: Optional[Bias] = None,
-                upper_bound: Optional[Bias] = None) -> Variable:
-        """Add the variable if it is missing, otherwise check that it matches
-        the existing vartype/bounds.
-
-        Bounds are ignored when the vartype is SPIN or BINARY.
-        """
-        vartype = as_vartype(vartype, extended=True)
-
-        if self.count(v):
-            if vartype != self.vartypes[self.index(v)]:
-                raise TypeError(f"variable {v!r} already exists with a different vartype")
-            if vartype is not vartype.BINARY and vartype is not Vartype.SPIN:
-                if lower_bound is not None and lower_bound != self.lower_bounds.setdefault(v, lower_bound):
-                    raise ValueError(
-                        f"variable {v!r} has already been added with a different lower bound")
-                if upper_bound is not None and upper_bound != self.upper_bounds.setdefault(v, upper_bound):
-                    raise ValueError(
-                        f"variable {v!r} has already been added with a different lower bound")
-        else:
-            v = super()._append(v)
-            self.vartypes.append(vartype)
-            if lower_bound is not None:
-                self.lower_bounds[v] = lower_bound
-            if upper_bound is not None:
-                self.upper_bounds[v] = upper_bound
-
-        return v
-
-    def _extend(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def vartype(self, v: Variable) -> Vartype:
-        return self.vartypes[self.index(v)]
 
 
 class ConstrainedQuadraticModel:
@@ -187,6 +144,8 @@ class ConstrainedQuadraticModel:
         self.discrete: Set[Hashable] = set()  # collection of discrete constraints
         self._discrete: Set[Variable] = set()  # collection of all variables used in discrete
 
+        self._objective = QuadraticModel()
+
     @property
     def constraints(self) -> Dict[Hashable, Comparison]:
         """The constraints as a dictionary.
@@ -202,16 +161,9 @@ class ConstrainedQuadraticModel:
         return self._constraints
 
     @property
-    def objective(self) -> Union[BinaryQuadraticModel, QuadraticModel]:
+    def objective(self) -> QuadraticModel:
         """The objective to be minimized."""
-        try:
-            return self._objective
-        except AttributeError:
-            pass
-
-        objective = BinaryQuadraticModel('BINARY')
-        self._objective: Union[BinaryQuadraticModel, QuadraticModel] = objective
-        return objective
+        return self._objective
 
     @property
     def variables(self) -> Variables:
@@ -221,8 +173,23 @@ class ConstrainedQuadraticModel:
         except AttributeError:
             pass
 
-        self._variables: TypedVariables = TypedVariables()
-        return self._variables
+        self._variables = variables = self.objective.variables
+
+        # to support backwards compatibility (0.10.0 - 0.10.5), we annotate
+        # this object with some attributes. All of these will be removed in
+        # 0.11.0
+        def vartype(v):
+            warnings.warn(
+                "cqm.variables.vartype(v) is deprecated and will be removed in dimod 0.11.0, "
+                "use cqm.vartype(v) instead.", DeprecationWarning, stacklevel=2)
+            return self.vartype(v)
+
+        variables.vartype = vartype  # method
+        variables.vartypes = _Vartypes(self)
+        variables.lower_bounds = _LowerBounds(self)
+        variables.upper_bounds = _UpperBounds(self)
+
+        return variables
 
     def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
         # todo: singledispatchmethod in 3.8+
@@ -230,14 +197,14 @@ class ConstrainedQuadraticModel:
             vartype = model.vartype
 
             for v in model.variables:
-                self.variables._append(vartype, v)
+                self.objective.add_variable(vartype, v)
 
         elif isinstance(model, QuadraticModel):
             for v in model.variables:
                 # for spin, binary variables the bounds are ignored anyway
-                self.variables._append(model.vartype(v), v,
-                                       lower_bound=model.lower_bound(v),
-                                       upper_bound=model.upper_bound(v))
+                self.objective.add_variable(model.vartype(v), v,
+                                            lower_bound=model.lower_bound(v),
+                                            upper_bound=model.upper_bound(v))
         else:
             raise TypeError("model should be a QuadraticModel or a BinaryQuadraticModel")
 
@@ -412,8 +379,8 @@ class ConstrainedQuadraticModel:
             if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
                 # need to worry about bounds
                 qm.add_variable(vartype, v,
-                                lower_bound=self.variables.lower_bounds.get(v, 0),
-                                upper_bound=self.variables.upper_bounds.get(v))
+                                lower_bound=self.lower_bound(v),
+                                upper_bound=self.upper_bound(v))
             else:
                 qm.add_variable(vartype, v)
 
@@ -478,7 +445,8 @@ class ConstrainedQuadraticModel:
         self._discrete.update(variables)
         return label
 
-    def add_variable(self, v: Variable, vartype: VartypeLike):
+    def add_variable(self, v: Variable, vartype: VartypeLike,
+                     *, lower_bound: int = 0, upper_bound: Optional[int] = None):
         """Add a variable to the model.
 
         Args:
@@ -491,18 +459,25 @@ class ConstrainedQuadraticModel:
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`.Vartype.INTEGER`, ``'INTEGER'``
 
+            lower_bound:
+                A lower bound on the variable. Ignored when the variable is
+                not :class:`Vartype.INTEGER`.
+
+            upper_bound:
+                An upper bound on the variable. Ignored when the variable is
+                not :class:`Vartype.INTEGER`.
+
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer
             >>> cqm = ConstrainedQuadraticModel()
             >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
 
         """
-        # todo: lower and upper bound
         if self.variables.count(v):
-            if as_vartype(vartype, extended=True) != self.variables.vartype(v):
+            if as_vartype(vartype, extended=True) != self.vartype(v):
                 raise ValueError("given variable has already been added with a different vartype")
         else:
-            return self.variables._append(vartype, v)
+            return self.objective.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
@@ -584,8 +559,10 @@ class ConstrainedQuadraticModel:
             >>> from dimod import ConstrainedQuadraticModel, BinaryQuadraticModel
             >>> bqm = BinaryQuadraticModel.from_ising({}, {'ab': 1, 'bc': 1, 'ac': 1})
             >>> cqm = ConstrainedQuadraticModel().from_bqm(bqm)
-            >>> cqm.objective
-            BinaryQuadraticModel({'a': 0.0, 'b': 0.0, 'c': 0.0}, {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}, 0.0, 'SPIN')
+            >>> cqm.objective.linear
+            {'a': 0.0, 'b': 0.0, 'c': 0.0}
+            >>> cqm.objective.quadratic
+            {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}
             >>> label1 = cqm.add_constraint_from_model(BinaryQuadraticModel({'a': 0}, {}, 0, 'SPIN'), '>=', 0)
         """
         cqm = cls()
@@ -641,6 +618,10 @@ class ConstrainedQuadraticModel:
 
         return cqm
 
+    def lower_bound(self, v: Variable) -> Bias:
+        """Return the lower bound on the specified variable."""
+        return self.objective.lower_bound(v)
+
     def num_biases(self) -> int:
         """The number of biases accross the objective and constraints."""
         num_biases = len(self.objective.linear) + len(self.objective.quadratic)
@@ -669,13 +650,21 @@ class ConstrainedQuadraticModel:
             >>> j = Integer('j')
             >>> cqm = ConstrainedQuadraticModel()
             >>> cqm.set_objective(2*i - 0.5*i*j + 10)
+
         """
+        # clear out current objective, keeping only the variables
+        self.objective.quadratic.clear()  # there may be a more performant way...
+        for v in self.objective.variables:
+            self.objective.set_linear(v, 0)
+        # offset is overwritten later
+
+        # now add everything from the new objective
         self._add_variables_from(objective)
 
-        if isinstance(objective, BQMabc):  # handle legacy BQMs
-            objective = as_bqm(objective)
-
-        self._objective = objective
+        for v in objective.variables:
+            self.objective.set_linear(v, objective.get_linear(v))
+        self.objective.add_quadratic_from(objective.iter_quadratic())
+        self.objective.offset = objective.offset
 
     def _substitute_self_loops_from_model(self, qm: Union[BinaryQuadraticModel, QuadraticModel],
                                           mapping: MutableMapping[Variable, Variable]):
@@ -711,7 +700,7 @@ class ConstrainedQuadraticModel:
 
                 mapping[u] = new
 
-                self.variables._append(vartype, new, lower_bound=lb, upper_bound=ub)
+                self.objective.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
 
                 # we don't add the constraint yet because we don't want
                 # to modify self.constraints
@@ -855,12 +844,82 @@ class ConstrainedQuadraticModel:
         file.seek(0)
         return file
 
+    def upper_bound(self, v: Variable) -> Bias:
+        """Return the upper bound on the specified variable."""
+        return self.objective.upper_bound(v)
+
     def vartype(self, v: Variable) -> Vartype:
         """The vartype of the given variable."""
-        return self.variables.vartype(v)
+        return self.objective.vartype(v)
 
 
 CQM = ConstrainedQuadraticModel
+
+
+class _Vartypes(abc.Sequence):
+    """Support deprecated attribute on ``CQM.variables``"""
+    def __init__(self, cqm: ConstrainedQuadraticModel):
+        self.cqm: ConstrainedQuadraticModel = cqm
+
+    def __getitem__(self, index: int) -> Vartype:
+        warnings.warn(
+            "cqm.variables.vartypes[i] is deprecated and will be removed in dimod 0.11.0, "
+            "use cqm.vartype(cqm.variables[i]) instead.", DeprecationWarning, stacklevel=3)
+        return self.cqm.vartype(self.cqm.variables[index])
+
+    def __len__(self) -> int:
+        warnings.warn(
+            "cqm.variables.vartypes is deprecated and will be removed in dimod 0.11.0",
+            DeprecationWarning, stacklevel=3)
+        return len(self.cqm.variables)
+
+
+class _LowerBounds(abc.Mapping):
+    """Support deprecated attribute on ``CQM.variables``"""
+    def __init__(self, cqm: ConstrainedQuadraticModel):
+        self.cqm: ConstrainedQuadraticModel = cqm
+
+    def __getitem__(self, key: Variable) -> float:
+        warnings.warn(
+            "cqm.variables.lower_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
+            "use cqm.lower_bound(v) instead.", DeprecationWarning, stacklevel=3)
+        return self.cqm.lower_bound(key)
+
+    def __iter__(self) -> Iterator[Variable]:
+        warnings.warn(
+            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
+            DeprecationWarning, stacklevel=3)
+        yield from self.cqm.variables
+
+    def __len__(self) -> int:
+        warnings.warn(
+            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
+            DeprecationWarning, stacklevel=3)
+        return len(self.cqm.variables)
+
+
+class _UpperBounds(abc.Mapping):
+    """Support deprecated attribute on ``CQM.variables``"""
+    def __init__(self, cqm: ConstrainedQuadraticModel):
+        self.cqm: ConstrainedQuadraticModel = cqm
+
+    def __getitem__(self, key: Variable) -> float:
+        warnings.warn(
+            "cqm.variables.upper_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
+            "use cqm.upper_bound(v) instead.", DeprecationWarning, stacklevel=3)
+        return self.cqm.upper_bound(key)
+
+    def __iter__(self) -> Iterator[Variable]:
+        warnings.warn(
+            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
+            DeprecationWarning, stacklevel=3)
+        yield from self.cqm.variables
+
+    def __len__(self) -> int:
+        warnings.warn(
+            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
+            DeprecationWarning, stacklevel=3)
+        return len(self.cqm.variables)
 
 
 # register fileview loader
