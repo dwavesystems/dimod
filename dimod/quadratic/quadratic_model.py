@@ -248,6 +248,8 @@ class QuadraticModel(QuadraticViewsMixin):
             for v, bias in other.linear.items():
                 new.add_linear(v, bias*self_offset)
 
+            new.offset += self_offset*other_offset
+
             return new
         if isinstance(other, Number):
             new = self.copy()

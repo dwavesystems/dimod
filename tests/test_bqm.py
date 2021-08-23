@@ -2272,6 +2272,7 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(-u*v, BQM({}, {'uv': -1}, 0, 'BINARY'))
         self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'BINARY'))
         self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'BINARY'))
+        self.assertEqual((u - 1)*(v - 1), BQM({'u': -1, 'v': -1}, {'uv': 1}, 1, 'BINARY'))
 
     def test_expressions_spin(self):
         u = Spin('u')

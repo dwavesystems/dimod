@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Correctly account for the offset when multiplying binary quadratic models
