@@ -26,7 +26,7 @@ import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping, Iterator
+from typing import Callable, MutableMapping, Iterator, Tuple, Mapping
 
 import numpy as np
 
@@ -42,7 +42,7 @@ from dimod.utilities import new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
 
-__all__ = ['ConstrainedQuadraticModel', 'CQM']
+__all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
 
 CQM_MAGIC_PREFIX = b'DIMODCQM'
@@ -920,6 +920,202 @@ class _UpperBounds(abc.Mapping):
             "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
             DeprecationWarning, stacklevel=3)
         return len(self.cqm.variables)
+
+
+def _qm_to_bqm(qm: QuadraticModel, integers: MutableMapping[Variable, BinaryQuadraticModel],
+               ) -> BinaryQuadraticModel:
+    # dev note: probably we'll want to make this function or something similar
+    # public facing at some point, but right now the interface is pretty weird
+    # and it only returns BINARY bqms
+
+    if any(qm.vartype(v) is Vartype.SPIN for v in qm.variables):
+        # bqm is BINARY so we want to handle these
+        qm = qm.spin_to_binary(inplace=False)
+
+    bqm = BinaryQuadraticModel(Vartype.BINARY)
+
+    for v in qm.variables:
+        if v in integers:
+            bqm += qm.get_linear(v) * integers[v]
+        else:
+            bqm.add_linear(v, qm.get_linear(v))
+
+    for u, v, bias in qm.iter_quadratic():
+        if u in integers:
+            if v in integers:
+                bqm += integers[u] * integers[v] * bias
+            else:
+                bqm += Binary(v) * integers[u] * bias
+        elif v in integers:
+            bqm += Binary(u) * integers[v] * bias
+        else:
+            bqm.add_quadratic(u, v, bias)
+    bqm.offset += qm.offset
+
+    return bqm
+
+
+class CQMToBQMInverter:
+    """Invert a sample from a binary quadratic model constructed by :func:`cqm_to_bqm`."""
+    __slots__ = ('_binary', '_integers')
+
+    def __init__(self,
+                 binary: Mapping[Variable, Vartype],
+                 integers: Mapping[Variable, BinaryQuadraticModel]):
+        self._binary = binary
+        self._integers = integers
+
+    def __call__(self, sample: Mapping[Variable, int]) -> Mapping[Variable, int]:
+        new = {}
+
+        for v, vartype in self._binary.items():
+            if vartype is Vartype.BINARY:
+                new[v] = sample[v]
+            elif vartype is Vartype.SPIN:
+                new[v] = 2*sample[v] - 1
+            else:
+                raise RuntimeError("unexpected vartype")
+
+        for v, bqm in self._integers.items():
+            new[v] = 0
+            for u in bqm.variables:
+                new[v] += sample[u] * u[1]
+
+        return new
+
+
+# Developer note: This function is *super* ad hoc. In the future, we may want
+# A BQM.from_cqm method or similar, but for now I think it makes sense to
+# expose that functionality as a function for easier later deprecation.
+def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bias] = None,
+               ) -> Tuple[BinaryQuadraticModel, CQMToBQMInverter]:
+    """Construct a binary quadratic model from a constrained quadratic model.
+
+    Args:
+        cqm: A constrained quadratic model. All constraints must be linear
+            and all integer variables must have a lower bound of 0.
+
+        lagrange_multiplier: The penalty strength used when converting
+            constraints into penalty models. Defaults to 10x the largest
+            bias in the objective.
+
+    Returns:
+        A 2-tuple containing:
+
+            A binary quadratic model
+
+            A function that converts samples over the binary quadratic model
+            back into samples for the constrained quadratic model.
+
+    Example:
+
+        Start with a constrained quadratic model
+
+        >>> num_widget_a = dimod.Integer('num_widget_a', upper_bound=7)
+        >>> num_widget_b = dimod.Integer('num_widget_b', upper_bound=3)
+        >>> cqm = dimod.ConstrainedQuadraticModel()
+        >>> cqm.set_objective(-3 * num_widget_a - 4 * num_widget_b)
+        >>> cqm.add_constraint(num_widget_a + num_widget_b <= 5, label='total widgets')
+        'total widgets'
+
+        Convert it to a binary quadratic model and solve it using
+        :class:`dimod.ExactSolver`.
+
+        >>> bqm, invert = dimod.cqm_to_bqm(cqm)
+        >>> sampleset = dimod.ExactSolver().sample(bqm)
+
+        Interpret the answer in the original variable classes
+
+        >>> invert(sampleset.first.sample)
+        {'num_widget_a': 2, 'num_widget_b': 3}
+
+
+    """
+
+    from dimod.generators.integer import binary_encoding  # avoid circular import
+
+    bqm = BinaryQuadraticModel(Vartype.BINARY)
+    binary: Dict[Variable, Vartype] = {}
+    integers: Dict[Variable, BinaryQuadraticModel] = {}
+
+    # add the variables
+    for v in cqm.variables:
+        vartype = cqm.vartype(v)
+
+        if vartype is Vartype.SPIN or vartype is Vartype.BINARY:
+            binary[v] = vartype
+        elif vartype is Vartype.INTEGER:
+            if cqm.lower_bound(v) != 0:
+                raise ValueError("integer variables must have a lower bound of 0, "
+                                 f"variable {v} has a lower bound of {cqm.lower_bound(v)}")
+            v_bqm = integers[v] = binary_encoding(v, int(cqm.upper_bound(v)))
+
+            if not v_bqm.variables.isdisjoint(bqm.variables):
+                # this should be pretty unusual, so let's not bend over backwards
+                # to accommodate it.
+                raise ValueError("given CQM has conflicting variables with ones "
+                                 "generated by dimod.generators.binary_encoding")
+
+            bqm.add_variables_from((v, 0) for v in v_bqm.variables)
+        else:
+            raise RuntimeError("unexpected vartype")
+
+    # objective, we know it's always a QM
+    bqm += _qm_to_bqm(cqm.objective, integers)
+
+    if lagrange_multiplier is None:
+        if cqm.constraints and bqm.num_variables:
+            max_bias = max(-bqm.linear.min(), bqm.linear.max())
+            if not bqm.is_linear():
+                max_bias = max(-bqm.quadratic.min(), bqm.quadratic.max(), max_bias)
+            lagrange_multiplier = 10 * max_bias
+        else:
+            lagrange_multiplier = 0  # doesn't matter
+
+    for constraint in cqm.constraints.values():
+        lhs = constraint.lhs
+        rhs = constraint.rhs
+        sense = constraint.sense
+
+        if isinstance(lhs, QuadraticModel):
+            lhs = _qm_to_bqm(lhs, integers)
+
+        if not lhs.is_linear():
+            raise ValueError("CQM must not have any quadratic constraints")
+
+        if lhs.vartype is Vartype.SPIN:
+            lhs = lhs.change_vartype(Vartype.BINARY, inplace=True)
+
+        # at this point we know we have a BINARY bqm
+
+        if sense is Sense.Eq:
+            bqm.add_linear_equality_constraint(
+                ((v, lhs.get_linear(v)) for v in lhs.variables),
+                lagrange_multiplier,
+                lhs.offset - rhs,
+                )
+        elif sense is Sense.Ge:
+            bqm.add_linear_inequality_constraint(
+                ((v, lhs.get_linear(v)) for v in lhs.variables),
+                lagrange_multiplier,
+                new_label(),
+                constant=lhs.offset,
+                lb=rhs,
+                ub=np.iinfo(np.int64).max,
+                )
+        elif sense is Sense.Le:
+            bqm.add_linear_inequality_constraint(
+                ((v, lhs.get_linear(v)) for v in lhs.variables),
+                lagrange_multiplier,
+                new_label(),
+                constant=lhs.offset,
+                lb=np.iinfo(np.int64).min,
+                ub=rhs,
+                )
+        else:
+            raise RuntimeError("unexpected sense")
+
+    return bqm, CQMToBQMInverter(binary, integers)
 
 
 # register fileview loader
