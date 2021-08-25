@@ -153,6 +153,100 @@ class TestCopy(unittest.TestCase):
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
 
 
+class TestCQMtoBQM(unittest.TestCase):
+    def test_empty(self):
+        bqm, inverter = dimod.cqm_to_bqm(dimod.CQM())
+        self.assertEqual(bqm.shape, (0, 0))
+        self.assertEqual(bqm.vartype, dimod.BINARY)
+
+    def test_bqm_objective_only(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM.from_bqm(x*y + 2*y*z + 8*x + 5)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm)
+
+        self.assertEqual(bqm, x*y + 2*y*z + 8*x + 5)
+
+    def test_qm_objective_only(self):
+        i = dimod.Integer('i', upper_bound=7)
+        j = dimod.Integer('j', upper_bound=9)
+        x = dimod.Binary('x')
+
+        qm = i*j + 5*j*x + 8*i + 3*x + 5
+        cqm = CQM.from_qm(qm)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm)
+
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        for bin_sample, energy in sampleset.data(['sample', 'energy']):
+            int_sample = inverter(bin_sample)
+            self.assertEqual(qm.energy(int_sample), energy)
+
+    def test_bqm_equality_constraint(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM()
+        cqm.add_constraint(x + y + z == 1)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        self.assertEqual(bqm, (x + y + z - 1)*(x + y + z - 1))
+
+    def test_bqm_equality_constraint_offset(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM()
+        cqm.add_constraint(x + y + z - 1 == 2)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        self.assertEqual(bqm, (x + y + z - 3)*(x + y + z - 3))
+
+    def test_bqm_Le_constraint(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM()
+        cqm.add_constraint(x + y + z <= 2)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        configs = set()
+        for sample in dimod.ExactSolver().sample(bqm).lowest().samples():
+            self.assertLessEqual(sample['x'] + sample['y'] + sample['z'], 2)
+            configs.add((sample['x'], sample['y'], sample['z']))
+        self.assertEqual(len(configs), 7)
+
+    def test_bqm_Ge_constraint(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM()
+        cqm.add_constraint(x + y + z >= 2)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        configs = set()
+        for sample in dimod.ExactSolver().sample(bqm).lowest().samples():
+            self.assertGreaterEqual(sample['x'] + sample['y'] + sample['z'], 2)
+            configs.add((sample['x'], sample['y'], sample['z']))
+        self.assertEqual(len(configs), 4)
+
+    def test_qm_Ge_constraint(self):
+        i = dimod.Integer('i', upper_bound=7)
+        j = dimod.Integer('j', upper_bound=9)
+        x = dimod.Binary('x')
+
+        cqm = CQM()
+        cqm.add_constraint(i + j + x >= 5)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        for bin_sample in dimod.ExactSolver().sample(bqm).lowest().samples():
+            int_sample = inverter(bin_sample)
+            self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
+
+
 class TestDeprecated(unittest.TestCase):
     def test_typedvariables(self):
         cqm = CQM()

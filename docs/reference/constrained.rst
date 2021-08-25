@@ -60,3 +60,12 @@ Generating constrained quadratic models:
    :toctree: generated/
 
    bin_packing
+
+Generating constrained quadratic models to other model types:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   cqm_to_bqm

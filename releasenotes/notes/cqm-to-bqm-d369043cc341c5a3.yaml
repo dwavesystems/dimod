@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``cqm_to_bqm`` function.
