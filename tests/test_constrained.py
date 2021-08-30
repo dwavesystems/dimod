@@ -372,6 +372,9 @@ class TestIterViolations(unittest.TestCase):
         sample = {'i': 105, 'j': 4, 'k': 5}
         self.assertEqual(cqm.violations(sample), {label_le: 120.0, label_ge: 891.0})
 
+        sample = {'j': -1, 'i': 1004, 'k': 1000}
+        self.assertEqual(cqm.violations(sample, clip=False), {label_ge: -3.0, label_le: -1.0})
+
 
 class TestSerialization(unittest.TestCase):
     def test_functional(self):

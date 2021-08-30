@@ -619,13 +619,14 @@ class ConstrainedQuadraticModel:
 
         return cqm
 
-    def iter_violations(self, sample_like, *, skip_satisfied: bool = False,
+    def iter_violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = True,
                         ) -> Iterator[Tuple[Hashable, Bias]]:
         """Yield constraint labels and the amount the constraints are violated.
 
         Args:
             sample_like: A sample over the CQM variables.
             skip_satisfied: If True, samples that are not violated are skipped.
+            clip: If False, then negative violations will be returned.
 
         Yields:
             A 2-tuple containing the constraint label and the amount of
@@ -669,6 +670,19 @@ class ConstrainedQuadraticModel:
             greater equal 3.0
 
         """
+        if skip_satisfied:
+            # clip doesn't matter in this case
+            for label, violation in self.iter_violations(sample_like, skip_satisfied=False):
+                if violation > 0:
+                    yield label, violation
+            return
+
+        if clip:
+            for label, violation in self.iter_violations(sample_like,
+                                                         clip=False, skip_satisfied=False):
+                yield label, max(violation, 0.)
+            return
+
         sample, labels = as_samples(sample_like)
 
         if sample.shape[0] != 1:
@@ -679,14 +693,11 @@ class ConstrainedQuadraticModel:
             lhs_energy = constraint.lhs.energy((sample, labels))
 
             if constraint.sense is Sense.Eq:
-                if not (skip_satisfied and lhs_energy == constraint.rhs):
-                    yield label, abs(lhs_energy - constraint.rhs)
+                yield label, abs(lhs_energy - constraint.rhs)
             elif constraint.sense is Sense.Le:
-                if not (skip_satisfied and lhs_energy <= constraint.rhs):
-                    yield label, max(0.0, lhs_energy - constraint.rhs)
+                yield label, lhs_energy - constraint.rhs
             elif constraint.sense is Sense.Ge:
-                if not (skip_satisfied and lhs_energy >= constraint.rhs):
-                    yield label, -min(-0.0, lhs_energy - constraint.rhs)
+                yield label, constraint.rhs - lhs_energy
             else:
                 raise RuntimeError("unexpected sense")
 
@@ -924,12 +935,13 @@ class ConstrainedQuadraticModel:
         """The vartype of the given variable."""
         return self.objective.vartype(v)
 
-    def violations(self, sample_like, *, skip_satisfied: bool = False) -> Dict[Hashable, Bias]:
+    def violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = True,
+                   ) -> Dict[Hashable, Bias]:
         """Return a dictionary mapping constraint labels to the amount the constraints are violated.
 
         This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
         """
-        return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied))
+        return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied, clip=clip))
 
 
 CQM = ConstrainedQuadraticModel
