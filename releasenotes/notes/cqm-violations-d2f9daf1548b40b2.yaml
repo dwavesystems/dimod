@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.iter_violations()`` and
+    ``ConstrainedQuadraticModel.violations()`` methods.
+    See `971 <https://github.com/dwavesystems/dimod/issues/971>`_.

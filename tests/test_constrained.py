@@ -340,6 +340,39 @@ class FromQM(unittest.TestCase):
         self.assertTrue(cqm.objective.is_equal(qm))
 
 
+class TestIterViolations(unittest.TestCase):
+    def test_no_constraints(self):
+        cqm = CQM.from_bqm(-Binary('a') + Binary('a')*Binary('b') + 1.5)
+        self.assertEqual(cqm.violations({'a': 1, 'b': 1}), {})
+
+    def test_binary(self):
+        a, b, c = dimod.Binaries('abc')
+
+        cqm = CQM()
+        cqm.add_constraint(a + b + c == 1, label='onehot')
+        cqm.add_constraint(a*b <= 0, label='ab LE')
+        cqm.add_constraint(c >= 1, label='c GE')
+
+        sample = {'a': 0, 'b': 0, 'c': 1}  # satisfying sample
+        self.assertEqual(cqm.violations(sample), {'ab LE': 0.0, 'c GE': 0.0, 'onehot': 0.0})
+        self.assertEqual(cqm.violations(sample, skip_satisfied=True), {})
+
+        sample = {'a': 1, 'b': 0, 'c': 0}  # violates one
+        self.assertEqual(cqm.violations(sample), {'ab LE': 0.0, 'c GE': 1.0, 'onehot': 0.0})
+        self.assertEqual(cqm.violations(sample, skip_satisfied=True), {'c GE': 1.0})
+
+    def test_integer(self):
+        i = dimod.Integer('i', lower_bound=-1000)
+        j, k = dimod.Integers('jk')
+
+        cqm = CQM()
+        label_le = cqm.add_constraint(i + j*k <= 5)
+        label_ge = cqm.add_constraint(i + j >= 1000)
+
+        sample = {'i': 105, 'j': 4, 'k': 5}
+        self.assertEqual(cqm.violations(sample), {label_le: 120.0, label_ge: 891.0})
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()

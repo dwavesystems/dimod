@@ -34,6 +34,7 @@ from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.quadratic import QuadraticModel
+from dimod.sampleset import as_samples
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
@@ -618,6 +619,77 @@ class ConstrainedQuadraticModel:
 
         return cqm
 
+    def iter_violations(self, sample_like, *, skip_satisfied: bool = False,
+                        ) -> Iterator[Tuple[Hashable, Bias]]:
+        """Yield constraint labels and the amount the constraints are violated.
+
+        Args:
+            sample_like: A sample over the CQM variables.
+            skip_satisfied: If True, samples that are not violated are skipped.
+
+        Yields:
+            A 2-tuple containing the constraint label and the amount of
+            constraints violation.
+
+        Example:
+
+            Construct a constrained quadratic model.
+
+            >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i + j + k == 10, label='equal')
+            'equal'
+            >>> cqm.add_constraint(i + j <= 15, label='less equal')
+            'less equal'
+            >>> cqm.add_constraint(j - k >= 0, label='greater equal')
+            'greater equal'
+
+            Check the violations of a satisfying sample.
+
+            >>> sample = {'i': 3, 'j': 5, 'k': 2}
+            >>> for label, violation in cqm.iter_violations(sample):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 0.0
+
+            Check the violations for a sample that does not satisfy all of the
+            constraints.
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 3.0
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample, skip_satisfied=True):
+            ...     print(label, violation)
+            greater equal 3.0
+
+        """
+        sample, labels = as_samples(sample_like)
+
+        if sample.shape[0] != 1:
+            raise ValueError("sample_like should be a single sample, "
+                             f"received {sample.shape[0]} samples")
+
+        for label, constraint in self.constraints.items():
+            lhs_energy = constraint.lhs.energy((sample, labels))
+
+            if constraint.sense is Sense.Eq:
+                if not (skip_satisfied and lhs_energy == constraint.rhs):
+                    yield label, abs(lhs_energy - constraint.rhs)
+            elif constraint.sense is Sense.Le:
+                if not (skip_satisfied and lhs_energy <= constraint.rhs):
+                    yield label, max(0.0, lhs_energy - constraint.rhs)
+            elif constraint.sense is Sense.Ge:
+                if not (skip_satisfied and lhs_energy >= constraint.rhs):
+                    yield label, -min(-0.0, lhs_energy - constraint.rhs)
+            else:
+                raise RuntimeError("unexpected sense")
+
     def lower_bound(self, v: Variable) -> Bias:
         """Return the lower bound on the specified variable."""
         return self.objective.lower_bound(v)
@@ -851,6 +923,13 @@ class ConstrainedQuadraticModel:
     def vartype(self, v: Variable) -> Vartype:
         """The vartype of the given variable."""
         return self.objective.vartype(v)
+
+    def violations(self, sample_like, *, skip_satisfied: bool = False) -> Dict[Hashable, Bias]:
+        """Return a dictionary mapping constraint labels to the amount the constraints are violated.
+
+        This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
+        """
+        return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied))
 
 
 CQM = ConstrainedQuadraticModel
