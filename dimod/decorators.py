@@ -20,7 +20,6 @@ import collections.abc as abc
 from functools import wraps
 from numbers import Integral
 
-from dimod.compatibility23 import getargspec
 from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
 from dimod.utilities import new_label
@@ -277,7 +276,7 @@ def vartype_argument(*arg_names):
         arg_names = ['vartype']
 
     def _vartype_arg(f):
-        argspec = getargspec(f)
+        argspec = inspect.getfullargspec(f)
 
         def _enforce_single_arg(name, args, kwargs):
             try:
@@ -297,7 +296,7 @@ def vartype_argument(*arg_names):
             # `getcallargs` doesn't merge additional positional/keyword arguments,
             # so do it manually
             final_args = list(bound_args.pop(argspec.varargs, ()))
-            final_kwargs = bound_args.pop(argspec.keywords, {})
+            final_kwargs = bound_args.pop(argspec.varkw, {})
 
             final_kwargs.update(bound_args)
             for name in arg_names:
@@ -349,7 +348,7 @@ def graph_argument(*arg_names, **options):
         raise TypeError(msg)
 
     def _graph_arg(f):
-        argspec = getargspec(f)
+        argspec = inspect.getfullargspec(f)
 
         def _enforce_single_arg(name, args, kwargs):
             try:
@@ -410,7 +409,7 @@ def graph_argument(*arg_names, **options):
             # `getcallargs` doesn't merge additional positional/keyword arguments,
             # so do it manually
             final_args = list(bound_args.pop(argspec.varargs, ()))
-            final_kwargs = bound_args.pop(argspec.keywords, {})
+            final_kwargs = bound_args.pop(argspec.varkw, {})
 
             final_kwargs.update(bound_args)
             for name in arg_names:
