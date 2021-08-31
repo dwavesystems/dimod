@@ -26,7 +26,7 @@ import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping, Iterator, Tuple, Mapping
+from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any
 
 import numpy as np
 
@@ -983,6 +983,35 @@ class CQMToBQMInverter:
 
         return new
 
+    @classmethod
+    def from_dict(cls, doc: Dict[str, Dict[Variable, Any]]) -> 'CQMToBQMInverter':
+        """Construct an inverter from a serialized representation."""
+
+        integers = {}
+        for v, variables in doc['integers'].items():
+            v = deserialize_variable(v)
+
+            bqm = BinaryQuadraticModel(Vartype.BINARY)
+            bqm.add_linear_from((deserialize_variable(u), u[1]) for u in variables)
+
+            integers[v] = bqm
+
+        return cls(
+            dict((deserialize_variable(v), as_vartype(vartype))
+                 for v, vartype in doc['binary'].items()),
+            integers,
+            )
+
+    def to_dict(self) -> Dict[str, Dict[Variable, Any]]:
+        """Return a json-serializable encoding of the inverter."""
+        # todo: in 3.8 we can used TypedDict for the typing
+        return dict(
+            binary=dict((serialize_variable(v), vartype.name)
+                        for v, vartype in self._binary.items()),
+            integers=dict((serialize_variable(v), bqm.variables.to_serializable())
+                          for v, bqm in self._integers.items()),
+            )
+
 
 # Developer note: This function is *super* ad hoc. In the future, we may want
 # A BQM.from_cqm method or similar, but for now I think it makes sense to
@@ -1029,6 +1058,13 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
         >>> invert(sampleset.first.sample)
         {'num_widget_a': 2, 'num_widget_b': 3}
 
+        Note that the inverter is also serializable.
+
+        >>> import json
+        >>> newinvert = dimod.constrained.CQMToBQMInverter.from_dict(
+        ...     json.loads(json.dumps(invert.to_dict())))
+        >>> newinvert(sampleset.first.sample)
+        {'num_widget_a': 2, 'num_widget_b': 3}
 
     """
 

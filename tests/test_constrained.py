@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import json
 import unittest
 
 import dimod
@@ -244,6 +245,23 @@ class TestCQMtoBQM(unittest.TestCase):
 
         for bin_sample in dimod.ExactSolver().sample(bqm).lowest().samples():
             int_sample = inverter(bin_sample)
+            self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
+
+    def test_serializable(self):
+        i = dimod.Integer('i', upper_bound=7)
+        j = dimod.Integer('j', upper_bound=9)
+        x = dimod.Binary('x')
+
+        cqm = CQM()
+        cqm.add_constraint(i + j + x >= 5)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm, lagrange_multiplier=1)
+
+        newinverter = dimod.constrained.CQMToBQMInverter.from_dict(
+            json.loads(json.dumps(inverter.to_dict())))
+
+        for bin_sample in dimod.ExactSolver().sample(bqm).lowest().samples():
+            int_sample = newinverter(bin_sample)
             self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
 
 

@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add ``.to_dict()`` and ``.from_dict()`` methods to the sample inverter
+    returned by the ``cqm_to_bqm`` function. The methods return a json
+    serializable representation of the inversion for storage if needed.
+    See `977 <https://github.com/dwavesystems/dimod/issues/977>`_.
