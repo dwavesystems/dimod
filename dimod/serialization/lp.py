@@ -16,7 +16,8 @@ import typing
 
 from pyparsing import *
 from collections import defaultdict, namedtuple
-
+from dimod.vartypes import Vartype
+from dimod.quadratic import QuadraticModel
 
 MINIMIZE = 1
 MAXIMIZE = -1
@@ -171,7 +172,7 @@ def remove_strings(string, strings_to_remove):
 
 def get_variables_from_parsed_lp(parse_output: ParseResults,
                                  lower_bound_default: typing.Optional[int] = None,
-                                 upper_bound_default: typing.Optional[int] = None) -> Dict:
+                                 upper_bound_default: typing.Optional[int] = None) -> QuadraticModel:
     """Return set of variables and dict of variable types and bounds
 
     Args:
@@ -182,12 +183,15 @@ def get_variables_from_parsed_lp(parse_output: ParseResults,
     Returns:
         a dictionary for each variable containing type, upper and lower bounds
     """
+
+    obj = QuadraticModel()
+
     all_vars = set()
     # default variable type for LP file
     # should be continuous, even though
     # they are not supported in CQMs
-    Var = namedtuple('Variable', ['type', 'lb', 'ub'])
-    variables_info = defaultdict(lambda: Var(type="c", lb=lower_bound_default, ub=upper_bound_default))
+    Var = namedtuple('Variable', ['vartype', 'lb', 'ub'])
+    variables_info = defaultdict(lambda: Var(vartype="c", lb=lower_bound_default, ub=upper_bound_default))
 
     # scan the objective
     for oe in parse_output.objective:
@@ -219,15 +223,6 @@ def get_variables_from_parsed_lp(parse_output: ParseResults,
                 elif len(qe) == 2:
                     all_vars.add(qe.squared_name[0])
 
-    # check the binary variables:
-    for n in parse_output.binaries:
-
-        variables_info[n] = variables_info[n]._replace(type='b')
-
-    # check for integer variables
-    for n in parse_output.generals:
-        variables_info[n] = variables_info[n]._replace(type='i')
-
     # scan the bounds
     for b in parse_output.bounds:
 
@@ -247,4 +242,20 @@ def get_variables_from_parsed_lp(parse_output: ParseResults,
             if constraint_senses[b.sense] >= 0:  # var <= NUM
                 variables_info[n] = variables_info[n]._replace(ub=b.rightbound[1])
 
-    return variables_info
+    # check the binary variables:
+    for n in parse_output.binaries:
+        variables_info[n] = variables_info[n]._replace(vartype=Vartype.BINARY)
+
+    # check for integer variables
+    for n in parse_output.generals:
+        variables_info[n] = variables_info[n]._replace(vartype=Vartype.INTEGER)
+
+    for n, var_info in variables_info.items():
+        if var_info.vartype is Vartype.BINARY:
+            obj.add_variable(Vartype.BINARY, n)
+        elif var_info.vartype is Vartype.INTEGER:
+            obj.add_variable(Vartype.INTEGER, n, var_info.lb, var_info.ub)
+        else:
+            raise ValueError("Unexpected Vartype: {} for variable: {}".format(var_info.vartype, n))
+
+    return obj
