@@ -930,7 +930,7 @@ class ConstrainedQuadraticModel:
                     if vartype is Vartype.BINARY:
                         constraint.add_variable(Vartype.BINARY, var)
                     elif vartype is Vartype.INTEGER:
-                        constraint.add_variable(Vartype.INTEGER, lb, ub)
+                        constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
                     else:
                         raise ValueError("Unexpected vartype: {}".format(vartype))
                     constraint.set_linear(var, le.coef)
@@ -947,7 +947,7 @@ class ConstrainedQuadraticModel:
                         if vartype1 is Vartype.BINARY:
                             constraint.add_variable(vartype1, var1)
                         elif vartype1 is Vartype.INTEGER:
-                            constraint.add_variable(vartype1, var1, lb1, ub1)
+                            constraint.add_variable(vartype1, var1, lower_bound=lb1, upper_bound=ub1)
                         else:
                             raise ValueError("Unexpected vartype: {}".format(vartype1))
 
@@ -959,7 +959,7 @@ class ConstrainedQuadraticModel:
                         if vartype2 is Vartype.BINARY:
                             constraint.add_variable(vartype2, var2)
                         elif vartype2 is Vartype.INTEGER:
-                            constraint.add_variable(vartype2, var2, lb2, ub2)
+                            constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_boun=ub2)
 
                         constraint.set_quadratic(var1, var2, qe.coef)
 
@@ -974,7 +974,7 @@ class ConstrainedQuadraticModel:
                             constraint.add_variable(vartype, var)
                             constraint.set_linear(var, qe.coef)
                         elif vartype is Vartype.INTEGER:
-                            constraint.add_variable(vartype, var, lb, ub)
+                            constraint.add_variable(vartype, var, lower_bound=lb, upper_bound=ub)
                             constraint.set_quadratic(var, var, qe.coef)
                         else:
                             raise TypeError("Unexpected variable type: {}".format(vartype))

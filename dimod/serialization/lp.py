@@ -254,7 +254,13 @@ def get_variables_from_parsed_lp(parse_output: ParseResults,
         if var_info.vartype is Vartype.BINARY:
             obj.add_variable(Vartype.BINARY, n)
         elif var_info.vartype is Vartype.INTEGER:
-            obj.add_variable(Vartype.INTEGER, n, var_info.lb, var_info.ub)
+            lb = var_info.lb
+            ub = var_info.ub
+
+            if lb is not None:
+                obj.add_variable(Vartype.INTEGER, n, lower_bound=lb, upper_bound=ub)
+            else:
+                obj.add_variable(Vartype.INTEGER, n, upper_bound=ub)
         else:
             raise ValueError("Unexpected Vartype: {} for variable: {}".format(var_info.vartype, n))
 
