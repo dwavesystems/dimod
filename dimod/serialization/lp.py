@@ -173,7 +173,7 @@ def remove_strings(string, strings_to_remove):
 def get_variables_from_parsed_lp(parse_output: ParseResults,
                                  lower_bound_default: typing.Optional[int] = None,
                                  upper_bound_default: typing.Optional[int] = None) -> QuadraticModel:
-    """Return set of variables and dict of variable types and bounds
+    """Return a quadratic model containing all the variables included in the CQM
 
     Args:
         parse_output: the parse results encoding the LP file
@@ -181,7 +181,7 @@ def get_variables_from_parsed_lp(parse_output: ParseResults,
         upper_bound_default: the upper bound of the integer variables in case they are not specified
 
     Returns:
-        a dictionary for each variable containing type, upper and lower bounds
+        the quadratic model with all variables
     """
 
     obj = QuadraticModel()
