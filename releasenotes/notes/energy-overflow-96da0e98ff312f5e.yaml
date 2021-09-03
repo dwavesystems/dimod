@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix energy calculations for integer variables with large values.
+    See `#982 <https://github.com/dwavesystems/dimod/issues/982>`_.

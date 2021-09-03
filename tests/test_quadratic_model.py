@@ -252,6 +252,13 @@ class TestDegree(unittest.TestCase):
 
 
 class TestEnergies(unittest.TestCase):
+    def test_bug982(self):
+        # https://github.com/dwavesystems/dimod/issues/982
+        i, j = dimod.Integers('ij')
+
+        self.assertAlmostEqual((i*j).energy({'i': 4294967296, 'j': 4294967296}),
+                               1.8446744073709552e+19)
+
     def test_spin_bin(self):
         x = Binary('x')
         s = Spin('s')
