@@ -118,6 +118,7 @@ jobs:
             . env/bin/activate
             pip install -r tests/requirements.txt
             pip install numpy=='<< parameters.numpy-version >>'
+            pip install 'dwave-preprocessing~=0.2.0' --no-deps
             pip install dimod --no-index -f dist/ --no-deps --force-reinstall
 
       - run:
