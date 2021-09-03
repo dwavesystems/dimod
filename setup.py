@@ -23,7 +23,9 @@ from distutils.command.build_ext import build_ext as _build_ext
 exec(open(os.path.join(os.path.dirname(__file__), "dimod", "package_info.py")).read())
 
 # if the numpy ranges change here, don't forget to update the circle-ci job
-install_requires = ['numpy>=1.17.3,<2.0.0']
+install_requires = ['numpy>=1.17.3,<2.0.0',
+                    'dwave-preprocessing>=0.2.0,<0.3.0',
+                    ]
 
 setup_requires = ['numpy>=1.17.3,<2.0.0']
 
