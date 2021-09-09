@@ -128,16 +128,20 @@ class BinaryPolynomial(abc.MutableMapping):
                 # not a polynomial
                 return False
 
-        if self.vartype != other.vartype:
-            return False
+        self_terms = self._terms
+        other_terms = other._terms
 
-        for term, bias in self.items():
-            if bias and other[term] != bias:
-                return False
-        for term, bias in other.items():
-            if bias and self[term] != bias:
-                return False
-        return True
+        return (
+            self.vartype == other.vartype
+            and all(
+                (not bias or other_terms[term] == bias)
+                for term, bias in self.items()
+            )
+            and all(
+                (not bias or self_terms[term] == bias)
+                for term, bias in other.items()
+            )
+        )
 
     def __ne__(self, other):
         return not (self == other)
