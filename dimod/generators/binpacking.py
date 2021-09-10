@@ -12,38 +12,39 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import warnings
+
+from typing import Tuple
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
-from typing import Tuple
 
-__all__ = ['bin_packing']
+__all__ = ['bin_packing', 'random_bin_packing']
 
 
-def bin_packing(num_items: int,
-                seed: int = 32,
-                weight_range: Tuple[int, int] = (10, 30),
-                ) -> ConstrainedQuadraticModel:
-    """Returns a constrained quadratic model encoding a bin packing problem
+def random_bin_packing(num_items: int,
+                       seed: int = 32,
+                       weight_range: Tuple[int, int] = (10, 30),
+                       ) -> ConstrainedQuadraticModel:
+    """Generate a bin packing problem as a constrained quadratic model.
 
-    Given the number of items, the code generates a random bin packing problem
-    formulated as a Constrained Quadratic model. The weights for each item are
-    integers uniformly drawn from in the weight_range. The bin capacity is set
-    to num_items * mean(weights) / 5.
+    The weights for each item are integers uniformly drawn from in the
+    ``weight_range``. The bin capacity is set to ``num_items * mean(weights) / 5``.
 
     Args:
         num_items: Number of items to choose from.
 
-        seed: Seed for numpy random number  generator.
+        seed: Seed for NumPy random number generator.
 
         weight_range: The range of the randomly generated weights for each item.
 
     Returns:
         The constrained quadratic model encoding the bin packing problem.
-        Variables are labeled as y_{j} where y_{j} = 1 means that bin j has
-        been used and x_{i}_{j} where x_{i}_{j} = 1 means that item i has been
-        placed in bin j.
+        Variables are labeled as ``y_{j}`` where ``y_{j} == 1`` means that bin
+        ``j`` has been used and ``x_{i}_{j}`` where ``x_{i}_{j} == 1`` means
+        that item ``i`` has been placed in bin ``j``.
 
     """
     max_num_bins = num_items
@@ -75,3 +76,15 @@ def bin_packing(num_items: int,
             sense="<=", label='capacity_bin_{}'.format(j))
 
     return model
+
+
+# We want to use bin_packing in the future for problems with specified weights/
+# capacities, so we'll deprecate it and use the more explicit random_bin_packing.
+# Once the deprecation period is over we can use the bin_packing with a different
+# api.
+def bin_packing(*args, **kwargs) -> ConstrainedQuadraticModel:
+    warnings.warn("bin_packing was deprecated after 0.10.6 and will be removed in 0.11.0, "
+                  "use random_bin_packing instead.",
+                  DeprecationWarning,
+                  stacklevel=2)
+    return random_bin_packing(*args, **kwargs)

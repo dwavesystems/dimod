@@ -39,7 +39,7 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
-   bin_packing
+   random_bin_packing
 
 Random
 ======
@@ -50,5 +50,6 @@ Random
    gnm_random_bqm
    gnp_random_bqm
    randint
+   random_bin_packing
    ran_r
    uniform

@@ -469,13 +469,13 @@ class TestBinPacking(unittest.TestCase):
 
     def test_model(self):
         num_items = 10
-        cqm = dimod.generators.bin_packing(num_items=num_items)
+        cqm = dimod.generators.random_bin_packing(num_items=num_items)
         self.assertEqual(len(cqm.variables), num_items*(num_items+1))
         self.assertEqual(len(cqm.constraints), 2*num_items)
 
     def test_infeasible(self):
         num_items = 10
-        cqm = dimod.generators.bin_packing(num_items=num_items)
+        cqm = dimod.generators.random_bin_packing(num_items=num_items)
 
         for i in range(num_items):
             x = {'x_{}_{}'.format(i, j): 1 for j in range(num_items)}
@@ -490,7 +490,7 @@ class TestBinPacking(unittest.TestCase):
 
     def test_feasible(self):
         num_items = 10
-        cqm = dimod.generators.bin_packing(num_items=num_items)
+        cqm = dimod.generators.random_bin_packing(num_items=num_items)
 
         for i in range(num_items):
             x = {'x_{}_{}'.format(i, j): 0 for j in range(1, num_items)}
@@ -504,6 +504,10 @@ class TestBinPacking(unittest.TestCase):
             lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
             self.assertLessEqual(lhs, 0)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            dimod.generators.bin_packing(5)
+
 
 class TestMultiKnapsack(unittest.TestCase):
 
@@ -516,7 +520,7 @@ class TestMultiKnapsack(unittest.TestCase):
 
     def test_infeasible(self):
         num_items = 10
-        cqm = dimod.generators.bin_packing(num_items=num_items)
+        cqm = dimod.generators.random_bin_packing(num_items=num_items)
 
         for i in range(num_items):
             x = {'x_{}_{}'.format(i, j): 1 for j in range(num_items)}
@@ -531,7 +535,7 @@ class TestMultiKnapsack(unittest.TestCase):
 
     def test_feasible(self):
         num_items = 10
-        cqm = dimod.generators.bin_packing(num_items=num_items)
+        cqm = dimod.generators.random_bin_packing(num_items=num_items)
 
         for i in range(num_items):
             x = {'x_{}_{}'.format(i, j): 0 for j in range(1, num_items)}
