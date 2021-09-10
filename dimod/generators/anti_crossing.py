@@ -12,74 +12,87 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dimod import BinaryQuadraticModel
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+from dimod.vartypes import Vartype
 
 __all__ = ['anti_crossing_clique', 'anti_crossing_loops']
 
 
-def anti_crossing_clique(num_variables):
-    """Anti crossing problems with a single clique.
+def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
+    """Generate an anti crossing problem with a single clique.
 
-    Given the number of variables, the code will generate a clique of size
-    num_variables/2, each variable ferromagnetically interacting with a partner 
-    variable with opposite bias. A single variable in the cluster will have 
-    no bias applied.
+    Let ``N = num_variables // 2``. This function returns a binary
+    quadratic model with variables `[0, N)` forming a ferromagnetic clique.
+    Each variable `v` in `[N, 2*N)` ferromagnetically interacts with
+    variable `v-N`.
+
+    All of the variables in the clique except variable `1` have a linear bias
+    of `+1`, and all of the variables attached to the clique have a linear bias
+    of `-1`.
+
+    The ground state of this problem is therefore `+1` for all variables.
 
     Args:
-        num_variables (int):
-            Number of variables used to generate the problem. Must be an even number
-            greater than 6.
+        num_variables:
+            Number of variables used to generate the problem. Must be an even
+            number greater than or equal to 6.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`.
+        A binary quadratic model.
 
     """
 
-    if num_variables % 2 != 0 or num_variables < 6:
-        raise ValueError('num_variables must be an even number > 6')
+    if num_variables % 2 or num_variables < 6:
+        raise ValueError('num_variables must be an even number >= 6')
 
-    bqm = BinaryQuadraticModel({}, {}, 0, 'SPIN')
+    bqm = BinaryQuadraticModel(Vartype.SPIN)
 
     hf = int(num_variables / 2)
     for n in range(hf):
         for m in range(n + 1, hf):
-            bqm.add_interaction(n, m, -1)
+            bqm.add_quadratic(n, m, -1)
 
-        bqm.add_interaction(n, n + hf, -1)
+        bqm.add_quadratic(n, n + hf, -1)
 
-        bqm.add_variable(n, 1)
-        bqm.add_variable(n + hf, -1)
+        bqm.add_linear(n, 1)
+        bqm.add_linear(n + hf, -1)
 
     bqm.set_linear(1, 0)
-    
+
     return bqm
 
-def anti_crossing_loops(num_variables):
-    """Anti crossing problems with two loops. These instances are copies of the
-    instance studied in [DJA]_.
+
+def anti_crossing_loops(num_variables: int) -> BinaryQuadraticModel:
+    """Generate an anti crossing problem with two loops.
+
+    These instances are copies of the instance studied in [DJA]_.
+
+    Note that for small values of ``num_variables``, the loops can be as small
+    as a single edge.
+
+    The ground state of this problem is `+1` for all variables.
 
     Args:
-        num_variables (int): 
-            Number of variables used to generate the problem. Must be an even number
-            greater than 8.
+        num_variables:
+            Number of variables used to generate the problem. Must be an even
+            number greater than or equal to 8.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`.
+        A binary quadratic model.
 
     .. [DJA] Dickson, N., Johnson, M., Amin, M. et al. Thermally assisted
         quantum annealing of a 16-qubit problem. Nat Commun 4, 1903 (2013).
-        https://doi.org/10.1038/ncomms2920 
+        https://doi.org/10.1038/ncomms2920
 
     """
 
-    bqm = BinaryQuadraticModel({}, {}, 0, 'SPIN')
+    if num_variables % 2 or num_variables < 8:
+        raise ValueError('num_variables must be an even number >= 8')
 
-    if num_variables % 2 != 0 or num_variables < 8:
-        raise ValueError('num_variables must be an even number > 8')
+    bqm = BinaryQuadraticModel(Vartype.SPIN)
 
     hf = int(num_variables / 4)
-
-    for n in range(hf):   
+    for n in range(hf):
         if n % 2 == 1:
             bqm.set_quadratic(n, n + hf, -1)
 
@@ -87,14 +100,14 @@ def anti_crossing_loops(num_variables):
         bqm.set_quadratic(n + hf, (n + 1) % hf + hf, -1)
 
         bqm.set_quadratic(n, n + 2 * hf, -1)
-        bqm.set_quadratic(n + hf, n + 3 * hf, -1)  
+        bqm.set_quadratic(n + hf, n + 3 * hf, -1)
 
-        bqm.add_variable(n, 1)
-        bqm.add_variable(n + hf, 1)
-        bqm.add_variable(n + 2 * hf, -1)
-        bqm.add_variable(n + 3 * hf, -1)
+        bqm.add_linear(n, 1)
+        bqm.add_linear(n + hf, 1)
+        bqm.add_linear(n + 2 * hf, -1)
+        bqm.add_linear(n + 3 * hf, -1)
 
-    bqm.set_linear(0, 0) 
+    bqm.set_linear(0, 0)
     bqm.set_linear(hf, 0)
 
     return bqm

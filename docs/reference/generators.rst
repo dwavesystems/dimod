@@ -14,6 +14,8 @@ Benchmarking
 .. autosummary::
    :toctree: generated/
 
+   anti_crossing_clique
+   anti_crossing_loops
    chimera_anticluster
    frustrated_loop
 
