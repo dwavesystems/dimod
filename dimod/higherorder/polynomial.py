@@ -16,10 +16,13 @@ from __future__ import division
 
 import itertools
 import collections.abc as abc
+from collections import defaultdict
 
 from numbers import Number
 
 import numpy as np
+
+import cytoolz as tl
 
 from dimod.decorators import vartype_argument
 from dimod.sampleset import as_samples
@@ -33,6 +36,25 @@ def asfrozenset(term):
     """Convert to frozenset if it is not already"""
     return term if isinstance(term, frozenset) else frozenset(term)
 
+
+is_odd = tl.flip(tl.curried.operator.mod)(2)
+second_is_odd = tl.compose(is_odd, tl.second)
+
+def freeze_term(term, vartype):
+    return (
+        term
+        if isinstance(term, frozenset)
+        else (
+                frozenset(term)
+                if vartype is Vartype.BINARY
+                else frozenset(
+                        map(
+                            tl.first,
+                            filter(second_is_odd, tl.frequencies(term).items())
+                        )
+                )
+        )
+    )
 
 class BinaryPolynomial(abc.MutableMapping):
     """A polynomial with binary variables and real-valued coefficients.
@@ -92,26 +114,11 @@ class BinaryPolynomial(abc.MutableMapping):
             poly = poly.items()
 
         # we need to aggregate the repeated terms
-        self._terms = terms = {}
+
+        self._terms = terms = defaultdict(int)
         for term, bias in poly:
-
-            fsterm = asfrozenset(term)
-
-            # when SPIN-valued, s^2 == 1, so we need to handle that case
-            # in BINARY, x^2 == x
-            if len(fsterm) < len(term) and vartype is Vartype.SPIN:
-                new = set()
-                term = tuple(term)  # make sure it has .count
-                for v in fsterm:
-                    if term.count(v) % 2:
-                        new.add(v)
-                fsterm = frozenset(new)
-
-            if fsterm in terms:
-                terms[fsterm] += bias
-            else:
-                terms[fsterm] = bias
-
+            terms[freeze_term(term, vartype)] += bias
+        
         self.vartype = vartype
 
     def __contains__(self, term):
@@ -127,10 +134,10 @@ class BinaryPolynomial(abc.MutableMapping):
             except Exception:
                 # not a polynomial
                 return False
-
+        
         self_terms = self._terms
         other_terms = other._terms
-
+        
         return (
             self.vartype == other.vartype
             and all(
