@@ -16,13 +16,14 @@
 Type hints for common dimod inputs.
 """
 
-from typing import Hashable, Union
+from typing import Collection, Hashable, Tuple, Union
 
 import numpy as np
 
 from dimod.vartypes import VartypeLike
 
 __all__ = ['Bias',
+           'GraphLike',
            'Variable',
            'VartypeLike',
            ]
@@ -32,3 +33,19 @@ Variable = Hashable  # todo: exclude None
 Bias = Union[int, float, np.number]
 
 # todo: SamplesLike
+
+try:
+    import networkx as nx
+except ImportError:
+    GraphLike = Union[
+        int,  # number of nodes
+        Tuple[Collection[Variable], Collection[Tuple[Variable, Variable]]],  # nodes/edges
+        Collection[Tuple[Variable, Variable]],  # edges
+        ]
+else:
+    GraphLike = Union[
+        int,  # number of nodes
+        Tuple[Collection[Variable], Collection[Tuple[Variable, Variable]]],  # nodes/edges
+        Collection[Tuple[Variable, Variable]],  # edges
+        nx.Graph,
+        ]

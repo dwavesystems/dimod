@@ -291,6 +291,10 @@ class TestChimeraAnticluster(unittest.TestCase):
 
         bqm = dimod.generators.chimera_anticluster(2, subgraph=edgelist)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.chimera_anticluster(0, cls=6)        
+
 
 @unittest.skipUnless(_networkx, "no networkx installed")
 class TestFCL(unittest.TestCase):
