@@ -1078,7 +1078,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @classmethod
     def from_ising(cls, h: Union[Mapping, Sequence],
                    J: Mapping,
-                   offset: Number = 0):
+                   offset: float = 0):
         """Create a binary quadratic model from an Ising problem.
 
         Args:
@@ -1169,7 +1169,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return obj
 
     @classmethod
-    def from_qubo(cls, Q: Mapping, offset: Number = 0):
+    def from_qubo(cls, Q: Mapping, offset: float = 0):
         """Create a binary quadratic model from a QUBO problem.
 
         Args:
