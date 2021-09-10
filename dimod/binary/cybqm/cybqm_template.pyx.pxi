@@ -376,7 +376,7 @@ cdef class cyBQM_template(cyBQMBase):
 
                     vspin = samples_view[si, bqm_to_sample[vi]]
 
-                    energies[si] += uspin * vspin * deref(span.first).second
+                    energies[si] += deref(span.first).second * uspin * vspin
 
                     inc(span.first)
 

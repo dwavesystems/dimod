@@ -312,7 +312,7 @@ class QuadraticModelBase {
                  ++nit) {
                 auto v_val = *(sample_start + (*nit).first);
                 auto bias = (*nit).second;
-                en += u_val * v_val * bias;
+                en += bias * u_val * v_val;
             }
         }
 
