@@ -37,9 +37,6 @@ def asfrozenset(term):
     return term if isinstance(term, frozenset) else frozenset(term)
 
 
-is_odd = tl.flip(tl.curried.operator.mod)(2)
-second_is_odd = tl.compose(is_odd, tl.second)
-
 def freeze_term(term, vartype):
     return (
         term
@@ -48,13 +45,13 @@ def freeze_term(term, vartype):
                 frozenset(term)
                 if vartype is Vartype.BINARY
                 else frozenset(
-                        map(
-                            tl.first,
-                            filter(second_is_odd, tl.frequencies(term).items())
-                        )
+                        var
+                        for var, power in tl.frequencies(term).items()
+                        if power % 2
                 )
         )
     )
+
 
 class BinaryPolynomial(abc.MutableMapping):
     """A polynomial with binary variables and real-valued coefficients.
