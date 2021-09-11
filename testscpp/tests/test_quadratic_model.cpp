@@ -719,6 +719,22 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
                 }
             }
         }
+
+        WHEN("we add two integer variables with an interaction") {
+          auto u = qm.add_variable(Vartype::INTEGER);
+          auto v = qm.add_variable(Vartype::INTEGER);
+
+          qm.set_quadratic(u, v, 1);
+
+          AND_WHEN("we calculate the energy of a sample with large biases") {
+            // https://github.com/dwavesystems/dimod/issues/982
+            std::vector<std::int64_t> samples = {4294967296, 4294967296};
+
+            THEN("we get the value we expect") {
+              CHECK(qm.energy(samples) == Approx(1.8446744069414584e+19));
+            }
+          }
+        }
     }
 }
 
