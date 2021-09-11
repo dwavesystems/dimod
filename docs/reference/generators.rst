@@ -40,6 +40,8 @@ Optimization
    :toctree: generated/
 
    random_bin_packing
+   random_knapsack
+   random_multi_knapsack
 
 Random
 ======
@@ -51,5 +53,7 @@ Random
    gnp_random_bqm
    randint
    random_bin_packing
+   random_knapsack
+   random_multi_knapsack
    ran_r
    uniform

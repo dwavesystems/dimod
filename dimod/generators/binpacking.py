@@ -47,9 +47,11 @@ def random_bin_packing(num_items: int,
         that item ``i`` has been placed in bin ``j``.
 
     """
+
+    rng = np.random.RandomState(seed)
+
     max_num_bins = num_items
-    np.random.seed(seed)
-    weights = list(np.random.randint(*weight_range, num_items))
+    weights = list(rng.randint(*weight_range, num_items))
     bin_capacity = int(num_items * np.mean(weights) / 5)
     model = ConstrainedQuadraticModel()
 
