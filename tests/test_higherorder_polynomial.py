@@ -70,6 +70,11 @@ class Test__eq__(unittest.TestCase):
         self.assertEqual(BinaryPolynomial(polydict, 'SPIN'), polydict)
         self.assertNotEqual(BinaryPolynomial(polydict, 'SPIN'), 1)
 
+    def test_different_terms(self):
+        poly1 = BinaryPolynomial({'a': 1, 'b': 1}, 'BINARY')
+        poly2 = BinaryPolynomial({'ab': -1, 'a': 1, 'b': 1}, 'BINARY')
+        self.assertNotEqual(poly1, poly2)
+
 
 class Test__len__(unittest.TestCase):
     def test_single_term(self):
