@@ -418,14 +418,12 @@ class QuadraticModel(QuadraticViewsMixin):
                 If the interaction already exists, the bias is added.
 
         """
-        add_quadratic = self.data.add_quadratic
-
         if isinstance(quadratic, Mapping):
-            for (u, v), bias in quadratic.items():
-                add_quadratic(u, v, bias)
+            self.data.add_quadratic_from_iterable(
+                (u, v, bias) for (u, v), bias in quadratic.items())
         else:
-            for u, v, bias in quadratic:
-                add_quadratic(u, v, bias)
+            self.data.add_quadratic_from_iterable(quadratic)
+
 
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,

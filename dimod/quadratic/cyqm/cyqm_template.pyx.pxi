@@ -275,6 +275,19 @@ cdef class cyQM_template(cyQMBase):
             for vi in range(length):
                 self.add_quadratic(irow[vi], icol[vi], qdata[vi])
 
+    def add_quadratic_from_iterable(self, quadratic):
+        cdef Py_ssize_t ui, vi
+        cdef bias_type bias
+
+        for u, v, bias in quadratic:
+            ui = self.variables.index(u)
+            vi = self.variables.index(v)
+
+            if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+                raise ValueError(f"{u!r} cannot have an interaction with itself")
+            
+            self.cppqm.add_quadratic(ui, vi, bias)
+
     def add_variable(self, vartype, label=None, *, lower_bound=0, upper_bound=None):
         # as_vartype will raise for unsupported vartypes
         vartype = as_vartype(vartype, extended=True)
