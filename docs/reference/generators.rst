@@ -17,6 +17,7 @@ Benchmarking
    anti_crossing_clique
    anti_crossing_loops
    chimera_anticluster
+   doped
    frustrated_loop
 
 Constraints
@@ -49,6 +50,7 @@ Random
 .. autosummary::
    :toctree: generated/
 
+   doped
    gnm_random_bqm
    gnp_random_bqm
    randint
