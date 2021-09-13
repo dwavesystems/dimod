@@ -138,11 +138,11 @@ class BinaryPolynomial(abc.MutableMapping):
         return (
             self.vartype == other.vartype
             and all(
-                (not bias or other_terms[term] == bias)
+                (not bias or other_terms.get(term, 0.) == bias)
                 for term, bias in self.items()
             )
             and all(
-                (not bias or self_terms[term] == bias)
+                (not bias or self_terms.get(term, 0.) == bias)
                 for term, bias in other.items()
             )
         )
