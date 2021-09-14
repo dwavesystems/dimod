@@ -16,11 +16,25 @@
 
 import warnings
 
-__all__ = ['DeprecatedToPreprocessing']
+__all__ = ['NotFound', 'DeprecatedToPreprocessing']
+
+
+class NotFound:
+    pass
 
 
 class DeprecatedToPreprocessing:
     def __init__(self, *args, **kwargs):
+        if isinstance(self, NotFound):
+            # we recommend --no-deps because its dependencies are the same as
+            # dimods and it would be a circular install otherwise
+            raise TypeError(
+                f"{type(self).__name__!r} has been moved to dwave-preprocessing. "
+                "You must install dwave-preprocessing in order to use it. "
+                "You can do so with "
+                "'pip install \"dwave-preprocessing<0.4\" --no-deps'.",
+                )
+
         # otherwise warn about it's new location but let it proceed
         warnings.warn(
             f"{type(self).__name__!s} has been moved to dwave-preprocessing "

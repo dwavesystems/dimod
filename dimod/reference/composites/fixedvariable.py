@@ -18,7 +18,12 @@ quadratic model before sending to its child sampler.
 """
 import warnings
 
-from dwave.preprocessing import FixVariablesComposite
+try:
+    from dwave.preprocessing import FixVariablesComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as FixVariablesComposite
+
+from dimod.reference.composites._preprocessing import NotFound
 
 __all__ = ['FixedVariableComposite']
 
@@ -44,6 +49,16 @@ class FixedVariableComposite(FixVariablesComposite):
 
     """
     def __init__(self, child):
+        if isinstance(self, NotFound):
+            # we recommend --no-deps because its dependencies are the same as
+            # dimods and it would be a circular install otherwise
+            raise TypeError(
+                f"{type(self).__name__!r} has been moved to dwave-preprocessing. "
+                "You must install dwave-preprocessing in order to use it. "
+                "You can do so with "
+                "'pip install \"dwave-preprocessing<0.4\" --no-deps'.",
+                )
+
         # otherwise warn about it's new location but let it proceed
         warnings.warn(
             f"{type(self).__name__!s} has been deprecated and will be removed from dimod 0.11.0. "

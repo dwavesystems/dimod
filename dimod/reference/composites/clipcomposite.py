@@ -18,7 +18,10 @@ and upper bounds is not given it does nothing.
 
 """
 
-from dwave.preprocessing import ClipComposite as _ClipComposite
+try:
+    from dwave.preprocessing import ClipComposite as _ClipComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as _ClipComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
