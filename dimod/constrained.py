@@ -626,7 +626,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_objective(2*i - 0.5*i*j + 10)
 
         """
-        if isinstance(objective, Iterable):
+        if not isinstance(objective, [BinaryQuadraticModel, QuadraticModel]):
             objective = self._iterable_to_qm(objective)
         # clear out current objective, keeping only the variables
         self.objective.quadratic.clear()  # there may be a more performant way...
