@@ -370,34 +370,7 @@ class ConstrainedQuadraticModel:
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
 
         """
-        qm = QuadraticModel()
-
-        def _add_variable(v):
-            # handles vartype, and bounds
-            vartype = self.vartype(v)
-
-            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
-                # need to worry about bounds
-                qm.add_variable(vartype, v,
-                                lower_bound=self.lower_bound(v),
-                                upper_bound=self.upper_bound(v))
-            else:
-                qm.add_variable(vartype, v)
-
-        for *variables, bias in iterable:
-            if len(variables) == 0:
-                qm.offset += bias
-            elif len(variables) == 1:
-                v, = variables
-                _add_variable(v)
-                qm.add_linear(v, bias)
-            elif len(variables) == 2:
-                u, v = variables
-                _add_variable(u)
-                _add_variable(v)
-                qm.add_quadratic(u, v, bias)
-            else:
-                raise ValueError("terms must be constant, linear or quadratic")
+        qm = self._iterable_to_qm(iterable)
 
         # use quadratic model in the future
         return self.add_constraint_from_model(
@@ -642,7 +615,8 @@ class ConstrainedQuadraticModel:
         """Set the objective of the constrained quadratic model.
 
         Args:
-            objective: Binary quadratic model (BQM) or quadratic model (QM).
+            objective: Binary quadratic model (BQM) or quadratic model (QM) or
+            an iterable of tuples.
 
         Examples:
             >>> from dimod import Integer, ConstrainedQuadraticModel
@@ -652,6 +626,8 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_objective(2*i - 0.5*i*j + 10)
 
         """
+        if isinstance(objective, Iterable):
+            objective = self._iterable_to_qm(objective)
         # clear out current objective, keeping only the variables
         self.objective.quadratic.clear()  # there may be a more performant way...
         for v in self.objective.variables:
@@ -665,6 +641,37 @@ class ConstrainedQuadraticModel:
             self.objective.set_linear(v, objective.get_linear(v))
         self.objective.add_quadratic_from(objective.iter_quadratic())
         self.objective.offset = objective.offset
+
+    def _iterable_to_qm(self, iterable: Iterable) -> QuadraticModel:
+        qm = QuadraticModel()
+
+        def _add_variable(v):
+            # handles vartype, and bounds
+            vartype = self.vartype(v)
+
+            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
+                # need to worry about bounds
+                qm.add_variable(vartype, v,
+                                lower_bound=self.lower_bound(v),
+                                upper_bound=self.upper_bound(v))
+            else:
+                qm.add_variable(vartype, v)
+
+        for *variables, bias in iterable:
+            if len(variables) == 0:
+                qm.offset += bias
+            elif len(variables) == 1:
+                v, = variables
+                _add_variable(v)
+                qm.add_linear(v, bias)
+            elif len(variables) == 2:
+                u, v = variables
+                _add_variable(u)
+                _add_variable(v)
+                qm.add_quadratic(u, v, bias)
+            else:
+                raise ValueError("terms must be constant, linear or quadratic")
+        return qm
 
     def _substitute_self_loops_from_model(self, qm: Union[BinaryQuadraticModel, QuadraticModel],
                                           mapping: MutableMapping[Variable, Variable]):
