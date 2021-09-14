@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    ``ConstrainedQuadraticModel.set_objective`` now accepts an iterable.
