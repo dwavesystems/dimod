@@ -429,6 +429,19 @@ class TestSetObjective(unittest.TestCase):
         cqm.set_objective(Integer('a') * 5)
         self.assertTrue(cqm.objective.is_equal(Integer('a') * 5))
 
+    def test_terms_objective(self):
+        cqm = CQM()
+
+        a = cqm.add_variable('a', 'BINARY')
+        b = cqm.add_variable('b', 'BINARY')
+        c = cqm.add_variable('c', 'INTEGER')
+
+        cqm.set_objective([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)])
+        energy = cqm.objective.energy({'a': 1, 'b': 0, 'c': 10})
+        self.assertAlmostEqual(energy, 18)
+        energy = cqm.objective.energy({'a': 1, 'b': 1, 'c': 3})
+        self.assertAlmostEqual(energy, 11)
+
 
 class TestSubstituteSelfLoops(unittest.TestCase):
     def test_typical(self):
