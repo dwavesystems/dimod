@@ -19,12 +19,12 @@ __all__ = ['anti_crossing_clique', 'anti_crossing_loops']
 
 
 def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
-    """Generate an anti crossing problem with a single clique.
+    """Generate an anti-crossing problem with a single clique.
 
-    Let ``N = num_variables // 2``. This function returns a binary
-    quadratic model with variables `[0, N)` forming a ferromagnetic clique.
-    Each variable `v` in `[N, 2*N)` ferromagnetically interacts with
-    variable `v-N`.
+    Let ``N = num_variables // 2``. This function returns a binary quadratic
+    model where half the variables, `[0, N)`, form a ferromagnetic clique, with
+    each variable, `v`, also ferromagnetically interacting with one variable,
+    `v+N`, of the remaining half of the variables, `[N, 2*N)`.
 
     All of the variables in the clique except variable `1` have a linear bias
     of `+1`, and all of the variables attached to the clique have a linear bias
@@ -63,9 +63,9 @@ def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
 
 
 def anti_crossing_loops(num_variables: int) -> BinaryQuadraticModel:
-    """Generate an anti crossing problem with two loops.
+    """Generate an anti-crossing problem with two loops.
 
-    These instances are copies of the instance studied in [DJA]_.
+    This is the problem studied in [DJA]_.
 
     Note that for small values of ``num_variables``, the loops can be as small
     as a single edge.
