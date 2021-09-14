@@ -186,28 +186,6 @@ Generic constructor:
 
    as_bqm
 
-Generating BQMs:
-
-.. currentmodule:: dimod.generators
-
-.. autosummary::
-   :toctree: generated/
-
-   and_gate
-   binary_encoding
-   chimera_anticluster
-   combinations
-   frustrated_loop
-   fulladder_gate
-   gnm_random_bqm
-   gnp_random_bqm
-   halfadder_gate
-   or_gate
-   randint
-   ran_r
-   uniform
-   xor_gate
-
 Adding models symbolically:
 
 .. currentmodule:: dimod.binary

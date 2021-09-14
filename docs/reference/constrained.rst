@@ -52,16 +52,7 @@ Methods
 Functions
 =========
 
-Generating constrained quadratic models:
-
-.. currentmodule:: dimod.generators
-
-.. autosummary::
-   :toctree: generated/
-
-   bin_packing
-
-Generating constrained quadratic models to other model types:
+Converting constrained quadratic models to other model types:
 
 .. currentmodule:: dimod
 

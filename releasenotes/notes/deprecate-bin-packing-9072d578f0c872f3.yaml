@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``random_bin_packing`` function with the same functionality as the
+    (now deprecated) ``bin_packing``.
+deprecations:
+  - |
+    Deprecate ``bin_packing`` function in favour of ``random_bin_packing``.

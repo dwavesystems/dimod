@@ -11,6 +11,7 @@ Reference Documentation
    constrained
    quadratic
    higherorder
+   generators
    sampler_composites/index
    sampleset
    utilities

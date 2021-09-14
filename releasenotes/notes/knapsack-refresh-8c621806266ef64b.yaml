@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Add ``random_multi_knapsack`` function with the same functionality as the
+    (now deprecated) ``multi_knapsack``.
+  - |
+    Add ``random_knapsack`` function with the same functionality as the
+    (now deprecated) ``knapsack``.
+deprecations:
+  - |
+    Deprecate ``multi_knapsack`` function in favour of ``random_multi_knapsack``.
+  - |
+    Deprecate ``knapsack`` function in favour of ``random_knapsack``.

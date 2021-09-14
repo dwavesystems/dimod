@@ -12,26 +12,28 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import warnings
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from typing import Tuple
 
-__all__ = ['knapsack']
+__all__ = ['knapsack', 'random_knapsack']
 
 
-def knapsack(num_items: int,
-             seed: int = 32,
-             value_range: Tuple[int, int] = (10, 30),
-             weight_range: Tuple[int, int] = (10, 30),
-             tightness_ratio: float = 0.5,
-             ) -> ConstrainedQuadraticModel:
+def random_knapsack(num_items: int,
+                    seed: int = 32,
+                    value_range: Tuple[int, int] = (10, 30),
+                    weight_range: Tuple[int, int] = (10, 30),
+                    tightness_ratio: float = 0.5,
+                    ) -> ConstrainedQuadraticModel:
     """Returns a Constrained Quadratic Model encoding a knapsack problem.
 
     Given the number of items, the code generates a random knapsack problem,
     formulated as a Constrained Quadratic model. The capacity of the bin is set
-    to be tightness_ratio times the sum of the weights.
+    to be ``tightness_ratio`` times the sum of the weights.
 
     Args:
         num_items: Number of items to choose from.
@@ -46,14 +48,15 @@ def knapsack(num_items: int,
 
     Returns:
         The quadratic model encoding the knapsack problem. Variables are
-        denoted as x_{i} where x_{i} = 1 means that the item i has been placed
-        in the knapsack.
+        denoted as ``x_{i}`` where ``x_{i} == 1`` means that the item ``i`` has
+        been placed in the knapsack.
 
     """
 
-    np.random.seed(seed)
-    value = {i: np.random.randint(*value_range) for i in range(num_items)}
-    weight = {i: np.random.randint(*weight_range) for i in range(num_items)}
+    rng = np.random.RandomState(seed)
+
+    value = {i: rng.randint(*value_range) for i in range(num_items)}
+    weight = {i: rng.randint(*weight_range) for i in range(num_items)}
     capacity = int(sum(weight.values()) * tightness_ratio)
 
     model = ConstrainedQuadraticModel()
@@ -68,3 +71,15 @@ def knapsack(num_items: int,
     model.add_constraint(constraint, sense="<=", label='capacity')
 
     return model
+
+
+# We want to use knapsack in the future for problems with specified weights/
+# values, so we'll deprecate it and use the more explicit random_knapsack.
+# Once the deprecation period is over we can use the knapsack with a different
+# api.
+def knapsack(*args, **kwargs) -> ConstrainedQuadraticModel:
+    warnings.warn("knapsack was deprecated after 0.10.6 and will be removed in 0.11.0, "
+                  "use random_bin_packing instead.",
+                  DeprecationWarning,
+                  stacklevel=2)
+    return random_knapsack(*args, **kwargs)

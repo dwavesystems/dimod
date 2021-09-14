@@ -12,19 +12,21 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import collections.abc as abc
+from typing import Collection, Union
 
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
-from dimod.decorators import graph_argument, vartype_argument
+from dimod.typing import Variable, VartypeLike
 from dimod.vartypes import BINARY
 
-__all__ = 'combinations',
+__all__ = ['combinations']
 
 
-def combinations(n, k, strength=1, vartype=BINARY):
-    r"""Generate a BQM that is minimized when k of n variables are selected.
+def combinations(n: Union[int, Collection[Variable]], k: int,
+                 strength: float = 1, vartype: VartypeLike = BINARY) -> BinaryQuadraticModel:
+    r"""Generate a binary quadratic model that is minimized when k of n
+    variables are selected.
 
     More fully, generates a binary quadratic model (BQM) that is minimized for
     each of the k-combinations of its variables.
@@ -33,24 +35,22 @@ def combinations(n, k, strength=1, vartype=BINARY):
     :math:`(\sum_{i} x_i - k)^2`.
 
     Args:
-        n (int/list/set):
-            If n is an integer, variables are labelled [0, n-1]. If n is a list
-            or set, variables are labelled accordingly.
+        n: If ``n`` is an integer, variables are labelled `[0, n)`. If ``n`` is
+            a list or set, variables are labelled accordingly.
 
-        k (int):
-            The generated BQM has 0 energy when any k of its variables are 1.
+        k: The generated BQM has ``0`` energy when any ``k`` of its variables
+            are ``1``.
 
-        strength (number, optional, default=1):
-            The energy of the first excited state of the BQM.
+        strength: The energy of the first excited state of the binary quadratic
+            model.
 
-        vartype (:class:`.Vartype`/str/set):
-            Variable type for the BQM. Accepted input values:
+        vartype: Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
     Returns:
-        :obj:`.BinaryQuadraticModel`
+        A binary quadratic model.
 
     Examples:
 
@@ -73,9 +73,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
         3.0
 
     """
-    if isinstance(n, abc.Sized) and isinstance(n, abc.Iterable):
-        # what we actually want is abc.Collection but that doesn't exist in
-        # python2
+    if isinstance(n, Collection):
         variables = n
     else:
         try:
@@ -102,7 +100,7 @@ def combinations(n, k, strength=1, vartype=BINARY):
         except TypeError:
             raise TypeError('n should be a collection or an integer')
 
-    Q = np.triu(np.ones((num_vars,num_vars))*qbias, k=1)
+    Q = np.triu(np.ones((num_vars, num_vars))*qbias, k=1)
     np.fill_diagonal(Q, lbias)
     bqm = BinaryQuadraticModel.from_qubo(Q, offset=strength*(k**2))
 

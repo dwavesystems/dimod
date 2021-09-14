@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Add ``GraphLike`` type hint to ``dimod.typing``.
+deprecations:
+  - |
+    Deprecate ``cls`` keyword argument of the ``chimera_anticluster`` function.
+upgrade:
+  - |
+    The ``cls`` keyword argument of the ``chimera_anticluster`` function now
+    does nothing.
