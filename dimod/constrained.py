@@ -611,7 +611,8 @@ class ConstrainedQuadraticModel:
             count += sum(lhs.degree(v) > 0 for v in lhs.variables)
         return count
 
-    def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
+    def set_objective(self, objective: Union[BinaryQuadraticModel,
+                                             QuadraticModel, Iterable]):
         """Set the objective of the constrained quadratic model.
 
         Args:
