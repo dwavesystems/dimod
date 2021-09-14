@@ -18,7 +18,10 @@ connected components of the binary
 quadratic model graph before sending to its child sampler.
 """
 
-from dwave.preprocessing import ConnectedComponentsComposite as _ConnectedComponentsComposite
+try:
+    from dwave.preprocessing import ConnectedComponentsComposite as _ConnectedComponentsComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as _ConnectedComponentsComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
