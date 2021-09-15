@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Allow the offset of a ``BinaryQuadraticModel`` to be specified as a keyword
+    argument.

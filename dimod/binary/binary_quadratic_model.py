@@ -44,7 +44,7 @@ from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
-from dimod.typing import Bias, Variable
+from dimod.typing import Bias, Variable, VartypeLike
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -114,11 +114,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             ``{v: b, ...}``.
 
         ``BinaryQuadraticModel(linear, quadratic, offset, vartype)``
-            Create a BQM from linear and quadratic biases an offset.
+            Create a BQM from linear and quadratic biases and an offset.
             ``offset`` must be a number.
 
     Args:
         *args: See above
+
+        offset: The offset (see above) may be supplied as a keyword argument.
 
         vartype: The variable type (see above) may be supplied as a keyword
             argument.
@@ -140,7 +142,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     DEFAULT_DTYPE = np.float64
     """The default dtype used to construct the class."""
 
-    def __init__(self, *args, vartype=None, dtype=None):
+    def __init__(self, *args,
+                 offset: Optional[Bias] = None,
+                 vartype: Optional[VartypeLike] = None,
+                 dtype: Optional[DTypeLike] = None):
 
         if vartype is not None:
             args = [*args, vartype]
@@ -153,6 +158,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             if hasattr(args[0], 'vartype'):
+                # bqm case
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
@@ -162,6 +171,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
             elif hasattr(args[0], 'vartype'):
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             else:
                 self._init_components([], args[0], 0.0, args[1], dtype=dtype)
@@ -170,10 +182,21 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self._init_components(args[0], args[1], 0.0, args[2], dtype=dtype)
         elif len(args) == 4:
             # BQM(linear, quadratic, offset, vartype)
+
+            if offset is not None:
+                # we don't strictly need to fail in this case, we could instead
+                # add it, but I think this is closer to the normal python behavior
+                # of failing if an argument is provided twice
+                raise TypeError("BinaryQuadraticModel() got multiple values for 'offset'")
+
             self._init_components(*args, dtype=dtype)
         else:
             msg = "__init__() takes 4 positional arguments but {} were given."
             raise TypeError(msg.format(len(args)))
+
+        # we already checked the one case that doesn't support offset
+        if offset is not None:
+            self.offset += offset
 
     def _init_bqm(self, bqm, vartype, dtype):
         if dtype is None:

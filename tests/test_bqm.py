@@ -580,6 +580,38 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(bqm.shape, (1, 0))
         self.assertEqual(bqm.linear[0], 1)
 
+    def test_offset_kwarg(self):
+        # the various constructions but with a kwarg
+        with self.subTest('vartype only'):
+            bqm = dimod.BQM(vartype='SPIN', offset=7)
+            self.assertEqual(bqm.shape, (0, 0))
+            self.assertIs(bqm.vartype, dimod.SPIN)
+            self.assertEqual(bqm.offset, 7)
+
+        with self.subTest('bqm'):
+            bqm = dimod.BQM('SPIN')
+            with self.assertRaises(TypeError):
+                dimod.BQM(bqm, offset=5)
+            with self.assertRaises(TypeError):
+                dimod.BQM(bqm, vartype='BINARY', offset=5)
+
+        with self.subTest('integer'):
+            bqm = dimod.BQM(5, offset=5, vartype='SPIN')
+            self.assertEqual(bqm.num_variables, 5)
+            self.assertEqual(bqm.linear, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0})
+            self.assertTrue(bqm.is_linear())
+            self.assertEqual(bqm.offset, 5)
+
+        with self.subTest('linear/quadratic'):
+            bqm = dimod.BQM({'a': 1}, {'ab': 2}, offset=6, vartype='SPIN')
+            self.assertEqual(bqm.shape, (2, 1))
+            self.assertEqual(bqm.offset, 6)
+            self.assertIs(bqm.vartype, dimod.SPIN)
+
+        with self.subTest('linear/quadratic/offset'):
+            with self.assertRaises(TypeError):
+                dimod.BQM({}, {}, 1.5, 'SPIN', offset=5)
+
     @parameterized.expand(BQMs.items())
     def test_vartype(self, name, BQM):
         bqm = BQM('SPIN')
