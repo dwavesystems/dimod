@@ -79,6 +79,56 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     This class encodes Ising and quadratic unconstrained binary optimization
     (QUBO) models used by samplers such as the D-Wave system.
+
+    BQMs can be created in several ways:
+
+        ``BinaryQuadraticModel(vartype)``
+            Create a BQM with no variables or interactions.
+            ``vartype``  must be one of:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        ``BinaryQuadraticModel(bqm)``
+            Create a BQM from another BQM. The resulting BQM will have the
+            same variables, linear biases, quadratic biases and offset as
+            ``bqm``.
+
+        ``BinaryQuadraticModel(bqm, vartype)``
+            Create a BQM from another BQM, changing it to the appropriate
+            ``vartype`` if necessary.
+
+        ``BinaryQuadraticModel(n, vartype)``
+            Create a BQM with ``n`` variables, indexed linearly from zero,
+            setting all biases to zero.
+
+        ``BinaryQuadraticModel(quadratic, vartype)``
+            Create a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form ``{(u, v): b, ...}``. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        ``BinaryQuadraticModel(linear, quadratic, vartype)``
+            Create a BQM from linear and quadratic biases, where ``linear`` is a
+            one-dimensional array_like_ or a dictionary of the form
+            ``{v: b, ...}``.
+
+        ``BinaryQuadraticModel(linear, quadratic, offset, vartype)``
+            Create a BQM from linear and quadratic biases an offset.
+            ``offset`` must be a number.
+
+    Args:
+        *args: See above
+
+        vartype: The variable type (see above) may be supplied as a keyword
+            argument.
+
+        dtype: The data type.
+            :class:`numpy.float32` and :class:`numpy.float64` are supported.
+            Defaults to :class:`numpy.float64`.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
     """
 
     _DATA_CLASSES = {
