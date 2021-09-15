@@ -729,6 +729,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             linear:
                 A one-dimensional `array_like`_ of linear biases.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
         """
         ldata = np.asarray(linear)
 
@@ -1683,7 +1686,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             the variables array ``VARIABLES_LENGTH``.
 
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
-            constructed by `json.dumps(list(bqm.variables)).
+            constructed by `json.dumps(list(bqm.variables))`.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
