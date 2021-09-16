@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add `PEP 561 <https://www.python.org/dev/peps/pep-0561/>`_ compatibility to
+    allow tools like `mypy <http://mypy-lang.org/>`_ to auto-detect typing
+    hints. See `#980 <https://github.com/dwavesystems/dimod/issues/980>`_.
