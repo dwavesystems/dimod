@@ -44,7 +44,7 @@ from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
-from dimod.typing import Bias, Variable
+from dimod.typing import Bias, Variable, VartypeLike
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -79,6 +79,58 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     This class encodes Ising and quadratic unconstrained binary optimization
     (QUBO) models used by samplers such as the D-Wave system.
+
+    BQMs can be created in several ways:
+
+        ``BinaryQuadraticModel(vartype)``
+            Create a BQM with no variables or interactions.
+            ``vartype``  must be one of:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        ``BinaryQuadraticModel(bqm)``
+            Create a BQM from another BQM. The resulting BQM will have the
+            same variables, linear biases, quadratic biases and offset as
+            ``bqm``.
+
+        ``BinaryQuadraticModel(bqm, vartype)``
+            Create a BQM from another BQM, changing it to the appropriate
+            ``vartype`` if necessary.
+
+        ``BinaryQuadraticModel(n, vartype)``
+            Create a BQM with ``n`` variables, indexed linearly from zero,
+            setting all biases to zero.
+
+        ``BinaryQuadraticModel(quadratic, vartype)``
+            Create a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form ``{(u, v): b, ...}``. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        ``BinaryQuadraticModel(linear, quadratic, vartype)``
+            Create a BQM from linear and quadratic biases, where ``linear`` is a
+            one-dimensional array_like_ or a dictionary of the form
+            ``{v: b, ...}``.
+
+        ``BinaryQuadraticModel(linear, quadratic, offset, vartype)``
+            Create a BQM from linear and quadratic biases and an offset.
+            ``offset`` must be a number.
+
+    Args:
+        *args: See above
+
+        offset: The offset (see above) may be supplied as a keyword argument.
+
+        vartype: The variable type (see above) may be supplied as a keyword
+            argument.
+
+        dtype: The data type.
+            :class:`numpy.float32` and :class:`numpy.float64` are supported.
+            Defaults to :class:`numpy.float64`.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
     """
 
     _DATA_CLASSES = {
@@ -90,7 +142,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     DEFAULT_DTYPE = np.float64
     """The default dtype used to construct the class."""
 
-    def __init__(self, *args, vartype=None, dtype=None):
+    def __init__(self, *args,
+                 offset: Optional[Bias] = None,
+                 vartype: Optional[VartypeLike] = None,
+                 dtype: Optional[DTypeLike] = None):
 
         if vartype is not None:
             args = [*args, vartype]
@@ -103,6 +158,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             if hasattr(args[0], 'vartype'):
+                # bqm case
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
@@ -112,6 +171,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
             elif hasattr(args[0], 'vartype'):
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             else:
                 self._init_components([], args[0], 0.0, args[1], dtype=dtype)
@@ -120,10 +182,21 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self._init_components(args[0], args[1], 0.0, args[2], dtype=dtype)
         elif len(args) == 4:
             # BQM(linear, quadratic, offset, vartype)
+
+            if offset is not None:
+                # we don't strictly need to fail in this case, we could instead
+                # add it, but I think this is closer to the normal python behavior
+                # of failing if an argument is provided twice
+                raise TypeError("BinaryQuadraticModel() got multiple values for 'offset'")
+
             self._init_components(*args, dtype=dtype)
         else:
             msg = "__init__() takes 4 positional arguments but {} were given."
             raise TypeError(msg.format(len(args)))
+
+        # we already checked the one case that doesn't support offset
+        if offset is not None:
+            self.offset += offset
 
     def _init_bqm(self, bqm, vartype, dtype):
         if dtype is None:
@@ -679,6 +752,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             linear:
                 A one-dimensional `array_like`_ of linear biases.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
         """
         ldata = np.asarray(linear)
 
@@ -1633,7 +1709,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             the variables array ``VARIABLES_LENGTH``.
 
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
-            constructed by `json.dumps(list(bqm.variables)).
+            constructed by `json.dumps(list(bqm.variables))`.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
