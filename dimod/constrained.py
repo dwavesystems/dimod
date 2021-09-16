@@ -27,9 +27,6 @@ import zipfile
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
 from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any
-from os import PathLike
-from sys import argv
-from collections import defaultdict
 
 import numpy as np
 
@@ -869,7 +866,7 @@ class ConstrainedQuadraticModel:
             upper_bound_default: in case upper bounds for integer are not given, this will be the default
 
         Returns:
-            The model encoded in the LP file, converted to ConstrainedQuadraticModel dimod object
+            The model encoded in the LP file as a :class:`ConstrainedQuadraticModel`.
         """
         grammar = make_lp_grammar()
         parse_output = grammar.parseFile(fp)
