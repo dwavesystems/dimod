@@ -568,7 +568,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset.variables
             Variables(['a', 'b', 'c'])
 
-        .. _array_like:  https://numpy.org/doc/stable/user/basics.creation.html#converting-python-array-like-objects-to-numpy-arrays
+        .. _array_like:  https://numpy.org/doc/stable/user/basics.creation.html
         """
         if aggregate_samples:
             return cls.from_samples(samples_like, vartype, energy,
