@@ -150,7 +150,7 @@ def make_lp_grammar() -> And:
     var_info = ZeroOrMore(bounds | generals | binaries)
 
     # full LP file grammar
-    grammar = objective + constraints_tag + constraints + var_info + end_tag
+    grammar = Optional(objective) + constraints_tag + constraints + var_info + end_tag
 
     # commenting
     comment_style = Literal("\\") + restOfLine

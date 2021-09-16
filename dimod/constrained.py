@@ -912,10 +912,20 @@ class ConstrainedQuadraticModel:
         # adding constraints
         for c in parse_output.constraints:
 
-            cname = c.name[0]
+            try:
+                cname = c.name[0]
+            except IndexError:
+                # the constraint is nameless, set this to None now
+                cname = None
+
             csense = constraint_symbols[c.sense]
             ccoef = c.rhs
             constraint = QuadraticModel()
+
+            if not c.lin_expr and not c.quad_expr:
+                # empty constraint
+                warnings.warn('The LP file contained an empty constraint and it will be ignored')
+                continue
 
             if c.lin_expr:
 
