@@ -657,7 +657,7 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         # check the objective
         self.assertAlmostEqual(cqm.objective.get_linear('x0'), 0.5,
-                               msg=' linear(x0) should be 0')
+                               msg=' linear(x0) should be 0.5')
         self.assertAlmostEqual(cqm.objective.get_linear('i0'), 0,
                                msg=' linear(i0) should be 0')
 
@@ -684,3 +684,67 @@ class TestCQMFromLPFile(unittest.TestCase):
                                        msg='constraint c2, offset should be -25')
                 self.assertTrue(cmodel.sense == Sense.Ge,
                                 msg='constraint c2, should be >= inequality')
+
+            else:
+                raise KeyError('Not expected constraint: {}'.format(cname))
+
+    def test_nameless_objective(self):
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_nameless_objective.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 0, msg='expected 0 constraints')
+
+    def test_nameless_constraint(self):
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_nameless_constraint.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')
+
+    def test_empty_objective(self):
+
+        # test case where Objective section is missing. This is allowed in LP format,
+        # see https://www.gurobi.com/documentation/9.1/refman/lp_format.html)
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_objective.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 1, msg='wrong number of constraints')
+
+        # check that the objective is empty
+        self.assertAlmostEqual(cqm.objective.get_linear('x0'), 0,
+                               msg=' linear(x0) should be 0')
+        self.assertAlmostEqual(cqm.objective.get_linear('x1'), 0,
+                               msg=' linear(i0) should be 0')
+        for cname, cmodel in cqm.constraints.items():
+            if cname == 'c1':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 1,
+                                       msg='constraint c1, linear(x0) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x1'), 1,
+                                       msg='constraint c1, linear(x1) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.offset, -1,
+                                       msg='constraint c1, offset should be 1')
+                self.assertTrue(cmodel.sense == Sense.Eq,
+                                msg='constraint c1, should be equality')
+
+            else:
+                raise KeyError('Not expected constraint: {}'.format(cname))
+
+    def test_empty_constraint(self):
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_constraint.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 0, msg='expected 0 constraints')
