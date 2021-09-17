@@ -748,3 +748,40 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 0, msg='expected 0 constraints')
+
+    def test_quadratic_binary(self):
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_binary.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 1, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')
+
+        self.assertAlmostEqual(cqm.objective.get_linear('x0'), 1.5,
+                               msg=' linear(x0) should be 1.5')
+
+        for cname, cmodel in cqm.constraints.items():
+            if cname == 'c1':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 2,
+                                       msg='constraint c1, linear(x0) should be 2')
+
+    def test_variable_multiple_times(self):
+
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_variable_multiple_times.lp')
+
+        with open(filepath, 'r') as f:
+            cqm = CQM.from_lp_file(f)
+
+        self.assertEqual(len(cqm.variables), 1, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')
+
+        self.assertAlmostEqual(cqm.objective.get_linear('x0'), 3,
+                               msg=' linear(x0) should be 3')
+
+        for cname, cmodel in cqm.constraints.items():
+            if cname == 'c1':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 3.5,
+                                       msg='constraint c1, linear(x0) should be 3.5')
+
