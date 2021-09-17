@@ -14,6 +14,7 @@
 
 import collections.abc as abc
 import copy
+import fractions
 import itertools
 import io
 import json
@@ -395,6 +396,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def __pos__(self: 'BinaryQuadraticModel') -> 'BinaryQuadraticModel':
         return self
 
+    def __pow__(self, other: int) -> 'BinaryQuadraticModel':
+        if isinstance(other, int):
+            if other != 2:
+                raise ValueError("the only supported power for binary quadratic models is 2")
+            if not self.is_linear():
+                raise ValueError("only linear models can be squared")
+            return self * self
+        return NotImplemented
+
     def __sub__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
@@ -437,6 +447,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             # promote to QM
             return other - QuadraticModel.from_bqm(self)
         return NotImplemented
+
+    def __truediv__(self, other: Bias) -> 'BQM':
+        return self * fractions.Fraction(1, other)
+
+    def __itruediv__(self, other: Bias) -> 'BQM':
+        self *= fractions.Fraction(1, other)
+        return self
 
     def __eq__(self, other):
         if isinstance(other, Number):

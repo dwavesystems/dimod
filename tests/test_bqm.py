@@ -2277,6 +2277,14 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(bqm.num_variables, 0)
 
     @parameterized.expand(BQMs.items())
+    def test_div_number(self, name, BQM):
+        bqm = BQM({'u': 2}, {'uv': 4}, 6, 'BINARY')
+        ref = bqm
+        bqm /= 2
+        self.assertIs(bqm, ref)
+        self.assertEqual(bqm, BQM({'u': 1}, {'uv': 2}, 3, 'BINARY'))
+
+    @parameterized.expand(BQMs.items())
     def test_exceptions_symbolic_mode(self, name, BQM):
         bqm = BQM('SPIN')
         with self.assertRaises(TypeError):
@@ -2305,6 +2313,8 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'BINARY'))
         self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'BINARY'))
         self.assertEqual((u - 1)*(v - 1), BQM({'u': -1, 'v': -1}, {'uv': 1}, 1, 'BINARY'))
+        self.assertEqual((4*u + 2*u*v + 6) / 2, BQM({'u': 2, 'v': 0}, {'uv': 1}, 3, 'BINARY'))
+        self.assertEqual((u - v)**2, (u - v)*(u - v))
 
     def test_expressions_spin(self):
         u = Spin('u')
