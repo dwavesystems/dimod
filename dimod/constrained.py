@@ -886,7 +886,7 @@ class ConstrainedQuadraticModel:
                 if len(oe) == 2:
                     if oe.name != "":
                         # linear term
-                        obj.set_linear(oe.name[0], obj_coefficient * oe.coef)
+                        obj.add_linear(oe.name[0], obj_coefficient * oe.coef)
 
                     else:
                         # this is a pure squared term
@@ -894,9 +894,9 @@ class ConstrainedQuadraticModel:
                         vartype = obj.vartype(varname)
 
                         if vartype is Vartype.BINARY:
-                            obj.set_linear(varname, obj_coefficient * oe.coef * 0.5)
+                            obj.add_linear(varname, obj_coefficient * oe.coef * 0.5)
                         elif vartype is Vartype.INTEGER:
-                            obj.set_quadratic(varname, varname,
+                            obj.add_quadratic(varname, varname,
                                               obj_coefficient * oe.coef * 0.5)
                         else:
                             raise TypeError("Unexpected variable type: {}".format(vartype))
@@ -905,7 +905,7 @@ class ConstrainedQuadraticModel:
                     # bilinear term
                     var1 = oe.name[0]
                     var2 = oe.second_var_name[0]
-                    obj.set_quadratic(var1, var2, obj_coefficient * oe.coef * 0.5)
+                    obj.add_quadratic(var1, var2, obj_coefficient * oe.coef * 0.5)
 
         cqm.set_objective(obj)
 
@@ -940,7 +940,7 @@ class ConstrainedQuadraticModel:
                         constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
                     else:
                         raise ValueError("Unexpected vartype: {}".format(vartype))
-                    constraint.set_linear(var, le.coef)
+                    constraint.add_linear(var, le.coef)
 
             if c.quad_expr:
 
@@ -968,7 +968,7 @@ class ConstrainedQuadraticModel:
                         elif vartype2 is Vartype.INTEGER:
                             constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_boun=ub2)
 
-                        constraint.set_quadratic(var1, var2, qe.coef)
+                        constraint.add_quadratic(var1, var2, qe.coef)
 
                     else:
                         # this is a pure squared term
@@ -977,12 +977,11 @@ class ConstrainedQuadraticModel:
                         lb = obj.lower_bound(var)
                         ub = obj.upper_bound(var)
                         if vartype is Vartype.BINARY:
-                            # TODO: in case of linear and quadratic on a binary, we gotta add them
                             constraint.add_variable(vartype, var)
-                            constraint.set_linear(var, qe.coef)
+                            constraint.add_linear(var, qe.coef)
                         elif vartype is Vartype.INTEGER:
                             constraint.add_variable(vartype, var, lower_bound=lb, upper_bound=ub)
-                            constraint.set_quadratic(var, var, qe.coef)
+                            constraint.add_quadratic(var, var, qe.coef)
                         else:
                             raise TypeError("Unexpected variable type: {}".format(vartype))
 
