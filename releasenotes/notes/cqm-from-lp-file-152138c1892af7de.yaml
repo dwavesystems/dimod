@@ -2,5 +2,5 @@
 features:
   - |
     Added ``from_lp_file`` classmethod to ``ConstrainedQuadraticModel`` that
-    reads input LP file anc converts it to CQM instance.
+    reads input LP file and converts it to CQM instance.
 
