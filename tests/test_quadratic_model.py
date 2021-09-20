@@ -514,7 +514,7 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'INTEGER'})))
         self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'INTEGER'})))
         self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
-        self.assertTrue(((2*i + 4*i*j + 6) / 2).is_equal(i + 2*i*j + 3))
+        self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
 
     def test_expression_mixed_smoke(self):
         i = Integer('i')

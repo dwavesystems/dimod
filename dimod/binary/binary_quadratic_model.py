@@ -14,7 +14,6 @@
 
 import collections.abc as abc
 import copy
-import fractions
 import itertools
 import io
 import json
@@ -449,10 +448,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __truediv__(self, other: Bias) -> 'BQM':
-        return self * fractions.Fraction(1, other)
+        return self * (1 / other)
 
     def __itruediv__(self, other: Bias) -> 'BQM':
-        self *= fractions.Fraction(1, other)
+        self *= (1 / other)
         return self
 
     def __eq__(self, other):

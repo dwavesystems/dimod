@@ -12,7 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import fractions
 import struct
 import tempfile
 
@@ -319,10 +318,10 @@ class QuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __truediv__(self, other: Bias) -> 'BQM':
-        return self * fractions.Fraction(1, other)
+        return self * (1 / other)
 
     def __itruediv__(self, other: Bias) -> 'BQM':
-        self *= fractions.Fraction(1, other)
+        self *= (1 / other)
         return self
 
     def __eq__(self, other: Number) -> Comparison:
