@@ -260,7 +260,8 @@ class QuadraticModel(QuadraticViewsMixin):
     def __imul__(self, other: Bias) -> 'QuadraticModel':
         # in-place multiplication is only defined for numbers
         if isinstance(other, Number):
-            raise NotImplementedError
+            self.scale(other)
+            return self
         return NotImplemented
 
     def __rmul__(self, other: Bias) -> 'QuadraticModel':
@@ -273,6 +274,15 @@ class QuadraticModel(QuadraticViewsMixin):
         new = self.copy()
         new.scale(-1)
         return new
+
+    def __pow__(self, other: int) -> 'QuadraticModel':
+        if isinstance(other, int):
+            if other != 2:
+                raise ValueError("the only supported power for quadratic models is 2")
+            if not self.is_linear():
+                raise ValueError("only linear models can be squared")
+            return self * self
+        return NotImplemented
 
     def __sub__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
@@ -306,6 +316,13 @@ class QuadraticModel(QuadraticViewsMixin):
             new += other
             return new
         return NotImplemented
+
+    def __truediv__(self, other: Bias) -> 'BQM':
+        return self * (1 / other)
+
+    def __itruediv__(self, other: Bias) -> 'BQM':
+        self *= (1 / other)
+        return self
 
     def __eq__(self, other: Number) -> Comparison:
         if isinstance(other, Number):
