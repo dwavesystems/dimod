@@ -225,7 +225,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         bqm.info = {}
     bqm.info['reduction'] = {}
 
-    if poly.vartype !=vartype:
+    if not isinstance(poly, BinaryPolynomial) or poly.vartype != vartype:
         poly = BinaryPolynomial(poly, vartype=vartype)
 
     variables = set().union(*poly)
