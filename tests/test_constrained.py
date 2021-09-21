@@ -137,6 +137,28 @@ class TestBounds(unittest.TestCase):
         cqm.add_variable('i', 'INTEGER')
 
 
+class TestCheckFeasible(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 <= 3)
+
+        self.assertTrue(cqm.check_feasible({'x': 1, 'y': 0, 'z': 0}))
+        self.assertTrue(cqm.check_feasible({'x': 0, 'y': 0, 'z': 0}))
+        self.assertFalse(cqm.check_feasible({'x': 1, 'y': 0, 'z': 1}))
+
+    def test_tolerance(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 * .1 <= .9)
+
+        sample = {'x': 1, 'y': 1, 'z': 1}
+
+        self.assertTrue(cqm.check_feasible(sample))
+
+
 class TestCopy(unittest.TestCase):
     def test_deepcopy(self):
         from copy import deepcopy

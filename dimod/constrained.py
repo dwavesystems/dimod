@@ -463,6 +463,30 @@ class ConstrainedQuadraticModel:
         else:
             return self.objective.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
+    def check_feasible(self, sample_like, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
+        r"""Return the feasibility of the given sample.
+
+        A sample is feasible if all constraints are satisfied. A constraint's
+        satisfaction is tested using the following equation:
+
+        .. math::
+
+            violation <= (atol + rtol * | rhs\_energy | )
+
+        where ``violation`` and ``rhs_energy`` are as returned by :meth:`.iter_constraint_data`.
+
+        Args:
+            sample_like: A sample.
+            rtol: The relative tolerance.
+            atol: the absolute tolerance.
+
+        Returns:
+            True if the sample is feasible (given the tolerances).
+
+        """
+        return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
+                   for datum in self.iter_constraint_data(sample_like))
+
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
         """Alias for :meth:`from_quadratic_model`."""
