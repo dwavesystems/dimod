@@ -19,7 +19,6 @@ from collections import Counter
 
 from collections import defaultdict
 from functools import partial
-import cytoolz as tl
 
 import numpy as np
 
@@ -121,25 +120,20 @@ def _remove_old(idx, term, pair):
 def reduce_terms(bp):
     variables = bp.variables
     constraints = []
-    reduced_terms = [item for item in bp.items() if len(tl.first(item)) <= 2]
 
-    idx = defaultdict(
-        dict,
-        tl.valmap(
-            tl.compose(dict, partial(map, tl.second)),
-            tl.groupby(
-                tl.first,
-                (
-                    (frozenset(pair), item)
-                    for item in bp.items()
-                    if len(term := tl.first(item)) >= 3
-                    for pair in itertools.combinations(term, 2) ))))
+    reduced_terms = []
+    idx = defaultdict(dict)
+    for item in bp.items():
+        term, bias = item
+        if len(term) <= 2:
+            reduced_terms.append(item)
+        else:
+            for pair in itertools.combinations(term, 2):
+                idx[frozenset(pair)][term] = bias
 
-    que = defaultdict(
-        set,
-        tl.valmap(
-            tl.compose(set, partial(map, tl.first)),
-            tl.groupby(tl.second, tl.valmap(len, idx).items())))
+    que = defaultdict(set)
+    for pair, terms in idx.items():
+        que[len(terms)].add(pair)
 
     while idx:
         new_pairs = set()
