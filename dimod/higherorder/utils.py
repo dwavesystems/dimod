@@ -101,6 +101,23 @@ def _new_aux(variables, u, v):
     return aux
 
 
+def _decrement_count(idx, que, pair):
+    count = len(idx[pair])
+    que_count = que[count]
+    que_count.remove(pair)
+    if not que_count:
+        del que[count]
+    if count > 1:
+        que[count - 1].add(pair)
+
+
+def _remove_old(idx, term, pair):
+    idx_pair = idx[pair]
+    del idx_pair[term]
+    if not idx_pair:
+        del idx[pair]
+
+
 def reduce_terms(bp):
     variables = bp.variables
     constraints = []
@@ -127,46 +144,34 @@ def reduce_terms(bp):
     while idx:
         new_pairs = set()
         most = max(que)
-
-        #print(most, que[most])
-        #_, (pair, terms) = max((len(tl.second(item)), item) for item in idx.items())
-        #pair, terms = max(idx.items(), key=tl.compose(len,tl.second))
-
         que_most = que[most]
         pair = que_most.pop()
         if not que_most:
             del que[most]
-        terms = idx[pair]
+        terms = idx.pop(pair)
 
-        p = _new_product(variables, *pair)
-        constraints.append((pair, p))
-        del idx[pair]
-        pset = {p}
+        prod_var = _new_product(variables, *pair)
+        constraints.append((pair, prod_var))
+        prod_var_set = {prod_var}
 
-        for term, bias in terms.items():
-            for pair2 in map(frozenset, (itertools.combinations(term, 2))):
-                if pair2 != pair:
-                    if pair2 & pair:
-                        count = len(idx[pair2])
-                        que_count = que[count]
-                        que_count.remove(pair2)
-                        if not que_count:
-                            del que[count]
-                        if count > 1:
-                            que[count - 1].add(pair2)
-                    idx_pair2 = idx[pair2]
-                    del idx_pair2[term]
-                    if not idx_pair2:
-                        del idx[pair2]
+        for old_term, bias in terms.items():
+            common_subterm = (old_term - pair)
+            new_term = common_subterm | prod_var_set
 
-            new_term = (term - pair) | pset
-            if len(new_term) <= 2:
-                reduced_terms.append((new_term, bias))
-            else:
-                for new_pair in map(frozenset, itertools.combinations(new_term, 2)):
+            for old_pair in map(frozenset, itertools.product(pair, common_subterm)):
+                _decrement_count(idx, que, old_pair)
+                _remove_old(idx, old_term, old_pair)
+
+            for common_pair in map(frozenset, itertools.combinations(common_subterm, 2)):
+                idx[common_pair][new_term] = bias
+                _remove_old(idx, old_term, common_pair)
+
+            if len(new_term) > 2:
+                for new_pair in (frozenset((prod_var, v)) for v in common_subterm):
                     idx[new_pair][new_term] = bias
-                    if p in new_pair:
-                        new_pairs.add(new_pair)
+                    new_pairs.add(new_pair)
+            else:
+                reduced_terms.append((new_term, bias))
 
         for new_pair in new_pairs:
             que[len(idx[new_pair])].add(new_pair)
@@ -230,7 +235,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     variables = set().union(*poly)
     reduced_terms, constraints = reduce_terms(poly)
-  
+
     for (u, v), p in constraints:
 
         # add a constraint enforcing the relationship between p == u*v
