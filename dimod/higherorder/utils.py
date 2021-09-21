@@ -17,14 +17,20 @@ import warnings
 
 from collections import Counter
 
+from collections import defaultdict
+import functools as ft
+import itertools as it
+import cytoolz as tl
+
 import numpy as np
+import cytoolz as tl
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-__all__ = ['make_quadratic']
+__all__ = ['make_quadratic', 'reduce_terms']
 
 
 def _spin_product(variables):
@@ -95,6 +101,79 @@ def _new_aux(variables, u, v):
         aux = '_' + aux
     variables.add(aux)
     return aux
+
+
+def reduce_terms(bp):
+    variables = bp.variables
+    constraints = []
+    reduced_terms = [item for item in bp.items() if len(tl.first(item)) <= 2]
+
+    idx = defaultdict(
+        dict,
+        tl.valmap(
+            tl.compose(dict, ft.partial(map, tl.second)),
+            tl.groupby(
+                tl.first,
+                (
+                    (frozenset(pair), item)
+                    for item in bp.items()
+                    if len(term := tl.first(item)) >= 3
+                    for pair in it.combinations(term, 2) ))))
+
+    que = defaultdict(
+        set,
+        tl.valmap(
+            tl.compose(set, ft.partial(map, tl.first)),
+            tl.groupby(tl.second, tl.valmap(len, idx).items())))
+
+    while idx:
+        new_pairs = set()
+        most = max(que)
+
+        #print(most, que[most])
+        #_, (pair, terms) = max((len(tl.second(item)), item) for item in idx.items())
+        #pair, terms = max(idx.items(), key=tl.compose(len,tl.second))
+
+        que_most = que[most]
+        pair = que_most.pop()
+        if not que_most:
+            del que[most]
+        terms = idx[pair]
+
+        p = _new_product(variables, *pair)
+        constraints.append((pair, p))
+        del idx[pair]
+        pset = {p}
+
+        for term, bias in terms.items():
+            for pair2 in map(frozenset, (it.combinations(term, 2))):
+                if pair2 != pair:
+                    if pair2 & pair:
+                        count = len(idx[pair2])
+                        que_count = que[count]
+                        que_count.remove(pair2)
+                        if not que_count:
+                            del que[count]
+                        if count > 1:
+                            que[count - 1].add(pair2)
+                    idx_pair2 = idx[pair2]
+                    del idx_pair2[term]
+                    if not idx_pair2:
+                        del idx[pair2]
+
+            new_term = (term - pair) | pset
+            if len(new_term) <= 2:
+                reduced_terms.append((new_term, bias))
+            else:
+                for new_pair in map(frozenset, it.combinations(new_term, 2)):
+                    idx[new_pair][new_term] = bias
+                    if p in new_pair:
+                        new_pairs.add(new_pair)
+
+        for new_pair in new_pairs:
+            que[len(idx[new_pair])].add(new_pair)
+
+    return reduced_terms, constraints
 
 
 def make_quadratic(poly, strength, vartype=None, bqm=None):
