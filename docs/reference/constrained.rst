@@ -35,18 +35,22 @@ Methods
    ConstrainedQuadraticModel.add_constraint_from_model
    ConstrainedQuadraticModel.add_discrete
    ConstrainedQuadraticModel.add_variable
+   ConstrainedQuadraticModel.check_feasible
    ConstrainedQuadraticModel.from_bqm
    ConstrainedQuadraticModel.from_discrete_quadratic_model
    ConstrainedQuadraticModel.from_dqm
    ConstrainedQuadraticModel.from_qm
    ConstrainedQuadraticModel.from_quadratic_model
    ConstrainedQuadraticModel.from_file
+   ConstrainedQuadraticModel.iter_constraint_data
+   ConstrainedQuadraticModel.iter_violations
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
    ConstrainedQuadraticModel.set_objective
    ConstrainedQuadraticModel.substitute_self_loops
    ConstrainedQuadraticModel.to_file
    ConstrainedQuadraticModel.vartype
+   ConstrainedQuadraticModel.violations
 
 
 Functions

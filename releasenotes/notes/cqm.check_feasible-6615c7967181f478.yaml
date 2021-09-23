@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.check_feasible`` method.

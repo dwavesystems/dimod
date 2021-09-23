@@ -26,7 +26,7 @@ import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any
+from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, NamedTuple
 
 import numpy as np
 
@@ -34,6 +34,7 @@ from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.quadratic import QuadraticModel
+from dimod.sampleset import as_samples
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
@@ -47,6 +48,15 @@ __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
 
 CQM_MAGIC_PREFIX = b'DIMODCQM'
+
+
+class ConstraintData(NamedTuple):
+    label: Hashable
+    lhs_energy: float
+    rhs_energy: float
+    sense: Sense
+    activity: float
+    violation: float
 
 
 class ConstrainedQuadraticModel:
@@ -453,6 +463,30 @@ class ConstrainedQuadraticModel:
         else:
             return self.objective.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
+    def check_feasible(self, sample_like, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
+        r"""Return the feasibility of the given sample.
+
+        A sample is feasible if all constraints are satisfied. A constraint's
+        satisfaction is tested using the following equation:
+
+        .. math::
+
+            violation <= (atol + rtol * | rhs\_energy | )
+
+        where ``violation`` and ``rhs_energy`` are as returned by :meth:`.iter_constraint_data`.
+
+        Args:
+            sample_like: A sample.
+            rtol: The relative tolerance.
+            atol: the absolute tolerance.
+
+        Returns:
+            True if the sample is feasible (given the tolerances).
+
+        """
+        return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
+                   for datum in self.iter_constraint_data(sample_like))
+
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
         """Alias for :meth:`from_quadratic_model`."""
@@ -591,6 +625,122 @@ class ConstrainedQuadraticModel:
                     cqm.discrete.add(label)
 
         return cqm
+
+    def iter_constraint_data(self, sample_like) -> Iterator[ConstraintData]:
+        """Yield information about the constraints for the given sample.
+
+        Args:
+            sample_like: A sample.
+
+        Yields:
+            A :class:`collections.namedtuple` with ``label``, ``lhs_energy``,
+            ``rhs_energy``, ``sense``, ``activity``, and ``violation`` fields.
+            ``label`` is the constraint label.
+            ``lhs_energy`` is the energy of the left hand side of the constraint.
+            ``rhs_energy`` is the energy of the right hand side of the constraint.
+            ``sense`` is the :class:`dimod.sym.Sense` of the constraint.
+            ``activity`` is ``lhs_energy - rhs_energy``
+            ``violation`` is determined by the type of constraint. If ``violation``
+            is positive, that means that the constraint has been violated by
+            that amount. If it is negative, that means that the constraint has
+            been satisfied by the amount.
+
+        """
+
+        sample, labels = as_samples(sample_like)
+
+        if sample.shape[0] != 1:
+            raise ValueError("sample_like should be a single sample, "
+                             f"received {sample.shape[0]} samples")
+
+        for label, constraint in self.constraints.items():
+            lhs = constraint.lhs.energy((sample, labels))
+            rhs = constraint.rhs
+            sense = constraint.sense
+
+            activity = lhs - rhs
+
+            if sense is Sense.Eq:
+                violation = abs(activity)
+            elif sense is Sense.Ge:
+                violation = -activity
+            elif sense is Sense.Le:
+                violation = activity
+            else:
+                raise RuntimeError("unexpected sense")
+
+            yield ConstraintData(
+                activity=activity,
+                sense=sense,
+                violation=violation,
+                lhs_energy=lhs,
+                rhs_energy=rhs,
+                label=label,
+                )
+
+    def iter_violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
+                        ) -> Iterator[Tuple[Hashable, Bias]]:
+        """Yield violations for all constraints.
+
+        Args:
+            sample_like: A sample over the CQM variables.
+            skip_satisfied: If True, does not yield constraints that are satisfied.
+            clip: If True, negative violations are rounded up to 0.
+
+        Yields:
+            A 2-tuple containing the constraint label and the amount of
+            constraints violation.
+
+        Example:
+
+            Construct a constrained quadratic model.
+
+            >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i + j + k == 10, label='equal')
+            'equal'
+            >>> cqm.add_constraint(i + j <= 15, label='less equal')
+            'less equal'
+            >>> cqm.add_constraint(j - k >= 0, label='greater equal')
+            'greater equal'
+
+            Check the violations of a sample that satisfies all constraints.
+
+            >>> sample = {'i': 3, 'j': 5, 'k': 2}
+            >>> for label, violation in cqm.iter_violations(sample, clip=True):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 0.0
+
+            Check the violations for a sample that does not satisfy all of the
+            constraints.
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample, clip=True):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 3.0
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample, skip_satisfied=True):
+            ...     print(label, violation)
+            greater equal 3.0
+
+        """
+        if skip_satisfied:
+            # clip doesn't matter in this case
+            # todo: feasibility tolerance?
+            for datum in self.iter_constraint_data(sample_like):
+                if datum.violation > 0:
+                    yield datum.label, datum.violation
+        elif clip:
+            for datum in self.iter_constraint_data(sample_like):
+                yield datum.label, max(datum.violation, 0.0)
+        else:
+            for datum in self.iter_constraint_data(sample_like):
+                yield datum.label, datum.violation
 
     def lower_bound(self, v: Variable) -> Bias:
         """Return the lower bound on the specified variable."""
@@ -860,6 +1010,14 @@ class ConstrainedQuadraticModel:
     def vartype(self, v: Variable) -> Vartype:
         """The vartype of the given variable."""
         return self.objective.vartype(v)
+
+    def violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
+                   ) -> Dict[Hashable, Bias]:
+        """Return a dictionary mapping constraint labels to the amount the constraints are violated.
+
+        This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
+        """
+        return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied, clip=clip))
 
     @classmethod
     def from_lp_file(cls,

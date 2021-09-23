@@ -137,6 +137,28 @@ class TestBounds(unittest.TestCase):
         cqm.add_variable('i', 'INTEGER')
 
 
+class TestCheckFeasible(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 <= 3)
+
+        self.assertTrue(cqm.check_feasible({'x': 1, 'y': 0, 'z': 0}))
+        self.assertTrue(cqm.check_feasible({'x': 0, 'y': 0, 'z': 0}))
+        self.assertFalse(cqm.check_feasible({'x': 1, 'y': 0, 'z': 1}))
+
+    def test_tolerance(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 * .1 <= .9)
+
+        sample = {'x': 1, 'y': 1, 'z': 1}
+
+        self.assertTrue(cqm.check_feasible(sample))
+
+
 class TestCopy(unittest.TestCase):
     def test_deepcopy(self):
         from copy import deepcopy
@@ -154,6 +176,42 @@ class TestCopy(unittest.TestCase):
 
         self.assertTrue(new.objective.is_equal(cqm.objective))
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
+
+
+class TestIterViolations(unittest.TestCase):
+    def test_no_constraints(self):
+        cqm = CQM.from_bqm(-Binary('a') + Binary('a')*Binary('b') + 1.5)
+        self.assertEqual(cqm.violations({'a': 1, 'b': 1}), {})
+
+    def test_binary(self):
+        a, b, c = dimod.Binaries('abc')
+
+        cqm = CQM()
+        cqm.add_constraint(a + b + c == 1, label='onehot')
+        cqm.add_constraint(a*b <= 0, label='ab LE')
+        cqm.add_constraint(c >= 1, label='c GE')
+
+        sample = {'a': 0, 'b': 0, 'c': 1}  # satisfying sample
+        self.assertEqual(cqm.violations(sample), {'ab LE': 0.0, 'c GE': 0.0, 'onehot': 0.0})
+        self.assertEqual(cqm.violations(sample, skip_satisfied=True), {})
+
+        sample = {'a': 1, 'b': 0, 'c': 0}  # violates one
+        self.assertEqual(cqm.violations(sample), {'ab LE': 0.0, 'c GE': 1.0, 'onehot': 0.0})
+        self.assertEqual(cqm.violations(sample, skip_satisfied=True), {'c GE': 1.0})
+
+    def test_integer(self):
+        i = dimod.Integer('i', lower_bound=-1000)
+        j, k = dimod.Integers('jk')
+
+        cqm = CQM()
+        label_le = cqm.add_constraint(i + j*k <= 5)
+        label_ge = cqm.add_constraint(i + j >= 1000)
+
+        sample = {'i': 105, 'j': 4, 'k': 5}
+        self.assertEqual(cqm.violations(sample), {label_le: 120.0, label_ge: 891.0})
+
+        sample = {'j': -1, 'i': 1004, 'k': 1000}
+        self.assertEqual(cqm.violations(sample, clip=False), {label_ge: -3.0, label_le: -1.0})
 
 
 class TestCQMtoBQM(unittest.TestCase):
