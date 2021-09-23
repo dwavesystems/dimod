@@ -126,7 +126,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
         E(x) = \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
 
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
     variables and :math:`a_{i}, b_{ij}, c` are real values.
 
     """
