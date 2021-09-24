@@ -893,7 +893,7 @@ class TestDegree(unittest.TestCase):
         np.testing.assert_array_equal(bqm.degrees(array=True), [3, 2, 2, 1])
 
 
-class TestDepreaction(unittest.TestCase):
+class TestDeprecation(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())
     def test_shapeable(self, name, BQM):
         with self.assertWarns(DeprecationWarning):
@@ -917,6 +917,9 @@ class TestDepreaction(unittest.TestCase):
             # no false positives
             self.assertFalse(bqm.has_variable(0))
             self.assertFalse(bqm.has_variable(2))
+
+    def test_abc(self):
+        self.assertIsInstance(dimod.BQM('SPIN'), dimod.core.bqm.BQM)
 
 
 class TestDictBQM(unittest.TestCase):
