@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Make ``dimod.BinaryQuadraticModel`` a virtual subclass of ``dimod.core.bqm.BQM``.
