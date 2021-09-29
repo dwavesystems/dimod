@@ -20,6 +20,7 @@ import numbers
 import collections.abc as abc
 
 from collections import namedtuple
+from typing import Any, Callable
 
 import numpy as np
 from numpy.lib import recfunctions
@@ -33,6 +34,7 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        deserialize_ndarray,
                                        serialize_ndarrays,
                                        deserialize_ndarrays)
+from dimod.sym import Sense
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
@@ -1150,6 +1152,38 @@ class SampleSet(abc.Iterable, abc.Sized):
             raise ValueError("Cannot convert from {} to {}".format(self.vartype, vartype))
 
         return self
+
+    def filter(self, pred: Callable[[Any], bool]) -> 'SampleSet':
+        """Return a new sampleset with rows filtered out by the given predicate.
+
+        Args:
+            pred: A function that accepts a named tuple as returned by
+                :meth:`.data` and returns a :class:`bool`.
+
+        Returns:
+            A new sample set with only the data rows for which ``pred`` returns
+            ``False``.
+
+        Examples:
+            >>> sampleset = dimod.SampleSet.from_samples(
+            ...     [{'a': 1, 'b': 0}, {'a': 0, 'b': 1}],
+            ...     vartype=dimod.BINARY,
+            ...     energy=[0, 1],
+            ...     is_feasible=[True, False]
+            ...     )
+            >>> feasible_sampleset = sampleset.filter(lambda d: not d.is_feasible)
+            >>> print(feasible_sampleset)
+               a  b energy num_oc. is_fea.
+            0  1  0      0       1    True
+            ['BINARY', 1 rows, 1 samples, 2 variables]
+
+        """
+
+        keep = np.fromiter(
+            (not pred(datum) for datum in self.data(sorted_by=None, sample_dict_cast=False)),
+            count=len(self), dtype=bool)
+
+        return type(self)(self.record[keep], self.variables, self.info, self.vartype)
 
     def relabel_variables(self, mapping, inplace=True):
         """Relabel the variables of a :class:`SampleSet` according to the specified mapping.

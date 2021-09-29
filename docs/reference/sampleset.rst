@@ -47,6 +47,7 @@ Methods
    SampleSet.copy
    SampleSet.data
    SampleSet.done
+   SampleSet.filter
    SampleSet.from_future
    SampleSet.from_samples
    SampleSet.from_samples_bqm
