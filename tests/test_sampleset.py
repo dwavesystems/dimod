@@ -333,6 +333,25 @@ class TestEq(unittest.TestCase):
         self.assertNotEqual(ss1, ss3)
 
 
+class TestFilter(unittest.TestCase):
+    def test_simple(self):
+        sampleset = dimod.SampleSet(np.rec.array([
+            ([0., 1.], 0., 1,  True, [True, True]),
+            ([1., 0.], 0., 1,  True, [True, True]),
+            ([1., 1.], 0., 1,  False, [False, True]),
+            ([0., 0.], 0., 1,  False, [True, False])],
+            dtype=[('sample', '<f8', (2,)), ('energy', '<f8'), ('num_occurrences', '<i4'),
+                   ('is_feasible', '?'), ('is_satisfied', '?', (2,))]),
+            ['x', 'y'],
+            {},
+            'INTEGER')
+
+        new = sampleset.filter(lambda d: not d.is_feasible)
+
+        self.assertEqual(len(new), 2)
+        np.testing.assert_array_equal(new.record.sample, [[0, 1], [1, 0]])
+
+
 class TestAggregate(unittest.TestCase):
     def test_aggregate_simple(self):
         samples = dimod.SampleSet.from_samples(([[-1, 1], [-1, 1]], 'ab'), dimod.SPIN, energy=[0.0, 0.0])
