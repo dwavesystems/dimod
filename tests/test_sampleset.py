@@ -346,7 +346,7 @@ class TestFilter(unittest.TestCase):
             {},
             'INTEGER')
 
-        new = sampleset.filter(lambda d: not d.is_feasible)
+        new = sampleset.filter(lambda d: d.is_feasible)
 
         self.assertEqual(len(new), 2)
         np.testing.assert_array_equal(new.record.sample, [[0, 1], [1, 0]])
