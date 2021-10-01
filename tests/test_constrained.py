@@ -214,6 +214,50 @@ class TestIterViolations(unittest.TestCase):
         self.assertEqual(cqm.violations(sample, clip=False), {label_ge: -3.0, label_le: -1.0})
 
 
+class TestIsAlmostEqual(unittest.TestCase):
+    def test_simple(self):
+        i, j = dimod.Integers('ij')
+        x, y = dimod.Binaries('xy')
+
+        cqm0 = dimod.CQM()
+        cqm0.set_objective(i + 2*j + x*i)
+        cqm0.add_constraint(i <= 5, label='a')
+        cqm0.add_constraint(y*j >= 4, label='b')
+
+        cqm1 = dimod.CQM()
+        cqm1.set_objective(i + 2.0001*j + x*i)
+        cqm1.add_constraint(i <= 5, label='a')
+        cqm1.add_constraint(1.001*y*j >= 4, label='b')
+
+        self.assertTrue(cqm0.is_almost_equal(cqm1, places=2))
+        self.assertFalse(cqm0.is_almost_equal(cqm1, places=5))
+
+
+class TestIsEqual(unittest.TestCase):
+    def test_simple(self):
+        i, j = dimod.Integers('ij')
+        x, y = dimod.Binaries('xy')
+
+        cqm0 = dimod.CQM()
+        cqm0.set_objective(i + 2*j + x*i)
+        cqm0.add_constraint(i <= 5, label='a')
+        cqm0.add_constraint(y*j >= 4, label='b')
+
+        cqm1 = dimod.CQM()
+        cqm1.set_objective(i + 2*j + x*i)
+        cqm1.add_constraint(i <= 5, label='a')
+        cqm1.add_constraint(y*j >= 4, label='b')
+
+        self.assertTrue(cqm0.is_equal(cqm1))
+
+        cqm1.set_objective(y)
+        self.assertFalse(cqm0.is_equal(cqm1))
+
+        cqm1.set_objective(i + 2*j + x*i)
+        cqm1.add_constraint(x*y == 1)
+        self.assertFalse(cqm0.is_equal(cqm1))
+
+
 class TestCQMtoBQM(unittest.TestCase):
     def test_empty(self):
         bqm, inverter = dimod.cqm_to_bqm(dimod.CQM())

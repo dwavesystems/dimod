@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.is_equal()`` and
+    ``ConstrainedQuadraticModel.is_almost_equal()`` methods.
+    See `#1012 <https://github.com/dwavesystems/dimod/issues/1012>`_
+

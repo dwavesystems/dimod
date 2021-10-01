@@ -44,6 +44,8 @@ Methods
    ConstrainedQuadraticModel.from_file
    ConstrainedQuadraticModel.iter_constraint_data
    ConstrainedQuadraticModel.iter_violations
+   ConstrainedQuadraticModel.is_almost_equal
+   ConstrainedQuadraticModel.is_equal
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
    ConstrainedQuadraticModel.set_objective
