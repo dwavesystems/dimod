@@ -1286,7 +1286,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
-    def is_almost_equal(self, other: Union['BinaryQuadraticModel', Bias], places=7) -> bool:
+    def is_almost_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias],
+                        places: int = 7) -> bool:
         """Test if the given binary quadratic model's biases are almost equal.
 
         Test whether each bias in the binary quadratic model is approximately
@@ -1301,7 +1302,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return not round(a - b, places)
 
         try:
-            return (self.vartype == other.vartype
+            if isinstance(other, QuadraticModel):
+                vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
+            else:
+                vartype_eq = self.vartype == other.vartype
+
+            return (vartype_eq
                     and self.shape == other.shape
                     and eq(self.offset, other.offset)
                     and all(eq(self.get_linear(v), other.get_linear(v))
@@ -1313,12 +1319,18 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             # it's not a BQM or variables/interactions don't match
             return False
 
-    def is_equal(self, other):
+    def is_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias]) -> bool:
+        """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
-            return (self.vartype == other.vartype
+            if isinstance(other, QuadraticModel):
+                vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
+            else:
+                vartype_eq = self.vartype == other.vartype
+
+            return (vartype_eq
                     and self.shape == other.shape  # redundant, fast to check
                     and self.offset == other.offset
                     and self.linear == other.linear

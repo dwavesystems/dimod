@@ -387,6 +387,33 @@ class TestInteger(unittest.TestCase):
         self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
 
 
+class TestIsAlmostEqual(unittest.TestCase):
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 2}, 3, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+        self.assertTrue(qm.is_almost_equal(bqm))
+
+    def test_number(self):
+        qm = dimod.QuadraticModel()
+        qm.offset = 1
+        self.assertTrue((1.001*qm).is_almost_equal(qm, places=2))
+        self.assertFalse((1.1*qm).is_almost_equal(qm, places=2))
+
+    def test_qm(self):
+        x = dimod.Binary('x')
+        s = dimod.Spin('s')
+        i = dimod.Integer('i')
+        self.assertTrue((x + s + i).is_almost_equal(1.001*(x + s + i), places=2))
+        self.assertFalse((x + s + i).is_almost_equal(1.1*(x + s + i), places=2))
+
+
+class TestIsEqual(unittest.TestCase):
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 2}, 3, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+        self.assertTrue(qm.is_equal(bqm))
+
+
 class TestOffset(unittest.TestCase):
     def test_setting(self):
         qm = QM()

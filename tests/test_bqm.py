@@ -1457,6 +1457,20 @@ class TestIsAlmostEqual(unittest.TestCase):
         self.assertTrue(bqm.is_almost_equal(other, places=1))
         self.assertFalse(bqm.is_almost_equal(other, places=2))
 
+    def test_qm(self):
+        bqm = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1.01, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+
+        self.assertTrue(bqm.is_almost_equal(qm))
+
+
+class TestEqual(unittest.TestCase):
+    def test_qm(self):
+        bqm = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1.01, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+
+        self.assertTrue(bqm.is_equal(qm))
+
 
 class TestIsLinear(unittest.TestCase):
     @parameterized.expand(BQMs.items())

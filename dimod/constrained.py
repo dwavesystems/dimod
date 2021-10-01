@@ -742,6 +742,31 @@ class ConstrainedQuadraticModel:
             for datum in self.iter_constraint_data(sample_like):
                 yield datum.label, datum.violation
 
+    def is_almost_equal(self, other: 'ConstrainedQuadraticModel',
+                        places: int = 7) -> bool:
+        """Return True if the given model's objective and constraints are almost equal."""
+        def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
+            return (c0.sense is c1.sense
+                    and c0.lhs.is_almost_equal(c1.lhs, places=places)
+                    and not round(c0.rhs - c1.rhs, places))
+
+        return (self.objective.is_almost_equal(other.objective, places=places)
+                and self.constraints.keys() == other.constraints.keys()
+                and all(constraint_eq(constraint, other.constraints[label])
+                        for label, constraint in self.constraints.items()))
+
+    def is_equal(self, other: 'ConstrainedQuadraticModel') -> bool:
+        """Return True if the given model has the same objective and constraints."""
+        def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
+            return (c0.sense is c1.sense
+                    and c0.lhs.is_equal(c1.lhs)
+                    and c0.rhs == c1.rhs)
+
+        return (self.objective.is_equal(other.objective)
+                and self.constraints.keys() == other.constraints.keys()
+                and all(constraint_eq(constraint, other.constraints[label])
+                        for label, constraint in self.constraints.items()))
+
     def lower_bound(self, v: Variable) -> Bias:
         """Return the lower bound on the specified variable."""
         return self.objective.lower_bound(v)
