@@ -61,6 +61,7 @@ Methods
    ~QuadraticModel.from_file
    ~QuadraticModel.get_linear
    ~QuadraticModel.get_quadratic
+   ~QuadraticModel.is_almost_equal
    ~QuadraticModel.is_equal
    ~QuadraticModel.is_linear
    ~QuadraticModel.iter_neighborhood
@@ -148,6 +149,8 @@ Methods
    ~BinaryQuadraticModel.from_ising
    ~BinaryQuadraticModel.from_numpy_vectors
    ~BinaryQuadraticModel.from_qubo
+   ~BinaryQuadraticModel.is_almost_equal
+   ~BinaryQuadraticModel.is_equal
    ~BinaryQuadraticModel.is_linear
    ~BinaryQuadraticModel.iter_neighborhood
    ~BinaryQuadraticModel.iter_quadratic

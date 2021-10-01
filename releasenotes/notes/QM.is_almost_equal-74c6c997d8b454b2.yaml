@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``QuadraticModel.is_almost_equal()`` method
+  - |
+    Support equality checks between quadratic models and binary quadratic models in
+    ``BinaryQuadraticModel.is_equal()``, ``BinaryQuadraticModel.is_almost_equal()``,
+    ``QuadraticModel.is_equal()``, and ``QuadraticModel.is_almost_equal()`` methods.
