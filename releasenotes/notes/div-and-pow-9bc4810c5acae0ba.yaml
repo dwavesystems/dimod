@@ -1,5 +1,5 @@
 ---
-issues:
+features:
   - |
     Allow ``BinaryQuadraticModel`` and ``QuadraticModel`` to be divided by a
     scalar or squared.
