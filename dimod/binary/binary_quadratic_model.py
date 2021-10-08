@@ -754,7 +754,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         if isinstance(linear, abc.Mapping):
             iterator = linear.items()
-        elif isinstance(linear, abc.Iterator):
+        elif isinstance(linear, abc.Iterable):
             iterator = linear
         else:
             raise TypeError(

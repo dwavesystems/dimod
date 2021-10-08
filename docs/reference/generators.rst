@@ -40,6 +40,9 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
+   independent_set
+   maximum_independent_set
+   maximum_weight_independent_set
    random_bin_packing
    random_knapsack
    random_multi_knapsack
