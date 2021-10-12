@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add ``independent_set``, ``maximum_independent_set``, and
+    ``maximum_weight_independent_set`` functions to ``dimod.generators``.
+fixes:
+  - |
+    Fix ``BinaryQuadraticModel.add_linear_from`` to work correctly with
+    iterables. Before ``linear`` had to be a mapping or (incorrectly) an
+    iterator.

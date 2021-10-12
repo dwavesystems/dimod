@@ -634,3 +634,184 @@ class TestInteger(unittest.TestCase):
                 # the variable labels correspond to the energy
                 for sample, energy in sampleset.data(['sample', 'energy']):
                     self.assertEqual(sum(v[1]*val for v, val in sample.items()), energy)
+
+
+class TestIndependentSet(unittest.TestCase):
+    def test_edges(self):
+        bqm = dimod.generators.independent_set([(0, 1), (1, 2), (0, 2)])
+        self.assertEqual(bqm.linear, {0: 0.0, 1: 0.0, 2: 0.0})
+        self.assertEqual(bqm.quadratic, {(1, 0): 1.0, (2, 0): 1.0, (2, 1): 1.0})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_edges_networkx(self):
+        G = nx.complete_graph(3)
+        bqm = dimod.generators.independent_set(G.edges)
+        self.assertEqual(bqm.linear, {0: 0.0, 1: 0.0, 2: 0.0})
+        self.assertEqual(bqm.quadratic, {(1, 0): 1.0, (2, 0): 1.0, (2, 1): 1.0})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    def test_edges_and_nodes(self):
+        bqm = dimod.generators.independent_set([(0, 1), (1, 2)], [0, 1, 2, 3])
+        self.assertEqual(bqm.linear, {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0})
+        self.assertEqual(bqm.quadratic, {(1, 0): 1.0, (2, 1): 1.0})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_edges_and_nodes_networkx(self):
+        G = nx.complete_graph(3)
+        G.add_node(3)
+        bqm = dimod.generators.independent_set(G.edges, G.nodes)
+        self.assertEqual(bqm.linear, {0: 0.0, 1: 0.0, 2: 0.0, 3: 0.0})
+        self.assertEqual(bqm.quadratic, {(1, 0): 1.0, (2, 0): 1.0, (2, 1): 1.0})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    def test_empty(self):
+        self.assertEqual(dimod.generators.independent_set([]).shape, (0, 0))
+        self.assertEqual(dimod.generators.independent_set([], []).shape, (0, 0))
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_empty_networkx(self):
+        G = nx.Graph()
+        self.assertEqual(dimod.generators.independent_set(G.edges).shape, (0, 0))
+        self.assertEqual(dimod.generators.independent_set(G.edges, G.nodes).shape, (0, 0))
+
+    def test_functional(self):
+        edges = [(1, 0), (3, 0), (3, 1), (4, 1), (4, 3), (5, 1), (5, 3),
+                 (6, 1), (7, 0), (7, 1), (7, 5), (7, 6), (8, 1), (8, 6),
+                 (8, 7), (9, 2), (9, 4), (9, 5), (9, 8)]
+
+        bqm = dimod.generators.independent_set(edges)
+
+        self.assertEqual(set(frozenset(e) for e in edges),
+                         set(frozenset(i) for i in bqm.quadratic))
+
+        energies = set()
+        for sample, energy in dimod.ExactSolver().sample(bqm).data(['sample', 'energy']):
+            if energy:
+                self.assertGreaterEqual(energy, 1)
+                self.assertTrue(any(sample[u] and sample[v] for u, v in edges))
+            else:
+                self.assertFalse(any(sample[u] and sample[v] for u, v in edges))
+            energies.add(energy)
+        self.assertIn(1, energies)
+
+
+class TestMaximumIndependentSet(unittest.TestCase):
+    def test_edges(self):
+        bqm = dimod.generators.maximum_independent_set([(0, 1), (1, 2), (0, 2)])
+        self.assertEqual(bqm.linear, {0: -1, 1: -1, 2: -1})
+        self.assertEqual(bqm.quadratic, {(1, 0): 2, (2, 0): 2, (2, 1): 2})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_edges_networkx(self):
+        G = nx.complete_graph(3)
+        bqm = dimod.generators.maximum_independent_set(G.edges)
+        self.assertEqual(bqm.linear, {0: -1, 1: -1, 2: -1})
+        self.assertEqual(bqm.quadratic, {(1, 0): 2, (2, 0): 2, (2, 1): 2})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    def test_edges_and_nodes(self):
+        bqm = dimod.generators.maximum_independent_set([(0, 1), (1, 2)], [0, 1, 2, 3])
+        self.assertEqual(bqm.linear, {0: -1, 1: -1, 2: -1, 3: -1})
+        self.assertEqual(bqm.quadratic, {(1, 0): 2, (2, 1): 2})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_edges_and_nodes_networkx(self):
+        G = nx.complete_graph(3)
+        G.add_node(3)
+        bqm = dimod.generators.maximum_independent_set(G.edges, G.nodes)
+        self.assertEqual(bqm.linear, {0: -1, 1: -1, 2: -1, 3: -1})
+        self.assertEqual(bqm.quadratic, {(1, 0): 2, (2, 0): 2, (2, 1): 2})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    def test_empty(self):
+        self.assertEqual(dimod.generators.maximum_independent_set([]).shape, (0, 0))
+        self.assertEqual(dimod.generators.maximum_independent_set([], []).shape, (0, 0))
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_empty_networkx(self):
+        G = nx.Graph()
+        self.assertEqual(dimod.generators.maximum_independent_set(G.edges).shape, (0, 0))
+        self.assertEqual(dimod.generators.maximum_independent_set(G.edges, G.nodes).shape, (0, 0))
+
+    def test_functional(self):
+        edges = [(1, 0), (3, 0), (3, 1), (4, 1), (4, 3), (5, 1), (5, 3),
+                 (6, 1), (7, 0), (7, 1), (7, 5), (7, 6), (8, 1), (8, 6),
+                 (8, 7), (9, 2), (9, 4), (9, 5), (9, 8)]
+
+        bqm = dimod.generators.maximum_independent_set(edges)
+
+        self.assertEqual(set(frozenset(e) for e in edges),
+                         set(frozenset(i) for i in bqm.quadratic))
+
+        data = dimod.ExactSolver().sample(bqm).data(['sample', 'energy'])
+
+        first = next(data)
+
+        self.assertFalse(any(first.sample[u] and first.sample[v] for u, v in edges))
+
+        for sample, energy in data:
+            if energy == first.energy:
+                # it's unique
+                self.assertEqual(sum(sample.values()), sum(first.sample.values()))
+            elif any(sample[u] and sample[v] for u, v in edges):
+                self.assertGreaterEqual(energy, first.energy)
+            else:
+                self.assertLess(sum(sample.values()), sum(first.sample.values()))
+
+
+class TestMaximumWeightIndependentSet(unittest.TestCase):
+    def test_default_weight(self):
+        edges = [(0, 1), (1, 2)]
+        nodes = [(1, .5)]
+
+        bqm = dimod.generators.maximum_weight_independent_set(edges, nodes)
+
+        self.assertEqual(bqm.linear, {0: -1, 1: -.5, 2: -1})
+
+    def test_functional(self):
+        edges = [(0, 1), (1, 2)]
+        nodes = [(0, .25), (1, .5), (2, .25)]
+
+        bqm = dimod.generators.maximum_weight_independent_set(edges, nodes)
+
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        configs = {tuple(sample[v] for v in range(3)) for sample in sampleset.lowest().samples()}
+        self.assertEqual(configs, {(0, 1, 0), (1, 0, 1)})
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_functional_networkx(self):
+        G = nx.complete_graph(3)
+        G.add_nodes_from([0, 2], weight=.5)
+        G.add_node(1, weight=1)
+
+        bqm = dimod.generators.maximum_weight_independent_set(G.edges, G.nodes('weight'))
+
+        self.assertEqual(bqm.linear, {0: -0.5, 1: -1.0, 2: -0.5})
+        self.assertEqual(bqm.quadratic, {(1, 0): 2.0, (2, 0): 2.0, (2, 1): 2.0})
+        self.assertEqual(bqm.offset, 0)
+        self.assertIs(bqm.vartype, dimod.BINARY)
+
+    def test_empty(self):
+        self.assertEqual(dimod.generators.maximum_weight_independent_set([]).shape, (0, 0))
+        self.assertEqual(dimod.generators.maximum_weight_independent_set([], []).shape, (0, 0))
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_empty_networkx(self):
+        G = nx.Graph()
+        self.assertEqual(dimod.generators.maximum_weight_independent_set(G.edges).shape, (0, 0))
+        self.assertEqual(
+            dimod.generators.maximum_weight_independent_set(G.edges, G.nodes('weight')).shape,
+            (0, 0))
