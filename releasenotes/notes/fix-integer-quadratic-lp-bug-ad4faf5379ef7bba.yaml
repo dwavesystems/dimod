@@ -2,6 +2,7 @@
 
 fixes:
   - |
-    Fix misspelled `upper_bound` in `from_lp_file` constructor method when
-    adding integer quadratic term from constraints.
+    No longer throw a ``TypeError`` from ``ConstrainedQuadraticModel.from_lp_file``
+    when adding a integer quadratic term from constraints.
+
 
