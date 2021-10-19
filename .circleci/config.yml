@@ -362,6 +362,26 @@ jobs:
             python -m pip install twine
             twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
 
+  test-airspeed-velocity:
+    docker:
+      - image: circleci/python:3.7-stretch
+
+    steps:
+      - checkout
+
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install -r benchmarks/requirements.txt
+
+      - run:
+          name: check that our airspeed velocity tests run without failure
+          command: |
+            . env/bin/activate
+            asv machine --yes
+            asv run --quick --strict
 
   test-doctest:
     docker:
@@ -467,6 +487,7 @@ workflows:
           requires:
             - build-sdist
       - test-doctest
+      - test-airspeed-velocity
       - test-linux-cpp11
 
   deploy:

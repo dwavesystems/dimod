@@ -123,8 +123,7 @@ tests/*.cpp
 tests/*.html
 
 # benchmarking stuff
-benchmarks/html/
-benchmarks/results/
+.asv/
 
 # testing stuff
 testscpp/test_main
