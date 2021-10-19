@@ -673,7 +673,7 @@ class TestCQMFromLPFile(unittest.TestCase):
             cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 5, msg='wrong number of variables')
-        self.assertEqual(len(cqm.constraints), 5, msg='wrong number of constraints')
+        self.assertEqual(len(cqm.constraints), 6, msg='wrong number of constraints')
 
         # check the bounds
         self.assertAlmostEqual(cqm.objective.lower_bound('i0'), 3,
@@ -757,6 +757,18 @@ class TestCQMFromLPFile(unittest.TestCase):
                                        msg='constraint c5, offset should be -2')
                 self.assertTrue(cmodel.sense == Sense.Eq,
                                 msg='constraint c5, should be an equality')
+
+            elif cname == 'c6':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('i0'), 0,
+                                       msg='constraint c6, linear(i0) should be 0')
+                self.assertAlmostEqual(cmodel.lhs.get_linear('i1'), 0,
+                                       msg='constraint c6, linear(i1) should be0')
+                self.assertAlmostEqual(cmodel.lhs.offset, 0,
+                                       msg='constraint c6, offset should be 0')
+                self.assertAlmostEqual(cmodel.lhs.get_quadratic('i0', 'i1'), 1,
+                                       msg='constraint c6, quadratic (i0, i1) should be 1')
+                self.assertTrue(cmodel.sense == Sense.Ge,
+                                msg='constraint c6, should be an inequality')
 
             else:
                 raise KeyError('Not expected constraint: {}'.format(cname))

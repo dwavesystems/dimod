@@ -1157,7 +1157,7 @@ class ConstrainedQuadraticModel:
                         if vartype2 is Vartype.BINARY:
                             constraint.add_variable(vartype2, var2)
                         elif vartype2 is Vartype.INTEGER:
-                            constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_boun=ub2)
+                            constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_bound=ub2)
 
                         constraint.add_quadratic(var1, var2, qe.coef)
 

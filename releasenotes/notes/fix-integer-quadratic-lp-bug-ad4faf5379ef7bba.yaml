@@ -1,0 +1,8 @@
+---
+
+fixes:
+  - |
+    No longer throw a ``TypeError`` from ``ConstrainedQuadraticModel.from_lp_file``
+    when adding a integer quadratic term from constraints.
+
+
