@@ -1,0 +1,7 @@
+---
+
+fixes:
+  - |
+    Fix misspelled `upper_bound` in `from_lp_file` constructor method when
+    adding integer quadratic term from constraints.
+
