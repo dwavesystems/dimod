@@ -16,7 +16,7 @@ The :std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides
 additional :std:doc:`composites for D-Wave systems <oceandocs:docs_system/reference/composites>`
 such as those used for :term:`minor-embedding`.
 
-Structured Composite
+Structure Composite
 --------------------
 
 .. automodule:: dimod.reference.composites.structure
