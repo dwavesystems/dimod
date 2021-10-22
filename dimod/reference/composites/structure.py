@@ -24,6 +24,9 @@ from dimod.decorators import bqm_structured
 class StructureComposite(Sampler, Composite, Structured):
     """Creates a structured composed sampler from an unstructured sampler.
 
+    Useful for simulation purposes, for example testing a proposed chip's graph structure
+    with the :class:`Simulated Annealing Sampler <neal.SimulatedAnnealingSampler>`.
+
     Args:
         Sampler (:obj:`~dimod.Sampler`):
             Unstructured sampler.
