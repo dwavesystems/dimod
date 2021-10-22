@@ -17,7 +17,7 @@ additional :std:doc:`composites for D-Wave systems <oceandocs:docs_system/refere
 such as those used for :term:`minor-embedding`.
 
 Structure Composite
---------------------
+-------------------
 
 .. automodule:: dimod.reference.composites.structure
 
