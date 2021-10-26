@@ -17,6 +17,9 @@ import warnings
 
 from collections import Counter
 
+from collections import defaultdict
+from functools import partial
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -24,7 +27,7 @@ from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-__all__ = ['make_quadratic']
+__all__ = ['make_quadratic', 'reduce_terms']
 
 
 def _spin_product(variables):
@@ -97,7 +100,174 @@ def _new_aux(variables, u, v):
     return aux
 
 
+def _decrement_count(idx, que, pair):
+    count = len(idx[pair])
+    que_count = que[count]
+    que_count.remove(pair)
+    if not que_count:
+        del que[count]
+    if count > 1:
+        que[count - 1].add(pair)
+
+
+def _remove_old(idx, term, pair):
+    idx_pair = idx[pair]
+    del idx_pair[term]
+    if not idx_pair:
+        del idx[pair]
+
+
+def reduce_terms(bp):
+    variables = bp.variables
+    constraints = []
+
+    reduced_terms = []
+    idx = defaultdict(dict)
+    for item in bp.items():
+        term, bias = item
+        if len(term) <= 2:
+            reduced_terms.append(item)
+        else:
+            for pair in itertools.combinations(term, 2):
+                idx[frozenset(pair)][term] = bias
+
+    que = defaultdict(set)
+    for pair, terms in idx.items():
+        que[len(terms)].add(pair)
+
+    while idx:
+        new_pairs = set()
+        most = max(que)
+        que_most = que[most]
+        pair = que_most.pop()
+        if not que_most:
+            del que[most]
+        terms = idx.pop(pair)
+
+        prod_var = _new_product(variables, *pair)
+        constraints.append((pair, prod_var))
+        prod_var_set = {prod_var}
+
+        for old_term, bias in terms.items():
+            common_subterm = (old_term - pair)
+            new_term = common_subterm | prod_var_set
+
+            for old_pair in map(frozenset, itertools.product(pair, common_subterm)):
+                _decrement_count(idx, que, old_pair)
+                _remove_old(idx, old_term, old_pair)
+
+            for common_pair in map(frozenset, itertools.combinations(common_subterm, 2)):
+                idx[common_pair][new_term] = bias
+                _remove_old(idx, old_term, common_pair)
+
+            if len(new_term) > 2:
+                for new_pair in (frozenset((prod_var, v)) for v in common_subterm):
+                    idx[new_pair][new_term] = bias
+                    new_pairs.add(new_pair)
+            else:
+                reduced_terms.append((new_term, bias))
+
+        for new_pair in new_pairs:
+            que[len(idx[new_pair])].add(new_pair)
+
+    return reduced_terms, constraints
+
+
 def make_quadratic(poly, strength, vartype=None, bqm=None):
+    """Create a binary quadratic model from a higher order polynomial.
+
+    Args:
+        poly (dict):
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
+            variables and `bias` the associated bias.
+
+        strength (float):
+            The energy penalty for violating the prodcut constraint.
+            Insufficient strength can result in the binary quadratic model not
+            having the same minimizations as the polynomial.
+
+        vartype (:class:`.Vartype`/str/set, optional):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            If `bqm` is provided, `vartype` is not required.
+
+        bqm (:class:`.BinaryQuadraticModel`, optional):
+            The terms of the reduced polynomial are added to this binary quadratic model.
+            If not provided, a new binary quadratic model is created.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    Examples:
+
+        >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
+        >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
+
+    """
+    if vartype is None:
+        if bqm is None:
+            raise ValueError("one of vartype or bqm must be provided")
+        else:
+            vartype = bqm.vartype
+    else:
+        vartype = as_vartype(vartype)  # handle other vartype inputs
+        if bqm is None:
+            bqm = BinaryQuadraticModel.empty(vartype)
+        else:
+            bqm = bqm.change_vartype(vartype, inplace=False)
+
+    # for backwards compatibility, add an info field
+    if not hasattr(bqm, 'info'):
+        bqm.info = {}
+    bqm.info['reduction'] = {}
+
+    if not isinstance(poly, BinaryPolynomial) or poly.vartype != vartype:
+        poly = BinaryPolynomial(poly, vartype=vartype)
+
+    variables = set().union(*poly)
+    reduced_terms, constraints = reduce_terms(poly)
+
+    for (u, v), p in constraints:
+
+        # add a constraint enforcing the relationship between p == u*v
+        if vartype is Vartype.BINARY:
+            constraint = _binary_product([u, v, p])
+            bqm.info['reduction'][(u, v)] = {'product': p}
+        elif vartype is Vartype.SPIN:
+            aux = _new_aux(variables, u, v)  # need an aux in SPIN-space
+            constraint = _spin_product([u, v, p, aux])
+            bqm.info['reduction'][(u, v)] = {'product': p, 'auxiliary': aux}
+        else:
+            raise RuntimeError("unknown vartype: {!r}".format(vartype))
+
+        # scale constraint and update the polynomial with it
+        constraint.scale(strength)
+        for v, bias in constraint.linear.items():
+            bqm.add_variable(v, bias)
+        for uv, bias in constraint.quadratic.items():
+            bqm.add_interaction(*uv, bias)
+        bqm.offset += constraint.offset
+
+    for term, bias in reduced_terms:
+        if len(term) == 2:
+            bqm.add_interaction(*term , bias)
+        elif len(term) == 1:
+            bqm.add_variable(*term, bias)
+        elif len(term) == 0:
+            bqm.offset += bias
+        else:
+            # still has higher order terms, this shouldn't happen
+            msg = ('Internal error: not all higher-order terms were reduced. '
+                   'Please file a bug report.')
+            raise RuntimeError(msg)
+
+    return bqm
+
+
+def make_quadratic_old(poly, strength, vartype=None, bqm=None):
     """Create a binary quadratic model from a higher order polynomial.
 
     Args:
