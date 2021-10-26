@@ -7,53 +7,7 @@ environment:
   PIP_PROGRESS_BAR: off
 
 jobs:
-  build-manylinux:
-
-    parameters:
-      manylinux-tag:
-        type: string
-      manylinux-arch:
-        type: string
-      python-version:
-        type: string
-
-    docker:
-      - image: quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >>
-
-    working_directory: /dimod
-
-    steps:
-      - checkout
-
-      - run:
-          name: Fix git checkout
-          command: git reset --hard
-
-      - run:
-          name: Build wheels
-          command: |
-            for py in /opt/python/cp*/bin/python; do
-              ver=$("$py" -c 'import sys; print("{0.major}.{0.minor}".format(sys.version_info))')
-              req=<< parameters.python-version >>
-              [[ "$ver" != "${req:0:3}" ]] && continue
-              "$py" -m pip wheel . -w ./wheelhouse --no-deps
-            done
-
-      - run:
-          name: bundle shared libraries into wheels
-          command: |
-            for whl in ./wheelhouse/dimod*.whl; do
-              auditwheel repair "$whl" -w ./dist
-            done
-
-      - store_artifacts:
-          path: ./dist
-
-      - persist_to_workspace:
-          root: /dimod/dist/
-          paths: .
-
-  build-manylinux-aarch64:
+  build-manylinux: &build-manylinux
 
     parameters:
       manylinux-tag:
@@ -66,8 +20,6 @@ jobs:
     machine:
       image: ubuntu-2004:202101-01
 
-    resource_class: arm.medium
-
     steps:
       - checkout
 
@@ -79,8 +31,8 @@ jobs:
           name: Build wheels
           command: |
             pyv=<< parameters.python-version >>
+            pyv="${pyv%.*}"
             pyv="${pyv//.}"
-            pyv="${pyv:0:2}"
             docker run -e pyv=$pyv --rm -v $PWD:/ws:rw --workdir=/ws \
             quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
             bash -exc '
@@ -106,6 +58,10 @@ jobs:
       - persist_to_workspace:
           root: ./dist/
           paths: .
+
+  build-manylinux-aarch64:
+    <<: *build-manylinux
+    resource_class: arm.medium
 
   build-sdist:
     docker:
@@ -190,14 +146,10 @@ jobs:
             cd tests/
             codecov
 
+  # we could do a lot of fiddling to test multiple python versions on ARM but
+  # it's fiddly and slow. So for now let's just test with 3.9
   test-linux-aarch64:
     parameters:
-      manylinux-tag:
-        type: string
-      manylinux-arch:
-        type: string
-      python-version:
-        type: string
       numpy-version:
         type: string
 
@@ -212,37 +164,31 @@ jobs:
       - attach_workspace:
           at: dist
 
-      # Make sure that we're using the built dimod and not one from pypi
+      # for now we don't install dwave-preprocessing since as of Oct 2021 there
+      # are no ARM wheels
       - run:
           name: install
           command: |
-            npv='<< parameters.numpy-version >>'
-            pyv='<< parameters.python-version >>'
-            docker run -e npv=$npv -e pyv=$pyv --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              /opt/python/${pyv}/bin/python -m venv env
-              . env/bin/activate
-              pip install -U pip wheel
-              pip install Cython>=0.29.21
-              pip install dimod==0.10.4
-              pip install -r tests/requirements.txt
-              pip install numpy${npv} --upgrade --only-binary=numpy
-              pip install dwave-preprocessing --no-build-isolation
-              pip install -U pip pyparsing
-              pip install dimod --no-index -f dist/ --no-deps --force-reinstall
-            '
+            python3 -m venv env
+            . env/bin/activate
+            pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
+            pip install pyparsing
+            pip install dimod --no-index -f dist/ --no-deps --force-reinstall
 
       - run:
           name: run tests
           command: |
-            docker run --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              . env/bin/activate
-              cd tests/
-              coverage run --source=dimod --append -m unittest
-            '
+            . env/bin/activate
+            cd tests/
+            pip install -r requirements.txt
+            coverage run --source=dimod --append -m unittest
+
+      - run:
+          name: codecov
+          command: |
+            . env/bin/activate
+            cd tests/
+            codecov
 
   deploy-linux:
     docker:
@@ -556,31 +502,13 @@ workflows:
           name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
           matrix:
             parameters:
-              python-version: &python-versions [3.6.8, 3.7.9, 3.8.9, 3.9.4]
+              python-version: &python-versions [3.6.8, 3.7.9, 3.8.9, 3.9.4, 3.10.0]
               manylinux-tag: &manylinux-tags ["manylinux1", "manylinux2014"]
               manylinux-arch: &manylinux-archs ["x86_64"]
-      - test-linux:
-          name: test-linux-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
-          # We could break each of these out into seperate jobs so that we
-          # don't need to wait for the entire above matrix to complete, but
-          # this is cleaner
-          requires:
-            - build-manylinux
-          matrix:
-            parameters:
-              # test the lowest numpy version and the highest minor of each
-              # currently deployed
-              numpy-version: [==1.17.3, <1.19, <1.20, <1.21]
-              python-version: *python-versions
             exclude:
-              - numpy-version: <1.21
-                python-version: 3.6.8
-              - numpy-version: <1.19
-                python-version: 3.9.4
-              - numpy-version: <1.18
-                python-version: 3.9.4
-              - numpy-version: ==1.17.3
-                python-version: 3.9.4
+              - python-version: 3.10.0
+                manylinux-tag: manylinux1
+                manylinux-arch: x86_64
       - build-manylinux-aarch64:
           name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
           matrix:
@@ -588,96 +516,118 @@ workflows:
               python-version: *python-versions
               manylinux-tag: &manylinux-tag-aarch64 ["manylinux2014"]
               manylinux-arch: &manylinux-arch-aarch64 ["aarch64"]
+      # - test-linux:
+      #     name: test-linux-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
+      #     # We could break each of these out into seperate jobs so that we
+      #     # don't need to wait for the entire above matrix to complete, but
+      #     # this is cleaner
+      #     requires:
+      #       - build-manylinux
+      #     matrix:
+      #       parameters:
+      #         # test the lowest numpy version and the highest minor of each
+      #         # currently deployed
+      #         numpy-version: [==1.17.3, <1.19, <1.20, <1.21, <1.22]
+      #         python-version: *python-versions
+      #       exclude:
+      #         - numpy-version: ==1.17.3
+      #           python-version: 3.9.4
+      #         - numpy-version: ==1.17.3
+      #           python-version: 3.10.0
+      #         - numpy-version: <1.19
+      #           python-version: 3.9.4
+      #         - numpy-version: <1.19
+      #           python-version: 3.10.0
+      #         - numpy-version: <1.20
+      #           python-version: 3.10.0
+      #         - numpy-version: <1.21
+      #           python-version: 3.6.8
+      #         - numpy-version: <1.21
+      #           python-version: 3.10.0
+      #         - numpy-version: <1.22
+      #           python-version: 3.6.8
       - test-linux-aarch64:
-          name: test-linux-<< matrix.manylinux-arch >>-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
-          # We could break each of these out into seperate jobs so that we
-          # don't need to wait for the entire above matrix to complete, but
-          # this is cleaner
+          name: test-linux-aarch64-numpy<< matrix.numpy-version >>
           requires:
             - build-manylinux-aarch64
           matrix:
             parameters:
-              # test the lowest numpy version and the highest minor of each
-              # currently deployed
-              numpy-version: [<1.20, <1.21]
-              python-version: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
-              manylinux-tag: *manylinux-tag-aarch64
-              manylinux-arch: *manylinux-arch-aarch64
-      - test-osx:
-          matrix:
-            parameters:
-              python-version: *python-versions
-      - test-win:
-          matrix:
-            parameters:
-              python-version: *python-versions
-              architecture: ["", "x86"]
-      - build-sdist
-      - test-sdist:
-          requires:
-            - build-sdist
-      - test-doctest
-      - test-airspeed-velocity
-      - test-linux-cpp11
+              numpy-version: [<1.20, <1.21, <1.22]
+  #     - test-osx:
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #     - test-win:
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #             architecture: ["", "x86"]
+  #     - build-sdist
+  #     - test-sdist:
+  #         requires:
+  #           - build-sdist
+  #     - test-doctest
+  #     - test-airspeed-velocity
+  #     - test-linux-cpp11
 
-  deploy:
-    jobs:
-      - build-manylinux:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
-          matrix:
-            parameters:
-              python-version: *python-versions
-              manylinux-tag: *manylinux-tags
-              manylinux-arch: *manylinux-archs
-      - build-manylinux-aarch64:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
-          matrix:
-            parameters:
-              python-version: *python-versions
-              manylinux-tag: *manylinux-tag-aarch64
-              manylinux-arch: *manylinux-arch-aarch64
-      - build-sdist:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - deploy-linux:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          requires:
-            - build-manylinux-aarch64
-            - build-manylinux
-            - build-sdist
-      - deploy-osx:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          matrix:
-            parameters:
-              python-version: *python-versions
-      - deploy-win:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          matrix:
-            parameters:
-              python-version: *python-versions
-              architecture: ["", "x86"]
+  # deploy:
+  #   jobs:
+  #     - build-manylinux:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #             manylinux-tag: *manylinux-tags
+  #             manylinux-arch: *manylinux-archs
+  #     - build-manylinux-aarch64:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #             manylinux-tag: *manylinux-tag-aarch64
+  #             manylinux-arch: *manylinux-arch-aarch64
+  #     - build-sdist:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #     - deploy-linux:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         requires:
+  #           - build-manylinux-aarch64
+  #           - build-manylinux
+  #           - build-sdist
+  #     - deploy-osx:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #     - deploy-win:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         matrix:
+  #           parameters:
+  #             python-version: *python-versions
+  #             architecture: ["", "x86"]
