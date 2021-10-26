@@ -293,7 +293,7 @@ class TestChimeraAnticluster(unittest.TestCase):
 
     def test_deprecation(self):
         with self.assertWarns(DeprecationWarning):
-            bqm = dimod.generators.chimera_anticluster(0, cls=6)        
+            bqm = dimod.generators.chimera_anticluster(0, cls=6)
 
 
 @unittest.skipUnless(_networkx, "no networkx installed")
@@ -614,6 +614,13 @@ class TestGates(unittest.TestCase):
         # also check that the gap is 7.5
         self.assertIn(7.5, set(sampleset.record.energy))
 
+    def test_multiplication_circuit(self):
+        bqm = dimod.generators.multiplication_circuit(3)
+        self.assertEqual(list(bqm.variables), ['p5', 'p3', 'p0', 'and2,2',
+            'and0,1', 'carry2,1', 'and0,2', 'p4', 'and1,0', 'p1', 'carry1,0',
+            'and1,1', 'sum1,1', 'carry1,1', 'and1,2', 'carry3,0', 'and2,0', 'p2', 
+            'carry2,0', 'and2,1', 'sum2,1'])
+        # Add some more tests
 
 class TestInteger(unittest.TestCase):
     def test_exceptions(self):
