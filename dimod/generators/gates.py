@@ -16,7 +16,6 @@ from collections import defaultdict
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.typing import Variable
 from dimod.vartypes import Vartype
-from dimod.generators import and_gate, or_gate, halfadder_gate, fulladder_gate
 
 __all__ = ['and_gate',
            'fulladder_gate',
