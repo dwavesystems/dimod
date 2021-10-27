@@ -243,15 +243,15 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
         3-bit numbers. It fixes the multiplacands as :math:`a=5, b=3`
         (:math:`101` and :math:`011`) and uses a simulated annealing sampler
         to find the product, :math:`p=15` (:math:`001111`).
-        >>> from dwavebinarycsp.factories.csp.circuits import multiplication_circuit
+        
+        >>> from dimod.generators import multiplication_circuit
         >>> import neal
-        >>> csp = multiplication_circuit(3)
-        >>> bqm = dwavebinarycsp.stitch(csp)
+        >>> bqm = multiplication_circuit(3)
         >>> bqm.fix_variable('a0', 1); bqm.fix_variable('a1', 0); bqm.fix_variable('a2', 1)
         >>> bqm.fix_variable('b0', 1); bqm.fix_variable('b1', 1); bqm.fix_variable('b2', 0)
         >>> sampler = neal.SimulatedAnnealingSampler()
-        >>> response = sampler.sample(bqm)
-        >>> p = next(response.samples(n=1, sorted_by='energy'))
+        >>> sampleset = sampler.sample(bqm)
+        >>> p = sampleset.first
         >>> print(p['p5'], p['p4'], p['p3'], p['p2'], p['p1'], p['p0'])    # doctest: +SKIP
         0 0 1 1 1 1
     """
