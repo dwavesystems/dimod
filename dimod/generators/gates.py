@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 from collections import defaultdict
+
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.typing import Variable
 from dimod.vartypes import Vartype
@@ -209,7 +210,7 @@ def xor_gate(in0: Variable, in1: Variable, out: Variable, aux: Variable,
     # the sum of a halfadder is XOR
     return halfadder_gate(in0, in1, out, aux, strength=strength)
 
-def multiplication_circuit(nbit, vartype=Vartype.BINARY):
+def multiplication_circuit(nbit: int):
     """Return a binary quadratic model with ground states corresponding to
     a multiplication circuit.
 
@@ -230,11 +231,7 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
       --------------------------------------------------------------------------------
 
     Args:
-        nbit (int): Number of bits in the multiplicands.
-        vartype (Vartype, optional, default='BINARY'): Variable type. Accepted
-            input values:
-            * Vartype.SPIN, 'SPIN', {-1, 1}
-            * Vartype.BINARY, 'BINARY', {0, 1}
+        nbit: Number of bits in the multiplicands.
     Returns:
         A binary quadratic model with ground states corresponding to a
         multiplication circuit.
@@ -243,7 +240,7 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
         3-bit numbers. It fixes the multiplacands as :math:`a=5, b=3`
         (:math:`101` and :math:`011`) and uses a simulated annealing sampler
         to find the product, :math:`p=15` (:math:`001111`).
-        
+
         >>> from dimod.generators import multiplication_circuit
         >>> import neal
         >>> bqm = multiplication_circuit(3)
@@ -261,7 +258,7 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
 
     num_multiplier_bits = num_multiplicand_bits = nbit
 
-    bqm = BinaryQuadraticModel(vartype)
+    bqm = BinaryQuadraticModel(Vartype.BINARY)
 
     # throughout, we will use the following convention:
     #   i to refer to the bits of the multiplier
@@ -291,14 +288,12 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
                 # carry out
                 andij = AND[i][j] = p[0]
                 gate = and_gate(ai, bj, andij)
-                gate.change_vartype(vartype=vartype)
                 bqm.update(gate)
                 continue
 
             # we always need an AND gate
             andij = AND[i][j] = 'and%s,%s' % (i, j)
             gate = and_gate(ai, bj, andij)
-            gate.change_vartype(vartype=vartype)
             bqm.update(gate)
 
             # the number of inputs will determine the type of adder
@@ -325,7 +320,6 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
 
                 carryij = CARRY[i][j] = 'carry%d,%d' % (i, j)
                 gate = halfadder_gate(inputs[0], inputs[1], sumij, carryij)
-                gate.change_vartype(vartype=vartype)
                 bqm.update(gate)
             else:
                 assert len(inputs) == 3, 'unexpected number of inputs'
@@ -337,7 +331,6 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
 
                 carryij = CARRY[i][j] = 'carry%d,%d' % (i, j)
                 gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumij, carryij)
-                gate.change_vartype(vartype=vartype)
                 bqm.update(gate)
 
     # now we have a final row of full adders
@@ -348,7 +341,6 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
             sumout = p[nbit + col]
             carryout = CARRY[nbit][col] = 'carry%d,%d' % (nbit, col)
             gate = halfadder_gate(inputs[0], inputs[1], sumout, carryout)
-            gate.change_vartype(vartype=vartype)
             bqm.update(gate)
             continue
 
@@ -361,7 +353,6 @@ def multiplication_circuit(nbit, vartype=Vartype.BINARY):
             carryout = p[2 * nbit - 1]
 
         gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumout, carryout)
-        gate.change_vartype(vartype=vartype)
         bqm.update(gate)
 
     return bqm
