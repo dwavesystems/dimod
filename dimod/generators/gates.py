@@ -237,20 +237,19 @@ def multiplication_circuit(nbit: int):
         multiplication circuit.
     Examples:
         This example creates a multiplication circuit BQM that multiplies two
-        3-bit numbers. It fixes the multiplacands as :math:`a=5, b=3`
-        (:math:`101` and :math:`011`) and uses a simulated annealing sampler
-        to find the product, :math:`p=15` (:math:`001111`).
+        2-bit numbers. It fixes the multiplacands as :math:`a=2, b=3`
+        (:math:`10` and :math:`11`) and uses a brute-force solver to find the
+        product, :math:`p=6` (:math:`110`).
 
         >>> from dimod.generators import multiplication_circuit
-        >>> import neal
-        >>> bqm = multiplication_circuit(3)
-        >>> bqm.fix_variable('a0', 1); bqm.fix_variable('a1', 0); bqm.fix_variable('a2', 1)
-        >>> bqm.fix_variable('b0', 1); bqm.fix_variable('b1', 1); bqm.fix_variable('b2', 0)
-        >>> sampler = neal.SimulatedAnnealingSampler()
-        >>> sampleset = sampler.sample(bqm)
-        >>> p = sampleset.first
-        >>> print(p['p5'], p['p4'], p['p3'], p['p2'], p['p1'], p['p0'])    # doctest: +SKIP
-        0 0 1 1 1 1
+        >>> from dimod import ExactSolver
+        >>> bqm = multiplication_circuit(2)
+        >>> for fixed_var, fixed_val in {'a0': 0, 'a1': 1, 'b0':1, 'b1': 1}.items():
+        ...    bqm.fix_variable(fixed_var, fixed_val)
+        >>> best = ExactSolver().sample(bqm).first
+        >>> p = {key: best.sample[key] for key in best.sample.keys() if "p" in key}
+        >>> print(p)
+        {'p0': 0, 'p1': 1, 'p2': 1}
     """
 
     if nbit < 1:
