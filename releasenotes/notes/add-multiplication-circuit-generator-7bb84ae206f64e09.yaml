@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``multiplication_circuit`` to gate generators.
