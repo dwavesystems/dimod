@@ -253,7 +253,7 @@ def multiplication_circuit(nbit: int) -> BinaryQuadraticModel:
     """
 
     if nbit < 1:
-        raise ValueError("num_multiplier_bits, num_multiplicand_bits must be positive integers")
+        raise ValueError("nbit must be a positive integer")
 
     num_multiplier_bits = num_multiplicand_bits = nbit
 
