@@ -210,7 +210,7 @@ def xor_gate(in0: Variable, in1: Variable, out: Variable, aux: Variable,
     # the sum of a halfadder is XOR
     return halfadder_gate(in0, in1, out, aux, strength=strength)
 
-def multiplication_circuit(nbit: int):
+def multiplication_circuit(nbit: int) -> BinaryQuadraticModel:
     """Return a binary quadratic model with ground states corresponding to
     a multiplication circuit.
 
