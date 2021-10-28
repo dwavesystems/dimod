@@ -293,7 +293,7 @@ class TestChimeraAnticluster(unittest.TestCase):
 
     def test_deprecation(self):
         with self.assertWarns(DeprecationWarning):
-            bqm = dimod.generators.chimera_anticluster(0, cls=6)        
+            bqm = dimod.generators.chimera_anticluster(0, cls=6)
 
 
 @unittest.skipUnless(_networkx, "no networkx installed")
@@ -614,6 +614,38 @@ class TestGates(unittest.TestCase):
         # also check that the gap is 7.5
         self.assertIn(7.5, set(sampleset.record.energy))
 
+    def test_multiplication_circuit(self):
+
+        # Verify correct variables for 3x3 circuit
+        mc3_vars = ['p5', 'p3', 'p0', 'and2,2', 'and0,1', 'carry2,1', 'and0,2',
+        'p4', 'and1,0', 'p1', 'carry1,0', 'and1,1', 'sum1,1', 'carry1,1',
+        'and1,2', 'carry3,0', 'and2,0', 'p2','carry2,0', 'and2,1', 'sum2,1'].sort()
+        bqm = dimod.generators.multiplication_circuit(3)
+        self.assertEqual((list(bqm.variables)).sort(), mc3_vars)
+
+        # Verify correct factoring/multiplication for 2x2 circuit
+        bqm = dimod.generators.multiplication_circuit(2)
+
+        bqm_6 = bqm.copy()
+        for fixed_var, fixed_val in {'p0': 0, 'p1': 1, 'p2':1}.items():
+            bqm_6.fix_variable(fixed_var, fixed_val)
+        best = dimod.ExactSolver().sample(bqm_6).first
+        ab = [best.sample['a0'], best.sample['a1'], best.sample['b0'], best.sample['b1']]
+        self.assertTrue(ab == [0, 1, 1, 1] or ab == [1, 1, 0, 1])
+
+        bqm_4 = bqm.copy()
+        for fixed_var, fixed_val in {'p0': 0, 'p1': 0, 'p2':1}.items():
+            bqm_4.fix_variable(fixed_var, fixed_val)
+        best = dimod.ExactSolver().sample(bqm_4).first
+        ab = [best.sample['a0'], best.sample['a1'], best.sample['b0'], best.sample['b1']]
+        self.assertEqual(ab, [0, 1, 0, 1])
+
+        for fixed_var, fixed_val in {'a0': 1, 'a1': 1, 'b0':1, 'b1':1}.items():
+            bqm.fix_variable(fixed_var, fixed_val)
+        best = dimod.ExactSolver().sample(bqm).first
+        p = [best.sample['p0'], best.sample['p1'], best.sample['p2'],
+             best.sample['carry2,0']]
+        self.assertEqual(p, [1, 0, 0, 1])
 
 class TestInteger(unittest.TestCase):
     def test_exceptions(self):

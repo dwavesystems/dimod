@@ -31,6 +31,7 @@ Constraints
    combinations
    fulladder_gate
    halfadder_gate
+   multiplication_circuit
    or_gate
    xor_gate
 

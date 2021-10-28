@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``multiplication_circuit()``, a binary quadratic model generator for multiplication circuits.
