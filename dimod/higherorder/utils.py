@@ -117,7 +117,7 @@ def _remove_old(idx, term, pair):
         del idx[pair]
 
 
-def reduce_terms(poly):
+def reduce_terms(poly: BinaryPolynomial) -> Tuple[List[Tuple]], List[Tuple[Tuple[Variable, Variable], Variable]]:
     """ Reduce a Binary polynomial to a list of quadratic terms and constraints
     by introducing auxillary variables and creating costraints.
     
