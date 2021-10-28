@@ -1,6 +1,7 @@
 numpy==1.19.4
 cython==0.29.21
 dwave-preprocessing==0.3.0
+cytoolz==0.11.0
 
 reno==3.3.0  # for changelog
 
