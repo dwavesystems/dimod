@@ -28,7 +28,7 @@ from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 from dimod.generators import and_gate
 
-__all__ = ['make_quadratic', 'reduce_terms']
+__all__ = ['make_quadratic', 'reduce_binary_polynomial']
 
 
 def _spin_product(variables):
@@ -94,7 +94,7 @@ def _remove_old(idx, term, pair):
         del idx[pair]
 
 
-def reduce_terms(poly: BinaryPolynomial) -> Tuple[List[Tuple]], List[Tuple[Tuple[Variable, Variable], Variable]]:
+def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[List[Tuple]], List[Tuple[Tuple[Variable, Variable], Variable]]:
     """ Reduce a Binary polynomial to a list of quadratic terms and constraints
     by introducing auxillary variables and creating costraints.
     
@@ -215,7 +215,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         poly = BinaryPolynomial(poly, vartype=vartype)
 
     variables = set().union(*poly)
-    reduced_terms, constraints = reduce_terms(poly)
+    reduced_terms, constraints = reduce_binary_polynomial(poly)
 
     for (u, v), p in constraints:
 
