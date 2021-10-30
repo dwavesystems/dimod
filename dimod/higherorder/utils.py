@@ -26,6 +26,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
+from dimod.generators import and_gate
 
 __all__ = ['make_quadratic', 'reduce_terms']
 
@@ -57,30 +58,6 @@ def _spin_product(variables):
                                  (product, aux): 1.},
                                 2.,
                                 Vartype.SPIN)
-
-
-def _binary_product(variables):
-    """A BQM with a gap of 1 that represents the product of two binary variables.
-
-    Args:
-        variables (list):
-            multiplier, multiplicand, product
-
-    Returns:
-        :obj:`.BinaryQuadraticModel`
-
-    """
-    multiplier, multiplicand, product = variables
-
-    return BinaryQuadraticModel({multiplier: 0.0,
-                                 multiplicand: 0.0,
-                                 product: 3.0},
-                                {(multiplier, multiplicand): 1.0,
-                                 (multiplier, product): -2.0,
-                                 (multiplicand, product): -2.0},
-                                0.0,
-                                Vartype.BINARY)
-
 
 def _new_product(variables, u, v):
     # make a new product variable not in variables, then add it
@@ -244,7 +221,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
         # add a constraint enforcing the relationship between p == u*v
         if vartype is Vartype.BINARY:
-            constraint = _binary_product([u, v, p])
+            constraint = and_gate([u, v, p])
             bqm.info['reduction'][(u, v)] = {'product': p}
         elif vartype is Vartype.SPIN:
             aux = _new_aux(variables, u, v)  # need an aux in SPIN-space
