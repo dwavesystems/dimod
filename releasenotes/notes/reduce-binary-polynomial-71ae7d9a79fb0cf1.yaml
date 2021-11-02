@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Added `dimiod.higherorder.utils.reduce_binary_polynomial` that factors out a common basis for `dimiod.higherorder.utils.make_quadratic` and a future `dimiod.higherorder.utils.make_quadratic_cqm`. Given a `BinaryPolynomial` it return a list of reduced terms with auxillary variables and a list of constraints.
