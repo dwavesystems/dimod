@@ -53,6 +53,12 @@ class TestExactSolver(unittest.TestCase):
 
         self.assertEqual(response.record.sample.shape, (0, 0))
         self.assertIs(response.vartype, dimod.DISCRETE)
+        
+    def test_sample_CONSTRAINED_empty(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+        response = dimod.ExactCQMSolver().sample_dqm(cqm)
+
+        self.assertEqual(response.record.sample.shape, (0, 0))
 
     def test_sample_SPIN(self):
         bqm = dimod.BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0},
@@ -104,6 +110,24 @@ class TestExactSolver(unittest.TestCase):
         self.assertIs(response.vartype, dimod.DISCRETE)
 
         dimod.testing.assert_sampleset_energies_dqm(response, dqm)
+        
+    def test_sample_CONSTRAINED(self):
+        cqm = ConstrainedQuadraticModel()
+        x, y, z = Binary('x'), Binary('y'), Binary('z')
+        cqm.set_objective(x*y + 2*y*z)
+        cqm.add_constraint(x*y == 1)
+        
+        response = dimod.ExactCQMSolver().sample_cqm(cqm)
+        
+        # every possible combination should be present
+        self.assertEqual(len(response), 8)
+        self.assertEqual(response.record.sample.shape, (18, len(cqm.variables)))
+        
+        # only two samples should be feasible
+        feasible_responses = response.filter(lambda d: d.is_feasible)
+        self.assertEqual(len(feasible_responses), 2)
+        
+        dimod.testing.assert_sampleset_energies_cqm(response, cqm)
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}
@@ -168,6 +192,10 @@ class TestExactSolver(unittest.TestCase):
         dqm = dimod.DQM.from_numpy_vectors([0], [-1], ([], [], []), labels={'ab'})
         sampleset = dimod.ExactDQMSolver().sample_dqm(dqm)
         self.assertEqual(set(sampleset.variables), set(dqm.variables))
+        
+        cqm = dimod.CQM.from_dqm(dqm)
+        sampleset = dimod.ExactCQMSolver().sample_cqm(cqm)
+        self.assertEqual(set(sampleset.variables), set(cqm.variables))
 
     def test_kwargs(self):
         bqm = dimod.BinaryQuadraticModel({}, {}, 0.0, dimod.SPIN)
@@ -177,6 +205,10 @@ class TestExactSolver(unittest.TestCase):
         dqm = dimod.DiscreteQuadraticModel()
         with self.assertWarns(SamplerUnknownArgWarning):
             sampleset = dimod.ExactDQMSolver().sample_dqm(dqm, a=1, b="abc")
+      
+        cqm = dimod.ConstrainedQuadraticModel()
+        with self.assertWarns(SamplerUnknownArgWarning):
+            sampleset = dimod.ExactCQMSolver().sample_cqm(cqm, a=1, b="abc")
 
 class TestExactPolySolver(unittest.TestCase):
     def test_instantiation(self):

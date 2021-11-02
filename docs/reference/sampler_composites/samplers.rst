@@ -67,6 +67,29 @@ Methods
 
    ExactDQMSolver.sample_dqm
 
+Exact CQM Solver
+------------
+
+A simple CQM exact solver for testing and debugging code using your local CPU.
+
+Note:
+    This sampler is designed for use in testing. Because it calculates the
+    energy and constraint violations for every possible sample, it is very slow.
+
+
+Class
+~~~~~
+
+.. autoclass:: ExactCQMSolver
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ExactCQMSolver.sample_cqm
+
 Identity Sampler
 ----------------
 
