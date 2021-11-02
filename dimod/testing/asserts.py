@@ -279,7 +279,7 @@ def assert_sampleset_energies_cqm(sampleset, cqm, precision=7):
         assert isinstance(sample, abc.Mapping), "'for sample in sampleset', each sample should be a Mapping"
 
         for v, value in sample.items():
-            assert v in dqm.variables, 'sample contains a variable not in the given cqm'
+            assert v in cqm.variables, 'sample contains a variable not in the given cqm'
 
             for v in cqm.variables:
                 assert v in sample, "cqm contains a variable not in sample"

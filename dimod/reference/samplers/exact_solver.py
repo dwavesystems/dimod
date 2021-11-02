@@ -216,10 +216,9 @@ class ExactCQMSolver():
         >>> cqm = ConstrainedQuadraticModel()
         >>> x, y, z = Binary('x'), Binary('y'), Binary('z')
         >>> cqm.set_objective(x*y + 2*y*z)
-        >>> cqm.add_constraint(x*y == 1)
-    
+        >>> cqm.add_constraint(x*y == 1)      # doctest: +SKIP
         >>> sampleset = ExactCQMSolver().sample_cqm(cqm)
-        >>> print(sampleset)
+        >>> print(sampleset)      # doctest: +SKIP
           x y z energy num_oc. is_sat. is_fea.
         0 0 0 0    0.0       1 arra...   False
         1 0 1 0    0.0       1 arra...   False
@@ -245,6 +244,11 @@ class ExactCQMSolver():
         Args:
             cqm (:obj:`~dimod.ConstrainedQuadraticModel`):
                 Constrained quadratic model to be sampled from.
+            
+            rtol (float):
+                The relative tolerance for constraint violation, dependent on sample energy 
+            atol (float):
+                The absolute tolerance for constraint violations, always constant
 
         Returns:
             :obj:`~dimod.SampleSet`

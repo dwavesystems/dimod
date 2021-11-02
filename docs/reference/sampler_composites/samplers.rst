@@ -45,7 +45,7 @@ Methods
    ExactSolver.sample_qubo
 
 Exact DQM Solver
-------------
+----------------
 
 A simple DQM exact solver for testing and debugging code using your local CPU.
 
@@ -68,7 +68,7 @@ Methods
    ExactDQMSolver.sample_dqm
 
 Exact CQM Solver
-------------
+----------------
 
 A simple CQM exact solver for testing and debugging code using your local CPU.
 

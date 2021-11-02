@@ -56,7 +56,7 @@ class TestExactSolver(unittest.TestCase):
         
     def test_sample_CONSTRAINED_empty(self):
         cqm = dimod.ConstrainedQuadraticModel()
-        response = dimod.ExactCQMSolver().sample_dqm(cqm)
+        response = dimod.ExactCQMSolver().sample_cqm(cqm)
 
         self.assertEqual(response.record.sample.shape, (0, 0))
 
@@ -112,8 +112,8 @@ class TestExactSolver(unittest.TestCase):
         dimod.testing.assert_sampleset_energies_dqm(response, dqm)
         
     def test_sample_CONSTRAINED(self):
-        cqm = ConstrainedQuadraticModel()
-        x, y, z = Binary('x'), Binary('y'), Binary('z')
+        cqm = dimod.ConstrainedQuadraticModel()
+        x, y, z = dimod.Binary('x'), dimod.Binary('y'), dimod.Binary('z')
         cqm.set_objective(x*y + 2*y*z)
         cqm.add_constraint(x*y == 1)
         
@@ -121,7 +121,7 @@ class TestExactSolver(unittest.TestCase):
         
         # every possible combination should be present
         self.assertEqual(len(response), 8)
-        self.assertEqual(response.record.sample.shape, (18, len(cqm.variables)))
+        self.assertEqual(response.record.sample.shape, (8, len(cqm.variables)))
         
         # only two samples should be feasible
         feasible_responses = response.filter(lambda d: d.is_feasible)
