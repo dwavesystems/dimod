@@ -99,7 +99,7 @@ def _remove_old(idx, term, pair):
 
 def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
         List[Tuple[FrozenSet[Hashable], Number]],
-        List[Tuple[Tuple[Hashable, Hashable], Hashable]]
+        List[Tuple[FrozenSet[Hashable], Hashable]]
     ]:
     """ Reduce a Binary polynomial to a list of quadratic terms and constraints
     by introducing auxillary variables and creating costraints.
