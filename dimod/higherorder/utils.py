@@ -12,6 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from typing import Tuple, List, Hashable, FrozenSet
+from numbers import Number
+
 import itertools
 import warnings
 
@@ -94,7 +97,10 @@ def _remove_old(idx, term, pair):
         del idx[pair]
 
 
-def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[List[Tuple], List[Tuple[Tuple[Variable, Variable], Variable]]]:
+def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
+        List[Tuple[FrozenSet[Hashable], Number]],
+        List[Tuple[Tuple[Hashable, Hashable], Hashable]]
+    ]:
     """ Reduce a Binary polynomial to a list of quadratic terms and constraints
     by introducing auxillary variables and creating costraints.
     
@@ -103,6 +109,16 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[List[Tuple], List[
 
     Returns:
         ([(term, bias)*], [((orig_var1, orig_var2), aux_var)*])
+
+    Example:
+        >>> poly = BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY)
+        >>> reduce_binary_polynomial(poly)
+        ([(frozenset({0}), -1),
+          (frozenset({1}), 1),
+          (frozenset({2}), 1.5),
+          (frozenset({0, 1}), -1),
+          (frozenset({'0*1', 2}), -2)],
+         [(frozenset({0, 1}), '0*1')])
     """
 
     variables = poly.variables
