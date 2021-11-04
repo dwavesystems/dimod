@@ -29,7 +29,6 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
-from dimod.generators import and_gate
 
 __all__ = ['make_quadratic', 'reduce_binary_polynomial']
 
@@ -210,6 +209,8 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
         >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
     """
+    from dimod.generators import and_gate
+    
     if vartype is None:
         if bqm is None:
             raise ValueError("one of vartype or bqm must be provided")
@@ -237,7 +238,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
         # add a constraint enforcing the relationship between p == u*v
         if vartype is Vartype.BINARY:
-            constraint = and_gate([u, v, p])
+            constraint = and_gate(u, v, p)
             bqm.info['reduction'][(u, v)] = {'product': p}
         elif vartype is Vartype.SPIN:
             aux = _new_aux(variables, u, v)  # need an aux in SPIN-space
