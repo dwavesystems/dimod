@@ -175,6 +175,96 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
     return reduced_terms, constraints
 
 
+def _init_quadratic_model(qm, vartype, qm_class):
+    if vartype is None:
+        if qm is None:
+            raise ValueError("one of vartype or qm must be provided")
+        else:
+            vartype = qm.vartype
+    else:
+        vartype = as_vartype(vartype)  # handle other vartype inputs
+        if qm is None:
+            qm = qm_class.empty(vartype)
+        else:
+            qm = qm.change_vartype(vartype, inplace=False)
+
+    # for backwards compatibility, add an info field
+    if not hasattr(qm, 'info'):
+        qm.info = {}
+    qm.info['reduction'] = {}
+    return qm, vartype
+
+def _init_binary_polynomial(poly, vartype):
+    if not isinstance(poly, BinaryPolynomial) or poly.vartype != vartype:
+        poly = BinaryPolynomial(poly, vartype=vartype)
+    return poly
+
+def _init_objective(bqm, reduced_terms):
+    for term, bias in reduced_terms:
+        if len(term) == 2:
+            bqm.add_interaction(*term , bias)
+        elif len(term) == 1:
+            bqm.add_variable(*term, bias)
+        elif len(term) == 0:
+            bqm.offset += bias
+        else:
+            # still has higher order terms, this shouldn't happen
+            msg = ('Internal error: not all higher-order terms were reduced. '
+                   'Please file a bug report.')
+            raise RuntimeError(msg)
+
+def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
+    """Create a binary quadratic model from a higher order polynomial.
+
+    Args:
+        poly (dict):
+            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
+            variables and `bias` the associated bias.
+
+        strength (float):
+            The energy penalty for violating the prodcut constraint.
+            Insufficient strength can result in the binary quadratic model not
+            having the same minimizations as the polynomial.
+
+        vartype (:class:`.Vartype`/str/set, optional):
+            Variable type for the binary quadratic model. Accepted input values:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            If `cqm` is provided, `vartype` is not required.
+
+        cqm (:class:`.BinaryQuadraticModel`, optional):
+            The terms of the reduced polynomial are added to this binary quadratic model.
+            If not provided, a new binary quadratic model is created.
+
+    Returns:
+        :class:`.BinaryQuadraticModel`
+
+    Examples:
+
+        >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
+        >>> cqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
+
+    """
+    cqm, vartype = _init_quadratic_model(cqm, vartype, dimod.ConstrainedQuadraticModel)
+    poly = _init_binary_polynomial(poly, vartype)
+    variables = set().union(*poly)
+    reduced_terms, constraints = reduce_binary_polynomial(poly)
+
+    def var(x):
+        return dimod.BinaryQuadraticModel({x: 1.0}, {}, 0.0, vartype)
+
+    for (u, v), p in constraints:
+        cqm.add_constraint( var(u)*var(v) - var(p)  == 0, label = f'var__{u}*var_{v} == var_{p}')
+
+    obj = BinaryQuadraticModel(vartype=vartype)
+    _init_objective(obj, reduced_terms)
+    cqm.set_objective(obj)
+
+    return cqm
+
+
 def make_quadratic(poly, strength, vartype=None, bqm=None):
     """Create a binary quadratic model from a higher order polynomial.
 
@@ -210,27 +300,9 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     """
     from dimod.generators import and_gate
-    
-    if vartype is None:
-        if bqm is None:
-            raise ValueError("one of vartype or bqm must be provided")
-        else:
-            vartype = bqm.vartype
-    else:
-        vartype = as_vartype(vartype)  # handle other vartype inputs
-        if bqm is None:
-            bqm = BinaryQuadraticModel.empty(vartype)
-        else:
-            bqm = bqm.change_vartype(vartype, inplace=False)
 
-    # for backwards compatibility, add an info field
-    if not hasattr(bqm, 'info'):
-        bqm.info = {}
-    bqm.info['reduction'] = {}
-
-    if not isinstance(poly, BinaryPolynomial) or poly.vartype != vartype:
-        poly = BinaryPolynomial(poly, vartype=vartype)
-
+    bqm, vartype = _init_quadratic_model(bqm, vartype, BinaryQuadraticModel)
+    poly = _init_binary_polynomial(poly, vartype)
     variables = set().union(*poly)
     reduced_terms, constraints = reduce_binary_polynomial(poly)
 
@@ -255,18 +327,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
             bqm.add_interaction(*uv, bias)
         bqm.offset += constraint.offset
 
-    for term, bias in reduced_terms:
-        if len(term) == 2:
-            bqm.add_interaction(*term , bias)
-        elif len(term) == 1:
-            bqm.add_variable(*term, bias)
-        elif len(term) == 0:
-            bqm.offset += bias
-        else:
-            # still has higher order terms, this shouldn't happen
-            msg = ('Internal error: not all higher-order terms were reduced. '
-                   'Please file a bug report.')
-            raise RuntimeError(msg)
+    _init_objective(bqm, reduced_terms)
 
     return bqm
 
