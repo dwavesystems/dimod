@@ -214,18 +214,13 @@ def _init_objective(bqm, reduced_terms):
                    'Please file a bug report.')
             raise RuntimeError(msg)
 
-def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
-    """Create a binary quadratic model from a higher order polynomial.
+def make_quadratic_cqm(poly, vartype=None, cqm=None):
+    """Create a constrained quadratic model from a higher order polynomial.
 
     Args:
         poly (dict):
             Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
             variables and `bias` the associated bias.
-
-        strength (float):
-            The energy penalty for violating the prodcut constraint.
-            Insufficient strength can result in the binary quadratic model not
-            having the same minimizations as the polynomial.
 
         vartype (:class:`.Vartype`/str/set, optional):
             Variable type for the binary quadratic model. Accepted input values:
@@ -233,19 +228,19 @@ def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-            If `cqm` is provided, `vartype` is not required.
+            If `poly is a BinaryPolynomial , `vartype` is not required.
 
         cqm (:class:`.BinaryQuadraticModel`, optional):
-            The terms of the reduced polynomial are added to this binary quadratic model.
-            If not provided, a new binary quadratic model is created.
+            The terms of the reduced polynomial are added to this constrained quadratic model.
+            If not provided, a new constrained quadratic model is created.
 
     Returns:
-        :class:`.BinaryQuadraticModel`
+        :class:`.ConstrainedQuadraticModel`
 
     Examples:
 
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
-        >>> cqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
+        >>> cqm = dimod.make_quadratic_cqm(poly, dimod.SPIN)
 
     """
     if not (vartype or isinstance(poly, BinaryPolynomial)):

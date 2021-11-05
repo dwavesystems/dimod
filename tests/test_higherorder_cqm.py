@@ -43,13 +43,13 @@ class TestMakeQuadratic(unittest.TestCase):
                                 (+1, +1, +1)})
 
     def test_empty(self):
-        cqm = make_quadratic_cqm({}, 1.0, dimod.SPIN)
+        cqm = make_quadratic_cqm({}, dimod.SPIN)
         self.assertTrue(cqm.is_almost_equal(dimod.ConstrainedQuadraticModel()))
 
     def test_no_higher_order(self):
         poly = {(0, 1): -1, (1, 2): 1}
 
-        cqm = make_quadratic_cqm(poly, 1.0, dimod.SPIN)
+        cqm = make_quadratic_cqm(poly, dimod.SPIN)
 
         variables = set().union(*poly)
         aux_variables = tuple(set(cqm.variables) - variables)
@@ -71,7 +71,7 @@ class TestMakeQuadratic(unittest.TestCase):
     def test_simple(self):
         poly = {(0, 1, 2): -1}
 
-        cqm = make_quadratic_cqm(poly, 5.0, dimod.SPIN)
+        cqm = make_quadratic_cqm(poly, dimod.SPIN)
 
         variables = set().union(*poly)
         aux_variables = tuple(set(cqm.variables) - variables)
@@ -97,7 +97,7 @@ class TestMakeQuadratic(unittest.TestCase):
                 (0,): .4,
                 (): .5}
 
-        cqm = make_quadratic_cqm(poly, 5.0, dimod.SPIN, cqm=dimod.ConstrainedQuadraticModel())
+        cqm = make_quadratic_cqm(poly, dimod.SPIN, cqm=dimod.ConstrainedQuadraticModel())
 
         variables = set().union(*poly)
         aux_variables = tuple(set(cqm.variables) - variables)
@@ -133,7 +133,7 @@ class TestMakeQuadratic(unittest.TestCase):
              (2, 1, 1, 2): 4.97017,
              }
 
-        cqm = make_quadratic_cqm(H, 1, 'BINARY')
+        cqm = make_quadratic_cqm(H, 'BINARY')
 
         # should be no aux variables
         self.assertEqual(set(cqm.variables), {0, 1, 2})
@@ -150,7 +150,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         cqm0 = dimod.ConstrainedQuadraticModel()
         cqm0.set_objective(obj)
-        cqm = make_quadratic_cqm(J, 5.0, dimod.SPIN, cqm=cqm0)
+        cqm = make_quadratic_cqm(J, dimod.SPIN, cqm=cqm0)
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(cqm.variables) - variables)
@@ -175,10 +175,10 @@ class TestMakeQuadratic(unittest.TestCase):
     def test_vartype(self):
         poly = {(0, 1, 2): 10, (0, 1): 5}  # make sure (0, 1) is most common
 
-        self.assertTrue(dimod.make_quadratic_cqm(poly, 1.0, 'SPIN')
-                        .is_almost_equal(dimod.make_quadratic_cqm(poly, 1.0, dimod.SPIN)))
-        self.assertTrue(dimod.make_quadratic_cqm(poly, 1.0, 'BINARY')
-                         .is_almost_equal(dimod.make_quadratic_cqm(poly, 1.0, dimod.BINARY)))
+        self.assertTrue(dimod.make_quadratic_cqm(poly, 'SPIN')
+                        .is_almost_equal(dimod.make_quadratic_cqm(poly, dimod.SPIN)))
+        self.assertTrue(dimod.make_quadratic_cqm(poly, 'BINARY')
+                         .is_almost_equal(dimod.make_quadratic_cqm(poly,  dimod.BINARY)))
 
     def test_quad_to_linear(self):
         J = {(0, 1): -1, (0, 1, 2): 1, (0, 1, 3): 1}
@@ -191,7 +191,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         cqm0 = dimod.ConstrainedQuadraticModel()
         cqm0.set_objective(dimod.BinaryQuadraticModel.from_ising(h, {}, off))
-        cqm = make_quadratic_cqm(J, 10.0, dimod.SPIN, cqm=cqm0)
+        cqm = make_quadratic_cqm(J, dimod.SPIN, cqm=cqm0)
 
         variables = set(h).union(*J)
         aux_variables = tuple(set(cqm.variables) - variables)
@@ -216,7 +216,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         poly = {(0,): .5, tuple(): 1.3}
 
-        cqm = dimod.make_quadratic_cqm(poly, 10.0, dimod.BINARY)
+        cqm = dimod.make_quadratic_cqm(poly, dimod.BINARY)
         obj = dimod.BinaryQuadraticModel({0: .5}, {}, 1.3, dimod.BINARY)
 
         self.assertTrue(cqm.is_almost_equal(dimod.ConstrainedQuadraticModel.from_bqm(obj)))
@@ -225,7 +225,7 @@ class TestMakeQuadratic(unittest.TestCase):
 
         HUBO = {(0, 1, 2): .5, (0, 1): 1.3, (2, 4, 1): -1, (3, 2): -1}
 
-        cqm = make_quadratic_cqm(HUBO, 1000.0, dimod.BINARY)
+        cqm = make_quadratic_cqm(HUBO, dimod.BINARY)
 
         variables = set().union(*HUBO)
         aux_variables = tuple(set(cqm.variables) - variables)
