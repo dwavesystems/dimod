@@ -250,7 +250,7 @@ def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
     """
     if not (vartype or isinstance(poly, BinaryPolynomial)):
         raise ValueError("can not infer vartype")
-    cqm = ConstrainedQuadraticModel()
+    cqm = cqm or ConstrainedQuadraticModel()
     vartype = vartype or poly.vartype
     poly = _init_binary_polynomial(poly, vartype)
     variables = set().union(*poly)
@@ -264,7 +264,7 @@ def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
 
     obj = BinaryQuadraticModel(vartype=vartype)
     _init_objective(obj, reduced_terms)
-    cqm.set_objective(obj)
+    cqm.set_objective(obj + cqm.objective)
 
     return cqm
 
