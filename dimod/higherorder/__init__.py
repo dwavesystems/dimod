@@ -13,4 +13,4 @@
 #    limitations under the License.
 
 from dimod.higherorder.polynomial import BinaryPolynomial
-from dimod.higherorder.utils import make_quadratic, poly_energy, poly_energies, reduce_binary_polynomial
+from dimod.higherorder.utils import make_quadratic, make_quadratic_cqm, poly_energy, poly_energies, reduce_binary_polynomial

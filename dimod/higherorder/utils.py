@@ -26,11 +26,12 @@ from functools import partial
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.constrained import ConstrainedQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
 
-__all__ = ['make_quadratic', 'reduce_binary_polynomial']
+__all__ = ['make_quadratic', 'make_quadratic_cqm', 'reduce_binary_polynomial']
 
 
 def _spin_product(variables):
@@ -175,7 +176,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
     return reduced_terms, constraints
 
 
-def _init_quadratic_model(qm, vartype, qm_class):
+def _init_quadratic_model(qm, vartype, qm_factory):
     if vartype is None:
         if qm is None:
             raise ValueError("one of vartype or qm must be provided")
@@ -184,7 +185,7 @@ def _init_quadratic_model(qm, vartype, qm_class):
     else:
         vartype = as_vartype(vartype)  # handle other vartype inputs
         if qm is None:
-            qm = qm_class.empty(vartype)
+            qm = qm_factory(vartype)
         else:
             qm = qm.change_vartype(vartype, inplace=False)
 
@@ -195,7 +196,7 @@ def _init_quadratic_model(qm, vartype, qm_class):
     return qm, vartype
 
 def _init_binary_polynomial(poly, vartype):
-    if not isinstance(poly, BinaryPolynomial) or poly.vartype != vartype:
+    if not (isinstance(poly, BinaryPolynomial) and (vartype in (poly.vartype, None))):
         poly = BinaryPolynomial(poly, vartype=vartype)
     return poly
 
@@ -247,13 +248,16 @@ def make_quadratic_cqm(poly, strength, vartype=None, cqm=None):
         >>> cqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
 
     """
-    cqm, vartype = _init_quadratic_model(cqm, vartype, dimod.ConstrainedQuadraticModel)
+    if not (vartype or isinstance(poly, BinaryPolynomial)):
+        raise ValueError("can not infer vartype")
+    cqm = ConstrainedQuadraticModel()
+    vartype = vartype or poly.vartype
     poly = _init_binary_polynomial(poly, vartype)
     variables = set().union(*poly)
     reduced_terms, constraints = reduce_binary_polynomial(poly)
 
     def var(x):
-        return dimod.BinaryQuadraticModel({x: 1.0}, {}, 0.0, vartype)
+        return BinaryQuadraticModel({x: 1.0}, {}, 0.0, vartype)
 
     for (u, v), p in constraints:
         cqm.add_constraint( var(u)*var(v) - var(p)  == 0, label = f'var__{u}*var_{v} == var_{p}')
