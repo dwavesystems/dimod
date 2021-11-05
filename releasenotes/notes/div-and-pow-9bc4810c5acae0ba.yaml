@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Allow ``BinaryQuadraticModel`` and ``QuadraticModel`` to be divided by a
+    scalar or squared.
+    See `#864 <https://github.com/dwavesystems/dimod/issues/864>`_,
+    `#984 <https://github.com/dwavesystems/dimod/issues/984>`_.
+fixes:
+  - |
+    ``QuadraticModel`` can now be multiplied by a number in place.

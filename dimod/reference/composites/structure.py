@@ -24,6 +24,9 @@ from dimod.decorators import bqm_structured
 class StructureComposite(Sampler, Composite, Structured):
     """Creates a structured composed sampler from an unstructured sampler.
 
+    Useful for simulation; for example testing a QPU's working graph
+    with the :class:`~neal.sampler.SimulatedAnnealingSampler` class.
+
     Args:
         Sampler (:obj:`~dimod.Sampler`):
             Unstructured sampler.
@@ -34,7 +37,7 @@ class StructureComposite(Sampler, Composite, Structured):
             edge/interaction is a 2-tuple.
 
     Examples:
-        This example creates a composed sampler from the unstructure dimod ExactSolver sampler.
+        This example creates a composed sampler from the unstructured dimod ExactSolver sampler.
         The target structure is a square graph.
 
         >>> base_sampler = dimod.ExactSolver()

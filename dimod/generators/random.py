@@ -14,28 +14,37 @@
 
 import collections.abc as abc
 
+from typing import Callable, Optional, Sequence, Union
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
+from dimod.typing import Bias, GraphLike, Variable, VartypeLike
+from dimod.vartypes import Vartype
 
-__all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint']
+__all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint', 'doped']
 
 
-def gnm_random_bqm(variables, num_interactions, vartype, *,
-                   cls=BinaryQuadraticModel,
-                   random_state=None,
-                   bias_generator=None):
-    """Generate a random BQM with a fixed number of variables and interactions.
+def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
+                   num_interactions: int,
+                   vartype: VartypeLike,
+                   *,
+                   cls: type = BinaryQuadraticModel,
+                   random_state: Optional[Union[np.random.RandomState, int]] = None,
+                   bias_generator: Optional[Callable[[int], Sequence[Bias]]] = None,
+                   ) -> BinaryQuadraticModel:
+    """Generate a random binary quadratic model with a fixed number of variables
+    and interactions.
 
     Args:
-        variables (int/sequence):
+        variables:
             The variables. If `variables` is an int, the variables are labelled
             as `[0, variables)`.
 
-        num_interactions (int): The number of interactions.
+        num_interactions: The number of interactions.
 
-        vartype (:class:`.Vartype`/str/set):
+        vartype:
             Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
@@ -45,12 +54,12 @@ def gnm_random_bqm(variables, num_interactions, vartype, *,
             Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        random_state (:class:`numpy.random.RandomState`/int, optional):
+        random_state:
             A random seed or a random state generator. Used for generating
             the structure of the BQM and, if `bias_generator` is not given, for
             the bias generation.
 
-        bias_generator (callable, optional):
+        bias_generator:
             Bias generating function.
             Should accept a single argument `n` and return an
             :class:`~numpy.ndarray` of biases of length `n`.
@@ -116,34 +125,36 @@ def gnm_random_bqm(variables, num_interactions, vartype, *,
     return bqm
 
 
-def gnp_random_bqm(n, p, vartype,
-                   cls=BinaryQuadraticModel,
-                   random_state=None, bias_generator=None):
+def gnp_random_bqm(n: Union[int, Sequence[Variable]],
+                   p: float,
+                   vartype: VartypeLike,
+                   cls: type = BinaryQuadraticModel,
+                   random_state: Optional[Union[np.random.RandomState, int]] = None,
+                   bias_generator: Optional[Callable[[int], Sequence[Bias]]] = None,
+                   ) -> BinaryQuadraticModel:
     """Generate a BQM structured as an Erdős-Rényi graph.
 
     Args:
-        n (int/sequence):
-            The variables. If `n` is an int, the variables are labelled as
-            `[0, n)`.
+        n: The variables. If `n` is an int, the variables are labelled as `[0, n)`.
 
-        p (float): The probability for interaction creation.
+        p: The probability for interaction creation.
 
-        vartype (:class:`.Vartype`/str/set):
+        vartype:
             Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        cls (type, optional):
+        cls:
             Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        random_state (:class:`numpy.random.RandomState`/int, optional):
+        random_state:
             A random seed or a random state generator. Used for generating
             the structure of the BQM and, if `bias_generator` is not given, for
             the bias generation.
 
-        bias_generator (callable, optional):
+        bias_generator:
             Bias generating function.
             Should accept a single argument `n` and return an
             :class:`~numpy.ndarray` of biases of length `n`.
@@ -201,39 +212,38 @@ def gnp_random_bqm(n, p, vartype,
 
 
 @graph_argument('graph')
-def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
-            seed=None):
+def uniform(graph: GraphLike, vartype: VartypeLike,
+            low: float = 0, high: float = 1,
+            cls: type = BinaryQuadraticModel,
+            seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate a binary quadratic model with random biases and offset.
 
     Biases and offset are drawn from a uniform distribution range (low, high).
 
     Args:
-        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+        graph:
             The graph to build the binary quadratic model (BQM) on. Either an
             integer n, interpreted as a complete graph of size n, a nodes/edges
             pair, a list of edges or a NetworkX graph.
 
-        vartype (:class:`.Vartype`/str/set):
+        vartype:
             Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        low (float, optional, default=0.0):
-            The low end of the range for the random biases.
+        low: The low end of the range for the random biases.
 
-        high (float, optional, default=1.0):
-            The high end of the range for the random biases.
+        high: The high end of the range for the random biases.
 
-        cls (type, optional):
+        cls:
             Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`
+        A binary quadratic model.
 
     """
     if seed is None:
@@ -258,39 +268,37 @@ def uniform(graph, vartype, low=0.0, high=1.0, cls=BinaryQuadraticModel,
 
 
 @graph_argument('graph')
-def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
-            seed=None):
+def randint(graph: GraphLike, vartype: VartypeLike,
+            low: int = 0, high: int = 1,
+            cls: type = BinaryQuadraticModel,
+            seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate a binary quadratic model with random biases and offset.
 
     Biases and offset are integer-valued in range [low, high] inclusive.
 
     Args:
-        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+        graph:
             The graph to build the binary quadratic model (BQM) on. Either an
             integer n, interpreted as a complete graph of size n, a nodes/edges
             pair, a list of edges or a NetworkX graph.
 
-        vartype (:class:`.Vartype`/str/set):
+        vartype:
             Variable type for the BQM. Accepted input values:
 
             * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
             * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        low (float, optional, default=0):
-            The low end of the range for the random biases.
+        low : The low end of the range for the random biases.
 
-        high (float, optional, default=1):
-            The high end of the range for the random biases.
+        high: The high end of the range for the random biases.
 
-        cls (type, optional):
-            Binary quadratic model class to build from. Default is
+        cls: Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`
+        A binary quadratic model.
 
     """
     if seed is None:
@@ -316,33 +324,32 @@ def randint(graph, vartype, low=0, high=1, cls=BinaryQuadraticModel,
 
 
 @graph_argument('graph')
-def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
+def ran_r(r: int, graph: GraphLike,
+          cls: type = BinaryQuadraticModel,
+          seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate an Ising model for a RANr problem.
 
     In RANr problems all linear biases are zero and quadratic values are uniformly
     selected integers between -r to r, excluding zero. This class of problems is relevant
     for binary quadratic models (BQM) with spin variables (Ising models).
 
-    This generator of RANr problems follows the definition in [Kin2015]_\ .
+    This generator of RANr problems follows the definition in [Kin2015]_.
 
     Args:
-        r (int):
-            Order of the RANr problem.
+        r: Order of the RANr problem.
 
-        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+        graph:
             The graph to build the bqm on. Either an integer n,
             interpreted as a complete graph of size n, a nodes/edges pair, a
             list of edges or a NetworkX graph.
 
-        cls (type, optional):
-            Binary quadratic model class to build from. Default is
+        cls: Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`.
+        A binary quadratic model.
 
     Examples:
 
@@ -389,7 +396,10 @@ def ran_r(r, graph, cls=BinaryQuadraticModel, seed=None):
 
 
 @graph_argument('graph')
-def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
+def doped(p: float, graph: GraphLike,
+          cls: type = BinaryQuadraticModel,
+          seed: Optional[int] = None,
+          fm: bool = True):
     """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem.
 
     In a doped FM problem, `p`, the doping parameter, determines the probability of
@@ -397,26 +407,22 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
     AFM problem, the opposite is true.
 
     Args:
-        p (float):
-            Doping parameter [0,1] determines the probability of couplers flipped.
+        p: Doping parameter [0,1] determines the probability of couplers flipped.
 
-        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+        graph:
             The graph to build the bqm on. Either an integer n,
             interpreted as a complete graph of size n, a nodes/edges pair, a
             list of edges or a NetworkX graph.
 
-        cls (type, optional):
-            Binary quadratic model class to build from. Default is
+        cls: Binary quadratic model class to build from. Default is
             :class:`.BinaryQuadraticModel`.
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
-        fm (bool):
-            If True, the default undoped graph is FM. If False, it is AFM.
+        fm: If True, the default undoped graph is FM. If False, it is AFM.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`
+        A binary quadratic model.
 
     """
 
@@ -424,7 +430,7 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
         seed = np.random.randint(2**32, dtype=np.uint32)
     rnd = np.random.RandomState(seed)
 
-    if p>1 or p<0:
+    if p > 1 or p < 0:
         raise ValueError('Doping must be in the range [0,1]')
 
     variables, edges = graph
@@ -432,13 +438,13 @@ def doped(p, graph, cls=BinaryQuadraticModel, seed=None, fm=True):
     if not fm:
         p = 1 - p
 
-    bqm = cls({},{},0, 'SPIN')
+    bqm = cls(Vartype.SPIN)
 
     for u, v in edges:
         bqm.set_linear(u, 0)
         bqm.set_linear(v, 0)
 
-        J = rnd.choice([1,-1], p=[p, 1 - p])
+        J = rnd.choice([1, -1], p=[p, 1 - p])
         bqm.add_interaction(u, v, J)
 
     return bqm

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``SampleSet.filter()`` method that returns a sample set with data rows
+    filtered by a given predicate.

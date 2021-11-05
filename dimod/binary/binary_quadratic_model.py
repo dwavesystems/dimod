@@ -39,12 +39,13 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
+from dimod.core.bqm import BQM as BQMabc
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
-from dimod.typing import Bias, Variable
+from dimod.typing import Bias, Variable, VartypeLike
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -79,6 +80,58 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     This class encodes Ising and quadratic unconstrained binary optimization
     (QUBO) models used by samplers such as the D-Wave system.
+
+    BQMs can be created in several ways:
+
+        ``BinaryQuadraticModel(vartype)``
+            Create a BQM with no variables or interactions.
+            ``vartype``  must be one of:
+
+            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+        ``BinaryQuadraticModel(bqm)``
+            Create a BQM from another BQM. The resulting BQM will have the
+            same variables, linear biases, quadratic biases and offset as
+            ``bqm``.
+
+        ``BinaryQuadraticModel(bqm, vartype)``
+            Create a BQM from another BQM, changing it to the appropriate
+            ``vartype`` if necessary.
+
+        ``BinaryQuadraticModel(n, vartype)``
+            Create a BQM with ``n`` variables, indexed linearly from zero,
+            setting all biases to zero.
+
+        ``BinaryQuadraticModel(quadratic, vartype)``
+            Create a BQM from quadratic biases given as a square array_like_
+            or a dictionary of the form ``{(u, v): b, ...}``. Note that when
+            formed with SPIN-variables, biases on the diagonal are added to the
+            offset.
+
+        ``BinaryQuadraticModel(linear, quadratic, vartype)``
+            Create a BQM from linear and quadratic biases, where ``linear`` is a
+            one-dimensional array_like_ or a dictionary of the form
+            ``{v: b, ...}``.
+
+        ``BinaryQuadraticModel(linear, quadratic, offset, vartype)``
+            Create a BQM from linear and quadratic biases and an offset.
+            ``offset`` must be a number.
+
+    Args:
+        *args: See above
+
+        offset: The offset (see above) may be supplied as a keyword argument.
+
+        vartype: The variable type (see above) may be supplied as a keyword
+            argument.
+
+        dtype: The data type.
+            :class:`numpy.float32` and :class:`numpy.float64` are supported.
+            Defaults to :class:`numpy.float64`.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
     """
 
     _DATA_CLASSES = {
@@ -90,7 +143,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     DEFAULT_DTYPE = np.float64
     """The default dtype used to construct the class."""
 
-    def __init__(self, *args, vartype=None, dtype=None):
+    def __init__(self, *args,
+                 offset: Optional[Bias] = None,
+                 vartype: Optional[VartypeLike] = None,
+                 dtype: Optional[DTypeLike] = None):
 
         if vartype is not None:
             args = [*args, vartype]
@@ -103,6 +159,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         if len(args) == 1:
             # BQM(bqm) or BQM(vartype)
             if hasattr(args[0], 'vartype'):
+                # bqm case
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[0].vartype, dtype=dtype)
             else:
                 self._init_empty(vartype=args[0], dtype=dtype)
@@ -112,6 +172,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 self._init_empty(vartype=args[1], dtype=dtype)
                 self.resize(args[0])
             elif hasattr(args[0], 'vartype'):
+                if offset is not None:
+                    # see note for (linear, quadratic, offset, vartype) below
+                    raise TypeError("cannot provide 'offset' when input is a binary quadratic model")
                 self._init_bqm(args[0], vartype=args[1], dtype=dtype)
             else:
                 self._init_components([], args[0], 0.0, args[1], dtype=dtype)
@@ -120,10 +183,21 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self._init_components(args[0], args[1], 0.0, args[2], dtype=dtype)
         elif len(args) == 4:
             # BQM(linear, quadratic, offset, vartype)
+
+            if offset is not None:
+                # we don't strictly need to fail in this case, we could instead
+                # add it, but I think this is closer to the normal python behavior
+                # of failing if an argument is provided twice
+                raise TypeError("BinaryQuadraticModel() got multiple values for 'offset'")
+
             self._init_components(*args, dtype=dtype)
         else:
             msg = "__init__() takes 4 positional arguments but {} were given."
             raise TypeError(msg.format(len(args)))
+
+        # we already checked the one case that doesn't support offset
+        if offset is not None:
+            self.offset += offset
 
     def _init_bqm(self, bqm, vartype, dtype):
         if dtype is None:
@@ -322,6 +396,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def __pos__(self: 'BinaryQuadraticModel') -> 'BinaryQuadraticModel':
         return self
 
+    def __pow__(self, other: int) -> 'BinaryQuadraticModel':
+        if isinstance(other, int):
+            if other != 2:
+                raise ValueError("the only supported power for binary quadratic models is 2")
+            if not self.is_linear():
+                raise ValueError("only linear models can be squared")
+            return self * self
+        return NotImplemented
+
     def __sub__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
@@ -364,6 +447,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             # promote to QM
             return other - QuadraticModel.from_bqm(self)
         return NotImplemented
+
+    def __truediv__(self, other: Bias) -> 'BQM':
+        return self * (1 / other)
+
+    def __itruediv__(self, other: Bias) -> 'BQM':
+        self *= (1 / other)
+        return self
 
     def __eq__(self, other):
         if isinstance(other, Number):
@@ -664,7 +754,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         if isinstance(linear, abc.Mapping):
             iterator = linear.items()
-        elif isinstance(linear, abc.Iterator):
+        elif isinstance(linear, abc.Iterable):
             iterator = linear
         else:
             raise TypeError(
@@ -679,6 +769,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             linear:
                 A one-dimensional `array_like`_ of linear biases.
+
+    .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
+
         """
         ldata = np.asarray(linear)
 
@@ -1078,7 +1171,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @classmethod
     def from_ising(cls, h: Union[Mapping, Sequence],
                    J: Mapping,
-                   offset: Number = 0):
+                   offset: float = 0):
         """Create a binary quadratic model from an Ising problem.
 
         Args:
@@ -1169,7 +1262,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return obj
 
     @classmethod
-    def from_qubo(cls, Q: Mapping, offset: Number = 0):
+    def from_qubo(cls, Q: Mapping, offset: float = 0):
         """Create a binary quadratic model from a QUBO problem.
 
         Args:
@@ -1193,7 +1286,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
-    def is_almost_equal(self, other: Union['BinaryQuadraticModel', Bias], places=7) -> bool:
+    def is_almost_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias],
+                        places: int = 7) -> bool:
         """Test if the given binary quadratic model's biases are almost equal.
 
         Test whether each bias in the binary quadratic model is approximately
@@ -1208,7 +1302,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return not round(a - b, places)
 
         try:
-            return (self.vartype == other.vartype
+            if isinstance(other, QuadraticModel):
+                vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
+            else:
+                vartype_eq = self.vartype == other.vartype
+
+            return (vartype_eq
                     and self.shape == other.shape
                     and eq(self.offset, other.offset)
                     and all(eq(self.get_linear(v), other.get_linear(v))
@@ -1220,12 +1319,18 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             # it's not a BQM or variables/interactions don't match
             return False
 
-    def is_equal(self, other):
+    def is_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias]) -> bool:
+        """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
-            return (self.vartype == other.vartype
+            if isinstance(other, QuadraticModel):
+                vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
+            else:
+                vartype_eq = self.vartype == other.vartype
+
+            return (vartype_eq
                     and self.shape == other.shape  # redundant, fast to check
                     and self.offset == other.offset
                     and self.linear == other.linear
@@ -1633,7 +1738,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             the variables array ``VARIABLES_LENGTH``.
 
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
-            constructed by `json.dumps(list(bqm.variables)).
+            constructed by `json.dumps(list(bqm.variables))`.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -2080,3 +2185,7 @@ def quicksum(iterable: Iterable[Union[BinaryQuadraticModel, QuadraticModel, Bias
 
 # register fileview loader
 load.register(BQM_MAGIC_PREFIX, BinaryQuadraticModel.from_file)
+
+# register with the old (deprecated) abc so that old instance checks will
+# continue to work
+BQMabc.register(BinaryQuadraticModel)

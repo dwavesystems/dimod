@@ -61,6 +61,7 @@ Methods
    ~QuadraticModel.from_file
    ~QuadraticModel.get_linear
    ~QuadraticModel.get_quadratic
+   ~QuadraticModel.is_almost_equal
    ~QuadraticModel.is_equal
    ~QuadraticModel.is_linear
    ~QuadraticModel.iter_neighborhood
@@ -148,6 +149,8 @@ Methods
    ~BinaryQuadraticModel.from_ising
    ~BinaryQuadraticModel.from_numpy_vectors
    ~BinaryQuadraticModel.from_qubo
+   ~BinaryQuadraticModel.is_almost_equal
+   ~BinaryQuadraticModel.is_equal
    ~BinaryQuadraticModel.is_linear
    ~BinaryQuadraticModel.iter_neighborhood
    ~BinaryQuadraticModel.iter_quadratic
@@ -185,28 +188,6 @@ Generic constructor:
    :toctree: generated/
 
    as_bqm
-
-Generating BQMs:
-
-.. currentmodule:: dimod.generators
-
-.. autosummary::
-   :toctree: generated/
-
-   and_gate
-   binary_encoding
-   chimera_anticluster
-   combinations
-   frustrated_loop
-   fulladder_gate
-   gnm_random_bqm
-   gnp_random_bqm
-   halfadder_gate
-   or_gate
-   randint
-   ran_r
-   uniform
-   xor_gate
 
 Adding models symbolically:
 

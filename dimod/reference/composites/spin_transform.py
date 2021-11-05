@@ -22,7 +22,10 @@ the transform simply amounts to reinterpreting spin up as spin down, and visa-ve
 a particular spin.
 """
 
-from dwave.preprocessing import SpinReversalTransformComposite as _SpinReversalTransformComposite
+try:
+    from dwave.preprocessing import SpinReversalTransformComposite as _SpinReversalTransformComposite
+except ImportError:
+    from dimod.reference.composites._preprocessing import NotFound as _SpinReversalTransformComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 

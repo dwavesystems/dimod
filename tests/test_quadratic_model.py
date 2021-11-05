@@ -387,6 +387,33 @@ class TestInteger(unittest.TestCase):
         self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
 
 
+class TestIsAlmostEqual(unittest.TestCase):
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 2}, 3, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+        self.assertTrue(qm.is_almost_equal(bqm))
+
+    def test_number(self):
+        qm = dimod.QuadraticModel()
+        qm.offset = 1
+        self.assertTrue((1.001*qm).is_almost_equal(qm, places=2))
+        self.assertFalse((1.1*qm).is_almost_equal(qm, places=2))
+
+    def test_qm(self):
+        x = dimod.Binary('x')
+        s = dimod.Spin('s')
+        i = dimod.Integer('i')
+        self.assertTrue((x + s + i).is_almost_equal(1.001*(x + s + i), places=2))
+        self.assertFalse((x + s + i).is_almost_equal(1.1*(x + s + i), places=2))
+
+
+class TestIsEqual(unittest.TestCase):
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 2}, 3, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+        self.assertTrue(qm.is_equal(bqm))
+
+
 class TestOffset(unittest.TestCase):
     def test_setting(self):
         qm = QM()
@@ -480,6 +507,16 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(qm.num_variables, 0)
         self.assertEqual(new.num_variables, 0)
 
+    def test_div_number(self):
+        i, j = dimod.Integers('ij')
+        x = Binary('x')
+
+        qm = 6*i*j + 2*i*x + 4*x + 12
+        ref = qm
+        qm /= 2
+        self.assertIs(qm, ref)
+        self.assertTrue(qm.is_equal(3*i*j + i*x + 2*x + 6))
+
     def test_isub(self):
         qm = Integer('i')
         qm -= Integer('j')
@@ -503,6 +540,8 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'INTEGER'})))
         self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'INTEGER'})))
         self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'INTEGER'})))
+        self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
+        self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
 
     def test_expression_mixed_smoke(self):
         i = Integer('i')

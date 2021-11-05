@@ -580,6 +580,38 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(bqm.shape, (1, 0))
         self.assertEqual(bqm.linear[0], 1)
 
+    def test_offset_kwarg(self):
+        # the various constructions but with a kwarg
+        with self.subTest('vartype only'):
+            bqm = dimod.BQM(vartype='SPIN', offset=7)
+            self.assertEqual(bqm.shape, (0, 0))
+            self.assertIs(bqm.vartype, dimod.SPIN)
+            self.assertEqual(bqm.offset, 7)
+
+        with self.subTest('bqm'):
+            bqm = dimod.BQM('SPIN')
+            with self.assertRaises(TypeError):
+                dimod.BQM(bqm, offset=5)
+            with self.assertRaises(TypeError):
+                dimod.BQM(bqm, vartype='BINARY', offset=5)
+
+        with self.subTest('integer'):
+            bqm = dimod.BQM(5, offset=5, vartype='SPIN')
+            self.assertEqual(bqm.num_variables, 5)
+            self.assertEqual(bqm.linear, {0: 0, 1: 0, 2: 0, 3: 0, 4: 0})
+            self.assertTrue(bqm.is_linear())
+            self.assertEqual(bqm.offset, 5)
+
+        with self.subTest('linear/quadratic'):
+            bqm = dimod.BQM({'a': 1}, {'ab': 2}, offset=6, vartype='SPIN')
+            self.assertEqual(bqm.shape, (2, 1))
+            self.assertEqual(bqm.offset, 6)
+            self.assertIs(bqm.vartype, dimod.SPIN)
+
+        with self.subTest('linear/quadratic/offset'):
+            with self.assertRaises(TypeError):
+                dimod.BQM({}, {}, 1.5, 'SPIN', offset=5)
+
     @parameterized.expand(BQMs.items())
     def test_vartype(self, name, BQM):
         bqm = BQM('SPIN')
@@ -861,7 +893,7 @@ class TestDegree(unittest.TestCase):
         np.testing.assert_array_equal(bqm.degrees(array=True), [3, 2, 2, 1])
 
 
-class TestDepreaction(unittest.TestCase):
+class TestDeprecation(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())
     def test_shapeable(self, name, BQM):
         with self.assertWarns(DeprecationWarning):
@@ -885,6 +917,9 @@ class TestDepreaction(unittest.TestCase):
             # no false positives
             self.assertFalse(bqm.has_variable(0))
             self.assertFalse(bqm.has_variable(2))
+
+    def test_abc(self):
+        self.assertIsInstance(dimod.BQM('SPIN'), dimod.core.bqm.BQM)
 
 
 class TestDictBQM(unittest.TestCase):
@@ -1421,6 +1456,20 @@ class TestIsAlmostEqual(unittest.TestCase):
         other = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1, 'SPIN')
         self.assertTrue(bqm.is_almost_equal(other, places=1))
         self.assertFalse(bqm.is_almost_equal(other, places=2))
+
+    def test_qm(self):
+        bqm = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1.01, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+
+        self.assertTrue(bqm.is_almost_equal(qm))
+
+
+class TestEqual(unittest.TestCase):
+    def test_qm(self):
+        bqm = BinaryQuadraticModel({'a': 1.01}, {'ab': 1.01}, 1.01, 'SPIN')
+        qm = dimod.QuadraticModel.from_bqm(bqm)
+
+        self.assertTrue(bqm.is_equal(qm))
 
 
 class TestIsLinear(unittest.TestCase):
@@ -2245,6 +2294,14 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(bqm.num_variables, 0)
 
     @parameterized.expand(BQMs.items())
+    def test_div_number(self, name, BQM):
+        bqm = BQM({'u': 2}, {'uv': 4}, 6, 'BINARY')
+        ref = bqm
+        bqm /= 2
+        self.assertIs(bqm, ref)
+        self.assertEqual(bqm, BQM({'u': 1}, {'uv': 2}, 3, 'BINARY'))
+
+    @parameterized.expand(BQMs.items())
     def test_exceptions_symbolic_mode(self, name, BQM):
         bqm = BQM('SPIN')
         with self.assertRaises(TypeError):
@@ -2273,6 +2330,9 @@ class TestSymbolic(unittest.TestCase):
         self.assertEqual(1-u, BQM({'u': -1}, {}, 1, 'BINARY'))
         self.assertEqual(u - v, BQM({'u': 1, 'v': -1}, {}, 0, 'BINARY'))
         self.assertEqual((u - 1)*(v - 1), BQM({'u': -1, 'v': -1}, {'uv': 1}, 1, 'BINARY'))
+        self.assertEqual((4*u + 2*u*v + 6) / 2, BQM({'u': 2, 'v': 0}, {'uv': 1}, 3, 'BINARY'))
+        self.assertEqual((4*u + 2*u*v + 8) / 2.5, BQM({'u': 1.6, 'v': 0}, {'uv': .8}, 3.2, 'BINARY'))
+        self.assertEqual((u - v)**2, (u - v)*(u - v))
 
     def test_expressions_spin(self):
         u = Spin('u')

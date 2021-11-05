@@ -12,21 +12,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import warnings
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from typing import Tuple
 
-__all__ = ['multi_knapsack']
+__all__ = ['multi_knapsack', 'random_multi_knapsack']
 
 
-def multi_knapsack(num_items: int,
-                   num_bins: int,
-                   seed: int = 32,
-                   value_range: Tuple[int, int] = (10, 50),
-                   weight_range: Tuple[int, int] = (10, 50),
-                   ) -> ConstrainedQuadraticModel:
+def random_multi_knapsack(num_items: int,
+                          num_bins: int,
+                          seed: int = 32,
+                          value_range: Tuple[int, int] = (10, 50),
+                          weight_range: Tuple[int, int] = (10, 50),
+                          ) -> ConstrainedQuadraticModel:
     """Return a constrained quadratic model encoding a multiple knapsack
     problem.
 
@@ -49,18 +51,19 @@ def multi_knapsack(num_items: int,
     Returns:
 
         A constrained quadratic model encoding the multiple knapsack problem.
-        Variables are labelled as x_{i}_{j}, where x_{i}_{j} = 1 means
-        that item i is placed in bin j.
+        Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
+        that item ``i`` is placed in bin ``j``.
 
     """
 
-    np.random.seed(seed)
-    weights = np.random.randint(*weight_range, num_items)
-    values = np.random.randint(*value_range, num_items)
+    rng = np.random.RandomState(seed)
+
+    weights = rng.randint(*weight_range, num_items)
+    values = rng.randint(*value_range, num_items)
 
     cap_low = int(weight_range[0] * num_items / num_bins)
     cap_high = int(weight_range[1] * num_items / num_bins)
-    capacities = np.random.randint(cap_low, cap_high, num_bins)
+    capacities = rng.randint(cap_low, cap_high, num_bins)
 
     model = ConstrainedQuadraticModel()
 
@@ -85,3 +88,15 @@ def multi_knapsack(num_items: int,
             sense="<=", label='capacity_bin_{}'.format(j))
 
     return model
+
+
+# We want to use multi_knapsack in the future for problems with specified weights/
+# values, so we'll deprecate it and use the more explicit random_knapsack.
+# Once the deprecation period is over we can use the multi_knapsack with a different
+# api.
+def multi_knapsack(*args, **kwargs) -> ConstrainedQuadraticModel:
+    warnings.warn("multi_knapsack was deprecated after 0.10.6 and will be removed in 0.11.0, "
+                  "use random_bin_packing instead.",
+                  DeprecationWarning,
+                  stacklevel=2)
+    return random_multi_knapsack(*args, **kwargs)

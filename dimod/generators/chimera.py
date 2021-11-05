@@ -12,54 +12,59 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import absolute_import
+import warnings
+
+from typing import Optional, Union
 
 import numpy as np
 import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
+from dimod.typing import GraphLike
 from dimod.vartypes import SPIN
 
 __all__ = ['chimera_anticluster']
 
 
 @graph_argument('subgraph', allow_None=True)
-def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
-                        cls=BinaryQuadraticModel, subgraph=None, seed=None):
+def chimera_anticluster(m: int, n: Optional[int] = None, t: int = 4,
+                        multiplier: float = 3,
+                        cls: None = None,
+                        subgraph: GraphLike = None,
+                        seed: Union[None, int] = None,
+                        ) -> BinaryQuadraticModel:
     """Generate an anticluster problem on a Chimera lattice.
 
     An anticluster problem has weak interactions within a tile and strong
     interactions between tiles.
 
     Args:
-        m (int):
-            Number of rows in the Chimera lattice.
+        m: Number of rows in the Chimera lattice.
 
-        n (int, optional, default=m):
-            Number of columns in the Chimera lattice.
+        n: Number of columns in the Chimera lattice. Defaults to ``m``.
 
-        t (int, optional, default=t):
-            Size of the shore within each Chimera tile.
+        t: Size of the shore within each Chimera tile.
 
-        multiplier (number, optional, default=3.0):
-            Strength of the intertile edges.
+        multiplier: Strength of the intertile edges.
 
-        cls (type, optional):
-            Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing
 
-        subgraph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
-            A subgraph of a Chimera(m, n, t) graph to build the anticluster
+        subgraph: A subgraph of a Chimera(m, n, t) graph to build the anticluster
             problem on.
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
     Returns:
-        :obj:`.BinaryQuadraticModel`: spin-valued binary quadratic model.
+        A binary quadratic model.
 
     """
+
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.6 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     if seed is None:
         seed = numpy.random.randint(2**32, dtype=np.uint32)
     r = numpy.random.RandomState(seed)
@@ -91,12 +96,12 @@ def chimera_anticluster(m, n=None, t=4, multiplier=3.0,
     else:
         irow = icol = qdata = tuple()
 
-    bqm = cls.from_numpy_vectors(ldata, (irow, icol, qdata), 0.0, SPIN)
+    bqm = BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata), 0.0, SPIN)
 
     if subgraph is not None:
         nodes, edges = subgraph
 
-        subbqm = cls.empty(SPIN)
+        subbqm = BinaryQuadraticModel.empty(SPIN)
 
         try:
             subbqm.add_variables_from((v, bqm.linear[v]) for v in nodes)

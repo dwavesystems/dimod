@@ -26,7 +26,7 @@ import zipfile
 
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any
+from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, NamedTuple
 
 import numpy as np
 
@@ -34,6 +34,7 @@ from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.quadratic import QuadraticModel
+from dimod.sampleset import as_samples
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
@@ -41,11 +42,21 @@ from dimod.typing import Bias, Variable
 from dimod.utilities import new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
+from dimod.serialization.lp import make_lp_grammar, get_variables_from_parsed_lp, constraint_symbols, obj_senses
 
 __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
 
 CQM_MAGIC_PREFIX = b'DIMODCQM'
+
+
+class ConstraintData(NamedTuple):
+    label: Hashable
+    lhs_energy: float
+    rhs_energy: float
+    sense: Sense
+    activity: float
+    violation: float
 
 
 class ConstrainedQuadraticModel:
@@ -370,34 +381,7 @@ class ConstrainedQuadraticModel:
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
 
         """
-        qm = QuadraticModel()
-
-        def _add_variable(v):
-            # handles vartype, and bounds
-            vartype = self.vartype(v)
-
-            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
-                # need to worry about bounds
-                qm.add_variable(vartype, v,
-                                lower_bound=self.lower_bound(v),
-                                upper_bound=self.upper_bound(v))
-            else:
-                qm.add_variable(vartype, v)
-
-        for *variables, bias in iterable:
-            if len(variables) == 0:
-                qm.offset += bias
-            elif len(variables) == 1:
-                v, = variables
-                _add_variable(v)
-                qm.add_linear(v, bias)
-            elif len(variables) == 2:
-                u, v = variables
-                _add_variable(u)
-                _add_variable(v)
-                qm.add_quadratic(u, v, bias)
-            else:
-                raise ValueError("terms must be constant, linear or quadratic")
+        qm = self._iterable_to_qm(iterable)
 
         # use quadratic model in the future
         return self.add_constraint_from_model(
@@ -478,6 +462,30 @@ class ConstrainedQuadraticModel:
                 raise ValueError("given variable has already been added with a different vartype")
         else:
             return self.objective.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
+
+    def check_feasible(self, sample_like, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
+        r"""Return the feasibility of the given sample.
+
+        A sample is feasible if all constraints are satisfied. A constraint's
+        satisfaction is tested using the following equation:
+
+        .. math::
+
+            violation <= (atol + rtol * | rhs\_energy | )
+
+        where ``violation`` and ``rhs_energy`` are as returned by :meth:`.iter_constraint_data`.
+
+        Args:
+            sample_like: A sample.
+            rtol: The relative tolerance.
+            atol: the absolute tolerance.
+
+        Returns:
+            True if the sample is feasible (given the tolerances).
+
+        """
+        return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
+                   for datum in self.iter_constraint_data(sample_like))
 
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
@@ -618,6 +626,147 @@ class ConstrainedQuadraticModel:
 
         return cqm
 
+    def iter_constraint_data(self, sample_like) -> Iterator[ConstraintData]:
+        """Yield information about the constraints for the given sample.
+
+        Args:
+            sample_like: A sample.
+
+        Yields:
+            A :class:`collections.namedtuple` with ``label``, ``lhs_energy``,
+            ``rhs_energy``, ``sense``, ``activity``, and ``violation`` fields.
+            ``label`` is the constraint label.
+            ``lhs_energy`` is the energy of the left hand side of the constraint.
+            ``rhs_energy`` is the energy of the right hand side of the constraint.
+            ``sense`` is the :class:`dimod.sym.Sense` of the constraint.
+            ``activity`` is ``lhs_energy - rhs_energy``
+            ``violation`` is determined by the type of constraint. If ``violation``
+            is positive, that means that the constraint has been violated by
+            that amount. If it is negative, that means that the constraint has
+            been satisfied by the amount.
+
+        """
+
+        sample, labels = as_samples(sample_like)
+
+        if sample.shape[0] != 1:
+            raise ValueError("sample_like should be a single sample, "
+                             f"received {sample.shape[0]} samples")
+
+        for label, constraint in self.constraints.items():
+            lhs = constraint.lhs.energy((sample, labels))
+            rhs = constraint.rhs
+            sense = constraint.sense
+
+            activity = lhs - rhs
+
+            if sense is Sense.Eq:
+                violation = abs(activity)
+            elif sense is Sense.Ge:
+                violation = -activity
+            elif sense is Sense.Le:
+                violation = activity
+            else:
+                raise RuntimeError("unexpected sense")
+
+            yield ConstraintData(
+                activity=activity,
+                sense=sense,
+                violation=violation,
+                lhs_energy=lhs,
+                rhs_energy=rhs,
+                label=label,
+                )
+
+    def iter_violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
+                        ) -> Iterator[Tuple[Hashable, Bias]]:
+        """Yield violations for all constraints.
+
+        Args:
+            sample_like: A sample over the CQM variables.
+            skip_satisfied: If True, does not yield constraints that are satisfied.
+            clip: If True, negative violations are rounded up to 0.
+
+        Yields:
+            A 2-tuple containing the constraint label and the amount of
+            constraints violation.
+
+        Example:
+
+            Construct a constrained quadratic model.
+
+            >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i + j + k == 10, label='equal')
+            'equal'
+            >>> cqm.add_constraint(i + j <= 15, label='less equal')
+            'less equal'
+            >>> cqm.add_constraint(j - k >= 0, label='greater equal')
+            'greater equal'
+
+            Check the violations of a sample that satisfies all constraints.
+
+            >>> sample = {'i': 3, 'j': 5, 'k': 2}
+            >>> for label, violation in cqm.iter_violations(sample, clip=True):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 0.0
+
+            Check the violations for a sample that does not satisfy all of the
+            constraints.
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample, clip=True):
+            ...     print(label, violation)
+            equal 0.0
+            less equal 0.0
+            greater equal 3.0
+
+            >>> sample = {'i': 3, 'j': 2, 'k': 5}
+            >>> for label, violation in cqm.iter_violations(sample, skip_satisfied=True):
+            ...     print(label, violation)
+            greater equal 3.0
+
+        """
+        if skip_satisfied:
+            # clip doesn't matter in this case
+            # todo: feasibility tolerance?
+            for datum in self.iter_constraint_data(sample_like):
+                if datum.violation > 0:
+                    yield datum.label, datum.violation
+        elif clip:
+            for datum in self.iter_constraint_data(sample_like):
+                yield datum.label, max(datum.violation, 0.0)
+        else:
+            for datum in self.iter_constraint_data(sample_like):
+                yield datum.label, datum.violation
+
+    def is_almost_equal(self, other: 'ConstrainedQuadraticModel',
+                        places: int = 7) -> bool:
+        """Return True if the given model's objective and constraints are almost equal."""
+        def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
+            return (c0.sense is c1.sense
+                    and c0.lhs.is_almost_equal(c1.lhs, places=places)
+                    and not round(c0.rhs - c1.rhs, places))
+
+        return (self.objective.is_almost_equal(other.objective, places=places)
+                and self.constraints.keys() == other.constraints.keys()
+                and all(constraint_eq(constraint, other.constraints[label])
+                        for label, constraint in self.constraints.items()))
+
+    def is_equal(self, other: 'ConstrainedQuadraticModel') -> bool:
+        """Return True if the given model has the same objective and constraints."""
+        def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
+            return (c0.sense is c1.sense
+                    and c0.lhs.is_equal(c1.lhs)
+                    and c0.rhs == c1.rhs)
+
+        return (self.objective.is_equal(other.objective)
+                and self.constraints.keys() == other.constraints.keys()
+                and all(constraint_eq(constraint, other.constraints[label])
+                        for label, constraint in self.constraints.items()))
+
     def lower_bound(self, v: Variable) -> Bias:
         """Return the lower bound on the specified variable."""
         return self.objective.lower_bound(v)
@@ -638,11 +787,13 @@ class ConstrainedQuadraticModel:
             count += sum(lhs.degree(v) > 0 for v in lhs.variables)
         return count
 
-    def set_objective(self, objective: Union[BinaryQuadraticModel, QuadraticModel]):
+    def set_objective(self, objective: Union[BinaryQuadraticModel,
+                                             QuadraticModel, Iterable]):
         """Set the objective of the constrained quadratic model.
 
         Args:
-            objective: Binary quadratic model (BQM) or quadratic model (QM).
+            objective: Binary quadratic model (BQM) or quadratic model (QM) or
+            an iterable of tuples.
 
         Examples:
             >>> from dimod import Integer, ConstrainedQuadraticModel
@@ -652,6 +803,8 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_objective(2*i - 0.5*i*j + 10)
 
         """
+        if isinstance(objective, Iterable):
+            objective = self._iterable_to_qm(objective)
         # clear out current objective, keeping only the variables
         self.objective.quadratic.clear()  # there may be a more performant way...
         for v in self.objective.variables:
@@ -665,6 +818,37 @@ class ConstrainedQuadraticModel:
             self.objective.set_linear(v, objective.get_linear(v))
         self.objective.add_quadratic_from(objective.iter_quadratic())
         self.objective.offset = objective.offset
+
+    def _iterable_to_qm(self, iterable: Iterable) -> QuadraticModel:
+        qm = QuadraticModel()
+
+        def _add_variable(v):
+            # handles vartype, and bounds
+            vartype = self.vartype(v)
+
+            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
+                # need to worry about bounds
+                qm.add_variable(vartype, v,
+                                lower_bound=self.lower_bound(v),
+                                upper_bound=self.upper_bound(v))
+            else:
+                qm.add_variable(vartype, v)
+
+        for *variables, bias in iterable:
+            if len(variables) == 0:
+                qm.offset += bias
+            elif len(variables) == 1:
+                v, = variables
+                _add_variable(v)
+                qm.add_linear(v, bias)
+            elif len(variables) == 2:
+                u, v = variables
+                _add_variable(u)
+                _add_variable(v)
+                qm.add_quadratic(u, v, bias)
+            else:
+                raise ValueError("terms must be constant, linear or quadratic")
+        return qm
 
     def _substitute_self_loops_from_model(self, qm: Union[BinaryQuadraticModel, QuadraticModel],
                                           mapping: MutableMapping[Variable, Variable]):
@@ -851,6 +1035,153 @@ class ConstrainedQuadraticModel:
     def vartype(self, v: Variable) -> Vartype:
         """The vartype of the given variable."""
         return self.objective.vartype(v)
+
+    def violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
+                   ) -> Dict[Hashable, Bias]:
+        """Return a dictionary mapping constraint labels to the amount the constraints are violated.
+
+        This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
+        """
+        return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied, clip=clip))
+
+    @classmethod
+    def from_lp_file(cls,
+                     fp: Union[BinaryIO, ByteString],
+                     lower_bound_default: Optional[int] = None,
+                     upper_bound_default: Optional[int] = None) -> "ConstrainedQuadraticModel":
+        """Create a CQM model from a LP file.
+
+        Args:
+            fp: file-like object in the LP format
+            lower_bound_default: in case lower bounds for integer are not given, this will be the default
+            upper_bound_default: in case upper bounds for integer are not given, this will be the default
+
+        Returns:
+            The model encoded in the LP file as a :class:`ConstrainedQuadraticModel`.
+        """
+        grammar = make_lp_grammar()
+        parse_output = grammar.parseFile(fp)
+        obj = get_variables_from_parsed_lp(parse_output, lower_bound_default, upper_bound_default)
+
+        cqm = ConstrainedQuadraticModel()
+
+        # parse and set the objective
+        obj_coefficient = 1
+        for oe in parse_output.objective:
+
+            if isinstance(oe, str):
+                if oe in obj_senses.keys():
+                    obj_coefficient = obj_senses[oe]
+
+            else:
+                if len(oe) == 2:
+                    if oe.name != "":
+                        # linear term
+                        obj.add_linear(oe.name[0], obj_coefficient * oe.coef)
+
+                    else:
+                        # this is a pure squared term
+                        varname = oe.squared_name[0]
+                        vartype = obj.vartype(varname)
+
+                        if vartype is Vartype.BINARY:
+                            obj.add_linear(varname, obj_coefficient * oe.coef * 0.5)
+                        elif vartype is Vartype.INTEGER:
+                            obj.add_quadratic(varname, varname,
+                                              obj_coefficient * oe.coef * 0.5)
+                        else:
+                            raise TypeError("Unexpected variable type: {}".format(vartype))
+
+                elif len(oe) == 3:
+                    # bilinear term
+                    var1 = oe.name[0]
+                    var2 = oe.second_var_name[0]
+                    obj.add_quadratic(var1, var2, obj_coefficient * oe.coef * 0.5)
+
+        cqm.set_objective(obj)
+
+        # adding constraints
+        for c in parse_output.constraints:
+
+            try:
+                cname = c.name[0]
+            except IndexError:
+                # the constraint is nameless, set this to None now
+                cname = None
+
+            csense = constraint_symbols[c.sense]
+            ccoef = c.rhs
+            constraint = QuadraticModel()
+
+            if not c.lin_expr and not c.quad_expr:
+                # empty constraint
+                warnings.warn('The LP file contained an empty constraint and it will be ignored')
+                continue
+
+            if c.lin_expr:
+
+                for le in c.lin_expr:
+                    var = le.name[0]
+                    vartype = obj.vartype(var)
+                    lb = obj.lower_bound(var)
+                    ub = obj.upper_bound(var)
+                    if vartype is Vartype.BINARY:
+                        constraint.add_variable(Vartype.BINARY, var)
+                    elif vartype is Vartype.INTEGER:
+                        constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
+                    else:
+                        raise ValueError("Unexpected vartype: {}".format(vartype))
+                    constraint.add_linear(var, le.coef)
+
+            if c.quad_expr:
+
+                for qe in c.quad_expr:
+                    if qe.name != "":
+                        var1 = qe.name[0]
+                        vartype1 = obj.vartype(var1)
+                        lb1 = obj.lower_bound(var1)
+                        ub1 = obj.upper_bound(var1)
+
+                        if vartype1 is Vartype.BINARY:
+                            constraint.add_variable(vartype1, var1)
+                        elif vartype1 is Vartype.INTEGER:
+                            constraint.add_variable(vartype1, var1, lower_bound=lb1, upper_bound=ub1)
+                        else:
+                            raise ValueError("Unexpected vartype: {}".format(vartype1))
+
+                        var2 = qe.second_var_name[0]
+                        vartype2 = obj.vartype(var2)
+                        lb2 = obj.lower_bound(var2)
+                        ub2 = obj.upper_bound(var2)
+
+                        if vartype2 is Vartype.BINARY:
+                            constraint.add_variable(vartype2, var2)
+                        elif vartype2 is Vartype.INTEGER:
+                            constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_bound=ub2)
+
+                        constraint.add_quadratic(var1, var2, qe.coef)
+
+                    else:
+                        # this is a pure squared term
+                        var = qe.squared_name[0]
+                        vartype = obj.vartype(var)
+                        lb = obj.lower_bound(var)
+                        ub = obj.upper_bound(var)
+                        if vartype is Vartype.BINARY:
+                            constraint.add_variable(vartype, var)
+                            constraint.add_linear(var, qe.coef)
+                        elif vartype is Vartype.INTEGER:
+                            constraint.add_variable(vartype, var, lower_bound=lb, upper_bound=ub)
+                            constraint.add_quadratic(var, var, qe.coef)
+                        else:
+                            raise TypeError("Unexpected variable type: {}".format(vartype))
+
+            # finally mode the RHS to the LHS with a minus sign
+            constraint.offset = - ccoef
+
+            cqm.add_constraint(constraint, label=cname, sense=csense)
+
+        return cqm
 
 
 CQM = ConstrainedQuadraticModel

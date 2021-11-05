@@ -126,7 +126,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
         E(x) = \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
 
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary, integer or discrete
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
     variables and :math:`a_{i}, b_{ij}, c` are real values.
 
     """
@@ -260,7 +260,8 @@ class QuadraticModel(QuadraticViewsMixin):
     def __imul__(self, other: Bias) -> 'QuadraticModel':
         # in-place multiplication is only defined for numbers
         if isinstance(other, Number):
-            raise NotImplementedError
+            self.scale(other)
+            return self
         return NotImplemented
 
     def __rmul__(self, other: Bias) -> 'QuadraticModel':
@@ -273,6 +274,15 @@ class QuadraticModel(QuadraticViewsMixin):
         new = self.copy()
         new.scale(-1)
         return new
+
+    def __pow__(self, other: int) -> 'QuadraticModel':
+        if isinstance(other, int):
+            if other != 2:
+                raise ValueError("the only supported power for quadratic models is 2")
+            if not self.is_linear():
+                raise ValueError("only linear models can be squared")
+            return self * self
+        return NotImplemented
 
     def __sub__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
@@ -306,6 +316,13 @@ class QuadraticModel(QuadraticViewsMixin):
             new += other
             return new
         return NotImplemented
+
+    def __truediv__(self, other: Bias) -> 'BQM':
+        return self * (1 / other)
+
+    def __itruediv__(self, other: Bias) -> 'BQM':
+        self *= (1 / other)
+        return self
 
     def __eq__(self, other: Number) -> Comparison:
         if isinstance(other, Number):
@@ -671,16 +688,54 @@ class QuadraticModel(QuadraticViewsMixin):
         """Get the quadratic bias of the specified pair of variables."""
         return self.data.get_quadratic
 
+    def is_almost_equal(self, other: Union['QuadraticModel', 'BinaryQuadraticModel', Bias],
+                        places: int = 7) -> bool:
+        """Test if the given quadratic model's biases are almost equal.
+
+        Test whether each bias in the binary quadratic model is approximately
+        equal to each bias in ``other``. Approximate equality is calculated by
+        passing the difference to :func:`round`. ``places`` determines the
+        number of decimal places.
+        """
+        if isinstance(other, Number):
+            return not (self.num_variables or round(self.offset - other, places))
+
+        def eq(a, b):
+            return not round(a - b, places)
+
+        try:
+            if callable(other.vartype):
+                vartype_eq = all(self.vartype(v) == other.vartype(v) for v in self.variables)
+            else:
+                vartype_eq = all(self.vartype(v) == other.vartype for v in self.variables)
+
+            return (vartype_eq
+                    and self.shape == other.shape
+                    and eq(self.offset, other.offset)
+                    and all(eq(self.get_linear(v), other.get_linear(v))
+                            for v in self.variables)
+                    and all(eq(bias, other.get_quadratic(u, v))
+                            for u, v, bias in self.iter_quadratic())
+                    )
+        except (AttributeError, ValueError):
+            # it's not a BQM or variables/interactions don't match
+            return False
+
     def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases."""
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
-            return (self.shape == other.shape  # redundant, fast to check
+            if callable(other.vartype):
+                vartype_eq = all(self.vartype(v) == other.vartype(v) for v in self.variables)
+            else:
+                vartype_eq = all(self.vartype(v) == other.vartype for v in self.variables)
+
+            return (vartype_eq
+                    and self.shape == other.shape  # redundant, fast to check
                     and self.offset == other.offset
                     and self.linear == other.linear
-                    and all(self.vartype(v) == other.vartype(v) for v in self.variables)
                     and self.adj == other.adj)
         except AttributeError:
             return False

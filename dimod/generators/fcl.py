@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2018 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,23 +12,30 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import absolute_import
+from typing import Callable, Collection, List, Mapping, Optional
 
-import itertools
-
-import numpy as np
 import numpy.random
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
+from dimod.typing import GraphLike, Variable
 from dimod.vartypes import SPIN
 
 __all__ = ['frustrated_loop']
 
 
+Predicate = Callable[[List[Variable]], bool]
+
+
 @graph_argument('graph')
-def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
-                    max_failed_cycles=100, planted_solution=None, seed=None):
+def frustrated_loop(graph: GraphLike,
+                    num_cycles: int,
+                    R: float = float('inf'),
+                    cycle_predicates: Collection[Predicate] = tuple(),
+                    max_failed_cycles: int = 100,
+                    planted_solution: Optional[Mapping[Variable, int]] = None,
+                    seed: Optional[int] = None,
+                    ) -> BinaryQuadraticModel:
     """Generate a frustrated-loop problem.
 
     A generic frustrated-loop (FL) problem is a sum of Hamiltonians, each generated
@@ -45,34 +51,33 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
        procedure.
 
     This is a generic generator of FL problems that encompasses both the original
-    FL problem definition\ [#HJARTL]_ and the limited FL problem
-    definition\ [#KLH]_\ .
+    FL problem definition [#HJARTL]_ and the limited FL problem
+    definition [#KLH]_.
 
     Args:
-        graph (int/tuple[nodes, edges]/list[edge]/:obj:`~networkx.Graph`):
+        graph:
             The graph to build the frustrated loops on. Either an integer n,
             interpreted as a complete graph of size n, a nodes/edges pair, a
             list of edges or a NetworkX graph.
 
-        num_cyles (int):
+        num_cyles:
             Desired number of frustrated cycles.
 
-        R (int, optional, default=inf):
+        R:
             Maximum interaction weight.
 
-        cycle_predicates (tuple[function], optional):
+        cycle_predicates:
             An iterable of functions, which should accept a cycle and return a bool.
 
-        max_failed_cycles (int, optional, default=100):
+        max_failed_cycles:
             Maximum number of failures to find a cycle before terminating.
 
-        planted_solution (dict, optional, default=None):
+        planted_solution:
             Other solutions with the same energy may exist, but the energy value
             of the (possibly degenerate) ground state will hold. If None,
-            planted_solution is: {v:-1 for v in graph}
+            planted_solution is: ``{v: -1 for v in graph}``
 
-        seed (int, optional, default=None):
-            Random seed.
+        seed: Random seed.
 
     .. [#HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
@@ -89,9 +94,7 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
     if max_failed_cycles <= 0:
         raise ValueError("max_failed_cycles should be a positive integer")
     if planted_solution is None:
-        planted_solution = {v:-1 for v in nodes}
-    if seed is None:
-        seed = numpy.random.randint(2**32, dtype=np.uint32)
+        planted_solution = {v: -1 for v in nodes}
     r = numpy.random.RandomState(seed)
 
     adj = {v: set() for v in nodes}
@@ -121,13 +124,13 @@ def frustrated_loop(graph, num_cycles, R=float('inf'), cycle_predicates=tuple(),
         # If its a good cycle, modify J with it, according to plated solution
         cycle_J = {}
         for i, c in enumerate(cycle):
-            u,v = cycle[i - 1], cycle[i]
+            u, v = cycle[i - 1], cycle[i]
             J = -planted_solution[u]*planted_solution[v]
-            cycle_J[(u,v)] = J
+            cycle_J[(u, v)] = J
 
         # randomly select an edge and flip it
         idx = r.randint(len(cycle))
-        cycle_J[(cycle[idx - 1], cycle[idx])] *= -1.
+        cycle_J[(cycle[idx - 1], cycle[idx])] *= -1
 
         # update the bqm
         bqm.add_interactions_from(cycle_J)
