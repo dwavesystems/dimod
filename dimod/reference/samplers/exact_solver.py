@@ -19,13 +19,17 @@ Note:
     These samplers are designed for use in testing. Because they calculate
     energy for every possible sample, they are very slow.
 """
-import numpy as np
 from itertools import product
+from typing import TYPE_CHECKING
+
+import numpy as np
 
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
 from dimod.core.polysampler import PolySampler
 from dimod.vartypes import Vartype
+if TYPE_CHECKING:
+    from dimod import BinaryQuadraticModel, BinaryPolynomial, DiscreteQuadraticModel, ConstrainedQuadraticModel
 
 __all__ = ['ExactSolver', 'ExactPolySolver', 'ExactDQMSolver', 'ExactCQMSolver']
 
@@ -73,7 +77,7 @@ class ExactSolver(Sampler):
         self.properties = {}
         self.parameters = {}
 
-    def sample(self, bqm, **kwargs) -> SampleSet:
+    def sample(self, bqm: 'BinaryQuadraticModel', **kwargs) -> SampleSet:
         """Sample from a binary quadratic model.
 
         Args:
@@ -144,7 +148,7 @@ class ExactPolySolver(PolySampler):
         self.properties = {}
         self.parameters = {}
 
-    def sample_poly(self, polynomial, **kwargs) -> SampleSet:
+    def sample_poly(self, polynomial: 'BinaryPolynomial', **kwargs) -> SampleSet:
         """Sample from a binary polynomial.
 
         Args:
@@ -169,14 +173,12 @@ class ExactDQMSolver():
         number of variables.
 
     """
-    properties = None
-    parameters = None
 
     def __init__(self):
         self.properties = {}
         self.parameters = {}
 
-    def sample_dqm(self, dqm, **kwargs) -> SampleSet:
+    def sample_dqm(self, dqm: 'DiscreteQuadraticModel', **kwargs) -> SampleSet:
         """Sample from a discrete quadratic model.
 
         Args:
@@ -212,8 +214,9 @@ class ExactCQMSolver():
         >>> cqm = ConstrainedQuadraticModel()
         >>> x, y, z = Binary('x'), Binary('y'), Binary('z')
         >>> cqm.set_objective(x*y + 2*y*z)
-        >>> cqm.add_constraint(x*y == 1)      # doctest: +SKIP
-        >>> sampleset = ExactCQMSolver().sample_cqm(cqm)      # doctest: +SKIP
+        >>> cqm.add_constraint(x*y == 1, label='constraint_1')
+        'constraint_1'
+        >>> sampleset = dimod.ExactCQMSolver().sample_cqm(cqm)
         >>> print(sampleset)      # doctest: +SKIP
           x y z energy num_oc. is_sat. is_fea.
         0 0 0 0    0.0       1 arra...   False
@@ -227,14 +230,11 @@ class ExactCQMSolver():
         ['INTEGER', 8 rows, 8 samples, 3 variables]
         
     """
-    properties = None
-    parameters = None
-
     def __init__(self):
         self.properties = {}
         self.parameters = {}
         
-    def sample_cqm(self, cqm, rtol: float = 1e-6, atol: float = 1e-8, **kwargs) -> SampleSet:
+    def sample_cqm(self, cqm: 'ConstrainedQuadraticModel', rtol: float = 1e-6, atol: float = 1e-8, **kwargs) -> SampleSet:
         """Sample from a constrained quadratic model.
 
         Args:
