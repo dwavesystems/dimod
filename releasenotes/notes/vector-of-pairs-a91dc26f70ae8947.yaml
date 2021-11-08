@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    Packages that require binary compatibility with dimod and that were compiled
+    with 0.10.0 will not work with 0.11.0.
+fixes:
+  - |
+    Fixes performance regression on energy calculations introduced in 0.10.0.
+    See `#1025 <https://github.com/dwavesystems/dimod/issues/1025>`_
