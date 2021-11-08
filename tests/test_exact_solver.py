@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import unittest
+from itertools import product
 
 import numpy as np
 import numpy.testing as npt
@@ -111,7 +112,8 @@ class TestExactSolver(unittest.TestCase):
 
         dimod.testing.assert_sampleset_energies_dqm(response, dqm)
         
-    def test_sample_CONSTRAINED(self):
+    def test_sample_CONSTRAINED_BINARY(self):
+        # using Binary variables, with equality constraint:
         cqm = dimod.ConstrainedQuadraticModel()
         x, y, z = dimod.Binary('x'), dimod.Binary('y'), dimod.Binary('z')
         cqm.set_objective(x*y + 2*y*z)
@@ -128,6 +130,73 @@ class TestExactSolver(unittest.TestCase):
         self.assertEqual(len(feasible_responses), 2)
         
         dimod.testing.assert_sampleset_energies_cqm(response, cqm)
+        
+    def test_sample_CONSTRAINED_SPIN(self):    
+        # using Spin variables, with inequality constraint:
+        cqm = dimod.ConstrainedQuadraticModel()
+        x, y, z = dimod.Spin('x'), dimod.Spin('y'), dimod.Spin('z')
+        cqm.set_objective(x*y + 2*y*z)
+        cqm.add_constraint(x*y <= 0)
+        
+        response = dimod.ExactCQMSolver().sample_cqm(cqm)
+        
+        # every possible combination should be present
+        self.assertEqual(len(response), 8)
+        self.assertEqual(response.record.sample.shape, (8, len(cqm.variables)))
+        
+        # four samples should be feasible
+        feasible_responses = response.filter(lambda d: d.is_feasible)
+        self.assertEqual(len(feasible_responses), 4)
+        
+        dimod.testing.assert_sampleset_energies_cqm(response, cqm)
+        
+    def test_sample_CONSTRAINED_INTEGER(self):    
+        # using Integer variables, with inequality constraint:
+        cqm = dimod.ConstrainedQuadraticModel()
+        x, y, z = dimod.Integer('x', lower_bound=1, upper_bound=3), dimod.Integer('y', lower_bound=4, upper_bound=5), dimod.Integer('z', lower_bound=-2, upper_bound=1)
+        cqm.set_objective(x*y + 2*y*z)
+        cqm.add_constraint(x*z >= 1)
+        
+        response = dimod.ExactCQMSolver().sample_cqm(cqm)
+        
+        # every possible combination should be present
+        self.assertEqual(len(response), 24)
+        self.assertEqual(response.record.sample.shape, (24, len(cqm.variables)))
+        
+        # only six samples should be feasible
+        feasible_responses = response.filter(lambda d: d.is_feasible)
+        self.assertEqual(len(feasible_responses), 6)
+        
+        dimod.testing.assert_sampleset_energies_cqm(response, cqm)
+    
+    def test_sample_CONSTRAINED_MIXED(self):
+        # Using various Vartypes, including the `add_discrete` method
+        cqm = dimod.ConstrainedQuadraticModel()
+        x = {(u,v): dimod.Binary((u,v)) for u,v in product(['u1','u2'], range(3))}
+        
+        cqm.add_discrete([('u1',v) for v in range(3)], label='u1')
+        cqm.add_discrete([('u2',v) for v in range(3)], label='u2')
+        
+        y, z = dimod.Spin('y'), dimod.Integer('z', lower_bound=1, upper_bound=3)
+        
+        obj1 = x[('u1',0)] * y - x[('u2',1)] * y 
+        obj2 = x[('u1',0)] * z + 2 * x[('u1',2)] * x[('u2',2)]
+        
+        cqm.set_objective(obj1+obj2)
+        cqm.add_constraint(z==2)
+        
+        response = dimod.ExactCQMSolver().sample_cqm(cqm)
+        
+        # every possible combination should be present, respecting the discrete constraints
+        self.assertEqual(len(response), 54)
+        self.assertEqual(response.record.sample.shape, (54, len(cqm.variables)))
+        
+        # only 18 samples should be feasible
+        feasible_responses = response.filter(lambda d: d.is_feasible)
+        self.assertEqual(len(feasible_responses), 18)
+        
+        dimod.testing.assert_sampleset_energies_cqm(response, cqm)
+        
 
     def test_sample_ising(self):
         h = {0: 0.0, 1: 0.0, 2: 0.0}
