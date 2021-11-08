@@ -1007,11 +1007,17 @@ TEMPLATE_TEST_CASE(
         bqm.add_quadratic(1, 2, 1.5);
         bqm.add_quadratic(2, 3, 1.5);
 
+        auto pair_size = sizeof(std::pair<int, TestType>);
+
+        // this assumption is not guaranteed across compilers, but it
+        // is required for this test to make sense
+        CHECK(pair_size == 2 * sizeof(TestType));
+
         THEN("we can determine the number of bytes used by the elements") {
             CHECK(bqm.nbytes() ==
-                  (bqm.num_variables() + 2 * bqm.num_interactions()) *
-                                  sizeof(TestType) +
-                          2 * bqm.num_interactions() * sizeof(int) + sizeof(TestType));
+                  bqm.num_variables() * sizeof(TestType)            // linear
+                          + 2 * bqm.num_interactions() * pair_size  // quadratic
+                          + sizeof(TestType));                      // offset
             CHECK(bqm.nbytes(true) >= bqm.nbytes());
         }
 
@@ -1020,12 +1026,13 @@ TEMPLATE_TEST_CASE(
 
             THEN("we can determine the number of bytes used by the elements") {
                 CHECK(qm.nbytes() ==
-                      (qm.num_variables() + 2 * qm.num_interactions()) *
-                                      sizeof(TestType) +
-                              2 * qm.num_interactions() * sizeof(int) +
-                              qm.num_variables() *
-                                      sizeof(dimod::VarInfo<TestType>) +
-                              sizeof(TestType));
+                      qm.num_variables() * sizeof(TestType)  // linear
+                              + 2 * qm.num_interactions() *
+                                        pair_size  // quadratic
+                              + sizeof(TestType)   // offset
+                              + qm.num_variables() *
+                                        sizeof(dimod::VarInfo<
+                                                TestType>));  // vartypes
                 CHECK(qm.nbytes(true) >= qm.nbytes());
             }
         }

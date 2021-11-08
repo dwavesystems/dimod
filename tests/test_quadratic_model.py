@@ -622,7 +622,7 @@ class TestNBytes(unittest.TestCase):
 
         size = sum([itemsize,  # offset
                     qm.num_variables*itemsize,  # linear
-                    2*qm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    2*qm.num_interactions*(2*itemsize),  # quadratic
                     qm.num_variables*3*itemsize,  # vartype info and bounds
                     ])
 
