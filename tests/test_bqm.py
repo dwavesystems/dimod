@@ -1603,7 +1603,7 @@ class TestNBytes(unittest.TestCase):
 
         size = sum([itemsize,  # offset
                     bqm.num_variables*itemsize,  # linear
-                    2*bqm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    2*bqm.num_interactions*(2*itemsize),  # quadratic
                     ])
 
         self.assertEqual(bqm.nbytes(), size)
