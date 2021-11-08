@@ -1,4 +1,4 @@
-# Copyright 2019 D-Wave Systems Inc.
+# Copyright 2021 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,23 +15,67 @@
 import dimod
 import numpy as np
 
-from parameterized import parameterized
+
+class TimeEnergies:
+    params = ([10, 150, 250],
+              [dimod.AdjVectorBQM, dimod.DictBQM, dimod.Float32BQM, dimod.Float64BQM])
+
+    def setup(self, n, cls):
+        self.bqm = cls(np.ones((n, n)), 'BINARY')
+        self.samples = np.ones((1000, n))
+
+    def teardown(self, n, cls):
+        del self.bqm
+        del self.samples
+
+    def time_energies(self, n, cls):
+        self.bqm.energies(self.samples)
 
 
-BQMs = dict(bqm_k150=dimod.BinaryQuadraticModel(np.ones((150, 150)), 'BINARY'),
-            adj_k150=dimod.AdjVectorBQM(np.ones((150, 150)), 'BINARY'),
-            bqm_k500=dimod.BinaryQuadraticModel(np.ones((500, 500)), 'BINARY'),
-            adj_k500=dimod.AdjVectorBQM(np.ones((500, 500)), 'BINARY'),
-            )
+class TimeGetQuadratic:
+    params = ([10, 150, 250, 500],
+              [dimod.AdjVectorBQM, dimod.DictBQM, dimod.Float32BQM, dimod.Float64BQM])
+
+    def setup(self, n, cls):
+        self.bqm = cls(np.ones((n, n)), 'BINARY')
+
+    def teardown(self, n, cls):
+        del self.bqm
+
+    def time_get_quadratic(self, n, cls):
+        bqm = self.bqm
+        for u in range(n):
+            for v in range(u+1, n):
+                bqm.get_quadratic(u, v)
 
 
-class BQMSuite:
-    @parameterized.expand(BQMs.items())
-    def time_iter_quadratic(self, _, bqm):
-        for _ in bqm.iter_quadratic():
+class TimeIterNeighborhood:
+    params = ([10, 150, 250, 500],
+              [dimod.DictBQM, dimod.Float32BQM, dimod.Float64BQM])
+
+    def setup(self, n, cls):
+        self.bqm = cls(np.ones((n, n)), 'BINARY')
+
+    def teardown(self, n, cls):
+        del self.bqm
+
+    def time_iter_neighborhood(self, n, cls):
+        bqm = self.bqm
+        for v in range(n):
+            for _ in bqm.iter_neighborhood(v):
+                pass
+
+
+class TimeIterQuadratic:
+    params = ([10, 150, 250, 500],
+              [dimod.AdjVectorBQM, dimod.DictBQM, dimod.Float32BQM, dimod.Float64BQM])
+
+    def setup(self, n, cls):
+        self.bqm = cls(np.ones((n, n)), 'BINARY')
+
+    def teardown(self, n, cls):
+        del self.bqm
+
+    def time_iter_quadratic(self, n, cls):
+        for _ in self.bqm.iter_quadratic():
             pass
-
-    @parameterized.expand((name, bqm, np.ones((1000, bqm.num_variables)))
-                          for name, bqm in BQMs.items())
-    def time_energies(self, _, bqm, samples):
-        bqm.energies(samples)
