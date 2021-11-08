@@ -248,7 +248,6 @@ def make_quadratic_cqm(poly, vartype=None, cqm=None):
     cqm = cqm or ConstrainedQuadraticModel()
     vartype = vartype or poly.vartype
     poly = _init_binary_polynomial(poly, vartype)
-    variables = set().union(*poly)
     reduced_terms, constraints = reduce_binary_polynomial(poly)
 
     def var(x):
