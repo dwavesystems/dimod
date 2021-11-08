@@ -42,3 +42,4 @@ Reducing to a Binary Quadratic Model
    :toctree: generated/
 
    make_quadratic
+   reduce_binary_polynomial

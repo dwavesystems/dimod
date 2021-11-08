@@ -42,26 +42,6 @@ class TestMakeQuadratic(unittest.TestCase):
                                 (+1, -1, -1),
                                 (+1, +1, +1)})
 
-    def test__binary_prod(self):
-
-        variables = ['a', 'b', 'p']
-
-        bqm = dimod.higherorder.utils._binary_product(variables)
-
-        for v in variables:
-            self.assertIn(v, bqm.variables)
-        self.assertEqual(len(bqm), 3)
-
-        seen = set()
-        samples = dimod.ExactSolver().sample(bqm)
-        for sample, energy in samples.data(['sample', 'energy']):
-            if energy == 0:
-                self.assertEqual(sample['a'] * sample['b'], sample['p'])
-                seen.add((sample['a'], sample['b'], sample['p']))
-            if sample['a'] * sample['b'] != sample['p']:
-                self.assertGreaterEqual(energy, 1)  # gap 1
-        self.assertEqual(seen, {(0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 1)})
-
     def test_empty(self):
         bqm = make_quadratic({}, 1.0, dimod.SPIN)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel.empty(dimod.SPIN))

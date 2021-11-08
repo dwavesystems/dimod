@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added ``reduce_binary_polynomial()`` that factors out a common basis for ``make_quadratic()`` and a future ``make_quadratic_cqm()``.
+    Given a ``BinaryPolynomial`` it return a list of reduced terms using auxillary variables and a list of constraints on them.
