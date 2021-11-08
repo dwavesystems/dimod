@@ -175,7 +175,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
 
     return reduced_terms, constraints
 
-
+  
 def _init_quadratic_model(qm, vartype, qm_factory):
     if vartype is None:
         if qm is None:
@@ -302,6 +302,7 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
 
     bqm, vartype = _init_quadratic_model(bqm, vartype, BinaryQuadraticModel)
     poly = _init_binary_polynomial(poly, vartype)
+
     variables = set().union(*poly)
     reduced_terms, constraints = reduce_binary_polynomial(poly)
 
