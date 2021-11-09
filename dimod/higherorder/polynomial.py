@@ -26,7 +26,7 @@ from dimod.sampleset import as_samples
 from dimod.utilities import iter_safe_relabels
 from dimod.vartypes import Vartype
 
-__all__ = 'BinaryPolynomial',
+__all__ = ['BinaryPolynomial']
 
 
 def asfrozenset(term):

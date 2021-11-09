@@ -44,7 +44,7 @@ import dimod.generators
 from dimod.exceptions import *
 import dimod.exceptions
 
-from dimod.higherorder import make_quadratic, poly_energy, poly_energies, BinaryPolynomial
+from dimod.higherorder import make_quadratic, make_quadratic_cqm, reduce_binary_polynomial, poly_energy, poly_energies, BinaryPolynomial
 import dimod.higherorder
 
 from dimod.package_info import __version__, __author__, __authoremail__, __description__

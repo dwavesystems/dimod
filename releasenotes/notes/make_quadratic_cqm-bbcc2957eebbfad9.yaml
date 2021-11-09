@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added ``make_quadratic_cqm()`` - like make quadratic, but returns a CQM treating auxillary variable constraints as proper constraints instead of adding them to the objective.
+
