@@ -25,6 +25,7 @@ from functools import partial
 
 import numpy as np
 
+import dimod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
@@ -111,8 +112,8 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
         ([(term, bias)*], [((orig_var1, orig_var2), aux_var)*])
 
     Example:
-        >>> poly = BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, 'BINARY')
-        >>> reduce_binary_polynomial(poly)
+        >>> poly = BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY) # doctest: +SKIP
+        >>> reduce_binary_polynomial(poly) # doctest: +SKIP
         ([(frozenset({0}), -1),
           (frozenset({1}), 1),
           (frozenset({2}), 1.5),
