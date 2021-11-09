@@ -112,7 +112,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
         ([(term, bias)*], [((orig_var1, orig_var2), aux_var)*])
 
     Example:
-        >>> poly = BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY) # doctest: +SKIP
+        >>> poly = dimod.BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY)
         >>> reduce_binary_polynomial(poly) # doctest: +SKIP
         ([(frozenset({0}), -1),
           (frozenset({1}), 1),
@@ -255,7 +255,7 @@ def make_quadratic_cqm(poly, vartype=None, cqm=None):
         return BinaryQuadraticModel({x: 1.0}, {}, 0.0, vartype)
 
     for (u, v), p in constraints:
-        cqm.add_constraint( var(u)*var(v) - var(p)  == 0, label = f'var__{u}*var_{v} == var_{p}')
+        cqm.add_constraint( var(u)*var(v) - var(p)  == 0, label = f"'{u}'*'{v}' == '{p}'")
 
     obj = BinaryQuadraticModel(vartype=vartype)
     _init_objective(obj, reduced_terms)
