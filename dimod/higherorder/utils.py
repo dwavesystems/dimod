@@ -109,6 +109,16 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
 
     Returns:
         ([(term, bias)*], [((orig_var1, orig_var2), aux_var)*])
+
+    Example:
+        >>> poly = BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, 'BINARY')
+        >>> reduce_binary_polynomial(poly)
+        ([(frozenset({0}), -1),
+          (frozenset({1}), 1),
+          (frozenset({2}), 1.5),
+          (frozenset({0, 1}), -1),
+          (frozenset({'0*1', 2}), -2)],
+         [(frozenset({0, 1}), '0*1')])
     """
 
     variables = poly.variables
