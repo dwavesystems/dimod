@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``ExactCQMSolver`` class with ``solve_cqm`` method to reference solvers.

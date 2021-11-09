@@ -257,7 +257,7 @@ class ExactCQMSolver():
         cases = _all_cases_cqm(cqm)
         energies = cqm.objective.energies(cases)
         
-        is_satisfied = [[violation <= atol + rtol*abs(energies[i]) for _, violation in cqm.iter_violations((cases[0][i],cases[1]))] for i in range(len(cases[0]))]
+        is_satisfied = [[info.violation <= atol + rtol*info.rhs_energy for info in cqm.iter_constraint_data((c,cases[1]))] for c in cases[0]]
         is_feasible = [all(satisfied) for satisfied in is_satisfied]
         
         # from_samples requires a single vartype argument, but QuadraticModel
