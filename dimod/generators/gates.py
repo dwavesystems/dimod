@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 from collections import defaultdict
-
+from typing import Union
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.typing import Variable
 from dimod.vartypes import Vartype
@@ -210,7 +210,7 @@ def xor_gate(in0: Variable, in1: Variable, out: Variable, aux: Variable,
     # the sum of a halfadder is XOR
     return halfadder_gate(in0, in1, out, aux, strength=strength)
 
-def multiplication_circuit(nbit: int) -> BinaryQuadraticModel:
+def multiplication_circuit(nbit: int, multiplicand_nbit: int = 0) -> BinaryQuadraticModel:
     """Return a binary quadratic model with ground states corresponding to
     a multiplication circuit.
 
@@ -255,7 +255,8 @@ def multiplication_circuit(nbit: int) -> BinaryQuadraticModel:
     if nbit < 1:
         raise ValueError("nbit must be a positive integer")
 
-    num_multiplier_bits = num_multiplicand_bits = nbit
+    num_multiplier_bits = nbit
+    num_multiplicand_bits = multiplicand_nbit or nbit
 
     bqm = BinaryQuadraticModel(Vartype.BINARY)
 
