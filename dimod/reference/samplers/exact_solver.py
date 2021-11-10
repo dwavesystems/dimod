@@ -241,12 +241,17 @@ class ExactCQMSolver():
             cqm (:class:`~dimod.ConstrainedQuadraticModel`):
                 Constrained quadratic model to be sampled from.
             rtol (float):
-                The relative tolerance for constraint violation, scales sample energy 
+                Relative tolerance for constraint violation. The fraction of a
+                constraint's right hand side which any violation must be smaller
+                than for the constraint to be satisfied.
             atol (float):
-                The absolute tolerance for constraint violations, constant for sample energy
+                Absolute tolerance for constraint violations. A constant any
+                violation must be smaller than for the constraint to be satisfied.
 
         Returns:
-            :class:`~dimod.SampleSet`
+            A sampleset of all possible samples, with the fields is_feasible
+            and is_satisfied containing total and individual constraint
+            violation information, respectively.
 
         """
         Sampler.remove_unknown_kwargs(self, **kwargs)
