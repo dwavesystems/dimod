@@ -266,9 +266,9 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: int = 0) -> BinaryQuadr
     #   k to refer to the bits of the product
 
     # create the variables corresponding to the input and output wires for the circuit
-    a = {i: 'a%d' % i for i in range(nbit)}
-    b = {j: 'b%d' % j for j in range(nbit)}
-    p = {k: 'p%d' % k for k in range(nbit + nbit)}
+    a = {i: 'a%d' % i for i in range(num_multiplier_bits)}
+    b = {j: 'b%d' % j for j in range(num_multiplicand_bits)}
+    p = {k: 'p%d' % k for k in  range(num_multiplier_bits + num_multiplicand_bits)}
 
     # we will want to store the internal variables somewhere
     AND = defaultdict(dict)  # the output of the AND gate associated with ai, bj is stored in AND[i][j]
@@ -334,23 +334,23 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: int = 0) -> BinaryQuadr
                 bqm.update(gate)
 
     # now we have a final row of full adders
-    for col in range(nbit - 1):
-        inputs = [CARRY[nbit - 1][col], SUM[nbit - 1][col + 1]]
+    for col in range(num_multiplicand_nbits - 1):
+        inputs = [CARRY[num_multiplier_nbits - 1][col], SUM[num_multiplier_nbits - 1][col + 1]]
 
         if col == 0:
-            sumout = p[nbit + col]
-            carryout = CARRY[nbit][col] = 'carry%d,%d' % (nbit, col)
+            sumout = p[num_multiplier_nbits + col]
+            carryout = CARRY[num_multiplier_nbits][col] = 'carry%d,%d' % (num_multiplier_nbits, col)
             gate = halfadder_gate(inputs[0], inputs[1], sumout, carryout)
             bqm.update(gate)
             continue
 
-        inputs.append(CARRY[nbit][col - 1])
+        inputs.append(CARRY[num_multiplier_nbits][col - 1])
 
-        sumout = p[nbit + col]
-        if col < nbit - 2:
-            carryout = CARRY[nbit][col] = 'carry%d,%d' % (nbit, col)
+        sumout = p[num_multiplier_nbits + col]
+        if col < num_multiplicand_nbits - 2:
+            carryout = CARRY[num_multiplier_nbits][col] = 'carry%d,%d' % (num_multiplier_nbits, col)
         else:
-            carryout = p[2 * nbit - 1]
+            carryout = p[num_multiplier_nbits + num_multiplicand_nbits - 1]
 
         gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumout, carryout)
         bqm.update(gate)
