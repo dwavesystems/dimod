@@ -334,23 +334,23 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: int = 0) -> BinaryQuadr
                 bqm.update(gate)
 
     # now we have a final row of full adders
-    for col in range(num_multiplicand_nbits - 1):
-        inputs = [CARRY[num_multiplier_nbits - 1][col], SUM[num_multiplier_nbits - 1][col + 1]]
+    for col in range(num_multiplicand_bits - 1):
+        inputs = [CARRY[num_multiplier_bits - 1][col], SUM[num_multiplier_bits - 1][col + 1]]
 
         if col == 0:
-            sumout = p[num_multiplier_nbits + col]
-            carryout = CARRY[num_multiplier_nbits][col] = 'carry%d,%d' % (num_multiplier_nbits, col)
+            sumout = p[num_multiplier_bits + col]
+            carryout = CARRY[num_multiplier_bits][col] = 'carry%d,%d' % (num_multiplier_bits, col)
             gate = halfadder_gate(inputs[0], inputs[1], sumout, carryout)
             bqm.update(gate)
             continue
 
-        inputs.append(CARRY[num_multiplier_nbits][col - 1])
+        inputs.append(CARRY[num_multiplier_bits][col - 1])
 
-        sumout = p[num_multiplier_nbits + col]
-        if col < num_multiplicand_nbits - 2:
-            carryout = CARRY[num_multiplier_nbits][col] = 'carry%d,%d' % (num_multiplier_nbits, col)
+        sumout = p[num_multiplier_bits + col]
+        if col < num_multiplicand_bits - 2:
+            carryout = CARRY[num_multiplier_bits][col] = 'carry%d,%d' % (num_multiplier_bits, col)
         else:
-            carryout = p[num_multiplier_nbits + num_multiplicand_nbits - 1]
+            carryout = p[num_multiplier_bits + num_multiplicand_bits - 1]
 
         gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumout, carryout)
         bqm.update(gate)
