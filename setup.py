@@ -47,6 +47,20 @@ class build_ext(_build_ext):
 
         super().build_extensions()
 
+    def finalize_options(self):
+        # allow us to set/override the `-j` user option with the
+        # DIMOD_NUM_BUILD_JOBS env (inspired by NumPy's NPY_NUM_BUILD_JOBS).
+        # This is useful for building in CI via pip and other places where
+        # messing with PIP_GLOBAL_OPTION creates undesired side-effects.
+        # Note that this is different than building a single extension from
+        # multiple compiled object files. For that we could use NumPy's
+        # `numpy.distutils.ccompiler.CCompiler_compile` since we use
+        # NumPy at compile time.
+        parallel = os.getenv('DIMOD_NUM_BUILD_JOBS')
+        if parallel is not None:
+            self.parallel = parallel
+        super().finalize_options()
+
 
 setup(
     name='dimod',
