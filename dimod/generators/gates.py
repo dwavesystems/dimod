@@ -252,7 +252,7 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -
         >>> best = ExactSolver().sample(bqm).first
         >>> p = {key: best.sample[key] for key in best.sample.keys() if "p" in key}
         >>> print(p)
-        {'p0': 0, 'p1': 1, 'p2': 1}
+        {'p0': 0, 'p1': 1, 'p2': 1, 'p3': 0}
     """
 
     if nbit < 1:
