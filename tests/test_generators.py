@@ -617,25 +617,39 @@ class TestGates(unittest.TestCase):
     def test_multiplication_circuit(self):
 
         # Verify correct variables for 3x3 circuit
-        mc3_vars = ['p5', 'p3', 'p0', 'and2,2', 'and0,1', 'carry2,1', 'and0,2',
-        'p4', 'and1,0', 'p1', 'carry1,0', 'and1,1', 'sum1,1', 'carry1,1',
-        'and1,2', 'carry3,0', 'and2,0', 'p2','carry2,0', 'and2,1', 'sum2,1'].sort()
+        mc3_vars = {
+            'a0', 'a1', 'a2',
+            'b0', 'b1', 'b2',
+            'and0,1', 'and0,2', 'and1,0', 'and1,1', 'and1,2', 'and2,0', 'and2,1', 'and2,2',
+            'sum1,1', 'sum1,2',
+            'carry1,0', 'carry1,1', 'carry1,2', 'carry2,0', 'carry2,1',
+            'p0', 'p1', 'p2', 'p3', 'p4', 'p5',
+        }
         bqm = dimod.generators.multiplication_circuit(3)
-        self.assertEqual((list(bqm.variables)).sort(), mc3_vars)
+        self.assertEqual(set(bqm.variables), mc3_vars)
 
-        # Verify correct variables for 3x3 circuit
-        mc2_3_vars = ['p5', 'p3', 'p0', 'and0,1', 'and0,2',
-        'p4', 'and1,0', 'p1', 'carry1,0', 'and1,1', 'sum1,1', 'carry1,1',
-        'and1,2', 'p2','carry2,0'].sort()
+        # Verify correct variables for 2x3 circuit
+        mc2_3_vars = {
+            'a0', 'a1',
+            'b0', 'b1', 'b2',
+            'and0,1', 'and0,2', 'and1,0', 'and1,1', 'and1,2',
+            'carry1,0', 'carry1,1',
+            'p0', 'p1', 'p2', 'p3', 'p4'
+        }
         bqm = dimod.generators.multiplication_circuit(2, 3)
-        self.assertEqual((list(bqm.variables)).sort(), mc2_3_vars)
+        self.assertEqual(set(bqm.variables), mc2_3_vars)
   
-        # Verify correct variables for 3x3 circuit
-        mc3_2_vars = ['p3', 'p0', 'and0,1', 'carry2,1',
-        'p4', 'and1,0', 'p1', 'carry1,0', 'and1,1', 'sum1,1', 'carry1,1',
-        'carry3,0', 'and2,0', 'p2','carry2,0', 'and2,1', 'sum2,1'].sort()
+        # Verify correct variables for 3x2 circuit
+        mc3_2_vars = {
+            'a0', 'a1', 'a2',
+            'b0', 'b1',
+            'and0,1', 'and1,0', 'and1,1', 'and2,0', 'and2,1',
+            'sum1,1',
+            'carry1,0', 'carry1,1', 'carry2,0',
+            'p0', 'p1', 'p2', 'p3', 'p4',
+        }
         bqm = dimod.generators.multiplication_circuit(3, 2)
-        self.assertEqual((list(bqm.variables)).sort(), mc3_2_vars)
+        self.assertEqual((set(bqm.variables)), mc3_2_vars)
 
         # Verify correct factoring/multiplication for 2x2 circuit
         bqm = dimod.generators.multiplication_circuit(2)
@@ -658,7 +672,7 @@ class TestGates(unittest.TestCase):
             bqm.fix_variable(fixed_var, fixed_val)
         best = dimod.ExactSolver().sample(bqm).first
         p = [best.sample['p0'], best.sample['p1'], best.sample['p2'],
-             best.sample['carry2,0']]
+             best.sample['p3']]
         self.assertEqual(p, [1, 0, 0, 1])
 
 class TestInteger(unittest.TestCase):

@@ -14,9 +14,11 @@
 
 from collections import defaultdict
 from typing import Optional
+import itertools as it
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.typing import Variable
 from dimod.vartypes import Vartype
+from dimod import quicksum
 
 __all__ = ['and_gate',
            'fulladder_gate',
@@ -262,7 +264,7 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -
     if num_multiplicand_bits < 1:
         raise ValueError("the multiplicand must have a positive size")
 
-    bqm = BinaryQuadraticModel(Vartype.BINARY)
+    num_product_bits = num_multiplier_bits +num_multiplicand_bits
 
     # throughout, we will use the following convention:
     #   i to refer to the bits of the multiplier
@@ -274,89 +276,42 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -
     b = {j: 'b%d' % j for j in range(num_multiplicand_bits)}
     p = {k: 'p%d' % k for k in  range(num_multiplier_bits + num_multiplicand_bits)}
 
-    # we will want to store the internal variables somewhere
-    AND = defaultdict(dict)  # the output of the AND gate associated with ai, bj is stored in AND[i][j]
-    SUM = defaultdict(dict)  # the sum of the ADDER gate associated with ai, bj is stored in SUM[i][j]
-    CARRY = defaultdict(dict)  # the carry of the ADDER gate associated with ai, bj is stored in CARRY[i][j]
+    def AND(i, j):
+        return f'and{i},{j}' if i or j else p[0]
 
-    # we follow a shift adder
-    for i in range(num_multiplier_bits):
-        for j in range(num_multiplicand_bits):
+    def SUM(i, j):
+        return (
+            p[i]
+            if j == 0
+            else (
+                p[i + j]
+                if i == num_multiplier_bits - 1
+                else f'sum{i},{j}'
+            ))
 
-            ai = a[i]
-            bj = b[j]
+    def CARRY(i, j):
+        return (
+            p[num_product_bits - 1]
+            if i + j == num_product_bits - 2
+            else f'carry{i},{j}'
+        )
 
-            if i == 0 and j == 0:
-                # in this case there are no inputs from lower bits, so our only input is the AND
-                # gate. And since we only have one bit to add, we don't need an adder, have no
-                # carry out
-                andij = AND[i][j] = p[0]
-                gate = and_gate(ai, bj, andij)
-                bqm.update(gate)
-                continue
+    def gate(i, j):
+        inputs = [AND(i, j)]
+        bqm = and_gate(a[i], b[j], inputs[0])
+        if i > 0:
+            if j < num_multiplicand_bits - 1:
+                inputs.append(SUM(i-1, j+1) if i > 1 else AND(0, j+1))
+            if j > 0:
+                inputs.append(CARRY(i, j-1))
+        l = len(inputs)
+        if l > 1:
+            outputs = SUM(i,j), CARRY(i, j)
+            if l==2:
+                bqm.update(halfadder_gate(*inputs, *outputs))
+            elif l==3:
+                bqm.update(fulladder_gate(*inputs, *outputs))
 
-            # we always need an AND gate
-            andij = AND[i][j] = 'and%s,%s' % (i, j)
-            gate = and_gate(ai, bj, andij)
-            bqm.update(gate)
+        return bqm
 
-            # the number of inputs will determine the type of adder
-            inputs = [andij]
-
-            # determine if there is a carry in
-            if i - 1 in CARRY and j in CARRY[i - 1]:
-                inputs.append(CARRY[i - 1][j])
-
-            # determine if there is a sum in
-            if i - 1 in SUM and j + 1 in SUM[i - 1]:
-                inputs.append(SUM[i - 1][j + 1])
-
-            # ok, create adders if necessary
-            if len(inputs) == 1:
-                # we don't need an adder and we don't have a carry
-                SUM[i][j] = andij
-            elif len(inputs) == 2:
-                # we need a HALFADDER so we have a sum and a carry
-                if j == 0:
-                    sumij = SUM[i][j] = p[i]
-                else:
-                    sumij = SUM[i][j] = 'sum%d,%d' % (i, j)
-
-                carryij = CARRY[i][j] = 'carry%d,%d' % (i, j)
-                gate = halfadder_gate(inputs[0], inputs[1], sumij, carryij)
-                bqm.update(gate)
-            else:
-                assert len(inputs) == 3, 'unexpected number of inputs'
-                # we need a FULLADDER so we have a sum and a carry
-                if j == 0:
-                    sumij = SUM[i][j] = p[i]
-                else:
-                    sumij = SUM[i][j] = 'sum%d,%d' % (i, j)
-
-                carryij = CARRY[i][j] = 'carry%d,%d' % (i, j)
-                gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumij, carryij)
-                bqm.update(gate)
-
-    # now we have a final row of full adders
-    for col in range(num_multiplicand_bits - 1):
-        inputs = [CARRY[num_multiplier_bits - 1][col], SUM[num_multiplier_bits - 1][col + 1]]
-
-        if col == 0:
-            sumout = p[num_multiplier_bits + col]
-            carryout = CARRY[num_multiplier_bits][col] = 'carry%d,%d' % (num_multiplier_bits, col)
-            gate = halfadder_gate(inputs[0], inputs[1], sumout, carryout)
-            bqm.update(gate)
-            continue
-
-        inputs.append(CARRY[num_multiplier_bits][col - 1])
-
-        sumout = p[num_multiplier_bits + col]
-        if col < num_multiplicand_bits - 2:
-            carryout = CARRY[num_multiplier_bits][col] = 'carry%d,%d' % (num_multiplier_bits, col)
-        else:
-            carryout = p[num_multiplier_bits + num_multiplicand_bits - 1]
-
-        gate = fulladder_gate(inputs[0], inputs[1], inputs[2], sumout, carryout)
-        bqm.update(gate)
-
-    return bqm
+    return quicksum(it.starmap(gate, it.product(a, b)))
