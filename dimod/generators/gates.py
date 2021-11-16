@@ -13,12 +13,13 @@
 #    limitations under the License.
 
 from collections import defaultdict
+from itertools import starmap, product
 from typing import Optional
-import itertools as it
-from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, quicksum
 from dimod.typing import Variable
 from dimod.vartypes import Vartype
-from dimod import quicksum
+
 
 __all__ = ['and_gate',
            'fulladder_gate',
@@ -212,13 +213,13 @@ def xor_gate(in0: Variable, in1: Variable, out: Variable, aux: Variable,
     # the sum of a halfadder is XOR
     return halfadder_gate(in0, in1, out, aux, strength=strength)
 
-def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -> BinaryQuadraticModel:
+def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = None) -> BinaryQuadraticModel:
     """Return a binary quadratic model with ground states corresponding to
     a multiplication circuit.
 
     The generated BQM represents the binary multiplication :math:`ab=p`,
-    where the multiplicands are binary variables of length `nbit`; for example,
-    :math:`2^ma_{nbit} + ... + 4a_2 + 2a_1 + a0`.
+    where the arg2s are binary variables of length `num_arg1_bits`; for example,
+    :math:`2^ma_{num_arg1_bits} + ... + 4a_2 + 2a_1 + a0`.
     The square below shows a graphic representation of the circuit::
       ________________________________________________________________________________
       |                                         and20         and10         and00    |
@@ -233,8 +234,9 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -
       --------------------------------------------------------------------------------
 
     Args:
-        nbit: Number of bits in the multiplier.
-        multiplicand_nbit: Number of bits in the multiplicand. If a false value is provided the arguments of equal size are used.
+        num_arg1_bits: Number of bits in the first argument.
+        num_arg2_bits: Number of bits in the second argument.
+            If num_arg2_bits is set to num_arg1_bits.
     Returns:
         A binary quadratic model with ground states corresponding to a
         multiplication circuit.
@@ -255,63 +257,53 @@ def multiplication_circuit(nbit: int, multiplicand_nbit: Optional[int] = None) -
         {'p0': 0, 'p1': 1, 'p2': 1, 'p3': 0}
     """
 
-    if nbit < 1:
-        raise ValueError("nbit must be a positive integer")
+    if num_arg1_bits < 1:
+        raise ValueError("num_arg1_bits must be a positive integer")
 
-    num_multiplier_bits = nbit
-    num_multiplicand_bits = multiplicand_nbit or nbit
+    num_arg2_bits = num_arg2_bits or num_arg1_bits
 
-    if num_multiplicand_bits < 1:
-        raise ValueError("the multiplicand must have a positive size")
+    if num_arg2_bits < 1:
+        raise ValueError("the arg2 must have a positive size")
 
-    num_product_bits = num_multiplier_bits +num_multiplicand_bits
+    num_product_bits = num_arg1_bits +num_arg2_bits
 
     # throughout, we will use the following convention:
-    #   i to refer to the bits of the multiplier
-    #   j to refer to the bits of the multiplicand
-    #   k to refer to the bits of the product
-
-    # create the variables corresponding to the input and output wires for the circuit
-    a = {i: 'a%d' % i for i in range(num_multiplier_bits)}
-    b = {j: 'b%d' % j for j in range(num_multiplicand_bits)}
-    p = {k: 'p%d' % k for k in  range(num_multiplier_bits + num_multiplicand_bits)}
+    #   i to refer to the bits of arg1
+    #   j to refer to the bits of arg2
 
     def AND(i, j):
-        return f'and{i},{j}' if i or j else p[0]
+        return f'and{i},{j}' if i or j else 'p0'
 
     def SUM(i, j):
         return (
-            p[i]
+            f'p{i}'
             if j == 0
             else (
-                p[i + j]
-                if i == num_multiplier_bits - 1
-                else f'sum{i},{j}'
-            ))
+                f'p{i + j}'
+                if i == num_arg1_bits - 1
+                else f'sum{i},{j}'))
 
     def CARRY(i, j):
         return (
-            p[num_product_bits - 1]
+            f'p{num_product_bits - 1}'
             if i + j == num_product_bits - 2
-            else f'carry{i},{j}'
-        )
+            else f'carry{i},{j}')
 
     def gate(i, j):
         inputs = [AND(i, j)]
-        bqm = and_gate(a[i], b[j], inputs[0])
+        bqm = and_gate(f'a{i}', f'b{j}', inputs[0])
         if i > 0:
-            if j < num_multiplicand_bits - 1:
+            if j < num_arg2_bits - 1:
                 inputs.append(SUM(i-1, j+1) if i > 1 else AND(0, j+1))
             if j > 0:
                 inputs.append(CARRY(i, j-1))
+
         l = len(inputs)
         if l > 1:
-            outputs = SUM(i,j), CARRY(i, j)
-            if l==2:
-                bqm.update(halfadder_gate(*inputs, *outputs))
-            elif l==3:
-                bqm.update(fulladder_gate(*inputs, *outputs))
+            outputs = SUM(i, j), CARRY(i, j)
+            bqm.update((halfadder_gate if l == 2 else fulladder_gate)(*inputs, *outputs))
 
         return bqm
 
-    return quicksum(it.starmap(gate, it.product(a, b)))
+    return quicksum(starmap(gate, product(range(num_arg1_bits),
+                                          range(num_arg2_bits))))
