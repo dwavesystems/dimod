@@ -1118,7 +1118,8 @@ class ConstrainedQuadraticModel:
 
             if not c.lin_expr and not c.quad_expr:
                 # empty constraint
-                warnings.warn('The LP file contained an empty constraint and it will be ignored')
+                warnings.warn('The LP file contained an empty constraint and it will be ignored',
+                              stacklevel=2)
                 continue
 
             if c.lin_expr:
