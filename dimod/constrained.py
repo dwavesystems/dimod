@@ -387,7 +387,7 @@ class ConstrainedQuadraticModel:
         return self.add_constraint_from_model(
             qm, sense, rhs=rhs, label=label, copy=False)
 
-    def add_discrete(self, variables: Collection[Variable],
+    def add_discrete(self, variables: Iterable[Variable],
                      label: Optional[Hashable] = None) -> Hashable:
         """Add an iterable of binary variables as a disjoint one-hot constraint.
 
@@ -413,6 +413,9 @@ class ConstrainedQuadraticModel:
         """
         if label is not None and label in self.constraints:
             raise ValueError("a constraint with that label already exists")
+
+        if isinstance(variables, Iterator):
+            variables = list(variables)
 
         for v in variables:
             if v in self._discrete:
