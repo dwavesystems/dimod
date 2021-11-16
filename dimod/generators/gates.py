@@ -218,7 +218,7 @@ def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = No
     a multiplication circuit.
 
     The generated BQM represents the binary multiplication :math:`ab=p`,
-    where the args are binary variables of length `num_arg1_bits` and 'num_arg2_bits;
+    where the args are binary variables of length `num_arg1_bits` and 'num_arg2_bits`;
     for example, :math:`2^ma_{num_arg1_bits} + ... + 4a_2 + 2a_1 + a0`.
     The square below shows a graphic representation of the circuit::
       ________________________________________________________________________________
