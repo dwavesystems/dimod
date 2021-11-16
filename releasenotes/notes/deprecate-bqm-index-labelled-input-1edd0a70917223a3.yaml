@@ -1,0 +1,4 @@
+---
+deprecations:
+  - |
+    Deprecate ``dimod.decorators.bqm_index_labelled_input()`` decorator.

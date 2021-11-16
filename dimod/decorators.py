@@ -16,6 +16,7 @@
 import inspect
 import itertools
 import collections.abc as abc
+import warnings
 
 from functools import wraps
 from numbers import Integral
@@ -123,6 +124,9 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
 
     .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
     """
+
+    warnings.warn("bqm_index_labelled_input is deprecated and will be removed in dimod 0.11.0",
+                  DeprecationWarning)
 
     def index_label_decorator(f):
         @wraps(f)

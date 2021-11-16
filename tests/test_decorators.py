@@ -49,6 +49,16 @@ class TestBQMIndexLabels(unittest.TestCase):
     pass
 
 
+class TestBQMIndexLabelledInput(unittest.TestCase):
+    # we really should add proper tests but since it's deprecated anyway let's
+    # just leave it alone
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            @dimod.decorators.bqm_index_labelled_input('a', ['b'])
+            def f(a, b):
+                pass
+
+
 class TestNonblockingSampleMethod(unittest.TestCase):
     def test_done(self):
         class Sampler:
