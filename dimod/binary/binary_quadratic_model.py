@@ -1970,8 +1970,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         qubo.update(((v, v), bias) for v, bias in self.binary.linear.items())
         return qubo, self.binary.offset
 
-    def update(self, other):
-        """Not implemented."""
+    def update(self, other: 'BinaryQuadraticModel'):
+        """Add the variables, interactions, offset and biases from another
+        binary quadratic model."""
         try:
             self.data.update(other.data)
             return
