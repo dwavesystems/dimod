@@ -18,6 +18,7 @@ import json
 import warnings
 
 from collections import defaultdict, namedtuple
+from typing import List, Tuple, Union, Generator, Iterator
 
 import numpy as np
 from numpy.core.shape_base import stack
@@ -26,8 +27,9 @@ from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
 from dimod.serialization.fileview import load, read_header, write_header
+from dimod.typing import QuadraticVectors, DQMVectors
 from dimod.variables import Variables
-from typing import List, Tuple, Union, Generator, Iterator
+
 
 LinearTriplets = Union[List[Tuple], Generator[Tuple, None, None]]
 
@@ -40,15 +42,8 @@ DQM_MAGIC_PREFIX = b'DIMODDQM'
 DATA_MAGIC_PREFIX = b'BIAS'
 
 
-# todo: update BinaryQuadraticModel.to_numpy_vectors to also use namedtuple
 LegacyDQMVectors = namedtuple(
     'LegacyDQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels'])
-
-DQMVectors = namedtuple(
-    'DQMVectors', ['case_starts', 'linear_biases', 'quadratic', 'labels', 'offset'])
-
-QuadraticVectors = namedtuple(
-    'QuadraticVectors', ['row_indices', 'col_indices', 'biases'])
 
 
 class VariableNeighborhood(abc.Set):

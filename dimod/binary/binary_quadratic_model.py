@@ -45,7 +45,8 @@ from dimod.quadratic import QuadraticModel, QM
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
-from dimod.typing import Bias, Variable, VartypeLike
+from dimod.typing import (Bias, BQMVectors, LabelledBQMVectors, QuadraticVectors,
+                          Variable, VartypeLike)
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -1873,11 +1874,51 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         return dense
 
-    def to_numpy_vectors(self, variable_order=None, *,
-                         dtype=None, index_dtype=None,
-                         sort_indices=False, sort_labels=True,
-                         return_labels=False):
-        """Save a binary quadratic model as NumPy vectors."""
+    def to_numpy_vectors(self,
+                         variable_order: Optional[Sequence[Variable]] = None,
+                         *,
+                         dtype: Optional[DTypeLike] = None,
+                         index_dtype: Optional[DTypeLike] = None,
+                         sort_indices: bool = False,
+                         sort_labels: bool = True,
+                         return_labels: bool = False,
+                         ) -> Union[BQMVectors, LabelledBQMVectors]:
+        """Convert binary quadratic model to 1-dimensional NumPy arrays.
+
+        Args:
+            variable_order:
+                Variable order for the vector output. By default uses
+                the order of the binary quadratic model.
+
+            sort_indices:
+                Sort the indices of the interactions such that row is always
+                less than column and then lexicographical.
+
+            sort_labels:
+                Equivalent to setting ``variable_order=sorted(bqm.variables)``.
+                Ignored if ``variable_order`` is provided.
+
+            return_labels:
+                If True, returns a list of variable labels in the order used.
+
+        Returns:
+            A named tuple with fields ``linear_biases``, ``quadratic``, and
+            ``offset``. If ``return_labels == True`` then it will also
+            have a ``labels`` field.
+
+            ``linear_biases`` is a length :attr:`BinaryQuadraticModel.num_variables`
+            array containing the linear biases.
+
+            ``quadratic`` is a named tuple with fields ``row_indices``,
+            ``col_indices``, ``biases``. ``row_indices`` and ``col_indices``
+            are length :attr:`BinaryQuadraticModel.num_interactions`` arrays
+            containing the interaction indices. ``biases`` contains the biases.
+
+            ``offset`` is the offset.
+
+            ``labels`` are the variable labels used.
+
+        """
         if dtype is not None:
             warnings.warn(
                 "The 'dtype' keyword argument is deprecated since dimod 0.10.0"
@@ -1928,32 +1969,34 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             icol.append(label_to_idx[v])
             qdata.append(bias)
 
-        irow = np.asarray(irow, dtype=np.int64)
-        icol = np.asarray(icol, dtype=np.int64)
-        qdata = np.asarray(qdata)
+        quadratic = QuadraticVectors(
+            np.asarray(irow, dtype=np.int64),
+            np.asarray(icol, dtype=np.int64),
+            np.asarray(qdata),
+            )
 
         if sort_indices:
             # row index should be less than col index, this handles
             # upper-triangular vs lower-triangular
-            swaps = irow > icol
+            swaps = quadratic.row_indices > quadratic.col_indices
             if swaps.any():
                 # in-place
-                irow[swaps], icol[swaps] = icol[swaps], irow[swaps]
+                quadratic.row_indices[swaps],  quadratic.col_indices[swaps] = \
+                    quadratic.col_indices[swaps], quadratic.row_indices[swaps]
 
             # sort lexigraphically
-            order = np.lexsort((irow, icol))
+            order = np.lexsort((quadratic.row_indices, quadratic.col_indices))
             if not (order == range(len(order))).all():
-                # copy
-                irow = irow[order]
-                icol = icol[order]
-                qdata = qdata[order]
-
-        ret = [ldata, (irow, icol, qdata), ldata.dtype.type(self.offset)]
+                quadratic = QuadraticVectors(
+                    quadratic.row_indices[order],
+                    quadratic.col_indices[order],
+                    quadratic.biases[order],
+                    )
 
         if return_labels:
-            ret.append(variable_order)
-
-        return tuple(ret)
+            return LabelledBQMVectors(ldata, quadratic, ldata.dtype.type(self.offset), variable_order)
+        else:
+            return BQMVectors(ldata, quadratic, ldata.dtype.type(self.offset))
 
     def to_qubo(self) -> Tuple[Mapping[Tuple[Variable, Variable], Bias], Bias]:
         """Convert a binary quadratic model to QUBO format.

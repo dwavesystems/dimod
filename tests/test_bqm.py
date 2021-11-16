@@ -2845,6 +2845,18 @@ class TestToNumpyVectors(unittest.TestCase):
         self.assertEqual(off, 0)
 
     @parameterized.expand(BQMs.items())
+    def test_namedtuple(self, name, BQM):
+        bqm = BQM({'c': 1, 'a': -1}, {'ba': 1, 'bc': -2}, 0, dimod.SPIN)
+
+        nt = bqm.to_numpy_vectors()
+        ntl = bqm.to_numpy_vectors(return_labels=True)
+
+        self.assertEqual(ntl.labels, list('abc'))
+
+        np.testing.assert_array_equal(nt.linear_biases, [-1, 0, 1])
+        np.testing.assert_array_equal(ntl.linear_biases, [-1, 0, 1])
+
+    @parameterized.expand(BQMs.items())
     def test_unsorted_labels(self, name, BQM):
         bqm = BQM(OrderedDict([('b', -1), ('a', 1)]), {}, 'SPIN')
 

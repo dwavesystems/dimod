@@ -34,6 +34,7 @@ from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
 from dimod.libcpp cimport cppVartype
 from dimod.sampleset import as_samples
+from dimod.typing import BQMVectors, LabelledBQMVectors, QuadraticVectors
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.variables import Variables
 from dimod.vartypes import Vartype, as_vartype
@@ -832,13 +833,10 @@ cdef class cyBQM_template(cyBQMBase):
         if sort_indices:
             coo_sort(irow, icol, qdata)
 
-        # todo: nametuple
-        ret = [ldata, (irow, icol, qdata), self.offset]
-
         if return_labels:
-            ret.append(labels)
-
-        return tuple(ret)
+            return LabelledBQMVectors(ldata, QuadraticVectors(irow, icol, qdata), self.offset, labels)
+        else:
+            return BQMVectors(ldata, QuadraticVectors(irow, icol, qdata), self.offset)
 
     def _update(self, cyBQM other):
         # get the reindexing
