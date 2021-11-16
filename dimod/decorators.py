@@ -96,29 +96,10 @@ def bqm_index_labels(f):
     input and to return a :obj:`.SampleSet`.
 
     """
-
     @wraps(f)
     def _index_label(sampler, bqm, **kwargs):
-        if not hasattr(bqm, 'linear'):
-            raise TypeError('expected input to be a BinaryQuadraticModel')
-        linear = bqm.linear
-
-        # if already index-labelled, just continue
-        if all(v in linear for v in range(len(bqm))):
-            return f(sampler, bqm, **kwargs)
-
-        try:
-            inverse_mapping = dict(enumerate(sorted(linear)))
-        except TypeError:
-            # in python3 unlike types cannot be sorted
-            inverse_mapping = dict(enumerate(linear))
-        mapping = {v: i for i, v in inverse_mapping.items()}
-
-        response = f(sampler, bqm.relabel_variables(mapping, inplace=False), **kwargs)
-
-        # unapply the relabeling
-        return response.relabel_variables(inverse_mapping, inplace=True)
-
+        bqm, mapping = bqm.relabel_variables_as_integers(inplace=False)
+        return f(sampler, bqm, **kwargs).relabel_variables(mapping, inplace=False)
     return _index_label
 
 
