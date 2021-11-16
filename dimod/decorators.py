@@ -126,7 +126,7 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
     """
 
     warnings.warn("bqm_index_labelled_input is deprecated and will be removed in dimod 0.11.0",
-                  DeprecationWarning)
+                  DeprecationWarning, stacklevel=2)
 
     def index_label_decorator(f):
         @wraps(f)
