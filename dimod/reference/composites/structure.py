@@ -60,11 +60,12 @@ class StructureComposite(Sampler, Composite, Structured):
         >>> quadratic[(0, 2)] = 1.0
         >>> bqm = dimod.BinaryQuadraticModel(linear, quadratic, 1.0, dimod.Vartype.SPIN)
         ...
-        >>> try: response = structured_sampler.sample(bqm)
+        >>> try:
+        ...     response = structured_sampler.sample(bqm)
         ... except dimod.BinaryQuadraticModelStructureError as details:
         ...     print(details)
         ...
-        given bqm does not match the sampler's structure
+        given bqm constains an interaction, (0, 2), not supported by the structured solver
 
     """
     # we will override these in the __init__, but because they are abstract properties we need to
