@@ -188,12 +188,12 @@ def bqm_structured(f):
 
         if not adjacency.keys() >= bqm.variables:
             raise BinaryQuadraticModelStructureError(
-                f"given bqm constains a variable, {(adjacency.keys() - bqm.variables).pop()!r}, "
+                f"given bqm contains a variable, {(adjacency.keys() - bqm.variables).pop()!r}, "
                 "not supported by the structured solver")
         if any(u not in adjacency[v] for u, v, _ in bqm.iter_quadratic()):
             u, v = next((u, v) for u, v, _ in bqm.iter_quadratic() if u not in adjacency[v])
             raise BinaryQuadraticModelStructureError(
-                f"given bqm constains an interaction, {(u, v)!r}, "
+                f"given bqm contains an interaction, {(u, v)!r}, "
                 "not supported by the structured solver")
         return f(sampler, bqm, **kwargs)
     return structured_sample

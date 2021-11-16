@@ -1910,7 +1910,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             array containing the linear biases.
 
             ``quadratic`` is a named tuple with fields ``row_indices``,
-            ``col_indices``, ``biases``. ``row_indices`` and ``col_indices``
+            ``col_indices``, and ``biases``. ``row_indices`` and ``col_indices``
             are length :attr:`BinaryQuadraticModel.num_interactions`` arrays
             containing the interaction indices. ``biases`` contains the biases.
 

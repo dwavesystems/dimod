@@ -65,7 +65,7 @@ class StructureComposite(Sampler, Composite, Structured):
         ... except dimod.BinaryQuadraticModelStructureError as details:
         ...     print(details)
         ...
-        given bqm constains an interaction, (0, 2), not supported by the structured solver
+        given bqm contains an interaction, (0, 2), not supported by the structured solver
 
     """
     # we will override these in the __init__, but because they are abstract properties we need to
