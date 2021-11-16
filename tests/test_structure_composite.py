@@ -26,3 +26,14 @@ class MockSampler(unittest.TestCase):
             dit.assert_sampler_api(sampler)
             dit.assert_composite_api(sampler)
             dit.assert_structured_api(sampler)
+
+    def test_sample(self):
+        sampler = dimod.StructureComposite(dimod.NullSampler(),
+                                           [0, 1, 2], [(0, 1), (0, 2)])
+
+        sampler.sample_ising({0: 1}, {}).resolve()
+
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({'a': 1}, {})  # wrong variables
+        with self.assertRaises(ValueError):
+            sampler.sample_ising({0: 1}, {(1, 2): 1})  # wrong interactions

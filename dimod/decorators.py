@@ -13,9 +13,9 @@
 #    limitations under the License.
 #
 
+import collections.abc as abc
 import inspect
 import itertools
-import collections.abc as abc
 import warnings
 
 from functools import wraps
@@ -182,28 +182,21 @@ def bqm_structured(f):
     function or method to accept a :obj:`.BinaryQuadraticModel` as the second
     input and for the :class:`.Sampler` to also be :class:`.Structured`.
     """
-
     @wraps(f)
-    def new_f(sampler, bqm, **kwargs):
-        try:
-            structure = sampler.structure
-            adjacency = structure.adjacency
-        except AttributeError:
-            if isinstance(sampler, Structured):
-                raise RuntimeError("something is wrong with the structured sampler")
-            else:
-                raise TypeError("sampler does not have a structure property")
+    def structured_sample(sampler, bqm, **kwargs):
+        adjacency = sampler.adjacency
 
-        if not all(v in adjacency for v in bqm.linear):
-            # todo: better error message
-            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
-        if not all(u in adjacency[v] for u, v in bqm.quadratic):
-            # todo: better error message
-            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
-
+        if not adjacency.keys() >= bqm.variables:
+            raise BinaryQuadraticModelStructureError(
+                f"given bqm constains a variable, {(adjacency.keys() - bqm.variables).pop()!r}, "
+                "not supported by the structured solver")
+        if any(u not in adjacency[v] for u, v, _ in bqm.iter_quadratic()):
+            u, v = next((u, v) for u, v, _ in bqm.iter_quadratic() if u not in adjacency[v])
+            raise BinaryQuadraticModelStructureError(
+                f"given bqm constains an interaction, {(u, v)!r}, "
+                "not supported by the structured solver")
         return f(sampler, bqm, **kwargs)
-
-    return new_f
+    return structured_sample
 
 
 def vartype_argument(*arg_names):
