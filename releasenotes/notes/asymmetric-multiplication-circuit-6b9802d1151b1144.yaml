@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add optional second parameter to ``multiplication_circuit()`` enabling the multiplying arguments of different sizes.
