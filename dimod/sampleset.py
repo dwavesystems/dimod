@@ -322,16 +322,12 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
             max_ = max(-samples_like.min(initial=0),
                        +samples_like.max(initial=0))
 
-            if max_ <= np.iinfo(np.int8).max:
-                dtype = np.int8
-            elif max_ <= np.iinfo(np.int16).max:
-                dtype = np.int16
-            elif max_ < np.iinfo(np.int32).max:
-                dtype = np.int32
-            elif max_ < np.iinfo(np.int64).max:
-                dtype = np.int64
-            else:
-                raise RuntimeError
+            try:
+                dtype = next(tp for tp in (np.int8, np.int16, np.int32, np.int64)
+                             if max_ <= np.iinfo(tp).max)
+            except StopIteration:
+                raise ValueError('`samples like contains entries that do not fit in np.int64')
+
         else:
             dtype = samples_like.dtype
 

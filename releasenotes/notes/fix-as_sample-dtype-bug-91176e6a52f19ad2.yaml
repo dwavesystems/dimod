@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed edge case bug when determining dtype in ``as_sample()``.
