@@ -272,6 +272,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: dist
+      - when:
+          condition:
+            equal: [3.10.0, << parameters.python-version>>]
+          steps:
+            - run: brew update
       - run:
           name: install pyenv
           command: |
