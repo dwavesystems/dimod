@@ -3,63 +3,57 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
 
-environment:
-  PIP_PROGRESS_BAR: off
+environment: &global-environment
+  CIBW_BUILD_VERBOSITY: 1
+  CIBW_ENVIRONMENT: DIMOD_NUM_BUILD_JOBS=20
+  CIBW_SKIP: pp* *musllinux*
+  PIP_PROGRESS_BAR: 'off'
 
 jobs:
-  build-manylinux:
-
+  build-linux:
     parameters:
-      manylinux-tag:
-        type: string
-      manylinux-arch:
-        type: string
       python-version:
         type: string
 
     docker:
-      - image: quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >>
+      - image: circleci/python:3.9
 
-    working_directory: /dimod
+    environment:
+      <<: *global-environment
+      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
+      CIBW_ARCHS_LINUX: x86_64
 
     steps:
       - checkout
-
-      - run:
-          name: Fix git checkout
-          command: git reset --hard
-
-      - run:
-          name: Build wheels
+      - setup_remote_docker
+      - restore_cache: &build-linux-restore-cache
+          keys:
+            - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
+      - when:
+          condition:
+            equal: [3.6.8, << parameters.python-version>>]
+          steps:
+            - run: echo 'export CIBW_MANYLINUX_X86_64_IMAGE=manylinux1' >> $BASH_ENV
+      - run: &build-linux-wheels
+          name: build wheels
           command: |
-            for py in /opt/python/cp*/bin/python; do
-              ver=$("$py" -c 'import sys; print("{0.major}.{0.minor}".format(sys.version_info))')
-              req=<< parameters.python-version >>
-              [[ "$ver" != "${req:0:3}" ]] && continue
-              "$py" -m pip wheel . -w ./wheelhouse --no-deps
-            done
-
-      - run:
-          name: bundle shared libraries into wheels
-          command: |
-            for whl in ./wheelhouse/dimod*.whl; do
-              auditwheel repair "$whl" -w ./dist
-            done
-
-      - store_artifacts:
+            python3 -m venv env
+            . env/bin/activate
+            pip install pip --upgrade
+            pip install cibuildwheel==2.2.2
+            cibuildwheel --output-dir dist
+      - save_cache: &build-linux-save-cache
+          paths:
+            - ~/.cache/pip
+          key: pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
+      - store_artifacts: &store-artifacts
           path: ./dist
-
-      - persist_to_workspace:
-          root: /dimod/dist/
+      - persist_to_workspace: &persist-to-workspace
+          root: ./dist/
           paths: .
 
-  build-manylinux-aarch64:
-
+  build-linux-aarch64:
     parameters:
-      manylinux-tag:
-        type: string
-      manylinux-arch:
-        type: string
       python-version:
         type: string
 
@@ -68,85 +62,152 @@ jobs:
 
     resource_class: arm.medium
 
-    steps:
+    environment:
+      <<: *global-environment
+      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
+      CIBW_ARCHS_LINUX: aarch64
+
+    steps: &build-steps
       - checkout
+      - restore_cache: *build-linux-restore-cache
+      - run: *build-linux-wheels
+      - save_cache: *build-linux-save-cache
+      - store_artifacts: *store-artifacts
+      - persist_to_workspace: *persist-to-workspace
 
-      - run:
-          name: Fix git checkout
-          command: git reset --hard
+  build-osx:
+    parameters:
+      python-version:
+        type: string
+      cibw-arch:
+        type: string
 
-      - run:
-          name: Build wheels
-          command: |
-            pyv=<< parameters.python-version >>
-            pyv="${pyv//.}"
-            pyv="${pyv:0:2}"
-            docker run -e pyv=$pyv --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              for py in /opt/python/cp*${pyv}*/bin/python;
-              do
-                  $py -m pip wheel . -w ./wheelhouse --no-deps;
-              done
-            '
-      - run:
-          name: bundle shared libraries into wheels
-          command: |
-            docker run -e pyv=$pyv --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              for whl in ./wheelhouse/dimod*.whl; do
-                auditwheel repair "$whl" -w ./dist
-              done
-            '
+    macos:
+      xcode: 12.5.1
 
-      - store_artifacts:
-          path: ./dist
+    environment:
+      <<: *global-environment
+      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
+      CIBW_ARCHS_MACOS: << parameters.cibw-arch >>
 
-      - persist_to_workspace:
-          root: ./dist/
-          paths: .
+    steps: *build-steps
 
   build-sdist:
-    docker:
-      - image: circleci/python:3.9-buster
-
-    working_directory: ~/build
-
-    steps:
-      - checkout
-
-      - run:
-          name: build sdist
-          command: |
-            python -m venv build_env
-            . build_env/bin/activate
-            pip install -r requirements.txt
-            python setup.py sdist -d ./dist
-
-      - store_artifacts:
-          path: ./dist
-
-      - persist_to_workspace:
-          root: ~/build/dist/
-          paths: .
-
-  test-sdist:
     docker:
       - image: circleci/python:3.9
 
     steps:
       - checkout
-
-      - attach_workspace:
-          at: dist
-
       - run:
-          name: install from sdist
+          name: build sdist
           command: |
             python -m venv env
             . env/bin/activate
-            pip install dist/dimod*.tar.gz
+            pip install -r requirements.txt
+            python setup.py sdist -d ./dist
+      - store_artifacts: *store-artifacts
+      - persist_to_workspace: *persist-to-workspace
+
+  build-windows:
+    parameters:
+      python-version:
+        type: string
+
+    executor:
+      name: win/default
+
+    environment:
+      <<: *global-environment
+      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
+      CIBW_ARCHS_WINDOWS: AMD64
+
+    steps:
+      - checkout
+      - run:
+          name: build wheels
+          command: |
+            python -m pip install pip --upgrade
+            python -m pip install cibuildwheel==2.2.2
+            python -m cibuildwheel --output-dir dist
+      - store_artifacts: *store-artifacts
+      - persist_to_workspace: *persist-to-workspace
+
+  deploy-all:
+    docker:
+      - image: circleci/python:3.9
+
+    steps:
+      - attach_workspace:
+          at: dist
+
+      - store_artifacts:
+          path: ./dist
+
+      - run:
+          name: deploy
+          command: |
+            python -m venv env
+            . env/bin/activate
+            python -m pip install twine
+            twine upload -u "$PYPI_USERNAME" -p "$PYPI_PASSWORD" --skip-existing ./dist/*
+
+  test-airspeed-velocity:
+    docker:
+      - image: circleci/python:3.9
+
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install -r benchmarks/requirements.txt
+      - run:
+          name: check that our airspeed velocity tests run without failure
+          command: |
+            . env/bin/activate
+            asv machine --yes
+            asv run --quick --strict
+
+  test-doctest:
+    docker:
+      - image: circleci/python:3.7 # as of march 2019 RTD uses 3.7
+
+    steps:
+      - checkout
+      - run:
+          name: install doxygen
+          command: sudo apt-get install doxygen
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install -r requirements.txt
+            pip install -r docs/requirements.txt
+      - run:
+          name: build dimod
+          command: |
+            . env/bin/activate
+            python setup.py build_ext --inplace
+      - run:
+          name: build docs
+          command: |
+            . env/bin/activate
+            make -C docs/ cpp html
+      - store_artifacts:
+          path: ./docs/build/html
+      - run:
+          name: doctest
+          command: |
+            . env/bin/activate
+            make -C docs/ doctest
+      - run:
+          name: linkcheck
+          command: |
+            . env/bin/activate
+            make -C docs/ linkcheck
 
   test-linux:
     parameters:
@@ -160,387 +221,33 @@ jobs:
 
     steps:
       - checkout
-
       - attach_workspace:
           at: dist
-
-      # Make sure that we're using the built dimod and not one from pypi
       - run:
           name: install
           command: |
             python -m venv env
             . env/bin/activate
-            pip install -r tests/requirements.txt
+            pip install -r requirements.txt
+            pip install dimod --no-index -f dist/ --force-reinstall --no-deps
             pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
-            pip install 'dwave-preprocessing<0.4' --no-deps
-            pip install 'pyparsing' --no-deps
-            pip install dimod --no-index -f dist/ --no-deps --force-reinstall
-
-      - run:
+      - run: &unix-run-tests
           name: run tests
           command: |
             . env/bin/activate
             cd tests/
+            pip install -r requirements.txt
             coverage run --source=dimod --append -m unittest
-
-      - run:
+      - run: &unix-codecov
           name: codecov
           command: |
             . env/bin/activate
             cd tests/
             codecov
-
-  test-linux-aarch64:
-    parameters:
-      manylinux-tag:
-        type: string
-      manylinux-arch:
-        type: string
-      python-version:
-        type: string
-      numpy-version:
-        type: string
-
-    machine:
-      image: ubuntu-2004:202101-01
-
-    resource_class: arm.medium
-
-    steps:
-      - checkout
-
-      - attach_workspace:
-          at: dist
-
-      # Make sure that we're using the built dimod and not one from pypi
-      - run:
-          name: install
-          command: |
-            npv='<< parameters.numpy-version >>'
-            pyv='<< parameters.python-version >>'
-            docker run -e npv=$npv -e pyv=$pyv --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              /opt/python/${pyv}/bin/python -m venv env
-              . env/bin/activate
-              pip install -U pip wheel
-              pip install Cython>=0.29.21
-              pip install dimod==0.10.4
-              pip install -r tests/requirements.txt
-              pip install numpy${npv} --upgrade --only-binary=numpy
-              pip install dwave-preprocessing --no-build-isolation
-              pip install -U pip pyparsing
-              pip install dimod --no-index -f dist/ --no-deps --force-reinstall
-            '
-
-      - run:
-          name: run tests
-          command: |
-            docker run --rm -v $PWD:/ws:rw --workdir=/ws \
-            quay.io/pypa/<< parameters.manylinux-tag >>_<< parameters.manylinux-arch >> \
-            bash -exc '
-              . env/bin/activate
-              cd tests/
-              coverage run --source=dimod --append -m unittest
-            '
-
-  deploy-linux:
-    docker:
-      - image: circleci/python:3.9
-
-    steps:
-      - attach_workspace:
-          at: dist
-
-      - store_artifacts:
-          path: ./dist
-
-      - run:
-          name: deploy
-          command: |
-            python -m venv env
-            . env/bin/activate
-            python -m pip install twine
-            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
-
-  test-osx:
-    parameters:
-      python-version:
-        type: string
-
-    macos:
-      xcode: "12.2.0"
-
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: 1
-
-      # Force (lie about) macOS 10.9 binary compatibility.
-      # Needed for properly versioned wheels.
-      # See: https://github.com/MacPython/wiki/wiki/Spinning-wheels
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-    steps:
-      - checkout
-
-      - run:
-          name: install pyenv
-          command: |
-            brew install pyenv
-
-      - restore_cache:
-          keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run:
-          name: install python
-          command: |
-            pyenv install << parameters.python-version>> -s
-
-      - save_cache:
-          paths:
-            - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run: &osx-install-template
-          name: install
-          command: |
-            eval "$(pyenv init -)"
-            pyenv local << parameters.python-version >>
-            python -m venv env
-            . env/bin/activate
-            pip install -r requirements.txt
-            pip install -r tests/requirements.txt
-
-      - run: &unix-build-ext-template
-          name: build
-          command: |
-            . env/bin/activate
-            python setup.py build_ext --inplace
-
-      - run:
-          name: run tests
-          command: |
-            . env/bin/activate
-            python --version
-            coverage run -m unittest discover
-
-      - run:
-          name: codecov
-          command: |
-            . env/bin/activate
-            codecov
-
-  deploy-osx:
-    parameters:
-      python-version:
-        type: string
-
-    macos:
-      xcode: "12.2.0"
-
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: 1
-
-      # Force (lie about) macOS 10.9 binary compatibility.
-      # Needed for properly versioned wheels.
-      # See: https://github.com/MacPython/wiki/wiki/Spinning-wheels
-      MACOSX_DEPLOYMENT_TARGET: 10.9
-
-    steps:
-      - checkout
-
-      - run:
-          name: install pyenv
-          command: |
-            brew install pyenv
-
-      - restore_cache:
-          keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run:
-          name: install python
-          command: |
-            pyenv install << parameters.python-version>> -s
-
-      - save_cache:
-          paths:
-            - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.2.0
-
-      - run: *osx-install-template
-
-      - run:
-          name: create bdist_wheel
-          command: |
-            . env/bin/activate
-            python -m pip install wheel
-            python setup.py bdist_wheel
-
-      - run:
-          name: deploy
-          command: |
-            . env/bin/activate
-            python -m pip install twine
-            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --skip-existing ./dist/*
-
-  test-win:
-    parameters:
-      python-version:
-        type: string
-      architecture:
-        type: string
-
-    executor:
-      name: win/default
-
-    environment:
-      CL: /d2FH4-
-
-    steps:
-      - checkout
-
-      - run: &win-install-python-template
-          name: install python and create venv
-          command: |
-            nuget install python<< parameters.architecture >> -Version << parameters.python-version >> -ExcludeVersion -OutputDirectory .
-            .\python<< parameters.architecture >>\tools\python.exe --version
-            .\python<< parameters.architecture >>\tools\python.exe -m venv env
-
-      - run: &win-install-dependencies-template
-          name: install dependencies
-          command: |
-            env\Scripts\activate.ps1
-            python --version
-            pip install -r requirements.txt
-            pip install -r tests\requirements.txt
-
-      - run:
-          name: build extension
-          command: |
-            env\Scripts\activate.ps1
-            python setup.py build_ext --inplace
-
-      - run:
-          name: run unittests
-          command: |
-            env\Scripts\activate.ps1
-            coverage run -m unittest discover
-
-      - run:
-          name: codecov
-          command: |
-            env\Scripts\activate.ps1
-            codecov
-
-  deploy-win:
-    parameters:
-      python-version:
-        type: string
-      architecture:
-        type: string
-
-    executor:
-      name: win/default
-
-    environment:
-      CL: /d2FH4-
-
-    steps:
-      - checkout
-
-      - run: *win-install-python-template
-
-      - run: *win-install-dependencies-template
-
-      - run:
-          name: create wheel
-          command: |
-            env\Scripts\activate.ps1
-            python -m pip install wheel
-            python setup.py bdist_wheel
-
-      - store_artifacts:
-          path: ./dist
-
-      - run: &win-twine-template
-          name: install twine and deploy
-          command: |
-            env\Scripts\activate.ps1
-            python -m pip install twine
-            twine upload -u $env:PYPI_USERNAME -p $env:PYPI_PASSWORD --skip-existing ./dist/*
-
-  test-airspeed-velocity:
-    docker:
-      - image: circleci/python:3.7-stretch
-
-    steps:
-      - checkout
-
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv env
-            . env/bin/activate
-            pip install -r benchmarks/requirements.txt
-
-      - run:
-          name: check that our airspeed velocity tests run without failure
-          command: |
-            . env/bin/activate
-            asv machine --yes
-            asv run --quick --strict
-
-  test-doctest:
-    docker:
-      - image: circleci/python:3.7-stretch # as of march 2019 RTD uses 3.7
-
-    working_directory: ~/repo
-
-    steps:
-      - checkout
-
-      - run:
-          name: install doxygen
-          command: sudo apt-get install doxygen
-
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv env
-            . env/bin/activate
-            pip install -r requirements.txt
-            pip install -r docs/requirements.txt
-
-      - run: *unix-build-ext-template
-
-      - run:
-          name: build docs
-          command: |
-            . env/bin/activate
-            make -C docs/ cpp html
-
-      - store_artifacts:
-          path: ./docs/build/html
-
-      - run:
-          name: doctest
-          command: |
-            . env/bin/activate
-            make -C docs/ doctest
-
-      - run:
-          name: linkcheck
-          command: |
-            . env/bin/activate
-            make -C docs/ linkcheck
 
   test-linux-cpp11:
     docker:
-      # just use a python image, all we really want is debian
-      - image: circleci/python:3.6-jessie
-
-    working_directory: ~/repo
+      - image: circleci/python:3.9
 
     steps:
       - checkout
@@ -549,135 +256,218 @@ jobs:
           command: |
             make -C testscpp/ --always-make
 
+  test-osx:
+    parameters:
+      python-version:
+        type: string
+
+    macos:
+      xcode: 12.5.1
+
+    environment:
+      <<: *global-environment
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
+    steps:
+      - checkout
+      - attach_workspace:
+          at: dist
+      - run:
+          name: install pyenv
+          command: |
+            brew install pyenv
+      - restore_cache:
+          keys:
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.5.1
+      - run:
+          name: install python
+          command: |
+            pyenv install << parameters.python-version>> -s
+      - save_cache:
+          paths:
+            - ~/.pyenv
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.5.1
+      - run:
+          name: install
+          command: |
+            eval "$(pyenv init --path)"
+            eval "$(pyenv init -)"
+            pyenv local << parameters.python-version >>
+            python -m venv env
+            . env/bin/activate
+            pip install pip --upgrade
+            pip install -r requirements.txt
+            pip install -r tests/requirements.txt
+            pip install dimod --no-index -f dist/ --force-reinstall --no-deps
+      - run: *unix-run-tests
+      - run: *unix-codecov
+
+  test-sdist:
+    docker:
+      - image: circleci/python:3.9
+
+    steps:
+      - checkout
+      - attach_workspace:
+          at: dist
+      - run:
+          name: install from sdist
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install dist/dimod*.tar.gz
+      - run: *unix-run-tests
+      - run: *unix-codecov
+
+  test-windows:
+    parameters:
+      python-version:
+        type: string
+
+    executor:
+      name: win/default
+
+    steps:
+      - checkout
+      - attach_workspace:
+          at: dist
+
+      - run:
+          name: install python and create venv
+          command: |
+            nuget install python -Version << parameters.python-version >> -ExcludeVersion -OutputDirectory .
+            .\python\tools\python.exe --version
+            .\python\tools\python.exe -m venv env
+
+      - run:
+          name: install dependencies
+          command: |
+            env\Scripts\activate.ps1
+            python --version
+            pip install -r requirements.txt
+            pip install -r tests\requirements.txt
+            pip install dimod --no-index -f dist/ --force-reinstall --no-deps
+
+      - run:
+          name: run unittests
+          command: |
+            env\Scripts\activate.ps1
+            cd tests\
+            coverage run -m unittest discover
+
+      - run:
+          name: codecov
+          command: |
+            env\Scripts\activate.ps1
+            cd tests\
+            codecov
+
 workflows:
   tests:
     jobs:
-      - build-manylinux:
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
+      - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.6.8, 3.7.9, 3.8.9, 3.9.4]
-              manylinux-tag: &manylinux-tags ["manylinux1", "manylinux2014"]
-              manylinux-arch: &manylinux-archs ["x86_64"]
+              python-version: &python-versions [3.6.8, 3.7.9, 3.8.9, 3.9.4, 3.10.0]
+              # python-version: &python-versions [3.9.4]
+      - build-linux-aarch64: *build
+      - build-sdist
+      - build-osx: &build-osx
+          matrix:
+            parameters:
+              python-version: *python-versions
+              cibw-arch: [x86_64, universal2]
+            exclude:
+              - python-version: 3.6.8
+                cibw-arch: universal2
+              - python-version: 3.7.9
+                cibw-arch: universal2
+      - build-windows: *build
+      - test-airspeed-velocity
+      - test-doctest
       - test-linux:
           name: test-linux-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
-          # We could break each of these out into seperate jobs so that we
-          # don't need to wait for the entire above matrix to complete, but
-          # this is cleaner
           requires:
-            - build-manylinux
+            - build-linux
           matrix:
             parameters:
               # test the lowest numpy version and the highest minor of each
               # currently deployed
-              numpy-version: [==1.17.3, <1.19, <1.20, <1.21]
+              numpy-version: [==1.17.3, ~=1.18.0, ~=1.19.0, ~=1.20.0, ~=1.21.0]
               python-version: *python-versions
             exclude:
-              - numpy-version: <1.21
-                python-version: 3.6.8
-              - numpy-version: <1.19
-                python-version: 3.9.4
-              - numpy-version: <1.18
-                python-version: 3.9.4
               - numpy-version: ==1.17.3
                 python-version: 3.9.4
-      - build-manylinux-aarch64:
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
-          matrix:
-            parameters:
-              python-version: *python-versions
-              manylinux-tag: &manylinux-tag-aarch64 ["manylinux2014"]
-              manylinux-arch: &manylinux-arch-aarch64 ["aarch64"]
-      - test-linux-aarch64:
-          name: test-linux-<< matrix.manylinux-arch >>-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
-          # We could break each of these out into seperate jobs so that we
-          # don't need to wait for the entire above matrix to complete, but
-          # this is cleaner
-          requires:
-            - build-manylinux-aarch64
-          matrix:
-            parameters:
-              # test the lowest numpy version and the highest minor of each
-              # currently deployed
-              numpy-version: [<1.20, <1.21]
-              python-version: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
-              manylinux-tag: *manylinux-tag-aarch64
-              manylinux-arch: *manylinux-arch-aarch64
+              - numpy-version: ==1.17.3
+                python-version: 3.10.0
+              - numpy-version: ~=1.18.0
+                python-version: 3.9.4
+              - numpy-version: ~=1.18.0
+                python-version: 3.10.0
+              - numpy-version: ~=1.19.0
+                python-version: 3.10.0
+              - numpy-version: ~=1.20.0
+                python-version: 3.6.8
+              - numpy-version: ~=1.20.0
+                python-version: 3.10.0
+              - numpy-version: ~=1.21.0
+                python-version: 3.6.8
+      - test-linux-cpp11
       - test-osx:
+          name: test-osx-py<< matrix.python-version >>
+          requires:
+            - build-osx
           matrix:
             parameters:
               python-version: *python-versions
-      - test-win:
-          matrix:
-            parameters:
-              python-version: *python-versions
-              architecture: ["", "x86"]
-      - build-sdist
+            exclude:
+              # this doesn't play nicely with the xcode version we're using.
+              # rather than mess around with https://github.com/pyenv/pyenv/issues/1740
+              # etc let's just skip until december
+              - python-version: 3.6.8            
       - test-sdist:
           requires:
             - build-sdist
-      - test-doctest
-      - test-airspeed-velocity
-      - test-linux-cpp11
-
+      - test-windows:
+          name: test-windows-py<< matrix.python-version >>
+          requires:
+            - build-windows
+          matrix:
+            parameters:
+              python-version: *python-versions
   deploy:
     jobs:
-      - build-manylinux:
+      - build-linux: &deploy-build
+          <<: *build
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
-          matrix:
-            parameters:
-              python-version: *python-versions
-              manylinux-tag: *manylinux-tags
-              manylinux-arch: *manylinux-archs
-      - build-manylinux-aarch64:
+      - build-linux-aarch64: *deploy-build
+      - build-osx:
+          <<: *build-osx
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
-          name: build-<< matrix.manylinux-tag >>_<< matrix.manylinux-arch >>-py<< matrix.python-version >>
-          matrix:
-            parameters:
-              python-version: *python-versions
-              manylinux-tag: *manylinux-tag-aarch64
-              manylinux-arch: *manylinux-arch-aarch64
       - build-sdist:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
-      - deploy-linux:
+      - build-windows: *deploy-build
+      - deploy-all:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
             branches:
               ignore: /.*/
           requires:
-            - build-manylinux-aarch64
-            - build-manylinux
+            - build-linux
+            - build-linux-aarch64
+            - build-osx
             - build-sdist
-      - deploy-osx:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          matrix:
-            parameters:
-              python-version: *python-versions
-      - deploy-win:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          matrix:
-            parameters:
-              python-version: *python-versions
-              architecture: ["", "x86"]
+            - build-windows

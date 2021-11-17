@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add official support for Python 3.10.
+  - |
+    Add ``aarch64`` wheels for linux and ``universal`` wheels for osx.
