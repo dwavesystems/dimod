@@ -484,6 +484,10 @@ class TestConstruction(unittest.TestCase):
         bqm = BQM(D, 'BINARY')
         self.assertEqual(bqm.shape, (5, 0))
 
+    def test_DictBQM(self):
+        self.assertEqual(DictBQM('SPIN').dtype, object)
+        self.assertEqual(DictBQM({'a': 1}, {}, 1.5, 'SPIN').dtype, object)
+
     @parameterized.expand(BQMs.items())
     def test_integer(self, name, BQM):
         bqm = BQM(0, 'SPIN')
@@ -1094,7 +1098,7 @@ class TestEnergies(unittest.TestCase):
 
     @parameterized.expand(BQMs.items())
     def test_superset(self, name, BQM):
-        bqm = dimod.BQM({'a': 1}, {'ab': 1}, 1.5, 'BINARY')
+        bqm = BQM({'a': 1}, {'ab': 1}, 1.5, 'BINARY')
 
         self.assertEqual(bqm.energy({'a': 1, 'b': 1, 'c': 1}), 3.5)
         self.assertEqual(bqm.energy({'a': 1, 'b': 0, 'c': 1}), 2.5)
