@@ -1091,7 +1091,7 @@ class BQM(metaclass=abc.ABCMeta):
                          dtype=float, index_dtype=np.intc,
                          sort_indices=False, sort_labels=True,
                          return_labels=False):
-        """Convert binary quadratic model to NumPy vectors.
+        """Convert binary quadratic model to 1 dimensional NumPy arrays.
 
         Args:
             variable_order (iterable, optional, default=None):
@@ -1108,7 +1108,8 @@ class BQM(metaclass=abc.ABCMeta):
                 If True, sorts index vectors of variables and interactions.
 
             sort_labels (Boolean, optional, default=True):
-                If True, sorts vectors based on variable labels.
+                Equivalent to setting ``variable_order=sorted(bqm.variables)``.
+                Ignored if ``variable_order`` is provided.
 
             return_labels (Boolean, optional, default=False):
                 If True, returns a list of variable labels.

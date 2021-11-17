@@ -93,6 +93,11 @@ class TestAddDiscrete(unittest.TestCase):
         self.assertEqual(label, 'hello')
         self.assertEqual(cqm.variables, 'abc')
 
+    def test_iterator(self):
+        cqm = CQM()
+        label = cqm.add_discrete(iter(range(10)), label='hello')
+        self.assertEqual(cqm.constraints[label].lhs.variables, range(10))
+
 
 class TestAdjVector(unittest.TestCase):
     # this will be deprecated in the future
@@ -871,7 +876,8 @@ class TestCQMFromLPFile(unittest.TestCase):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_constraint.lp')
 
         with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+            with self.assertWarns(UserWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 0, msg='expected 0 constraints')

@@ -18,7 +18,6 @@ Decorators
    :toctree: generated/
 
    bqm_index_labels
-   bqm_index_labelled_input
    bqm_structured
    forwarding_method
    graph_argument

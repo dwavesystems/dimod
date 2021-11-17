@@ -587,18 +587,22 @@ class TestConstraint(unittest.TestCase):
                                                  constant=-1,
                                                  lagrange_multiplier=1)
         for j in [0, 1]:
-            check = dqm.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
-            check1 = \
-                dqm1.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
+            with self.assertWarns(DeprecationWarning):
+                check = dqm.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
+            with self.assertWarns(DeprecationWarning):
+                check1 = \
+                    dqm1.to_numpy_vectors()[j] - dqm_equal.to_numpy_vectors()[j]
             for i in range(len(check)):
                 self.assertAlmostEqual(check[i], 0)
                 self.assertAlmostEqual(check1[i], 0)
 
         for k in range(3):
-            check = dqm.to_numpy_vectors()[2][k] -\
-                     dqm_equal.to_numpy_vectors()[2][k]
-            check1 = dqm1.to_numpy_vectors()[2][k] -\
-                     dqm_equal.to_numpy_vectors()[2][k]
+            with self.assertWarns(DeprecationWarning):
+                check = dqm.to_numpy_vectors()[2][k] -\
+                         dqm_equal.to_numpy_vectors()[2][k]
+            with self.assertWarns(DeprecationWarning):
+                check1 = dqm1.to_numpy_vectors()[2][k] -\
+                         dqm_equal.to_numpy_vectors()[2][k]
             for i in range(len(check)):
                 self.assertAlmostEqual(check[i], 0)
                 self.assertAlmostEqual(check1[i], 0)

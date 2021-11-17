@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    ``dimod.testing.load_sampler_bqm_tests()`` now also tests the deprecated
+    BQM subclasses, namely ``AdjVectorBQM`` and ``AdjDictBQM``.

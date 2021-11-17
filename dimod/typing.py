@@ -16,11 +16,17 @@
 Type hints for common dimod inputs.
 """
 
-from typing import Collection, Hashable, Tuple, Union
+from typing import Collection, Hashable, NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 
 from dimod.vartypes import VartypeLike
+
+try:
+    from numpy.typing import NDArray
+except ImportError:
+    # support numpy < 1.20
+    NDArray = Sequence
 
 __all__ = ['Bias',
            'GraphLike',
@@ -49,3 +55,30 @@ else:
         Collection[Tuple[Variable, Variable]],  # edges
         nx.Graph,
         ]
+
+
+class QuadraticVectors(NamedTuple):
+    row_indices: NDArray[np.integer]
+    col_indices: NDArray[np.integer]
+    biases: NDArray[np.floating]
+
+
+class BQMVectors(NamedTuple):
+    linear_biases: NDArray[np.floating]
+    quadratic: QuadraticVectors
+    offset: Bias
+
+
+class LabelledBQMVectors(NamedTuple):
+    linear_biases: NDArray[np.floating]
+    quadratic: QuadraticVectors
+    offset: Bias
+    labels: Sequence[Variable]
+
+
+class DQMVectors(NamedTuple):
+    case_starts: NDArray[np.integer]
+    linear_biases: NDArray[np.floating]
+    quadratic: QuadraticVectors
+    labels: Sequence[Variable]
+    offset: Bias

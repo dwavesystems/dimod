@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix ``ConstrainedQuadraticModel.add_discrete()`` to correctly accept
+    an iterator of variables as documented rather than instead requiring
+    a collection.

@@ -17,6 +17,7 @@ import typing
 import unittest
 import itertools
 
+from collections.abc import Sequence
 from operator import itemgetter
 
 try:
@@ -30,6 +31,32 @@ import dimod
 
 from dimod.vartypes import SPIN, BINARY
 from dimod.decorators import vartype_argument, graph_argument
+
+
+class IndexSampler(dimod.NullSampler):
+    @dimod.decorators.bqm_index_labels
+    def sample(self, bqm):
+        if isinstance(bqm.variables, Sequence):
+            assert bqm.variables == range(bqm.num_variables)
+        else:
+            # unordered
+            assert sorted(bqm.variables) == list(range(bqm.num_variables))
+        return super().sample(bqm)
+
+
+@dimod.testing.load_sampler_bqm_tests(IndexSampler)
+class TestBQMIndexLabels(unittest.TestCase):
+    pass
+
+
+class TestBQMIndexLabelledInput(unittest.TestCase):
+    # we really should add proper tests but since it's deprecated anyway let's
+    # just leave it alone
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            @dimod.decorators.bqm_index_labelled_input('a', ['b'])
+            def f(a, b):
+                pass
 
 
 class TestNonblockingSampleMethod(unittest.TestCase):

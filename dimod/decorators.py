@@ -13,9 +13,10 @@
 #    limitations under the License.
 #
 
+import collections.abc as abc
 import inspect
 import itertools
-import collections.abc as abc
+import warnings
 
 from functools import wraps
 from numbers import Integral
@@ -96,29 +97,10 @@ def bqm_index_labels(f):
     input and to return a :obj:`.SampleSet`.
 
     """
-
     @wraps(f)
     def _index_label(sampler, bqm, **kwargs):
-        if not hasattr(bqm, 'linear'):
-            raise TypeError('expected input to be a BinaryQuadraticModel')
-        linear = bqm.linear
-
-        # if already index-labelled, just continue
-        if all(v in linear for v in range(len(bqm))):
-            return f(sampler, bqm, **kwargs)
-
-        try:
-            inverse_mapping = dict(enumerate(sorted(linear)))
-        except TypeError:
-            # in python3 unlike types cannot be sorted
-            inverse_mapping = dict(enumerate(linear))
-        mapping = {v: i for i, v in inverse_mapping.items()}
-
-        response = f(sampler, bqm.relabel_variables(mapping, inplace=False), **kwargs)
-
-        # unapply the relabeling
-        return response.relabel_variables(inverse_mapping, inplace=True)
-
+        bqm, mapping = bqm.relabel_variables_as_integers(inplace=False)
+        return f(sampler, bqm, **kwargs).relabel_variables(mapping, inplace=False)
     return _index_label
 
 
@@ -142,6 +124,9 @@ def bqm_index_labelled_input(var_labels_arg_name, samples_arg_names):
 
     .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
     """
+
+    warnings.warn("bqm_index_labelled_input is deprecated and will be removed in dimod 0.11.0",
+                  DeprecationWarning, stacklevel=2)
 
     def index_label_decorator(f):
         @wraps(f)
@@ -197,28 +182,21 @@ def bqm_structured(f):
     function or method to accept a :obj:`.BinaryQuadraticModel` as the second
     input and for the :class:`.Sampler` to also be :class:`.Structured`.
     """
-
     @wraps(f)
-    def new_f(sampler, bqm, **kwargs):
-        try:
-            structure = sampler.structure
-            adjacency = structure.adjacency
-        except AttributeError:
-            if isinstance(sampler, Structured):
-                raise RuntimeError("something is wrong with the structured sampler")
-            else:
-                raise TypeError("sampler does not have a structure property")
+    def structured_sample(sampler, bqm, **kwargs):
+        adjacency = sampler.adjacency
 
-        if not all(v in adjacency for v in bqm.linear):
-            # todo: better error message
-            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
-        if not all(u in adjacency[v] for u, v in bqm.quadratic):
-            # todo: better error message
-            raise BinaryQuadraticModelStructureError("given bqm does not match the sampler's structure")
-
+        if not adjacency.keys() >= bqm.variables:
+            raise BinaryQuadraticModelStructureError(
+                f"given bqm contains a variable, {(adjacency.keys() - bqm.variables).pop()!r}, "
+                "not supported by the structured solver")
+        if any(u not in adjacency[v] for u, v, _ in bqm.iter_quadratic()):
+            u, v = next((u, v) for u, v, _ in bqm.iter_quadratic() if u not in adjacency[v])
+            raise BinaryQuadraticModelStructureError(
+                f"given bqm contains an interaction, {(u, v)!r}, "
+                "not supported by the structured solver")
         return f(sampler, bqm, **kwargs)
-
-    return new_f
+    return structured_sample
 
 
 def vartype_argument(*arg_names):

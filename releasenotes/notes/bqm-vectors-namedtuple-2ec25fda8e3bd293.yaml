@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Return a named tuple from ``BinaryQuadraticModel.to_numpy_vectors()``.
