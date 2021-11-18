@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Binary quadratic models with ``object`` data type now correctly support
+    energy calculations where the given samples contain a superset of the
+    variables in the model. This makes them consistent with binary quadratic
+    models with ``np.float32`` and ``np.float64`` data types.

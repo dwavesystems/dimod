@@ -181,31 +181,32 @@ class pyBQM:
     def energies(self, samples_like, dtype: DTypeLike = None):
         samples, labels = as_samples(samples_like)
 
-        if len(labels) != self.num_variables():
-            raise ValueError("variable_order does not match the number of "
-                             "variables")
+        bqm_to_sample = dict((v, i) for i, v in enumerate(labels))
 
-        ldata = np.asarray([self.get_linear(v) for v in labels], dtype=dtype)
+        if not bqm_to_sample.keys() >= self._adj.keys():
+            raise ValueError(
+                f"missing variable {(self._adj.keys() - bqm_to_sample.keys()).pop()!r} in sample(s)"
+                )
 
+        ldata = np.asarray([self.get_linear(v) if v in self._adj else 0 for v in labels],
+                           dtype=dtype)
+
+        # let's use floats (or the more general object) if dtype is not specified
+        # so that we do proper type promotion
         if dtype is None and np.issubdtype(ldata.dtype, np.number):
             ldata = np.asarray(ldata, dtype=np.float64)
 
-        label_to_idx = {v: idx for idx, v in enumerate(labels)}
         irow = []
         icol = []
         qdata = []
         for u, v, bias in self.iter_quadratic():
-            irow.append(label_to_idx[u])
-            icol.append(label_to_idx[v])
+            irow.append(bqm_to_sample[u])
+            icol.append(bqm_to_sample[v])
             qdata.append(bias)
-
-        irow = np.asarray(irow, dtype=int)  # type: ignore[assignment]
-        icol = np.asarray(icol, dtype=int)  # type: ignore[assignment]
-        qdata = np.asarray(qdata, dtype=dtype)  # type: ignore[assignment]
 
         energies = samples.dot(ldata)
         energies += (samples[:, irow]*samples[:, icol]).dot(qdata)
-        energies += ldata.dtype.type(self.offset)
+        energies += energies.dtype.type(self.offset)
 
         return np.asarray(energies, dtype=dtype)
 
