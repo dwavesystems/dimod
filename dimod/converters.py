@@ -114,7 +114,7 @@ def from_networkx_graph(G, vartype=None,
     """
     if cls is not None:
         warnings.warn("'cls' keyword argument is deprecated as of 0.10.0 and "
-                      "does nothing.")
+                      "does nothing.", DeprecationWarning, stacklevel=2)
     if vartype is None:
         if not hasattr(G, 'vartype'):
             msg = ("either 'vartype' argument must be provided or "
