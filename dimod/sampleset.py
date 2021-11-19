@@ -20,7 +20,7 @@ import numbers
 import collections.abc as abc
 
 from collections import namedtuple
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 from numpy.lib import recfunctions
@@ -35,11 +35,20 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        serialize_ndarrays,
                                        deserialize_ndarrays)
 from dimod.sym import Sense
+from dimod.typing import Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
 
-__all__ = ['append_data_vectors', 'append_variables', 'as_samples', 'concatenate', 'SampleSet']
+__all__ = ['append_data_vectors',
+           'append_variables',
+           'as_samples',
+           'concatenate',
+           'drop_variables',
+           'keep_variables',
+           'SampleSet',
+           ]
+
 
 def append_data_vectors(sampleset, **vectors):
     """Create a new :obj:`.SampleSet` with additional fields in
@@ -448,6 +457,58 @@ def infer_vartype(samples_like):
         return Vartype.SPIN
 
     raise ValueError("given samples_like is of an unknown vartype")
+
+
+def drop_variables(sampleset: 'SampleSet', variables: Iterable[Variable]) -> 'SampleSet':
+    """Return a new sample set with the given variables removed.
+
+    Args:
+        sampleset: A sample set.
+        variables: The variables to be dropped. Can contain variables not in
+            the sample set.
+
+    Returns:
+        A new sampleset without the given variables. The energies, info
+        and other data vectors will be the same as in the given sample set.
+
+    """
+    return keep_variables(sampleset, sampleset.variables - variables)
+
+
+def keep_variables(sampleset: 'SampleSet', variables: Iterable[Variable]) -> 'SampleSet':
+    """Return a new sample set with only the given variables.
+
+    Args:
+        sampleset: A sample set.
+        variables: The variables to be kept. Must be a subset of the variables
+            in the sample set.
+
+    Returns:
+        A new sampleset with only the given variables kept. The energies, info
+        and other data vectors will be the same as in the given sample set.
+
+    """
+    if isinstance(variables, abc.Sequence):
+        sort_labels = False  # keep the original label ordering
+    elif isinstance(variables, abc.Iterator):
+        variables = list(variables)
+        sort_labels = False
+    else:
+        variables = list(variables)
+        sort_labels = True  # probably a set or something, so may as well
+
+    try:
+        return SampleSet.from_samples(
+            (sampleset.samples(sorted_by=None)[:, variables], variables),
+            vartype=sampleset.vartype,
+            **sampleset.data_vectors,
+            info=copy.deepcopy(sampleset.info),
+            sort_labels=sort_labels,
+            )
+    except KeyError:
+        v = next(v for v in variables if v not in sampleset.variables)
+        raise ValueError(f'variables contains at least one variable, {v!r}, '
+                         'not present in the sampleset')
 
 
 class SampleSet(abc.Iterable, abc.Sized):

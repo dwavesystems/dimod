@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``drop_variables()`` and ``keep_variables()`` functions that allow the
+    user to create a new sample set from an old one, retaining only a subset
+    of the variables.

@@ -528,6 +528,41 @@ class TestAppendVectors(unittest.TestCase):
         with self.assertRaises(ValueError):
             sampleset = dimod.append_data_vectors(sampleset, sets=[{0}, {1}])
 
+
+class TestDropVariables(unittest.TestCase):
+    def test_generator(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        new = dimod.drop_variables(sampleset, (v for v in 'cb'))
+
+        self.assertEqual(new.variables, 'a')
+
+        for datum, new_datum in zip(sampleset.data(sorted_by=None), new.data(sorted_by=None)):
+            self.assertEqual(datum.energy, new_datum.energy)
+            self.assertEqual(datum.num_occurrences, new_datum.num_occurrences)
+            self.assertEqual(datum.sample['a'], new_datum.sample['a'])
+
+    def test_superset(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        new = dimod.drop_variables(sampleset, 'cefg')
+
+        self.assertEqual(new.variables, 'ab')
+
+        for datum, new_datum in zip(sampleset.data(sorted_by=None), new.data(sorted_by=None)):
+            self.assertEqual(datum.energy, new_datum.energy)
+            self.assertEqual(datum.num_occurrences, new_datum.num_occurrences)
+            self.assertEqual(datum.sample['a'], new_datum.sample['a'])
+            self.assertEqual(datum.sample['b'], new_datum.sample['b'])
+
+    def test_variables_were_dropped(self):
+        samples = np.triu(np.ones((5, 5)))
+        labels = 'abcde'
+        sampleset = dimod.SampleSet.from_samples((samples, labels), vartype='BINARY', energy=1)
+        variables_to_drop = "ae"
+        expected = set([label for label in labels if label not in variables_to_drop])
+        obtained = set(dimod.sampleset.drop_variables(sampleset, variables_to_drop).variables)
+        self.assertEqual(obtained, expected)
+
+
 class TestFromFuture(unittest.TestCase):
     def test_default(self):
 
@@ -603,6 +638,42 @@ class TestFromFuture(unittest.TestCase):
         matrix = response.record.sample
 
         np.testing.assert_equal(matrix, result['samples'])
+
+
+class TestKeepVariables(unittest.TestCase):
+    def test_empty(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        new = dimod.keep_variables(sampleset, [])
+        self.assertEqual(new.record.sample.shape, (len(sampleset), 0))
+
+    def test_generator(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        new = dimod.keep_variables(sampleset, (v for v in 'cb'))
+
+        self.assertEqual(new.variables, 'cb')
+
+        for datum, new_datum in zip(sampleset.data(sorted_by=None), new.data(sorted_by=None)):
+            self.assertEqual(datum.energy, new_datum.energy)
+            self.assertEqual(datum.num_occurrences, new_datum.num_occurrences)
+            self.assertEqual(datum.sample['b'], new_datum.sample['b'])
+            self.assertEqual(datum.sample['c'], new_datum.sample['c'])
+
+    def test_simple(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        new = dimod.keep_variables(sampleset, 'bc')
+
+        self.assertEqual(new.variables, 'bc')
+
+        for datum, new_datum in zip(sampleset.data(sorted_by=None), new.data(sorted_by=None)):
+            self.assertEqual(datum.energy, new_datum.energy)
+            self.assertEqual(datum.num_occurrences, new_datum.num_occurrences)
+            self.assertEqual(datum.sample['b'], new_datum.sample['b'])
+            self.assertEqual(datum.sample['c'], new_datum.sample['c'])
+
+    def test_superset(self):
+        sampleset = dimod.ExactSolver().sample_ising({}, {'ab': 1, 'bc': 1})
+        with self.assertRaises(ValueError):
+            dimod.keep_variables(sampleset, 'bcd')
 
 
 class TestLowest(unittest.TestCase):

@@ -115,7 +115,7 @@ class SamplesArray(abc.Sequence, abc.Iterator):
         try:
             index = (row, [variables.index(v) for v in col])
         except (TypeError, ValueError):
-            raise KeyError('{!r} is not a variable in samples'.format(col))
+            raise KeyError(f'{col!r} contains a variable not in samples')
 
         if isinstance(row, (abc.Sequence, np.ndarray)):
             # we know that column is a sequence (because we just constructed it)

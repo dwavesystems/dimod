@@ -70,3 +70,5 @@ Utility Functions
    append_data_vectors
    append_variables
    concatenate
+   drop_variables
+   keep_variables
