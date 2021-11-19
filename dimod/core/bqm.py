@@ -38,7 +38,12 @@ ShapeableQuadratic = Quadratic
 
 
 class Variables(Set):
-    # replaces the KeysView used in dimod 0.9.x
+    def __new__(cls, bqm):
+        if not isinstance(bqm, BQM):
+            # we need this to support some of the more abstract set methods
+            return set()
+        return super().__new__(cls)
+
     def __init__(self, bqm):
         self._bqm = bqm
 
