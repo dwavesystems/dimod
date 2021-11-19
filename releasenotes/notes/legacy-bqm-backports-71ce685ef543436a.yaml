@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Backport the use of ``dimod.views.quadratic.Adjacency``,
+    ``dimod.views.quadratic.Linear``, and ``dimod.views.quadratic.Quadratic``
+    for use with the deprecated ``AdjVectorBQM`` and ``AdjDictBQM`` binary
+    quadratic model classes.
+  - |
+    Backport ``iter_neighborhood()``, ``reduce_linear()``,
+    ``reduce_neighborhood()``, and ``reduce_quadratic()`` methods for use with
+    the deprecated ``AdjVectorBQM`` and ``AdjDictBQM`` binary quadratic model classes.
+fixes:
+  - |
+    Fix instance and subclass testing between deprecated and modern binary
+    quadratic model views.
+    For example ``instance(bqm.quadratic, dimod.core.bqm.BQMView)`` now returns
+    ``True`` for modern binary quadratic models.
