@@ -467,6 +467,37 @@ class FromQM(unittest.TestCase):
         self.assertTrue(cqm.objective.is_equal(qm))
 
 
+class TestRelabelVariables(unittest.TestCase):
+    def test_copy(self):
+        cqm = CQM()
+        u, v, w = dimod.Binaries('uvw')
+        cqm.set_objective(6*u + v + w)
+        c0 = cqm.add_constraint(u + w <= 5)
+        c1 = cqm.add_constraint(w + v == 3)
+
+        new = cqm.relabel_variables({'u': 1, 'v': 0}, inplace=False)
+
+        self.assertIsNot(new, cqm)
+        self.assertEqual(new.objective.variables, [1, 0, 'w'])
+        self.assertEqual(new.constraints[c0].lhs.variables, [1, 'w'])
+        self.assertEqual(new.constraints[c1].lhs.variables, ['w', 0])
+        self.assertEqual(cqm.objective.variables, 'uvw')
+
+    def test_inplace(self):
+        cqm = CQM()
+        u, v, w = dimod.Binaries('uvw')
+        cqm.set_objective(6*u + v + w)
+        c0 = cqm.add_constraint(u + w <= 5)
+        c1 = cqm.add_constraint(w + v == 3)
+
+        new = cqm.relabel_variables({'u': 1, 'v': 0})
+
+        self.assertIs(new, cqm)
+        self.assertEqual(cqm.objective.variables, [1, 0, 'w'])
+        self.assertEqual(cqm.constraints[c0].lhs.variables, [1, 'w'])
+        self.assertEqual(cqm.constraints[c1].lhs.variables, ['w', 0])
+
+
 class TestSerialization(unittest.TestCase):
     def test_functional(self):
         cqm = CQM()
