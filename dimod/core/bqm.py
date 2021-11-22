@@ -14,280 +14,47 @@
 
 import abc
 import copy
-import io
 import functools
 
 from collections import defaultdict
-from collections.abc import Container, KeysView, Mapping, MutableMapping
+from collections.abc import Container, KeysView, Mapping, Set, Sequence
 from numbers import Number
-from pprint import PrettyPrinter
 
 import numpy as np
 
 from dimod.sampleset import as_samples
 from dimod.vartypes import as_vartype, Vartype
-
-from dimod.bqm.utils import cylinear_min, cylinear_max, cylinear_sum
-from dimod.bqm.utils import cyquadratic_min, cyquadratic_max, cyquadratic_sum
-from dimod.bqm.utils import cyneighborhood_max, cyneighborhood_min, cyneighborhood_sum
+from dimod.views.quadratic import TermsView, Adjacency, Linear, Neighborhood, Quadratic
 
 __all__ = ['BQM', 'ShapeableBQM']
 
 
-class BQMView(Mapping):
-    __slots__ = ['_bqm']
+# Aliases for backwards compatibility
+BQMView = TermsView
+ShapeableAdjacency = Adjacency
+ShapeableLinear = Linear
+ShapeableNeighborhood = Neighborhood
+ShapeableQuadratic = Quadratic
+
+
+class Variables(Set):
+    def __new__(cls, bqm):
+        if not isinstance(bqm, BQM):
+            # we need this to support some of the more abstract set methods
+            return set()
+        return super().__new__(cls)
 
     def __init__(self, bqm):
         self._bqm = bqm
 
-    # support python2 pickle
-    def __getstate__(self):
-        return {'_bqm': self._bqm}
-
-    # support python2 pickle
-    def __setstate__(self, state):
-        self._bqm = state['_bqm']
-
-    def __repr__(self):
-        # let's just print the whole (potentially massive) thing for now, in
-        # the future we'd like to do something a bit more clever (like hook into
-        # dimod's Formatter)
-        stream = io.StringIO()
-        stream.write('{')
-        last = len(self) - 1
-        for i, (key, value) in enumerate(self.items()):
-            stream.write('{!s}: {!s}'.format(key, value))
-            if i != last:
-                stream.write(', ')
-        stream.write('}')
-        return stream.getvalue()
-
-
-class Adjacency(BQMView):
-    """Quadratic biases as a nested dict of dicts.
-
-    Accessed like a dict of dicts, where the keys of the outer dict are all
-    of the model's variables (e.g. `v`) and the values are the neighborhood of
-    `v`. Each neighborhood is a dict where the keys are the neighbors of `v`
-    and the values are their associated quadratic biases.
-    """
-    def __getitem__(self, v):
-        if not self._bqm.has_variable(v):
-            raise KeyError('{} is not a variable'.format(v))
-        return Neighborhood(self._bqm, v)
+    def __contains__(self, v):
+        return self._bqm.has_variable(v)
 
     def __iter__(self):
-        return self._bqm.iter_variables()
+        yield from self._bqm.iter_variables()
 
     def __len__(self):
         return self._bqm.num_variables
-
-
-class ShapeableAdjacency(Adjacency):
-    def __getitem__(self, v):
-        if not self._bqm.has_variable(v):
-            raise KeyError('{} is not a variable'.format(v))
-        return ShapeableNeighborhood(self._bqm, v)
-
-
-class Neighborhood(BQMView):
-    __slots__ = ['_var']
-
-    def __init__(self, bqm, v):
-        super().__init__(bqm)
-        self._var = v
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_quadratic(self._var, v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        return self._bqm.iter_neighbors(self._var)
-
-    def __len__(self):
-        return self._bqm.degree(self._var)
-
-    def __setitem__(self, v, bias):
-        self._bqm.set_quadratic(self._var, v, bias)
-
-    def max(self, default=None):
-        """The maximum quadratic bias in the neighborhood."""
-        try:
-            return cyneighborhood_max(self._bqm, self._var, default)
-        except TypeError:
-            pass
-
-        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
-
-        if default is None:
-            return max(generator)
-        else:
-            return max(generator, default=default)
-
-    def min(self, default=None):
-        """The minimum quadratic bias in the neighborhood."""
-        try:
-            return cyneighborhood_min(self._bqm, self._var, default)
-        except TypeError:
-            pass
-
-        generator = (b for _, _, b in self._bqm.iter_quadratic(self._var))
-
-        if default is None:
-            return min(generator)
-        else:
-            return min(generator, default=default)
-
-    def sum(self, start=0):
-        """The sum of the quadratic biases in the neighborhood."""
-        try:
-            return cyneighborhood_sum(self._bqm, self._var, start)
-        except TypeError:
-            pass
-
-        return sum((b for _, _, b in self._bqm.iter_quadratic(self._var)),
-                   start)
-
-
-class ShapeableNeighborhood(Neighborhood, MutableMapping):
-    def __delitem__(self, v):
-        self._bqm.remove_interaction(self._var, v)
-
-
-class Linear(BQMView):
-    """Linear biases as a mapping.
-
-    Accessed like a dict, where keys are the variables of the binary quadratic
-    model and values are the linear biases.
-    """
-    __slots__ = ['_bqm']
-
-    def __init__(self, bqm):
-        self._bqm = bqm
-
-    def __getitem__(self, v):
-        try:
-            return self._bqm.get_linear(v)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        return self._bqm.iter_variables()
-
-    def __len__(self):
-        return len(self._bqm)
-
-    def __setitem__(self, v, bias):
-        # inherits its ability to reshape the bqm from the `.set_linear` method
-        self._bqm.set_linear(v, bias)
-
-    def min(self, default=None):
-        """Returns the minimum linear bias."""
-        try:
-            return cylinear_min(self._bqm, default=default)
-        except TypeError:
-            pass
-
-        if default is None:
-            return min(self.values())
-        else:
-            return min(self.values(), default=default)
-
-    def max(self, default=None):
-        """Returns the maximum linear bias."""
-        try:
-            return cylinear_max(self._bqm, default=default)
-        except TypeError:
-            pass
-
-        if default is None:
-            return max(self.values())
-        else:
-            return max(self.values(), default=default)
-
-    def sum(self, start=0):
-        """Return the sum of the linear biases."""
-        try:
-            return cylinear_sum(self._bqm, start=start)
-        except TypeError:
-            pass
-
-        return sum(self.values(), start)
-
-
-class ShapeableLinear(Linear, MutableMapping):
-    def __delitem__(self, v):
-        try:
-            self._bqm.remove_variable(v)
-        except ValueError:
-            raise KeyError(repr(v))
-
-
-class Quadratic(BQMView):
-    """Quadratic biases as a flat mapping.
-
-    Accessed like a dict, where keys are 2-tuples of varables, which represent
-    an interaction and values are the quadratic biases.
-    """
-    def __getitem__(self, uv):
-        try:
-            return self._bqm.get_quadratic(*uv)
-        except ValueError as e:
-            raise KeyError(*e.args)
-
-    def __iter__(self):
-        return self._bqm.iter_interactions()
-
-    def __len__(self):
-        return self._bqm.num_interactions
-
-    def __setitem__(self, uv, bias):
-        # inherits its ability to reshape the bqm from the `.set_linear` method
-        u, v = uv
-        self._bqm.set_quadratic(u, v, bias)
-
-    def min(self, default=None):
-        """Returns the minimum quadratic bias."""
-        try:
-            return cyquadratic_min(self._bqm, default=default)
-        except TypeError:
-            pass
-
-        if default is None:
-            return min(self.values())
-        else:
-            return min(self.values(), default=default)
-
-    def max(self, default=None):
-        """Returns the maximum quadratic bias."""
-        try:
-            return cyquadratic_max(self._bqm, default=default)
-        except TypeError:
-            pass
-
-        if default is None:
-            return max(self.values())
-        else:
-            return max(self.values(), default=default)
-
-    def sum(self, start=0):
-        """Return the sum of the quadratic biases."""
-        try:
-            return cyquadratic_sum(self._bqm, start=start)
-        except TypeError:
-            pass
-
-        return sum(self.values(), start)
-
-
-class ShapeableQuadratic(Quadratic, MutableMapping):
-    def __delitem__(self, uv):
-        try:
-            self._bqm.remove_interaction(*uv)
-        except ValueError:
-            raise KeyError(repr(uv))
 
 
 class BQM(metaclass=abc.ABCMeta):
@@ -448,7 +215,7 @@ class BQM(metaclass=abc.ABCMeta):
     @property
     def variables(self):
         """Variables of the binary quadratic model."""
-        return KeysView(self.linear)
+        return Variables(self)
 
     def add_offset(self, offset):
         """Add the specified value to the offset of a binary quadratic model.
@@ -820,6 +587,10 @@ class BQM(metaclass=abc.ABCMeta):
         for _, v, _ in self.iter_quadratic(u):
             yield v
 
+    def iter_neighborhood(self, u):
+        for _, v, bias in self.iter_quadratic(u):
+            yield v, bias
+
     def normalize(self, bias_range=1, quadratic_range=None,
                   ignored_variables=None, ignored_interactions=None,
                   ignore_offset=False):
@@ -896,6 +667,27 @@ class BQM(metaclass=abc.ABCMeta):
             return 1.0 / inv_scalar
         else:
             return 1.0
+
+    def reduce_linear(self, function, initializer=None):
+        gen = (self.get_linear(v) for v in self.variables)
+        if initializer is None:
+            return functools.reduce(function, gen)
+        else:
+            return functools.reduce(function, gen, initializer)
+
+    def reduce_neighborhood(self, v, function, initializer=None):
+        gen = (b for _, b in self.iter_neighborhood(v))
+        if initializer is None:
+            return functools.reduce(function, gen)
+        else:
+            return functools.reduce(function, gen, initializer)
+
+    def reduce_quadratic(self, function, initializer=None):
+        gen = (b for _, _, b in self.iter_quadratic())
+        if initializer is None:
+            return functools.reduce(function, gen)
+        else:
+            return functools.reduce(function, gen, initializer)
 
     def relabel_variables_as_integers(self, inplace=True):
         """Relabel the variables of the binary quadratic model to integers.
@@ -1239,18 +1031,6 @@ class ShapeableBQM(BQM):
         pass
 
     # mixins
-
-    @property
-    def adj(self):
-        return ShapeableAdjacency(self)
-
-    @property
-    def linear(self):
-        return ShapeableLinear(self)
-
-    @property
-    def quadratic(self):
-        return ShapeableQuadratic(self)
 
     def add_variables_from(self, linear):
         """Add variables and/or linear biases to a binary quadratic model.
@@ -1600,21 +1380,3 @@ class SpinView(VartypeView):
         bqm.set_linear(v, bqm.get_linear(v) - 2 * delta)
 
         bqm.offset += delta
-
-
-# register the various objects with prettyprint
-def _pprint_bqm(printer, bqm, stream, indent, *args, **kwargs):
-    clsname = type(bqm).__name__
-    stream.write(clsname)
-    indent += len(clsname)
-    bqmtup = (bqm.linear, bqm.quadratic, bqm.offset, bqm.vartype.name)
-    printer._pprint_tuple(bqmtup, stream, indent, *args, **kwargs)
-
-
-try:
-    PrettyPrinter._dispatch[BQMView.__repr__] = PrettyPrinter._pprint_dict
-    PrettyPrinter._dispatch[BQM.__repr__] = _pprint_bqm
-except AttributeError:
-    # we're using some internal stuff in PrettyPrinter so let's silently fail
-    # for that
-    pass

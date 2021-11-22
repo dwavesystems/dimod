@@ -262,7 +262,7 @@ cdef class cyAdjVectorBQM:
     # todo: support protocol 5, if possible
     def __reduce__(self):
         from dimod.serialization.fileview import FileView, load
-        return (load, (FileView(self).readall(),))
+        return (load, (FileView(self).read(),))
 
     @property
     def num_variables(self):
