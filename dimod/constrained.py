@@ -17,6 +17,7 @@ Constrained Quadratic Model class.
 """
 
 import collections.abc as abc
+import copy
 import json
 import re
 import tempfile
@@ -789,6 +790,30 @@ class ConstrainedQuadraticModel:
             lhs = const.lhs
             count += sum(lhs.degree(v) > 0 for v in lhs.variables)
         return count
+
+    def relabel_variables(self,
+                          mapping: Mapping[Variable, Variable],
+                          inplace: bool = True,
+                          ) -> 'ConstrainedQuadraticModel':
+        """Relabel the variables of the objective and constraints.
+
+        Args:
+            mapping: A mapping from the old variable labels to the new.
+            inplace: Whether to act on the model in-place or return a copy.
+
+        Returns:
+            A constrained quadratic model. Either ``self`` if ``inplace`` or a
+            copy.
+
+        """
+        if not inplace:
+            return copy.deepcopy(self).relabel_variables(mapping, inplace=True)
+
+        self.objective.relabel_variables(mapping, inplace=True)
+        for constraint in self.constraints.values():
+            constraint.lhs.relabel_variables(mapping, inplace=True)
+
+        return self
 
     def set_objective(self, objective: Union[BinaryQuadraticModel,
                                              QuadraticModel, Iterable]):

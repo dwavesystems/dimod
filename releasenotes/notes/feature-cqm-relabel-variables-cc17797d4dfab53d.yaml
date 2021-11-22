@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.relabel_variables()`` method to relabel the
+    variables in the objective and constraints.

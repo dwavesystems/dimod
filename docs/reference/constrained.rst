@@ -48,6 +48,7 @@ Methods
    ConstrainedQuadraticModel.is_equal
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
+   ConstrainedQuadraticModel.relabel_variables
    ConstrainedQuadraticModel.set_objective
    ConstrainedQuadraticModel.substitute_self_loops
    ConstrainedQuadraticModel.to_file
