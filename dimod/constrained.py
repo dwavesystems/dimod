@@ -1056,6 +1056,140 @@ class ConstrainedQuadraticModel:
         file.seek(0)
         return file
 
+    def to_lp_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
+        """Serialize to LP file format.
+        Args:
+            spool_size: Defines the `max_size` passed to the constructor of
+                :class:`tempfile.SpooledTemporaryFile`. Determines whether
+                the returned file-like's contents will be kept on disk or in
+                memory.
+
+        Format Specifications:
+            This format follows the directions in
+            https://www.gurobi.com/documentation/9.5/refman/lp_format.html#format:LP
+
+        """
+
+        sign_dict = {1: '+', -1: '-', 0: '+'}
+        sense_dict = {'==': '=', '<=': '<=', '>=': '>='}
+
+        # forbidden chars in the LP format
+        not_allowed_chars = ['+', '-', '*', '^', ':']
+        not_first_char = ['<', '>', '=', '(', ')', '[', ']', ',']
+        not_first_char += [str(i) for i in range(10)]
+
+        new_line_every = 20
+
+        f = SpooledTemporaryFile(max_size=spool_size, mode='wt')
+
+        if self.objective.linear or self.objective.quadratic:
+            f.write("Minimize\n ")
+            obj_string = 'obj: '
+
+            i_term = 0
+            if self.objective.linear:
+                for var, bias in self.objective.linear.items():
+                    obj_string += '{} {} {} '.format(sign_dict[int(np.sign(bias))], abs(bias), var)
+                    i_term += 1
+
+                    if i_term % new_line_every == 0:
+                        obj_string += '\n '
+
+            if self.objective.quadratic:
+                obj_string += '+ [ '
+                for edge, bias in self.objective.quadratic.items():
+                    var1, var2 = edge
+                    obj_string += '{} {} {} * {} '.format(sign_dict[np.sign(bias)], abs(2 * bias), var1, var2)
+                    i_term += 1
+                    if i_term % new_line_every == 0:
+                        obj_string += '\n '
+                obj_string += ']/2 '
+
+            f.write(obj_string)
+            f.write("\n \n")
+
+        if self.constraints:
+            f.write("Subject To \n")
+
+            for label, constraint in self.constraints.items():
+
+                if label[0] in not_first_char:
+                    raise ValueError('Cannot start variable name with {}'.format(label[0]))
+
+                if any([l in not_allowed_chars for l in label]):
+                    raise ValueError('Cannot use characters {} in names'.format(not_allowed_chars))
+
+                c_string = '{}: '.format(label)
+
+                i_term = 0
+                if constraint.lhs.linear:
+                    for var, bias in constraint.lhs.linear.items():
+                        c_string += '{} {} {} '.format(sign_dict[int(np.sign(bias))], abs(bias), var)
+                        i_term += 1
+
+                        if i_term % new_line_every == 0:
+                            c_string += '\n '
+
+                if constraint.lhs.quadratic:
+                    c_string += '+ [ '
+                    for edge, bias in constraint.lhs.quadratic.items():
+                        var1, var2 = edge
+                        c_string += '{} {} {} * {} '.format(sign_dict[np.sign(bias)], abs(bias), var1, var2)
+                        i_term += 1
+                        if i_term % new_line_every == 0:
+                            c_string += '\n '
+                    c_string += '] '
+
+                rhs = constraint.rhs - constraint.lhs.offset
+                c_string += ' {} {} \n'.format(sense_dict[constraint.sense.value], rhs)
+                f.write(c_string)
+
+        vartypes = {var: self.vartype(var) for var in self.variables}
+
+        # write the bounds
+        f.write('\n')
+        f.write('Bounds \n')
+        for v, vartype in vartypes.items():
+            if any([vv in not_allowed_chars for vv in v]):
+                raise ValueError('Cannot use chars {} in variable name'.format(not_allowed_chars))
+            if v[0] in not_first_char:
+                raise ValueError('Cannot start variable name with {}'.format(v[0]))
+            if vartype == Vartype.INTEGER:
+                bound_string = ' {} <= {} <= {}\n'.format(self.lower_bound(v), v, self.upper_bound(v))
+                f.write(bound_string)
+            elif vartype == Vartype.SPIN:
+                raise ValueError('SPIN variables not supported in LP files, convert them to BINARY beforehand.')
+
+        # Write the Binary variables
+        f.write('\n')
+        f.write('Binary \n')
+        var_string = ''
+        i_term = 0
+        for v, vartype in vartypes.items():
+            if vartype == Vartype.BINARY:
+                var_string += '{} '.format(v)
+                i_term += 1
+                if i_term % new_line_every == 0:
+                    var_string += '\n '
+
+        f.write(var_string)
+        f.write('\n')
+        f.write('General \n')
+        var_string = ''
+        i_term = 0
+        for v, vartype in vartypes.items():
+            if vartype is Vartype.INTEGER:
+                var_string += '{} '.format(v)
+                i_term += 1
+                if i_term % new_line_every == 0:
+                    var_string += '\n '
+
+        f.write(var_string)
+        f.write('\n')
+        f.write('End')
+        f.seek(0)
+        return f
+
     def upper_bound(self, v: Variable) -> Bias:
         """Return the upper bound on the specified variable."""
         return self.objective.upper_bound(v)
