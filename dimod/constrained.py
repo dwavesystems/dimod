@@ -1058,6 +1058,7 @@ class ConstrainedQuadraticModel:
 
     def to_lp_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
         """Serialize to LP file format.
+
         Args:
             spool_size: Defines the `max_size` passed to the constructor of
                 :class:`tempfile.SpooledTemporaryFile`. Determines whether
