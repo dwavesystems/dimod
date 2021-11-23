@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Added ``to_lp_file`` method to dump ``ConstrainedQuadraticModel``
+    to an LP file.
