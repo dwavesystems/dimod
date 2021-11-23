@@ -949,3 +949,26 @@ class TestCQMFromLPFile(unittest.TestCase):
                 self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 3.5,
                                        msg='constraint c1, linear(x0) should be 3.5')
 
+    def test_functional(self):
+        cqm = CQM()
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'BINARY')
+        cqm.add_constraint(bqm, '<=', label='c0')
+        cqm.add_constraint(bqm, '>=', label='c1')
+        cqm.set_objective(BQM({'c': -1}, {}, 'BINARY'))
+        cqm.add_constraint(Binary('a')*Integer('d')*5 <= 3, label='c2')
+
+        new = CQM.from_lp_file(cqm.to_lp_file())
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            try:
+                self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+                self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            except AssertionError:
+                c = constraint.lhs
+                c.offset -= constraint.rhs
+                self.assertTrue(c.is_equal(new.constraints[label].lhs))
+                self.assertEqual(0, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
