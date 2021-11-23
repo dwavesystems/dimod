@@ -170,6 +170,39 @@ jobs:
             asv machine --yes
             asv run --quick --strict
 
+  # we could do this as part of the various test jobs but getting the pathing
+  # and configuration to work correctly is a pain. And since there is not
+  # significant different between the linux/osx/windows code I think it
+  # suffices to just do it once
+  test-codecov:
+    docker:
+      - image: circleci/python:3.9
+
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install -r requirements.txt
+            pip install -r tests/requirements.txt
+      - run: &unix-build
+          name: build dimod
+          command: |
+            . env/bin/activate
+            python setup.py build_ext --inplace
+      - run:
+          name: run coverage
+          command: |
+            . env/bin/activate
+            coverage run -m unittest
+      - run:
+          name: codecov
+          command: |
+            . env/bin/activate
+            codecov
+
   test-doctest:
     docker:
       - image: circleci/python:3.7 # as of march 2019 RTD uses 3.7
@@ -186,11 +219,7 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r docs/requirements.txt
-      - run:
-          name: build dimod
-          command: |
-            . env/bin/activate
-            python setup.py build_ext --inplace
+      - run: *unix-build
       - run:
           name: build docs
           command: |
@@ -237,13 +266,7 @@ jobs:
             . env/bin/activate
             cd tests/
             pip install -r requirements.txt
-            coverage run --source=dimod --append -m unittest
-      - run: &unix-codecov
-          name: codecov
-          command: |
-            . env/bin/activate
-            cd tests/
-            codecov
+            python -m unittest
 
   test-linux-cpp11:
     docker:
@@ -305,7 +328,6 @@ jobs:
             pip install -r tests/requirements.txt
             pip install dimod --no-index -f dist/ --force-reinstall --no-deps
       - run: *unix-run-tests
-      - run: *unix-codecov
 
   test-sdist:
     docker:
@@ -322,7 +344,6 @@ jobs:
             . env/bin/activate
             pip install dist/dimod*.tar.gz
       - run: *unix-run-tests
-      - run: *unix-codecov
 
   test-windows:
     parameters:
@@ -358,14 +379,7 @@ jobs:
           command: |
             env\Scripts\activate.ps1
             cd tests\
-            coverage run -m unittest discover
-
-      - run:
-          name: codecov
-          command: |
-            env\Scripts\activate.ps1
-            cd tests\
-            codecov
+            python -m unittest discover
 
 workflows:
   tests:
