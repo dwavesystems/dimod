@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``BinaryQuadraticModel.iter_linear()`` method.
+  - |
+    Add ``BinaryQuadraticModel.to_polystring()`` method.

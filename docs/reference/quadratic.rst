@@ -152,6 +152,7 @@ Methods
    ~BinaryQuadraticModel.is_almost_equal
    ~BinaryQuadraticModel.is_equal
    ~BinaryQuadraticModel.is_linear
+   ~BinaryQuadraticModel.iter_linear
    ~BinaryQuadraticModel.iter_neighborhood
    ~BinaryQuadraticModel.iter_quadratic
    ~BinaryQuadraticModel.get_linear
@@ -173,6 +174,7 @@ Methods
    ~BinaryQuadraticModel.to_file
    ~BinaryQuadraticModel.to_ising
    ~BinaryQuadraticModel.to_numpy_vectors
+   ~BinaryQuadraticModel.to_polystring
    ~BinaryQuadraticModel.to_qubo
    ~BinaryQuadraticModel.update
 
