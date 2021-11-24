@@ -16,8 +16,8 @@ import abc
 import io
 import operator
 
-from collections.abc import Callable, ItemsView, Iterable, Mapping, MutableMapping
-from typing import Any, Collection, Iterator, Optional, Tuple
+from collections.abc import ItemsView, Iterable, Mapping, MutableMapping
+from typing import Any, Callable, Collection, Iterator, Optional, Tuple
 
 from dimod.typing import Bias, Variable
 
@@ -339,6 +339,11 @@ class QuadraticViewsMixin(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def offset(self) -> Bias:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
     def variables(self) -> Collection[Variable]:
         raise NotImplementedError
 
@@ -390,3 +395,90 @@ class QuadraticViewsMixin(abc.ABC):
     @abc.abstractmethod
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         raise NotImplementedError
+
+    def iter_linear(self) -> Iterator[Tuple[Variable, Bias]]:
+        """Iterate over the variables and their biases."""
+        get = self.get_linear
+        for v in self.variables:
+            yield v, get(v)
+
+    def to_polystring(self, encoder: Optional[Callable[[Variable], str]] = None) -> str:
+        """Return a string representing the model as a polynomial.
+
+        Args:
+            encoder: A function mapping variables to a string. By default
+                string variables are mapped directly whereas all other types
+                are mapped to a string :code:`f"v{variable!r}"`.
+
+        Returns:
+            A string representing the binary quadratic model.
+
+        Examples:
+
+            >>> x, y, z = dimod.Binaries(['x', 'y', 'z'])
+            >>> (2*x + 3*y*z + 6).to_polystring()
+            '6 + 2*x + 3*y*z'
+
+        """
+
+        if encoder is None:
+            def encoder(v: Variable) -> str:
+                return v if isinstance(v, str) else f"v{v!r}"
+
+        # developer note: we use floats everywhere because they have some nice
+        # methods and because for this method we're not too worried about
+        # performance
+
+        def neg(bias: float) -> bool: return bias < 0
+
+        def string(bias: float) -> str:
+            return repr(abs(int(bias))) if bias.is_integer() else repr(abs(bias))
+
+        def coefficient(bias: float) -> str:
+            return '' if abs(bias) == 1 else f"{string(bias)}*"
+
+        # linear variables that have a positive bias or are not going to be
+        # included implicitly in quadratic
+        linear = ((v, float(bias)) for v, bias in self.iter_linear()
+                  if bias or not any(bias for _, bias in self.iter_neighborhood(v)))
+
+        # non-zero quadratic biases
+        quadratic = ((u, v, float(bias)) for u, v, bias in self.iter_quadratic() if bias)
+
+        # offset
+        offset = float(self.offset)
+
+        sio = io.StringIO()
+
+        # the first element is special, since we put the sign adjacent to it so
+        # let's handle that case
+        if offset or not len(self.variables):
+            if neg(offset):
+                sio.write('-')
+            sio.write(string(offset))
+
+        else:
+            # the first element can come from quadratic or linear
+
+            try:
+                v, bias = next(linear)
+            except StopIteration:
+                # we are guaranteed that this exists
+                u, v, bias = next(quadratic)
+                if neg(bias):
+                    sio.write('-')
+                sio.write(f"{coefficient(bias)}{encoder(v)}*{encoder(u)}")
+            else:
+                # there is a linear bias
+                if neg(bias):
+                    sio.write('-')
+                sio.write(f'{coefficient(bias)}{encoder(v)}')
+
+        for v, bias in linear:
+            sio.write(f" {'-' if neg(bias) else '+'} {coefficient(bias)}{encoder(v)}")
+
+        for u, v, bias in quadratic:
+            sio.write(f" {'-' if neg(bias) else '+'} {coefficient(bias)}{encoder(v)}*{encoder(u)}")
+
+        sio.seek(0)
+        return sio.read()

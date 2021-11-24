@@ -64,6 +64,7 @@ Methods
    ~QuadraticModel.is_almost_equal
    ~QuadraticModel.is_equal
    ~QuadraticModel.is_linear
+   ~QuadraticModel.iter_linear
    ~QuadraticModel.iter_neighborhood
    ~QuadraticModel.iter_quadratic
    ~QuadraticModel.lower_bound
@@ -80,6 +81,7 @@ Methods
    ~QuadraticModel.set_quadratic
    ~QuadraticModel.spin_to_binary
    ~QuadraticModel.to_file
+   ~QuadraticModel.to_polystring
    ~QuadraticModel.update
    ~QuadraticModel.upper_bound
    ~QuadraticModel.vartype
