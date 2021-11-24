@@ -1070,11 +1070,16 @@ class ConstrainedQuadraticModel:
             https://www.gurobi.com/documentation/9.5/refman/lp_format.html#format:LP
 
         """
+        def neg(bias: float) -> bool:
+            return bias < 0
 
-        sign_dict = {1: '+', -1: '-', 0: '+'}
-        sense_dict = {'==': '=', '<=': '<=', '>=': '>='}
+        def string(bias: float) -> str:
+            return repr(abs(int(bias))) if bias.is_integer() else repr(abs(bias))
 
-        # forbidden chars in the LP format
+        def sense(s: Sense) -> str:
+            return '=' if s.value == "==" else s.value
+
+        # forbidden chars for names in the LP format
         not_allowed_chars = {'+', '-', '*', '^', ':'}
         not_first_char = {'<', '>', '=', '(', ')', '[', ']', ','}
         not_first_char.update({str(i) for i in range(10)})
@@ -1084,46 +1089,58 @@ class ConstrainedQuadraticModel:
         f = SpooledTemporaryFile(max_size=spool_size, mode='wt')
 
         if self.objective.linear or self.objective.quadratic:
-            f.write("Minimize\n ")
-            f.write('obj: ')
 
             i_term = 0
             for var, bias in self.objective.linear.items():
                 if not bias:
                     continue
-                f.write(f'{sign_dict[int(np.sign(bias))]} {abs(bias)} {var} ')
+                if i_term == 0:
+                    # LP files allow to omit this part if the objective is empty, so
+                    # we add these lines if we are sure that there are nonzero terms.
+                    f.write("Minimize\n ")
+                    f.write('obj: ')
+                f.write(f"{'-' if neg(bias) else '+'} {string(bias)} {var} ")
                 i_term += 1
 
                 if i_term % new_line_every == 0:
                     f.write('\n ')
 
             if self.objective.quadratic:
+                if i_term == 0:
+                    # if the objective is only quadratic then the header is written now
+                    f.write("Minimize\n ")
+                    f.write('obj: ')
+
                 f.write('+ [ ')
                 for (u, v), bias in self.objective.quadratic.items():
-                    f.write(f'{sign_dict[np.sign(bias)]} {abs(2 * bias)} {u} * {v} ')
+                    # multiply bias by two because all quadratic terms are eventually
+                    # divided by two outside the squared parenthesis
+                    f.write(f"{'-' if neg(bias) else '+'} {string(2 * bias)} {u} * {v} ")
                     i_term += 1
                     if i_term % new_line_every == 0:
                         f.write('\n ')
                 f.write(']/2 ')
 
             f.write("\n \n")
+        f.write("Subject To \n")
 
         if self.constraints:
-            f.write("Subject To \n")
-
             for label, constraint in self.constraints.items():
 
                 if label[0] in not_first_char:
-                    raise ValueError('Cannot start variable name with {}'.format(label[0]))
+                    raise ValueError(f'Cannot start constraint name with {label[0]} in LP files.')
 
                 if any([l in not_allowed_chars for l in label]):
-                    raise ValueError('Cannot use characters {} in names'.format(not_allowed_chars))
+                    raise ValueError(f'Cannot use characters {not_allowed_chars} in names in LP files. '
+                                     f'Label given {label}')
 
                 f.write(f'{label}: ')
 
                 i_term = 0
                 for var, bias in constraint.lhs.linear.items():
-                    f.write(f'{sign_dict[int(np.sign(bias))]} {abs(bias)} {var}')
+                    if not bias:
+                        continue
+                    f.write(f"{'-' if neg(bias) else '+'} {string(bias)} {var} ")
                     i_term += 1
 
                     if i_term % new_line_every == 0:
@@ -1131,56 +1148,56 @@ class ConstrainedQuadraticModel:
 
                 if constraint.lhs.quadratic:
                     f.write('+ [ ')
-                    for edge, bias in constraint.lhs.quadratic.items():
-                        var1, var2 = edge
-                        f.write(f'{sign_dict[np.sign(bias)]} {abs(bias)} {var1} * {var2} ')
+                    for (u, v), bias in constraint.lhs.quadratic.items():
+                        f.write(f"{'-' if neg(bias) else '+'} {string(bias)} {u} * {v} ")
                         i_term += 1
                         if i_term % new_line_every == 0:
                             f.write('\n ')
                     f.write('] ')
 
                 rhs = constraint.rhs - constraint.lhs.offset
-                f.write(f' {sense_dict[constraint.sense.value]} {rhs} \n')
+                f.write(f" {sense(constraint.sense)} {rhs} \n")
 
-        vartypes = {repr(var): self.vartype(var) for var in self.variables}
-        if len(vartypes) != len(self.variables):
-            raise ValueError("some variables do not have a unique representation")
+        if len({repr(var): self.vartype(var) for var in self.variables}) != len(self.variables):
+            raise ValueError("Some variables do not have a unique representation")
+
+        vartypes = {var: self.vartype(var) for var in self.variables}
 
         # write the bounds
         f.write('\n')
         f.write('Bounds \n')
         for v, vartype in vartypes.items():
             if any([vv in not_allowed_chars for vv in v]):
-                raise ValueError('Cannot use chars {} in variable name'.format(not_allowed_chars))
+                raise ValueError(f'Cannot use chars {not_allowed_chars} in variable name in LP files. '
+                                 f'Variable given: {v}.')
             if v[0] in not_first_char:
-                raise ValueError('Cannot start variable name with {}'.format(v[0]))
+                raise ValueError(f'Cannot start variable name with {v[0]} in LP files.'
+                                 f' Variable given: {v}.')
             if vartype == Vartype.INTEGER:
                 f.write(f' {self.lower_bound(v)} <= {v} <= {self.upper_bound(v)}\n')
             elif vartype == Vartype.SPIN:
                 raise ValueError('SPIN variables not supported in LP files, convert them to BINARY beforehand.')
 
-        # Write the Binary variables
+        # Write Binary and General variables
         f.write('\n')
-        f.write('Binary \n')
-        var_string = ''
-        i_term = 0
+        binary_string = 'Binary \n'
+        general_string = 'General \n'
+        i_term_bin = 0
+        i_term_gen = 0
         for v, vartype in vartypes.items():
             if vartype == Vartype.BINARY:
-                f.write(f'{v} ')
-                i_term += 1
-                if i_term % new_line_every == 0:
-                    f.write('\n ')
-
+                binary_string += f'{v} '
+                i_term_bin += 1
+                if i_term_bin % new_line_every == 0:
+                    binary_string += '\n '
+            elif vartype is Vartype.INTEGER:
+                general_string += f'{v} '
+                i_term_gen += 1
+                if i_term_gen % new_line_every == 0:
+                    general_string += '\n '
+        f.write(binary_string)
         f.write('\n')
-        f.write('General \n')
-        i_term = 0
-        for v, vartype in vartypes.items():
-            if vartype is Vartype.INTEGER:
-                f.write(f'{v} ')
-                i_term += 1
-                if i_term % new_line_every == 0:
-                    f.write('\n ')
-
+        f.write(general_string)
         f.write('\n')
         f.write('End')
         f.seek(0)
@@ -1277,20 +1294,19 @@ class ConstrainedQuadraticModel:
                               stacklevel=2)
                 continue
 
-            if c.lin_expr:
-
-                for le in c.lin_expr:
-                    var = le.name[0]
-                    vartype = obj.vartype(var)
-                    lb = obj.lower_bound(var)
-                    ub = obj.upper_bound(var)
-                    if vartype is Vartype.BINARY:
-                        constraint.add_variable(Vartype.BINARY, var)
-                    elif vartype is Vartype.INTEGER:
-                        constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
-                    else:
-                        raise ValueError("Unexpected vartype: {}".format(vartype))
-                    constraint.add_linear(var, le.coef)
+            # if c.lin_expr:
+            for le in c.lin_expr:
+                var = le.name[0]
+                vartype = obj.vartype(var)
+                lb = obj.lower_bound(var)
+                ub = obj.upper_bound(var)
+                if vartype is Vartype.BINARY:
+                    constraint.add_variable(Vartype.BINARY, var)
+                elif vartype is Vartype.INTEGER:
+                    constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
+                else:
+                    raise ValueError("Unexpected vartype: {}".format(vartype))
+                constraint.add_linear(var, le.coef)
 
             if c.quad_expr:
 
