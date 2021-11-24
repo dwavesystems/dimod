@@ -2183,6 +2183,12 @@ class TestSetLinear(unittest.TestCase):
         bqm.set_linear(0, .5)
         self.assertEqual(bqm.get_linear(0), .5)
 
+    @parameterized.expand(BQMs.items())
+    def test_set_on_empty(self, name, BQM):
+        bqm = BQM('BINARY')
+        bqm.set_linear('a', 7)
+        self.assertEqual(bqm.get_linear('a'), 7)
+
 
 class TestSetQuadratic(unittest.TestCase):
     @parameterized.expand(BQMs.items())
@@ -2197,6 +2203,12 @@ class TestSetQuadratic(unittest.TestCase):
         bqm.set_quadratic(0, 1, -.5)
         self.assertEqual(bqm.get_quadratic(0, 1), -.5)
         self.assertEqual(bqm.get_quadratic(1, 0), -.5)
+
+    @parameterized.expand(BQMs.items())
+    def test_set_on_empty(self, name, BQM):
+        bqm = BQM('BINARY')
+        bqm.set_quadratic('a', 'b', 7)
+        self.assertEqual(bqm.get_quadratic('a', 'b'), 7)
 
     @parameterized.expand(BQMs.items())
     def test_set_quadratic_exception(self, name, BQM):

@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix setting linear and quadratic biases on vartype views when the relevant
+    variable or interaction does not already exist.

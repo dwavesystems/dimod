@@ -234,6 +234,7 @@ class VartypeView:
 
     @view_method
     def remove_interaction(self, u: Variable, v: Variable):
+        self.get_quadratic(u, v)  # raise an error if it doesn't exist
         self.set_quadratic(u, v, 0)  # zero it out in the appropriate vartype
         self.data.remove_interaction(u, v)
 
@@ -255,12 +256,14 @@ class VartypeView:
 
     @view_method
     def set_linear(self, v: Variable, bias: Bias):
+        self.add_linear(v, 0)  # make sure it exists
         self.add_linear(v, bias - self.get_linear(v))  # just add the delta
 
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         self.add_variable(u)
         self.add_variable(v)
         # just add the delta
+        self.add_quadratic(u, v, 0)  # make sure it exists
         self.add_quadratic(u, v, bias - self.get_quadratic(u, v))
 
     def to_numpy_vectors(self, *args, **kwargs):
