@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    You can now install ``dwave-preprocessing`` as part of the dimod install with
+    ``pip install dimod[all]``
+upgrade:
+  - |
+    ``dwave-preprocessing`` is no longer a direct dependency. It can still be
+    installed with ``pip install dimod[all]``.
