@@ -87,4 +87,8 @@ setup(
         'numpy>=1.17.3,<2.0.0,!=1.21.0,!=1.21.1', # keep synced with circle-ci, pyproject.toml
         'pyparsing>=2.4.7, <3.0.0',
         ],
+    # we use the generic 'all' so that in the future when we remove
+    # dwave-preprocessing we can leave it in as an empty list. Thereby not
+    # breaking any packages that have dimod[all] in their requirments.
+    extras_require=dict(all='dwave-preprocessing>=0.3,<0.4'),
 )
