@@ -2,6 +2,6 @@
 
 fixes:
   - |
-    Fixes the ``bqm_structured`` decorator's error message for cases where
-    ``adjacency.keys()`` (nodes of the structured sampler) do not include all
-    BQM variables.
+    ``bqm_structured`` decorator now correctly raises a
+    ``BinaryQuadraticModelStructureError`` error in cases where nodes of the 
+    structured sampler do not include all BQM variables.
