@@ -1,0 +1,7 @@
+---
+
+fixes:
+  - |
+    Fixes the ``bqm_structured`` decorator's error message for cases where
+    ``adjacency.keys()`` (nodes of the structured sampler) do not include all
+    BQM variables.
