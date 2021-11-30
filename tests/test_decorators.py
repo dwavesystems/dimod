@@ -48,21 +48,6 @@ class IndexSampler(dimod.NullSampler):
 class TestBQMIndexLabels(unittest.TestCase):
     pass
 
-class EmptyStructuredSampler(dimod.Structured):
-    edgelist = nodelist = []
-
-    @dimod.decorators.bqm_structured
-    def sample(self, bqm):
-        pass
-
-class StructuredSampler(dimod.Structured):
-    nodelist = ['a', 'b', 'c']
-    edgelist = [('a', 'b')]
-
-    @dimod.decorators.bqm_structured
-    def sample(self, bqm):
-        pass
-
 class TestBQMIndexLabelledInput(unittest.TestCase):
     # we really should add proper tests but since it's deprecated anyway let's
     # just leave it alone
@@ -378,6 +363,21 @@ class TestForwardingMethod(unittest.TestCase):
     def test_output(self):
         outer = self.outer
         self.assertEqual(outer.func(2, 3), 5)
+
+class EmptyStructuredSampler(dimod.Structured):
+    edgelist = nodelist = []
+
+    @dimod.decorators.bqm_structured
+    def sample(self, bqm):
+        pass
+
+class StructuredSampler(dimod.Structured):
+    nodelist = ['a', 'b', 'c']
+    edgelist = [('a', 'b')]
+
+    @dimod.decorators.bqm_structured
+    def sample(self, bqm):
+        pass
 
 class TestBQMStructured(unittest.TestCase):
     def test_empty_sampler_empty_bqm(self):
