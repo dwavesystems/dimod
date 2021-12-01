@@ -1078,6 +1078,17 @@ class TestEnergies(unittest.TestCase):
         self.assertEqual(energies.dtype, np.float32)
 
     @parameterized.expand(BQMs.items())
+    def test_empty(self, name, BQM):
+        empty = BQM('BINARY')
+
+        self.assertEqual(empty.energy({}), 0)
+        self.assertEqual(empty.energy([]), 0)
+
+        np.testing.assert_array_equal(empty.energies([]), [])
+        np.testing.assert_array_equal(empty.energies([[], []]), [0, 0])
+        np.testing.assert_array_equal(empty.energies([{}, {}]), [0, 0])
+
+    @parameterized.expand(BQMs.items())
     def test_energy(self, name, BQM):
         arr = np.triu(np.ones((5, 5)))
         bqm = BQM(arr, 'BINARY')
@@ -1112,6 +1123,14 @@ class TestEnergies(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             bqm.energies(samples)
+
+    @parameterized.expand(BQMs.items())
+    def test_subset_empty(self, name, BQM):
+        arr = np.arange(9).reshape((3, 3))
+        bqm = BQM(arr, dimod.BINARY)
+
+        with self.assertRaises(ValueError):
+            bqm.energies([])
 
 
 class TestFileView(unittest.TestCase):

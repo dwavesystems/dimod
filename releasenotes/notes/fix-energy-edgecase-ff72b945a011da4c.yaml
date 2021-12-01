@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix energy calculation in binary quadratic models and quadratic models
+    with no variables. Previously an empty sample would incorrectly raise
+    an error.

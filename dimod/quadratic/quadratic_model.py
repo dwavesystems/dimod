@@ -594,7 +594,12 @@ class QuadraticModel(QuadraticViewsMixin):
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
         """
-        energy, = self.energies(sample, dtype=dtype)
+        energies = self.energies(sample, dtype=dtype)
+
+        if not len(energies):  # the empty case, happens with []
+            return self.dtype.type(0)
+
+        energy, = energies
         return energy
 
     @classmethod
