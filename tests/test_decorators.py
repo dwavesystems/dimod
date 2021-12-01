@@ -48,7 +48,6 @@ class IndexSampler(dimod.NullSampler):
 class TestBQMIndexLabels(unittest.TestCase):
     pass
 
-
 class TestBQMIndexLabelledInput(unittest.TestCase):
     # we really should add proper tests but since it's deprecated anyway let's
     # just leave it alone
@@ -364,3 +363,44 @@ class TestForwardingMethod(unittest.TestCase):
     def test_output(self):
         outer = self.outer
         self.assertEqual(outer.func(2, 3), 5)
+
+class EmptyStructuredSampler(dimod.Structured):
+    edgelist = nodelist = []
+
+    @dimod.decorators.bqm_structured
+    def sample(self, bqm):
+        pass
+
+class StructuredSampler(dimod.Structured):
+    nodelist = ['a', 'b', 'c']
+    edgelist = [('a', 'b')]
+
+    @dimod.decorators.bqm_structured
+    def sample(self, bqm):
+        pass
+
+class TestBQMStructured(unittest.TestCase):
+    def test_empty_sampler_empty_bqm(self):
+        EmptyStructuredSampler().sample(dimod.BQM.empty('SPIN'))  # should do nothing
+
+    def test_empty_sampler(self):
+        with self.assertRaises(dimod.exceptions.BinaryQuadraticModelStructureError):
+            EmptyStructuredSampler().sample(dimod.BQM({'a': 1}, {}, 0.0, 'BINARY'))
+
+    def test_bqm_empty(self):
+        StructuredSampler().sample(dimod.BQM('BINARY'))  # should do nothing
+
+    def test_bqm_subset(self):
+        StructuredSampler().sample(dimod.BQM({'a': 1}, {'ab': 1}, 0, 'BINARY'))  # should do nothing
+
+    def test_bqm_extra_edge(self):
+        with self.assertRaises(dimod.exceptions.BinaryQuadraticModelStructureError):
+            StructuredSampler().sample(dimod.BQM({}, {'ca': 1}, 0.0, 'BINARY'))
+
+    def test_bqm_extra_node(self):
+        with self.assertRaises(dimod.exceptions.BinaryQuadraticModelStructureError):
+            StructuredSampler().sample(dimod.BQM({'a': 1, 'd': 1}, {}, 0.0, 'BINARY'))
+
+    def test_bqm_extra_node_disjoint(self):
+        with self.assertRaises(dimod.exceptions.BinaryQuadraticModelStructureError):
+            StructuredSampler().sample(dimod.BQM({'d': 1}, {}, 0.0, 'BINARY'))

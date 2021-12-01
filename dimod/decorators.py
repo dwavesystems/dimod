@@ -188,7 +188,7 @@ def bqm_structured(f):
 
         if not adjacency.keys() >= bqm.variables:
             raise BinaryQuadraticModelStructureError(
-                f"given bqm contains a variable, {(adjacency.keys() - bqm.variables).pop()!r}, "
+                f"given bqm has at least one variable, {(list(bqm.variables) - adjacency.keys()).pop()!r}, "
                 "not supported by the structured solver")
         if any(u not in adjacency[v] for u, v, _ in bqm.iter_quadratic()):
             u, v = next((u, v) for u, v, _ in bqm.iter_quadratic() if u not in adjacency[v])
@@ -490,6 +490,5 @@ def unique_variable_labels(f):
             return qm
         qm = f(label, *args, **kwargs)
         return qm
-        
+
     return conditional_unique_label
-    

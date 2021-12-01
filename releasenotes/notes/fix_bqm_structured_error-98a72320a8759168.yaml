@@ -1,0 +1,7 @@
+---
+
+fixes:
+  - |
+    ``bqm_structured`` decorator now correctly raises a
+    ``BinaryQuadraticModelStructureError`` error in cases where nodes of the 
+    structured sampler do not include all BQM variables.
