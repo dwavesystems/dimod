@@ -259,6 +259,16 @@ class TestEnergies(unittest.TestCase):
         self.assertAlmostEqual((i*j).energy({'i': 4294967296, 'j': 4294967296}),
                                1.8446744073709552e+19)
 
+    def test_empty(self):
+        empty = dimod.QuadraticModel()
+
+        self.assertEqual(empty.energy({}), 0)
+        self.assertEqual(empty.energy([]), 0)
+
+        np.testing.assert_array_equal(empty.energies([]), [])
+        np.testing.assert_array_equal(empty.energies([[], []]), [0, 0])
+        np.testing.assert_array_equal(empty.energies([{}, {}]), [0, 0])
+
     def test_spin_bin(self):
         x = Binary('x')
         s = Spin('s')
@@ -285,6 +295,14 @@ class TestEnergies(unittest.TestCase):
 
         self.assertEqual(qm.energy({'a': 1, 'b': 1, 'c': 1}), 3.5)
         self.assertEqual(qm.energy({'a': 1, 'b': 0, 'c': 1}), 2.5)
+
+    def test_subset_empty(self):
+        a = Integer('a')
+        b = Binary('b')
+        qm = a + a*b + 1.5
+
+        with self.assertRaises(ValueError):
+            qm.energies([])
 
     def test_subset(self):
         a = Integer('a')
