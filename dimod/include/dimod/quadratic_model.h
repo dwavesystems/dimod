@@ -30,7 +30,8 @@ namespace dimod {
 enum Vartype {
     BINARY,  ///< Variables that are either 0 or 1.
     SPIN,    ///< Variables that are either -1 or 1.
-    INTEGER  ///< Variables that are integer valued.
+    INTEGER,  ///< Variables that are integer valued.
+    REAL  ///< Variables that are real valued.
 };
 
 /// Compile-time limits by variable type.
@@ -65,6 +66,14 @@ class vartype_limits<Bias, Vartype::INTEGER> {
     }
     static constexpr Bias min() noexcept { return -max(); }
 };
+template <class Bias>
+class vartype_limits<Bias, Vartype::REAL> {
+ public:
+    static constexpr Bias default_max() noexcept { return max(); }
+    static constexpr Bias default_min() noexcept { return 0; }
+    static constexpr Bias max() noexcept { return 1e30; }
+    static constexpr Bias min() noexcept { return -1e30; }
+};
 
 /// Runtime limits by variable type.
 template <class Bias>
@@ -77,6 +86,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::default_max();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::default_max();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::default_max();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -88,6 +99,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::default_min();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::default_min();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::default_min();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -99,6 +112,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::max();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::max();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::max();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -110,6 +125,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::min();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::min();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::min();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -1097,7 +1114,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
                 base_type::linear(u) += bias;
             } else if (vartype == Vartype::SPIN) {
                 base_type::offset_ += bias;
-            } else if (vartype == Vartype::INTEGER) {
+            } else if (vartype == Vartype::INTEGER ||
+                       vartype == Vartype::REAL) {
                 base_type::add_quadratic(u, u, bias);
             } else {
                 throw std::logic_error("unknown vartype");
@@ -1177,6 +1195,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
             this->change_vartype(Vartype::BINARY, v);
             this->change_vartype(Vartype::INTEGER, v);
         } else {
+            // todo: support integer to real and vice versa, need to figure
+            // out how to handle bounds in that case though
             throw std::logic_error("invalid vartype change");
         }
     }
