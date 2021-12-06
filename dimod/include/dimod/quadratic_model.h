@@ -30,7 +30,8 @@ namespace dimod {
 enum Vartype {
     BINARY,  ///< Variables that are either 0 or 1.
     SPIN,    ///< Variables that are either -1 or 1.
-    INTEGER  ///< Variables that are integer valued.
+    INTEGER,  ///< Variables that are integer valued.
+    REAL  ///< Variables that are real valued.
 };
 
 /**
@@ -979,7 +980,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
                 base_type::linear(u) += bias;
             } else if (vartype == Vartype::SPIN) {
                 base_type::offset_ += bias;
-            } else if (vartype == Vartype::INTEGER) {
+            } else if (vartype == Vartype::INTEGER ||
+                       vartype == Vartype::REAL) {
                 base_type::add_quadratic(u, u, bias);
             } else {
                 throw std::logic_error("unknown vartype");
@@ -990,31 +992,37 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     index_type add_variable(Vartype vartype) {
-        bias_type lb;
-        bias_type ub;
         if (vartype == Vartype::BINARY) {
-            lb = 0;
-            ub = 1;
+            return this->add_variable(vartype, 0, 1);
         } else if (vartype == Vartype::SPIN) {
-            lb = -1;
-            ub = 1;
+            return this->add_variable(vartype, -1, +1);
         } else if (vartype == Vartype::INTEGER) {
-            ub = this->max_integer();
-            lb = 0;
+            return this->add_variable(vartype, 0, this->max_integer());
+        } else if (vartype == Vartype::REAL) {
+            return this->add_variable(vartype, 0, this->max_real());
         } else {
             throw std::logic_error("unknown vartype");
         }
-        return this->add_variable(vartype, lb, ub);
     }
 
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub) {
         assert(lb <= ub);
-        assert(lb >= -this->max_integer());
-        assert(ub <= this->max_integer());
+
+        assert(vartype != Vartype::BINARY || lb == 0);
+        assert(vartype != Vartype::BINARY || ub == 1);
+
+        assert(vartype != Vartype::SPIN || lb == -1);
+        assert(vartype != Vartype::SPIN || ub == +1);
+
+        assert(vartype != Vartype::INTEGER || lb >= -this->max_integer());
+        assert(vartype != Vartype::INTEGER || ub <= this->max_integer());
+
+        assert(vartype != Vartype::REAL || lb >= -this->max_real());
+        assert(vartype != Vartype::REAL || ub <= this->max_real());
 
         index_type v = this->num_variables();
 
-        varinfo_.emplace_back(vartype, lb, ub);
+        this->varinfo_.emplace_back(vartype, lb, ub);
         this->linear_biases_.resize(v + 1);
         this->adj_.resize(v + 1);
 
@@ -1064,6 +1072,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
             this->change_vartype(Vartype::BINARY, v);
             this->change_vartype(Vartype::INTEGER, v);
         } else {
+            // todo: support integer to real and vice versa, need to figure
+            // out how to handle bounds in that case though
             throw std::logic_error("invalid vartype change");
         }
     }
@@ -1075,6 +1085,11 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     constexpr bias_type max_integer() {
         return ((std::int64_t)1 << (std::numeric_limits<bias_type>::digits)) -
                1;
+    }
+
+    constexpr bias_type max_real() {
+        // todo: better bound, this is too generous
+        return std::numeric_limits<bias_type>::max();
     }
 
     // Resize the model to contain `n` variables.
