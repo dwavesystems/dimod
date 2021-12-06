@@ -1,0 +1,8 @@
+---
+prelude: >
+    Add support for real-valued variables.
+features:
+  - |
+    Add C++ ``Vartype::REAL``, a new variable type for real-valued variables.
+  - |
+    Support variables with ``Vartype::REAL`` in C++ ``QuadraticModel``.
