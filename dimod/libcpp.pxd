@@ -38,6 +38,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         BINARY
         SPIN
         INTEGER
+        REAL
 
     cpdef cppclass cppvartype_info "dimod::vartype_info" [Bias]:
         @staticmethod
