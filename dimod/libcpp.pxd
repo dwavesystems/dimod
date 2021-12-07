@@ -38,6 +38,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         BINARY
         SPIN
         INTEGER
+        REAL
 
     cdef cppclass cppBinaryQuadraticModel "dimod::BinaryQuadraticModel" [Bias, Index]:
         ctypedef Bias bias_type
@@ -123,6 +124,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bias_type& linear(index_type)
         const bias_type& lower_bound(index_type)
         bias_type max_integer()
+        bias_type max_real()
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
         size_type num_variables()
         size_type num_interactions()
