@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from dimod import BinaryQuadraticModel
 
 
-__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray']
+__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray', 'Real', 'Reals']
 
 
 QM_MAGIC_PREFIX = b'DIMODQM'
@@ -236,7 +236,7 @@ class QuadraticModel(QuadraticViewsMixin):
                             new.add_linear(u, ubias*vbias)
                         elif u_vartype is Vartype.SPIN:
                             new.offset += ubias * vbias
-                        elif u_vartype is Vartype.INTEGER:
+                        elif u_vartype is Vartype.INTEGER or u_vartype is Vartype.REAL:
                             new.add_quadratic(u, v, ubias*vbias)
                         else:
                             raise RuntimeError("unexpected vartype")
@@ -455,6 +455,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`.Vartype.REAL`, ``'REAL'``
 
             label:
                 A label for the variable. Defaults to the length of the
@@ -463,11 +464,11 @@ class QuadraticModel(QuadraticViewsMixin):
 
             lower_bound:
                 A lower bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                not :class:`Vartype.INTEGER` or :class:`Vartype.REAL`.
 
             upper_bound:
                 An upper bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                not :class:`Vartype.INTEGER` or :class:`Vartype.REAL`.
 
         Returns:
             The variable label.
@@ -484,6 +485,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`.Vartype.REAL`, ``'REAL'``
 
             variables: Iterable of variable labels.
 
@@ -506,6 +508,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`.Vartype.REAL`, ``'REAL'``
 
             v: Variable to change to the specified ``vartype``.
 
@@ -1260,6 +1263,43 @@ def _VariableArray(variable_generator: Callable,
         variable_array[index] = element
     
     return variable_array
+
+
+@unique_variable_labels
+def Real(label: Optional[Variable] = None, bias: Bias = 1,
+         dtype: Optional[DTypeLike] = None,
+         *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> QuadraticModel:
+    """Return a quadratic model with a single real-valued variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID` as a string.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned quadratic model.
+        lower_bound: Keyword-only argument to specify the lower bound.
+        upper_bound: Keyword-only argument to specify the upper bound.
+
+    Returns:
+        Instance of :class:`.QuadraticModel`.
+
+    """
+    qm = QM(dtype=dtype)
+    v = qm.add_variable(Vartype.REAL, label, lower_bound=lower_bound, upper_bound=upper_bound)
+    qm.set_linear(v, bias)
+    return qm
+
+
+def Reals(labels: Union[int, Iterable[Variable]],
+          dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+    """Yield quadratic models, each with a single real-valued variable.
+    Yields:
+        Quadratic models, each with a single real-valued variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Real(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Real(dtype=dtype) for _ in range(labels))
 
 # register fileview loader
 load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)
