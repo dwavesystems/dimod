@@ -126,6 +126,8 @@ cdef cppVartype cppvartype(vartype) except? cppVartype.SPIN:
         return cppVartype.BINARY
     elif vartype is Vartype.INTEGER:
         return cppVartype.INTEGER
+    elif vartype is Vartype.REAL:
+        return cppVartype.REAL
     else:
         raise TypeError(f"unexpected vartype {vartype!r}")
 
