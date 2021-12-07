@@ -24,7 +24,7 @@ from parameterized import parameterized
 
 import dimod
 
-from dimod import Spin, Binary, Integer, QM, QuadraticModel
+from dimod import Spin, Binary, Integer, QM, QuadraticModel, Real, Reals
 
 
 VARTYPES = dict(BINARY=dimod.BINARY, SPIN=dimod.SPIN, INTEGER=dimod.INTEGER)
@@ -412,11 +412,13 @@ class TestFileSerialization(unittest.TestCase):
         qm.add_variable('INTEGER', 'i')
         qm.add_variable('BINARY', 'x')
         qm.add_variable('SPIN', 's')
+        qm.add_variable('REAL', 'a')
 
         qm.set_linear('i', 3)
         qm.set_quadratic('s', 'i', 2)
         qm.set_quadratic('x', 's', -2)
         qm.set_quadratic('i', 'i', 5)
+        qm.set_quadratic('i', 'a', 6)
         qm.offset = 7
 
         with tempfile.TemporaryFile() as tf:
@@ -638,6 +640,36 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(qm.offset, 3)
 
 
+class TestReal(unittest.TestCase):
+    def test_init_no_label(self):
+        a = dimod.Real()
+        self.assertIsInstance(a.variables[0], str)
+
+    def test_multiple_labelled(self):
+        i, j, k = dimod.Reals('ijk')
+
+        self.assertEqual(i.variables[0], 'i')
+        self.assertEqual(j.variables[0], 'j')
+        self.assertEqual(k.variables[0], 'k')
+        self.assertIs(i.vartype('i'), dimod.REAL)
+        self.assertIs(j.vartype('j'), dimod.REAL)
+        self.assertIs(k.vartype('k'), dimod.REAL)
+
+    def test_multiple_unlabelled(self):
+        i, j, k = dimod.Reals(3)
+
+        self.assertNotEqual(i.variables[0], j.variables[0])
+        self.assertNotEqual(i.variables[0], k.variables[0])
+        self.assertIs(i.vartype(i.variables[0]), dimod.REAL)
+        self.assertIs(j.vartype(j.variables[0]), dimod.REAL)
+        self.assertIs(k.vartype(k.variables[0]), dimod.REAL)
+
+    def test_no_label_collision(self):
+        qm_1 = Real()
+        qm_2 = Real()
+        self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
+
+
 class TestRemoveInteraction(unittest.TestCase):
     def test_several(self):
         i, j, k = dimod.Integers('ijk')
@@ -739,7 +771,7 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue(
             qm.is_equal(QM({'i': 1, 'j': -1}, {}, -5, {'i': 'INTEGER', 'j': 'INTEGER'})))
 
-    def test_expressions(self):
+    def test_expressions_integer(self):
         i = Integer('i')
         j = Integer('j')
 
@@ -755,6 +787,25 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'INTEGER'})))
         self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'INTEGER'})))
         self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'INTEGER'})))
+        self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
+        self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
+
+    def test_expressions_real(self):
+        i = Real('i')
+        j = Real('j')
+
+        self.assertTrue((i*j).is_equal(QM({}, {'ij': 1}, 0, {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i*i).is_equal(QM({}, {'ii': 1}, 0, {'i': 'REAL'})))
+        self.assertTrue(((2*i)*(3*i)).is_equal(QM({}, {'ii': 6}, 0, {'i': 'REAL'})))
+        self.assertTrue((i + j).is_equal(QM({'i': 1, 'j': 1}, {}, 0,
+                                            {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i + 2*j).is_equal(QM({'i': 1, 'j': 2}, {}, 0,
+                                              {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i - 2*j).is_equal(QM({'i': 1, 'j': -2}, {}, 0,
+                                              {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'REAL'})))
+        self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'REAL'})))
+        self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'REAL'})))
         self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
         self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
 

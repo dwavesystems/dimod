@@ -154,6 +154,8 @@ cdef class cyQM_template(cyQMBase):
                 cpp_vartype = cppVartype.SPIN
             elif vartype_view[vi] == 2:
                 cpp_vartype = cppVartype.INTEGER
+            elif vartype_view[vi] == 3:
+                cpp_vartype = cppVartype.REAL
             else:
                 raise RuntimeError
             self.cppqm.add_variable(cpp_vartype, lb_view[vi], ub_view[vi])
@@ -222,7 +224,7 @@ cdef class cyQM_template(cyQMBase):
             if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
                              or self.cppqm.vartype(ui) == cppVartype.BINARY):
                 raise ValueError(f"{u!r} cannot have an interaction with itself")
-            
+
             self.cppqm.add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
@@ -261,7 +263,7 @@ cdef class cyQM_template(cyQMBase):
             # in this case we just ignore the provided values
             lb = cppvartype_info[bias_type].default_min(cppvartype)
             ub = cppvartype_info[bias_type].default_max(cppvartype)
-        elif cppvartype == cppVartype.INTEGER:
+        elif cppvartype == cppVartype.INTEGER or cppvartype == cppVartype.REAL:
             if lower_bound is None:
                 lb = cppvartype_info[bias_type].default_min(cppvartype)
             else:
@@ -279,7 +281,7 @@ cdef class cyQM_template(cyQMBase):
             if lb > ub:
                 raise ValueError("lower_bound must be less than or equal to upper_bound")
 
-            if ceil(lb) > floor(ub):
+            if cppvartype == cppVartype.INTEGER and ceil(lb) > floor(ub):
                 raise ValueError("there must be at least one valid integer between lower_bound and upper_bound")
         else:
             raise RuntimeError("unknown vartype")
@@ -700,9 +702,10 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
+                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
             raise ValueError(f"{u!r} cannot have an interaction with itself")
-        
+
         self.cppqm.set_quadratic(ui, vi, bias)
 
     def upper_bound(self, v):
@@ -719,5 +722,7 @@ cdef class cyQM_template(cyQMBase):
             return Vartype.SPIN
         elif cppvartype == cppVartype.INTEGER:
             return Vartype.INTEGER
+        elif cppvartype == cppVartype.REAL:
+            return Vartype.REAL
         else:
             raise RuntimeError("unexpected vartype")
