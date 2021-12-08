@@ -6,6 +6,7 @@ orbs:
 environment: &global-environment
   CIBW_BUILD_VERBOSITY: 1
   CIBW_ENVIRONMENT: DIMOD_NUM_BUILD_JOBS=20
+  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
   CIBW_SKIP: pp* *musllinux*
   PIP_PROGRESS_BAR: 'off'
 
@@ -40,7 +41,7 @@ jobs:
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.2.2
+            pip install cibuildwheel==2.3.0
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -127,7 +128,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.2.2
+            python -m pip install cibuildwheel==2.3.0
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
