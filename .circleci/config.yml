@@ -84,7 +84,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 12.5.1
+      xcode: 13.2.0
 
     environment:
       <<: *global-environment
@@ -286,7 +286,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 12.5.1
+      xcode: 13.2.0
 
     environment:
       <<: *global-environment
@@ -296,18 +296,24 @@ jobs:
       - checkout
       - attach_workspace:
           at: dist
-      - when:
-          condition:
-            equal: [3.10.0, << parameters.python-version>>]
-          steps:
-            - run: brew update
       - run:
           name: install pyenv
           command: |
             brew install pyenv
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.5.1
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.2.0
+      - when:
+          # see https://github.com/pyenv/pyenv/issues/1643. We use an intermediate
+          # file so we can use the --skip-existing without raising errors from curl
+          condition:
+            equal: [3.6.8, << parameters.python-version>>]
+          steps:
+            - run:
+                name: Install Python 3.6 with a patch
+                command: |
+                  curl -sSL https://github.com/python/cpython/commit/8ea6353.patch > tmp.txt
+                  pyenv install -s --patch 3.6.8 < tmp.txt
       - run:
           name: install python
           command: |
@@ -315,7 +321,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode12.5.1
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.2.0
       - run:
           name: install
           command: |
