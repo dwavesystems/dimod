@@ -395,6 +395,10 @@ class ConstrainedQuadraticModel:
         Adds a special kind of one-hot constraint. These one-hot constraints
         must be disjoint, that is they must not have any overlapping variables.
 
+        Note that constraints added by :meth:`add_discrete` are guaranteed to
+        be satisfied in solutions returned by
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+
         Args:
             variables: An iterable of variables.
 
