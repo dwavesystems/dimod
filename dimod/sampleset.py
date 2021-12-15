@@ -1707,14 +1707,14 @@ class SampleSet(abc.Iterable, abc.Sized):
     ###############################################################################################
 
     def to_pandas_dataframe(self, sample_column=False):
-        """Convert a sample set to a Pandas DataFrame
+        """Convert a sample set to a Pandas DataFrame.
 
         Args:
             sample_column(bool, optional, default=False): If True, samples are
-            represented as a column of type dict.
+                represented as a column of type dict.
 
         Returns:
-            :obj:`pandas.DataFrame`
+            :obj:`pandas.DataFrame`.
 
         Examples:
             >>> samples = dimod.SampleSet.from_samples([{'a': -1, 'b': +1, 'c': -1},
@@ -1728,6 +1728,10 @@ class SampleSet(abc.Iterable, abc.Sized):
                                    sample  energy  num_occurrences
             0  {'a': -1, 'b': 1, 'c': -1}    -0.5                1
             1  {'a': -1, 'b': -1, 'c': 1}    -0.5                1
+
+        Note that sample sets can be constructed to contain data structures
+        incompatible with the target
+        `Pandas format <https://pandas.pydata.org/docs>`_. 
 
         """
         import pandas as pd
