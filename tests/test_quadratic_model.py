@@ -572,6 +572,19 @@ class TestSymbolic(unittest.TestCase):
         exp = i + j + x + y + s + t + i*j + s*i + x*j + (s + 1)*(1 - j)
 
 
+class TestToPolyString(unittest.TestCase):
+    def test_simple(self):
+        i, j = dimod.Integers('ij')
+        x = dimod.Binary('x')
+        s = dimod.Spin('s')
+
+        self.assertEqual((i*j).to_polystring(), 'i*j')
+        self.assertEqual((-i*j).to_polystring(), '-i*j')
+        self.assertEqual((i*j + x).to_polystring(), 'x + i*j')
+        self.assertEqual((i*j).to_polystring(), 'i*j')
+        self.assertEqual((-i*j - x).to_polystring(), '-x - i*j')
+
+
 class TestViews(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):

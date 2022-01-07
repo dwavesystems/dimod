@@ -2202,6 +2202,12 @@ class TestSetLinear(unittest.TestCase):
         bqm.set_linear(0, .5)
         self.assertEqual(bqm.get_linear(0), .5)
 
+    @parameterized.expand(BQMs.items())
+    def test_set_on_empty(self, name, BQM):
+        bqm = BQM('BINARY')
+        bqm.set_linear('a', 7)
+        self.assertEqual(bqm.get_linear('a'), 7)
+
 
 class TestSetQuadratic(unittest.TestCase):
     @parameterized.expand(BQMs.items())
@@ -2216,6 +2222,12 @@ class TestSetQuadratic(unittest.TestCase):
         bqm.set_quadratic(0, 1, -.5)
         self.assertEqual(bqm.get_quadratic(0, 1), -.5)
         self.assertEqual(bqm.get_quadratic(1, 0), -.5)
+
+    @parameterized.expand(BQMs.items())
+    def test_set_on_empty(self, name, BQM):
+        bqm = BQM('BINARY')
+        bqm.set_quadratic('a', 'b', 7)
+        self.assertEqual(bqm.get_quadratic('a', 'b'), 7)
 
     @parameterized.expand(BQMs.items())
     def test_set_quadratic_exception(self, name, BQM):
@@ -2416,6 +2428,63 @@ class TestToIsing(unittest.TestCase):
 
             # and the energy of the model
             self.assertAlmostEqual(energy, model.energy(bin_sample), 5)
+
+
+class TestToPolyString(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_empty(self, name, BQM):
+        self.assertEqual(BQM('BINARY').to_polystring(), "0")
+        self.assertEqual(BQM('SPIN').to_polystring(), "0")
+
+    @parameterized.expand(BQMs.items())
+    def test_linear_with_offset(self, name, BQM):
+        self.assertEqual(BQM({'a': 2}, {}, 7, 'BINARY').to_polystring(), "7 + 2*a")
+
+    @parameterized.expand(BQMs.items())
+    def test_linear_without_offset(self, name, BQM):
+        self.assertEqual(BQM({'a': 2}, {}, 0, 'BINARY').to_polystring(), "2*a")
+
+    @parameterized.expand(BQMs.items())
+    def test_offset_only(self, name, BQM):
+        bqm = BQM('BINARY')
+
+        for offset in [-0.0, 0, 0.0]:
+            with self.subTest(offset):
+                bqm.offset = offset
+                self.assertEqual(bqm.to_polystring(), '0')
+
+        for offset in [-7, -7.]:
+            with self.subTest(offset):
+                bqm.offset = offset
+                self.assertEqual(bqm.to_polystring(), '-7')
+
+        for offset in [-7.5]:
+            with self.subTest(offset):
+                bqm.offset = offset
+                self.assertEqual(bqm.to_polystring(), '-7.5')
+
+        for offset in [7, 7.0]:
+            with self.subTest(offset):
+                bqm.offset = offset
+                self.assertEqual(bqm.to_polystring(), '7')
+
+        for offset in [7.5]:
+            with self.subTest(offset):
+                bqm.offset = offset
+                self.assertEqual(bqm.to_polystring(), '7.5')
+
+    @parameterized.expand(BQMs.items())
+    def test_quadratic(self, name, BQM):
+        bqm = BQM('BINARY')
+        bqm.set_quadratic('a', 'b', 3)
+        bqm.set_linear('c', 0)
+
+        self.assertIn(bqm.to_polystring(), ['0*c + 3*a*b', '0*c + 3*b*a'])
+
+        # bqm.offset = 6
+        bqm.set_quadratic('c', 'a', 7)
+
+        self.assertIn(bqm.to_polystring(), ['3*a*b + 7*a*c', '3*b*a + 7*c*a'])
 
 
 class TestVartypeViews(unittest.TestCase):

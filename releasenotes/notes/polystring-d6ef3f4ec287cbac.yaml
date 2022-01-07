@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    Add ``BinaryQuadraticModel.iter_linear()`` method.
+  - |
+    Add ``BinaryQuadraticModel.to_polystring()`` method.
+  - |
+    Add ``QuadraticModel.iter_linear()`` method.
+  - |
+    Add ``QuadraticModel.to_polystring()`` method.
+upgrade:
+  - |
+    ``dimod.views.quadratic.QuadraticModelMixin`` now has an abstract property
+    ``.offset``.
