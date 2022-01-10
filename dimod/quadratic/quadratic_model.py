@@ -1224,5 +1224,37 @@ def Integers(labels: Union[int, Iterable[Variable]],
     else:
         yield from (Integer(dtype=dtype) for _ in range(labels))
 
+
+def IntegerArray(labels: Union[int, Iterable[Variable]],
+                 dtype: Optional[DTypeLike] = None) -> np.ndarray:
+    """Return a numpy array of binary quadratic models, each with a 
+    single integer variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned binary quadratic models.
+
+    Returns:
+        Binary quadratic models, each with a single integer variable.
+    
+    """
+    return _VariableArray(Integers, labels, dtype)
+
+
+def _VariableArray(variable_generator: Callable,
+                   labels: Union[int, Iterable[Variable]],
+                   dtype: Optional[DTypeLike] = None) -> np.ndarray:
+    """Builds numpy array from a variable generator method."""
+    if isinstance(labels, int):
+        number_of_elements = labels
+    else:
+        number_of_elements = len(labels)
+    variable_array = np.empty(number_of_elements, dtype=object)
+    for index, element in enumerate(variable_generator(labels, dtype)):
+        variable_array[index] = element
+    
+    return variable_array
+
 # register fileview loader
 load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)
