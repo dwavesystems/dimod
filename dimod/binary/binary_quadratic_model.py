@@ -29,8 +29,6 @@ from typing import (Any, BinaryIO, ByteString, Callable,
                     )
 
 import numpy as np
-from numpy.core import numeric
-from numpy.lib.arraysetops import isin
 
 try:
     from numpy.typing import ArrayLike, DTypeLike
