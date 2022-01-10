@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from dimod import BinaryQuadraticModel
 
 
-__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers']
+__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray']
 
 
 QM_MAGIC_PREFIX = b'DIMODQM'
@@ -1227,16 +1227,16 @@ def Integers(labels: Union[int, Iterable[Variable]],
 
 def IntegerArray(labels: Union[int, Iterable[Variable]],
                  dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a numpy array of binary quadratic models, each with a 
+    """Return a numpy array of quadratic models, each with a 
     single integer variable.
 
     Args:
         labels: Either an iterable of variable labels or a number. If a number
             labels are generated using :class:`uuid.UUID`.
-        dtype: Data type for the returned binary quadratic models.
+        dtype: Data type for the returned quadratic models.
 
     Returns:
-        Binary quadratic models, each with a single integer variable.
+        Array of quadratic models, each with a single integer variable.
     
     """
     return _VariableArray(Integers, labels, dtype)

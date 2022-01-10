@@ -60,7 +60,7 @@ __all__ = ['BinaryQuadraticModel',
            'Float32BQM',
            'Float64BQM',
            'as_bqm',
-           'Spin', 'Binary', 'Spins', 'Binaries',
+           'Spin', 'Binary', 'Spins', 'Binaries', 'SpinArray', 'BinaryArray',
            'quicksum',
            ]
 
@@ -2106,10 +2106,10 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Binary quadratic models, each with a single binary variable.
+        Array of binary quadratic models, each with a single binary variable.
     
     """
-    return _VariableArray(Spins, labels, dtype)
+    return _VariableArray(Binaries, labels, dtype)
 
 
 @unique_variable_labels
@@ -2160,7 +2160,7 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Binary quadratic models, each with a single spin variable.
+        Array of binary quadratic models, each with a single spin variable.
     
     """
     return _VariableArray(Spins, labels, dtype)
