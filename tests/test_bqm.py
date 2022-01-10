@@ -225,6 +225,18 @@ class TestBinary(unittest.TestCase):
         binary_bqm = Binary()
         self.assertIsInstance(binary_bqm.variables[0], str)
 
+    def test_binary_array_int_init(self):
+        binary_array = dimod.BinaryArray(3)
+        self.assertIsInstance(binary_array, np.ndarray)
+        for element in binary_array:
+            self.assertIsInstance(element, BinaryQuadraticModel)
+    
+    def test_binary_array_label_init(self):
+        labels = 'ijk'
+        binary_array = dimod.BinaryArray(labels=labels)
+        self.assertIsInstance(binary_array, np.ndarray)
+        self.assertEqual(len(binary_array), len(labels))
+
     def test_multiple_labelled(self):
         x, y, z = dimod.Binaries('abc')
 
@@ -2271,6 +2283,18 @@ class TestSpin(unittest.TestCase):
     def test_init_no_label(self):
         spin_bqm = Spin()
         self.assertIsInstance(spin_bqm.variables[0], str)
+
+    def test_spin_array_int_init(self):
+        spin_array = dimod.SpinArray(3)
+        self.assertIsInstance(spin_array, np.ndarray)
+        for element in spin_array:
+            self.assertIsInstance(element, BinaryQuadraticModel)
+    
+    def test_spin_array_label_init(self):
+        labels = 'ijk'
+        spin_array = dimod.SpinArray(labels=labels)
+        self.assertIsInstance(spin_array, np.ndarray)
+        self.assertEqual(len(spin_array), len(labels))
 
     def test_multiple_labelled(self):
         r, s, t = dimod.Spins('abc')

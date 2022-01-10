@@ -18,6 +18,7 @@ import tempfile
 import unittest
 
 import numpy as np
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 
 from parameterized import parameterized
 
@@ -379,6 +380,18 @@ class TestInteger(unittest.TestCase):
     def test_init_no_label(self):
         integer_qm = Integer()
         self.assertIsInstance(integer_qm.variables[0], str)
+    
+    def test_integer_array_int_init(self):
+        integer_array = dimod.IntegerArray(3)
+        self.assertIsInstance(integer_array, np.ndarray)
+        for element in integer_array:
+            self.assertIsInstance(element, QuadraticModel)
+    
+    def test_integer_array_label_init(self):
+        labels = 'ijk'
+        integer_array = dimod.IntegerArray(labels=labels)
+        self.assertIsInstance(integer_array, np.ndarray)
+        self.assertEqual(len(integer_array), len(labels))
 
     def test_multiple_labelled(self):
         i, j, k = dimod.Integers('ijk')
