@@ -1248,12 +1248,12 @@ def _VariableArray(variable_generator: Callable,
     """Builds NumPy array from a variable generator method."""
     if isinstance(labels, int):
         number_of_elements = labels
-    if isinstance(labels, Sized):
+    elif isinstance(labels, Sized):
         number_of_elements = len(labels)
     else:
         labels = list(labels)
         number_of_elements = len(labels)
-        
+
     variable_array = np.empty(number_of_elements, dtype=object)
     for index, element in enumerate(variable_generator(labels, dtype)):
         variable_array[index] = element
