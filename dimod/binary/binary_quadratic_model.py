@@ -2095,7 +2095,7 @@ def Binaries(labels: Union[int, Iterable[Variable]],
 
 def BinaryArray(labels: Union[int, Iterable[Variable]],
                 dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a numpy array of binary quadratic models, each with a 
+    """Return a NumPy array of binary quadratic models, each with a 
     single binary variable.
 
     Args:
@@ -2149,7 +2149,7 @@ def Spins(labels: Union[int, Iterable[Variable]],
 
 def SpinArray(labels: Union[int, Iterable[Variable]],
               dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a numpy array of binary quadratic models, each with a 
+    """Return a NumPy array of binary quadratic models, each with a 
     single spin variable.
 
     Args:

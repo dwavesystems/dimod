@@ -18,7 +18,7 @@ import tempfile
 from collections.abc import Callable
 from copy import deepcopy
 from numbers import Number
-from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Sized, Tuple, Union
 from typing import BinaryIO, ByteString
 from typing import TYPE_CHECKING
 
@@ -1227,7 +1227,7 @@ def Integers(labels: Union[int, Iterable[Variable]],
 
 def IntegerArray(labels: Union[int, Iterable[Variable]],
                  dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a numpy array of quadratic models, each with a 
+    """Return a NumPy array of quadratic models, each with a 
     single integer variable.
 
     Args:
@@ -1245,11 +1245,15 @@ def IntegerArray(labels: Union[int, Iterable[Variable]],
 def _VariableArray(variable_generator: Callable,
                    labels: Union[int, Iterable[Variable]],
                    dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Builds numpy array from a variable generator method."""
+    """Builds NumPy array from a variable generator method."""
     if isinstance(labels, int):
         number_of_elements = labels
-    else:
+    if isinstance(labels, Sized):
         number_of_elements = len(labels)
+    else:
+        labels = list(labels)
+        number_of_elements = len(labels)
+        
     variable_array = np.empty(number_of_elements, dtype=object)
     for index, element in enumerate(variable_generator(labels, dtype)):
         variable_array[index] = element
