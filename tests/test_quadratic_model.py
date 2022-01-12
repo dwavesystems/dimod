@@ -393,6 +393,13 @@ class TestInteger(unittest.TestCase):
         self.assertIsInstance(integer_array, np.ndarray)
         self.assertEqual(len(integer_array), len(labels))
 
+    def test_integer_array_generator_expression_init(self):
+        num_variables = 3
+        labels = (v for v in range(num_variables))
+        integer_array = dimod.IntegerArray(labels=labels)
+        self.assertIsInstance(integer_array, np.ndarray)
+        self.assertEqual(len(integer_array), num_variables)
+
     def test_multiple_labelled(self):
         i, j, k = dimod.Integers('ijk')
 
