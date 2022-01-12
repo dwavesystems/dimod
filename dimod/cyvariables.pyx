@@ -46,9 +46,24 @@ cdef class cyVariables:
     # atomic is a strict subset of hashable (e.g. frozenset), so we fall back
     # on the default __deepcopy__
 
-    # todo: support slices
-    def __getitem__(self, Py_ssize_t idx):
-        return self.at(idx)
+    def __getitem__(self, idx):
+        try:
+            return self.at(idx)
+        except TypeError:
+            pass
+
+        if not isinstance(idx, slice):
+            raise TypeError(f"indices must be integers or slices, not {type(idx)}")
+
+        cdef Py_ssize_t start = 0 if idx.start is None else idx.start
+        cdef Py_ssize_t stop = self.size() if idx.stop is None else idx.stop
+        cdef Py_ssize_t step = 1 if idx.step is None else idx.step
+
+        cdef Py_ssize_t i
+        cdef cyVariables new = type(self)()
+        for i in range(start, stop, step):
+            new._append(self.at(i), permissive=False)
+        return new
 
     def __len__(self):
         return self.size()
