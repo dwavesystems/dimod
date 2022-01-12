@@ -263,6 +263,16 @@ class Formatter(object):
                          width, depth, sorted_by,
                          **other):
 
+        # as a quick performance boost, we can take a subset of the variables
+        # if we know it will be too big. width is in characters, and we
+        # need at least two characters per variable, so this is already
+        # way more than we need
+        num_variables = len(sampleset.variables)  # save this for later
+        if width > 2 and num_variables > width:
+            variables = sampleset.variables[:width-1]
+            variables._append(sampleset.variables[-1])
+            sampleset = dimod.keep_variables(sampleset, variables)
+
         if len(sampleset) > 0:
             self._print_samples(sampleset, stream, width, depth, sorted_by)
         else:
@@ -283,7 +293,7 @@ class Formatter(object):
         footer = [repr(sampleset.vartype.name),
                   '{} rows'.format(len(sampleset)),
                   '{} samples'.format(sampleset.record.num_occurrences.sum()),
-                  '{} variables'.format(len(sampleset.variables))
+                  '{} variables'.format(num_variables)
                   ]
         if sum(map(len, footer)) + (len(footer) - 1)*2 > width - 2:
             # if the footer won't fit in width

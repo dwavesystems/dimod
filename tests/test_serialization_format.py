@@ -219,3 +219,14 @@ class TestSampleSet(unittest.TestCase):
                   "['BINARY', 3 rows, 3 samples, 2 variables]")
 
         self.assertEqual(target, s)
+
+    def test_wide(self):
+        ss = dimod.SampleSet.from_samples(np.ones(1000), 'BINARY', energy=[0])
+
+        s = Formatter().format(ss)
+
+        self.assertEqual(s, ("   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15"
+                             " 16 17 ... 999 energy num_oc.\n0  1  1  1  1  1  "
+                             "1  1  1  1  1  1  1  1  1  1  1  1  1 ...   1    "
+                             "  0       1\n['BINARY', 1 rows, 1 samples, 1000 v"
+                             "ariables]"))
