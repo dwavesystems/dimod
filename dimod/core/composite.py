@@ -57,7 +57,7 @@ Examples:
 
     >>> composed_sampler = dimod.SpinReversalTransformComposite(dimod.ExactSolver())
     >>> h = {0: -1, 1: 1}
-    >>> solutions = composed_sampler.sample_ising(h, {})
+    >>> solutions = composed_sampler.sample_ising(h, {}, num_spin_reversal_transforms=2)
     >>> len(solutions) == 8
     True
 
