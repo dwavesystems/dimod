@@ -1,0 +1,4 @@
+---
+upgrade:
+  - Python 3.6 is no longer supported.
+  - NumPy 1.17 and 1.18 are no longer supported.

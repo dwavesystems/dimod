@@ -83,8 +83,7 @@ setup(
         'dimod/include/',
         ],
     install_requires=[
-        # ignoring 1.21.0 and 1.21.1 due to https://github.com/dwavesystems/dimod/issues/901
-        'numpy>=1.17.3,<2.0.0,!=1.21.0,!=1.21.1', # keep synced with circle-ci, pyproject.toml
+        'numpy>=1.19.1,<2.0.0',
         'pyparsing>=2.4.7, <3.0.0',
         ],
     # we use the generic 'all' so that in the future when we remove
