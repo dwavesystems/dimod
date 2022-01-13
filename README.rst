@@ -1,11 +1,14 @@
 .. image:: https://img.shields.io/pypi/v/dimod.svg
     :target: https://pypi.org/project/dimod
-
-.. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
-    :target: https://codecov.io/gh/dwavesystems/dimod
+    
+.. image:: https://img.shields.io/pypi/pyversions/dimod.svg
+    :target: https://pypi.python.org/pypi/dimod
 
 .. image:: https://circleci.com/gh/dwavesystems/dimod.svg?style=svg
     :target: https://circleci.com/gh/dwavesystems/dimod
+    
+.. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
+    :target: https://codecov.io/gh/dwavesystems/dimod
 
 dimod
 =====
