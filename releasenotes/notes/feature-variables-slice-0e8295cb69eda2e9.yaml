@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add ability to pass a slice to ``Variables.__getitem__``. This allows
+    for syntax like ``variables[:5]`` which will return a new ``Variables``
+    object.
+    See `#1069 <https://github.com/dwavesystems/dimod/issues/1069>`_.

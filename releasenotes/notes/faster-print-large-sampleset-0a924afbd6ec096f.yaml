@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Speed up printing sample sets with a large number of variables.
+    See `#1068 <https://github.com/dwavesystems/dimod/issues/1068>`_.

@@ -153,6 +153,18 @@ class TestRelabel(unittest.TestCase):
         self.assertEqual(variables, [1, 0, 5, 4, 3])
 
 
+class TestSlice(unittest.TestCase):
+    def test_slice(self):
+        variables = Variables('abd')
+
+        self.assertEqual(variables[:3], 'abd')
+        self.assertEqual(variables[:1], 'a')
+        self.assertEqual(variables[:], 'abd')
+        self.assertIsInstance(variables[:2], Variables)
+        self.assertEqual(variables[1::2], 'b')
+        self.assertEqual(variables[::2], 'ad')
+
+
 @parameterized_class(
     [dict(name='list', iterable=list(range(5))),
      dict(name='string', iterable='abcde'),
