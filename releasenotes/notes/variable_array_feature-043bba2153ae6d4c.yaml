@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Introduces variable array methods ``dimod.BinaryArray``, ``dimod.SpinArray``, and
+    ``dimod.IntegerArray``. These methods build numpy object arrays from their respective
+    generator methods ``dimod.Binaries``, ``dimod.Spins`` and ``dimod.Integers``.

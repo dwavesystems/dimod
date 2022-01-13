@@ -42,6 +42,7 @@ from dimod.binary.vartypeview import VartypeView
 from dimod.core.bqm import BQM as BQMabc
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
+from dimod.quadratic.quadratic_model import _VariableArray
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
@@ -57,7 +58,7 @@ __all__ = ['BinaryQuadraticModel',
            'Float32BQM',
            'Float64BQM',
            'as_bqm',
-           'Spin', 'Binary', 'Spins', 'Binaries',
+           'Spin', 'Binary', 'Spins', 'Binaries', 'SpinArray', 'BinaryArray',
            'quicksum',
            ]
 
@@ -2092,6 +2093,23 @@ def Binaries(labels: Union[int, Iterable[Variable]],
         yield from (Binary(dtype=dtype) for _ in range(labels))
 
 
+def BinaryArray(labels: Union[int, Iterable[Variable]],
+                dtype: Optional[DTypeLike] = None) -> np.ndarray:
+    """Return a NumPy array of binary quadratic models, each with a 
+    single binary variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned binary quadratic models.
+
+    Returns:
+        Array of binary quadratic models, each with a single binary variable.
+    
+    """
+    return _VariableArray(Binaries, labels, dtype)
+
+
 @unique_variable_labels
 def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
@@ -2127,6 +2145,23 @@ def Spins(labels: Union[int, Iterable[Variable]],
         yield from (Spin(v, dtype=dtype) for v in labels)
     else:
         yield from (Spin(dtype=dtype) for _ in range(labels))
+
+
+def SpinArray(labels: Union[int, Iterable[Variable]],
+              dtype: Optional[DTypeLike] = None) -> np.ndarray:
+    """Return a NumPy array of binary quadratic models, each with a 
+    single spin variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned binary quadratic models.
+
+    Returns:
+        Array of binary quadratic models, each with a single spin variable.
+    
+    """
+    return _VariableArray(Spins, labels, dtype)
 
 
 def as_bqm(*args, cls: None = None, copy: bool = False,
