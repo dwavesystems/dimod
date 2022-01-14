@@ -321,7 +321,7 @@ class TestEnergies(unittest.TestCase):
 class TestFileSerialization(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
-        qm = QM()
+        qm = QM(dtype=dtype)
 
         with tempfile.TemporaryFile() as tf:
             with qm.to_file() as qmf:
@@ -334,7 +334,7 @@ class TestFileSerialization(unittest.TestCase):
 
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_3var(self, dtype):
-        qm = QM()
+        qm = QM(dtype=dtype)
         qm.add_variable('INTEGER', 'i')
         qm.add_variable('BINARY', 'x')
         qm.add_variable('SPIN', 's')
