@@ -1193,16 +1193,6 @@ class TestFixVariable(unittest.TestCase):
         self.assertEqual(bqm, BQM({'b': 0}, {}, 1.5, dimod.BINARY))
 
     @parameterized.expand(BQMs.items())
-    def test_cross_type(self, name, BQM):
-        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
-        with self.assertRaises(ValueError):
-            bqm.fix_variable('a', -1)
-
-        bqm = BQM({'a': .3}, {('a', 'b'): -1}, 1.2, dimod.SPIN)
-        with self.assertRaises(ValueError):
-            bqm.fix_variable('a', 0)
-
-    @parameterized.expand(BQMs.items())
     def test_missing_variable(self, name, BQM):
         with self.assertRaises(ValueError):
             BQM('SPIN').fix_variable('a', -1)

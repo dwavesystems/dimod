@@ -57,6 +57,8 @@ Methods
    ~QuadraticModel.degree
    ~QuadraticModel.energies
    ~QuadraticModel.energy
+   ~QuadraticModel.fix_variable
+   ~QuadraticModel.fix_variables
    ~QuadraticModel.from_bqm
    ~QuadraticModel.from_file
    ~QuadraticModel.get_linear
