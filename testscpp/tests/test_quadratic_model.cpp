@@ -735,6 +735,52 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
             }
           }
         }
+
+        WHEN("the quadratic model is resized") {
+            qm.resize(10, Vartype::BINARY);
+
+            THEN("missing variables are given the provided vartype") {
+                CHECK(qm.num_variables() == 10);
+
+                for (size_t v = 0; v < qm.num_variables(); ++v) {
+                    CHECK(qm.vartype(v) == Vartype::BINARY);
+                }
+            }
+
+            AND_WHEN("we shrink it again") {
+                qm.resize(5);
+
+                THEN("it is shrunk accordingly") {
+                    CHECK(qm.num_variables() == 5);
+
+                    for (size_t v = 0; v < qm.num_variables(); ++v) {
+                        CHECK(qm.vartype(v) == Vartype::BINARY);
+                    }
+                }
+            }
+
+            AND_WHEN("we add more variables of other vartypes") {
+                qm.resize(15, Vartype::SPIN);
+                qm.resize(20, Vartype::INTEGER, 0, 5);
+
+                THEN("missing variables are given the provided vartype and/or "
+                     "bounds") {
+                    CHECK(qm.num_variables() == 20);
+
+                    for (size_t v = 0; v < 10; ++v) {
+                        CHECK(qm.vartype(v) == Vartype::BINARY);
+                    }
+                    for (size_t v = 10; v < 15; ++v) {
+                        CHECK(qm.vartype(v) == Vartype::SPIN);
+                    }
+                    for (size_t v = 15; v < 20; ++v) {
+                        CHECK(qm.vartype(v) == Vartype::INTEGER);
+                        CHECK(qm.lower_bound(v) == 0);
+                        CHECK(qm.upper_bound(v) == 5);
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``QuadraticModel::resize()`` method in C++ code.
