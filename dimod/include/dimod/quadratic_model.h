@@ -429,6 +429,24 @@ class QuadraticModelBase {
         }
     }
 
+    /// Resize model to contain n variables.
+    void resize(index_type n) {
+        if (n < (index_type)this->num_variables()) {
+            // Clean out any of the to-be-deleted variables from the
+            // neighborhoods.
+            // This approach is better in the dense case. In the sparse case
+            // we could determine which neighborhoods need to be trimmed rather
+            // than just doing them all.
+            for (index_type v = 0; v < n; ++v) {
+                this->adj_[v].erase(this->adj_[v].lower_bound(n),
+                                    this->adj_[v].end());
+            }
+        }
+
+        this->linear_biases_.resize(n);
+        this->adj_.resize(n);
+    }
+
     /// Scale offset, linear biases, and interactions by a factor
     void scale(double scale_factor) {
         // adjust offset
@@ -496,7 +514,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     /// Create a BQM with `n` variables of the given `vartype`.
     BinaryQuadraticModel(index_type n, Vartype vartype)
             : BinaryQuadraticModel(vartype) {
-        resize(n);
+        this->resize(n);
     }
 
     /**
@@ -725,7 +743,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
                     *std::max_element(col_iterator, col_iterator + length));
 
             if ((size_t)max_label >= base_type::num_variables()) {
-                resize(max_label + 1);
+                this->resize(max_label + 1);
             }
         } else if (length < 0) {
             throw std::out_of_range("length must be positive");
@@ -835,24 +853,6 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     /// The number of other variables `v` interacts with.
     size_type num_interactions(index_type v) const {
         return base_type::num_interactions(v);
-    }
-
-    /// Resize the binary quadratic model to contain n variables.
-    void resize(index_type n) {
-        if (n < (index_type)base_type::num_variables()) {
-            // Clean out any of the to-be-deleted variables from the
-            // neighborhoods.
-            // This approach is better in the dense case. In the sparse case
-            // we could determine which neighborhoods need to be trimmed rather
-            // than just doing them all.
-            for (index_type v = 0; v < n; ++v) {
-                base_type::adj_[v].erase(base_type::adj_[v].lower_bound(n),
-                                         base_type::adj_[v].end());
-            }
-        }
-
-        base_type::linear_biases_.resize(n);
-        base_type::adj_.resize(n);
     }
 
     /// Set the quadratic bias for the given variables.
@@ -1022,6 +1022,58 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     constexpr bias_type max_integer() {
         return ((std::int64_t)1 << (std::numeric_limits<bias_type>::digits)) -
                1;
+    }
+
+    // Resize the model to contain `n` variables.
+    void resize(index_type n) {
+        // we could do this as an assert, but let's be careful since
+        // we're often calling this from python
+        if (n > this->num_variables()) {
+            throw std::logic_error(
+                    "n must be smaller than the number of variables when no "
+                    "`vartype` is specified");
+        }
+        // doesn't matter what vartype we specify since we're shrinking
+        return this->resize(n, Vartype::BINARY, 0, 1);
+    }
+
+    /**
+     * Resize the model to contain `n` variables.
+     *
+     * The `vartype` is used to any new variables added.
+     *
+     * The `vartype` must be `Vartype::BINARY` or `Vartype::SPIN`.
+     */
+    void resize(index_type n, Vartype vartype) {
+        if (vartype == Vartype::BINARY) {
+            this->resize(n, vartype, 0, 1);
+        } else if (vartype == Vartype::SPIN) {
+            this->resize(n, vartype, -1, +1);
+        } else {
+            throw std::logic_error(
+                    "must provide bounds for integer vartypes when resizing");
+        }
+    }
+
+    /**
+     * Resize the model to contain `n` variables.
+     *
+     * The `vartype` is used to any new variables added.
+     */
+    void resize(index_type n, Vartype vartype, bias_type lb, bias_type ub) {
+        assert(n > 0);
+
+        assert(vartype != Vartype::BINARY || lb == 0);
+        assert(vartype != Vartype::BINARY || ub == 1);
+
+        assert(vartype != Vartype::SPIN || lb == -1);
+        assert(vartype != Vartype::SPIN || ub == +1);
+
+        assert(vartype != Vartype::INTEGER || lb >= -this->max_integer());
+        assert(vartype != Vartype::INTEGER || ub <= this->max_integer());
+
+        this->varinfo_.resize(n, VarInfo<bias_type>(vartype, lb, ub));
+        base_type::resize(n);
     }
 
     void set_quadratic(index_type u, index_type v, bias_type bias) {

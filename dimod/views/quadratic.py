@@ -16,8 +16,8 @@ import abc
 import io
 import operator
 
-from collections.abc import ItemsView, Iterable, Mapping, MutableMapping
-from typing import Any, Callable, Collection, Iterator, Optional, Tuple
+from collections.abc import ItemsView, MutableMapping
+from typing import Any, Callable, Collection, Iterable, Iterator, Mapping, Optional, Tuple, Union
 
 from dimod.typing import Bias, Variable
 
@@ -348,6 +348,10 @@ class QuadraticViewsMixin(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def add_linear(self, v: Variable, bias: Bias):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def degree(self, v: Variable) -> int:
         raise NotImplementedError
 
@@ -395,6 +399,43 @@ class QuadraticViewsMixin(abc.ABC):
     @abc.abstractmethod
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         raise NotImplementedError
+
+    def fix_variable(self, v: Variable, value: float):
+        """Remove a variable by fixing its value.
+
+        Args:
+            v: Variable to be fixed.
+
+            value: Value assigned to the variable. Values should generally
+                match the :class:`.Vartype` of the variable, but do not have
+                to.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the model.
+
+        """
+        add_linear = self.add_linear
+        for u, bias in self.iter_neighborhood(v):
+            add_linear(u, value*bias)
+
+        self.offset += value*self.get_linear(v)
+        self.remove_variable(v)
+
+    def fix_variables(self,
+                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]]):
+        """Fix the value of the variables and remove them.
+
+        Args:
+            fixed: A dictionary or an iterable of 2-tuples of variable
+                assignments.
+
+        """
+        if isinstance(fixed, Mapping):
+            fixed = fixed.items()
+
+        fix_variable = self.fix_variable
+        for v, val in fixed:
+            fix_variable(v, val)
 
     def iter_linear(self) -> Iterator[Tuple[Variable, Bias]]:
         """Iterate over the variables and their biases."""

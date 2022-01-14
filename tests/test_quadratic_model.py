@@ -321,7 +321,7 @@ class TestEnergies(unittest.TestCase):
 class TestFileSerialization(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
-        qm = QM()
+        qm = QM(dtype=dtype)
 
         with tempfile.TemporaryFile() as tf:
             with qm.to_file() as qmf:
@@ -334,7 +334,7 @@ class TestFileSerialization(unittest.TestCase):
 
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_3var(self, dtype):
-        qm = QM()
+        qm = QM(dtype=dtype)
         qm.add_variable('INTEGER', 'i')
         qm.add_variable('BINARY', 'x')
         qm.add_variable('SPIN', 's')
@@ -353,6 +353,36 @@ class TestFileSerialization(unittest.TestCase):
 
         self.assertTrue(qm.is_equal(new))
         self.assertEqual(qm.dtype, new.dtype)
+
+
+class TestFixVariable(unittest.TestCase):
+    def test_spin(self):
+        qm = QM({'a': .3}, {'ab': -1}, 1.2, {'a': dimod.SPIN, 'b': dimod.SPIN})
+        qm.fix_variable('a', +1)
+        self.assertEqual(qm.linear, {'b': -1})
+        self.assertEqual(qm.quadratic, {})
+        self.assertEqual(qm.offset, 1.5)
+
+
+class TestFixVariables(unittest.TestCase):
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_typical(self, dtype):
+        qm = QM(dtype=dtype)
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('SPIN', 's')
+
+        qm.set_linear('i', 3)
+        qm.set_quadratic('s', 'i', 2)
+        qm.set_quadratic('x', 's', -82)
+        qm.set_quadratic('i', 'i', 5)
+        qm.offset = 7
+
+        qm.fix_variables({'i': 34, 's': -1})
+
+        self.assertEqual(qm.linear, {'x': 82})
+        self.assertEqual(qm.quadratic, {})
+        self.assertEqual(qm.offset, 5821)
 
 
 class TestFromBQM(unittest.TestCase):

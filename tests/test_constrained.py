@@ -183,6 +183,24 @@ class TestCopy(unittest.TestCase):
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
 
 
+class TestFixVariables(unittest.TestCase):
+    def test_typical(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm = CQM()
+        cqm.set_objective(x + 2*y + 3*i + 4*j)
+        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
+        c1 = cqm.add_discrete('xyz', label='c1')
+
+        cqm.fix_variables({'x': 1, 'i': 86})
+
+        self.assertTrue(cqm.objective.is_equal(1 + 2*y + 3*86 + 4*j + 0*z))
+        self.assertTrue(cqm.constraints[c0].lhs.is_equal(3*86+2*1*j+5*86*j))
+        self.assertTrue(cqm.constraints[c1].lhs.is_equal(1+y+z))
+        self.assertNotIn(c1, cqm.discrete)
+
+
 class TestIterViolations(unittest.TestCase):
     def test_no_constraints(self):
         cqm = CQM.from_bqm(-Binary('a') + Binary('a')*Binary('b') + 1.5)

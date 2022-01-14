@@ -1018,43 +1018,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         energy, = energies
         return energy
 
-    def fix_variable(self, v: Hashable, value: int):
-        """Remove a variable by fixing its value.
-
-        Args:
-            v: Variable in the binary quadratic model to be fixed.
-
-            value: Value assigned to the variable. Values must match the
-                :class:`.Vartype` of the binary quadratic model.
-
-        """
-
-        if value not in self.vartype.value:
-            raise ValueError("expected value to be in {}, received {} "
-                             "instead".format(self.vartype.value, value))
-
-        try:
-            for u, bias in self.adj[v].items():
-                self.linear[u] += bias*value
-        except KeyError:
-            raise ValueError('{} is not a variable'.format(v))
-
-        self.offset += value*self.linear[v]
-        self.remove_variable(v)
-
-    def fix_variables(self, fixed: Union[Mapping, Iterable]):
-        """Fix the value of the variables and remove them.
-
-        Args:
-            fixed: A dictionary or an iterable of 2-tuples of variable
-                assignments.
-
-        """
-        if isinstance(fixed, abc.Mapping):
-            fixed = fixed.items()
-        for v, val in fixed:
-            self.fix_variable(v, val)
-
     def flip_variable(self, v: Hashable):
         """Flip the specified variable in a binary quadratic model."""
         for u in self.adj[v]:

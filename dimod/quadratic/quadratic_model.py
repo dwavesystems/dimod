@@ -953,9 +953,10 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.remove_interaction
 
+    @forwarding_method
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
-        # see note in remove_interaction
-        raise NotImplementedError("not yet implemented - please open a feature request")
+        """Remove the specified variable from the quadratic model."""
+        return self.data.remove_variable
 
     @forwarding_method
     def scale(self, scalar: Bias):

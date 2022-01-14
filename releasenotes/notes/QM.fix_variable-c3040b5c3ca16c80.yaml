@@ -1,0 +1,10 @@
+---
+features:
+  - Add ``.fix_variable()`` and ``.fix_variables()`` methods to ``ConstrainedQuadraticModel``.
+  - Add ``.fix_variable()`` and ``.fix_variables()`` methods to ``QuadraticModel``.
+upgrade:
+  - |
+    ``QuadraticViewsMixin`` now has ``.add_linear()`` as an abstract method.
+  - |
+    ``BinaryQuadraticModel.fix_variable()`` no longer raises a ``ValueError``
+    when given a value that does not match the variable type.

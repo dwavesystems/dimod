@@ -36,6 +36,8 @@ Methods
    ConstrainedQuadraticModel.add_discrete
    ConstrainedQuadraticModel.add_variable
    ConstrainedQuadraticModel.check_feasible
+   ConstrainedQuadraticModel.fix_variable
+   ConstrainedQuadraticModel.fix_variables
    ConstrainedQuadraticModel.from_bqm
    ConstrainedQuadraticModel.from_discrete_quadratic_model
    ConstrainedQuadraticModel.from_dqm

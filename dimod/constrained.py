@@ -495,6 +495,44 @@ class ConstrainedQuadraticModel:
         return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
                    for datum in self.iter_constraint_data(sample_like))
 
+    def fix_variable(self, v: Variable, value: float):
+        """Fix the value of a variable in the model."""
+        for label, comparison in self.constraints.items():
+            if v in comparison.lhs.variables:
+                comparison.lhs.fix_variable(v, value)
+
+                if label in self.discrete:
+                    # we've fixed a variable in a discrete constraint, so it
+                    # might not be one any more.
+
+                    if value not in Vartype.BINARY.value:
+                        raise ValueError(
+                            f"variable {v} is part of a discrete constraint so "
+                            "it can only be fixed to 0 or 1")
+
+                    # either it's too small or we've found the one-hot
+                    if len(comparison.lhs.variables) < 2 or value == 1:
+                        self.discrete.remove(label)
+
+        if v in self.objective.variables:
+            self.objective.fix_variable(v, value)
+
+    def fix_variables(self,
+                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]]):
+        """Fix the value of the variables and remove them.
+
+        Args:
+            fixed: A dictionary or an iterable of 2-tuples of variable
+                assignments.
+
+        """
+        if isinstance(fixed, Mapping):
+            fixed = fixed.items()
+
+        fix_variable = self.fix_variable
+        for v, val in fixed:
+            fix_variable(v, val)
+
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
         """Alias for :meth:`from_quadratic_model`."""
