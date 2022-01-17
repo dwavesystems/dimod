@@ -1,0 +1,5 @@
+---
+
+fixes:
+  - |
+    ``multiplcation_circuit`` now adds the carry from the most significant column in a row into the most significant column of the next row.

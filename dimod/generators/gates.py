@@ -295,6 +295,8 @@ def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = No
         if i > 0:
             if j < num_arg2_bits - 1:
                 inputs.append(SUM(i-1, j+1) if i > 1 else AND(0, j+1))
+            elif i > 1:
+                inputs.append(CARRY(i - 1, j))
             if j > 0:
                 inputs.append(CARRY(i, j-1))
 

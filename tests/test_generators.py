@@ -651,6 +651,14 @@ class TestGates(unittest.TestCase):
         bqm = dimod.generators.multiplication_circuit(3, 2)
         self.assertEqual((set(bqm.variables)), mc3_2_vars)
 
+        bqm_9 = bqm.copy()
+        for fixed_var, fixed_val in {'a0': 1, 'a1': 1, 'a2':0, 'b0': 1, 'b1': 1 }.items():
+            bqm_9.fix_variable(fixed_var, fixed_val)
+        best = dimod.ExactSolver().sample(bqm_9).first
+        p = [best.sample['p0'], best.sample['p1'], best.sample['p2'],
+             best.sample['p3']]
+        self.assertEqual(p, [1, 0, 0, 1])
+
         # Verify correct factoring/multiplication for 2x2 circuit
         bqm = dimod.generators.multiplication_circuit(2)
 
