@@ -177,21 +177,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: install dependencies
+          name: run c++ coverage
+          command: |
+            sudo apt-get install lcov
+            make -C testscpp/ catch2 coverage
+      - run:
+          name: run python coverage
           command: |
             python -m venv env
             . env/bin/activate
-            pip install -r requirements.txt
-            pip install -r tests/requirements.txt
-      - run: &unix-build
-          name: build dimod
-          command: |
-            . env/bin/activate
+            pip install -r requirements.txt -r tests/requirements.txt
             python setup.py build_ext --inplace
-      - run:
-          name: run coverage
-          command: |
-            . env/bin/activate
             coverage run -m unittest
       - run:
           name: codecov
@@ -215,7 +211,11 @@ jobs:
             . env/bin/activate
             pip install -r requirements.txt
             pip install -r docs/requirements.txt
-      - run: *unix-build
+      - run:
+          name: build dimod
+          command: |
+            . env/bin/activate
+            python setup.py build_ext --inplace
       - run:
           name: build docs
           command: |
