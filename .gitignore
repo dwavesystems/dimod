@@ -132,3 +132,8 @@ testscpp/test_main.out
 testscpp/test_main_parallel
 testscpp/test_main_parallel.o
 testscpp/test_main_parallel.out
+
+# C++ coverage stuff
+testscpp/coverage.info
+*.gcda
+*.gcno
