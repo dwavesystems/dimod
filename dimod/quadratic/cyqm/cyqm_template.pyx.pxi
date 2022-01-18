@@ -482,7 +482,8 @@ cdef class cyQM_template(cyQMBase):
 
         if vi == lasti:
             # it's the last one!
-            self.resize(vi)
+            self.cppqm.resize(vi)
+            self.variables._pop()
             return v
 
         last = self.variables.at(lasti)
