@@ -22,7 +22,7 @@ import tempfile
 import warnings
 
 from numbers import Integral, Number
-from typing import (Any, BinaryIO, ByteString, Callable,
+from typing import (Any, BinaryIO, ByteString, Callable, Dict,
                     Hashable, Iterable, Iterator,
                     Mapping, MutableMapping, Optional, Sequence,
                     Tuple, Union,
@@ -1250,6 +1250,72 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return cls({}, Q, offset, Vartype.BINARY)
 
+    @classmethod
+    def from_serializable(cls, obj: Mapping) -> 'BinaryQuadraticModel':
+        """Deserialize a binary quadratic model.
+
+        Args:
+            obj: A binary quadratic model serialized by
+                :meth:`~.BinaryQuadraticModel.to_serializable`.
+
+        Returns:
+            A binary quadratic model.
+
+        Examples:
+
+            Encode and decode using JSON
+
+            >>> import json
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0},
+            ...                                  {('a', 'b'): -1.0},
+            ...                                  0.0,
+            ...                                  dimod.SPIN)
+            >>> s = json.dumps(bqm.to_serializable())
+            >>> new_bqm = dimod.BinaryQuadraticModel.from_serializable(json.loads(s))
+
+        See also:
+            :meth:`~.BinaryQuadraticModel.to_serializable`
+
+            :func:`json.loads`, :func:`json.load` JSON deserialization functions
+
+        """
+        version = obj.get("version", {"bqm_schema": "1.0.0"})["bqm_schema"]
+        if version < "2.0.0":
+            raise ValueError("No longer supported serialization format")
+        elif version < "3.0.0" and obj.get("use_bytes", False):
+            # from 2.0.0 to 3.0.0 the formatting of the bytes changed
+            raise ValueError("No longer supported serialization format")
+
+        variables = [tuple(v) if isinstance(v, list) else v for v in obj["variable_labels"]]
+
+        if obj["use_bytes"]:
+            bias_dtype = np.dtype(obj['bias_type'])
+            index_dtype = np.dtype(obj['index_type'])
+
+            ldata = np.frombuffer(obj['linear_biases'], dtype=bias_dtype)
+            qdata = np.frombuffer(obj['quadratic_biases'], dtype=bias_dtype)
+            irow = np.frombuffer(obj['quadratic_head'], dtype=index_dtype)
+            icol = np.frombuffer(obj['quadratic_tail'], dtype=index_dtype)
+        else:
+            bias_dtype = None
+
+            ldata = obj["linear_biases"]
+            qdata = obj["quadratic_biases"]
+            irow = obj["quadratic_head"]
+            icol = obj["quadratic_tail"]
+
+        offset = obj["offset"]
+        vartype = obj["variable_type"]
+
+        bqm = cls.from_numpy_vectors(ldata,
+                                     (irow, icol, qdata),
+                                     offset,
+                                     vartype,
+                                     variable_order=variables,
+                                     dtype=bias_dtype)
+        return bqm
+
     def has_variable(self, v):
         warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0, '
                       'use v in bqm.variables instead.',
@@ -1981,6 +2047,92 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         qubo = dict(self.binary.quadratic)
         qubo.update(((v, v), bias) for v, bias in self.binary.linear.items())
         return qubo, self.binary.offset
+
+    def to_serializable(self,
+                        *,
+                        use_bytes: bool = False,
+                        bias_dtype: None = None,  # does nothing
+                        bytes_type: Callable = bytes,
+                        ) -> Dict:
+        """Convert the binary quadratic model to a serializable object.
+
+        Args:
+            use_bytes:
+                If True, a compact representation representing the biases as
+                bytes is used. Uses :meth:`~numpy.ndarray.tobytes`. This will
+                prevent the returned dict from being JSON serialized, but
+                it can be serialized with `BSON <http://bsonspec.org/>`_.
+
+            bytes_type:
+                This class will be used to wrap the bytes objects in the
+                serialization if ``use_bytes`` is true.
+
+        Returns:
+            An object that can be serialized.
+
+        Examples:
+
+            Encode using JSON
+
+            >>> import json
+            ...
+            >>> bqm = dimod.BinaryQuadraticModel({'a': -1.0, 'b': 1.0},
+            ...                                  {('a', 'b'): -1.0},
+            ...                                  0.0,
+            ...                                  dimod.SPIN)
+            >>> s = json.dumps(bqm.to_serializable())
+
+        See also:
+            :meth:`~.BinaryQuadraticModel.from_serializable`
+
+            :func:`json.dumps`, :func:`json.dump` JSON encoding functions
+
+        """
+        if bias_dtype is not None:
+            warnings.warn(
+                "The 'bias_dtype' keyword argument is deprecated  and does nothing",
+                DeprecationWarning, stacklevel=2)
+
+        from dimod import __version__
+
+        schema_version = "3.0.0"
+
+        ldata, (irow, icol, qdata), offset, variables = self.to_numpy_vectors(
+            sort_indices=True,
+            sort_labels=True,
+            return_labels=True,
+            )
+
+        doc = {
+            # metadata
+            "type": type(self).__name__,
+            "version": {"bqm_schema": schema_version},
+            "use_bytes": bool(use_bytes),
+            "index_type": irow.dtype.name,
+            "bias_type": ldata.dtype.name,
+
+            # bqm
+            "num_variables": len(ldata),
+            "num_interactions": len(irow),
+            "variable_labels": Variables(variables).to_serializable(),
+            "variable_type": self.vartype.name,
+            "offset": float(offset),
+            "info": dict(),  # for backwards compatibility
+            }
+
+        if use_bytes:
+            # these are vectors so don't need to specify byte-order
+            doc.update({'linear_biases': bytes_type(ldata.tobytes()),
+                        'quadratic_biases': bytes_type(qdata.tobytes()),
+                        'quadratic_head': bytes_type(irow.tobytes()),
+                        'quadratic_tail': bytes_type(icol.tobytes())})
+        else:
+            doc.update({'linear_biases': ldata.tolist(),
+                        'quadratic_biases': qdata.tolist(),
+                        'quadratic_head': irow.tolist(),
+                        'quadratic_tail': icol.tolist()})
+
+        return doc
 
     def update(self, other: 'BinaryQuadraticModel'):
         """Add the variables, interactions, offset and biases from another

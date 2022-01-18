@@ -153,6 +153,7 @@ Methods
    ~BinaryQuadraticModel.from_ising
    ~BinaryQuadraticModel.from_numpy_vectors
    ~BinaryQuadraticModel.from_qubo
+   ~BinaryQuadraticModel.from_serializable
    ~BinaryQuadraticModel.is_almost_equal
    ~BinaryQuadraticModel.is_equal
    ~BinaryQuadraticModel.is_linear
@@ -180,6 +181,7 @@ Methods
    ~BinaryQuadraticModel.to_numpy_vectors
    ~BinaryQuadraticModel.to_polystring
    ~BinaryQuadraticModel.to_qubo
+   ~BinaryQuadraticModel.to_serializable
    ~BinaryQuadraticModel.update
 
 
