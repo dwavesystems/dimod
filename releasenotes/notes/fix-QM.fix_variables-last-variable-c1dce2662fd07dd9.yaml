@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix ``QuadraticModel.fix_variable()`` when fixing the last variable in
+    the quadratic model. Previously it would incorrectly raise an
+    ``AttributeError``.

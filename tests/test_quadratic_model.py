@@ -363,6 +363,12 @@ class TestFixVariable(unittest.TestCase):
         self.assertEqual(qm.quadratic, {})
         self.assertEqual(qm.offset, 1.5)
 
+    def test_last(self):
+        qm = QM({'a': .3}, {'ab': -1}, 1.2, {'a': dimod.SPIN, 'b': dimod.SPIN})
+        qm.fix_variable(qm.variables[-1], -1)
+        self.assertEqual(qm.linear, {'a': 1.3})
+        self.assertEqual(qm.quadratic, {})
+        self.assertEqual(qm.offset, 1.2)
 
 class TestFixVariables(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
