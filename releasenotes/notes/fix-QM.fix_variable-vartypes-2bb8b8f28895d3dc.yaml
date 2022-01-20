@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix ``QuadraticModel.fix_variable()`` to correctly update the vartypes
+    and bounds of of variables that are not fixed.
