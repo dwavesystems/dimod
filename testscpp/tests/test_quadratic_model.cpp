@@ -895,4 +895,82 @@ SCENARIO("The variables of a quadratic model can have their vartypes changed",
         }
     }
 }
+
+SCENARIO("variables in a quadratic model can be swapped", "[qm]") {
+    GIVEN("a quadratic model with a binary, integer, and spin variable") {
+        auto qm = dimod::QuadraticModel<double>();
+        auto s = qm.add_variable(Vartype::SPIN);
+        auto x = qm.add_variable(Vartype::BINARY);
+        auto i = qm.add_variable(Vartype::INTEGER, -5, 5);
+
+        qm.linear(s) = 1;
+        qm.linear(x) = 2;
+        qm.linear(i) = 3;
+
+        AND_GIVEN("that all the variables have interactions") {
+            qm.set_quadratic(s, x, 4);
+            qm.set_quadratic(s, i, 5);
+            qm.set_quadratic(x, i, 6);
+
+            WHEN("we swap two of the variables") {
+                qm.swap_variables(s, i);
+
+                THEN("everything moves accordingly") {
+                    CHECK(qm.linear(i) == 1);
+                    CHECK(qm.linear(x) == 2);
+                    CHECK(qm.linear(s) == 3);
+                    CHECK(qm.quadratic(i, x) == 4);
+                    CHECK(qm.quadratic(x, i) == 4);
+                    CHECK(qm.quadratic(s, i) == 5);
+                    CHECK(qm.quadratic(i, s) == 5);
+                    CHECK(qm.quadratic(s, x) == 6);
+                    CHECK(qm.quadratic(x, s) == 6);
+                    CHECK(qm.lower_bound(s) == -5);
+                    CHECK(qm.upper_bound(s) == 5);
+                    CHECK(qm.lower_bound(i) == -1);
+                    CHECK(qm.upper_bound(i) == +1);
+                    CHECK(qm.vartype(s) == Vartype::INTEGER);
+                    CHECK(qm.vartype(x) == Vartype::BINARY);
+                    CHECK(qm.vartype(i) == Vartype::SPIN);
+                    CHECK(qm.num_interactions(i) == 2);
+                    CHECK(qm.num_interactions(x) == 2);
+                    CHECK(qm.num_interactions(s) == 2);
+                }
+            }
+        }
+
+        AND_GIVEN("sparse interactions") {
+            qm.set_quadratic(s, x, 4);
+
+            WHEN("we swap two of the variables") {
+                qm.swap_variables(s, i);
+
+                THEN("everything moves accordingly") {
+                    CHECK(qm.linear(i) == 1);
+                    CHECK(qm.linear(x) == 2);
+                    CHECK(qm.linear(s) == 3);
+                    CHECK(qm.quadratic(i, x) == 4);
+                    CHECK(qm.quadratic(x, i) == 4);
+                    CHECK_THROWS_AS(qm.quadratic_at(s, i), std::out_of_range);
+                    CHECK_THROWS_AS(qm.quadratic_at(i, s), std::out_of_range);
+                    CHECK_THROWS_AS(qm.quadratic_at(s, x), std::out_of_range);
+                    CHECK_THROWS_AS(qm.quadratic_at(x, s), std::out_of_range);
+                    // CHECK(qm.quadratic(i, s) == 5);
+                    // CHECK(qm.quadratic(s, x) == 6);
+                    // CHECK(qm.quadratic(x, s) == 6);
+                    CHECK(qm.lower_bound(s) == -5);
+                    CHECK(qm.upper_bound(s) == 5);
+                    CHECK(qm.lower_bound(i) == -1);
+                    CHECK(qm.upper_bound(i) == +1);
+                    CHECK(qm.vartype(s) == Vartype::INTEGER);
+                    CHECK(qm.vartype(x) == Vartype::BINARY);
+                    CHECK(qm.vartype(i) == Vartype::SPIN);
+                    CHECK(qm.num_interactions(i) == 1);
+                    CHECK(qm.num_interactions(x) == 1);
+                    CHECK(qm.num_interactions(s) == 0);
+                }
+            }
+        }
+    }
+}
 }  // namespace dimod
