@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Reintroduce ``BinaryQuadraticModel.to_serializable()`` and
+    ``BinaryQuadraticModel.from_serializable()`` methods that were previously
+    removed in dimod 0.10.0, see `#847 <https://github.com/dwavesystems/dimod/pull/847>`_.
+upgrade:
+  - |
+    Make ``use_bytes`` and ``bytes_type`` keyword-only arguments in
+    ``BinaryQuadraticModel.to_serializable()``.
+    Note that ``BinaryQuadraticModel.to_serializable()`` was removed in 0.10.0 but
+    restored in 0.10.12.
+  - |
+    The ``bias_dtype`` keyword-only argument in
+    ``BinaryQuadraticModel.to_serializable()`` now does nothing.
+    Note that ``BinaryQuadraticModel.to_serializable()`` was removed in 0.10.0 but
+    restored in 0.10.12.
