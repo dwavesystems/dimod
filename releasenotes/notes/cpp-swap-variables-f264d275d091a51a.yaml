@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``QuadraticModel::swap_variables()`` and ``BinaryQuadraticModel::swap_variables()`` methods to the C++ code.

@@ -692,41 +692,18 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t vi = self.variables.index(v)
         cdef Py_ssize_t lasti = self.num_variables() - 1
 
-        if vi == lasti:
-            # it's the last one!
-            self.resize(vi)
-            return v
+        if vi != lasti:
+            # we're removing a variable in the middle of the
+            # underlying adjacency. We do this by "swapping" the last variable
+            # and v, then popping v from the end
+            self.cppbqm.swap_variables(vi, lasti)
 
-        last = self.variables.at(lasti)
+            # now swap the variable labels
+            last = self.variables.at(lasti)
+            self.variables._relabel({v: last, last: v})
 
-        # in this case we're removing a variable in the middle of the
-        # underlying adjacency. We do this by "swapping" the last variable
-        # and v, then popping v from the end
-
-        # remove all of the interactions associated with v
-        cdef Py_ssize_t ui
-        span = self.cppbqm.neighborhood(vi)
-        while span.first != span.second:
-            ui = deref(span.first).first
-            self.cppbqm.remove_interaction(ui, vi)
-            span = self.cppbqm.neighborhood(vi)
-
-        # copy all of the interactions from last to v
-        span = self.cppbqm.neighborhood(lasti)
-        while span.first != span.second:
-            ui = deref(span.first).first
-            self.cppbqm.set_quadratic(ui, vi, deref(span.first).second)
-            inc(span.first)
-
-        # copy the linear bias from last to v
-        self._set_linear(vi, self.cppbqm.linear(lasti))
-
-        # remove last from the cppbqm
+        # remove last from the cppqm and variables
         self.cppbqm.resize(lasti)
-
-        # now swap the variable labels
-        self.variables._relabel({v: last, last: v})
-
         tmp = self.variables._pop()
 
         assert tmp == v, f"{tmp} == {v}"

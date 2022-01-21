@@ -88,6 +88,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void resize(index_type)
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except +
+        void swap_variables(index_type, index_type)
         cppVartype& vartype()
 
     cdef cppclass cppQuadraticModel "dimod::QuadraticModel" [Bias, Index]:
@@ -133,5 +134,6 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void resize(index_type) except +
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type)
+        void swap_variables(index_type, index_type)
         const bias_type& upper_bound(index_type)
         const cppVartype& vartype(index_type)

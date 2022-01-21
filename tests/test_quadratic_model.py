@@ -370,6 +370,16 @@ class TestFixVariable(unittest.TestCase):
         self.assertEqual(qm.quadratic, {})
         self.assertEqual(qm.offset, 1.2)
 
+    def test_vartype(self):
+        qm = dimod.Integer('a', lower_bound=-5, upper_bound=5) + dimod.Binary('b')
+        qm.fix_variable('a', 0)
+        self.assertEqual(qm.vartype('b'), dimod.BINARY)
+        self.assertEqual(qm.lower_bound('b'), 0)
+        self.assertEqual(qm.upper_bound('b'), 1)
+        self.assertEqual(qm.num_variables, 1)
+        self.assertEqual(qm.num_interactions, 0)
+
+
 class TestFixVariables(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_typical(self, dtype):
@@ -389,6 +399,11 @@ class TestFixVariables(unittest.TestCase):
         self.assertEqual(qm.linear, {'x': 82})
         self.assertEqual(qm.quadratic, {})
         self.assertEqual(qm.offset, 5821)
+        self.assertEqual(qm.vartype('x'), dimod.BINARY)
+        self.assertEqual(qm.lower_bound('x'), 0)
+        self.assertEqual(qm.upper_bound('x'), 1)
+        self.assertEqual(qm.num_variables, 1)
+        self.assertEqual(qm.num_interactions, 0)
 
 
 class TestFromBQM(unittest.TestCase):

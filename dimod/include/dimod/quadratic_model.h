@@ -474,6 +474,59 @@ class QuadraticModelBase {
         }
     }
 
+    /// Swap the linear and quadratic biases between two variables.
+    void swap_variables(index_type u, index_type v) {
+        assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
+        assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
+
+        if (u == v) return;  // nothing to do!
+
+        // developer note, this is pretty expensive since we remove an
+        // element and then add an element to each of the neighborhoods that
+        // touch u or v. We could do it more efficiently by just swapping
+        // their values if they are both present, or only moving the elements
+        // between u and v if only one is there. But let's use the simple
+        // implementation for now.
+
+        // remove any references to u or v in any other neighborhoods (don't
+        // worry, we'll put them back)
+        for (auto it = this->adj_[u].begin(); it < this->adj_[u].end(); ++it) {
+            if (it->first != v) {
+                this->adj_[it->first].erase(u);
+            }
+        }
+        for (auto it = this->adj_[v].begin(); it < this->adj_[v].end(); ++it) {
+            if (it->first != u) {
+                this->adj_[it->first].erase(v);
+            }
+        }
+
+        // swap the neighborhoods of u and v
+        std::swap(this->adj_[u], this->adj_[v]);
+        std::swap(this->linear_biases_[u], this->linear_biases_[v]);
+
+        // now put u and v back into their neighbor's neighborhoods (according
+        // to their new indices)
+        for (auto it = this->adj_[u].begin(); it < this->adj_[u].end(); ++it) {
+            if (it->first != v) {
+                this->adj_[it->first][u] = it->second;
+            }
+        }
+        for (auto it = this->adj_[v].begin(); it < this->adj_[v].end(); ++it) {
+            if (it->first != u) {
+                this->adj_[it->first][v] = it->second;
+            }
+        }
+
+        // finally fix u and v themselves
+        if (this->adj_[u].erase(u)) {
+            auto bias = this->adj_[v][v];
+            this->adj_[u][v] = bias;
+            this->adj_[v][u] = bias;
+            this->adj_[v].erase(v);
+        }
+    }
+
  protected:
     std::vector<bias_type> linear_biases_;
     std::vector<Neighborhood<bias_type, index_type>> adj_;
@@ -1094,6 +1147,12 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     Vartype& vartype(index_type v) { return varinfo_[v].vartype; }
 
     const Vartype& vartype(index_type v) const { return varinfo_[v].vartype; }
+
+    /// Swap the linear and quadratic biases between two variables.
+    void swap_variables(index_type u, index_type v) {
+        base_type::swap_variables(u, v);  // also handles asserts
+        std::swap(this->varinfo_[u], this->varinfo_[v]);
+    }
 
  private:
     std::vector<VarInfo<bias_type>> varinfo_;
