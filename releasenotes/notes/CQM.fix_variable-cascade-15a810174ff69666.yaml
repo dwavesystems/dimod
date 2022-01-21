@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Add ``cascade`` keyword argument to ``ConstrainedQuadraticModel.fix_variable()``
+    and ``ConstrainedQuadraticModel.fix_variables()``. These methods also
+    now return any variables fixed using the `cascade` keyword argument.
+upgrade:
+  - |
+    ``ConstrainedQuadraticModel.fix_variable()`` and
+    ``ConstrainedQuadraticModel.fix_variables()`` now raise a ``ValueError``
+    if given a variable not in the model.

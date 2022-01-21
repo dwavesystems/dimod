@@ -34,6 +34,7 @@ import numpy as np
 from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
+from dimod.exceptions import InfeasibileModelError
 from dimod.quadratic import QuadraticModel
 from dimod.sampleset import as_samples
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
@@ -495,8 +496,41 @@ class ConstrainedQuadraticModel:
         return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
                    for datum in self.iter_constraint_data(sample_like))
 
-    def fix_variable(self, v: Variable, value: float):
-        """Fix the value of a variable in the model."""
+    def fix_variable(self, v: Variable, value: float, *,
+                     cascade: bool = False,
+                     ) -> Dict[Variable, float]:
+        """Fix the value of a variable in the model.
+
+        Note that this function does not test feasibility.
+
+        Args:
+            v: A variable in the model.
+
+            value: A value to assign that variable.
+
+            cascade: If ``True``, then some other variable may be removed
+                from the model based on the assignment of ``v``.
+                Currently handles the following cases: fixing the value in a
+                discrete constraint (see :meth:`add_discrete`) to ``1``; fixing
+                all but one of the value in a discrete constratint to `0`;
+                fixing a variable in an equality constraint with two
+                variables, e.g. fixing ``i`` to ``3`` in ``i + j == 7`` will
+                also fix ``j`` to ``4``.
+
+        Returns:
+            The assignments of any additional variables fixed.
+            If ``cascade==False`` then this will be exactly ``{}``.
+            If ``casecade==True`` then additional variable may be fixed.
+            See above.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the model.
+
+        """
+        if v not in self.variables:
+            raise ValueError(f"unknown variable {v!r}")
+
+        new: Dict[Variable, float] = {}
         for label, comparison in self.constraints.items():
             if v in comparison.lhs.variables:
                 comparison.lhs.fix_variable(v, value)
@@ -510,28 +544,71 @@ class ConstrainedQuadraticModel:
                             f"variable {v} is part of a discrete constraint so "
                             "it can only be fixed to 0 or 1")
 
-                    # either it's too small or we've found the one-hot
-                    if len(comparison.lhs.variables) < 2 or value == 1:
+                    if value == 1:  # we've found the one-hot!
                         self.discrete.remove(label)
 
-        if v in self.objective.variables:
-            self.objective.fix_variable(v, value)
+                        if cascade:
+                            # everything else gets set to 0
+                            new.update((v, 0) for v in comparison.lhs.variables)
+
+                    elif len(comparison.lhs.variables) < 2:  # we've made it too small
+                        self.discrete.remove(label)
+
+                        if cascade and len(comparison.lhs.variables) == 1:
+                            new[comparison.lhs.variables[0]] = 1
+
+                elif cascade and comparison.sense is Sense.Eq and len(comparison.lhs.variables) == 1:
+                    # we have a constraint like i == 7, so can just go ahead and set it
+                    new[comparison.lhs.variables[0]] = comparison.rhs - comparison.lhs.offset
+
+        self.objective.fix_variable(v, value)
+
+        for assignment in new.items():
+            self.fix_variable(*assignment)
+
+        return new
 
     def fix_variables(self,
-                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]]):
+                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]],
+                      *,
+                      cascade: bool = False,
+                      ) -> Dict[Variable, float]:
         """Fix the value of the variables and remove them.
 
         Args:
-            fixed: A dictionary or an iterable of 2-tuples of variable
-                assignments.
+            fixed: A dictionary or an iterable of 2-tuples of variable assignments.
+            cascade: See :meth:`.fix_variable`.
+
+        Returns:
+            The assignments of any additional variables fixed.
+            If ``cascade==False`` then this will be exactly ``{}``.
+            If ``casecade==True`` then additional variable may be fixed.
+            See :meth:`.fix_variable`.
+
+        Raises:
+            ValueError: If given a variable not in the model.
+
+            :exc:`~dimod.exceptions.InfeasibileModelError`: If fixing the
+                given variables will result in an infeasible model. Note that
+                this exception is only raised in some obvious cases, it
+                is possible to fix variable to create an infeasible model
+                without raising this error.
 
         """
         if isinstance(fixed, Mapping):
             fixed = fixed.items()
 
         fix_variable = self.fix_variable
+
+        new: Dict[Variable, float] = {}
         for v, val in fixed:
-            fix_variable(v, val)
+            if v in new:
+                if new[v] != val:
+                    raise InfeasibileModelError()
+            else:
+                new.update(fix_variable(v, val, cascade=cascade))
+
+        return new
 
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
