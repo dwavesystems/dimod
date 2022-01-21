@@ -955,9 +955,6 @@ SCENARIO("variables in a quadratic model can be swapped", "[qm]") {
                     CHECK_THROWS_AS(qm.quadratic_at(i, s), std::out_of_range);
                     CHECK_THROWS_AS(qm.quadratic_at(s, x), std::out_of_range);
                     CHECK_THROWS_AS(qm.quadratic_at(x, s), std::out_of_range);
-                    // CHECK(qm.quadratic(i, s) == 5);
-                    // CHECK(qm.quadratic(s, x) == 6);
-                    // CHECK(qm.quadratic(x, s) == 6);
                     CHECK(qm.lower_bound(s) == -5);
                     CHECK(qm.upper_bound(s) == 5);
                     CHECK(qm.lower_bound(i) == -1);
