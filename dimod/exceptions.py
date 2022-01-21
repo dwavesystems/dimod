@@ -43,3 +43,7 @@ class WriteableError(ValueError):
 
 class SamplerUnknownArgWarning(UserWarning):
     """Raised when trying to pass in an unknown argument to the sampler."""
+
+
+class InfeasibileModelError(Exception):
+    """Raised when a model is known to be infeasible."""
