@@ -155,7 +155,6 @@ class ConstrainedQuadraticModel:
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
         self.discrete: Set[Hashable] = set()  # collection of discrete constraints
-        self._discrete: Set[Variable] = set()  # collection of all variables used in discrete
 
         self._objective = QuadraticModel()
 
@@ -424,8 +423,11 @@ class ConstrainedQuadraticModel:
             variables = list(variables)
 
         for v in variables:
-            if v in self._discrete:
-                # todo: language around discrete variables?
+            if (v in self.variables and
+                    any(v in self.constraints[label].lhs.variables for label in self.discrete)):
+                # the first check is not necessary, but it's faster to make sure it's
+                # somewhere to be found before looking through all of the
+                # discrete constraints
                 raise ValueError(f"variable {v!r} is already used in a discrete variable")
             elif v in self.variables and self.vartype(v) != Vartype.BINARY:
                 raise ValueError(f"variable {v!r} has already been added but is not BINARY")
@@ -435,7 +437,6 @@ class ConstrainedQuadraticModel:
         bqm.add_variables_from((v, 1) for v in variables)
         label = self.add_constraint(bqm == 1, label=label)
         self.discrete.add(label)
-        self._discrete.update(variables)
         return label
 
     def add_variable(self, v: Variable, vartype: VartypeLike,
