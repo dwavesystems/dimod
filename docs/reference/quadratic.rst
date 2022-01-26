@@ -59,6 +59,7 @@ Methods
    ~QuadraticModel.energy
    ~QuadraticModel.fix_variable
    ~QuadraticModel.fix_variables
+   ~QuadraticModel.flip_variable
    ~QuadraticModel.from_bqm
    ~QuadraticModel.from_file
    ~QuadraticModel.get_linear

@@ -1018,11 +1018,20 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         energy, = energies
         return energy
 
-    def flip_variable(self, v: Hashable):
+    def flip_variable(self, v: Variable):
         """Flip the specified variable in a binary quadratic model."""
-        for u in self.adj[v]:
-            self.spin.adj[v][u] *= -1
-        self.spin.linear[v] *= -1
+        if self.vartype is Vartype.SPIN:
+            for u, bias in self.iter_neighborhood(v):
+                self.set_quadratic(u, v, -1*bias)
+            self.set_linear(v, -1*self.get_linear(v))
+        elif self.vartype is Vartype.BINARY:
+            for u, bias in self.iter_neighborhood(v):
+                self.set_quadratic(u, v, -1*bias)
+                self.add_linear(u, bias)
+            self.offset += self.get_linear(v)
+            self.set_linear(v, -1*self.get_linear(v))
+        else:
+            raise RuntimeError("unexpected vartype")
 
     @classmethod
     def from_coo(cls, obj, vartype=None):

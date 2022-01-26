@@ -427,6 +427,35 @@ class TestFromBQM(unittest.TestCase):
                     self.assertIs(qm.vartype(v), bqm.vartype)
 
 
+class TestFlipVariable(unittest.TestCase):
+    def test_binary(self):
+        a, b = dimod.Binaries('ab')
+        qm = QuadraticModel.from_bqm(a - b - a*b)
+        qm.flip_variable('a')
+        self.assertTrue(qm.is_equal(QuadraticModel.from_bqm((1-a) - b - (1-a)*b)))
+
+    def test_mixed(self):
+        x = dimod.Binary('x')
+        s = dimod.Spin('s')
+        i = dimod.Integer('i')
+        qm = x + 2*s + 3*i + 4*x*s + 5*x*i + 6*i*s
+
+        qm.flip_variable('x')
+        self.assertTrue(qm.is_equal((1-x) + 2*s + 3*i + 4*(1-x)*s + 5*(1-x)*i + 6*i*s))
+
+        qm.flip_variable('s')
+        self.assertTrue(qm.is_equal((1-x) + 2*-s + 3*i + 4*(1-x)*-s + 5*(1-x)*i + 6*i*-s))
+
+        with self.assertRaises(ValueError):
+            qm.flip_variable('i')
+
+    def test_spin(self):
+        a, b = dimod.Spins('ab')
+        qm = QuadraticModel.from_bqm(a - b - a*b)
+        qm.flip_variable('a')
+        self.assertTrue(qm.is_equal(QuadraticModel.from_bqm(-a - b - (-a)*b)))
+
+
 class TestInteger(unittest.TestCase):
     def test_init_no_label(self):
         integer_qm = Integer()
