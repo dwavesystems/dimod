@@ -4,25 +4,34 @@
 Quadratic Models: Unconstrained
 ===============================
 
-:term:`Sampler`\ s such as D-Wave quantum computers accept unconstrained models
-(binary quadratic models, for D-Wave systems: binary because variables are
-represented by qubits that return two states and quadratic because you can
-configure coupling strengths between pairs of qubits). Hybrid quantum-classical
-samplers can accept non-binary models; for example, quadratic models with
-discrete variables.
+Unconstrained quadratic models are used to submit problems to :term:`sampler`\ s
+such as D-Wave quantum computers\ [#]_ and some hybrid quantum-classical
+samplers\ [#]_.
 
 When using such samplers to handle problems with constraints, you typically
 formulate the constraints as penalties: see
 :std:doc:`sysdocs_gettingstarted:doc_getting_started`.
 (:ref:`Constrained models <intro_cqm>`, such as the
-:class:`dimod.ConstrainedQuadraticModel`, can support constraints natively.)
+:class:`~dimod.ConstrainedQuadraticModel`, can support constraints natively.)
+
+.. [#]
+  D-Wave quantum computers accept unconstrained binary quadratic models, such as
+  quadratic unconstrained binary optimization (\ :term:`QUBO`\ ) models: binary
+  because variables are represented by qubits that return two states and quadratic
+  because polynomial terms of two variables can be represented by pairs of coupled
+  qubits.
+
+.. [#]
+  Some hybrid quantum-classical samplers accept constrained and non-binary models;
+  for example, a quadratic model with an integer variable that must be smaller
+  than some configured value.
 
 Supported Models
 ================
 
 * **Quadratic Models**
 
-  The :term:`quadratic model` (QM) class, :class:`dimod.QuadraticModel`, encodes
+  The :term:`quadratic model` (QM) class, :class:`~dimod.QuadraticModel`, encodes
   polynomials of binary, integer, and discrete variables, with all terms of degree
   two or less.
 
@@ -30,7 +39,8 @@ Supported Models
 
 * **Binary Quadratic Models**
 
-  The :term:`binary quadratic model` (BQM) class, :class:`dimod.BinaryQuadraticModel`,
+  The :term:`binary quadratic model` (BQM) class,
+  :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel`,
   encodes :term:`Ising` and quadratic unconstrained binary optimization
   (\ :term:`QUBO`\ ) models used by samplers such as the D-Wave system.
 
@@ -42,7 +52,7 @@ Supported Models
 * **Discrete Quadratic Models**
 
   The :term:`discrete quadratic model` (BQM) class,
-  :class:`dimod.DiscreteQuadraticModel`, encodes polynomials of discrete variables,
+  :class:`~dimod.DiscreteQuadraticModel`, encodes polynomials of discrete variables,
   with all terms of degree two or less.
 
   For an introduction to DQMs, see
@@ -68,7 +78,7 @@ linear biases are zero and quadratic values are uniformly selected -1 or +1 valu
 
 Typically you construct a model when reformulating your problem, using such
 techniques as those presented in D-Wave's system documentation's
-:std:doc:`oceandocs:doc_handbook`.
+:std:doc:`sysdocs_gettingstarted:doc_handbook`.
 
 Example: Formulating a Max-Cut Problem as a BQM
 -----------------------------------------------
@@ -104,8 +114,8 @@ convenient:
 >>> bqm = dimod.BQM.from_qubo(qubo)
 
 For performance, especially with very large BQMs, you might read the data from a
-file using methods,
-such as :meth:`~dimod.bqm.adjvectorbqm.AdjVectorBQM.from_file` or from NumPy arrays.
+file using methods, such as :func:`~dimod.binary.BinaryQuadraticModel.from_file`
+or from NumPy arrays.
 
 Example: Interaction Between Integer Variables
 ----------------------------------------------

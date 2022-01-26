@@ -1,12 +1,12 @@
 .. image:: https://img.shields.io/pypi/v/dimod.svg
     :target: https://pypi.org/project/dimod
-    
+
 .. image:: https://img.shields.io/pypi/pyversions/dimod.svg
     :target: https://pypi.python.org/pypi/dimod
 
 .. image:: https://circleci.com/gh/dwavesystems/dimod.svg?style=svg
     :target: https://circleci.com/gh/dwavesystems/dimod
-    
+
 .. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/dwavesystems/dimod
 
@@ -51,7 +51,8 @@ Example Usage
 
 .. index-end-marker2
 
-See the documentation for more examples.
+See the `documentation <https://docs.ocean.dwavesys.com/en/stable/docs_dimod/>`_
+for more examples.
 
 Installation
 ------------
