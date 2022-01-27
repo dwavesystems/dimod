@@ -83,11 +83,15 @@ Typically you construct a model when reformulating your problem, using such
 techniques as those presented in D-Wave's system documentation's
 :std:doc:`sysdocs_gettingstarted:doc_handbook`.
 
-Example: Formulating a Max-Cut Problem as a BQM
------------------------------------------------
+For learning and testing with small models, construction in Python is
+convenient.
 
-The four-node `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
-problem shown in this figure,
+Example: Python Formulation
+---------------------------
+
+The `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_ problem is to find
+a subset of a graph's vertices such that the number of edges between it and the
+complementary subset is as large as possible.
 
 .. figure:: ../_images/four_node_star_graph.png
     :align: center
@@ -97,9 +101,8 @@ problem shown in this figure,
 
     Star graph with four nodes.
 
-can be represented, as shown in the
-`dwave-examples <https://github.com/dwave-examples/maximum-cut>`_ Maximum Cut
-example, by a QUBO:
+The `dwave-examples Maximum Cut <https://github.com/dwave-examples/maximum-cut>`_
+example demonstrates how such problems can be formulated as QUBOs:
 
 .. math::
 
@@ -109,9 +112,6 @@ example, by a QUBO:
                         0 & 0 & 0 & -1
        \end{bmatrix}
 
-For learning and testing with small BQMs, constructing BQMs in Python is
-convenient:
-
 >>> qubo = {(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
 ...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> bqm = dimod.BQM.from_qubo(qubo)
@@ -119,6 +119,22 @@ convenient:
 For performance, especially with very large BQMs, you might read the data from a
 file using methods, such as :func:`~dimod.binary.BinaryQuadraticModel.from_file`
 or from NumPy arrays.
+
+Example: Construction from NumPy Arrays
+---------------------------------------
+
+This example creates a BQM representing a long ferromagnetic loop with two opposite
+non-zero biases.
+
+>>> import numpy as np
+>>> linear = np.zeros(1000)
+>>> quadratic = (np.arange(0, 1000), np.arange(1, 1001), -np.ones(1000))
+>>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear, quadratic, 0, "SPIN")
+>>> bqm.add_quadratic(0, 10, -1)
+>>> bqm.set_linear(0, -1)
+>>> bqm.set_linear(500, 1)
+>>> bqm.num_variables
+1001
 
 Example: Interaction Between Integer Variables
 ----------------------------------------------
