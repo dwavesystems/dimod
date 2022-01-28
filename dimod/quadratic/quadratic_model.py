@@ -602,6 +602,53 @@ class QuadraticModel(QuadraticViewsMixin):
         energy, = energies
         return energy
 
+    def flip_variable(self, v: Variable):
+        """Flip the specified variable.
+
+        Args:
+            v: A variable in the model.
+
+        Raises:
+            ValueError: If ``v`` is not a variable in the model.
+            ValueError: If ``v`` is not a :class:`Vartype.SPIN` or
+                :class:`Vartype.BINARY` variable.
+
+        Examples:
+            In this example we flip the value of a binary variable ``x``. That
+            is we substitute ``(1 - x)`` which always takes the opposite value.
+
+            >>> x = dimod.Binary('x')
+            >>> s = dimod.Spin('s')
+            >>> qm = x + 2*s + 3*x*s
+            >>> qm.flip_variable('x')
+            >>> qm.is_equal((1-x) + 2*s + 3*(1-x)*s)
+            True
+
+            In this example we flip the value of a spin variable ``s``. That
+            is we substitute ``-s`` which always takes the opposite value.
+
+            >>> x = dimod.Binary('x')
+            >>> s = dimod.Spin('s')
+            >>> qm = x + 2*s + 3*x*s
+            >>> qm.flip_variable('s')
+            >>> qm.is_equal(x + 2*-s + 3*x*-s)
+            True
+
+        """
+        vartype = self.vartype(v)
+        if vartype is Vartype.SPIN:
+            for u, bias in self.iter_neighborhood(v):
+                self.set_quadratic(u, v, -1*bias)
+            self.set_linear(v, -1*self.get_linear(v))
+        elif vartype is Vartype.BINARY:
+            for u, bias in self.iter_neighborhood(v):
+                self.set_quadratic(u, v, -1*bias)
+                self.add_linear(u, bias)
+            self.offset += self.get_linear(v)
+            self.set_linear(v, -1*self.get_linear(v))
+        else:
+            raise ValueError(f"can only flip SPIN and BINARY variables, {v} is {vartype.name}")
+
     @classmethod
     def from_bqm(cls, bqm: 'BinaryQuadraticModel') -> 'QuadraticModel':
         """Construct a quadratic model from a binary quadratic model.

@@ -611,6 +611,21 @@ class ConstrainedQuadraticModel:
 
         return new
 
+    def flip_variable(self, v: Variable):
+        """Flip the specified variable in the objective and constraints.
+
+        Note that this may remove a constraint as being tracked as discrete.
+        Subsequently flipping the variable again will not restore it.
+        """
+        self.objective.flip_variable(v)  # checks that it exists and is the correct vartype
+
+        for label, comparison in self.constraints.items():
+            lhs = comparison.lhs
+            if v in lhs.variables:
+                comparison.lhs.flip_variable(v)
+
+                self.discrete.discard(label)  # no longer a discrete variable
+
     @classmethod
     def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
         """Alias for :meth:`from_quadratic_model`."""

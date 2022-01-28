@@ -306,6 +306,39 @@ class TestFixVariables(unittest.TestCase):
         self.assertEqual({'z': 0, 'y': 0, 'j': 0.0}, fixed)  # y appears because it was fixed twice
 
 
+class TestFlipVariable(unittest.TestCase):
+    def test_exceptions(self):
+        x, y = dimod.Binaries('xy')
+        i, j = dimod.Integers('ij')
+        s, t = dimod.Spins('st')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + i + j + s + t)
+        cqm.add_constraint(x + i + s <= 5)
+
+        with self.assertRaises(ValueError):
+            cqm.flip_variable('i')  # can't flip integer
+        with self.assertRaises(ValueError):
+            cqm.flip_variable('not a variable')
+
+    def test_binary(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+        s, t = dimod.Spins('st')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + z + i + j + s + t)
+        c = cqm.add_constraint(x + i + s <= 5)
+        d = cqm.add_discrete('xyz')
+
+        cqm.flip_variable('x')
+
+        self.assertTrue(cqm.objective.is_equal((1-x) + y + z + i + j + s + t))
+        self.assertTrue(cqm.constraints[c].lhs.is_equal((1-x) + i + s))
+        self.assertTrue(cqm.constraints[d].lhs.is_equal((1-x) + y + z))
+        self.assertNotIn(d, cqm.discrete)
+
+
 class TestIterViolations(unittest.TestCase):
     def test_no_constraints(self):
         cqm = CQM.from_bqm(-Binary('a') + Binary('a')*Binary('b') + 1.5)

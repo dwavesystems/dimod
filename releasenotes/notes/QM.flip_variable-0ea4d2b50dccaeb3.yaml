@@ -1,0 +1,4 @@
+---
+features:
+  - Add ``QuadraticModel.flip_variable()`` method.
+  - Add ``ConstrainedQuadraticModel.flip_variable()`` method.
