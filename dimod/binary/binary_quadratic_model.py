@@ -568,14 +568,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @property
     def variables(self) -> Variables:
-        """The variables of the binary quadratic model"""
+        """The variables of the binary quadratic model."""
         return self.data.variables
 
     @property
     def vartype(self) -> Vartype:
         """The model's variable type.
 
-        One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+        One of :class:`~dimod.Vartype.SPIN` or :class:`~dimod.Vartype.BINARY`.
         """
         return self.data.vartype()
 
@@ -594,7 +594,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
-        """Add a linear term."""
+        """Add a linear term.
+
+        Args:
+            v: Variable label.
+            bias: Linear bias for the variable.
+
+        """
         return self.data.add_linear
 
     def add_linear_equality_constraint(
