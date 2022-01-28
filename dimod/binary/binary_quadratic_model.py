@@ -83,52 +83,58 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     This class encodes Ising and quadratic unconstrained binary optimization
     (QUBO) models used by samplers such as the D-Wave system.
 
-    BQMs can be created in several ways:
+    With one or more of the following parameters,
 
-        ``BinaryQuadraticModel(vartype)``
-            Create a BQM with no variables or interactions.
-            ``vartype``  must be one of:
+            * ``vartype``: The valid variable types for binary quadratic models, is
+              one of:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        ``BinaryQuadraticModel(bqm)``
-            Create a BQM from another BQM. The resulting BQM will have the
-            same variables, linear biases, quadratic biases and offset as
-            ``bqm``.
+            * ``bqm``: An existing BQM.
 
-        ``BinaryQuadraticModel(bqm, vartype)``
-            Create a BQM from another BQM, changing it to the appropriate
-            ``vartype`` if necessary.
+            * ``n``: Required number of variables.
 
-        ``BinaryQuadraticModel(n, vartype)``
-            Create a BQM with ``n`` variables, indexed linearly from zero,
-            setting all biases to zero.
+            * ``quadratic``: Quadratic biases, as a dictionary of form
+              ``{(u, v): b, ...}`` or a square array_like_.
 
-        ``BinaryQuadraticModel(quadratic, vartype)``
-            Create a BQM from quadratic biases given as a square array_like_
-            or a dictionary of the form ``{(u, v): b, ...}``. Note that when
-            formed with SPIN-variables, biases on the diagonal are added to the
-            offset.
+            * ``linear``: Linear biases, as a dictionary of the form ``{v: b, ...}``
+              or a one-dimensional array_like_.
 
-        ``BinaryQuadraticModel(linear, quadratic, vartype)``
-            Create a BQM from linear and quadratic biases, where ``linear`` is a
-            one-dimensional array_like_ or a dictionary of the form
-            ``{v: b, ...}``.
+            * ``offset``: Offset as a number.
 
-        ``BinaryQuadraticModel(linear, quadratic, offset, vartype)``
-            Create a BQM from linear and quadratic biases and an offset.
-            ``offset`` must be a number.
+    you can create BQMs in several ways:
+
+    * ``BinaryQuadraticModel(vartype)`` with no variables or interactions.
+
+    * ``BinaryQuadraticModel(bqm)`` from an existing BQM. The resulting
+      BQM has the same variables, linear biases, quadratic biases and offset as
+      ``bqm``.
+
+    * ``BinaryQuadraticModel(bqm, vartype)`` from an existing BQM, changing to
+      the specified ``vartype`` if necessary.
+
+    * ``BinaryQuadraticModel(n, vartype)`` with ``n`` variables, indexed linearly
+      from zero, setting all biases to zero.
+
+    * ``BinaryQuadraticModel(quadratic, vartype)`` from quadratic biases. When
+      formed with SPIN-variables, biases on the diagonal are added to the offset.
+
+    * ``BinaryQuadraticModel(linear, quadratic, vartype)`` from linear and
+      quadratic biases.
+
+    * ``BinaryQuadraticModel(linear, quadratic, offset, vartype)`` from linear
+      and quadratic biases and an offset.
 
     Args:
-        *args: See above
+        *args: See above.
 
-        offset: The offset (see above) may be supplied as a keyword argument.
+        offset: Offset (see above) may be supplied as a keyword argument.
 
-        vartype: The variable type (see above) may be supplied as a keyword
+        vartype: Variable type (see above) may be supplied as a keyword
             argument.
 
-        dtype: The data type.
+        dtype: Data type.
             :class:`numpy.float32` and :class:`numpy.float64` are supported.
             Defaults to :class:`numpy.float64`.
 
@@ -2219,7 +2225,7 @@ def Binaries(labels: Union[int, Iterable[Variable]],
 
 def BinaryArray(labels: Union[int, Iterable[Variable]],
                 dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a NumPy array of binary quadratic models, each with a 
+    """Return a NumPy array of binary quadratic models, each with a
     single binary variable.
 
     Args:
@@ -2229,7 +2235,7 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
 
     Returns:
         Array of binary quadratic models, each with a single binary variable.
-    
+
     """
     return _VariableArray(Binaries, labels, dtype)
 
@@ -2273,7 +2279,7 @@ def Spins(labels: Union[int, Iterable[Variable]],
 
 def SpinArray(labels: Union[int, Iterable[Variable]],
               dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a NumPy array of binary quadratic models, each with a 
+    """Return a NumPy array of binary quadratic models, each with a
     single spin variable.
 
     Args:
@@ -2283,7 +2289,7 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
 
     Returns:
         Array of binary quadratic models, each with a single spin variable.
-    
+
     """
     return _VariableArray(Spins, labels, dtype)
 
