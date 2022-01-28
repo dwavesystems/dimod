@@ -8,9 +8,11 @@ dimod provides a :class:`~dimod.SampleSet` class that contains, and enables you 
 manipulate, samples.
 
 For an introduction to returned solutions and samples, see
-:std:doc:`Solutions <oceandocs:concepts/solutions>`.
+:std:doc:`Solutions <oceandocs:concepts/solutions>`. For all supported sampleset
+methods, see :ref:`sampleset`.
 
-For all supported sampleset methods, see :ref:`sampleset`.
+Example: Sampleset Returned from a Sampler
+==========================================
 
 This example creates a sample set and then demonstrates some :class:`~dimod.SampleSet`
 properties and methods.
@@ -43,3 +45,17 @@ Convert to a third-party format
 1    1 -1 -1 -1 -1 -1 -1     7.0                1
 2    1  1 -1 -1 -1 -1 -1     7.0                1
 ...
+
+Example: Creating a Sampleset
+=============================
+
+This example creates a sample set from NumPy arrays.
+
+>>> import numpy as np
+>>> samples = np.random.randint(0, 2, (100, 10))
+>>> energies = np.random.randint(-10, 0, 100)
+>>> occurrences = np.random.randint(0, 50, 100)
+>>> sampleset = dimod.SampleSet.from_samples(samples,
+...                                          "BINARY",
+...                                          energies,
+...                                          num_occurrences=occurrences)
