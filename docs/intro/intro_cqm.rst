@@ -10,7 +10,7 @@ problem might require a minimum interval between shifts.
 
 When using unconstrained samplers to handle problems with constraints, you
 typically formulate the constraints as penalties. Constrained models such as
-:class:`ConstrainedQuadraticModel` can support constraints by encoding both an
+:class:`~dimod.ConstrainedQuadraticModel` can support constraints by encoding both an
 objective and its set of constraints, as models or in symbolic form.
 
 Supported Models
@@ -41,7 +41,7 @@ items.
 
 Typically you construct a model when reformulating your problem, using such
 techniques as those presented in D-Wave's system documentation's
-:std:doc:`oceandocs:doc_handbook`.
+:std:doc:`sysdocs_gettingstarted:doc_handbook`.
 
 Example: Formulating a CQM
 --------------------------

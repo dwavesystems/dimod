@@ -8,13 +8,16 @@ dimod includes reference :term:`sampler`\ s and :term:`composite`\ s for process
 quadratic (and higher order) models and refining sampling, and for
 testing your code during development.
 
-For an introduction to samplers and composites, see
-:std:doc:`Samplers and Composites <oceandocs:concepts/samplers>`.
-
-For descriptions of all supported samplers, see :ref:`samplers_index`.
-
 Using Samplers
 ==============
+
+For an introduction to samplers and composites, see
+:std:doc:`Concepts: Samplers and Composites <oceandocs:concepts/samplers>`.
+For descriptions of all supported samplers, see
+:ref:`Samplers reference documentation <samplers_index>`.
+
+Example: Using a Reference Sampler
+----------------------------------
 
 To find solutions to the small four-node
 `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
@@ -45,21 +48,27 @@ calculates the energy of all possible samples.
 10  1  1  1  1    0.0       1
 ['BINARY', 16 rows, 16 samples, 4 variables]
 
-Using Composed Samplers
-=======================
+Samplers can be composed. The
+`composite pattern <https://en.wikipedia.org/wiki/Composite_pattern>`_ allows
+layers of pre- and post-processing to be applied to quadratic programs for a
+sampler implementation.
+
+Example: Using a Composed Sampler
+---------------------------------
 
 This example uses a composed sampler on the
 :std:doc:`Boolean NOT Gate <oceandocs:examples/not>`
 example detailed in the :std:doc:`Getting Started <oceandocs:getting_started>`
 documentation.
 
-The :class:`~dimod.reference.composites.fixedvariable.FixedVariableComposite`
+The :class:`~dwave.preprocessing.composites.FixVariablesComposite`
 composite sets the value and removes specified variables from the BQM before
 sending it to the sampler.
 
->>> from dimod import FixedVariableComposite, ExactSolver
+>>> from dimod import ExactSolver
+>>> from dwave.preprocessing import FixVariablesComposite
 >>> Q = {('x', 'x'): -1, ('x', 'z'): 2, ('z', 'x'): 0, ('z', 'z'): -1}
->>> composed_sampler = FixedVariableComposite(ExactSolver())
+>>> composed_sampler = FixVariablesComposite(ExactSolver())
 >>> sampleset = composed_sampler.sample_qubo(Q, fixed_variables={'x': 1})
 >>> print(sampleset)
    x  z energy num_oc.
@@ -73,8 +82,11 @@ Creating Samplers
 dimod provides an :ref:`api` you can use to create your own dimod samplers and
 composed samplers.
 
+Example: Creating a Sampler
+---------------------------
+
 This example creates a dimod sampler by implementing a single method (in this
-example the :meth:`sample_ising` method).
+example the :code:`sample_ising` method).
 
 .. testcode::
 

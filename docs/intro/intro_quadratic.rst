@@ -4,52 +4,65 @@
 Quadratic Models: Unconstrained
 ===============================
 
-:term:`Sampler`\ s such as D-Wave quantum computers accept unconstrained models
-(binary quadratic models, for D-Wave systems: binary because variables are
-represented by qubits that return two states and quadratic because you can
-configure coupling strengths between pairs of qubits). Hybrid quantum-classical
-samplers can accept non-binary models; for example, quadratic models with
-discrete variables.
+Unconstrained quadratic models are used to submit problems to :term:`sampler`\ s
+such as D-Wave quantum computers\ [#]_ and some hybrid quantum-classical
+samplers\ [#]_.
 
 When using such samplers to handle problems with constraints, you typically
 formulate the constraints as penalties: see
 :std:doc:`sysdocs_gettingstarted:doc_getting_started`.
 (:ref:`Constrained models <intro_cqm>`, such as the
-:class:`dimod.ConstrainedQuadraticModel`, can support constraints natively.)
+:class:`~dimod.ConstrainedQuadraticModel`, can support constraints natively.)
+
+.. [#]
+  D-Wave quantum computers accept unconstrained binary quadratic models, such as
+  quadratic unconstrained binary optimization (\ :term:`QUBO`\ ) models: binary
+  because variables are represented by qubits that return two states and quadratic
+  because polynomial terms of two variables can be represented by pairs of coupled
+  qubits.
+
+.. [#]
+  Some hybrid quantum-classical samplers accept constrained and non-binary models;
+  for example, a quadratic model with an integer variable that must be smaller
+  than some configured value.
 
 Supported Models
 ================
 
 * **Quadratic Models**
 
-  The :term:`quadratic model` (QM) class, :class:`dimod.QuadraticModel`, encodes
+  The :term:`quadratic model` (QM) class, :class:`~dimod.QuadraticModel`, encodes
   polynomials of binary, integer, and discrete variables, with all terms of degree
   two or less.
 
-  For the QM class, its attributes and methods, see :ref:`qm`.
+  For an introduction to QMs, see
+  :std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`. For the QM class,
+  its attributes and methods, see the :ref:`QM reference documentation <qm>`.
 
 * **Binary Quadratic Models**
 
-  The :term:`binary quadratic model` (BQM) class, :class:`dimod.BinaryQuadraticModel`,
+  The :term:`binary quadratic model` (BQM) class,
+  :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel`,
   encodes :term:`Ising` and quadratic unconstrained binary optimization
-  (\ :term:`QUBO`\ ) models used by samplers such as the D-Wave system.
+  (\ :term:`QUBO`\ ) models used by samplers such as D-Wave's quantum computers.
 
   For an introduction to BQMs, see
-  :std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
-
-  For the BQM class, its attributes and methods, see :ref:`bqm`.
+  :std:doc:`Concepts: Binary Quadratic Models <oceandocs:concepts/bqm>`. For the BQM class,
+  its attributes and methods, see the :ref:`BQM reference documentation <bqm>`.
 
 * **Discrete Quadratic Models**
 
   The :term:`discrete quadratic model` (BQM) class,
-  :class:`dimod.DiscreteQuadraticModel`, encodes polynomials of discrete variables,
+  :class:`~dimod.DiscreteQuadraticModel`, encodes polynomials of discrete variables,
   with all terms of degree two or less.
 
   For an introduction to DQMs, see
-  :std:doc:`Discrete Quadratic Models <oceandocs:concepts/dqm>`.
+  :std:doc:`Concepts: Discrete Quadratic Models <oceandocs:concepts/dqm>`. For the DQM
+  class, its attributes and methods, see :ref:`DQM reference documentation <dqm>`.
 
 See examples of using QPU solvers and `Leap <https://cloud.dwavesys.com/leap>`_
-hybrid solvers on these models in the
+hybrid solvers on these models in Ocean documentation's
+:std:doc:`Getting Started examples <oceandocs:getting_started>` and the
 `dwave-examples GitHub repository <https://github.com/dwave-examples>`_.
 
 Model Construction
@@ -64,17 +77,21 @@ Example: dimod BQM Generator
 This example generates a BQM from a fully-connected graph (a clique) where all
 linear biases are zero and quadratic values are uniformly selected -1 or +1 values.
 
->>> bqm = dimod.generators.random.ran_r(1, 7, cls=dimod.AdjVectorBQM)
+>>> bqm = dimod.generators.random.ran_r(1, 7)
 
 Typically you construct a model when reformulating your problem, using such
 techniques as those presented in D-Wave's system documentation's
-:std:doc:`oceandocs:doc_handbook`.
+:std:doc:`sysdocs_gettingstarted:doc_handbook`.
 
-Example: Formulating a Max-Cut Problem as a BQM
------------------------------------------------
+For learning and testing with small models, construction in Python is
+convenient.
 
-The small four-node `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
-problem shown in this figure,
+Example: Python Formulation
+---------------------------
+
+The `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_ problem is to find
+a subset of a graph's vertices such that the number of edges between it and the
+complementary subset is as large as possible.
 
 .. figure:: ../_images/four_node_star_graph.png
     :align: center
@@ -84,9 +101,8 @@ problem shown in this figure,
 
     Star graph with four nodes.
 
-Can be represented, as shown in the
-`dwave-examples <https://github.com/dwave-examples/maximum-cut>`_ Maximum Cut
-example, by a QUBO:
+The `dwave-examples Maximum Cut <https://github.com/dwave-examples/maximum-cut>`_
+example demonstrates how such problems can be formulated as QUBOs:
 
 .. math::
 
@@ -96,16 +112,29 @@ example, by a QUBO:
                         0 & 0 & 0 & -1
        \end{bmatrix}
 
-For learning and testing with small BQMs, constructing BQMs in Python is
-convenient:
-
 >>> qubo = {(0, 0): -3, (1, 1): -1, (0, 1): 2, (2, 2): -1,
 ...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> bqm = dimod.BQM.from_qubo(qubo)
 
 For performance, especially with very large BQMs, you might read the data from a
-file using methods,
-such as :meth:`~dimod.bqm.adjvectorbqm.AdjVectorBQM.from_file` or from NumPy arrays.
+file using methods, such as :func:`~dimod.binary.BinaryQuadraticModel.from_file`
+or from NumPy arrays.
+
+Example: Construction from NumPy Arrays
+---------------------------------------
+
+This example creates a BQM representing a long ferromagnetic loop with two opposite
+non-zero biases.
+
+>>> import numpy as np
+>>> linear = np.zeros(1000)
+>>> quadratic = (np.arange(0, 1000), np.arange(1, 1001), -np.ones(1000))
+>>> bqm = dimod.BinaryQuadraticModel.from_numpy_vectors(linear, quadratic, 0, "SPIN")
+>>> bqm.add_quadratic(0, 10, -1)
+>>> bqm.set_linear(0, -1)
+>>> bqm.set_linear(500, 1)
+>>> bqm.num_variables
+1001
 
 Example: Interaction Between Integer Variables
 ----------------------------------------------
