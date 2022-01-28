@@ -4,21 +4,27 @@
 Quadratic Models: Unconstrained
 ===============================
 
-The `dimod` package includes the following unconstrained quadratic models.
+This page describes the `dimod` package's unconstrained quadratic models: classes,
+attributes, methods, and some functions related to these classes. For an introduction,
+see :ref:`intro_qm`.
+
+For reference documentation of **constrained** quadratic models, see
+:ref:`cqm`.
 
 .. contents::
     :local:
-    :depth: 1
+    :depth: 3
 
 .. _qm:
 
 Quadratic Models
 ================
 
-.. todo: qm concepts link
+For an introduction to QMs, see
+:std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`.
 
-Class
------
+QM Class
+--------
 
 .. currentmodule:: dimod
 
@@ -95,10 +101,10 @@ Binary Quadratic Models
 =======================
 
 For an introduction to BQMs, see
-:std:doc:`Binary Quadratic Models <oceandocs:concepts/bqm>`.
+:std:doc:`Concepts: Binary Quadratic Models <oceandocs:concepts/bqm>`.
 
-Class
------
+BQM Class
+---------
 
 .. currentmodule:: dimod.binary
 
@@ -244,8 +250,8 @@ See also: :ref:`serialization functions<serialization_dimod>`
 Discrete Quadratic Models
 =========================
 
-:term:`Discrete quadratic model`\ s (DQMs) are described under
-:std:doc:`Discrete Quadratic Models <oceandocs:concepts/dqm>`.
+For an introduction to DQMs, see
+:std:doc:`Concepts: Discrete Quadratic Models <oceandocs:concepts/dqm>`.
 
 DQM Class
 ---------
