@@ -83,9 +83,46 @@ class TestAddConstraint(unittest.TestCase):
 
 
 class TestAddDiscrete(unittest.TestCase):
-    def test_simple(self):
+    def test_bqm(self):
         cqm = CQM()
-        cqm.add_discrete('abc')
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_discrete(qm, label='hello')
+        self.assertIn(c, cqm.discrete)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_comparison(self):
+        cqm = CQM()
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_discrete(qm == 1, label='hello')
+        self.assertIn(c, cqm.discrete)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_exceptions(self):
+        cqm = dimod.CQM()
+        x, y, z = dimod.Binaries('xyz')
+        with self.subTest("too few variables"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete('x')
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x)
+        with self.subTest("wrong sense"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y <= 1)
+        with self.subTest("wrong rhs"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y == 2)
+        with self.subTest("wrong vartype"):
+            s = dimod.Spin('s')
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + s == 1)
+        with self.subTest("quadratic"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y + x*y== 1)
+
+    def test_iterator(self):
+        cqm = CQM()
+        label = cqm.add_discrete(iter(range(10)), label='hello')
+        self.assertEqual(cqm.constraints[label].lhs.variables, range(10))
 
     def test_label(self):
         cqm = CQM()
@@ -93,10 +130,16 @@ class TestAddDiscrete(unittest.TestCase):
         self.assertEqual(label, 'hello')
         self.assertEqual(cqm.variables, 'abc')
 
-    def test_iterator(self):
+    def test_qm(self):
         cqm = CQM()
-        label = cqm.add_discrete(iter(range(10)), label='hello')
-        self.assertEqual(cqm.constraints[label].lhs.variables, range(10))
+        qm = dimod.QM.from_bqm(sum(dimod.Binaries('xyz')))
+        c = cqm.add_discrete(qm, label='hello')
+        self.assertIn(c, cqm.discrete)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_simple(self):
+        cqm = CQM()
+        cqm.add_discrete('abc')
 
 
 class TestAdjVector(unittest.TestCase):

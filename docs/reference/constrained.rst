@@ -34,6 +34,9 @@ Methods
    ConstrainedQuadraticModel.add_constraint_from_iterable
    ConstrainedQuadraticModel.add_constraint_from_model
    ConstrainedQuadraticModel.add_discrete
+   ConstrainedQuadraticModel.add_discrete_from_comparison
+   ConstrainedQuadraticModel.add_discrete_from_iterable
+   ConstrainedQuadraticModel.add_discrete_from_model
    ConstrainedQuadraticModel.add_variable
    ConstrainedQuadraticModel.check_feasible
    ConstrainedQuadraticModel.fix_variable
