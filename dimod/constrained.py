@@ -388,15 +388,118 @@ class ConstrainedQuadraticModel:
         return self.add_constraint_from_model(
             qm, sense, rhs=rhs, label=label, copy=False)
 
-    def add_discrete(self, variables: Iterable[Variable],
-                     label: Optional[Hashable] = None) -> Hashable:
-        """Add an iterable of binary variables as a disjoint one-hot constraint.
+    def add_discrete(self, data, *args, **kwargs) -> Hashable:
+        """Add a one-hot constraint.
 
-        Adds a special kind of one-hot constraint. These one-hot constraints
+        Add a special kind of one-hot constraint. These one-hot constraints
         must be disjoint, that is they must not have any overlapping variables.
 
-        Note that constraints added by :meth:`add_discrete` are guaranteed to
-        be satisfied in solutions returned by
+        Note that constraints added by :meth:`add_discrete` and other similar
+        methods are guaranteed to be satisfied in solutions returned by
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+
+        See also:
+            :meth:`~.ConstrainedQuadraticModel.add_discrete_from_model`
+
+            :meth:`~.ConstrainedQuadraticModel.add_discrete_from_comparison`
+
+            :meth:`~.ConstrainedQuadraticModel.add_discrete_from_iterable`
+
+        Examples:
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+
+            Add a discrete constraint over variables ``x, y, z`` from an
+            iterable.
+
+            >>> iterable = ['x', 'y', 'z']
+            >>> for v in iterable:
+            ...      cqm.add_variable(v, 'BINARY')
+            'x'
+            'y'
+            'z'
+            >>> cqm.add_discrete(iterable, label='discrete-xyz')
+            'discrete-xyz'
+
+            Add a discrete constraint over variables ``a, b, c`` from a
+            model.
+
+            >>> a, b, c = dimod.Binaries('abc')
+            >>> cqm.add_discrete(sum([a, b, c]), label='discrete-abc')
+            'discrete-abc'
+
+            Add a discrete constraint over variables ``d, e, f`` from a
+            comparison.
+
+            >>> d, e, f = dimod.Binaries('def')
+            >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
+            'discrete-def'
+
+        """
+        # in python 3.8+ we can use singledispatchmethod
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
+            return self.add_discrete_from_model(data, *args, **kwargs)
+        elif isinstance(data, Comparison):
+            return self.add_discrete_from_comparison(data, *args, **kwargs)
+        elif isinstance(data, Iterable):
+            return self.add_discrete_from_iterable(data, *args, **kwargs)
+        else:
+            raise TypeError("unexpected data format")
+
+    def add_discrete_from_comparison(self,
+                                     comp: Comparison,
+                                     label: Optional[Hashable] = None,
+                                     copy: bool = True) -> Hashable:
+        """Add a one-hot constraint.
+
+        Add a special kind of one-hot constraint. These one-hot constraints
+        must be disjoint, that is they must not have any overlapping variables.
+
+        Note that constraints added by :meth:`add_discrete` and other similar
+        methods are guaranteed to be satisfied in solutions returned by
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+
+        Args:
+            comp: A comparison object. The comparison must be a linear
+                equality constraint with all of the linear biases on the
+                left-hand side equal to one and the right hand side equal
+                to one.
+
+            label: A label for the constraint. Must be unique. If no label
+                is provided, one is generated using :mod:`uuid`.
+
+            copy: If `True`, the model is copied. You can set to `False` to
+                improve performance, but subsequently mutating the model can
+                cause issues.
+
+        Returns:
+            Label of the added constraint.
+
+        Examples:
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> d, e, f = dimod.Binaries('def')
+            >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
+            'discrete-def'
+
+        """
+        if comp.sense is not Sense.Eq:
+            raise ValueError("discrete constraints must be equality constraints")
+        if comp.rhs != 1:
+            # could scale, but let's keep it simple for now
+            raise ValueError("the right hand side of a discrete constraint must be 1")
+        return self.add_discrete_from_model(comp.lhs, label=label, copy=copy)
+
+    def add_discrete_from_iterable(self,
+                                   variables: Iterable[Variable],
+                                   label: Optional[Hashable] = None) -> Hashable:
+        """Add a one-hot constraint.
+
+        Add a special kind of one-hot constraint. These one-hot constraints
+        must be disjoint, that is they must not have any overlapping variables.
+
+        Note that constraints added by :meth:`add_discrete` and other similar
+        methods are guaranteed to be satisfied in solutions returned by
         :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
 
         Args:
@@ -408,34 +511,95 @@ class ConstrainedQuadraticModel:
         Returns:
             Label of the added constraint.
 
-        Raises:
-            ValueError: If any of the given variables have already been added
-                to the model with any vartype other than `BINARY`.
+        Examples:
 
-            ValueError: If any of the given variables are already used in
-                another discrete variable.
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> iterable = ['x', 'y', 'z']
+            >>> for v in iterable:
+            ...      cqm.add_variable(v, 'BINARY')
+            'x'
+            'y'
+            'z'
+            >>> cqm.add_discrete(iterable, label='discrete-xyz')
+            'discrete-xyz'
 
         """
         if label is not None and label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
-        if isinstance(variables, Iterator):
-            variables = list(variables)
+        bqm = BinaryQuadraticModel(Vartype.BINARY, dtype=np.float32)
 
         for v in variables:
-            if (v in self.variables and
-                    any(v in self.constraints[label].lhs.variables for label in self.discrete)):
-                # the first check is not necessary, but it's faster to make sure it's
-                # somewhere to be found before looking through all of the
-                # discrete constraints
-                raise ValueError(f"variable {v!r} is already used in a discrete variable")
-            elif v in self.variables and self.vartype(v) != Vartype.BINARY:
-                raise ValueError(f"variable {v!r} has already been added but is not BINARY")
+            if v in self.variables:
+                # it already exists, let's make sure it's not already used
+                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                    raise ValueError(f"variable {v!r} is already used in a discrete variable")
+                if self.vartype(v) is not Vartype.BINARY:
+                    raise ValueError(f"variable {v!r} has already been added but is not BINARY")
 
-        # we can! So add them
-        bqm = BinaryQuadraticModel('BINARY', dtype=np.float32)
-        bqm.add_variables_from((v, 1) for v in variables)
-        label = self.add_constraint(bqm == 1, label=label)
+            bqm.set_linear(v, 1)
+
+        if bqm.num_variables < 2:
+            raise ValueError("discrete constraints must have at least two variables")
+
+        label = self.add_constraint_from_comparison(bqm == 1, label=label, copy=False)
+        self.discrete.add(label)
+        return label
+
+    def add_discrete_from_model(self,
+                                qm: Union[BinaryQuadraticModel, QuadraticModel],
+                                label: Optional[Hashable] = None,
+                                copy: bool = True) -> Hashable:
+        """Add a one-hot constraint.
+
+        Add a special kind of one-hot constraint. These one-hot constraints
+        must be disjoint, that is they must not have any overlapping variables.
+
+        Note that constraints added by :meth:`add_discrete` and other similar
+        methods are guaranteed to be satisfied in solutions returned by
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+
+        Args:
+            qm: A quadratic model or binary quadratic model.
+                The model must be linear with all of the linear biases on the
+                left-hand side equal to one and the right hand side equal
+                to one.
+
+            label: A label for the constraint. Must be unique. If no label
+                is provided, one is generated using :mod:`uuid`.
+
+            copy: If `True`, the model is copied. You can set to `False` to
+                improve performance, but subsequently mutating the model can
+                cause issues.
+
+        Returns:
+            Label of the added constraint.
+
+        Examples:
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> a, b, c = dimod.Binaries('abc')
+            >>> cqm.add_discrete(sum([a, b, c]), label='discrete-abc')
+            'discrete-abc'
+
+        """
+        vartype = qm.vartype if isinstance(qm, QuadraticModel) else lambda v: qm.vartype
+
+        if qm.num_interactions:
+            raise ValueError("discrete constraints must be linear")
+
+        if qm.num_variables < 2:
+            raise ValueError("discrete constraints must have at least two variables")
+
+        for v, bias in qm.iter_linear():
+            if not vartype(v) is Vartype.BINARY:
+                raise ValueError("all variables in a discrete constraint must be binary, "
+                                 f"{v!r} is {vartype(v).name!r}")
+            # we could maybe do a scaling, but let's just keep it simple for now
+            if bias != 1:
+                raise ValueError("all linear biases in a discrete constraint must be 1")
+
+        label = self.add_constraint_from_model(qm, sense='==', rhs=1, label=label, copy=copy)
         self.discrete.add(label)
         return label
 

@@ -1,0 +1,8 @@
+---
+features:
+  - Add ``ConstrainedQuadraticModel.add_discrete_from_comparison()`` method.
+  - Add ``ConstrainedQuadraticModel.add_discrete_from_iterable()`` method.
+  - Add ``ConstrainedQuadraticModel.add_discrete_from_model()`` method.
+  - |
+    ``ConstrainedQuadraticModel.add_discrete()`` now supports additional
+    argument types.
