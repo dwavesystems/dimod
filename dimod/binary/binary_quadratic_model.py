@@ -1745,38 +1745,66 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def remove_interaction(self, u: Variable, v: Variable):
-        """Remove the interaction between a pair of variables."""
+        """Remove the interaction between a pair of variables.
+
+        Args:
+            u: Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
+        """
         return self.data.remove_interaction
 
     def remove_interactions_from(self, interactions: Iterable):
         """Remove the given interactions from the binary quadratic model.
 
         Args:
-            interactions: an iterabble of 2-tuples of interactions in
-                the binary quadratic model.
-
+            interactions: Interactions of the binary quadratic model as an
+                iterable of 2-tuples.
         """
         for u, v in interactions:
             self.remove_interaction(u, v)
 
     @forwarding_method
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
-        """Remove the specified variable from a binary quadratic model."""
+        """Remove the specified variable from a binary quadratic model.
+
+        Args:
+            v: Variable of the binary quadratic model.
+        """
         return self.data.remove_variable
 
     def remove_variables_from(self, variables: Iterable[Variable]):
-        """Remove the given variables from the binary quadratic model."""
+        """Remove the given variables from the binary quadratic model.
+
+        Args:
+            variables: Variables of the binary quadratic model.
+        """
         for v in variables:
             self.remove_variable(v)
 
     @forwarding_method
     def resize(self, n: int):
-        """Reduce a binary quadratic model to the specified number of variables."""
+        """Resize a binary quadratic model to the specified number of variables.
+
+        Args:
+            n: Number of variables in the resized model. If ``n`` is smaller than
+                the current number of variables, variables are removed; if larger,
+                variables are added.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({"a": 1, "b": 2}, {}, 0, "BINARY")
+            >>> bqm.resize(4)                   # doctest:+SKIP
+            >>> bqm.variables
+            Variables(['a', 'b', 2, 3])
+            >>> bqm.resize(3)                   # doctest:+SKIP
+            >>> bqm.variables
+            Variables(['a', 'b', 2])
+
+        """
         return self.data.resize
 
     def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
               ignore_offset=False):
-        """Multiply all the biases by the specified scalar.
+        """Multiply all biases by the specified scalar.
 
         Args:
             scalar (number):
@@ -1829,6 +1857,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def set_linear(self, v: Variable, bias: Bias):
         """Set the linear bias of of a variable.
 
+        Args:
+            v: Variable in the binary quadratic model.
+
         Raises:
             TypeError: If ``v`` is not hashable.
 
@@ -1837,7 +1868,11 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Set the quadratic bias of variables ``(u, v)``.
+        """Set the quadratic bias of interaction ``(u, v)``.
+
+        Args:
+            u: Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
 
         Raises:
             TypeError: If ``u`` or ``v`` is not hashable.
@@ -1848,7 +1883,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def to_coo(self, fp=None, vartype_header: bool = False):
         """Serialize the binary quadratic model to a COOrdinate format encoding.
 
-        If ``fp`` is provided, the serialized BQM is written to a file,
+        If ``fp`` is provided, the serialized BQM is written to a file;
         otherwise it is returned as a string.
 
         Note:
@@ -2052,8 +2087,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         """
         warnings.warn('BinaryQuadraticModel.to_networkx_graph() is deprecated since '
-                      'dimod 0.10.0, '
-                      'use bqm.to_networkx_graph() instead.',
+                      'dimod 0.10.0. '
+                      'Use bqm.to_networkx_graph() instead.',
                       DeprecationWarning, stacklevel=2)
         from dimod.converters import to_networkx_graph  # avoid circular import
         return to_networkx_graph(self, node_attribute_name, edge_attribute_name)
@@ -2122,8 +2157,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Returns:
             A named tuple with fields ``linear_biases``, ``quadratic``, and
-            ``offset``. If ``return_labels == True`` then it will also
-            have a ``labels`` field.
+            ``offset``. If ``return_labels == True``, it also includes a ``labels``
+            field.
 
             ``linear_biases`` is a length :attr:`BinaryQuadraticModel.num_variables`
             array containing the linear biases.
@@ -2225,7 +2260,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Returns:
             tuple: 2-tuple of form ``({(u, v): bias, ...}, offset)``, where
-            ``u``, ``v``, are binary-valued variables and ``bias`` is their associated coefficient, and ``offset`` is a number that represents the
+            ``u``, ``v``, are binary-valued variables and ``bias`` is their
+            associated coefficient, and ``offset`` is a number that represents the
             constant offset of the binary quadratic model.
         """
         qubo = dict(self.binary.quadratic)
@@ -2320,7 +2356,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def update(self, other: 'BinaryQuadraticModel'):
         """Add the variables, interactions, offset and biases from another
-        binary quadratic model."""
+        binary quadratic model.
+
+        Args:
+            other:
+                Binary quadratic model from which to add values.
+        """
         try:
             self.data.update(other.data)
             return
@@ -2363,7 +2404,7 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
     Args:
         label: Hashable label to identify the variable. Defaults to a
             generated :class:`uuid.UUID` as a string.
-        bias: The bias to apply to the variable.
+        bias: Bias to apply to the variable.
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
