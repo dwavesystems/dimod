@@ -893,8 +893,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             vartype (:class:`.Vartype`/str/set, optional):
                 Variable type for the changed model. Accepted input values:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
             inplace (bool, optional, default=True):
                 If True, the binary quadratic model is updated in-place;
@@ -903,7 +903,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Returns:
             :obj:`.BQM`: A binary quadratic model with the specified
             vartype.
-
         """
         if not inplace:
             return self.copy().change_vartype(vartype, inplace=True)
@@ -950,7 +949,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         self.remove_variable(v)
 
     def copy(self, deep=False):
-        """Return a copy."""
+        """Return a copy.
+
+        Args:
+            deep:
+                If True, returns a deep copy.
+        """
         if deep:
             return copy.deepcopy(self)
         else:
@@ -961,6 +965,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Return the degree of a variable.
 
         The degree is the number of interactions that contain ``v``.
+
+        Args:
+            v:
+                Variable in the binary quadratic model.
         """
         return self.data.degree
 
@@ -969,10 +977,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Return the degrees of a binary quadratic model's variables.
 
         Args:
-            array (optional, default=False):
+            array:
                 If True, returns a :obj:`numpy.ndarray`; otherwise returns a dict.
-
-            dtype (optional, default=:class:`numpy.int`):
+            dtype:
                 The data type of the returned degrees. Applies only if
                 ``array==True``.
 
@@ -998,13 +1005,19 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             samples_like (samples_like):
                 Raw samples. `samples_like` is an extension of
                 NumPy's `array_like`_ structure. See :func:`.as_samples`.
-
             dtype:
                 Desired NumPy data type for the energy. Matches
                 :attr:`.dtype` by default.
 
         Returns:
             Energies for the samples.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {("x0", "x1"): -1}, "BINARY")
+            >>> bqm.energies([{"x0": 1, "x1": 1},{"x0": 0, "x1": 1}])
+            array([-1.,  0.])
+
+            See also the example under :meth:`energy`.
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -1025,6 +1038,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Returns:
             The energy.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({}, {("x0", "x1"): -1}, "BINARY")
+            >>> bqm.energy(([1, 1], ["x0", "x1"]))
+            -1.0
+
+            See also the example under :meth:`energies`.
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -1063,7 +1083,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 model.
 
         Note:
-            This method is deprecated, use
+            This method is deprecated. Use
             :func:`~dimod.serialization.coo.load` or
             :func:`~dimod.serialization.coo.loads` instead.
 
@@ -1173,14 +1193,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Create a binary quadratic model from an Ising problem.
 
         Args:
-            h: Linear biases of the Ising problem. If a dict, should be of the
-                form ``{v: bias, ...}`` where ``v`` is a spin-valued variable and
-                ``bias`` is its associated bias. If a list, it is treated as a
-                list of biases where the indices are the variable labels.
+            h: Linear biases of the Ising problem, as either a dict of the form
+                ``{v: bias, ...}``, where ``v`` is a spin-valued variable and
+                ``bias`` is its associated bias, or as a list of biases, where
+                the indices are the variable labels.
 
             J: Quadratic biases of the Ising problem.
 
-            offset (optional, default=0.0): Constant offset.
+            offset: Constant offset.
 
         Returns:
             A spin-valued binary quadratic model.
@@ -1201,20 +1221,20 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 Variable type for the binary quadratic model. Accepted input
                 values:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-                If not provided, the ``G`` should have a vartype attribute. If
-                ``vartype`` is provided and ``G.vartype`` exists then the argument
-                overrides the property.
+                If not provided, ``G`` must have a vartype attribute. If
+                provided, ``vartype`` overrides an existing ``G.vartype``
+                attribute.
 
             node_attribute_name (hashable, optional, default='bias'):
                 Attribute name for linear biases. If the node does not have a
-                matching attribute then the bias defaults to 0.
+                matching attribute, the bias defaults to 0.
 
             edge_attribute_name (hashable, optional, default='bias'):
                 Attribute name for quadratic biases. If the edge does not have a
-                matching attribute then the bias defaults to 0.
+                matching attribute, the bias defaults to 0.
 
         Returns:
             Binary quadratic model.
@@ -1223,8 +1243,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         """
         warnings.warn('BinaryQuadraticModel.from_networkx_graph() is deprecated since '
-                      'dimod 0.10.0, '
-                      'use dimod.from_networkx_graph(bqm) instead.',
+                      'dimod 0.10.0. '
+                      'Use dimod.from_networkx_graph(bqm) instead.',
                       DeprecationWarning, stacklevel=2)
         from dimod.converters import from_networkx_graph  # avoid circular import
         return from_networkx_graph(G, vartype, node_attribute_name,
@@ -1234,7 +1254,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0,
                           interactions=None):
         warnings.warn('BQM.from_numpy_matrix(M) is deprecated since dimod '
-                      '0.10.0, use BQM(M, "BINARY") instead.',
+                      '0.10.0. Use BQM(M, "BINARY") instead.',
                       DeprecationWarning, stacklevel=2)
         bqm = cls(mat, Vartype.BINARY)
         bqm.offset = offset
@@ -1251,7 +1271,40 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @classmethod
     def from_numpy_vectors(cls, linear, quadratic, offset, vartype, *,
                            variable_order=None, dtype=np.float64):
-        """Create a binary quadratic model from NumPy vectors."""
+        """Create a binary quadratic model from NumPy vectors.
+
+        Args:
+            linear (NumPy vector):
+                Linear biases .
+
+            quadratic  (NumPy vector):
+                Quadratic biases.
+
+            offset (float):
+                Offset of the binary quadratic model.
+
+            vartype (:class:`.Vartype`/str/set):
+                Variable type for the binary quadratic model. Accepted input
+                values:
+
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+            variable_order:
+                Variable order for the binary quadratic model's labels.
+
+            dtype:
+                Data type for the returned binary quadratic model.
+
+        Returns:
+            A binary quadratic model.
+
+        Examples:
+            >>> import numpy as np
+            >>> linear = np.ones(10)
+            >>> quadratic = (np.arange(0, 10), np.arange(1, 11), -np.ones(10))
+            >>> bqm = dimod.BQM.from_numpy_vectors(linear, quadratic, 0, "BINARY")
+        """
         obj = super().__new__(cls)
         data_cls = cls._DATA_CLASSES[np.dtype(dtype)]
         obj.data = data_cls.from_numpy_vectors(
@@ -1265,9 +1318,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             Q: Coefficients of a quadratic unconstrained binary optimization
-                (QUBO) problem. Should be a dict of the form
-                ``{(u, v): bias, ...}`` where ``u``, ``v``, are binary-valued
-                variables and ``bias`` is their associated coefficient.
+                (QUBO) problem as a dict of form ``{(u, v): bias, ...}``, where
+                ``u``, ``v``, are binary-valued variables and ``bias`` is their
+                associated coefficient.
 
             offset (optional, default=0.0):
                 Constant offset applied to the model.
@@ -1352,12 +1405,24 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def is_almost_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias],
                         places: int = 7) -> bool:
-        """Test if the given binary quadratic model's biases are almost equal.
+        """Test for near eqaulity to all biases of a given binary quadratic model.
 
-        Test whether each bias in the binary quadratic model is approximately
-        equal to each bias in ``other``. Approximate equality is calculated by
-        passing the difference to :func:`round`. ``places`` determines the
-        number of decimal places.
+        Args:
+            other:
+                Binary quadratic model with which to compare biases.
+            places:
+                Number of decimal places to which the Python :func:`round`
+                function calculates approximate equality.
+
+        Examples:
+            >>> bqm1 = dimod.BinaryQuadraticModel({0: 0.1234},
+            ...                                   {(0, 1): -1.1234},0, "BINARY")
+            >>> bqm2 = dimod.BinaryQuadraticModel({0: 0.1232},
+            ...                                   {(0, 1): -1.1229},0, "BINARY")
+            >>> bqm1.is_almost_equal(bqm2, 4)
+            False
+            >>> bqm1.is_almost_equal(bqm2, 3)
+            True
         """
         if isinstance(other, Number):
             return not (self.num_variables or round(self.offset - other, places))
@@ -1384,7 +1449,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return False
 
     def is_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias]) -> bool:
-        """Return True if the given model has the same variables, vartypes and biases."""
+        """Return True if the given model has the same variables, vartypes and biases.
+
+        Args:
+            other:
+                Binary quadratic model to compare against.
+        """
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance

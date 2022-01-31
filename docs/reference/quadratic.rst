@@ -150,6 +150,7 @@ Methods
    ~BinaryQuadraticModel.contract_variables
    ~BinaryQuadraticModel.copy
    ~BinaryQuadraticModel.degree
+   ~BinaryQuadraticModel.degrees
    ~BinaryQuadraticModel.empty
    ~BinaryQuadraticModel.energies
    ~BinaryQuadraticModel.energy
