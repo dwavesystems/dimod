@@ -710,9 +710,11 @@ cdef class cyBQM_template(cyBQMBase):
 
         return v
 
-    cpdef Py_ssize_t resize(self, Py_ssize_t n) except -1:
+    cpdef Py_ssize_t resize(self, Py_ssize_t n) except? 0:
         if n < 0:
             raise ValueError("n must be non-negative")
+
+        cdef Py_ssize_t diff = n - self.cppbqm.num_variables()
 
         self.cppbqm.resize(n)
 
@@ -720,6 +722,8 @@ cdef class cyBQM_template(cyBQMBase):
             self.variables._append()
         while self.variables.size() > n:
             self.variables._pop()
+
+        return diff
 
     cpdef void scale(self, bias_type scalar):
         self.cppbqm.scale(scalar)
