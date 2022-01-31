@@ -141,6 +141,7 @@ Methods
    ~BinaryQuadraticModel.add_linear_equality_constraint
    ~BinaryQuadraticModel.add_linear_from
    ~BinaryQuadraticModel.add_linear_from_array
+   ~BinaryQuadraticModel.add_linear_inequality_constraint
    ~BinaryQuadraticModel.add_quadratic
    ~BinaryQuadraticModel.add_quadratic_from
    ~BinaryQuadraticModel.add_quadratic_from_dense

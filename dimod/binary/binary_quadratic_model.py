@@ -599,7 +599,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             v: Variable label.
             bias: Linear bias for the variable.
-
         """
         return self.data.add_linear
 
@@ -613,18 +612,20 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         to the binary quadratic model as a quadratic objective.
 
         Args:
-            terms (iterable/iterator):
-                An iterable of 2-tuples, (variable, bias), with each tuple
-                constituting a term in :math:`\sum_{i} a_{i} x_{i},
-                with :math:`i` being the length of the iterable.
+            terms:
+                Values of the :math:`\sum_{i} a_{i} x_{i}` term as an
+                :math:`i`--length iterable of 2-tuples, ``(variable, bias)``, with
+                each tuple constituting a term in the summation.
             lagrange_multiplier:
-                A weight or the penalty strength. This value is
-                multiplied by the entire constraint objective and added to the
-                binary quadratic model (it does not appear explicitly in the
-                equation above).
+                Weight or penalty strength. The linear constraint is multiplied
+                by this value (which does not appear explicitly in the above
+                equation) when added to the binary quadratic model.
             constant:
-                The constant value of the constraint, :math:`C`, in the equation
-                above.
+                Value of the constant term, :math:`C`, of the linear constraint.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel("BINARY")
+            >>> bqm.add_linear_equality_constraint([("x1", 5), ("x2", -2)], 10, -3)
 
         """
         try:
@@ -661,42 +662,39 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     ) -> Iterable[Tuple[Variable, int]]:
         """Add a linear inequality constraint as a quadratic objective.
 
-        Adds a linear inequality constraint of the form:
-
-        math:'lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub'
+        Adds a linear inequality constraint of the form,
+        :math:`lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub`,
         to the binary quadratic model as a quadratic objective.
+
         For constraints with fractional coefficients, multiply both sides of the
         inequality by an appropriate factor of ten to attain or approximate
         integer coefficients.
 
         Args:
-            terms (iterable/iterator):
-                An iterable of 2-tuples, (variable, bias), with each tuple
-                constituting a term in :math:`\sum_{i} a_{i} x_{i},
-                with :math:`i` being the length of the iterable.
+            terms:
+                Values of the :math:`\sum_{i} a_{i} x_{i}` term as an
+                :math:`i`--length iterable of 2-tuples, ``(variable, bias)``, with
+                each tuple constituting a term in the summation.
             lagrange_multiplier:
-                A weight or the penalty strength. This value is
-                multiplied by the entire constraint objective and added to the
-                binary quadratic model (it does not appear explicitly in the
-                equation above).
+                Weight or penalty strength. The linear constraint is multiplied
+                by this value (which does not appear explicitly in the above
+                equation) when added to the binary quadratic model.
             label:
-                Prefix used to label the slack variables used to create the new
+                Prefix for labels of any slack variables used in the added
                 objective.
             constant:
-                The constant value of the constraint.
+                Value of the constant term of the linear constraint.
             lb:
-                lower bound for the constraint.
+                Lower bound for the constraint.
             ub:
-                upper bound for the constraint.
+                Upper bound for the constraint.
             cross_zero:
                 When True, adds zero to the domain of constraint.
 
         Returns:
-            slack_terms:  An iterable of 2-tuples for the new slack variables
-             (variable, int), with each tuple constituting a term in
-             :math:`\sum_{i} b_{i} slack {i},
-             with :math:`i` being the length of the iterable and :math:`b` being
-             the coefficient for the slack variable.
+            slack_terms:  Values of :math:`\sum_{i} b_{i} slack_{i}` as an
+            :math:`i`--length iterable of 2-tuples, ``(slack variable, bias)``,
+            with each tuple constituting a term in the summation.
         """
 
         if isinstance(terms, Iterator):
@@ -760,10 +758,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             linear:
-                A collection of variables and their associated linear biases.
-                If a dict, should be of the form `{v: bias, ...}` where `v` is
-                a variable and `bias` is its associated linear bias.
-                Otherwise, should be an iterable of `(v, bias)` pairs.
+                Variables and their associated linear biases, as either a dict of
+                form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
+                where ``v`` is a variable and ``bias`` is its associated linear
+                bias.
 
         """
         if isinstance(linear, abc.Mapping):
@@ -782,7 +780,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             linear:
-                A one-dimensional `array_like`_ of linear biases.
+                Linear biases as a one-dimensional `array_like`_.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel("BINARY")
+            >>> bqm.add_linear_from_array([0.5, 0.2, -0.3, 0.25])
+            >>> print(bqm.linear)
+            {0: 0.5, 1: 0.2, 2: -0.3, 3: 0.25}
 
     .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -822,11 +826,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             quadratic:
-                Collection of interactions and their associated quadratic
-                bias. If a dict, should be of the form ``{(u, v): bias, ...}``
-                where ``u`` and ``v`` are variables in the model and ``bias`` is
-                the associated quadratic bias. Otherwise, should be an
-                iterable of ``(u, v, bias)`` triplets.
+                Interactions and their associated quadratic biases, as either a
+                dict of form ``{(u, v): bias, ...}`` or an iterable of
+                ``(u, v, bias)`` triplets, where ``u`` and ``v`` are variables in
+                the model and ``bias`` is the associated quadratic bias.
                 If a variable is not present in the model, it is added.
                 If the interaction already exists, the bias is added.
 
@@ -834,7 +837,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             ValueError:
                 If any self-loops are given. E.g. ``(u, u, bias)`` is not a valid
                 triplet.
-
         """
         add_quadratic = self.data.add_quadratic
 
@@ -853,7 +855,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Args:
             quadratic:
-                An square 2d `array_like`_ of quadratic biases.
+                Quadratic biases as a square 2d `array_like`_.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel("BINARY")
+            >>> bqm.add_quadratic_from_dense([[0, -0.4, 0.2],[0, 0, 0], [0, 0, 0]])
+            >>> print(bqm.quadratic)
+            {(1, 0): -0.4, (2, 0): 0.2}
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -872,9 +880,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Add a variable to a binary quadratic model.
 
         Args:
-            v: Variable label. If not provided, the next interger label
+            v: Variable label. If not provided, the next integer label
                 is used.
-
             bias: Linear bias for the added variable.
         """
         return self.data.add_variable
