@@ -168,7 +168,6 @@ Methods
    ~BinaryQuadraticModel.is_linear
    ~BinaryQuadraticModel.iter_linear
    ~BinaryQuadraticModel.iter_neighborhood
-   ~BinaryQuadraticModel.iter_quadratic
    ~BinaryQuadraticModel.get_linear
    ~BinaryQuadraticModel.get_quadratic
    ~BinaryQuadraticModel.normalize

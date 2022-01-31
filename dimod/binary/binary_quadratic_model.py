@@ -854,8 +854,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Add quadratic biases from a square 2d array-like.
 
         Args:
-            quadratic:
-                Quadratic biases as a square 2d `array_like`_.
+            quadratic: Quadratic biases as a square 2d `array_like`_.
 
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel("BINARY")
@@ -917,11 +916,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         corresponding interactions of ``u``.
 
         Args:
-            u (variable):
-                Variable in the binary quadratic model.
-
-            v (variable):
-                Variable in the binary quadratic model.
+            u (variable): Variable in the binary quadratic model.
+            v (variable): Variable in the binary quadratic model.
 
         """
         if u not in self.variables:
@@ -952,8 +948,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Return a copy.
 
         Args:
-            deep:
-                If True, returns a deep copy.
+            deep: If True, returns a deep copy.
         """
         if deep:
             return copy.deepcopy(self)
@@ -967,8 +962,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         The degree is the number of interactions that contain ``v``.
 
         Args:
-            v:
-                Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
         """
         return self.data.degree
 
@@ -1274,14 +1268,11 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Create a binary quadratic model from NumPy vectors.
 
         Args:
-            linear (NumPy vector):
-                Linear biases .
+            linear (NumPy vector): Linear biases.
 
-            quadratic  (NumPy vector):
-                Quadratic biases.
+            quadratic  (NumPy vector): Quadratic biases.
 
-            offset (float):
-                Offset of the binary quadratic model.
+            offset (float): Offset of the binary quadratic model.
 
             vartype (:class:`.Vartype`/str/set):
                 Variable type for the binary quadratic model. Accepted input
@@ -1293,8 +1284,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             variable_order:
                 Variable order for the binary quadratic model's labels.
 
-            dtype:
-                Data type for the returned binary quadratic model.
+            dtype: Data type for the returned binary quadratic model.
 
         Returns:
             A binary quadratic model.
@@ -1398,8 +1388,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return bqm
 
     def has_variable(self, v):
-        warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0, '
-                      'use v in bqm.variables instead.',
+        warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0. '
+                      'Use v in bqm.variables instead.',
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
 
@@ -1452,8 +1442,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """Return True if the given model has the same variables, vartypes and biases.
 
         Args:
-            other:
-                Binary quadratic model to compare against.
+            other: Binary quadratic model to compare against.
         """
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
@@ -1478,12 +1467,23 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
-        """Iterate over the neighbors and quadratic biases of a variable."""
+        """Iterate over the neighbors and quadratic biases of a variable.
+
+        Args:
+            v: Variable in the binary quadratic model.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({},
+            ...                 {(0, 1): -1, (1, 2): -2, (2, 3): -3},
+            ...                 "BINARY")
+            >>> list(bqm.iter_neighborhood(1))
+            [(0, -1.0), (2, -2.0)]
+        """
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
-        warnings.warn('bqm.iter_neighbors(v) is deprecated since dimod 0.10.0,'
-                      ' use (v for v, _ in bqm.iter_neighborhood(v)) instead.',
+        warnings.warn('bqm.iter_neighbors(v) is deprecated since dimod 0.10.0.'
+                      ' Use (v for v, _ in bqm.iter_neighborhood(v)) instead.',
                       DeprecationWarning, stacklevel=2)
         for v, _ in self.iter_neighborhood(u):
             yield v
@@ -1494,7 +1494,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             yield from self.data.iter_quadratic()
         else:
             warnings.warn('passing variables to bqm.iter_quadratic() is '
-                          'deprecated since dimod 0.10.0, use '
+                          'deprecated since dimod 0.10.0. Use '
                           'bqm.iter_neighborhood(v) instead.',
                           DeprecationWarning, stacklevel=2)
 
@@ -1524,19 +1524,28 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             This method is deprecated, use `iter(bqm.variables)` instead.
 
         """
-        warnings.warn('bqm.iter_variables() is deprecated since dimod 0.10.0, '
-                      'use iter(bqm.variables) instead.', stacklevel=2)
+        warnings.warn('bqm.iter_variables() is deprecated since dimod 0.10.0. '
+                      'Use iter(bqm.variables) instead.', stacklevel=2)
         return iter(self.variables)
 
     @forwarding_method
     def get_linear(self, v: Variable) -> Bias:
-        """Get the linear bias of a variable."""
+        """Get the linear bias of a variable.
+
+        Args:
+            v: Variable in the binary quadratic model.
+        """
         return self.data.get_linear
 
     @forwarding_method
     def get_quadratic(self, u: Variable, v: Variable,
                       default: Optional[Bias] = None):
-        """Get the quadratic bias of a pair of variables."""
+        """Get the quadratic bias of a pair of variables.
+
+        Args:
+            u:  Variable in the binary quadratic model.
+            v:  Variable in the binary quadratic model.
+        """
         return self.data.get_quadratic
 
     def normalize(self, bias_range=1, quadratic_range=None,
@@ -1770,8 +1779,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             :func:`~dimod.serialization.coo.dump` or
             :func:`~dimod.serialization.coo.dumps` instead.
         """
-        warnings.warn('bqm.to_coo() is deprecated since dimod 0.10.0, '
-                      'use dimod.serialization.coo.dump(bqm) or '
+        warnings.warn('bqm.to_coo() is deprecated since dimod 0.10.0. '
+                      'Use dimod.serialization.coo.dump(bqm) or '
                       'dimod.serialization.coo.dumps(bqm, fp) instead.',
                       DeprecationWarning, stacklevel=2)
 
