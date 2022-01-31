@@ -1556,9 +1556,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Normalizes the biases to fall in the provided range(s), and adjusts the
         offset appropriately.
 
-        If ``quadratic_range`` is provided, ``bias_range`` is used for the linear
-        biases and ``quadratic_range`` for the quadratic biases.
-
         Args:
             bias_range (number/pair):
                 Value/range that the biases of the BQM are scaled to fit
@@ -1566,14 +1563,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 used to fit the linear biases.
 
             quadratic_range (number/pair):
-                The BQM is scaled so that the quadratic biases fit within
-                this range.
+                Value/range that quadratic biases of the BQM are scaled to fit
+                within.
 
             ignored_variables (iterable, optional):
                 Biases associated with these variables are not scaled.
 
             ignored_interactions (iterable[tuple], optional):
-                Biases associated with these interactions, formatted as an iterable of 2-tuples, are not scaled.
+                Biases associated with these interactions, formatted as an
+                iterable of 2-tuples, are not scaled.
 
             ignore_offset (bool, default=False):
                 If True, the offset is not scaled.
@@ -1631,6 +1629,22 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def reduce_linear(self, function: Callable,
                       initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the linear biases.
+
+        See :func:`functools.reduce` for information on reducing an iterable to
+        a single value.
+
+        Args:
+            function: Function of two arguments to apply cumulatively to linear
+                biases.
+            initializer: A value to precede the linear biases.
+
+        Examples:
+            >>> from operator import add
+            >>> bqm = dimod.BinaryQuadraticModel({0: 1, 1: 2, 2: 3},
+            ...                                  {(0, 1): 5},
+            ...                                  0, "BINARY")
+            >>> bqm.reduce_linear(add)
+            6.0
         """
         return self.data.reduce_linear
 
@@ -1639,6 +1653,25 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                             initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the quadratic biases
         associated with a single variable.
+
+        See :func:`functools.reduce` for information on reducing an iterable to
+        a single value.
+
+        Args:
+            v:
+                Variable in the binary quadratic model.
+            function: Function of two arguments to apply cumulatively to quadratic
+                biases.
+            initializer:
+                A value to precede the linear biases.
+
+        Examples:
+            >>> from operator import add
+            >>> bqm = dimod.BinaryQuadraticModel({0: 10},
+            ...                                  {(0, 1): 1, (0, 2): 2, (1, 2): 5},
+            ...                                  0, "BINARY")
+            >>> bqm.reduce_neighborhood(0, add, 0.25)
+            3.25
         """
         return self.data.reduce_neighborhood
 
@@ -1647,11 +1680,43 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                          initializer: Optional[Bias] = None) -> Any:
         """Apply function of two arguments cumulatively to the quadratic
         biases.
+
+        See :func:`functools.reduce` for information on reducing an iterable to
+        a single value.
+
+        Args:
+            function: Function of two arguments to apply cumulatively to quadratic
+                biases.
+            initializer:
+                A value to precede the linear biases.
+
+        Examples:
+            >>> from operator import add
+            >>> bqm = dimod.BinaryQuadraticModel({0: 10},
+            ...                                  {(0, 1): 1, (0, 2): 2, (1, 2): 5},
+            ...                                  0, "BINARY")
+            >>> bqm.reduce_quadratic(add, 0.25)
+            8.25
         """
         return self.data.reduce_quadratic
 
     def relabel_variables(self, mapping, inplace=True):
-        """Relabel the variables of a binary quadratic model."""
+        """Relabel the variables of a binary quadratic model.
+
+        Args:
+            mapping: Mapping between current and new labels.
+            inplace: If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({0: 1, 1: 2, 2: 3},
+            ...                                  {(0, 1): 5},
+            ...                                  0, "BINARY")
+            >>> bqm_new = bqm.relabel_variables({0: "a", 1: "b", 2: "c"},
+            ...                                 inplace=False)
+            >>> bqm_new.variables
+            Variables(['a', 'b', 'c'])
+        """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
 
@@ -1659,7 +1724,19 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self
 
     def relabel_variables_as_integers(self, inplace=True):
-        """Relabel to consecutive integers the variables of a binary quadratic model."""
+        """Relabel to consecutive integers the variables of a binary quadratic
+        model.
+
+        Args:
+            inplace: If True, the binary quadratic model is updated in-place;
+                otherwise, a new binary quadratic model is returned.
+
+        Examples:
+            >>> bqm = dimod.BinaryQuadraticModel({"a": 1, "b": 2},{"ab": -1}, 0, "BINARY")
+            >>> _, mapping = bqm.relabel_variables_as_integers()
+            >>> print(bqm.quadratic)
+            {(1, 0): -1.0}
+        """
         if not inplace:
             return self.copy().relabel_variables_as_integers(inplace=True)
 
