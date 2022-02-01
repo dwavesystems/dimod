@@ -2423,8 +2423,12 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
-        Instance of :class:`.BinaryQuadraticModel`.
+        A :class:`.BinaryQuadraticModel` representing a binary variable.
 
+    Examples:
+        >>> x = dimod.Binary('x')
+        >>> x
+        BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'BINARY')
     """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
@@ -2439,8 +2443,13 @@ def Binaries(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Yields:
-        Binary quadratic models, each with a single binary variable.
+        A :class:`.BinaryQuadraticModel` for each binary variable.
 
+    Examples:
+        >>> x = dimod.Binaries(["x0", "x1"])
+        >>> list(x)
+        [BinaryQuadraticModel({'x0': 1.0}, {}, 0.0, 'BINARY'),
+         BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')]
     """
     if isinstance(labels, Iterable):
         yield from (Binary(v, dtype=dtype) for v in labels)
@@ -2454,12 +2463,18 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
     single binary variable.
 
     Args:
-        labels: Either an iterable of variable labels or a number. If a number
-            labels are generated using :class:`uuid.UUID`.
+        labels: Either an iterable of variable labels or the number of required
+            models. If a number, labels are generated using :class:`uuid.UUID`.
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Array of binary quadratic models, each with a single binary variable.
+        Array of :class:`.BinaryQuadraticModel`\ s, each representing a single
+        binary variable.
+
+    Examples:
+        >>> x = dimod.BinaryArray(["x0", "x1"])
+        >>> x[1]
+        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')
 
     """
     return _VariableArray(Binaries, labels, dtype)

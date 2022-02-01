@@ -39,8 +39,9 @@ as :func:`sum`\ [#]_\ :
 QuadraticModel({'i': 5.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
 .. note::
-  It's important to remember that, for example, :code:`x = dimod.Binary('x')` instantiates
-  a single-variable model, in this case a :class:`dimod.BinaryQuadraticModel` with
+  It's important to remember that, for example, :code:`x = dimod.Binary('x')`
+  instantiates a single-variable model, in this case a
+  :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` with
   variable label ``'x'``, not a free-floating variable labeled ``x``. Consequently,
   you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
   by adding the two models, :code:`x + bqm`. This adds the variable labeled ``'x'``
