@@ -907,7 +907,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         self.data.change_vartype(vartype)
         return self
 
-    def contract_variables(self, u, v):
+    def contract_variables(self, u: Variable, v: Variable):
         """Enforce u, v being the same variable in a binary quadratic model.
 
         The resulting variable is labeled ``u``. Values of interactions between
@@ -915,8 +915,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         corresponding interactions of ``u``.
 
         Args:
-            u (variable): Variable in the binary quadratic model.
-            v (variable): Variable in the binary quadratic model.
+            u: Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
 
         """
         if u not in self.variables:
@@ -1262,18 +1262,20 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return bqm
 
     @classmethod
-    def from_numpy_vectors(cls, linear, quadratic, offset, vartype, *,
-                           variable_order=None, dtype=np.float64):
+    def from_numpy_vectors(cls, linear: ArrayLike, quadratic: ArrayLike,
+                           offset: Number, vartype: Vartype, *,
+                           variable_order: Iterable = None,
+                           dtype: DTypeLike = np.float64) -> 'BinaryQuadraticModel':
         """Create a binary quadratic model from NumPy vectors.
 
         Args:
-            linear (NumPy vector): Linear biases.
+            linear: Linear biases.
 
-            quadratic  (NumPy vector): Quadratic biases.
+            quadratic: Quadratic biases.
 
-            offset (float): Offset of the binary quadratic model.
+            offset: Offset of the binary quadratic model.
 
-            vartype (:class:`.Vartype`/str/set):
+            vartype:
                 Variable type for the binary quadratic model. Accepted input
                 values:
 
@@ -1547,34 +1549,35 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.get_quadratic
 
-    def normalize(self, bias_range=1, quadratic_range=None,
-                  ignored_variables=None, ignored_interactions=None,
-                  ignore_offset=False):
+    def normalize(self, bias_range: Union[Number, Iterable] = 1,
+                  quadratic_range: Union[Number, Iterable] = None,
+                  ignored_variables: Optional(Iterable) = None,
+                  ignored_interactions: Optional(Iterable[Tuple]) = None,
+                  ignore_offset: bool = False):
         """Normalize the biases of a binary quadratic model.
 
         Normalizes the biases to fall in the provided range(s), and adjusts the
         offset appropriately.
 
         Args:
-            bias_range (number/pair):
+            bias_range:
                 Value/range that the biases of the BQM are scaled to fit
                 within. If ``quadratic_range`` is provided, this range is
                 used to fit the linear biases.
 
-            quadratic_range (number/pair):
+            quadratic_range:
                 Value/range that quadratic biases of the BQM are scaled to fit
                 within.
 
-            ignored_variables (iterable, optional):
+            ignored_variables:
                 Biases associated with these variables are not scaled.
 
-            ignored_interactions (iterable[tuple], optional):
+            ignored_interactions:
                 Biases associated with these interactions, formatted as an
                 iterable of 2-tuples, are not scaled.
 
-            ignore_offset (bool, default=False):
+            ignore_offset:
                 If True, the offset is not scaled.
-
         """
 
         def parse_range(r):
