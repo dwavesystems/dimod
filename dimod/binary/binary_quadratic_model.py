@@ -626,7 +626,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel("BINARY")
             >>> bqm.add_linear_equality_constraint([("x1", 5), ("x2", -2)], 10, -3)
-
+            >>> print(bqm)
+            BinaryQuadraticModel({'x1': -50.0, 'x2': 160.0}, {('x2', 'x1'): -200.0}, 90.0, 'BINARY')
         """
         try:
             self.data.add_linear_equality_constraint(
