@@ -33,6 +33,89 @@ enum Vartype {
     INTEGER  ///< Variables that are integer valued.
 };
 
+/// Compile-time limits by variable type.
+template <class Bias, Vartype vartype>
+class vartype_limits {};
+
+template <class Bias>
+class vartype_limits<Bias, Vartype::BINARY> {
+ public:
+    static constexpr Bias default_max() noexcept { return 1; }
+    static constexpr Bias default_min() noexcept { return 0; }
+    static constexpr Bias max() noexcept { return 1; }
+    static constexpr Bias min() noexcept { return 0; }
+};
+
+template <class Bias>
+class vartype_limits<Bias, Vartype::SPIN> {
+ public:
+    static constexpr Bias default_max() noexcept { return 1; }
+    static constexpr Bias default_min() noexcept { return -1; }
+    static constexpr Bias max() noexcept { return +1; }
+    static constexpr Bias min() noexcept { return -1; }
+};
+
+template <class Bias>
+class vartype_limits<Bias, Vartype::INTEGER> {
+ public:
+    static constexpr Bias default_max() noexcept { return max(); }
+    static constexpr Bias default_min() noexcept { return 0; }
+    static constexpr Bias max() noexcept {
+        return ((std::int64_t)1 << (std::numeric_limits<Bias>::digits)) - 1;
+    }
+    static constexpr Bias min() noexcept { return -max(); }
+};
+
+/// Runtime limits by variable type.
+template <class Bias>
+class vartype_info {
+ public:
+    static Bias default_max(Vartype vartype) {
+        if (vartype == Vartype::BINARY) {
+            return vartype_limits<Bias, Vartype::BINARY>::default_max();
+        } else if (vartype == Vartype::SPIN) {
+            return vartype_limits<Bias, Vartype::SPIN>::default_max();
+        } else if (vartype == Vartype::INTEGER) {
+            return vartype_limits<Bias, Vartype::INTEGER>::default_max();
+        } else {
+            throw std::logic_error("unknown vartype");
+        }
+    }
+    static Bias default_min(Vartype vartype) {
+        if (vartype == Vartype::BINARY) {
+            return vartype_limits<Bias, Vartype::BINARY>::default_min();
+        } else if (vartype == Vartype::SPIN) {
+            return vartype_limits<Bias, Vartype::SPIN>::default_min();
+        } else if (vartype == Vartype::INTEGER) {
+            return vartype_limits<Bias, Vartype::INTEGER>::default_min();
+        } else {
+            throw std::logic_error("unknown vartype");
+        }
+    }
+    static Bias max(Vartype vartype) {
+        if (vartype == Vartype::BINARY) {
+            return vartype_limits<Bias, Vartype::BINARY>::max();
+        } else if (vartype == Vartype::SPIN) {
+            return vartype_limits<Bias, Vartype::SPIN>::max();
+        } else if (vartype == Vartype::INTEGER) {
+            return vartype_limits<Bias, Vartype::INTEGER>::max();
+        } else {
+            throw std::logic_error("unknown vartype");
+        }
+    }
+    static Bias min(Vartype vartype) {
+        if (vartype == Vartype::BINARY) {
+            return vartype_limits<Bias, Vartype::BINARY>::min();
+        } else if (vartype == Vartype::SPIN) {
+            return vartype_limits<Bias, Vartype::SPIN>::min();
+        } else if (vartype == Vartype::INTEGER) {
+            return vartype_limits<Bias, Vartype::INTEGER>::min();
+        } else {
+            throw std::logic_error("unknown vartype");
+        }
+    }
+};
+
 /**
  * Used internally by QuadraticModelBase to sparsely encode the neighborhood of
  * a variable.
@@ -960,15 +1043,15 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     template <class B, class T>
     explicit QuadraticModel(const BinaryQuadraticModel<B, T>& bqm)
             : base_type(bqm) {
-        if (bqm.vartype() == Vartype::SPIN) {
-            this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
-                                  VarInfo<bias_type>(Vartype::SPIN, -1, 1));
-        } else if (bqm.vartype() == Vartype::BINARY) {
-            this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
-                                  VarInfo<bias_type>(Vartype::BINARY, 0, 1));
-        } else {
-            throw std::logic_error("unexpected vartype");
-        }
+        assert(bqm.vartype() == Vartype::BINARY ||
+               bqm.vartype() == Vartype::SPIN);
+
+        auto info = VarInfo<bias_type>(
+                bqm.vartype(), vartype_info<bias_type>::min(bqm.vartype()),
+                vartype_info<bias_type>::max(bqm.vartype()));
+
+        this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
+                              info);
     }
 
     void add_quadratic(index_type u, index_type v, bias_type bias) {
@@ -990,31 +1073,26 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     index_type add_variable(Vartype vartype) {
-        bias_type lb;
-        bias_type ub;
-        if (vartype == Vartype::BINARY) {
-            lb = 0;
-            ub = 1;
-        } else if (vartype == Vartype::SPIN) {
-            lb = -1;
-            ub = 1;
-        } else if (vartype == Vartype::INTEGER) {
-            ub = this->max_integer();
-            lb = 0;
-        } else {
-            throw std::logic_error("unknown vartype");
-        }
-        return this->add_variable(vartype, lb, ub);
+        return this->add_variable(
+                vartype, vartype_info<bias_type>::default_min(vartype),
+                vartype_info<bias_type>::default_max(vartype));
     }
 
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub) {
         assert(lb <= ub);
-        assert(lb >= -this->max_integer());
-        assert(ub <= this->max_integer());
+
+        assert(lb >= vartype_info<bias_type>::min(vartype));
+        assert(ub <= vartype_info<bias_type>::max(vartype));
+
+        assert(vartype != Vartype::BINARY || lb == 0);
+        assert(vartype != Vartype::BINARY || ub == 1);
+
+        assert(vartype != Vartype::SPIN || lb == -1);
+        assert(vartype != Vartype::SPIN || ub == +1);
 
         index_type v = this->num_variables();
 
-        varinfo_.emplace_back(vartype, lb, ub);
+        this->varinfo_.emplace_back(vartype, lb, ub);
         this->linear_biases_.resize(v + 1);
         this->adj_.resize(v + 1);
 
@@ -1073,8 +1151,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     const bias_type& lower_bound(index_type v) const { return varinfo_[v].lb; }
 
     constexpr bias_type max_integer() {
-        return ((std::int64_t)1 << (std::numeric_limits<bias_type>::digits)) -
-               1;
+        return vartype_limits<bias_type, Vartype::INTEGER>::max();
     }
 
     // Resize the model to contain `n` variables.
@@ -1116,14 +1193,16 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     void resize(index_type n, Vartype vartype, bias_type lb, bias_type ub) {
         assert(n > 0);
 
+        assert(lb <= ub);
+
+        assert(lb >= vartype_info<bias_type>::min(vartype));
+        assert(ub <= vartype_info<bias_type>::max(vartype));
+
         assert(vartype != Vartype::BINARY || lb == 0);
         assert(vartype != Vartype::BINARY || ub == 1);
 
         assert(vartype != Vartype::SPIN || lb == -1);
         assert(vartype != Vartype::SPIN || ub == +1);
-
-        assert(vartype != Vartype::INTEGER || lb >= -this->max_integer());
-        assert(vartype != Vartype::INTEGER || ub <= this->max_integer());
 
         this->varinfo_.resize(n, VarInfo<bias_type>(vartype, lb, ub));
         base_type::resize(n);
