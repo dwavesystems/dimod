@@ -885,7 +885,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.add_variable
 
-    def change_vartype(self, vartype: Vartype, inplace: bool =True) -> BinaryQuadraticModel:
+    def change_vartype(self, vartype: Optional[Vartype],
+                       inplace: Optional[bool] = True) -> 'BinaryQuadraticModel':
         """Return a binary quadratic model with the specified vartype.
 
         Args:
