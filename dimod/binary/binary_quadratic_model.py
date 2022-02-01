@@ -856,6 +856,12 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Args:
             quadratic: Quadratic biases as a square 2d `array_like`_.
 
+        Raises:
+            ValueError:
+                If any self-loops are given; i.e., the array contains a non-zero
+                value on its diagonal, which would set a bias for interaction
+                ``(u, u)``.
+
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel("BINARY")
             >>> bqm.add_quadratic_from_dense([[0, -0.4, 0.2],[0, 0, 0], [0, 0, 0]])
@@ -885,8 +891,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.add_variable
 
-    def change_vartype(self, vartype: Optional[Vartype],
-                       inplace: Optional[bool] = True) -> 'BinaryQuadraticModel':
+    def change_vartype(self, vartype: Vartype,
+                       inplace: bool = True) -> 'BinaryQuadraticModel':
         """Return a binary quadratic model with the specified vartype.
 
         Args:
@@ -1264,7 +1270,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_numpy_vectors(cls, linear: ArrayLike, quadratic: ArrayLike,
-                           offset: Number, vartype: Vartype, *,
+                           offset: float, vartype: Vartype, *,
                            variable_order: Iterable = None,
                            dtype: DTypeLike = np.float64) -> 'BinaryQuadraticModel':
         """Create a binary quadratic model from NumPy vectors.
