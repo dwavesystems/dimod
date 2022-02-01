@@ -1556,10 +1556,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.get_quadratic
 
-    def normalize(self, bias_range: Union[Number, Iterable] = 1,
-                  quadratic_range: Union[Number, Iterable] = None,
-                  ignored_variables: Optional(Iterable) = None,
-                  ignored_interactions: Optional(Iterable[Tuple]) = None,
+    def normalize(self, bias_range: Union[float, Tuple[float, float]] = 1,
+                  quadratic_range: Union[float, Tuple[float, float], None] = None,
+                  ignored_variables: Optional[Iterable[Variable]] = None,
+                  ignored_interactions: Optional[Iterable[Tuple[Variable, Variable]]] = None,
                   ignore_offset: bool = False):
         """Normalize the biases of a binary quadratic model.
 
