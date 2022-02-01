@@ -685,6 +685,39 @@ class TestToPolyString(unittest.TestCase):
         self.assertEqual((-i*j - x).to_polystring(), '-x - i*j')
 
 
+class TestVartypeInfo(unittest.TestCase):
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_binary(self, dtype):
+        info = QM(dtype=dtype).vartype_info(dimod.BINARY)
+        self.assertEqual(info.default_min, 0)
+        self.assertEqual(info.default_max, 1)
+        self.assertEqual(info.min, 0)
+        self.assertEqual(info.max, 1)
+
+    def test_integer(self):
+        with self.subTest('float32'):
+            info = QM(dtype=np.float32).vartype_info(dimod.INTEGER)
+            self.assertEqual(info.default_min, 0)
+            self.assertEqual(info.default_max, 16777215)
+            self.assertEqual(info.min, -16777215)
+            self.assertEqual(info.max, 16777215)
+
+        with self.subTest('float64'):
+            info = QM(dtype=np.float64).vartype_info(dimod.INTEGER)
+            self.assertEqual(info.default_min, 0)
+            self.assertEqual(info.default_max, 9007199254740991)
+            self.assertEqual(info.min, -9007199254740991)
+            self.assertEqual(info.max, 9007199254740991)
+
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_spin(self, dtype):
+        info = QM(dtype=dtype).vartype_info(dimod.SPIN)
+        self.assertEqual(info.default_min, -1)
+        self.assertEqual(info.default_max, 1)
+        self.assertEqual(info.min, -1)
+        self.assertEqual(info.max, 1)
+
+
 class TestViews(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
