@@ -1790,12 +1790,18 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 the current number of variables, variables are removed; if larger,
                 variables are added.
 
+        Returns:
+            int: Difference between the number of variables in the resized model
+                and previous model.
+
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel({"a": 1, "b": 2}, {}, 0, "BINARY")
-            >>> bqm.resize(4)                   # doctest:+SKIP
+            >>> bqm.resize(4)
+            2
             >>> bqm.variables
             Variables(['a', 'b', 2, 3])
-            >>> bqm.resize(3)                   # doctest:+SKIP
+            >>> bqm.resize(3)
+            -1
             >>> bqm.variables
             Variables(['a', 'b', 2])
 
