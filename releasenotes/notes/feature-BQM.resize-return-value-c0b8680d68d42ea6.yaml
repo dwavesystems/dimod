@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    ``BinaryQuadraticModel.resize()`` now returns the difference in the number
+    of variables between the current and previous binary quadratic model.
+    Previously it always returned 0.
+    See `#1091 <https://github.com/dwavesystems/dimod/issues/1091>`_

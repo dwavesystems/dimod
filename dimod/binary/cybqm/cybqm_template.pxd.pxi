@@ -44,5 +44,5 @@ cdef class cyBQM_template(cyBQMBase):
     cpdef bint is_linear(self)
     cpdef Py_ssize_t num_interactions(self)
     cpdef Py_ssize_t num_variables(self)
-    cpdef Py_ssize_t resize(self, Py_ssize_t) except -1
+    cpdef Py_ssize_t resize(self, Py_ssize_t) except? 0
     cpdef void scale(self, bias_type)

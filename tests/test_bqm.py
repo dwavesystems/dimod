@@ -2165,6 +2165,41 @@ class TestRelabel(unittest.TestCase):
             self.assertAlmostEqual(newlinear[v], bqm.linear[v])
 
 
+class TestResize(unittest.TestCase):
+    def test_do_nothing(self):
+        bqm = dimod.BQM('BINARY')
+        bqm.add_variables_from([('a', 0), ('b', 0), ('c', 0)])
+        bqm.set_quadratic('b', 'c', 1)
+
+        self.assertEqual(bqm.resize(3), 0)
+        self.assertEqual(bqm.num_variables, 3)
+        self.assertEqual(bqm.num_interactions, 1)
+
+    def test_exception(self):
+        bqm = dimod.BinaryQuadraticModel('BINARY')
+
+        with self.assertRaises(ValueError):
+            bqm.resize(-100)
+
+    def test_grow(self):
+        bqm = dimod.BinaryQuadraticModel('BINARY')
+
+        self.assertEqual(bqm.resize(10), 10)
+        self.assertEqual(bqm.num_variables, 10)
+        self.assertEqual(bqm.num_interactions, 0)
+        for v, bias in bqm.iter_linear():
+            self.assertEqual(bias, 0)
+
+    def test_shrink(self):
+        bqm = dimod.BQM('BINARY')
+        bqm.add_variables_from([('a', 0), ('b', 0), ('c', 0)])
+        bqm.set_quadratic('b', 'c', 1)
+
+        self.assertEqual(bqm.resize(2), -1)
+        self.assertEqual(bqm.num_variables, 2)
+        self.assertEqual(bqm.num_interactions, 0)
+
+
 class TestScale(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_exclusions(self, name, BQM):
