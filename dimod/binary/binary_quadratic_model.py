@@ -662,9 +662,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     ) -> Iterable[Tuple[Variable, int]]:
         """Add a linear inequality constraint as a quadratic objective.
 
-        Adds a linear inequality constraint of the form,
-        :math:`lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub`,
-        to the binary quadratic model as a quadratic objective.
+        The linear inequality constraint is of the form:
+        :math:`lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub`.
 
         For constraints with fractional coefficients, multiply both sides of the
         inequality by an appropriate factor of ten to attain or approximate
@@ -859,8 +858,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel("BINARY")
             >>> bqm.add_quadratic_from_dense([[0, -0.4, 0.2],[0, 0, 0], [0, 0, 0]])
-            >>> print(bqm.quadratic)
-            {(1, 0): -0.4, (2, 0): 0.2}
+            >>> print(bqm)
+            BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0}, {(1, 0): -0.4, (2, 0): 0.2}, 0.0, 'BINARY')
 
         .. _`array_like`:  https://numpy.org/doc/stable/user/basics.creation.html
 
@@ -1035,7 +1034,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         Examples:
             >>> bqm = dimod.BinaryQuadraticModel({}, {("x0", "x1"): -1}, "BINARY")
-            >>> bqm.energy(([1, 1], ["x0", "x1"]))
+            >>> bqm.energy({"x0": 1, "x1": 1})
             -1.0
 
             See also the example under :meth:`energies`.
