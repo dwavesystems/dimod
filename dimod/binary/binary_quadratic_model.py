@@ -2475,7 +2475,6 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
         >>> x = dimod.BinaryArray(["x0", "x1"])
         >>> x[1]
         BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')
-
     """
     return _VariableArray(Binaries, labels, dtype)
 
@@ -2492,8 +2491,12 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
-        Instance of :class:`.BinaryQuadraticModel`.
+        A :class:`.BinaryQuadraticModel` representing a spin-valued variable.
 
+    Examples:
+        >>> x = dimod.Spin('x')
+        >>> x
+        BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'SPIN')
     """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
@@ -2508,8 +2511,13 @@ def Spins(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Yields:
-        Binary quadratic models, each with a single spin variable.
+        A :class:`.BinaryQuadraticModel` for each spin-valued binary variable.
 
+    Examples:
+        >>> x = dimod.Spins(["x0", "x1"])
+        >>> list(x)
+        [BinaryQuadraticModel({'x0': 1.0}, {}, 0.0, 'SPIN'),
+         BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')]
     """
     if isinstance(labels, Iterable):
         yield from (Spin(v, dtype=dtype) for v in labels)
@@ -2523,13 +2531,18 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
     single spin variable.
 
     Args:
-        labels: Either an iterable of variable labels or a number. If a number
-            labels are generated using :class:`uuid.UUID`.
+        labels: Either an iterable of variable labels or the number of required
+            models. If a number, labels are generated using :class:`uuid.UUID`.
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Array of binary quadratic models, each with a single spin variable.
+        Array of :class:`.BinaryQuadraticModel`\ s, each representing a single
+        spin-valued binary variable.
 
+    Examples:
+        >>> x = dimod.SpinArray(["x0", "x1"])
+        >>> x[1]
+        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')
     """
     return _VariableArray(Spins, labels, dtype)
 
