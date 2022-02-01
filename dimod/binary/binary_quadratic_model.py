@@ -2447,9 +2447,8 @@ def Binaries(labels: Union[int, Iterable[Variable]],
 
     Examples:
         >>> x = dimod.Binaries(["x0", "x1"])
-        >>> list(x)
-        [BinaryQuadraticModel({'x0': 1.0}, {}, 0.0, 'BINARY'),
-         BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')]
+        >>> list(x)[1]
+        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')
     """
     if isinstance(labels, Iterable):
         yield from (Binary(v, dtype=dtype) for v in labels)
@@ -2491,7 +2490,7 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
-        A :class:`.BinaryQuadraticModel` representing a spin-valued variable.
+        A :class:`.BinaryQuadraticModel` representing a spin-valued binary variable.
 
     Examples:
         >>> x = dimod.Spin('x')
@@ -2515,9 +2514,8 @@ def Spins(labels: Union[int, Iterable[Variable]],
 
     Examples:
         >>> x = dimod.Spins(["x0", "x1"])
-        >>> list(x)
-        [BinaryQuadraticModel({'x0': 1.0}, {}, 0.0, 'SPIN'),
-         BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')]
+        >>> list(x)[1]
+        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')
     """
     if isinstance(labels, Iterable):
         yield from (Spin(v, dtype=dtype) for v in labels)
