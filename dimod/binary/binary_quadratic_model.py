@@ -885,23 +885,22 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.add_variable
 
-    def change_vartype(self, vartype, inplace=True):
+    def change_vartype(self, vartype: Vartype, inplace: bool =True) -> BinaryQuadraticModel:
         """Return a binary quadratic model with the specified vartype.
 
         Args:
-            vartype (:class:`.Vartype`/str/set, optional):
+            vartype:
                 Variable type for the changed model. Accepted input values:
 
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-            inplace (bool, optional, default=True):
+            inplace:
                 If True, the binary quadratic model is updated in-place;
                 otherwise, a new binary quadratic model is returned.
 
         Returns:
-            :obj:`.BQM`: A binary quadratic model with the specified
-            vartype.
+            A binary quadratic model with the specified vartype.
         """
         if not inplace:
             return self.copy().change_vartype(vartype, inplace=True)
