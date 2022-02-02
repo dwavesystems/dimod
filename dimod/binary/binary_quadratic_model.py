@@ -2471,9 +2471,25 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
         binary variable.
 
     Examples:
-        >>> x = dimod.BinaryArray(["x0", "x1"])
-        >>> x[1]
-        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')
+        This example generates the QUBO, :math:`{x}^{T} {Q}{x}`, for a Boolean
+        AND gate from the QUBO coefficients matrix,
+
+        .. math::
+
+             Q = \\begin{bmatrix}
+                    0 & 1 & -2 \\\\
+                    0 & 0 & -2 \\\\
+                    0 & 0 & 3
+                 \\end{bmatrix},
+
+        derived in the :std:doc:`Ocean documentation's <oceandocs:index>`
+        :ref:`AND example <oceandocs:and>`.
+
+        >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
+        >>> x = dimod.BinaryArray(["in1", "in2", "out"])
+        >>> bqm = x.dot(Q).dot(x)
+        >>> print(bqm.to_polystring())
+        3*out + in1*in2 - 2*in1*out - 2*in2*out
     """
     return _VariableArray(Binaries, labels, dtype)
 
