@@ -2431,7 +2431,7 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
         :math:`\{0, 1\}`. Remember that for such variables, :math:`x^2 = x`.
 
         >>> x = dimod.Binary('x')
-        >>> bqm = x * x + 3 * x - 1.5
+        >>> bqm = x*x + 3*x - 1.5
         >>> print(bqm.to_polystring())
         -1.5 + 4*x
     """
@@ -2459,7 +2459,7 @@ def Binaries(labels: Union[int, Iterable[Variable]],
         solutions are for assignments of the variables where :math:`z = \overline{x}`.
 
         >>> x, y = dimod.Binaries(["x", "y"])
-        >>> bqm = 2 * x * y - x - y
+        >>> bqm = 2*x*y - x - y
         >>> print(bqm.to_polystring())
         -x - y + 2*x*y
         >>> print(dimod.ExactSolver().sample(bqm).lowest())
@@ -2527,9 +2527,14 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
         A :class:`.BinaryQuadraticModel` representing a spin-valued binary variable.
 
     Examples:
-        >>> x = dimod.Spin('x')
-        >>> x
-        BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'SPIN')
+        This example generates a BQM to represent the polynomial,
+        :math:`s^2 + 3s -1.5`, where :math:`s` is a binary variable with spin values
+        :math:`\{-1, 1\}`. Remember that for such variables, :math:`s^2 = 1`.
+
+        >>> s = dimod.Spin('s')
+        >>> bqm = s*s + 3*s - 1.5
+        >>> print(bqm.to_polystring())
+        -0.5 + 3*s
     """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
@@ -2547,9 +2552,23 @@ def Spins(labels: Union[int, Iterable[Variable]],
         A :class:`.BinaryQuadraticModel` for each spin-valued binary variable.
 
     Examples:
-        >>> x = dimod.Spins(["x0", "x1"])
-        >>> list(x)[1]
-        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')
+        This example generates a BQM that represents the constraint :math:`s_1 = s_2`
+        as a penalty model, :math:`-\\frac{1}{2}s_1s_2`, described in the
+        :std:doc:`system documentation's <sysdocs_gettingstarted:index>`
+        :std:doc:`sysdocs_gettingstarted:doc_getting_started` guide.
+        The output of the brute-force solver,
+        :class:`~dimod.reference.samplers.ExactSolver`, shows that best
+        solutions are for eqaul assignments of the variables' values.
+
+        >>> s1, s2 = dimod.Spins(["s1", "s2"])
+        >>> bqm = -0.5*s1*s2
+        >>> print(bqm.to_polystring())
+        -0.5*s1*s2
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          s1 s2 energy num_oc.
+        0 -1 -1   -0.5       1
+        1 +1 +1   -0.5       1
+        ['SPIN', 2 rows, 2 samples, 2 variables]
     """
     if isinstance(labels, Iterable):
         yield from (Spin(v, dtype=dtype) for v in labels)
