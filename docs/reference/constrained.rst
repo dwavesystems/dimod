@@ -4,8 +4,8 @@
 Quadratic Models: Constrained
 =============================
 
-Class
-=====
+CQM Class
+=========
 
 .. currentmodule:: dimod
 
@@ -62,6 +62,13 @@ Methods
    ConstrainedQuadraticModel.violations
 
 
+Sense Class
+===========
+
+.. currentmodule:: dimod.sym
+
+.. autoclass:: Sense
+
 Functions
 =========
 
@@ -73,3 +80,5 @@ Converting constrained quadratic models to other model types:
    :toctree: generated/
 
    cqm_to_bqm
+
+.. currentmodule:: dimod.sym

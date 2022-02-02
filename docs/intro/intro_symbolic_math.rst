@@ -5,7 +5,7 @@ Symbolic Math
 =============
 
 dimod enables easy incorporation of binary and integer variables as
-:ref:`single-variable models <symbolic_math_generators>`. For example, you can
+:ref:`single-variable models <generators_symbolic_math>`. For example, you can
 represent such binary variables as follows:
 
 >>> from dimod import Binary, Spin
