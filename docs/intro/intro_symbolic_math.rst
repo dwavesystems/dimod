@@ -21,13 +21,21 @@ Similarly for integers:
 >>> i
 QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
-The construction of such variables as either BQMs or QMS depends on the type of
-variable:
+The construction of such variables as either a
+:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` or a
+:class:`~dimod.quadratic.quadratic_model.QuadraticModel` depends on the type of
+variable. Models with more than one type of variable, for example
+:func:`~dimod.binary.Binary` and :func:`~dimod.binary.Spin`, or one of those
+with :func:`~dimod.quadratic.Integer`, are of the
+:class:`~dimod.quadratic.quadratic_model.QuadraticModel` class.
 
->>> x + s
-QuadraticModel({'x': 1.0, 's': 1.0}, {}, 0.0, {'x': 'BINARY', 's': 'SPIN'}, dtype='float64')
->>> 3*i - x
-QuadraticModel({'i': 3.0, 'x': -1.0}, {}, -0.0, {'i': 'INTEGER', 'x': 'BINARY'}, dtype='float64')
+>>> z = x + s
+>>> print("Type of {} is {}".format(z.to_polystring(), type(z)))
+Type of x + s is <class 'dimod.quadratic.quadratic_model.QuadraticModel'>
+>>> for variable in z.variables:
+...     print("{} is of type {}.".format(variable, z.vartype(variable)))
+x is of type Vartype.BINARY.
+s is of type Vartype.SPIN.
 
 You can express mathematical functions on these variables using Python functions such
 as :func:`sum`\ [#]_\ :
@@ -35,8 +43,8 @@ as :func:`sum`\ [#]_\ :
 .. [#]
   See the `Example: Adding Models`_ example for a performant summing function.
 
->>> sum([3*i, 2*i])
-QuadraticModel({'i': 5.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+>>> sum([3 * i, 2 * i]).to_polystring()
+'5*i'
 
 .. note::
   It's important to remember that, for example, :code:`x = dimod.Binary('x')`
@@ -57,6 +65,8 @@ This example creates the BQM :math:`x + 2y -xy`:
 >>> x = Binary('x')
 >>> y = Binary('y')
 >>> bqm = x + 2*y - x*y
+>>> print(bqm.to_polystring())
+x + 2*y - x*y
 
 Example: CQM
 ============
@@ -76,10 +86,14 @@ and constraints (:math:`xj <= 3` and :math:`i + j >= 1`) in a simple CQM.
 Example: Adding Models
 ======================
 
-This example uses the performant :func:`~dimod.quicksum` to add multiple models.
+This example uses the performant :func:`~dimod.binary.quicksum` on
+:func:`~dimod.binary.BinaryArray` to add multiple models.
 
->>> import random
->>> from dimod import Binary, quicksum
->>> vars = ['x'+str(i) for i in range(5)]
->>> models = [Binary(var, bias=random.randint(0,5)) for var in vars]
+>>> import numpy as np
+>>> from dimod import BinaryArray, quicksum
+...
+>>> num_vars = 10; max_bias = 5
+>>> var_labels = range(num_vars)
+...
+>>> models = BinaryArray(var_labels)*np.random.randint(0, max_bias, size=num_vars)
 >>> x = quicksum(models)
