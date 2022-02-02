@@ -2426,9 +2426,14 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
         A :class:`.BinaryQuadraticModel` representing a binary variable.
 
     Examples:
+        This example generates a BQM to represent the polynomial,
+        :math:`x^2 + 3x -1.5`, where :math:`x` is a binary variable with values
+        :math:`\{0, 1\}`. Remember that for such variables, :math:`x^2 = x`.
+
         >>> x = dimod.Binary('x')
-        >>> x
-        BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'BINARY')
+        >>> bqm = x * x + 3 * x - 1.5
+        >>> print(bqm.to_polystring())
+        -1.5 + 4*x
     """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
@@ -2446,9 +2451,22 @@ def Binaries(labels: Union[int, Iterable[Variable]],
         A :class:`.BinaryQuadraticModel` for each binary variable.
 
     Examples:
-        >>> x = dimod.Binaries(["x0", "x1"])
-        >>> list(x)[1]
-        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'BINARY')
+        This example generates a BQM that represents a Boolean NOT gate as a
+        penalty model, :math:`2xy - x - y`, described in
+        :std:doc:`Ocean documentation's <oceandocs:index>`
+        :ref:`NOT example <oceandocs:not>`. The output of the brute-force solver,
+        :class:`~dimod.reference.samplers.ExactSolver`, shows that best
+        solutions are for assignments of the variables where :math:`z = \overline{x}`.
+
+        >>> x, y = dimod.Binaries(["x", "y"])
+        >>> bqm = 2 * x * y - x - y
+        >>> print(bqm.to_polystring())
+        -x - y + 2*x*y
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+           x  y energy num_oc.
+        0  1  0   -1.0       1
+        1  0  1   -1.0       1
+        ['BINARY', 2 rows, 2 samples, 2 variables]
     """
     if isinstance(labels, Iterable):
         yield from (Binary(v, dtype=dtype) for v in labels)

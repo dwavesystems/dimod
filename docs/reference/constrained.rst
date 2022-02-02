@@ -80,5 +80,3 @@ Converting constrained quadratic models to other model types:
    :toctree: generated/
 
    cqm_to_bqm
-
-.. currentmodule:: dimod.sym
