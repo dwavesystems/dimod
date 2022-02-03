@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import annotations   
+from __future__ import annotations
 
 import collections.abc as abc
 import copy
@@ -1415,7 +1415,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def is_almost_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias],
                         places: int = 7) -> bool:
-        """Test for near eqaulity to all biases of a given binary quadratic model.
+        """Test for near equality to all biases of a given binary quadratic model.
 
         Args:
             other:

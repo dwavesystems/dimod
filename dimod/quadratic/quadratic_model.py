@@ -713,7 +713,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @classmethod
     def from_file(cls, fp: Union[BinaryIO, ByteString]):
-        """Construct a QM from a file-like object.
+        """Construct a quadratic model from a file-like object.
 
         The inverse of :meth:`~QuadraticModel.to_file`.
         """
@@ -757,23 +757,46 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def get_linear(self, v: Variable) -> Bias:
-        """Get the linear bias of the specified variable."""
+        """Get the linear bias of the specified variable.
+
+        Args:
+            v: Variable in the quadratic model.
+        """
         return self.data.get_linear
 
     @forwarding_method
     def get_quadratic(self, u: Variable, v: Variable,
                       default: Optional[Bias] = None) -> Bias:
-        """Get the quadratic bias of the specified pair of variables."""
+        """Get the quadratic bias of the specified pair of variables.
+
+        Args:
+            u: Variable in the quadratic model.
+            v: Variable in the quadratic model.
+            default: Value to return if variables ``u`` and ``v`` have no interaction.
+        """
         return self.data.get_quadratic
 
     def is_almost_equal(self, other: Union['QuadraticModel', 'BinaryQuadraticModel', Bias],
                         places: int = 7) -> bool:
-        """Test if the given quadratic model's biases are almost equal.
+        """Test for near equality to all biases of a given quadratic model.
 
-        Test whether each bias in the quadratic model is approximately
-        equal to each bias in ``other``. Approximate equality is calculated by
-        passing the difference to :func:`round`. ``places`` determines the
-        number of decimal places.
+        Args:
+            other:
+                Quadratic model with which to compare biases.
+            places:
+                Number of decimal places to which the Python :func:`round`
+                function calculates approximate equality.
+
+        Examples:
+            >>> from dimod import QuadraticModel
+            >>> qm1 = QuadraticModel({'x': 0.0, 'i': 0.1234}, {('i', 'x'): -1.1234},
+            ...                      0.0, {'x': 'BINARY', 'i': 'INTEGER'})
+            >>> qm2 = QuadraticModel({'x': 0.0, 'i': 0.1232}, {('i', 'x'): -1.1229},
+            ...                      0.0, {'x': 'BINARY', 'i': 'INTEGER'})
+            >>> qm1.is_almost_equal(qm2, 4)
+            False
+            >>> qm1.is_almost_equal(qm2, 3)
+            True
         """
         if isinstance(other, Number):
             return not (self.num_variables or round(self.offset - other, places))
@@ -800,7 +823,11 @@ class QuadraticModel(QuadraticViewsMixin):
             return False
 
     def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
-        """Return True if the given model has the same variables, vartypes and biases."""
+        """Return True if the given model has the same variables, vartypes and biases.
+
+        Args:
+            other: Quadratic model to compare against.
+        """
         if isinstance(other, Number):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
@@ -865,15 +892,29 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def lower_bound(self, v: Variable) -> Bias:
-        """Return the lower bound on the specified variable."""
+        """Return the lower bound on the specified variable.
+
+        Args:
+            v: Variable in the quadratic model.
+        """
         return self.data.lower_bound
 
     def set_lower_bound(self, v: Variable, lb: int):
-        """Set the lower bound for an integer variable."""
+        """Set the lower bound for an integer variable.
+
+        Args:
+            v: Variable in the quadratic model.
+            lb: Lower bound to set for variable ``v``.
+        """
         return self.data.set_lower_bound(v, lb)
 
     def set_upper_bound(self, v: Variable, ub: int):
-        """Set the upper bound for an integer variable."""
+        """Set the upper bound for an integer variable.
+
+        Args:
+            v: Variable in the quadratic model.
+            ub: Upper bound to set for variable ``v``.
+        """
         return self.data.set_upper_bound(v, ub)
 
     @forwarding_method
