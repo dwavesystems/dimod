@@ -23,3 +23,4 @@ The following sections give an orientation to dimod with usage examples:
   intro_nonquadratic
   intro_samplers
   intro_samples
+  intro_symbolic_math

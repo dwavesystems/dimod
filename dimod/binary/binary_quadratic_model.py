@@ -2423,8 +2423,17 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
-        Instance of :class:`.BinaryQuadraticModel`.
+        A :class:`.BinaryQuadraticModel` representing a binary variable.
 
+    Examples:
+        This example generates a BQM to represent the polynomial,
+        :math:3x -1.5`, where :math:`x` is a binary variable with values
+        :math:`\{0, 1\}`.
+
+        >>> x = dimod.Binary('x')
+        >>> bqm = 3*x - 1.5
+        >>> print(bqm.to_polystring())
+        -1.5 + 3*x
     """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
@@ -2439,8 +2448,25 @@ def Binaries(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Yields:
-        Binary quadratic models, each with a single binary variable.
+        A :class:`.BinaryQuadraticModel` for each binary variable.
 
+    Examples:
+        This example generates a BQM that represents a Boolean NOT gate as a
+        penalty model, :math:`2xy - x - y`, described in
+        :std:doc:`Ocean documentation's <oceandocs:index>`
+        :ref:`NOT example <oceandocs:not>`. The output of the brute-force solver,
+        :class:`~dimod.reference.samplers.ExactSolver`, shows that best
+        solutions are for assignments of the variables where :math:`z = \overline{x}`.
+
+        >>> x, y = dimod.Binaries(["x", "y"])
+        >>> bqm = 2*x*y - x - y
+        >>> print(bqm.to_polystring())
+        -x - y + 2*x*y
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+           x  y energy num_oc.
+        0  1  0   -1.0       1
+        1  0  1   -1.0       1
+        ['BINARY', 2 rows, 2 samples, 2 variables]
     """
     if isinstance(labels, Iterable):
         yield from (Binary(v, dtype=dtype) for v in labels)
@@ -2454,13 +2480,34 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
     single binary variable.
 
     Args:
-        labels: Either an iterable of variable labels or a number. If a number
-            labels are generated using :class:`uuid.UUID`.
+        labels: Either an iterable of variable labels or the number of required
+            models. If a number, labels are generated using :class:`uuid.UUID`.
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Array of binary quadratic models, each with a single binary variable.
+        Array of :class:`.BinaryQuadraticModel`\ s, each representing a single
+        binary variable.
 
+    Examples:
+        This example generates the QUBO, :math:`{x}^{T} {Q}{x}`, for a Boolean
+        AND gate from the QUBO coefficients matrix,
+
+        .. math::
+
+             Q = \\begin{bmatrix}
+                    0 & 1 & -2 \\\\
+                    0 & 0 & -2 \\\\
+                    0 & 0 & 3
+                 \\end{bmatrix},
+
+        derived in the :std:doc:`Ocean documentation's <oceandocs:index>`
+        :ref:`AND example <oceandocs:and>`.
+
+        >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
+        >>> x = dimod.BinaryArray(["in1", "in2", "out"])
+        >>> bqm = x.dot(Q).dot(x)
+        >>> print(bqm.to_polystring())
+        3*out + in1*in2 - 2*in1*out - 2*in2*out
     """
     return _VariableArray(Binaries, labels, dtype)
 
@@ -2477,8 +2524,17 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
         dtype: Data type for the returned binary quadratic model.
 
     Returns:
-        Instance of :class:`.BinaryQuadraticModel`.
+        A :class:`.BinaryQuadraticModel` representing a spin-valued binary variable.
 
+    Examples:
+        This example generates a BQM to represent the polynomial,
+        :math:`3s - 1.5`, where :math:`s` is a binary variable with spin values
+        :math:`\{-1, 1\}`.
+
+        >>> s = dimod.Spin('s')
+        >>> bqm = 3*s - 1.5
+        >>> print(bqm.to_polystring())
+        -1.5 + 3*s
     """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
@@ -2493,8 +2549,26 @@ def Spins(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned binary quadratic models.
 
     Yields:
-        Binary quadratic models, each with a single spin variable.
+        A :class:`.BinaryQuadraticModel` for each spin-valued binary variable.
 
+    Examples:
+        This example generates a BQM that represents the constraint :math:`s_1 = s_2`
+        as a penalty model, :math:`-\\frac{1}{2}s_1s_2`, described in the
+        :std:doc:`system documentation's <sysdocs_gettingstarted:index>`
+        :std:doc:`sysdocs_gettingstarted:doc_getting_started` guide.
+        The output of the brute-force solver,
+        :class:`~dimod.reference.samplers.ExactSolver`, shows that best
+        solutions are for eqaul assignments of the variables' values.
+
+        >>> s1, s2 = dimod.Spins(["s1", "s2"])
+        >>> bqm = -0.5*s1*s2
+        >>> print(bqm.to_polystring())
+        -0.5*s1*s2
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          s1 s2 energy num_oc.
+        0 -1 -1   -0.5       1
+        1 +1 +1   -0.5       1
+        ['SPIN', 2 rows, 2 samples, 2 variables]
     """
     if isinstance(labels, Iterable):
         yield from (Spin(v, dtype=dtype) for v in labels)
@@ -2508,13 +2582,24 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
     single spin variable.
 
     Args:
-        labels: Either an iterable of variable labels or a number. If a number
-            labels are generated using :class:`uuid.UUID`.
+        labels: Either an iterable of variable labels or the number of required
+            models. If a number, labels are generated using :class:`uuid.UUID`.
         dtype: Data type for the returned binary quadratic models.
 
     Returns:
-        Array of binary quadratic models, each with a single spin variable.
+        Array of :class:`.BinaryQuadraticModel`\ s, each representing a single
+        spin-valued binary variable.
 
+    Examples:
+        This example creates a BQM for a ferromagnetic chain of ten spin variables
+        (representing, for instance, ten coupled qubits) with increasing biases.
+
+        >>> import numpy as np
+        >>> x = dimod.SpinArray(range(10))
+        >>> lin_biases = np.linspace(1, 10, 10)
+        >>> bqm = x.dot(lin_biases) - dimod.quicksum(x[1:10] * x[0:9])
+        >>> print(bqm.to_polystring())           # doctest:+ELLIPSIS
+        v0 + 2*v1 + 3*v2 + ... + 9*v8 + 10*v9 - v0*v1 - v1*v2 - v2*v3 - ... - v8*v9
     """
     return _VariableArray(Spins, labels, dtype)
 

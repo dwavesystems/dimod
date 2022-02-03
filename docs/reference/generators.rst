@@ -63,3 +63,25 @@ Random
    random_multi_knapsack
    ran_r
    uniform
+
+.. _generators_symbolic_math:
+
+Single-Variable Models
+======================
+
+Generators for single-variable models used in :ref:`symbolic math <intro_symbolic_math>`.
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   ~binary.Binary
+   ~binary.Binaries
+   ~binary.BinaryArray
+   ~quadratic.Integer
+   ~quadratic.Integers
+   ~quadratic.IntegerArray
+   ~binary.Spin
+   ~binary.Spins
+   ~binary.SpinArray

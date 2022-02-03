@@ -4,8 +4,8 @@
 Quadratic Models: Constrained
 =============================
 
-Class
-=====
+CQM Class
+=========
 
 .. currentmodule:: dimod
 
@@ -61,6 +61,13 @@ Methods
    ConstrainedQuadraticModel.vartype
    ConstrainedQuadraticModel.violations
 
+
+Sense Class
+===========
+
+.. currentmodule:: dimod.sym
+
+.. autoclass:: Sense
 
 Functions
 =========
