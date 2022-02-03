@@ -2427,13 +2427,13 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
 
     Examples:
         This example generates a BQM to represent the polynomial,
-        :math:`x^2 + 3x -1.5`, where :math:`x` is a binary variable with values
-        :math:`\{0, 1\}`. Remember that for such variables, :math:`x^2 = x`.
+        :math:3x -1.5`, where :math:`x` is a binary variable with values
+        :math:`\{0, 1\}`.
 
         >>> x = dimod.Binary('x')
-        >>> bqm = x*x + 3*x - 1.5
+        >>> bqm = 3*x - 1.5
         >>> print(bqm.to_polystring())
-        -1.5 + 4*x
+        -1.5 + 3*x
     """
     return BQM({label: bias}, {}, 0, Vartype.BINARY, dtype=dtype)
 
@@ -2528,13 +2528,13 @@ def Spin(label: Optional[Variable] = None, bias: Bias = 1,
 
     Examples:
         This example generates a BQM to represent the polynomial,
-        :math:`s^2 + 3s -1.5`, where :math:`s` is a binary variable with spin values
-        :math:`\{-1, 1\}`. Remember that for such variables, :math:`s^2 = 1`.
+        :math:`3s - 1.5`, where :math:`s` is a binary variable with spin values
+        :math:`\{-1, 1\}`.
 
         >>> s = dimod.Spin('s')
-        >>> bqm = s*s + 3*s - 1.5
+        >>> bqm = 3*s - 1.5
         >>> print(bqm.to_polystring())
-        -0.5 + 3*s
+        -1.5 + 3*s
     """
     return BQM({label: bias}, {}, 0, Vartype.SPIN, dtype=dtype)
 
