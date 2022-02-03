@@ -1226,25 +1226,6 @@ class QuadraticModel(QuadraticViewsMixin):
         """The variable type of the given variable."""
         return self.data.vartype
 
-    def vartype_info(self, vartype: VartypeLike):
-        """Information about the variable bounds by variable type.
-
-        Args:
-            vartype:
-                Variable type. One of:
-
-                    * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                    * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                    * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
-
-        Returns:
-            A named tuple with ``default_min``, ``default_max``, ``min``, and
-            ``max`` fields. These specify the default and largest bounds for
-            the given variable type.
-
-        """
-        return self.data.vartype_info(vartype)
-
 
 QM = QuadraticModel
 

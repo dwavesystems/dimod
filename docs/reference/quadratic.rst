@@ -88,7 +88,6 @@ Methods
    ~QuadraticModel.update
    ~QuadraticModel.upper_bound
    ~QuadraticModel.vartype
-   ~QuadraticModel.vartype_info
 
 .. _bqm:
 

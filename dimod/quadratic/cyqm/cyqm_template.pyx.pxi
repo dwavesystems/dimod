@@ -15,7 +15,6 @@
 import operator
 
 from copy import deepcopy
-from typing import NamedTuple
 
 cimport cython
 
@@ -25,7 +24,6 @@ from libcpp.cast cimport static_cast
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric
-from dimod.libcpp cimport cppvartype_info
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
@@ -704,22 +702,3 @@ cdef class cyQM_template(cyQMBase):
             return Vartype.INTEGER
         else:
             raise RuntimeError("unexpected vartype")
-
-    def vartype_info(self, vartype: Vartype):
-        cdef cppVartype vt = self.cppvartype(vartype)
-
-        # In the future we can consider promoting this class somewhere, but
-        # let's leave it here for now
-        Info = NamedTuple("VartypeLimits",
-                          (("default_min", float),
-                           ("default_max", float),
-                           ("min", float),
-                           ("max", float),
-                          ))
-
-        return Info(
-            as_numpy_float(cppvartype_info[bias_type].default_min(vt)),
-            as_numpy_float(cppvartype_info[bias_type].default_max(vt)),
-            as_numpy_float(cppvartype_info[bias_type].min(vt)),
-            as_numpy_float(cppvartype_info[bias_type].max(vt)),
-            )
