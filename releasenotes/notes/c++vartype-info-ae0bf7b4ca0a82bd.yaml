@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add ``dimod::vartype_limits`` to C++ code for compile-time information
+    about variable types.
+  - |
+    Add ``dimod::vartype_info`` to C++ code for runtime information
+    about variable types.
+  - |
+    Add ``vartype_info()`` function.

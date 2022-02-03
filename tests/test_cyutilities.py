@@ -15,6 +15,9 @@
 import unittest
 
 import numpy as np
+import parameterized
+
+import dimod
 
 from dimod.cyutilities import coo_sort
 
@@ -49,3 +52,43 @@ class TestCOOSort(unittest.TestCase):
             for i in range(len(pairs) - 1):
                 self.assertLessEqual(pairs[i], pairs[i+1])
             np.testing.assert_array_equal(row * col, data)
+
+
+class TestVartypeInfo(unittest.TestCase):
+    @parameterized.parameterized.expand([(np.float32,), (np.float64,)])
+    def test_binary(self, dtype):
+        info = dimod.vartype_info('BINARY', dtype=dtype)
+        self.assertEqual(info.default_min, 0)
+        self.assertEqual(info.default_max, 1)
+        self.assertEqual(info.min, 0)
+        self.assertEqual(info.max, 1)
+
+    def test_integer(self):
+        with self.subTest('float32'):
+            info = dimod.vartype_info('INTEGER', dtype=np.float32)
+            self.assertEqual(info.default_min, 0)
+            self.assertEqual(info.default_max, 16777215)
+            self.assertEqual(info.min, -16777215)
+            self.assertEqual(info.max, 16777215)
+
+        with self.subTest('float64'):
+            info = dimod.vartype_info('INTEGER', dtype=np.float64)
+            self.assertEqual(info.default_min, 0)
+            self.assertEqual(info.default_max, 9007199254740991)
+            self.assertEqual(info.min, -9007199254740991)
+            self.assertEqual(info.max, 9007199254740991)
+
+        with self.subTest('default'):
+            info = dimod.vartype_info('INTEGER')
+            self.assertEqual(info.default_min, 0)
+            self.assertEqual(info.default_max, 9007199254740991)
+            self.assertEqual(info.min, -9007199254740991)
+            self.assertEqual(info.max, 9007199254740991)
+
+    @parameterized.parameterized.expand([(np.float32,), (np.float64,)])
+    def test_spin(self, dtype):
+        info = dimod.vartype_info('SPIN', dtype=dtype)
+        self.assertEqual(info.default_min, -1)
+        self.assertEqual(info.default_max, 1)
+        self.assertEqual(info.min, -1)
+        self.assertEqual(info.max, 1)

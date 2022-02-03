@@ -23,7 +23,7 @@ from libc.math cimport round as cppround
 from libcpp.cast cimport static_cast
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric
+from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
@@ -353,14 +353,7 @@ cdef class cyQM_template(cyQMBase):
                             f"to {vartype.name!r}") from None
 
     cdef cppVartype cppvartype(self, object vartype) except? cppVartype.SPIN:
-        if vartype is Vartype.SPIN:
-            return cppVartype.SPIN
-        elif vartype is Vartype.BINARY:
-            return cppVartype.BINARY
-        elif vartype is Vartype.INTEGER:
-            return cppVartype.INTEGER
-        else:
-            raise TypeError(f"unexpected vartype {vartype!r}")
+        return cppvartype(vartype)
 
     cdef const cppQuadraticModel[bias_type, index_type]* data(self):
         """Return a pointer to the C++ QuadraticModel."""

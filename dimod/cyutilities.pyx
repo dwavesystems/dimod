@@ -12,9 +12,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import typing
+
 cimport cython
 
 import numpy as np
+cimport numpy as np
+
+from dimod.libcpp cimport cppvartype_info
+from dimod.typing import VartypeLike
+from dimod.vartypes import as_vartype, Vartype
+
+__all__ = ['vartype_info']
 
 
 cdef extern from "numpy/arrayobject.h":
@@ -108,3 +117,62 @@ cdef Py_ssize_t partition_coo(Integer[:] row, Integer[:] col, cython.floating[:]
     _swap(row, col, data, i, pi)
 
     return i
+
+
+cdef cppVartype cppvartype(vartype) except? cppVartype.SPIN:
+    if vartype is Vartype.SPIN:
+        return cppVartype.SPIN
+    elif vartype is Vartype.BINARY:
+        return cppVartype.BINARY
+    elif vartype is Vartype.INTEGER:
+        return cppVartype.INTEGER
+    else:
+        raise TypeError(f"unexpected vartype {vartype!r}")
+
+
+# todo: type annotations, fix docs. This needs a followup PR
+def vartype_info(vartype, dtype=np.float64):
+    """Information about the variable bounds by variable type.
+
+    Args:
+        vartype:
+            Variable type. One of:
+
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+
+        dtype: One of :class:`~numpy.float64` and :class:`~numpy.float32`.
+
+    Returns:
+        A named tuple with ``default_min``, ``default_max``, ``min``, and
+        ``max`` fields. These specify the default and largest bounds for
+        the given variable type.
+
+    """
+    cdef cppVartype vt = cppvartype(as_vartype(vartype, extended=True))
+
+    Info = typing.NamedTuple("VartypeLimits",
+                      (("default_min", float),
+                       ("default_max", float),
+                       ("min", float),
+                       ("max", float),
+                      ))
+
+    dtype = np.dtype(dtype)
+    if dtype == np.dtype(np.float32):
+        return Info(
+            as_numpy_float(cppvartype_info[np.float32_t].default_min(vt)),
+            as_numpy_float(cppvartype_info[np.float32_t].default_max(vt)),
+            as_numpy_float(cppvartype_info[np.float32_t].min(vt)),
+            as_numpy_float(cppvartype_info[np.float32_t].max(vt)),
+            )
+    elif dtype == np.dtype(np.float64):
+        return Info(
+            as_numpy_float(cppvartype_info[np.float64_t].default_min(vt)),
+            as_numpy_float(cppvartype_info[np.float64_t].default_max(vt)),
+            as_numpy_float(cppvartype_info[np.float64_t].min(vt)),
+            as_numpy_float(cppvartype_info[np.float64_t].max(vt)),
+            )
+    else:
+        raise ValueError("only supports np.float64 and np.float32 dtypes")

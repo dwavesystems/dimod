@@ -18,6 +18,8 @@
 cimport cython
 cimport numpy as np
 
+from dimod.libcpp cimport cppVartype
+
 __all__ = [
     'as_numpy_float',
     'coo_sort',
@@ -67,3 +69,5 @@ cdef object as_numpy_float(cython.floating)
 
 
 cpdef Py_ssize_t coo_sort(Integer[:], Integer[:], cython.floating[:]) except -1
+
+cdef cppVartype cppvartype(object) except? cppVartype.SPIN

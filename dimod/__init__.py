@@ -23,6 +23,8 @@ import dimod.constrained
 from dimod.core import *
 import dimod.core
 
+from dimod.cyutilities import *
+
 from dimod.reference import *
 import dimod.reference
 
