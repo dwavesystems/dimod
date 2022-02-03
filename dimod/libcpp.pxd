@@ -39,6 +39,16 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         SPIN
         INTEGER
 
+    cpdef cppclass cppvartype_info "dimod::vartype_info" [Bias]:
+        @staticmethod
+        Bias default_max(cppVartype)
+        @staticmethod
+        Bias default_min(cppVartype)
+        @staticmethod
+        Bias max(cppVartype)
+        @staticmethod
+        Bias min(cppVartype)
+
     cdef cppclass cppBinaryQuadraticModel "dimod::BinaryQuadraticModel" [Bias, Index]:
         ctypedef Bias bias_type
         ctypedef size_t size_type
