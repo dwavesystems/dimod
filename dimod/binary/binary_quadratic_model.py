@@ -2591,9 +2591,15 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
         spin-valued binary variable.
 
     Examples:
-        >>> x = dimod.SpinArray(["x0", "x1"])
-        >>> x[1]
-        BinaryQuadraticModel({'x1': 1.0}, {}, 0.0, 'SPIN')
+        This example creates a BQM for a ferromagnetic chain of ten spin variables
+        (representing, for instance, ten coupled qubits) with increasing biases.
+
+        >>> import numpy as np
+        >>> x = dimod.SpinArray(range(10))
+        >>> lin_biases = np.linspace(1, 10, 10)
+        >>> bqm = x.dot(lin_biases) - sum(x[1:10] * x[0:9])
+        >>> print(bqm.to_polystring())           # doctest:+ELLIPSIS
+        v0 + 2*v1 + 3*v2 + ... + 9*v8 + 10*v9 - v0*v1 - v1*v2 - v2*v3 - ... - v8*v9
     """
     return _VariableArray(Spins, labels, dtype)
 
