@@ -494,7 +494,6 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Returns:
             The variable label.
-
         """
         return self.data.add_variable
 
@@ -504,9 +503,9 @@ class QuadraticModel(QuadraticViewsMixin):
         Args:
             vartype: Variable type. One of:
 
-                * :class:`~dimod..Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`~dimod..Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                * :class:`~dimod..Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
 
             variables: Iterable of variable labels.
 
@@ -526,9 +525,9 @@ class QuadraticModel(QuadraticViewsMixin):
         Args:
             vartype: Variable type. One of:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
 
             v: Variable to change to the specified ``vartype``.
 
@@ -560,11 +559,14 @@ class QuadraticModel(QuadraticViewsMixin):
         """Return the degree of specified variable.
 
         The degree is the number of interactions that contain a variable, ``v``.
+
+        Args:
+            v: Variable in the quadratic model.
         """
         return self.data.degree
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
-        """Determine the energies of the given samples-like.
+        """Determine the energies of the given samples_like.
 
         Args:
             samples_like (samples_like):
@@ -626,10 +628,11 @@ class QuadraticModel(QuadraticViewsMixin):
         return energy
 
     def flip_variable(self, v: Variable):
-        """Flip the specified variable.
+        """Flip the specified binary-valued variable.
 
         Args:
-            v: A variable in the model.
+            v: Binary-valued (:math:`\{0, 1\}` or :math:`\{-1, 1\}`) variable in
+                the quadratic model.
 
         Raises:
             ValueError: If ``v`` is not a variable in the model.

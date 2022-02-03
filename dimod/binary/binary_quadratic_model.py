@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from __future__ import annotations   # Py3.7 PEP 563 postponed evaluation of annotations
+from __future__ import annotations   
 
 import collections.abc as abc
 import copy
