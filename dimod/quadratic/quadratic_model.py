@@ -386,26 +386,35 @@ class QuadraticModel(QuadraticViewsMixin):
             'y'
             >>> qm.variables
             Variables(['i', 1, 'y'])
-
         """
         return self.data.variables
 
     @forwarding_method
     def add_linear(self, v: Variable, bias: Bias):
-        """Add a linear bias to an existing variable."""
+        """Add a linear bias to an existing variable.
+
+        Args:
+            v: Variable label.
+            bias: Linear bias for the variable.
+
+        Raises:
+            ValueError: If the variable is not in the model.
+        """
         return self.data.add_linear
 
     def add_linear_from(self, linear: Union[Mapping[Variable, Bias],
                                             Iterable[Tuple[Variable, Bias]]]):
-        """Add linear biases.
+        """Add variables and linear biases to a quadratic model.
 
         Args:
             linear:
-                A collection of variables and their associated linear biases.
-                If a dict, should be of the form ``{v: bias, ...}`` where ``v``
-                is a variable and ``bias`` is its associated linear bias.
-                Otherwise, should be an iterable of ``(v, bias)`` pairs.
+                Variables and their associated linear biases, as either a dict of
+                form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
+                where ``v`` is a variable and ``bias`` is its associated linear
+                bias.
 
+        Raises:
+            ValueError: If a specified variable is not in the model.
         """
         add_linear = self.add_linear
 
@@ -418,7 +427,18 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Add quadratic bias to a pair of variables."""
+        """Add quadratic bias to a pair of variables.
+
+        Args:
+            u: Variable in the quadratic model.
+            v: Variable in the quadratic model.
+            bias: Quadratic bias for the interaction.
+
+        Raises:
+            ValueError: If a specified variable is not in the model.
+            ValueError: If any self-loops are given on binary-valued variables.
+                E.g. ``(u, u, bias)`` is not a valid triplet for spin variables.
+        """
         return self.data.add_quadratic
 
     def add_quadratic_from(self, quadratic: Union[Mapping[Tuple[Variable, Variable], Bias],
@@ -427,13 +447,16 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             quadratic:
-                Collection of interactions and their associated quadratic
-                bias. If a dict, should be of the form ``{(u, v): bias, ...}``
-                where ``u`` and ``v`` are variables in the model and ``bias`` is
-                the associated quadratic bias. Otherwise, should be an
-                iterable of ``(u, v, bias)`` triplets.
+                Interactions and their associated quadratic biases, as either a
+                dict of form ``{(u, v): bias, ...}`` or an iterable of
+                ``(u, v, bias)`` triplets, where ``u`` and ``v`` are variables in
+                the model and ``bias`` is the associated quadratic bias.
                 If the interaction already exists, the bias is added.
 
+        Raises:
+            ValueError: If a specified variable is not in the model.
+            ValueError: If any self-loops are given on binary-valued variables.
+                E.g. ``(u, u, bias)`` is not a valid triplet for spin variables.
         """
         if isinstance(quadratic, Mapping):
             self.data.add_quadratic_from_iterable(
@@ -444,7 +467,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,
-                     v: Optional[Variable] = None,
+                     label: Optional[Variable] = None,
                      *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> Variable:
         """Add a variable to the quadratic model.
 
@@ -452,22 +475,22 @@ class QuadraticModel(QuadraticViewsMixin):
             vartype:
                 Variable type. One of:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
 
             label:
-                A label for the variable. Defaults to the length of the
+                Label for the variable. Defaults to the length of the
                 quadratic model, if that label is available. Otherwise defaults
                 to the lowest available positive integer label.
 
             lower_bound:
-                A lower bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                Lower bound on the variable. Ignored when the variable is
+                not :class:`~dimod.Vartype.INTEGER`.
 
             upper_bound:
-                An upper bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                Upper bound on the variable. Ignored when the variable is
+                not :class:`~dimod.Vartype.INTEGER`.
 
         Returns:
             The variable label.
@@ -481,9 +504,9 @@ class QuadraticModel(QuadraticViewsMixin):
         Args:
             vartype: Variable type. One of:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod..Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod..Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod..Vartype.INTEGER`, ``'INTEGER'``
 
             variables: Iterable of variable labels.
 
@@ -744,7 +767,7 @@ class QuadraticModel(QuadraticViewsMixin):
                         places: int = 7) -> bool:
         """Test if the given quadratic model's biases are almost equal.
 
-        Test whether each bias in the binary quadratic model is approximately
+        Test whether each bias in the quadratic model is approximately
         equal to each bias in ``other``. Approximate equality is calculated by
         passing the difference to :func:`round`. ``places`` determines the
         number of decimal places.
@@ -950,7 +973,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 incomplete mapping is provided, unmapped variables retain their
                 current labels.
 
-            inplace: If set to False, returns a new binary quadratic model
+            inplace: If set to False, returns a new quadratic model
                 mapped to the new labels.
 
         Returns:
@@ -976,7 +999,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """Relabel the variables as `[0, n)` and return the mapping.
 
         Args:
-            inplace: If set to False, returns a new binary quadratic model
+            inplace: If set to False, returns a new quadratic model
                 mapped to the new labels.
 
         Returns:
@@ -1060,7 +1083,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """Convert any spin-valued variables to binary-valued.
 
         Args:
-            inplace: If set to False, returns a new binary quadratic model
+            inplace: If set to False, returns a new quadratic model
                 with spin-valued variables converted to binary-valued variables.
 
         Examples:
@@ -1123,7 +1146,7 @@ class QuadraticModel(QuadraticViewsMixin):
             it is terminated by a newline character and padded with spaces to
             make the entire length of the entire header divisible by 64.
 
-            The binary quadratic model data comes after the header.
+            The quadratic model data comes after the header.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -1275,7 +1298,7 @@ def Integers(labels: Union[int, Iterable[Variable]],
 
 def IntegerArray(labels: Union[int, Iterable[Variable]],
                  dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a NumPy array of quadratic models, each with a 
+    """Return a NumPy array of quadratic models, each with a
     single integer variable.
 
     Args:
@@ -1285,7 +1308,7 @@ def IntegerArray(labels: Union[int, Iterable[Variable]],
 
     Returns:
         Array of quadratic models, each with a single integer variable.
-    
+
     """
     return _VariableArray(Integers, labels, dtype)
 
@@ -1305,7 +1328,7 @@ def _VariableArray(variable_generator: Callable,
     variable_array = np.empty(number_of_elements, dtype=object)
     for index, element in enumerate(variable_generator(labels, dtype)):
         variable_array[index] = element
-    
+
     return variable_array
 
 # register fileview loader

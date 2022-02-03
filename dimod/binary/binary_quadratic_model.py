@@ -814,7 +814,17 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Add a quadratic bias between two variables."""
+        """Add a quadratic bias between two variables.
+
+        Args:
+            u: Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
+            bias: Quadratic bias for the interaction.
+
+        Raises:
+            ValueError: If any self-loops are given. E.g. ``(u, u, bias)`` is not
+                a valid triplet.
+        """
         return self.data.add_quadratic
 
     def add_interaction(self, *args, **kwargs):
