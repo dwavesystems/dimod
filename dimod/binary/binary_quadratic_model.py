@@ -2597,7 +2597,7 @@ def SpinArray(labels: Union[int, Iterable[Variable]],
         >>> import numpy as np
         >>> x = dimod.SpinArray(range(10))
         >>> lin_biases = np.linspace(1, 10, 10)
-        >>> bqm = x.dot(lin_biases) - sum(x[1:10] * x[0:9])
+        >>> bqm = x.dot(lin_biases) - dimod.quicksum(x[1:10] * x[0:9])
         >>> print(bqm.to_polystring())           # doctest:+ELLIPSIS
         v0 + 2*v1 + 3*v2 + ... + 9*v8 + 10*v9 - v0*v1 - v1*v2 - v2*v3 - ... - v8*v9
     """
