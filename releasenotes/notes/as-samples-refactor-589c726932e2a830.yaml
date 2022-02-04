@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Support iterator inputs to ``as_samples()``.
+    See `#543 <https://github.com/dwavesystems/dimod/issues/543>`_.
+  - |
+    Add ``SamplesLike`` and ``SampleLike`` to ``dimod.typing``.
+    See `#1008 <https://github.com/dwavesystems/dimod/issues/1008>`_.
+upgrade:
+  - |
+    ``as_samples()`` no longer always casts input sample values to integers.
+deprecations:
+  - |
+    Deprecate support for a 2-tuple of ``(dict, list)`` as a samples-like.
+    E.g. ``({'a': 1, 'b': 0}, ['a', 'b'])`` is no longer supported.
+    ``(array_like, labels)`` is still supported, as is a dictionary.
+    Support will be removed in dimod 0.12.0.

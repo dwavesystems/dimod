@@ -12,19 +12,25 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
+import collections.abc as abc
 import base64
 import copy
+import functools
 import itertools
 import json
 import numbers
-import collections.abc as abc
+import typing
+import warnings
 
 from collections import namedtuple
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Optional
+from warnings import warn
 
 import numpy as np
+
 from numpy.lib import recfunctions
-from warnings import warn
 
 from dimod.exceptions import WriteableError
 from dimod.serialization.format import Formatter
@@ -35,10 +41,11 @@ from dimod.serialization.utils import (pack_samples as _pack_samples,
                                        serialize_ndarrays,
                                        deserialize_ndarrays)
 from dimod.sym import Sense
-from dimod.typing import Variable
+from dimod.typing import ArrayLike, DTypeLike, SampleLike, SamplesLike, Variable
 from dimod.variables import Variables, iter_deserialize_variables
 from dimod.vartypes import as_vartype, Vartype, DISCRETE
 from dimod.views.samples import SampleView, SamplesArray
+
 
 __all__ = ['append_data_vectors',
            'append_variables',
@@ -196,24 +203,68 @@ def append_variables(sampleset, samples_like, sort_labels=True):
                                         sort_labels=sort_labels,
                                         **sampleset.data_vectors)
 
-def as_samples(samples_like, dtype=None, copy=False, order='C'):
+
+def _sample_array(array_like: ArrayLike, dtype: Optional[DTypeLike] = None, **kwargs) -> np.ndarray:
+    """Convert an array-like into a samples array."""
+
+    if dtype is None:
+        dtype = getattr(array_like, 'dtype', None)
+
+    arr = np.array(array_like, dtype=dtype, **kwargs)
+
+    # make sure it's exactly 2d and handle the obvious edge cases
+    if arr.ndim < 2:
+        if arr.size:
+            arr = np.atleast_2d(arr)
+        else:
+            arr = arr.reshape((0, 0))
+    elif arr.ndim > 2:
+        raise ValueError("expected samples_like to be <= 2 dimensions")
+
+    if dtype is None and np.issubdtype(arr.dtype, np.integer):
+        # it was unspecified, so we may want to use a smaller representation
+        max_ = max(-arr.min(initial=0), +arr.max(initial=0))
+
+        try:
+            dtype = next(tp for tp in (np.int8, np.int16, np.int32, np.int64)
+                         if max_ <= np.iinfo(tp).max)
+        except StopIteration:
+            raise ValueError('`samples like contains entries that do not fit in np.int64')
+
+        arr = np.asarray(arr, dtype=dtype)  # preserves order by default
+
+    return arr
+
+
+try:
+    ArrayOrder = typing.Literal['K', 'A', 'C', 'F']
+except AttributeError:
+    ArrayOrder = str
+
+
+@functools.singledispatch
+def as_samples(samples_like: SamplesLike,
+               dtype: Optional[DTypeLike] = None,
+               copy: bool = False,
+               order: ArrayOrder = 'C',
+               ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
-        samples_like (samples_like):
+        samples_like:
             A collection of raw samples. `samples_like` is an extension of
             NumPy's array_like_ structure. See examples below.
 
-        dtype (data-type, optional):
+        dtype:
             dtype for the returned samples array. If not provided, it is either
             derived from `samples_like`, if that object has a dtype, or set to
             the smallest dtype that can hold the given values.
 
-        copy (bool, optional, default=False):
+        copy:
             If true, then samples_like is guaranteed to be copied, otherwise
             it is only copied if necessary.
 
-        order ({'K', 'A', 'C', 'F'}, optional, default='C'):
+        order:
             Specify the memory layout of the array. See :func:`numpy.array`.
 
     Returns:
@@ -270,96 +321,101 @@ def as_samples(samples_like, dtype=None, copy=False, order='C'):
     .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
     """
-    if isinstance(samples_like, SampleSet):
-        # we implicitely support this by handling an iterable of mapping but
-        # it is much faster to just do this here.
-        labels = list(samples_like.variables)
-        if dtype is None:
-            arr = np.copy(samples_like.record.sample) if copy else samples_like.record.sample
-            return arr, labels
-        else:
-            return samples_like.record.sample.astype(dtype, copy=copy), labels
+    # single dispatch should have handled everything except array-like and mixed
+    if isinstance(samples_like, abc.Sequence) and any(isinstance(s, abc.Mapping) for s in samples_like):
+        return as_samples(iter(samples_like), dtype=dtype, copy=copy, order=order)
 
-    if isinstance(samples_like, tuple) and len(samples_like) == 2:
-        samples_like, labels = samples_like
+    # array-like
+    arr = _sample_array(samples_like, dtype=dtype, copy=copy, order=order)
+    return arr, list(range(arr.shape[1]))
 
-        if not isinstance(labels, list) and labels is not None:
-            labels = list(labels)
+
+@as_samples.register(abc.Iterator)
+def _as_samples_iterator(samples_like: typing.Iterator[SampleLike],
+                         **kwargs,
+                         ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+
+    stack = (as_samples(sl, **kwargs) for sl in samples_like)
+
+    try:
+        first_samples, first_labels = next(stack)
+    except StopIteration:
+        return np.empty((0, 0), dtype=np.int8), []
+
+    samples_stack = [first_samples]
+    first_set = set(first_labels)
+
+    for samples, labels in stack:
+        if labels != first_labels:
+            if set(labels) ^ first_set:
+                raise ValueError
+            # do a bit of reindex
+            reindex = [first_labels.index(v) for v in labels]
+            samples = samples[:, reindex]
+
+        samples_stack.append(samples)
+
+    return np.vstack(samples_stack), first_labels
+
+
+@as_samples.register(abc.Mapping)
+def _as_samples_dict(samples_like: typing.Mapping[Variable, float],
+                     dtype: Optional[DTypeLike] = None,
+                     copy: bool = False,
+                     order: ArrayOrder = 'C',
+                     ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+    if samples_like:
+        labels, samples = zip(*samples_like.items())
+        return as_samples((samples, labels), dtype=dtype, copy=copy, order=order)
     else:
-        labels = None
+        return np.empty((1, 0), dtype=dtype, order=order), []
 
-    if isinstance(samples_like, abc.Iterator):
-        # if we don't check this case we can get unexpected behaviour where an
-        # iterator can be depleted
-        raise TypeError('samples_like cannot be an iterator')
 
-    if isinstance(samples_like, abc.Mapping):
-        return as_samples(([samples_like], labels), dtype=dtype, copy=copy, order=order)
+@as_samples.register(tuple)
+def _as_samples_tuple(samples_like: typing.Tuple[ArrayLike, typing.Sequence[Variable]],
+                      dtype: Optional[DTypeLike] = None,
+                      copy: bool = False,
+                      order: ArrayOrder = 'C',
+                      ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
 
-    if (isinstance(samples_like, list) and samples_like and
-            isinstance(samples_like[0], numbers.Number)):
-        # this is not actually necessary but it speeds up the
-        # samples_like = [1, 0, 1,...] case significantly
-        return as_samples(([samples_like], labels), dtype=dtype, copy=copy, order=order)
+    try:
+        array_like, labels = samples_like
+    except ValueError:
+        raise ValueError("if a tuple is provided, it must be length 2") from None
 
-    if not isinstance(samples_like, np.ndarray):
-        if any(isinstance(sample, abc.Mapping) for sample in samples_like):
-            # go through samples-like, turning the dicts into lists
-            samples_like, old = list(samples_like), samples_like
+    # for legacy reasons we support (mapping, labels) but we'll want to drop
+    # that in the future
+    if isinstance(array_like, abc.Mapping):
+        warnings.warn("support for (dict, labels) as a samples-like is deprecated "
+                      "and will be removed in dimod 0.12.0",
+                      DeprecationWarning, stacklevel=3)
 
-            if labels is None:
-                first = samples_like[0]
-                if isinstance(first, abc.Mapping):
-                    labels = list(first)
-                else:
-                    labels = list(range(len(first)))
+        # make sure that it has the correct order by making a copy
+        d = dict()
+        try:
+            for v in labels:
+                d[v] = array_like[v]
+        except KeyError:
+            raise ValueError("inconsistent labels")
+        array_like, _ = as_samples(d)
 
-            for idx, sample in enumerate(old):
-                if isinstance(sample, abc.Mapping):
-                    try:
-                        samples_like[idx] = [sample[v] for v in labels]
-                    except KeyError:
-                        raise ValueError("samples_like and labels do not match")
+    if isinstance(array_like, abc.Iterator):
+        raise TypeError('samples_like cannot be an iterator when given as a tuple')
 
-    if dtype is None:
-        if not hasattr(samples_like, 'dtype'):
-            # we want to use the smallest dtype available, not yet doing any
-            # copying or whatever, although we do make a new array to speed
-            # this up
-            samples_like = np.asarray(samples_like)
+    arr = _sample_array(array_like, dtype=dtype, copy=copy, order=order)
 
-            max_ = max(-samples_like.min(initial=0),
-                       +samples_like.max(initial=0))
+    # make sure our labels are the correct type
+    if not isinstance(labels, list):
+        # todo: generalize to other sequence types? Especially Variables
+        labels = list(labels)
 
-            try:
-                dtype = next(tp for tp in (np.int8, np.int16, np.int32, np.int64)
-                             if max_ <= np.iinfo(tp).max)
-            except StopIteration:
-                raise ValueError('`samples like contains entries that do not fit in np.int64')
+    if not arr.size:
+        arr.shape = (arr.shape[0], len(labels))
 
-        else:
-            dtype = samples_like.dtype
-
-    # samples-like should now be array-like
-    arr = np.array(samples_like, dtype=dtype, copy=copy, order=order)
-
-    if arr.ndim > 2:
-        raise ValueError("expected samples_like to be <= 2 dimensions")
-    if arr.ndim < 2:
-        if arr.size:
-            arr = np.atleast_2d(arr)
-        elif labels:  # is not None and len > 0
-            arr = arr.reshape((0, len(labels)))
-        else:
-            arr = arr.reshape((0, 0))
-
-    # ok we're basically done, just need to check against the labels
-    if labels is None:
-        return arr, list(range(arr.shape[1]))
-    elif len(labels) != arr.shape[1]:
+    if len(labels) != arr.shape[1]:
         raise ValueError("samples_like and labels dimensions do not match")
-    else:
-        return arr, labels
+
+    return arr, labels
 
 
 def concatenate(samplesets, defaults=None):
@@ -1750,3 +1806,18 @@ class SampleSet(abc.Iterable, abc.Sized):
                 df.loc[:, field] = self.record[field]
 
         return df
+
+
+@as_samples.register(SampleSet)
+def _as_samples_sampleset(samples_like: SampleSet,
+                          dtype: Optional[DTypeLike] = None,
+                          copy: bool = False,
+                          order: ArrayOrder = 'C',
+                          ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+    # this isn't strictly necessary, but it improves performance
+    labels = list(samples_like.variables)
+    if dtype is None:
+        arr = np.copy(samples_like.record.sample) if copy else samples_like.record.sample
+        return arr, labels
+    else:
+        return samples_like.record.sample.astype(dtype, copy=copy), labels

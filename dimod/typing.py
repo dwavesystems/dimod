@@ -15,6 +15,7 @@
 """
 Type hints for common dimod inputs.
 """
+import typing
 
 from typing import Collection, Hashable, NamedTuple, Sequence, Tuple, Union
 
@@ -23,13 +24,23 @@ import numpy as np
 from dimod.vartypes import VartypeLike
 
 try:
-    from numpy.typing import NDArray
+    from numpy.typing import ArrayLike, DTypeLike
 except ImportError:
     # support numpy < 1.20
-    NDArray = Sequence
+    ArrayLike = typing.Sequence
+    DTypeLike = typing.Any
+
+try:
+    from numpy.typing import NDArray
+except ImportError:
+    # support numpy < 1.21
+    NDArray = typing.Sequence
+
 
 __all__ = ['Bias',
            'GraphLike',
+           'SampleLike',
+           'SamplesLike',
            'Variable',
            'VartypeLike',
            ]
@@ -37,8 +48,6 @@ __all__ = ['Bias',
 
 Variable = Hashable  # todo: exclude None
 Bias = Union[int, float, np.number]
-
-# todo: SamplesLike
 
 try:
     import networkx as nx
@@ -82,3 +91,20 @@ class DQMVectors(NamedTuple):
     quadratic: QuadraticVectors
     labels: Sequence[Variable]
     offset: Bias
+
+
+SampleLike = Union[
+    typing.Sequence[float],
+    typing.Mapping[Variable, Bias],
+    ArrayLike,  # this is overgenerous, but we cannot easily specify it better
+    ]
+
+
+SamplesLike = Union[
+    SampleLike,
+    typing.Sequence[typing.Sequence[float]],  # 2d array
+    typing.Tuple[typing.Sequence[float], typing.List[Variable]],
+    typing.Tuple[typing.Sequence[typing.Sequence[float]], typing.List[Variable]],
+    typing.Sequence[SampleLike],
+    typing.Iterator[SampleLike],
+    ]
