@@ -1121,6 +1121,31 @@ class TestEnergies(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.energies(samples)
 
+    def test_sample_dtype(self):
+        x, y = dimod.Binaries('xy')
+        bqm = 3*x + y - 5*x*y + 5
+
+        for dtype in [np.int8, np.int16, np.int32, np.int64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                self.assertEqual(bqm.energy((arr, 'xy')), -28)
+
+        for dtype in [np.int8, np.int16, np.int32, np.int64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                self.assertEqual(bqm.energy((arr, 'xy')), -28)
+
+        for dtype in [np.float32, np.float64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2.5], dtype=dtype)
+                self.assertEqual(bqm.energy((arr, 'xy')), -40)
+
+        for dtype in [np.complex]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                with self.assertRaises(ValueError):
+                    bqm.energy((arr, 'xy'))
+
     @parameterized.expand(BQMs.items())
     def test_superset(self, name, BQM):
         bqm = BQM({'a': 1}, {'ab': 1}, 1.5, 'BINARY')

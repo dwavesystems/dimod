@@ -59,71 +59,6 @@ cdef class cyQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef cython.floating[::1] _energies(self,
-                                        object samples_like,
-                                        cython.floating signal=0):
-        samples, labels = as_samples(samples_like, dtype=np.int64)
-
-        cdef np.int64_t[:, :] samples_view = samples
-
-        cdef Py_ssize_t num_samples = samples_view.shape[0]
-        cdef Py_ssize_t num_variables = samples_view.shape[1]
-
-        if num_variables != len(labels):
-            # as_samples should never return inconsistent sizes, but we do this
-            # check because the boundscheck is off and we otherwise might get
-            # segfaults
-            raise RuntimeError(
-                "as_samples returned an inconsistent samples/variables")
-
-        # get the indices of the QM variables. Use -1 to signal that a
-        # variable's index has not yet been set
-        cdef Py_ssize_t[::1] qm_to_sample = np.full(self.num_variables(), -1, dtype=np.intp)
-        cdef Py_ssize_t si
-        for si in range(num_variables):
-            v = labels[si]
-            if self.variables.count(v):
-                qm_to_sample[self.variables.index(v)] = si
-
-        # make sure that all of the QM variables are accounted for
-        for si in range(self.num_variables()):
-            if qm_to_sample[si] == -1:
-                raise ValueError(
-                    f"missing variable {self.variables[si]!r} in sample(s)")
-
-        cdef cython.floating[::1] energies
-        if cython.floating is float:
-            energies = np.empty(num_samples, dtype=np.float32)
-        else:
-            energies = np.empty(num_samples, dtype=np.float64)
-
-        # alright, now let's calculate some energies!
-        cdef np.int64_t uspin, vspin
-        cdef Py_ssize_t ui, vi
-        for si in range(num_samples):
-            # offset
-            energies[si] = self.cppqm.offset()
-
-            for ui in range(self.num_variables()):
-                uspin = samples_view[si, qm_to_sample[ui]]
-
-                # linear
-                energies[si] += self.cppqm.linear(ui) * uspin;
-
-                span = self.cppqm.neighborhood(ui)
-                while span.first != span.second and deref(span.first).first < ui:
-                    vi = deref(span.first).first
-
-                    vspin = samples_view[si, qm_to_sample[vi]]
-
-                    energies[si] += deref(span.first).second * uspin * vspin
-
-                    inc(span.first)
-
-        return energies
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def _ilinear(self):
         """Return the linear biases in a numpy array."""
         cdef bias_type[:] ldata = np.empty(self.num_variables(), dtype=self.dtype)
@@ -363,14 +298,78 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t vi = self.variables.index(v)
         return self.cppqm.num_interactions(vi)
 
+    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, object labels):
+        cdef Py_ssize_t num_samples = samples.shape[0]
+        cdef Py_ssize_t num_variables = samples.shape[1]
+
+        if num_variables != len(labels):
+            # as_samples should never return inconsistent sizes, but we do this
+            # check because the boundscheck is off and we otherwise might get
+            # segfaults
+            raise RuntimeError("as_samples returned an inconsistent samples/variables")
+
+        # get the indices of the QM variables. Use -1 to signal that a
+        # variable's index has not yet been set
+        cdef Py_ssize_t[::1] qm_to_sample = np.full(self.num_variables(), -1, dtype=np.intp)
+        cdef Py_ssize_t si
+        for si in range(num_variables):
+            v = labels[si]
+            if self.variables.count(v):
+                qm_to_sample[self.variables.index(v)] = si
+
+        # make sure that all of the QM variables are accounted for
+        for si in range(self.num_variables()):
+            if qm_to_sample[si] == -1:
+                raise ValueError(f"missing variable {self.variables[si]!r} in sample(s)")
+
+        cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
+
+        # alright, now let's calculate some energies!
+        cdef Py_ssize_t ui, vi
+        for si in range(num_samples):
+            # offset
+            energies[si] = self.cppqm.offset()
+
+            for ui in range(self.num_variables()):
+                # linear
+                energies[si] += self.cppqm.linear(ui) * samples[si, qm_to_sample[ui]];
+
+                span = self.cppqm.neighborhood(ui)
+                while span.first != span.second and deref(span.first).first < ui:
+                    vi = deref(span.first).first
+
+                    energies[si] += deref(span.first).second * samples[si, qm_to_sample[ui]] * samples[si, qm_to_sample[vi]]
+
+                    inc(span.first)
+
+        return energies
+
     def energies(self, samples_like, dtype=None):
-        dtype = self.dtype if dtype is None else np.dtype(dtype)
-        if dtype == np.float64:
-            return np.asarray(self._energies[np.float64_t](samples_like))
-        elif dtype == np.float32:
-            return np.asarray(self._energies[np.float32_t](samples_like))
+        samples, labels = as_samples(samples_like)
+
+        # we need contiguous and unsigned. as_samples actually enforces contiguous
+        # but no harm in double checking for some future-proofness
+        samples = np.ascontiguousarray(
+                samples,
+                dtype=f'i{samples.dtype.itemsize}' if np.issubdtype(samples.dtype, np.unsignedinteger) else None,
+                )
+
+        # Cython really should be able to figure the type out, but for some reason
+        # it fails, so we just dispatch manually
+        if samples.dtype == np.float64:
+            return np.asarray(self._energies[np.float64_t](samples, labels), dtype=dtype)
+        elif samples.dtype == np.float32:
+            return np.asarray(self._energies[np.float32_t](samples, labels), dtype=dtype)
+        elif samples.dtype == np.int8:
+            return np.asarray(self._energies[np.int8_t](samples, labels), dtype=dtype)
+        elif samples.dtype == np.int16:
+            return np.asarray(self._energies[np.int16_t](samples, labels), dtype=dtype)
+        elif samples.dtype == np.int32:
+            return np.asarray(self._energies[np.int32_t](samples, labels), dtype=dtype)
+        elif samples.dtype == np.int64:
+            return np.asarray(self._energies[np.int64_t](samples, labels), dtype=dtype)
         else:
-            raise ValueError("dtype must be None or a floating type.")
+            raise ValueError("unsupported sample dtype")
 
     @classmethod
     def from_cybqm(cls, cyBQM bqm):

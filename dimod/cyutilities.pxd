@@ -53,14 +53,16 @@ cdef fused ConstInteger:
     const unsigned long long
 
 ctypedef fused Numeric:
+    signed char
     cython.integral  # short, int, long
     cython.floating  # float, double
 
 # cython doesn't like const Numeric
 ctypedef fused ConstNumeric:
-    const short
-    const int
-    const long long
+    const signed char
+    const signed short
+    const signed int
+    const signed long long
     const float
     const double
 
