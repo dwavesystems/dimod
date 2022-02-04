@@ -490,7 +490,27 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         If the binary quadratic model is binary-valued, this references itself,
         otherwise it references a view.
-        """
+
+        Examples:
+            This example uses a binary-valued Boolean XOR gate,
+            :func:`dimod.generators.xor_gate`, to ensure that an unbiased
+            eleven-spin ferromagnetic chain, which has two best solutions of
+            all-up and all-down spins, selects the all-down solution by requiring
+            that :math:`s_5 = s_0 \oplus s_10` (the only assignment that produces
+            a ferromagnetic chain is :math:`-1 = -1 \oplus -1`).
+
+            >>> import dimod
+            >>> import numpy as np
+            >>> s = dimod.SpinArray(range(11))
+            >>> bqm = - dimod.quicksum(s[1:11] * s[0:10])   # ferromagnetic chain
+            >>> bqm_xor = dimod.generators.xor_gate(0, 10, 5, "aux")
+            >>> bqm.spin.update(bqm_xor)   # xor left & right spins to middle spin
+            >>> bqm.vartype is dimod.Vartype.SPIN
+            True
+            >>> sampleset = dimod.drop_variables(dimod.ExactSolver().sample(bqm), "aux")
+            >>> set(sampleset.first.sample.values()) == {-1}
+            True
+            """
         if self.vartype is Vartype.BINARY:
             return self
 
