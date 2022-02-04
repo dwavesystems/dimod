@@ -1324,12 +1324,19 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
     Returns:
         Instance of :class:`.QuadraticModel`.
 
+    Examples:
+        This example generates a quadratic model to represent the polynomial,
+        :math:3i - 1.5`, where :math:`i` is an integer variable.
+        
+        >>> i = dimod.Integer('i')
+        >>> qm = 3*i - 1.5
+        >>> print(qm.to_polystring())
+        -1.5 + 3*i
     """
     qm = QM(dtype=dtype)
     v = qm.add_variable(Vartype.INTEGER, label, lower_bound=lower_bound, upper_bound=upper_bound)
     qm.set_linear(v, bias)
     return qm
-
 
 def Integers(labels: Union[int, Iterable[Variable]],
              dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
@@ -1341,7 +1348,7 @@ def Integers(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned quadratic models.
 
     Yields:
-        Quadratic models, each with a single integer variable.
+        A :class:`.QuadraticModel` for each integer variable.
 
     """
     if isinstance(labels, Iterable):
