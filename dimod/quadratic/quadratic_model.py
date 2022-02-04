@@ -1062,14 +1062,17 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             u: Variable in the quadratic model.
-
             v: Variable in the quadratic model.
         """
         return self.data.remove_interaction
 
     @forwarding_method
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
-        """Remove the specified variable from the quadratic model."""
+        """Remove the specified variable from the quadratic model.
+
+        Args:
+            v: Variable in the quadratic model.
+        """
         return self.data.remove_variable
 
     @forwarding_method
