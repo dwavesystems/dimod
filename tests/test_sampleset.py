@@ -52,8 +52,8 @@ class Test_as_samples(unittest.TestCase):
         # Check case where samples_like is a dimod.SampleSet
         sampleset = dimod.SampleSet.from_samples([{'a': -1, 'b': +1},
                                                   {'a': +1, 'b': +1}],
-                                                  'SPIN',
-                                                  energy=[-1.0, 1.0])
+                                                 'SPIN',
+                                                 energy=[-1.0, 1.0])
 
         arr, lab = dimod.as_samples(sampleset)
         self.assertTrue(np.shares_memory(arr, sampleset.record.sample))
@@ -67,10 +67,12 @@ class Test_as_samples(unittest.TestCase):
 
     def test_dict_with_inconsistent_labels(self):
         with self.assertRaises(ValueError):
-            dimod.as_samples(({'a': -1}, 'b'))
+            with self.assertWarns(DeprecationWarning):
+                dimod.as_samples(({'a': -1}, 'b'))
 
     def test_dict_with_labels(self):
-        arr, labels = dimod.as_samples(({'a': -1}, 'a'))
+        with self.assertWarns(DeprecationWarning):
+            arr, labels = dimod.as_samples(({'a': -1}, 'a'))
         np.testing.assert_array_equal(arr, [[-1]])
         self.assertEqual(labels, ['a'])
 
@@ -107,13 +109,30 @@ class Test_as_samples(unittest.TestCase):
         np.testing.assert_array_equal(arr, np.zeros((0, 0)))
         self.assertEqual(labels, [])
 
+    def test_float_array(self):
+        arr, labels = dimod.as_samples(([1.5, 3], 'ab'))
+        np.testing.assert_array_equal(arr, [[1.5, 3]])
+        self.assertEqual(labels, ['a', 'b'])
+
+    def test_float_dict(self):
+        arr, labels = dimod.as_samples({'a': 1.5, 'b': 3})
+        np.testing.assert_array_equal(arr, [[1.5, 3]])
+        self.assertEqual(labels, ['a', 'b'])
+
     def test_iterator(self):
-        with self.assertRaises(TypeError):
-            dimod.as_samples(([-1] for _ in range(10)))
+        arr, labels = dimod.as_samples(([-1] for _ in range(10)))
+        np.testing.assert_array_equal(arr, -np.ones((10, 1)))
+        self.assertEqual(labels, [0])
+
+    def test_iterator_empty(self):
+        arr, labels = dimod.as_samples(iter([]))
+
+        np.testing.assert_array_equal(arr, np.empty((0, 0)))
+        self.assertEqual(labels, [])
 
     def test_iterator_labelled(self):
         with self.assertRaises(TypeError):
-            dimod.as_samples(([-1] for _ in range(10)), 'a')
+            dimod.as_samples((([-1] for _ in range(10)), 'a'))
 
     def test_list_of_empty(self):
         arr, labels = dimod.as_samples([[], [], []])
@@ -213,10 +232,6 @@ class TestConstruction(unittest.TestCase):
 
     def test_from_samples_iterator(self):
         ss0 = dimod.SampleSet.from_samples(np.ones((100, 5), dtype='int8'), dimod.BINARY, energy=np.ones(100))
-
-        # ss0.samples() is an iterator, so let's just use that
-        with self.assertRaises(TypeError):
-            dimod.SampleSet.from_samples(iter(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)
 
         # should work for iterable
         ss1 = dimod.SampleSet.from_samples(list(ss0.samples()), dimod.BINARY, energy=ss0.record.energy)
