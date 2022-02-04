@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    ``QuadraticModel.energies()`` and ``BinaryQuadraticModel.energies()`` now
+    return a NumPy array with dtype ``np.float64`` be default. Previously
+    they defaulted to match the dtype of the model.
+fixes:
+  - |
+    ``QuadraticModel.energies()`` and ``BinaryQuadraticModel.energies()`` will
+    return the correct energy when given samples with non-integer values.

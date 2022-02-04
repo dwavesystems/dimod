@@ -270,6 +270,10 @@ class TestEnergies(unittest.TestCase):
         np.testing.assert_array_equal(empty.energies([[], []]), [0, 0])
         np.testing.assert_array_equal(empty.energies([{}, {}]), [0, 0])
 
+    def test_float(self):
+        x, y = dimod.Binaries('xy')
+        self.assertEqual(QM.from_bqm(3*x+y).energy({'x': .5, 'y': 2.5}), 4)
+
     def test_spin_bin(self):
         x = Binary('x')
         s = Spin('s')
@@ -287,6 +291,31 @@ class TestEnergies(unittest.TestCase):
             self.assertEqual(i.energy(sample), s)
             sample = {'i': -s}
             self.assertEqual(i.energy(sample), -s)
+
+    def test_sample_dtype(self):
+        i, j = dimod.Integers('ij')
+        qm = 3*i + j - 5*i*j + 5
+
+        for dtype in [np.int8, np.int16, np.int32, np.int64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                self.assertEqual(qm.energy((arr, 'ij')), -28)
+
+        for dtype in [np.int8, np.int16, np.int32, np.int64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                self.assertEqual(qm.energy((arr, 'ij')), -28)
+
+        for dtype in [np.float32, np.float64]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2.5], dtype=dtype)
+                self.assertEqual(qm.energy((arr, 'ij')), -40)
+
+        for dtype in [np.complex]:
+            with self.subTest(dtype):
+                arr = np.array([5, 2], dtype=dtype)
+                with self.assertRaises(ValueError):
+                    qm.energy((arr, 'ij'))
 
     def test_superset(self):
         a = Integer('a')
@@ -316,6 +345,15 @@ class TestEnergies(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             qm.energy(samples)
+
+    def test_uncontiguous(self):
+        x, y = dimod.Binaries('xy')
+        arr = np.asarray([1, 0, 2, 0])
+        self.assertEqual(QM.from_bqm(3*x+y).energy((arr[::2], 'xy')), 5)
+
+    def test_unsigned(self):
+        x, y = dimod.Binaries('xy')
+        self.assertEqual(QM.from_bqm(3*x+y).energy((np.asarray([1, 2], dtype=np.uint8), 'xy')), 5)
 
 
 class TestFileSerialization(unittest.TestCase):

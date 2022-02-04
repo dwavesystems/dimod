@@ -1058,9 +1058,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             samples_like (samples_like):
                 Raw samples. `samples_like` is an extension of
                 NumPy's `array_like`_ structure. See :func:`.as_samples`.
+
             dtype:
-                Desired NumPy data type for the energy. Matches
-                :attr:`.dtype` by default.
+                Desired NumPy data type for the energy.
+                Defaults to :class:`~numpy.float64`.
 
         Returns:
             Energies for the samples.
@@ -1086,8 +1087,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 NumPy's `array_like`_ structure. See :func:`.as_samples`.
 
             dtype:
-                Desired NumPy data type for the energy. Matches
-                :attr:`.dtype` by default.
+                Desired NumPy data type for the energy.
+                Defaults to :class:`~numpy.float64`.
 
         Returns:
             The energy.

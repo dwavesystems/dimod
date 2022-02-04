@@ -17,6 +17,7 @@
 
 cimport cython
 
+from dimod.cyutilities cimport ConstNumeric
 from dimod.cyvariables cimport cyVariables
 from dimod.quadratic.cyqm.cyqm_base cimport cyQMBase
 from dimod.libcpp cimport cppQuadraticModel, cppVartype
@@ -30,7 +31,7 @@ cdef class cyQM_template(cyQMBase):
     cdef readonly cyVariables variables
 
     cdef void _add_linear(self, Py_ssize_t, bias_type)
-    cdef cython.floating[::1] _energies(self, object samples_like, cython.floating signal=*)
+    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, object labels)
     cdef void _set_linear(self, Py_ssize_t, bias_type)
     cdef cppVartype cppvartype(self, object) except? cppVartype.SPIN
     cdef const cppQuadraticModel[bias_type, index_type]* data(self)
