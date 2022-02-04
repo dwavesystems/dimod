@@ -30,10 +30,9 @@ its abstract methods, properties, and mixins (for example, a `sample_Ising` meth
 supported samplers with `child` providing the first).
 
 Examples:
-    The dimod package's spin_transform.py reference example creates a composed
-    sampler, `SpinReversalTransformComposite(Sampler, Composite)`, that performs
-    spin reversal transforms ("gauge transformations") as a preprocessing step for
-    a given sampler. The reference example implements the pseudocode below:
+    The :class:`~dwave.preprocessing.composites.SpinReversalTransformComposite`
+    performs spin-reversal transforms ("gauge transformations") as a preprocessing
+    step for a given sampler. It implements the pseudocode below:
 
     .. code-block:: python
 
@@ -55,12 +54,17 @@ Examples:
     Given dimod sampler :class:`.ExactSolver` for example, the composed sampler is
     used as any dimod sampler, inheriting an Ising sampling method:
 
-    >>> composed_sampler = dimod.SpinReversalTransformComposite(dimod.ExactSolver())
+    >>> from dwave.preprocessing import SpinReversalTransformComposite
+    >>> composed_sampler = SpinReversalTransformComposite(dimod.ExactSolver())
     >>> h = {0: -1, 1: 1}
-    >>> solutions = composed_sampler.sample_ising(h, {}, num_spin_reversal_transforms=2)
-    >>> len(solutions) == 8
+    >>> num_srt = 2
+    >>> solutions = composed_sampler.sample_ising(h, {},
+    ...                                    num_spin_reversal_transforms=num_srt)
+    >>> len(solutions) == num_srt*len(dimod.ExactSolver().sample_ising(h, {}))
     True
 
+    For more examples, see the source code for the composed
+    documented in :ref:`quadratic_composites`.
 """
 import abc
 
