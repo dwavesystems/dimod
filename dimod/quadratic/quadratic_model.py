@@ -1100,12 +1100,11 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             v: Variable in the quadratic model.
-
             bias: Linear bias to set for variable ``v``.
 
         Raises:
             TypeError: If `v` is not hashable.
-
+            ValueError: If the variable is not in the model.
         """
         return self.data.set_linear
 
@@ -1115,14 +1114,14 @@ class QuadraticModel(QuadraticViewsMixin):
 
         Args:
             u: Variable in the quadratic model.
-
             v: Variable in the quadratic model.
-
             bias: Quadratic bias to set for interaction ``(u, v)``.
 
         Raises:
             TypeError: If ``u`` or ``v`` is not hashable.
-
+            ValueError: If a variable is not in the model or if ``u == v`` for
+                binary-valued variables (self-loops are not allowed for such
+                variables).
         """
         return self.data.set_quadratic
 
@@ -1288,12 +1287,20 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def upper_bound(self, v: Variable) -> Bias:
-        """Return the upper bound on the specified variable."""
+        """Return the upper bound on the specified variable.
+
+        Args:
+            v: Variable in the quadratic model.
+        """
         return self.data.upper_bound
 
     @forwarding_method
     def vartype(self, v: Variable) -> Vartype:
-        """The variable type of the given variable."""
+        """The variable type of the given variable.
+
+        Args:
+            v: Variable in the quadratic model.
+        """
         return self.data.vartype
 
 
