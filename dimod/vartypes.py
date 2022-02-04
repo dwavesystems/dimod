@@ -89,7 +89,9 @@ class Vartype(enum.Enum):
            the model are either -1 or 1.
         BINARY (:class:`.Vartype`): Vartype for binary models; variables of the
            model are either 0 or 1.
-
+        INTEGER (:class:`.Vartype`): Vartype for variables in quadratic models
+            that have values of type int.
+        DISCRETE (:class:`.Vartype`): Alias for ``INTEGER``.
     """
     SPIN = frozenset({-1, 1})
     BINARY = frozenset({0, 1})
@@ -131,20 +133,20 @@ def as_vartype(vartype: VartypeLike, extended: bool = False) -> Vartype:
         vartype (:class:`.Vartype`/str/set):
             Variable type. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
         extended (bool, optional, default=False):
             If `True`, vartype can also be:
 
-            * :class:`.Vartype.INTEGER`, ``'INTEGER'``
-            * :class:`.Vartype.DISCRETE`, ``'DISCRETE'``
+            * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+            * :class:`~dimod.Vartype.DISCRETE`, ``'DISCRETE'``
 
 
     Returns:
-        :class:`.Vartype`: Either :class:`.Vartype.SPIN` or
-        :class:`.Vartype.BINARY`. If `extended` is True, can also
-        be :class:`.Vartype.INTEGER`.
+        :class:`.Vartype`: Either :class:`~dimod.Vartype.SPIN` or
+        :class:`~dimod.Vartype.BINARY`. If `extended` is True, can also
+        be :class:`~dimod.Vartype.INTEGER`.
 
     See also:
         :func:`~dimod.decorators.vartype_argument`
