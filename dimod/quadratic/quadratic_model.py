@@ -1326,8 +1326,8 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
 
     Examples:
         This example generates a quadratic model to represent the polynomial,
-        :math:3i - 1.5`, where :math:`i` is an integer variable.
-        
+        :math:`3i - 1.5`, where :math:`i` is an integer variable.
+
         >>> i = dimod.Integer('i')
         >>> qm = 3*i - 1.5
         >>> print(qm.to_polystring())
@@ -1350,6 +1350,11 @@ def Integers(labels: Union[int, Iterable[Variable]],
     Yields:
         A :class:`.QuadraticModel` for each integer variable.
 
+    Examples:
+        >>> i, j = dimod.Integers(['i', 'j'])
+        >>> qm = 2*(pow(i, 2) + pow(j, 2)) - 3*i*j - i - j
+        >>> print(qm.to_polystring())
+        -i - j + 2*i*i - 3*i*j + 2*j*j
     """
     if isinstance(labels, Iterable):
         yield from (Integer(v, dtype=dtype) for v in labels)
@@ -1370,6 +1375,16 @@ def IntegerArray(labels: Union[int, Iterable[Variable]],
     Returns:
         Array of quadratic models, each with a single integer variable.
 
+    Examples:
+        This example creates a quadratic model that represents a clique
+        (fully-connected graph) of three nodes with integer values.
+
+        >>> import numpy as np
+        >>> i = dimod.IntegerArray(["i0", "i1", "i2"])
+        >>> j = dimod.IntegerArray(["j0", "j1", "j2"])
+        >>> qm = dimod.quicksum(dimod.quicksum(np.outer(i, j)))
+        >>> print(qm.to_polystring())
+        i0*j0 + j0*i1 + j0*i2 + i0*j1 + i1*j1 + i2*j1 + i0*j2 + i1*j2 + i2*j2
     """
     return _VariableArray(Integers, labels, dtype)
 
