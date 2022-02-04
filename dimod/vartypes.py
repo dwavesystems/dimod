@@ -90,7 +90,6 @@ class Vartype(enum.Enum):
            models that have values that are either 0 or 1.
         INTEGER: Vartype for variables in quadratic models
             that have values of type int.
-        DISCRETE: Alias for ``INTEGER``.
     """
     SPIN = frozenset({-1, 1})
     BINARY = frozenset({0, 1})

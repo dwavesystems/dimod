@@ -467,7 +467,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,
-                     label: Optional[Variable] = None,
+                     v: Optional[Variable] = None,
                      *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> Variable:
         """Add a variable to the quadratic model.
 
@@ -479,7 +479,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
 
-            label:
+            v:
                 Label for the variable. Defaults to the length of the
                 quadratic model, if that label is available. Otherwise defaults
                 to the lowest available positive integer label.
