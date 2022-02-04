@@ -81,14 +81,13 @@ integers = Integers()
 
 
 class Vartype(enum.Enum):
-    """An :py:class:`~enum.Enum` over the types of variables for the binary
-    quadratic model.
+    """An :py:class:`~enum.Enum` over the types of variables for quadratic models.
 
     Attributes:
-        SPIN: Vartype for spin-valued models; variables of
-           the model are either -1 or 1.
-        BINARY: Vartype for binary models; variables of the
-           model are either 0 or 1.
+        SPIN: Vartype for spin-valued binary quadratic models and variables of
+           quadratic models that have values that are either -1 or 1.
+        BINARY: Vartype for binary quadratic models and variables of quadratic
+           models that have values that are either 0 or 1.
         INTEGER: Vartype for variables in quadratic models
             that have values of type int.
         DISCRETE: Alias for ``INTEGER``.
