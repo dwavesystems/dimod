@@ -548,6 +548,27 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         If the binary quadratic model is spin-valued, this references itself,
         otherwise it references a view.
+
+        Examples:
+            This example exploits the simplicity of the Ising representation of
+            a Boolean NOT gate, :math:`s_1s_2`, relative to its QUBO counterpart,
+            :math:`2x_1x_2−x_1−x_2+1`, to change a QUBO representation of an AND
+            gate, derived in the :std:doc:`Ocean documentation's <oceandocs:index>`
+            :ref:`AND example <oceandocs:and>`, to represent a NAND gate.
+
+            >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
+            >>> x = dimod.BinaryArray(["in1", "in2", "out_and"])
+            >>> bqm = x.dot(Q).dot(x)               # bqm represents an AND gate
+            >>> bqm.spin.add_quadratic("out_and", "out_nand", 1)    # adds a NOT
+            >>> bqm.vartype is dimod.Vartype.BINARY
+            True
+            >>> print(dimod.ExactSolver().sample(bqm).lowest())
+              in1 in2 out_and out_nand energy num_oc.
+            0   1   1       1        0   -1.0       1
+            1   0   1       0        1   -1.0       1
+            2   1   0       0        1   -1.0       1
+            3   0   0       0        1   -1.0       1
+            ['BINARY', 4 rows, 4 samples, 4 variables]
         """
         if self.vartype is Vartype.SPIN:
             return self
