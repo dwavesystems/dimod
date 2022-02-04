@@ -5,8 +5,8 @@ Quadratic Models: Unconstrained
 ===============================
 
 This page describes the `dimod` package's unconstrained quadratic models: classes,
-attributes, methods, and some functions related to these classes. For an introduction,
-see :ref:`intro_qm`.
+attributes, methods, and some functions related to these classes. For an introduction
+and the data structure, see :ref:`intro_qm`.
 
 For reference documentation of **constrained** quadratic models, see
 :ref:`cqm`.
