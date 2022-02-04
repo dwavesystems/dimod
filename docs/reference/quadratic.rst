@@ -55,7 +55,9 @@ Methods
    :toctree: generated/
 
    ~QuadraticModel.add_linear
+   ~QuadraticModel.add_linear_from
    ~QuadraticModel.add_quadratic
+   ~QuadraticModel.add_quadratic_from
    ~QuadraticModel.add_variable
    ~QuadraticModel.add_variables_from
    ~QuadraticModel.change_vartype
@@ -85,6 +87,7 @@ Methods
    ~QuadraticModel.relabel_variables
    ~QuadraticModel.relabel_variables_as_integers
    ~QuadraticModel.remove_interaction
+   ~QuadraticModel.remove_variable
    ~QuadraticModel.scale
    ~QuadraticModel.set_linear
    ~QuadraticModel.set_quadratic

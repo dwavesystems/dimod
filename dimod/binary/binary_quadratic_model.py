@@ -12,6 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
 import collections.abc as abc
 import copy
 import itertools
@@ -296,7 +298,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                                                      self.vartype.name)
 
     # todo: singledisptach in 3.8
-    def __add__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
+    def __add__(self, other: Union[BQM, QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
                 # promote to QM
@@ -315,7 +317,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
         return NotImplemented
 
-    def __iadd__(self, other: Union['BQM', Bias]) -> 'BQM':
+    def __iadd__(self, other: Union[BQM, Bias]) -> BinaryQuadraticModel:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
                 return NotImplemented  # fallback on __add__
@@ -326,7 +328,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return self
         return NotImplemented
 
-    def __radd__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
+    def __radd__(self, other: Union[QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, Number):
             return self + other  # communative
         if isinstance(other, QuadraticModel):
@@ -336,7 +338,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return qm
         return NotImplemented
 
-    def __mul__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
+    def __mul__(self, other: Union[BQM, QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, BinaryQuadraticModel):
             if not (self.is_linear() and other.is_linear()):
                 raise TypeError(
@@ -379,14 +381,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return bqm
         return NotImplemented
 
-    def __imul__(self, other: Bias) -> 'BQM':
+    def __imul__(self, other: Bias) -> BinaryQuadraticModel:
         # in-place multiplication is only defined for numbers
         if isinstance(other, Number):
             self.scale(other)
             return self
         return NotImplemented
 
-    def __rmul__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
+    def __rmul__(self, other: Union[QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, Number):
             return self * other  # communative
         if isinstance(other, QuadraticModel):
@@ -413,7 +415,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return self * self
         return NotImplemented
 
-    def __sub__(self, other: Union['BQM', QM, Bias]) -> Union['BQM', QM]:
+    def __sub__(self, other: Union[BQM, QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
                 qm = QuadraticModel.from_bqm(self)
@@ -433,7 +435,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return bqm
         return NotImplemented
 
-    def __isub__(self, other: Union['BQM', Bias]) -> 'BQM':
+    def __isub__(self, other: Union[BQM, Bias]) -> BinaryQuadraticModel:
         if isinstance(other, BinaryQuadraticModel):
             if other.num_variables and other.vartype != self.vartype:
                 return NotImplemented  # fallback on __sub__
@@ -446,7 +448,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return self
         return NotImplemented
 
-    def __rsub__(self, other: Union[QM, Bias]) -> Union['BQM', QM]:
+    def __rsub__(self, other: Union[QM, Bias]) -> Union[BQM, QM]:
         if isinstance(other, Number):
             bqm = -self  # makes a new one
             bqm.offset += other
@@ -456,10 +458,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return other - QuadraticModel.from_bqm(self)
         return NotImplemented
 
-    def __truediv__(self, other: Bias) -> 'BQM':
+    def __truediv__(self, other: Bias) -> BinaryQuadraticModel:
         return self * (1 / other)
 
-    def __itruediv__(self, other: Bias) -> 'BQM':
+    def __itruediv__(self, other: Bias) -> BinaryQuadraticModel:
         self *= (1 / other)
         return self
 
@@ -814,7 +816,17 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
-        """Add a quadratic bias between two variables."""
+        """Add a quadratic bias between two variables.
+
+        Args:
+            u: Variable in the binary quadratic model.
+            v: Variable in the binary quadratic model.
+            bias: Quadratic bias for the interaction.
+
+        Raises:
+            ValueError: If any self-loops are given. E.g. ``(u, u, bias)`` is not
+                a valid triplet.
+        """
         return self.data.add_quadratic
 
     def add_interaction(self, *args, **kwargs):
@@ -1403,7 +1415,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     def is_almost_equal(self, other: Union['BinaryQuadraticModel', QuadraticModel, Bias],
                         places: int = 7) -> bool:
-        """Test for near eqaulity to all biases of a given binary quadratic model.
+        """Test for near equality to all biases of a given binary quadratic model.
 
         Args:
             other:
