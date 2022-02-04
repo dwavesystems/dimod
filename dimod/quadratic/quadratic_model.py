@@ -486,11 +486,11 @@ class QuadraticModel(QuadraticViewsMixin):
 
             lower_bound:
                 Lower bound on the variable. Ignored when the variable is
-                not :class:`~dimod.Vartype.INTEGER`.
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
 
             upper_bound:
                 Upper bound on the variable. Ignored when the variable is
-                not :class:`~dimod.Vartype.INTEGER`.
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
 
         Returns:
             The variable label.
@@ -566,7 +566,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.degree
 
     def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
-        """Determine the energies of the given samples_like.
+        """Determine the energies of the given samples-like.
 
         Args:
             samples_like (samples_like):

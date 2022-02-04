@@ -85,13 +85,13 @@ class Vartype(enum.Enum):
     quadratic model.
 
     Attributes:
-        SPIN (:class:`.Vartype`): Vartype for spin-valued models; variables of
+        SPIN: Vartype for spin-valued models; variables of
            the model are either -1 or 1.
-        BINARY (:class:`.Vartype`): Vartype for binary models; variables of the
+        BINARY: Vartype for binary models; variables of the
            model are either 0 or 1.
-        INTEGER (:class:`.Vartype`): Vartype for variables in quadratic models
+        INTEGER: Vartype for variables in quadratic models
             that have values of type int.
-        DISCRETE (:class:`.Vartype`): Alias for ``INTEGER``.
+        DISCRETE: Alias for ``INTEGER``.
     """
     SPIN = frozenset({-1, 1})
     BINARY = frozenset({0, 1})
