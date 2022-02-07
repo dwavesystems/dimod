@@ -33,6 +33,7 @@ import numpy as np
 from dimod.sampleset import as_samples, infer_vartype, SampleSet
 from dimod.vartypes import Vartype
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+from dimod.typing import SampleLike
 
 __all__ = ['Initialized']
 
@@ -56,7 +57,7 @@ class Initialized(abc.ABC):
                              initial_states_generator: str = 'random',
                              num_reads: Optional[int] = None,
                              seed: Optional[int] = None,
-                             copy_always: bool = False) -> Tuple['samples_like', str, int, int]:
+                             copy_always: bool = False) -> Tuple[SampleLike, str, int, int]:
         """Parse or generate initial states for an initialized sampler.
 
         Args:
