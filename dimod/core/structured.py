@@ -77,7 +77,6 @@ from collections import namedtuple
 import typing
 
 from dimod.typing import Variable
-from dimod.binary_quadratic_model import BinaryQuadraticModel
 
 __all__ = ['Structured']
 
@@ -149,7 +148,7 @@ class Structured(abc.ABC):
 
         return G
 
-    def valid_bqm_graph(self, bqm: BinaryQuadraticModel) -> bool:
+    def valid_bqm_graph(self, bqm: "BinaryQuadraticModel") -> bool:
         """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
         matches the graph provided by the sampler.
 
