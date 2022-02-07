@@ -110,7 +110,7 @@ from __future__ import annotations
 import abc
 import warnings
 
-from typing import Union, Dict, Sequence, Tuple
+import typing
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
@@ -177,7 +177,7 @@ class Sampler(metaclass=SamplerABCMeta):
     """
 
     @abc.abstractproperty  # for python2 compatibility
-    def parameters(self) -> dict:
+    def parameters(self) -> typing.Dict:
         """Parameters as a dict, where keys are keyword parameters accepted by the
         sampler methods and values are lists of the properties relevent to each
         parameter.
@@ -185,7 +185,7 @@ class Sampler(metaclass=SamplerABCMeta):
         pass
 
     @abc.abstractproperty  # for python2 compatibility
-    def properties(self)  -> dict:
+    def properties(self)  -> typing.Dict:
         """Properties as a dict containing any additional information about the
         sampler.
         """
@@ -240,8 +240,8 @@ class Sampler(metaclass=SamplerABCMeta):
         return sampleset.change_vartype(bqm.vartype, energy_offset=offset)
 
     @samplemixinmethod
-    def sample_ising(self, h: Union[Dict[Variable, Bias], Sequence[Bias]],
-                     J: Dict[Tuple[Variable, Variable], Bias],
+    def sample_ising(self, h: typing.Union[typing.Dict[Variable, Bias], typing.Sequence[Bias]],
+                     J: typing.Dict[typing.Tuple[Variable, Variable], Bias],
                      **parameters) -> SampleSet:
         """Sample from an Ising model using the implemented sample method.
 
@@ -269,19 +269,17 @@ class Sampler(metaclass=SamplerABCMeta):
         return self.sample(bqm, **parameters)
 
     @samplemixinmethod
-    def sample_qubo(self, Q: Dict[Tuple[Variable, Variable], Bias],
+    def sample_qubo(self, Q: typing.Dict[typing.Tuple[Variable, Variable], Bias],
                     **parameters)  -> SampleSet:
         """Sample from a QUBO using the implemented sample method.
 
         This method is inherited from the :class:`.Sampler` base class.
 
-        Converts the QUBO into a :obj:`.BinaryQuadraticModel` and then
-        calls :meth:`.sample`.
+        Converts the quadratic unconstrained binary optimization (QUBO) into a
+        :obj:`.BinaryQuadraticModel` and then calls :meth:`.sample`.
 
         Args:
-            Q:
-                Coefficients of a quadratic unconstrained binary optimization
-                (QUBO) problem.
+            Q: Coefficients of a QUBO problem.
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
@@ -295,7 +293,7 @@ class Sampler(metaclass=SamplerABCMeta):
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
 
-    def remove_unknown_kwargs(self, **kwargs):
+    def remove_unknown_kwargs(self, **kwargs) -> typing.Dict:
         """Check that all `kwargs` are accepted by the sampler. If a
         keyword is unknown, a warning is raised and the argument is removed.
 
@@ -303,9 +301,7 @@ class Sampler(metaclass=SamplerABCMeta):
             **kwargs:
                 Keyword arguments to be validated.
 
-        Returns:
-            dict: Updated `kwargs`
-
+        Returns: Updated `kwargs` dict. 
         """
         for kw in [k for k in kwargs if k not in self.parameters]:
             msg = "Ignoring unknown kwarg: {!r}".format(kw)
