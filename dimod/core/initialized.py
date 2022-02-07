@@ -34,7 +34,7 @@ from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 
 try:
     InitialStateGenerators = typing.Literal['none','tile', 'random']
-except ImportError:
+except AttributeError:
     InitialStateGenerators = str
 
 __all__ = ['Initialized']
