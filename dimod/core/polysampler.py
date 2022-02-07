@@ -80,7 +80,7 @@ class PolySampler(abc.ABC):
         """
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
 
-    def sample_hubo(self, H:typing.Dict[typing.Tuple[Variable, Variable], Bias],
+    def sample_hubo(self, H: typing.Dict[typing.Tuple[Variable, Variable], Bias],
                     **kwargs) -> SampleSet:
         """Sample from a higher-order unconstrained binary optimization problem.
 
