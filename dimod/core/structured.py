@@ -126,7 +126,7 @@ class Structured(abc.ABC):
     @property
     def structure(self) -> _Structure:
         """Structure of the structured sampler formatted as a
-        :class:`~collections.namedtuple` where the 3-tuple values are the
+        :func:`~collections.namedtuple` where the 3-tuple values are the
         :attr:`.nodelist`, :attr:`.edgelist` and :attr:`.adjacency` attributes.
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
