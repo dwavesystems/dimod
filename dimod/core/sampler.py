@@ -294,14 +294,25 @@ class Sampler(metaclass=SamplerABCMeta):
         return self.sample(bqm, **parameters)
 
     def remove_unknown_kwargs(self, **kwargs) -> typing.Dict:
-        """Check that all `kwargs` are accepted by the sampler. If a
-        keyword is unknown, a warning is raised and the argument is removed.
+        """Warn on and remove keyword arguments not accepted by the sampler.
 
         Args:
             **kwargs:
                 Keyword arguments to be validated.
 
-        Returns: Updated `kwargs` dict. 
+        Returns: Updated `kwargs` dict.
+
+        Examples:
+            >>> import warnings
+            >>> sampler = dimod.RandomSampler()
+            >>> with warnings.catch_warnings():
+            ...     warnings.filterwarnings('ignore')
+            ...     try:
+            ...         kwargs = sampler.remove_unknown_kwargs(num_reads=10,
+            ...                                                non_param=3)
+            ...     except dimod.exceptions.SamplerUnknownArgWarning:
+            ...:        pass
+            {'num_reads': 10}
         """
         for kw in [k for k in kwargs if k not in self.parameters]:
             msg = "Ignoring unknown kwarg: {!r}".format(kw)
