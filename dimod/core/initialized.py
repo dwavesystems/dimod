@@ -33,15 +33,15 @@ from dimod.vartypes import Vartype
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 
 try:
-    InitialStateGenerators = typing.Literal['none','tile', 'random']
+    InitialStateGenerator = typing.Literal['none', 'tile', 'random']
 except AttributeError:
-    InitialStateGenerators = str
+    InitialStateGenerator = str
 
 __all__ = ['Initialized']
 
 class ParsedInputs(typing.NamedTuple):
     initial_states: SampleSet
-    initial_states_generator: InitialStateGenerators
+    initial_states_generator: InitialStateGenerator
     num_reads: int
     seed: int
 
@@ -54,7 +54,7 @@ class Initialized(abc.ABC):
     # IdentitySampler
     def parse_initial_states(self, bqm: BinaryQuadraticModel,
                              initial_states = None,
-                             initial_states_generator: InitialStateGenerators = 'random',
+                             initial_states_generator: InitialStateGenerator = 'random',
                              num_reads: typing.Optional[int] = None,
                              seed: typing.Optional[int] = None,
                              copy_always: bool = False) -> ParsedInputs:
