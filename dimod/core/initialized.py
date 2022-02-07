@@ -19,31 +19,31 @@ See the source code for :class:`.IdentitySampler` for an example of using
 this abstract base class in a sampler.
 
 """
-from __future__ import annotations
-
 import abc
 
 from collections import namedtuple
 from numbers import Integral
 
-from typing import Optional, Tuple
+import typing
 
 import numpy as np
 
 from dimod.sampleset import as_samples, infer_vartype, SampleSet
 from dimod.vartypes import Vartype
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-from dimod.typing import SampleLike
+
+try:
+    InitialStateGenerators = typing.Literal['none','tile', 'random']
+except ImportError:
+    InitialStateGenerators = str
 
 __all__ = ['Initialized']
 
-
-ParsedInputs = namedtuple('ParsedInputs',
-                          ['initial_states',
-                           'initial_states_generator',
-                           'num_reads',
-                           'seed'])
-
+class ParsedInputs(typing.NamedTuple):
+    initial_states: SampleSet
+    initial_states_generator: InitialStateGenerators
+    num_reads: int
+    seed: int
 
 class Initialized(abc.ABC):
 
@@ -54,10 +54,10 @@ class Initialized(abc.ABC):
     # IdentitySampler
     def parse_initial_states(self, bqm: BinaryQuadraticModel,
                              initial_states = None,
-                             initial_states_generator: str = 'random',
-                             num_reads: Optional[int] = None,
-                             seed: Optional[int] = None,
-                             copy_always: bool = False) -> Tuple[SampleLike, str, int, int]:
+                             initial_states_generator: InitialStateGenerators = 'random',
+                             num_reads: typing.Optional[int] = None,
+                             seed: typing.Optional[int] = None,
+                             copy_always: bool = False) -> ParsedInputs:
         """Parse or generate initial states for an initialized sampler.
 
         Args:

@@ -32,25 +32,7 @@ supported samplers with `child` providing the first).
 Examples:
     The :class:`~dwave.preprocessing.composites.SpinReversalTransformComposite`
     performs spin-reversal transforms ("gauge transformations") as a preprocessing
-    step for a given sampler. It implements the pseudocode below:
-
-    .. code-block:: python
-
-        class SpinReversalTransformComposite(Sampler, Composite):
-
-            # Updates to inherited sampler properties and parameters
-            # Definition of the composite's children (i.e., supported samplers):
-            children = None
-            def __init__(self, child):
-                self.children = [child]
-
-            # The composite's implementation of spin-transformation functionality:
-            def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
-                response = None
-                # Preprocessing code that includes instantiation of a sampler:
-                # flipped_response = self.child.sample(bqm, **kwargs)
-                return response
-
+    step for a given sampler.
     Given dimod sampler :class:`.ExactSolver` for example, the composed sampler is
     used as any dimod sampler, inheriting an Ising sampling method:
 
