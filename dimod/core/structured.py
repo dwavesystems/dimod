@@ -74,10 +74,17 @@ import abc
 
 from collections import namedtuple
 
+import typing
+
+from dimod.typing import Variable
+from dimod.binary_quadratic_model import BinaryQuadraticModel
+
 __all__ = ['Structured']
 
-_Structure = namedtuple("Structure", ['nodelist', 'edgelist', 'adjacency'])
-
+class _Structure(typing.NamedTuple):
+    nodelist: typing.List[Variable]
+    edgelist: typing.List[typing.Tuple[Variable, Variable]]
+    adjacency: typing.Dict[Variable, typing.Set]
 
 class Structured(abc.ABC):
     """The abstract base class for dimod structured samplers.
@@ -90,22 +97,21 @@ class Structured(abc.ABC):
 
     """
     @abc.abstractproperty
-    def nodelist(self):
-        """list: Nodes/variables allowed by the sampler."""
+    def nodelist(self) -> typing.List[Variable]:
+        """Nodes/variables allowed by the sampler."""
         pass
 
     @abc.abstractproperty
-    def edgelist(self):
-        """list: Edges/interactions allowed by the sampler in the form
-        `[(u, v), ...]`.
+    def edgelist(self)  -> typing.List[typing.Tuple[Variable, Variable]]:
+        """Edges/interactions allowed by the sampler.
         """
         pass
 
     @property
-    def adjacency(self):
-        """dict[variable, set]: Adjacency structure formatted as a dict, where
-        keys are the nodes of the structured sampler and values are sets of all
-        adjacent nodes for each key node.
+    def adjacency(self)  -> typing.Dict[Variable, typing.Set]:
+        """Adjacency structure formatted as a dict, where keys are the nodes of
+        the structured sampler and values are sets of all adjacent nodes for each
+        key node.
         """
         if not hasattr(self, '_adjacency'):
             adjacency = {v: set() for v in self.nodelist}
@@ -119,17 +125,16 @@ class Structured(abc.ABC):
         return self._adjacency
 
     @property
-    def structure(self):
+    def structure(self) -> _Structure:
         """Structure of the structured sampler formatted as a
-        :class:`~collections.namedtuple`, `Structure(nodelist, edgelist, adjacency)`,
-        where the 3-tuple values are the :attr:`.nodelist`, :attr:`.edgelist`
-        and :attr:`.adjacency` attributes.
+        :class:`~collections.namedtuple` where the 3-tuple values are the
+        :attr:`.nodelist`, :attr:`.edgelist` and :attr:`.adjacency` attributes.
         """
         return _Structure(self.nodelist, self.edgelist, self.adjacency)
 
     def to_networkx_graph(self):
         """Convert structure to NetworkX graph format.
-        
+
         Note that NetworkX must be installed for this method to work.
 
         Returns:
@@ -144,7 +149,7 @@ class Structured(abc.ABC):
 
         return G
 
-    def valid_bqm_graph(self, bqm: "BinaryQuadraticModel"):
+    def valid_bqm_graph(self, bqm: BinaryQuadraticModel) -> bool:
         """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
         matches the graph provided by the sampler.
 
