@@ -19,16 +19,20 @@ See the source code for :class:`.IdentitySampler` for an example of using
 this abstract base class in a sampler.
 
 """
+from __future__ import annotations
 
 import abc
 
 from collections import namedtuple
 from numbers import Integral
 
+from typing import Optional, Tuple
+
 import numpy as np
 
 from dimod.sampleset import as_samples, infer_vartype, SampleSet
 from dimod.vartypes import Vartype
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 
 __all__ = ['Initialized']
 
@@ -47,22 +51,19 @@ class Initialized(abc.ABC):
 
     # dev note: if this function is updated, make sure to also update
     # IdentitySampler
-    def parse_initial_states(self, bqm,
-                             initial_states=None,
-                             initial_states_generator='random',
-                             num_reads=None, seed=None, copy_always=False):
-        """Parses/generates initial states for an initialized sampler.
+    def parse_initial_states(self, bqm: BinaryQuadraticModel,
+                             initial_states = None,
+                             initial_states_generator: str = 'random',
+                             num_reads: Optional[int] = None,
+                             seed: Optional[int] = None,
+                             copy_always: bool = False) -> Tuple['samples_like', str, int, int]:
+        """Parse or generate initial states for an initialized sampler.
 
         Args:
-            bqm (:class:`~dimod.BinaryQuadraticModel`):
-                The binary quadratic model.
+            bqm:
+                Binary quadratic model.
 
-            num_reads (int, optional, default=len(initial_states) or 1):
-                Number of reads. If ``num_reads`` is not explicitly given, it is
-                selected to match the number of initial states given. If no 
-                initial states are given, it defaults to 1.
-
-            initial_states (samples-like, optional, default=None):
+            initial_states (samples-like):
                 One or more samples, each defining an initial state for all the
                 problem variables. Initial states are given one per read, but
                 if fewer than ``num_reads`` initial states are defined,
@@ -70,8 +71,8 @@ class Initialized(abc.ABC):
                 ``initial_states_generator``. See func:`.as_samples` for a
                 description of "samples-like".
 
-            initial_states_generator ({'none', 'tile', 'random'}, optional, default='random'):
-                Defines the expansion of `initial_states` if fewer than
+            initial_states_generator:
+                Defines the expansion of ``initial_states`` if fewer than
                 ``num_reads`` are specified:
 
                 * "none":
@@ -87,14 +88,18 @@ class Initialized(abc.ABC):
                     generated states if fewer than ``num_reads`` or truncates if
                     greater.
 
-            seed (int (32-bit unsigned integer), optional):
-                Seed to use for the PRNG. Specifying a particular seed with a
-                constant set of parameters produces identical results. If not
-                provided, a random seed is chosen.
+            num_reads:
+                Number of reads. Defaults to the number of initial states, if
+                ``initial_states`` is specified, or to 1, if not.
 
-            copy_always (bool, optional, default=False):
-                If True, then ``initial_states`` is guaranteed to be copied, 
-                otherwise it is only copied if necessary.
+            seed:
+                32-bit unsigned integer seed to use for the PRNG. Specifying a
+                particular seed with a constant set of parameters produces
+                identical results. If not provided, a random seed is chosen.
+
+            copy_always:
+                If True, ``initial_states`` is always copied; otherwise it is
+                copied only if necessary.
 
         Returns:
             A named tuple with `['initial_states', 'initial_states_generator',
