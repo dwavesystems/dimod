@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 """
-The :class:`.Sampler` abstract base class (see :mod:`abc`) helps you create new
+The :class:`.Sampler` abstract base class (:mod:`abc`) helps you create new
 dimod samplers.
 
 Any new dimod sampler must define a subclass of :class:`.Sampler` that implements
@@ -28,8 +28,9 @@ Implemented sample methods must accept, and warn on, unknown keyword arguments
 method provided for this purpose.
 
 For example, the following steps show how to easily create a dimod sampler. It is
-sufficient to implement a single method (in this example the :meth:`sample_ising` method)
-to create a dimod sampler with the :class:`.Sampler` class.
+sufficient to implement a single method (in this example the
+:meth:`~.Sampler.sample_ising` method) to create a dimod sampler with the
+:class:`.Sampler` class.
 
 .. testcode::
 
@@ -73,11 +74,12 @@ as mixins.
 >>> response = sampler.sample_ising({'a': -1}, {})
 ...
 ...  # Mixins provided by Sampler class:
->>> response = sampler.sample_qubo({('a', 'a'): 1})  
->>> response = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
+>>> sampleset = sampler.sample_qubo({('a', 'a'): 1})
+>>> sampleset = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
 
-Below is a more complex version of the same sampler, where the :attr:`properties` and
-:attr:`parameters` properties return non-empty dicts.
+Below is a more complex version of the same sampler, where the
+:attr:`~.Sampler.properties` and :attr:`~.Sampler.parameters` properties return
+non-empty dicts.
 
 .. testcode::
 
@@ -102,15 +104,17 @@ Below is a more complex version of the same sampler, where the :attr:`properties
         def parameters(self):
             return self._parameters
 
-
 """
+
 import abc
+import typing
 import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
+from dimod.sampleset import SampleSet
+from dimod.typing import Bias, Variable
 from dimod.vartypes import Vartype
-
 
 __all__ = ['Sampler']
 
@@ -165,25 +169,27 @@ class Sampler(metaclass=SamplerABCMeta):
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
     :meth:`~.Sampler.sample_qubo` assuming at least one is implemented.
 
-    Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`, which
-    may be used in sample methods to handle unknown kwargs.
+    Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`,
+    which may be used in sample methods to handle unknown kwargs.
     """
 
     @abc.abstractproperty  # for python2 compatibility
-    def parameters(self):
-        """dict: A dict where keys are the keyword parameters accepted by the sampler
-        methods and values are lists of the properties relevent to each parameter.
+    def parameters(self) -> typing.Dict[str, typing.Any]:
+        """Parameters as a dict, where keys are keyword parameters accepted by the
+        sampler methods and values are lists of the properties relevent to each
+        parameter.
         """
         pass
 
     @abc.abstractproperty  # for python2 compatibility
-    def properties(self):
-        """dict: A dict containing any additional information about the sampler.
+    def properties(self) -> typing.Dict[str, typing.Any]:
+        """Properties as a dict containing any additional information about the
+        sampler.
         """
         pass
 
     @samplemixinmethod
-    def sample(self, bqm, **parameters):
+    def sample(self, bqm: BinaryQuadraticModel, **parameters) -> SampleSet:
         """Sample from a binary quadratic model.
 
         This method is inherited from the :class:`.Sampler` base class.
@@ -193,15 +199,14 @@ class Sampler(metaclass=SamplerABCMeta):
         :meth:`.sample_ising` or :meth:`.sample_qubo`).
 
         Args:
-            :obj:`.BinaryQuadraticModel`:
-                A binary quadratic model.
 
-            **kwargs:
+            bqm: A binary quadratic model.
+
+            **parameters:
                 See the implemented sampling for additional keyword definitions.
-                Unknown keywords are accepted but a warning will be raised.
+                Unknown keywords are accepted with a warning raised.
 
-        Returns:
-            :obj:`.SampleSet`
+        Returns: Samples from the binary quadratic model.
 
         See also:
             :meth:`.sample_ising`, :meth:`.sample_qubo`
@@ -232,7 +237,9 @@ class Sampler(metaclass=SamplerABCMeta):
         return sampleset.change_vartype(bqm.vartype, energy_offset=offset)
 
     @samplemixinmethod
-    def sample_ising(self, h, J, **parameters):
+    def sample_ising(self, h: typing.Union[typing.Mapping[Variable, Bias], typing.Sequence[Bias]],
+                     J: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+                     **parameters) -> SampleSet:
         """Sample from an Ising model using the implemented sample method.
 
         This method is inherited from the :class:`.Sampler` base class.
@@ -241,20 +248,15 @@ class Sampler(metaclass=SamplerABCMeta):
         calls :meth:`.sample`.
 
         Args:
-            h (dict/list):
-                Linear biases of the Ising problem. If a dict, should be of the
-                form `{v: bias, ...}` where is a spin-valued variable and `bias`
-                is its associated bias. If a list, it is treated as a list of
-                biases where the indices are the variable labels.
+            h: Linear biases of the Ising problem. If a list, indices are the
+                variable labels.
 
-            J (dict[(variable, variable), bias]):
-                Quadratic biases of the Ising problem.
+            J: Quadratic biases of the Ising problem.
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
 
-        Returns:
-            :obj:`.SampleSet`
+        Returns: Samples from the Ising model.
 
         See also:
             :meth:`.sample`, :meth:`.sample_qubo`
@@ -264,26 +266,22 @@ class Sampler(metaclass=SamplerABCMeta):
         return self.sample(bqm, **parameters)
 
     @samplemixinmethod
-    def sample_qubo(self, Q, **parameters):
+    def sample_qubo(self, Q: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+                    **parameters)  -> SampleSet:
         """Sample from a QUBO using the implemented sample method.
 
         This method is inherited from the :class:`.Sampler` base class.
 
-        Converts the QUBO into a :obj:`.BinaryQuadraticModel` and then
-        calls :meth:`.sample`.
+        Converts the quadratic unconstrained binary optimization (QUBO) into a
+        :obj:`.BinaryQuadraticModel` and then calls :meth:`.sample`.
 
         Args:
-            Q (dict):
-                Coefficients of a quadratic unconstrained binary optimization
-                (QUBO) problem. Should be a dict of the form `{(u, v): bias, ...}`
-                where `u`, `v`, are binary-valued variables and `bias` is their
-                associated coefficient.
+            Q: Coefficients of a QUBO problem.
 
             **kwargs:
                 See the implemented sampling for additional keyword definitions.
 
-        Returns:
-            :obj:`.SampleSet`
+        Returns: Samples from a QUBO.
 
         See also:
             :meth:`.sample`, :meth:`.sample_ising`
@@ -292,17 +290,26 @@ class Sampler(metaclass=SamplerABCMeta):
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
 
-    def remove_unknown_kwargs(self, **kwargs):
-        """Check that all `kwargs` are accepted by the sampler. If a
-        keyword is unknown, a warning is raised and the argument is removed.
+    def remove_unknown_kwargs(self, **kwargs) -> typing.Dict[str, typing.Any]:
+        """Remove with warnings any keyword arguments not accepted by the sampler.
 
         Args:
             **kwargs:
                 Keyword arguments to be validated.
 
-        Returns:
-            dict: Updated `kwargs`
+        Returns: Updated `kwargs` dict.
 
+        Examples:
+            >>> import warnings
+            >>> sampler = dimod.RandomSampler()
+            >>> with warnings.catch_warnings():
+            ...     warnings.filterwarnings('ignore')
+            ...     try:
+            ...         kwargs = sampler.remove_unknown_kwargs(num_reads=10,
+            ...                                                non_param=3)
+            ...     except dimod.exceptions.SamplerUnknownArgWarning:
+            ...:        pass
+            {'num_reads': 10}
         """
         for kw in [k for k in kwargs if k not in self.parameters]:
             msg = "Ignoring unknown kwarg: {!r}".format(kw)

@@ -92,6 +92,13 @@ Mixin Methods
    Sampler.sample_ising
    Sampler.sample_qubo
 
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   Sampler.remove_unknown_kwargs
 
 Creating a Composed Sampler
 ===========================
