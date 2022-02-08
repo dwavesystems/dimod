@@ -468,7 +468,7 @@ class QuadraticModel(QuadraticViewsMixin):
     @forwarding_method
     def add_variable(self, vartype: VartypeLike,
                      v: Optional[Variable] = None,
-                     *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> Variable:
+                     *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> Variable:
         """Add a variable to the quadratic model.
 
         Args:
@@ -899,21 +899,31 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.lower_bound
 
-    def set_lower_bound(self, v: Variable, lb: int):
-        """Set the lower bound for an integer variable.
+    def set_lower_bound(self, v: Variable, lb: float):
+        """Set the lower bound for a variable.
 
         Args:
             v: Variable in the quadratic model.
             lb: Lower bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
         """
         return self.data.set_lower_bound(v, lb)
 
-    def set_upper_bound(self, v: Variable, ub: int):
-        """Set the upper bound for an integer variable.
+    def set_upper_bound(self, v: Variable, ub: float):
+        """Set the upper bound for a variable.
 
         Args:
             v: Variable in the quadratic model.
             ub: Upper bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
         """
         return self.data.set_upper_bound(v, ub)
 
@@ -1310,7 +1320,7 @@ QM = QuadraticModel
 @unique_variable_labels
 def Integer(label: Optional[Variable] = None, bias: Bias = 1,
             dtype: Optional[DTypeLike] = None,
-            *, lower_bound: int = 0, upper_bound: Optional[int] = None) -> QuadraticModel:
+            *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> QuadraticModel:
     """Return a quadratic model with a single integer variable.
 
     Args:

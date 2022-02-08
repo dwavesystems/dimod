@@ -81,6 +81,10 @@ class TestAddVariable(unittest.TestCase):
         self.assertEqual(qm.lower_bound(k), -50)
         self.assertEqual(qm.upper_bound(k), 50)
 
+        with self.assertRaises(ValueError):
+            qm.add_variable('INTEGER', 'l', lower_bound=.2, upper_bound=.9)  # no available integer
+        qm.add_variable('INTEGER', 'l', lower_bound=.9, upper_bound=1.1)  # this is fine
+
     def test_add_integer_with_contradicting_ub_lb(self):
         qm = QM()
         qm.add_variable('INTEGER', 'i', lower_bound=-1, upper_bound=103)
@@ -93,7 +97,30 @@ class TestAddVariable(unittest.TestCase):
 
         qm.add_variable('INTEGER', 'i', lower_bound=-1)
         qm.add_variable('INTEGER', 'i', upper_bound=103, lower_bound=-1)
+        qm.add_variable('INTEGER', 'i')  # nothing specified
+        qm.add_variable('INTEGER', 'i', upper_bound=103)
 
+    def test_vartypes_bounds(self):
+        for vartype in list(dimod.Vartype):
+            with self.subTest(vartype.name):
+                qm = QM()
+                qm.add_variable(vartype, 'x', lower_bound=-10.5, upper_bound=10.5)
+
+                if vartype is dimod.SPIN:
+                    self.assertEqual(qm.lower_bound('x'), -1)
+                    self.assertEqual(qm.upper_bound('x'), +1)
+                elif vartype is dimod.BINARY:
+                    self.assertEqual(qm.lower_bound('x'), 0)
+                    self.assertEqual(qm.upper_bound('x'), 1)
+                else:
+                    self.assertEqual(qm.lower_bound('x'), -10.5)
+                    self.assertEqual(qm.upper_bound('x'), 10.5)
+
+                if vartype is not dimod.INTEGER:
+                    qm.add_variable(vartype, 'y', lower_bound=.1, upper_bound=.9)
+                else:
+                    with self.assertRaises(ValueError):
+                        qm.add_variable(vartype, 'y', lower_bound=.1, upper_bound=.9)
 
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
@@ -137,6 +164,15 @@ class TestBounds(unittest.TestCase):
         with self.assertRaises(ValueError):
             i0*i1
 
+    def test_integer_bound_too_small(self):
+        qm = QuadraticModel()
+        qm.add_variable('INTEGER', 'i', lower_bound=.5, upper_bound=1.5)
+
+        with self.assertRaises(ValueError):
+            qm.set_lower_bound('i', 1.2)
+        with self.assertRaises(ValueError):
+            qm.set_upper_bound('i', .7)
+
     @parameterized.expand([(np.float64,), (np.float32,)])
     def test_set_lower_bound(self, dtype):
         qm = QuadraticModel(dtype=dtype)
@@ -161,8 +197,8 @@ class TestBounds(unittest.TestCase):
         qm.set_lower_bound('i', -10)
         self.assertEqual(qm.lower_bound('i'), -10)
 
-        qm.set_lower_bound('i', -11.3)
-        self.assertEqual(qm.lower_bound('i'), -11)
+        qm.set_lower_bound('i', -11.5)
+        self.assertEqual(qm.lower_bound('i'), -11.5)
 
     @parameterized.expand([(np.float64,), (np.float32,)])
     def test_set_upper_bound(self, dtype):
@@ -188,8 +224,8 @@ class TestBounds(unittest.TestCase):
         qm.set_upper_bound('i', 10)
         self.assertEqual(qm.upper_bound('i'), 10)
 
-        qm.set_upper_bound('i', 11.3)
-        self.assertEqual(qm.upper_bound('i'), 11)
+        qm.set_upper_bound('i', 11.5)
+        self.assertEqual(qm.upper_bound('i'), 11.5)
 
     def test_symbolic_mul(self):
         i = Integer('i', lower_bound=-10, upper_bound=10)

@@ -1,0 +1,24 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.set_lower_bound()`` method.
+    See `#1105 <https://github.com/dwavesystems/dimod/issues/1105>`_.
+  - |
+    Add ``ConstrainedQuadraticModel.set_upper_bound()`` method.
+    See `#1105 <https://github.com/dwavesystems/dimod/issues/1105>`_.
+upgrade:
+  - |
+    Bounds for integer variables are no longer rounded to the nearest int
+    in ``QuadraticModel`` and ``ConstrainedQuadraticModel``.
+fixes:
+  - |
+    It is no longer possible to add an integer variables to a quadratic model
+    with bounds that do not include at least one integer between them.
+    E.g. ``qm.add_variable('INTEGER', 'v', lower_bound=1.2, upper_bound=1.5)``
+    will now raise a ``ValueError``.
+  - |
+    ``ConstrainedQuadraticModel.add_variable()`` now correctly raises an error
+    when a variable is added twice with inconsistent bounds.
+  - |
+    ``ConstrainedQuadraticModel.add_variable()`` now correctly returns the
+    variable label when a variable is added twice.

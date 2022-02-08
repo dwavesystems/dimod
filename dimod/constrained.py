@@ -604,7 +604,10 @@ class ConstrainedQuadraticModel:
         return label
 
     def add_variable(self, v: Variable, vartype: VartypeLike,
-                     *, lower_bound: int = 0, upper_bound: Optional[int] = None):
+                     *,
+                     lower_bound: Optional[float] = None,
+                     upper_bound: Optional[float] = None,
+                     ) -> Variable:
         """Add a variable to the model.
 
         Args:
@@ -625,17 +628,23 @@ class ConstrainedQuadraticModel:
                 An upper bound on the variable. Ignored when the variable is
                 not :class:`Vartype.INTEGER`.
 
+        Returns:
+            The variable label.
+
+        Raises:
+            ValueError: If ``v`` is already a variable in the model and
+                the ``vartype``, ``lower_bound``, or ``upper_bound`` are
+                inconsistent.
+
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('i', 'INTEGER')
+            'i'
 
         """
-        if self.variables.count(v):
-            if as_vartype(vartype, extended=True) != self.vartype(v):
-                raise ValueError("given variable has already been added with a different vartype")
-        else:
-            return self.objective.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
+        return self.objective.add_variable(
+            vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
     def check_feasible(self, sample_like, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
         r"""Return the feasibility of the given sample.
@@ -1114,6 +1123,24 @@ class ConstrainedQuadraticModel:
 
         return self
 
+    def set_lower_bound(self, v: Variable, lb: float):
+        """Set the lower bound for a variable.
+
+        Args:
+            v: Variable in the constrained quadratic model.
+            lb: Lower bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
+        """
+        self.objective.set_lower_bound(v, lb)
+        for comp in self.constraints.values():
+            qm = comp.lhs
+            if v in qm.variables:
+                qm.set_lower_bound(v, lb)
+
     def set_objective(self, objective: Union[BinaryQuadraticModel,
                                              QuadraticModel, Iterable]):
         """Set the objective of the constrained quadratic model.
@@ -1145,6 +1172,24 @@ class ConstrainedQuadraticModel:
             self.objective.set_linear(v, objective.get_linear(v))
         self.objective.add_quadratic_from(objective.iter_quadratic())
         self.objective.offset = objective.offset
+
+    def set_upper_bound(self, v: Variable, ub: float):
+        """Set the upper bound for a variable.
+
+        Args:
+            v: Variable in the constrained quadratic model.
+            ub: Upper bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
+        """
+        self.objective.set_upper_bound(v, ub)
+        for comp in self.constraints.values():
+            qm = comp.lhs
+            if v in qm.variables:
+                qm.set_upper_bound(v, ub)
 
     def _iterable_to_qm(self, iterable: Iterable) -> QuadraticModel:
         qm = QuadraticModel()
