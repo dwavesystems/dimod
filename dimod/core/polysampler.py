@@ -17,11 +17,17 @@ Samplers that handle binary polynomials: problems with binary variables that are
 not constrained to quadratic interactions.
 
 """
+
 import abc
 import warnings
 
+import typing
+
 from dimod.core.composite import Composite
 from dimod.higherorder.polynomial import BinaryPolynomial
+from dimod.sampleset import SampleSet
+
+from dimod.typing import Bias, Variable
 
 __all__ = 'PolySampler', 'ComposedPolySampler'
 
@@ -51,29 +57,22 @@ class PolySampler(abc.ABC):
         """Sample from a higher-order polynomial."""
         pass
 
-    def sample_hising(self, h, J, **kwargs):
+    def sample_hising(self, h: typing.Mapping[Variable, Bias],
+                      J: typing.Mapping[typing.Tuple[Variable, Variable], Bias], **kwargs) -> SampleSet:
         """Sample from a higher-order Ising model.
 
-        Convert the given higher-order Ising model to a :obj:`.BinaryPolynomial`
-        and call :meth:`.sample_poly`.
+        Converts the given higher-order Ising model to a :obj:`.BinaryPolynomial`
+        and calls :meth:`.sample_poly`.
 
         Args:
-            h (dict):
-                Variable biases of the Ising problem as a dict of
-                the form `{v: bias, ...}`, where `v` is a variable in the
-                polynomial and `bias` its associated coefficient.
-
-            J (dict):
-                Interaction biases of the Ising problem as a dict of
-                the form `{(u, v, ...): bias}`, where `u`, `v`, are spin-valued
-                variables in the polynomial and `bias` their associated
-                coefficient.
+            h: Variable biases of the Ising problem.
+            J: Interaction biases of the Ising problem.
 
             **kwargs:
                 See :meth:`.sample_poly` for additional keyword definitions.
 
         Returns:
-            :obj:`.SampleSet`
+            Samples from the higher-order Ising model.
 
         See also:
             :meth:`.sample_poly`, :meth:`.sample_hubo`
@@ -81,25 +80,21 @@ class PolySampler(abc.ABC):
         """
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
 
-    def sample_hubo(self, H, **kwargs):
+    def sample_hubo(self, H: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+                    **kwargs) -> SampleSet:
         """Sample from a higher-order unconstrained binary optimization problem.
 
-        Convert the given higher-order unconstrained binary optimization
-        problem to a :obj:`.BinaryPolynomial` and then call
-        :meth:`.sample_poly`.
+        Converts the given higher-order unconstrained binary optimization
+        problem to a :obj:`.BinaryPolynomial` and then calls :meth:`.sample_poly`.
 
         Args:
-            H (dict):
-                Coefficients of the HUBO as a dict of the form
-                {(u, v, ...): bias, ...}, where `u`, `v`, are binary-valued
-                variables in the polynomial and `bias` their associated
-                coefficient.
+            H: Coefficients of the HUBO.
 
             **kwargs:
                 See :meth:`.sample_poly` for additional keyword definitions.
 
         Returns:
-            :obj:`.SampleSet`
+            Samples from a higher-order unconstrained binary optimization problem.
 
         See also:
             :meth:`.sample_poly`, :meth:`.sample_hising`

@@ -30,37 +30,20 @@ its abstract methods, properties, and mixins (for example, a `sample_Ising` meth
 supported samplers with `child` providing the first).
 
 Examples:
-    The dimod package's spin_transform.py reference example creates a composed
-    sampler, `SpinReversalTransformComposite(Sampler, Composite)`, that performs
-    spin reversal transforms ("gauge transformations") as a preprocessing step for
-    a given sampler. The reference example implements the pseudocode below:
-
-    .. code-block:: python
-
-        class SpinReversalTransformComposite(Sampler, Composite):
-
-            # Updates to inherited sampler properties and parameters
-            # Definition of the composite's children (i.e., supported samplers):
-            children = None
-            def __init__(self, child):
-                self.children = [child]
-
-            # The composite's implementation of spin-transformation functionality:
-            def sample(self, bqm, num_spin_reversal_transforms=2, spin_reversal_variables=None, **kwargs):
-                response = None
-                # Preprocessing code that includes instantiation of a sampler:
-                # flipped_response = self.child.sample(bqm, **kwargs)
-                return response
-
+    The :class:`~dimod.reference.composites.higherordercomposites.HigherOrderComposite`
+    converts a binary quadratic model sampler to a binary polynomial sampler.
     Given dimod sampler :class:`.ExactSolver` for example, the composed sampler is
-    used as any dimod sampler, inheriting an Ising sampling method:
+    used as any dimod sampler:
 
-    >>> composed_sampler = dimod.SpinReversalTransformComposite(dimod.ExactSolver())
-    >>> h = {0: -1, 1: 1}
-    >>> solutions = composed_sampler.sample_ising(h, {}, num_spin_reversal_transforms=2)
-    >>> len(solutions) == 8
+    >>> sampler = dimod.ExactSolver()
+    >>> composed_sampler = dimod.HigherOrderComposite(sampler)
+    >>> J = {("a", "b", "c"): 1}
+    >>> sampleset = composed_sampler.sample_hising({}, J)
+    >>> set(sampleset.first.sample.values()) == {-1}
     True
 
+    For more examples, see the source code for the composed
+    documented in :ref:`quadratic_composites`.
 """
 import abc
 
