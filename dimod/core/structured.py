@@ -70,13 +70,17 @@ Examples:
     -1.0
 
 """
-import abc
+from __future__ import annotations
 
 from collections import namedtuple
 
+import abc
 import typing
 
 from dimod.typing import Variable
+
+if typing.TYPE_CHECKING:
+    from dimod import BinaryQuadraticModel
 
 __all__ = ['Structured']
 
@@ -101,13 +105,13 @@ class Structured(abc.ABC):
         pass
 
     @abc.abstractproperty
-    def edgelist(self)  -> typing.List[typing.Tuple[Variable, Variable]]:
+    def edgelist(self) -> typing.List[typing.Tuple[Variable, Variable]]:
         """Edges/interactions allowed by the sampler.
         """
         pass
 
     @property
-    def adjacency(self)  -> typing.Dict[Variable, typing.Set]:
+    def adjacency(self) -> typing.Dict[Variable, typing.Set]:
         """Adjacency structure formatted as a dict, where keys are the nodes of
         the structured sampler and values are sets of all adjacent nodes for each
         key node.
@@ -148,7 +152,7 @@ class Structured(abc.ABC):
 
         return G
 
-    def valid_bqm_graph(self, bqm: "BinaryQuadraticModel") -> bool:
+    def valid_bqm_graph(self, bqm: BinaryQuadraticModel) -> bool:
         """Validate that problem defined by :class:`dimod.BinaryQuadraticModel`
         matches the graph provided by the sampler.
 
