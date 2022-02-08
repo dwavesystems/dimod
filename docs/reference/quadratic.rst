@@ -173,6 +173,7 @@ Methods
    ~BinaryQuadraticModel.iter_neighborhood
    ~BinaryQuadraticModel.get_linear
    ~BinaryQuadraticModel.get_quadratic
+   ~BinaryQuadraticModel.maximum_energy_delta
    ~BinaryQuadraticModel.normalize
    ~BinaryQuadraticModel.reduce_linear
    ~BinaryQuadraticModel.reduce_neighborhood
