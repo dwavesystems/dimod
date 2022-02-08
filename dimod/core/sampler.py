@@ -74,8 +74,8 @@ as mixins.
 >>> response = sampler.sample_ising({'a': -1}, {})
 ...
 ...  # Mixins provided by Sampler class:
->>> response = sampler.sample_qubo({('a', 'a'): 1})
->>> response = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
+>>> sampleset = sampler.sample_qubo({('a', 'a'): 1})
+>>> sampleset = sampler.sample(dimod.BinaryQuadraticModel.from_ising({'a': -1}, {}))
 
 Below is a more complex version of the same sampler, where the
 :attr:`~.Sampler.properties` and :attr:`~.Sampler.parameters` properties return
@@ -107,16 +107,14 @@ non-empty dicts.
 """
 
 import abc
-import warnings
-
 import typing
+import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
-from dimod.vartypes import Vartype
 from dimod.sampleset import SampleSet
-
 from dimod.typing import Bias, Variable
+from dimod.vartypes import Vartype
 
 __all__ = ['Sampler']
 
@@ -176,7 +174,7 @@ class Sampler(metaclass=SamplerABCMeta):
     """
 
     @abc.abstractproperty  # for python2 compatibility
-    def parameters(self) -> typing.Dict:
+    def parameters(self) -> typing.Dict[str, typing.Any]:
         """Parameters as a dict, where keys are keyword parameters accepted by the
         sampler methods and values are lists of the properties relevent to each
         parameter.
@@ -184,7 +182,7 @@ class Sampler(metaclass=SamplerABCMeta):
         pass
 
     @abc.abstractproperty  # for python2 compatibility
-    def properties(self)  -> typing.Dict:
+    def properties(self) -> typing.Dict[str, typing.Any]:
         """Properties as a dict containing any additional information about the
         sampler.
         """
@@ -292,7 +290,7 @@ class Sampler(metaclass=SamplerABCMeta):
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
 
-    def remove_unknown_kwargs(self, **kwargs) -> typing.Dict:
+    def remove_unknown_kwargs(self, **kwargs) -> typing.Dict[str, typing.Any]:
         """Remove with warnings any keyword arguments not accepted by the sampler.
 
         Args:
