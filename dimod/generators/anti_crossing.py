@@ -40,6 +40,12 @@ def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
     Returns:
         A binary quadratic model.
 
+    Examples:
+        >>> bqm = dimod.generators.anti_crossing_clique(6)
+        >>> set(list(bqm.linear.values())[3:]) == set(bqm.quadratic.values()) == {-1.0}
+        True
+        >>> list(bqm.linear.values())[:3]
+        [1.0, 0.0, 1.0]
     """
 
     if num_variables % 2 or num_variables < 6:
@@ -84,6 +90,18 @@ def anti_crossing_loops(num_variables: int) -> BinaryQuadraticModel:
         quantum annealing of a 16-qubit problem. Nat Commun 4, 1903 (2013).
         https://doi.org/10.1038/ncomms2920
 
+    Examples:
+        The graphic lines of this example require the `Matplotlib <https://matplotlib.org>`_
+        library.
+
+        >>> import matplotlib as plt                   # doctest: +SKIP
+        >>> import networkx as nx
+        >>> bqm16 = dimod.generators.anti_crossing_loops(16)
+        >>> g16 = dimod.to_networkx_graph(bqm16)
+        >>> colors = [g16.nodes[n]['bias'] for n in g16.nodes]
+        >>> nx.draw(g16, node_color=colors,
+        ...         with_labels=True, cmap=plt.cm.autumn)   # doctest: +SKIP
+        >>> plt.show()                                      # doctest: +SKIP
     """
 
     if num_variables % 2 or num_variables < 8:
