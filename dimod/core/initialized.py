@@ -31,7 +31,7 @@ import numpy as np
 from dimod.sampleset import as_samples, infer_vartype, SampleSet
 from dimod.vartypes import Vartype
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
-
+from dimod.typing import SamplesLike
 try:
     InitialStateGenerator = typing.Literal['none', 'tile', 'random']
 except AttributeError:
@@ -53,7 +53,7 @@ class Initialized(abc.ABC):
     # dev note: if this function is updated, make sure to also update
     # IdentitySampler
     def parse_initial_states(self, bqm: BinaryQuadraticModel,
-                             initial_states = None,
+                             initial_states: typing.Optional[SamplesLike] = None,
                              initial_states_generator: InitialStateGenerator = 'random',
                              num_reads: typing.Optional[int] = None,
                              seed: typing.Optional[int] = None,
