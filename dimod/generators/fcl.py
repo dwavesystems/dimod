@@ -41,14 +41,14 @@ def frustrated_loop(graph: GraphLike,
     A generic frustrated-loop (FL) problem is a sum of Hamiltonians, each generated
     from a single "good" loop, as follows:
 
-    1. Generate a loop by random walking on the support graph.
+    1. Generate a loop by random walking on the specified graph, ``graph``.
     2. If the cycle meets provided predicates, continue; if not, return to  step 1.
-    3. Choose one edge of the loop to be anti-ferromagnetic; all other edges are
-       ferromagnetic.
-    4. Add the loop's coupler values to the FL problem.
-       If at any time the magnitude of a coupler in the FL problem exceeds a given
-       recision `R`, remove that coupler from consideration in the loop generation
-       procedure.
+    3. Choose one edge of the loop to be anti-ferromagnetic (an interaction value
+       of `+1` for the edge) and all others ferromagnetic (`-1`).
+    4. Add the loop's interactions to the FL problem.
+       If at any time the absolute value of an interaction in the FL problem,
+       accumulated on an edge over good loops, exceeds a given maximum, ``R``,
+       remove that edge from consideration in the loop generation procedure.
 
     This is a generic generator of FL problems that encompasses both the original
     FL problem definition [#HJARTL]_ and the limited FL problem
@@ -56,15 +56,16 @@ def frustrated_loop(graph: GraphLike,
 
     Args:
         graph:
-            The graph to build the frustrated loops on. Either an integer n,
-            interpreted as a complete graph of size n, a nodes/edges pair, a
-            list of edges or a NetworkX graph.
+            The graph to build the frustrated loops on. Either an integer, `n`,
+            interpreted as a complete graph of size `n`, a nodes/edges pair, a
+            list of edges, or a NetworkX graph.
 
         num_cyles:
             Desired number of frustrated cycles.
 
         R:
-            Maximum interaction weight.
+            Maximum absolute interaction weight an edge can accumulate from good
+            cycles.
 
         cycle_predicates:
             An iterable of functions, which should accept a cycle and return a bool.
@@ -78,6 +79,15 @@ def frustrated_loop(graph: GraphLike,
             planted_solution is: ``{v: -1 for v in graph}``
 
         seed: Random seed.
+
+    Examples:
+        This example creates a BQM from four frustrated loops built on a six-node
+        complete graph, with a maximum allowed interaction of :math:`\pm 2` on
+        any edge. 
+
+        >>> bqm = dimod.generators.frustrated_loop(6, 4, R=2, seed=1)
+        >>> set(bqm.quadratic.values())
+        {-2.0, -1.0, 0.0, 1.0}
 
     .. [#HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
