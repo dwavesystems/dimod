@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``BinaryQuadraticModel.maximum_energy_delta()`` method.
