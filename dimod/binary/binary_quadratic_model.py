@@ -1131,6 +1131,9 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         .. _`penalty model`: https://docs.ocean.dwavesys.com/en/stable/concepts/index.html#term-Penalty-model
 
         """
+        if not self.num_variables:
+            return 0
+
         if self.vartype is Vartype.SPIN:
             scale = 2
         elif self.vartype is Vartype.BINARY:
