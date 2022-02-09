@@ -1172,6 +1172,19 @@ class TestEnergies(unittest.TestCase):
             bqm.energies([])
 
 
+class TestMaximumDeltaEnergy(unittest.TestCase):
+    @parameterized.expand(itertools.product(BQMs.values(), ('SPIN', 'BINARY')))
+    def test_empty(self, BQM, vartype):
+        bqm = BQM(vartype)
+        self.assertEqual(bqm.maximum_energy_delta(), 0)
+
+    @parameterized.expand(itertools.product(BQMs.values(), (('SPIN', 46), ('BINARY', 23))))
+    def test_nonempty(self, BQM, vartype_and_expected_value):
+        vartype, expected_value = vartype_and_expected_value
+        bqm = BQM((1, 3, 7), {(1, 0): 2, (2, 0): 5, (2, 1): 11}, vartype)
+        self.assertEqual(bqm.maximum_energy_delta(), expected_value)
+
+
 class TestFileView(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())
     def test_empty(self, name, BQM):
