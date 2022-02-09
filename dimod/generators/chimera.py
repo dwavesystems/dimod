@@ -51,20 +51,12 @@ def chimera_anticluster(m: int, n: Optional[int] = None, t: int = 4,
         cls: Deprecated. Does nothing
 
         subgraph: A subgraph of the specified Chimera(m, n, t) graph to build the
-            anticluster problem on. Used to remove nodes and edges.
+            anticluster problem on. Can be used to remove nodes and edges.
 
         seed: Random seed.
 
     Returns:
         A binary quadratic model.
-
-    Examples:
-        This example generates a problem of two Chimera unit cells with one
-        shore of one cell (nodes 0 to 3) removed.
-
-        >>> import dwave_networkx
-        >>> sub_graph = dwave_networkx.chimera_graph(1, 2, node_list=range(3, 16))
-        >>> bqm = dimod.generators.chimera_anticluster(1, 2, 4, subgraph=sub_graph)
     """
 
     if cls is not None:
