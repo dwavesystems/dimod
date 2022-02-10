@@ -1111,6 +1111,40 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         energy, = energies
         return energy
 
+    def maximum_energy_delta(self) -> Bias:
+        """Compute a conservative bound on the maximum change in energy that can
+        result from flipping a single variable in a binary quadratic model.
+
+        The bound is useful as a starting point for determining the values of
+        `penalty parameters`_ in a `penalty model`_.
+
+        Returns:
+            Bound on change in energy.
+
+        Examples:
+            >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
+            >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+            >>> bqm.maximum_energy_delta()
+            5.5
+
+        .. _`penalty parameters`: https://en.wikipedia.org/wiki/Penalty_method
+        .. _`penalty model`: https://docs.ocean.dwavesys.com/en/stable/concepts/index.html#term-Penalty-model
+
+        """
+        if not self.num_variables:
+            return 0
+
+        if self.vartype is Vartype.SPIN:
+            scale = 2
+        elif self.vartype is Vartype.BINARY:
+            scale = 1
+        else:
+            raise RuntimeError("unexpected vartype")
+
+        return max(abs(self.get_linear(v))
+                   + sum(abs(bias) for u, bias in self.iter_neighborhood(v))
+                   for v in self.variables) * scale
+
     def flip_variable(self, v: Variable):
         """Flip the specified variable in a binary quadratic model."""
         if self.vartype is Vartype.SPIN:
