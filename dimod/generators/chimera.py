@@ -48,7 +48,7 @@ def chimera_anticluster(m: int, n: Optional[int] = None, t: int = 4,
 
         multiplier: Strength of the inter-tile edges.
 
-        cls: Deprecated. Does nothing
+        cls: Deprecated. Does nothing.
 
         subgraph: A subgraph of the specified Chimera(m, n, t) graph to build the
             anticluster problem on. Can be used to remove nodes and edges.

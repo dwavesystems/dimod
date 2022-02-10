@@ -51,6 +51,9 @@ class TestRandomGNMRandomBQM(unittest.TestCase):
                 bqm = dimod.generators.gnm_random_bqm(n, m, 'SPIN')
                 self.assertEqual(bqm.shape, (n, m))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.gnm_random_bqm(2, 1, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomGNPRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
@@ -126,6 +129,9 @@ class TestRandomGNPRandomBQM(unittest.TestCase):
         bqm = dimod.generators.gnp_random_bqm(1, 0, 'SPIN')
         self.assertEqual(bqm.shape, (1, 0))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.gnp_random_bqm(2, 1, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomUniform(unittest.TestCase):
     def test_singleton(self):
@@ -638,7 +644,7 @@ class TestGates(unittest.TestCase):
         }
         bqm = dimod.generators.multiplication_circuit(2, 3)
         self.assertEqual(set(bqm.variables), mc2_3_vars)
-  
+
         # Verify correct variables for 3x2 circuit
         mc3_2_vars = {
             'a0', 'a1', 'a2',
