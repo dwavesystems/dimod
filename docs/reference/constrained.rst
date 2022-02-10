@@ -55,7 +55,9 @@ Methods
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
    ConstrainedQuadraticModel.relabel_variables
+   ConstrainedQuadraticModel.set_lower_bound
    ConstrainedQuadraticModel.set_objective
+   ConstrainedQuadraticModel.set_upper_bound
    ConstrainedQuadraticModel.substitute_self_loops
    ConstrainedQuadraticModel.to_file
    ConstrainedQuadraticModel.vartype

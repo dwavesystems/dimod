@@ -133,7 +133,6 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bint is_linear()
         bias_type& linear(index_type)
         const bias_type& lower_bound(index_type)
-        bias_type max_integer()
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
         size_type num_variables()
         size_type num_interactions()

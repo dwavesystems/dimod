@@ -19,11 +19,11 @@ from copy import deepcopy
 cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
-from libc.math cimport round as cppround
-from libcpp.cast cimport static_cast
+from libc.math cimport ceil, floor
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
+from dimod.libcpp cimport cppvartype_info
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
@@ -187,7 +187,8 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
+                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
         self.cppqm.add_quadratic(ui, vi, bias)
@@ -218,17 +219,18 @@ cdef class cyQM_template(cyQMBase):
             ui = self.variables.index(u)
             vi = self.variables.index(v)
 
-            if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+            if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
+                             or self.cppqm.vartype(ui) == cppVartype.BINARY):
                 raise ValueError(f"{u!r} cannot have an interaction with itself")
             
             self.cppqm.add_quadratic(ui, vi, bias)
 
-    def add_variable(self, vartype, label=None, *, lower_bound=0, upper_bound=None):
+    def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
         # as_vartype will raise for unsupported vartypes
         vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
 
-        cdef bias_type lb = lower_bound
+        cdef bias_type lb
         cdef bias_type ub
 
         cdef Py_ssize_t vi
@@ -237,39 +239,52 @@ cdef class cyQM_template(cyQMBase):
             vi = self.variables.index(label)
             if self.cppqm.vartype(vi) != cppvartype:
                 raise TypeError(f"variable {label!r} already exists with a different vartype")
-            if cppvartype == cppVartype.INTEGER:
-                if lb != self.cppqm.lower_bound(vi):
-                    raise ValueError(
-                        f"the specified lower bound, {lower_bound}, for "
-                        f"variable {label!r} is different than the existing lower "
-                        f"bound, {int(self.cppqm.lower_bound(vi))}")
+            if cppvartype != cppVartype.BINARY and cppvartype != cppVartype.SPIN:
+                if lower_bound is not None:
+                    lb = lower_bound
+                    if lb != self.cppqm.lower_bound(vi):
+                        raise ValueError(
+                            f"the specified lower bound, {lower_bound}, for "
+                            f"variable {label!r} is different than the existing lower "
+                            f"bound, {int(self.cppqm.lower_bound(vi))}")
                 if upper_bound is not None:
                     ub = upper_bound
                     if ub != self.cppqm.upper_bound(vi):
                         raise ValueError(
-                            f"the specified upper bound, {lower_bound}, for "
+                            f"the specified upper bound, {upper_bound}, for "
                             f"variable {label!r} is different than the existing upper "
-                            f"bound, {int(self.cppqm.lower_bound(vi))}")
+                            f"bound, {int(self.cppqm.upper_bound(vi))}")
 
             return label
 
-        if cppvartype == cppVartype.INTEGER and (lb != 0 or upper_bound is not None):
-            if lb < -self.cppqm.max_integer():
-                raise ValueError(f"lower_bound cannot be less than {-self.cppqm.max_integer()}")
+        if cppvartype == cppVartype.BINARY or cppvartype == cppVartype.SPIN:
+            # in this case we just ignore the provided values
+            lb = cppvartype_info[bias_type].default_min(cppvartype)
+            ub = cppvartype_info[bias_type].default_max(cppvartype)
+        elif cppvartype == cppVartype.INTEGER:
+            if lower_bound is None:
+                lb = cppvartype_info[bias_type].default_min(cppvartype)
+            else:
+                lb = lower_bound
+                if lb < cppvartype_info[bias_type].min(cppvartype):
+                    raise ValueError(f"lower_bound cannot be less than {cppvartype_info[bias_type].min(cppvartype)}")
 
             if upper_bound is None:
-                ub = self.cppqm.max_integer()
+                ub = cppvartype_info[bias_type].default_max(cppvartype)
             else:
                 ub = upper_bound
-                if ub > self.cppqm.max_integer():
-                    raise ValueError(f"upper_bound cannot be greater than {self.cppqm.max_integer()}")
-
+                if ub > cppvartype_info[bias_type].max(cppvartype):
+                    raise ValueError(f"upper_bound cannot be greater than {cppvartype_info[bias_type].max(cppvartype)}")
+            
             if lb > ub:
                 raise ValueError("lower_bound must be less than or equal to upper_bound")
 
-            self.cppqm.add_variable(cppvartype, lb, ub)
+            if ceil(lb) > floor(ub):
+                raise ValueError("there must be at least one valid integer between lower_bound and upper_bound")
         else:
-            self.cppqm.add_variable(cppvartype)
+            raise RuntimeError("unknown vartype")
+
+        self.cppqm.add_variable(cppvartype, lb, ub)
 
         self.variables._append(label)
 
@@ -403,7 +418,8 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
+        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
+                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
             raise ValueError(f"{u!r} cannot have an interaction with itself")
 
         cdef bias_type bias
@@ -621,50 +637,58 @@ cdef class cyQM_template(cyQMBase):
 
     def set_lower_bound(self, v, bias_type lb):
         cdef Py_ssize_t vi = self.variables.index(v)
+        cdef cppVartype cppvartype = self.cppqm.vartype(vi)
 
-        if self.cppqm.vartype(vi) != cppVartype.INTEGER:
+        if cppvartype == cppVartype.BINARY or cppvartype == cppVartype.SPIN:
             raise ValueError(
-                "can only set the lower bound for INTEGER variables, "
+                "cannot set the lower bound for BINARY or SPIN variables, "
                 f"{v!r} is a {self.vartype(v).name} variable")
 
-        lb = cppround(lb)  # we round to the nearest integer
-
-        if lb < -self.cppqm.max_integer():
-            raise ValueError(
-                f"the specified lower bound, {int(lb)}, for variable {v!r} is less than "
-                f"{int(-self.cppqm.max_integer())}, "
-                f"the minimum for QuadraticModel(dtype=np.{self.dtype.name}) ")
-
+        if lb < cppvartype_info[bias_type].min(cppvartype):
+            raise ValueError(f"lower_bound cannot be less than {cppvartype_info[bias_type].min(cppvartype)}")
+            
         if lb > self.cppqm.upper_bound(vi):
             raise ValueError(
-                f"the specified lower bound, {int(lb)}, cannot be set greater than the "
-                f"current upper bound, {int(self.cppqm.upper_bound(vi))}"
+                f"the specified lower bound, {lb}, cannot be set greater than the "
+                f"current upper bound, {self.cppqm.upper_bound(vi)}"
                 )
+
+        if cppvartype == cppVartype.INTEGER:
+            if ceil(lb) > floor(self.cppqm.upper_bound(vi)):
+                raise ValueError(
+                    "there must be at least one integer value between "
+                    f"the specified lower bound, {lb} and the "
+                    f"current upper bound, {self.cppqm.upper_bound(vi)}"
+                    )
 
         cdef bias_type *b = &(self.cppqm.lower_bound(vi))
         b[0] = lb
 
     def set_upper_bound(self, v, bias_type ub):
         cdef Py_ssize_t vi = self.variables.index(v)
+        cdef cppVartype cppvartype = self.cppqm.vartype(vi)
 
-        if self.cppqm.vartype(vi) != cppVartype.INTEGER:
+        if cppvartype == cppVartype.BINARY or cppvartype == cppVartype.SPIN:
             raise ValueError(
-                "can only set the upper bound for INTEGER variables, "
+                "cannot set the upper bound for BINARY or SPIN variables, "
                 f"{v!r} is a {self.vartype(v).name} variable")
 
-        ub = cppround(ub)  # we round to the nearest integer
-
-        if ub > self.cppqm.max_integer():
-            raise ValueError(
-                f"the specified upper bound, {int(ub)}, for variable {v!r} is greater than "
-                f"{int(self.cppqm.max_integer())}, "
-                f"the maximum for QuadraticModel(dtype=np.{self.dtype.name}) ")
-
+        if ub > cppvartype_info[bias_type].max(cppvartype):
+            raise ValueError(f"upper_bound cannot be more than {cppvartype_info[bias_type].max(cppvartype)}")
+            
         if ub < self.cppqm.lower_bound(vi):
             raise ValueError(
-                f"the specified upper bound, {int(ub)}, cannot be set less than the "
-                f"current lower bound, {int(self.cppqm.lower_bound(vi))}"
+                f"the specified upper bound, {ub}, cannot be set less than the "
+                f"current lower bound, {self.cppqm.lower_bound(vi)}"
                 )
+
+        if cppvartype == cppVartype.INTEGER:
+            if ceil(self.cppqm.lower_bound(vi)) > floor(ub):
+                raise ValueError(
+                    "there must be at least one integer value between "
+                    f"the specified upper bound, {ub} and the "
+                    f"current lower bound, {self.cppqm.lower_bound(vi)}"
+                    )
 
         cdef bias_type *b = &(self.cppqm.upper_bound(vi))
         b[0] = ub

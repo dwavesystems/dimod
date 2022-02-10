@@ -23,6 +23,24 @@ from dimod import BQM, Spin, Binary, CQM, Integer
 from dimod.sym import Sense
 
 
+class TestAddVariable(unittest.TestCase):
+    def test_inconsistent_bounds(self):
+        cqm = dimod.CQM()
+        i = dimod.Integer('i')
+        cqm.set_objective(i)
+        cqm.set_lower_bound('i', 1)
+        cqm.set_upper_bound('i', 5)
+        with self.assertRaises(ValueError):
+            cqm.add_variable('i', 'INTEGER', lower_bound=-1)
+        with self.assertRaises(ValueError):
+            cqm.add_variable('i', 'INTEGER', upper_bound=6)
+
+    def test_return_value(self):
+        cqm = dimod.CQM()
+        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
+        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
+
+
 class TestAddConstraint(unittest.TestCase):
     def test_bqm(self):
         cqm = CQM()
@@ -183,6 +201,38 @@ class TestBounds(unittest.TestCase):
             cqm.add_constraint(i1 <= 1)
 
         cqm.add_variable('i', 'INTEGER')
+
+    def test_setting(self):
+        i = Integer('i')
+        j = Integer('j', upper_bound=5, lower_bound=-2)
+        x = Binary('x')
+
+        cqm = CQM()
+        cqm.set_objective(2*i - j + x)
+        cqm.add_constraint(i + j <= 5, 'c1')
+        cqm.add_constraint(x*j == 3, 'c2')
+
+        with self.assertRaises(ValueError):
+            cqm.set_upper_bound('i', -1)  # too low
+
+        cqm.set_upper_bound('i', 1.5)
+        self.assertEqual(cqm.upper_bound('i'), 1.5)
+
+        with self.assertRaises(ValueError):
+            cqm.set_lower_bound('i', 1.2)
+        cqm.set_lower_bound('i', -100)
+        self.assertEqual(cqm.lower_bound('i'), -100)
+
+        # can't modify 'x' since it's binary
+        with self.assertRaises(ValueError):
+            cqm.set_upper_bound('x', 100)
+        with self.assertRaises(ValueError):
+            cqm.set_lower_bound('x', -100)
+
+        # internal state of the constraints shouldn't matter but just in
+        # case
+        self.assertEqual(cqm.constraints['c1'].lhs.lower_bound('i'), -100)
+        self.assertEqual(cqm.constraints['c1'].lhs.upper_bound('i'), 1.5)
 
 
 class TestCheckFeasible(unittest.TestCase):
