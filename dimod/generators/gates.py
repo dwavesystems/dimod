@@ -94,10 +94,13 @@ def fulladder_gate(in0: Variable, in1: Variable, in2: Variable, sum_: Variable, 
         adder gate. The model has five variables and ten interactions.
 
     Examples:
-        >>> bqm = dimod.generators.fulladder_gate('x1', 'x2', 'x3', 'z', 'c')
-        >>> bqm.fix_variables({'x1': 0, 'x2': 1, 'x3': 1})
-        >>> print(dimod.ExactSolver().sample(bqm).first)
-        Sample(sample={'c': 1, 'z': 0}, energy=0.0, num_occurrences=1)
+        >>> bqm = dimod.generators.fulladder_gate('a1', 'a2', 'a3', 's', 'c')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest().slice(0, 6, 2))
+          a1 a2 a3  c  s energy num_oc.
+        0  0  0  0  0  0    0.0       1
+        1  0  1  0  0  1    0.0       1
+        2  1  1  1  1  1    0.0       1
+        ['BINARY', 3 rows, 3 samples, 5 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
@@ -146,10 +149,14 @@ def halfadder_gate(in0: Variable, in1: Variable, sum_: Variable, carry: Variable
         adder gate. The model has four variables and six interactions.
 
     Examples:
-        >>> bqm = dimod.generators.halfadder_gate('x1', 'x2', 'z', 'c')
-        >>> bqm.fix_variables({'x1': 0, 'x2': 1})
-        >>> print(dimod.ExactSolver().sample(bqm).first)
-        Sample(sample={'c': 0, 'z': 1}, energy=0.0, num_occurrences=1)
+        >>> bqm = dimod.generators.halfadder_gate('a1', 'a2', 's', 'c')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          a1 a2  c  s energy num_oc.
+        0  0  0  0  0    0.0       1
+        1  0  1  0  1    0.0       1
+        2  1  0  0  1    0.0       1
+        3  1  1  1  0    0.0       1
+        ['BINARY', 4 rows, 4 samples, 4 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)

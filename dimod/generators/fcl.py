@@ -80,15 +80,6 @@ def frustrated_loop(graph: GraphLike,
 
         seed: Random seed.
 
-    Examples:
-        This example creates a BQM from four frustrated loops built on a six-node
-        complete graph, with a maximum allowed interaction of :math:`\pm 2` on
-        any edge.
-
-        >>> bqm = dimod.generators.frustrated_loop(6, 4, R=2, seed=1)
-        >>> set(bqm.quadratic.values())
-        {0.0, 1.0, -2.0, -1.0}
-
     .. [#HJARTL] Hen, I., J. Job, T. Albash, T.F. Rønnow, M. Troyer, D. Lidar. Probing for quantum
         speedup in spin glass problems with planted solutions. https://arxiv.org/abs/1502.01663v2
 
