@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    Deprecate ``cls`` parameter in ``dimod.generators.random.gnm_random_bqm()``,
+    ``dimod.generators.random.gnp_random_bqm()``,
+    ``dimod.generators.random.uniform()``, ``dimod.generators.random.ran_r()``,
+    ``dimod.generators.random.randint()``, and ``dimod.generators.random.doped()``.

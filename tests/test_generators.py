@@ -157,6 +157,9 @@ class TestRandomUniform(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.uniform(2, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomRandint(unittest.TestCase):
     def test_singleton(self):
@@ -182,6 +185,9 @@ class TestRandomRandint(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.randint(3, dimod.BINARY, cls=dimod.BinaryQuadraticModel)
 
 class TestRandomRanR(unittest.TestCase):
     def test_singleton(self):
@@ -215,6 +221,9 @@ class TestRandomRanR(unittest.TestCase):
         self.assertTrue(all(val <= 5 for val in bqm.quadratic.values()))
         self.assertTrue(all(val >= -5 for val in bqm.quadratic.values()))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.ran_r(2, 3, cls=dimod.BinaryQuadraticModel)
 
 class TestChimeraAnticluster(unittest.TestCase):
     def test_singletile(self):
@@ -446,6 +455,10 @@ class TestDoped(unittest.TestCase):
         total = len(bqm.quadratic)
         fm = sum([val == -1 for val in bqm.quadratic.values()])
         self.assertAlmostEqual(fm / total, 0.3, places=2)
+
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.doped(0.3, 10, cls=dimod.BinaryQuadraticModel)
 
 
 class TestKnapsack(unittest.TestCase):
