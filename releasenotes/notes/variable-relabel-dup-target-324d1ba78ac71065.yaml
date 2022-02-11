@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Attempting to relabel two model variables to the same target will now correctly
+    raise a ``ValueError``.
+    See `#1110 <https://github.com/dwavesystems/dimod/issues/1110>`_.

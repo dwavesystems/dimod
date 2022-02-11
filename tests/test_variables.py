@@ -139,6 +139,12 @@ class TestPrint(unittest.TestCase):
 
 
 class TestRelabel(unittest.TestCase):
+    def test_duplicate_target(self):
+        # see https://github.com/dwavesystems/dimod/issues/1110
+        variables = Variables('ab')
+        with self.assertRaises(ValueError):
+            variables._relabel({'a': 'c', 'b': 'c'})
+
     def test_permissive(self):
         variables = Variables([0, 1])
 

@@ -13,13 +13,16 @@
 #    limitations under the License.
 
 import copy
-import os
 import itertools
+import os
+import typing
 import uuid
 
 from functools import reduce
 
 import numpy as np
+
+from dimod.typing import Variable
 
 __all__ = ['ising_energy',
            'qubo_energy',
@@ -348,27 +351,35 @@ def resolve_label_conflict(mapping, existing, old_labels=None, new_labels=None):
     return old_to_intermediate, intermediate_to_new
 
 
-def iter_safe_relabels(mapping, existing):
+def iter_safe_relabels(mapping: typing.Mapping[Variable, Variable],
+                       existing: typing.Container[Variable],
+                       ) -> typing.Iterator[typing.Mapping[Variable, Variable]]:
     """Iterator over "safe" intermediate relabelings.
 
     Args:
-        mapping (dict):
-            A map from old labels to new.
+        mapping: A map from old labels to new. New labels must be hashable and
+            unique.
 
-        existing (set):
-            A container of existing labels.
+        existing: A container of existing labels.
 
     Yields:
-        dict: A "safe" relabelling.
+        A "safe" relabelling.
 
     """
-
     # put the new labels into a set for fast lookup, also ensures that the
     # values are valid labels
+    # We could use a set, but using a dict makes for nicer error messages later
     try:
-        new_labels = set(mapping.values())
+        new_labels = {new: old for old, new in mapping.items()}
     except TypeError:
         raise ValueError("mapping targets must be hashable objects")
+
+    if len(new_labels) < len(mapping):
+        for old, new in mapping.items():
+            if new_labels[new] != old:
+                raise ValueError("cannot map two variables to the same label: "
+                                 f"{old!r} and {new_labels[new]!r} are both mapped to {new!r}")
+        raise RuntimeError  # should never get here, but just in case...
 
     old_labels = mapping.keys()
 
