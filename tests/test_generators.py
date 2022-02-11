@@ -343,6 +343,11 @@ class TestFCL(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_too_few_good_cycles(self):
+
+        with self.assertRaises(RuntimeError):
+            dimod.generators.frustrated_loop(4, 3, R=1, seed=1)
+
     def test_planted_solution(self):
         G = self.G
 

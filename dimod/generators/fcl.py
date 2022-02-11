@@ -141,7 +141,8 @@ def frustrated_loop(graph: GraphLike,
                 adj[v].remove(u)
 
     if good_cycles < num_cycles:
-        raise RuntimeError
+        raise RuntimeError(f"number of found cycles, {good_cycles}, is below " 
+                           f"requested {num_cycles}")
 
     return bqm
 
