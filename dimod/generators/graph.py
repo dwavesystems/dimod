@@ -28,42 +28,37 @@ __all__ = [
 def independent_set(edges: Iterable[Tuple[Variable, Variable]],
                     nodes: Optional[Iterable[Variable]] = None,
                     ) -> BinaryQuadraticModel:
-    """Return a binary quadratic model encoding an independent set problem.
+    """Generate a binary quadratic model encoding an independent set problem.
 
     Given a graph `G`, an independent set is a set of nodes such that the
     subgraph of `G` induced by these nodes contains no edges.
 
     Args:
-        edges: The edges of the graph as an iterable of two-tuples.
-        nodes: The nodes of the graph as an iterable.
+        edges: Edges of the graph.
+        nodes: Nodes of the graph.
 
     Returns:
-        A binary quadratic model. The binary quadratic model will have
-        variables and interactions corresponding to ``nodes`` and ``edges``.
-        Each interaction will have a quadratic bias of exactly ``1`` and
-        each node will have a linear bias of ``0``.
+        A binary quadratic model (BQM) with variables and interactions corresponding
+        to ``nodes`` and ``edges``. Each interaction has a quadratic bias of `1`
+        and each node has a linear bias of `0`.
 
     Examples:
 
-        >>> from dimod.generators import independent_set
+        Generate an independent set BQM from a list of edges.
 
-        Get an independent set binary quadratic model from a list of edges.
-
-        >>> independent_set([(0, 1), (1, 2)])
+        >>> dimod.generators.independent_set([(0, 1), (1, 2)])
         BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0}, {(1, 0): 1.0, (2, 1): 1.0}, 0.0, 'BINARY')
 
-        Get an independent set binary quadratic model from a list of edges and
-        nodes.
+        Generate an independent set BQM from a list of edges and nodes.
 
-        >>> independent_set([(0, 1)], [0, 1, 2])
+        >>> dimod.generators.independent_set([(0, 1)], [0, 1, 2])
         BinaryQuadraticModel({0: 0.0, 1: 0.0, 2: 0.0}, {(1, 0): 1.0}, 0.0, 'BINARY')
 
-        Get an independent set binary quadratic model from a
-        :class:`networkx.Graph`.
+        Generate an independent set BQM from a :class:`networkx.Graph`.
 
         >>> import networkx as nx
         >>> G = nx.complete_graph(2)
-        >>> independent_set(G.edges, G.nodes)
+        >>> dimod.generators.independent_set(G.edges, G.nodes)
         BinaryQuadraticModel({0: 0.0, 1: 0.0}, {(1, 0): 1.0}, 0.0, 'BINARY')
 
     """
@@ -82,7 +77,7 @@ def maximum_independent_set(edges: Iterable[Tuple[Variable, Variable]],
                             *,
                             strength: float = 2,
                             ) -> BinaryQuadraticModel:
-    """Return a binary quadratic model encoding a maximum independent set problem.
+    """Generate a binary quadratic model encoding a maximum independent set problem.
 
     Given a graph `G`, an independent set is a set of nodes such that the
     subgraph of `G` induced by these nodes contains no edges.
@@ -90,38 +85,32 @@ def maximum_independent_set(edges: Iterable[Tuple[Variable, Variable]],
 
 
     Args:
-        edges: The edges of the graph as an iterable of two-tuples.
-        nodes: The nodes of the graph as an iterable.
-        strength: The strength of the quadratic biases. Must be strictly
-            greater than ``1`` in order to enforce the independent set
-            constraint.
+        edges: Edges of the graph.
+        nodes: Nodes of the graph.
+        strength: Strength of the quadratic biases. Must be strictly greater than
+            `1` to enforce the independent set constraint.
 
     Returns:
-        A binary quadratic model. The binary quadratic model will have
-        variables and interactions corresponding to ``nodes`` and ``edges``.
+        A binary quadratic model (BQM) with variables and interactions corresponding
+        to ``nodes`` and ``edges``.
 
     Examples:
 
-        >>> from dimod.generators import maximum_independent_set
+        Generate a maximum independent set BQM from a  list of edges.
 
-        Get a maximum independent set binary quadratic model froma  list of
-        edges.
-
-        >>> maximum_independent_set([(0, 1), (1, 2)])
+        >>> dimod.generators.maximum_independent_set([(0, 1), (1, 2)])
         BinaryQuadraticModel({0: -1.0, 1: -1.0, 2: -1.0}, {(1, 0): 2.0, (2, 1): 2.0}, 0.0, 'BINARY')
 
-        Get a maximum independent set binary quadratic model from a list of
-        edges and nodes.
+        Generate a maximum independent set BQM from a list of edges and nodes.
 
-        >>> maximum_independent_set([(0, 1)], [0, 1, 2])
+        >>> dimod.generators.maximum_independent_set([(0, 1)], [0, 1, 2])
         BinaryQuadraticModel({0: -1.0, 1: -1.0, 2: -1.0}, {(1, 0): 2.0}, 0.0, 'BINARY')
 
-        Get a maximum independent set binary quadratic model from a
-        :class:`networkx.Graph`.
+        Generate a maximum independent set BQM from a :class:`networkx.Graph`.
 
         >>> import networkx as nx
         >>> G = nx.complete_graph(2)
-        >>> maximum_independent_set(G.edges, G.nodes)
+        >>> dimod.generators.maximum_independent_set(G.edges, G.nodes)
         BinaryQuadraticModel({0: -1.0, 1: -1.0}, {(1, 0): 2.0}, 0.0, 'BINARY')
 
     """
@@ -135,42 +124,39 @@ def maximum_weight_independent_set(edges: Iterable[Tuple[Variable, Variable]],
                                    strength: Optional[float] = None,
                                    strength_multiplier: float = 2,
                                    ) -> BinaryQuadraticModel:
-    """Return a binary quadratic model encoding a maximum-weight independent set problem.
+    """Generate a binary quadratic model encoding a maximum-weight independent
+    set problem.
 
     Given a graph `G`, an independent set is a set of nodes such that the
     subgraph of `G` induced by these nodes contains no edges.
     A maximum-weight independent set is the independent set with the highest
     total node weight.
 
-
     Args:
-        edges: The edges of the graph as an iterable of two-tuples.
-        nodes: The nodes of the graph as an iterable of two-tuples where the
+        edges: Edges of the graph.
+        nodes: Nodes of the graph as an iterable of two-tuples, where the
             first element of the tuple is the node label and the second element
-            is the node weight. Nodes not specified are given a weight of ``1``.
-        strength: The strength of the quadratic biases. Must be strictly
-            greater than ``1`` in order to enforce the independent set
-            constraint. If not given, the strength is determined by the
-            ``strength_multiplier``.
-        strength_multiplier: The strength of the quadratic biases is given by
-            the maximum node weight multiplied by ``strength_multiplier``.
+            is the node weight. Nodes not specified are given a weight of `1`.
+        strength: Strength of the quadratic biases. Must be strictly
+            greater than `1` to enforce the independent set constraint. If not
+            given, determined by ``strength_multiplier``.
+        strength_multiplier: Multiplies the maximum node weight to set the value
+            of the quadratic biases.
 
     Returns:
-        A binary quadratic model. The binary quadratic model will have
-        variables and interactions corresponding to ``nodes`` and ``edges``.
+        A binary quadratic model (BQM) with variables and interactions
+        corresponding to ``nodes`` and ``edges``.
 
     Examples:
 
         >>> from dimod.generators import maximum_weight_independent_set
 
-        Get a maximum-weight independent set binary quadratic model from a list
-        of edges and nodes.
+        Generate a maximum-weight independent set BQM from a list of edges and nodes.
 
         >>> maximum_weight_independent_set([(0, 1)], [(0, .25), (1, .5), (2, 1)])
         BinaryQuadraticModel({0: -0.25, 1: -0.5, 2: -1.0}, {(1, 0): 2.0}, 0.0, 'BINARY')
 
-        Get a maximum-weight independent set binary quadratic model from a
-        :class:`networkx.Graph`.
+        Generate a maximum-weight independent set BQM from a :class:`networkx.Graph`.
 
         >>> import networkx as nx
         >>> G = nx.Graph()

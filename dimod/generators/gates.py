@@ -32,18 +32,28 @@ __all__ = ['and_gate',
 
 def and_gate(in0: Variable, in1: Variable, out: Variable,
              *, strength: float = 1.0) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to an
+    """Generate a binary quadratic model with ground states corresponding to an
     AND gate.
 
     Args:
-        in0: The variable label for one of the inputs.
-        in1: The variable label for one of the inputs.
-        out: The variable label for the output.
-        strength: The energy of the lowest-energy infeasible state.
+        in0: Variable label for one of the inputs.
+        in1: Variable label for one of the inputs.
+        out: Variable label for the output.
+        strength: Energy of the lowest-energy infeasible state.
 
     Returns:
         A binary quadratic model with ground states corresponding to an AND
         gate. The model has three variables and three interactions.
+
+    Examples:
+        >>> bqm = dimod.generators.and_gate('x1', 'x2', 'z')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          x1 x2  z energy num_oc.
+        0  0  0  0    0.0       1
+        1  1  0  0    0.0       1
+        2  0  1  0    0.0       1
+        3  1  1  1    0.0       1
+        ['BINARY', 4 rows, 4 samples, 3 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
@@ -68,20 +78,34 @@ def and_gate(in0: Variable, in1: Variable, out: Variable,
 
 def fulladder_gate(in0: Variable, in1: Variable, in2: Variable, sum_: Variable, carry: Variable,
                    *, strength: float = 1.0) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to a
+    """Generate a binary quadratic model with ground states corresponding to a
     full adder gate.
 
     Args:
-        in0: The variable label for one of the inputs.
-        in1: The variable label for one of the inputs.
-        in2: The variable label for one of the inputs
-        sum_: The variable label for the sum output.
-        carry: The variable label for the carry output.
-        strength: The energy of the lowest-energy infeasible state.
+        in0: Variable label for one of the inputs.
+        in1: Variable label for one of the inputs.
+        in2: Variable label for one of the inputs
+        sum_: Variable label for the sum output.
+        carry: Variable label for the carry output.
+        strength: Energy of the lowest-energy infeasible state.
 
     Returns:
         A binary quadratic model with ground states corresponding to a full
         adder gate. The model has five variables and ten interactions.
+
+    Examples:
+        >>> bqm = dimod.generators.fulladder_gate('a1', 'a2', 'a3', 's', 'c')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          a1 a2 a3  c  s energy num_oc.
+        0  0  0  0  0  0    0.0       1
+        1  0  0  1  0  1    0.0       1
+        2  0  1  0  0  1    0.0       1
+        3  1  0  0  0  1    0.0       1
+        4  1  1  1  1  1    0.0       1
+        5  1  0  1  1  0    0.0       1
+        6  0  1  1  1  0    0.0       1
+        7  1  1  0  1  0    0.0       1
+        ['BINARY', 8 rows, 8 samples, 5 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
@@ -115,19 +139,29 @@ def fulladder_gate(in0: Variable, in1: Variable, in2: Variable, sum_: Variable, 
 
 def halfadder_gate(in0: Variable, in1: Variable, sum_: Variable, carry: Variable,
                    *, strength: float = 1.0) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to a
+    """Generate a binary quadratic model with ground states corresponding to a
     half adder gate.
 
     Args:
-        in0: The variable label for one of the inputs.
-        in1: The variable label for one of the inputs.
-        sum_: The variable label for the sum output.
-        carry: The variable label for the carry output.
-        strength: The energy of the lowest-energy infeasible state.
+        in0: Variable label for one of the inputs.
+        in1: Variable label for one of the inputs.
+        sum_: Variable label for the sum output.
+        carry: Variable label for the carry output.
+        strength: Energy of the lowest-energy infeasible state.
 
     Returns:
         A binary quadratic model with ground states corresponding to a half
         adder gate. The model has four variables and six interactions.
+
+    Examples:
+        >>> bqm = dimod.generators.halfadder_gate('a1', 'a2', 's', 'c')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          a1 a2  c  s energy num_oc.
+        0  0  0  0  0    0.0       1
+        1  0  1  0  1    0.0       1
+        2  1  0  0  1    0.0       1
+        3  1  1  1  0    0.0       1
+        ['BINARY', 4 rows, 4 samples, 4 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
@@ -156,18 +190,28 @@ def halfadder_gate(in0: Variable, in1: Variable, sum_: Variable, carry: Variable
 
 def or_gate(in0: Variable, in1: Variable, out: Variable,
             *, strength: float = 1.0) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to an
+    """Generate a binary quadratic model with ground states corresponding to an
     OR gate.
 
     Args:
-        in0: The variable label for one of the inputs.
-        in1: The variable label for one of the inputs.
-        out: The variable label for the output.
-        strength: The energy of the lowest-energy infeasible state.
+        in0: Variable label for one of the inputs.
+        in1: Variable label for one of the inputs.
+        out: Variable label for the output.
+        strength: Energy of the lowest-energy infeasible state.
 
     Returns:
         A binary quadratic model with ground states corresponding to an OR
         gate. The model has three variables and three interactions.
+
+    Examples:
+        >>> bqm = dimod.generators.or_gate('x1', 'x2', 'z')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+          x1 x2  z energy num_oc.
+        0  0  0  0    0.0       1
+        1  0  1  1    0.0       1
+        2  1  1  1    0.0       1
+        3  1  0  1    0.0       1
+        ['BINARY', 4 rows, 4 samples, 3 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
@@ -192,34 +236,44 @@ def or_gate(in0: Variable, in1: Variable, out: Variable,
 
 def xor_gate(in0: Variable, in1: Variable, out: Variable, aux: Variable,
              *, strength: float = 1.0) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to an
+    """Generate a binary quadratic model with ground states corresponding to an
     XOR gate.
 
     Note that it is not possible to construct a binary quadratic model with
     only three variables for an XOR gate.
 
     Args:
-        in0: The variable label for one of the inputs.
-        in1: The variable label for one of the inputs.
-        out: The variable label for the output.
-        aux: The variable label for an auxiliary variable.
-        strength: The energy of the lowest-energy infeasible state.
+        in0: Variable label for one of the inputs.
+        in1: Variable label for one of the inputs.
+        out: Variable label for the output.
+        aux: Variable label for an auxiliary variable.
+        strength: Energy of the lowest-energy infeasible state.
 
     Returns:
         A binary quadratic model with ground states corresponding to an XOR
         gate. The model has four variables and six interactions.
+
+    Examples:
+        >>> bqm = dimod.generators.xor_gate('x1', 'x2', 'z', 'a')
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
+           a x1 x2  z energy num_oc.
+        0  0  0  0  0    0.0       1
+        1  0  0  1  1    0.0       1
+        2  0  1  0  1    0.0       1
+        3  1  1  1  0    0.0       1
+        ['BINARY', 4 rows, 4 samples, 4 variables]
 
     """
     # the sum of a halfadder is XOR
     return halfadder_gate(in0, in1, out, aux, strength=strength)
 
 def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = None) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with ground states corresponding to
+    """Generate a binary quadratic model with ground states corresponding to
     a multiplication circuit.
 
     The generated BQM represents the binary multiplication :math:`ab=p`,
-    where the args are binary variables of length `num_arg1_bits` and 'num_arg2_bits`;
-    for example, :math:`2^ma_{num_arg1_bits} + ... + 4a_2 + 2a_1 + a0`.
+    where the args are binary variables of length ``num_arg1_bits`` and
+    ``num_arg2_bits``; for example, :math:`2^ma_{num_arg1_bits} + ... + 4a_2 + 2a_1 + a0`.
     The square below shows a graphic representation of the circuit::
       ________________________________________________________________________________
       |                                         and20         and10         and00    |
@@ -235,11 +289,12 @@ def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = No
 
     Args:
         num_arg1_bits: Number of bits in the first argument.
-        num_arg2_bits: Number of bits in the second argument.
-            If num_arg2_bits is set to num_arg1_bits.
+        num_arg2_bits: Number of bits in the second argument. If None, set to
+            ``num_arg1_bits``.
     Returns:
         A binary quadratic model with ground states corresponding to a
         multiplication circuit.
+
     Examples:
         This example creates a multiplication circuit BQM that multiplies two
         2-bit numbers. It fixes the multiplacands as :math:`a=2, b=3`

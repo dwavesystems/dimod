@@ -11,6 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+import warnings
 
 import collections.abc as abc
 
@@ -30,7 +31,7 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
                    num_interactions: int,
                    vartype: VartypeLike,
                    *,
-                   cls: type = BinaryQuadraticModel,
+                   cls: None = None,
                    random_state: Optional[Union[np.random.RandomState, int]] = None,
                    bias_generator: Optional[Callable[[int], Sequence[Bias]]] = None,
                    ) -> BinaryQuadraticModel:
@@ -39,24 +40,21 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
 
     Args:
         variables:
-            The variables. If `variables` is an int, the variables are labelled
-            as `[0, variables)`.
+            Variable labels. If an int, variables are labelled `[0,` ``variables`` `)`.
 
         num_interactions: The number of interactions.
 
         vartype:
             Variable type for the BQM. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        cls (type, optional):
-            Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         random_state:
-            A random seed or a random state generator. Used for generating
-            the structure of the BQM and, if `bias_generator` is not given, for
+            Random seed or a random state generator. Used for generating
+            the structure of the BQM and, if ``bias_generator`` is not given, for
             the bias generation.
 
         bias_generator:
@@ -64,13 +62,18 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
             Should accept a single argument `n` and return an
             :class:`~numpy.ndarray` of biases of length `n`.
             May be called multiple times.
-            If not provided, :meth:numpy.random.RandomState.uniform is used by
+            If not provided, :meth:`~numpy.random.RandomState.uniform` is used by
             default.
 
     Returns:
-        A binary quadratic model of type `cls`.
+        A binary quadratic model.
 
     """
+
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
 
     if isinstance(variables, abc.Sequence):
         labels = variables
@@ -95,7 +98,7 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
         def bias_generator(n):
             return random_state.uniform(size=n)
 
-    bqm = cls(vartype=vartype)
+    bqm = BinaryQuadraticModel(vartype=vartype)
 
     for vi, bias in enumerate(bias_generator(num_variables)):
         bqm.set_linear(labels[vi], bias)
@@ -128,30 +131,28 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
 def gnp_random_bqm(n: Union[int, Sequence[Variable]],
                    p: float,
                    vartype: VartypeLike,
-                   cls: type = BinaryQuadraticModel,
+                   cls: None = None,
                    random_state: Optional[Union[np.random.RandomState, int]] = None,
                    bias_generator: Optional[Callable[[int], Sequence[Bias]]] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a BQM structured as an Erdős-Rényi graph.
 
     Args:
-        n: The variables. If `n` is an int, the variables are labelled as `[0, n)`.
+        n: Variables labels. If an int, variables are labelled `[0,` ``variables`` `)`.
 
-        p: The probability for interaction creation.
+        p: Probability for interaction creation.
 
         vartype:
             Variable type for the BQM. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        cls:
-            Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         random_state:
-            A random seed or a random state generator. Used for generating
-            the structure of the BQM and, if `bias_generator` is not given, for
+            Random seed or a random state generator. Used for generating
+            the structure of the BQM and, if ``bias_generator`` is not given, for
             the bias generation.
 
         bias_generator:
@@ -159,16 +160,21 @@ def gnp_random_bqm(n: Union[int, Sequence[Variable]],
             Should accept a single argument `n` and return an
             :class:`~numpy.ndarray` of biases of length `n`.
             May be called multiple times.
-            If not provided, :meth:numpy.random.RandomState.uniform is used by
+            If not provided, :meth:`~numpy.random.RandomState.uniform` is used by
             default.
 
     Returns:
-        A binary quadratic model of type `cls`.
+        A binary quadratic model.
 
     Notes:
         This algorithm runs in O(n^2) time and space.
 
     """
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     if isinstance(n, abc.Sequence):
         labels = n
         n = len(labels)
@@ -207,38 +213,36 @@ def gnp_random_bqm(n: Union[int, Sequence[Variable]],
     qdata = bias_generator(num_interactions)
     offset, = bias_generator(1)
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
-                                  variable_order=labels)
+    return BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata),
+                                offset, vartype, variable_order=labels)
 
 
 @graph_argument('graph')
 def uniform(graph: GraphLike, vartype: VartypeLike,
             low: float = 0, high: float = 1,
-            cls: type = BinaryQuadraticModel,
+            cls: None = None,
             seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate a binary quadratic model with random biases and offset.
 
-    Biases and offset are drawn from a uniform distribution range (low, high).
+    Biases and offset are drawn uniformly from a specified distribution range.
 
     Args:
         graph:
-            The graph to build the binary quadratic model (BQM) on. Either an
-            integer n, interpreted as a complete graph of size n, a nodes/edges
+            Graph to build the binary quadratic model (BQM) on. Either an
+            integer `n`, interpreted as a complete graph of size `n`, a nodes/edges
             pair, a list of edges or a NetworkX graph.
 
         vartype:
             Variable type for the BQM. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        low: The low end of the range for the random biases.
+        low: Low end of the range for the random biases.
 
-        high: The high end of the range for the random biases.
+        high: High end of the range for the random biases.
 
-        cls:
-            Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         seed: Random seed.
 
@@ -246,6 +250,11 @@ def uniform(graph: GraphLike, vartype: VartypeLike,
         A binary quadratic model.
 
     """
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     if seed is None:
         seed = np.random.randint(2**32, dtype=np.uint32)
     r = np.random.RandomState(seed)
@@ -263,18 +272,18 @@ def uniform(graph: GraphLike, vartype: VartypeLike,
     qdata = r.uniform(low, high, size=len(irow))
     offset = r.uniform(low, high)
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
-                                  variable_order=variables)
+    return BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata),
+                                  offset, vartype, variable_order=variables)
 
 
 @graph_argument('graph')
 def randint(graph: GraphLike, vartype: VartypeLike,
             low: int = 0, high: int = 1,
-            cls: type = BinaryQuadraticModel,
+            cls: None = None,
             seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate a binary quadratic model with random biases and offset.
 
-    Biases and offset are integer-valued in range [low, high] inclusive.
+    Biases and offset are integer-valued in specified range.
 
     Args:
         graph:
@@ -285,15 +294,14 @@ def randint(graph: GraphLike, vartype: VartypeLike,
         vartype:
             Variable type for the BQM. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-        low : The low end of the range for the random biases.
+        low : Inclusive low end of the range for the random biases.
 
-        high: The high end of the range for the random biases.
+        high: Inclusive high end of the range for the random biases.
 
-        cls: Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         seed: Random seed.
 
@@ -301,6 +309,11 @@ def randint(graph: GraphLike, vartype: VartypeLike,
         A binary quadratic model.
 
     """
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     if seed is None:
         seed = np.random.randint(2**32, dtype=np.uint32)
     r = np.random.RandomState(seed)
@@ -319,19 +332,20 @@ def randint(graph: GraphLike, vartype: VartypeLike,
     qdata = r.randint(low, high+1, size=len(irow))
     offset = r.randint(low, high+1)
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
+    return BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype,
                                   variable_order=variables)
 
 
 @graph_argument('graph')
 def ran_r(r: int, graph: GraphLike,
-          cls: type = BinaryQuadraticModel,
+          cls: None = None,
           seed: Optional[int] = None) -> BinaryQuadraticModel:
     """Generate an Ising model for a RANr problem.
 
     In RANr problems all linear biases are zero and quadratic values are uniformly
-    selected integers between -r to r, excluding zero. This class of problems is relevant
-    for binary quadratic models (BQM) with spin variables (Ising models).
+    selected integers between ``-r`` to ``r``, excluding zero. This class of
+    problems is relevant for binary quadratic models (BQM) with spin variables
+    (Ising models).
 
     This generator of RANr problems follows the definition in [Kin2015]_.
 
@@ -339,12 +353,11 @@ def ran_r(r: int, graph: GraphLike,
         r: Order of the RANr problem.
 
         graph:
-            The graph to build the bqm on. Either an integer n,
-            interpreted as a complete graph of size n, a nodes/edges pair, a
-            list of edges or a NetworkX graph.
+            Graph to build the BQM on. Either an integer, `n`, interpreted as a
+            complete graph of size `n`, a nodes/edges pair, a list of edges or a
+            NetworkX graph.
 
-        cls: Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         seed: Random seed.
 
@@ -364,6 +377,11 @@ def ran_r(r: int, graph: GraphLike,
         time-to-target metric. https://arxiv.org/abs/1508.05087
 
     """
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     if not isinstance(r, int):
         raise TypeError("r should be a positive integer")
     if r < 1:
@@ -391,31 +409,32 @@ def ran_r(r: int, graph: GraphLike,
 
     offset = 0
 
-    return cls.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
+    return BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
                                   variable_order=variables)
 
 
 @graph_argument('graph')
 def doped(p: float, graph: GraphLike,
-          cls: type = BinaryQuadraticModel,
+          cls: None = None,
           seed: Optional[int] = None,
           fm: bool = True):
-    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM) problem.
+    """Generate a BQM for a doped ferromagnetic (FM) or antiferromagnetic (AFM)
+    problem.
 
-    In a doped FM problem, `p`, the doping parameter, determines the probability of
-    couplers set to AFM (flipped to 1). The remaining couplers remain FM (-1). In a doped
-    AFM problem, the opposite is true.
+    In a doped FM problem, ``p``, the doping parameter, determines the probability
+    of couplers set to AFM (flipped to `1`). The remaining couplers remain FM
+    (`-1`). In a doped AFM problem, the opposite is true.
 
     Args:
-        p: Doping parameter [0,1] determines the probability of couplers flipped.
+        p: Doping parameter `[0, 1]` determines the probability of couplers
+            being flipped.
 
         graph:
-            The graph to build the bqm on. Either an integer n,
-            interpreted as a complete graph of size n, a nodes/edges pair, a
-            list of edges or a NetworkX graph.
+            Graph to build the BQM on. Either an integer `n`, interpreted as a
+            complete graph of size `n`, a nodes/edges pair, a list of edges or a
+            NetworkX graph.
 
-        cls: Binary quadratic model class to build from. Default is
-            :class:`.BinaryQuadraticModel`.
+        cls: Deprecated. Does nothing.
 
         seed: Random seed.
 
@@ -425,6 +444,10 @@ def doped(p: float, graph: GraphLike,
         A binary quadratic model.
 
     """
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
+                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
 
     if seed is None:
         seed = np.random.randint(2**32, dtype=np.uint32)
@@ -438,7 +461,7 @@ def doped(p: float, graph: GraphLike,
     if not fm:
         p = 1 - p
 
-    bqm = cls(Vartype.SPIN)
+    bqm = BinaryQuadraticModel(Vartype.SPIN)
 
     for u, v in edges:
         bqm.set_linear(u, 0)

@@ -29,12 +29,12 @@ def random_multi_knapsack(num_items: int,
                           value_range: Tuple[int, int] = (10, 50),
                           weight_range: Tuple[int, int] = (10, 50),
                           ) -> ConstrainedQuadraticModel:
-    """Return a constrained quadratic model encoding a multiple knapsack
+    """Generate a constrained quadratic model encoding a multiple-knapsack
     problem.
 
-    Given the number of items and the number of bins, the code generates a
-    multiple-knapsack problem, formulated as a Constrained Quadratic Model.
-    Values and weights  for each item are uniformly sampled within the provided
+    Given the number of items and the number of bins, generates a
+    multiple-knapsack problem, formulated as a :class:`~dimod.ConstrainedQuadraticModel`.
+    Values and weights for each item are uniformly sampled within the specified
     ranges. Capacities of bins are randomly assigned.
 
     Args:
@@ -42,15 +42,15 @@ def random_multi_knapsack(num_items: int,
 
         num_bins: Number of bins.
 
-        seed: seed for RNG.
+        seed: Seed for RNG.
 
-        value_range: The range of the randomly generated values for each item.
+        value_range: Range of the randomly generated values for each item.
 
-        weight_range: The range of the randomly generated weights for each item.
+        weight_range: Range of the randomly generated weights for each item.
 
     Returns:
 
-        A constrained quadratic model encoding the multiple knapsack problem.
+        A constrained quadratic model encoding the multiple-knapsack problem.
         Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
         that item ``i`` is placed in bin ``j``.
 

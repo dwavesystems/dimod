@@ -25,24 +25,23 @@ __all__ = ['combinations']
 
 def combinations(n: Union[int, Collection[Variable]], k: int,
                  strength: float = 1, vartype: VartypeLike = BINARY) -> BinaryQuadraticModel:
-    r"""Generate a binary quadratic model that is minimized when k of n
+    r"""Generate a binary quadratic model that is minimized when ``k`` of ``n``
     variables are selected.
 
     More fully, generates a binary quadratic model (BQM) that is minimized for
-    each of the k-combinations of its variables.
+    each of the ``k``-combinations of its variables.
 
     The energy for the BQM is given by
     :math:`(\sum_{i} x_i - k)^2`.
 
     Args:
-        n: If ``n`` is an integer, variables are labelled `[0, n)`. If ``n`` is
-            a list or set, variables are labelled accordingly.
+        n: Variable labels. If ``n`` is an integer, variables are labelled `[0, n)`.
 
-        k: The generated BQM has ``0`` energy when any ``k`` of its variables
-            are ``1``.
+        k: The number of selected variables (variables assigned value `1`) that
+            minimizes the generated BQM, resulting in an energy of `0`.
 
-        strength: The energy of the first excited state of the binary quadratic
-            model.
+        strength: Energy of the first excited state of the BQM. The first excited
+            state occurs when the number of selected variables is :math:`k \pm 1`.
 
         vartype: Variable type for the BQM. Accepted input values:
 

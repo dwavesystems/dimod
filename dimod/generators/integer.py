@@ -22,20 +22,19 @@ __all__ = ['binary_encoding']
 
 
 def binary_encoding(v: Variable, upper_bound: int) -> BinaryQuadraticModel:
-    """Return a binary quadratic model encoding an integer.
+    """Generate a binary quadratic model encoding an integer.
 
     Args:
-        v: The integer variable label.
-        upper_bound: The upper bound on the integer value (inclusive).
+        v: Integer variable label.
+        upper_bound: Upper bound on the integer value (inclusive). You can set
+            a lower bound by setting the model's offset.
 
     Returns:
-        A binary quadratic model. The variables in the BQM will be labelled
-        with tuples of length two or three. The first value of the tuple will
-        be the variable label ``v`` provided. The second value will be the
-        coefficient in the integer encoding. One of the variables will
-        have a third value in the tuple, ``'msb'``. This is the variable
-        occupying the position of the most significant bit. Though it may
-        actually be a smaller number in order to enforce the ``upper_bound``.
+        A binary quadratic model. Variables in the BQM are labelled with tuples
+        with the following two or three values: first, the specified variable
+        label, ``v``; second, the coefficient in the integer encoding; third
+        (only in the tuple representing the most significant bit), a string,
+        ``'msb'``.
 
     Example:
 
@@ -43,7 +42,7 @@ def binary_encoding(v: Variable, upper_bound: int) -> BinaryQuadraticModel:
         >>> bqm
         BinaryQuadraticModel({('i', 1): 1.0, ('i', 2): 2.0, ('i', 3, 'msb'): 3.0}, {}, 0.0, 'BINARY')
 
-        We can use a sample to restore the original integer value.
+        You can use a sample to restore the original integer value.
 
         >>> sample = {('i', 1): 1, ('i', 2): 0, ('i', 3, 'msb'): 1}
         >>> bqm.energy(sample)
@@ -52,7 +51,8 @@ def binary_encoding(v: Variable, upper_bound: int) -> BinaryQuadraticModel:
         4.0
 
         If you wish to encode integers with a lower bound, you can use the
-        binary quadratic model's :attr:`~BinaryQuadraticModel.offset` attribute.
+        binary quadratic model's :attr:`~dimod.binary.BinaryQuadraticModel.offset`
+        attribute.
 
         >>> i = dimod.generators.binary_encoding('i', 10) + 5  # integer in [5, 15]
 

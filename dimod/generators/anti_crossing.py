@@ -65,12 +65,15 @@ def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
 def anti_crossing_loops(num_variables: int) -> BinaryQuadraticModel:
     """Generate an anti-crossing problem with two loops.
 
-    This is the problem studied in [DJA]_.
+    The low-energy space of this model consists of a unique ground state of all
+    :math:`+1`\ s and a degenerate first excited state, centered at all
+    :math:`-1`\ s, with these two lowest states well separated in Hamming distance
+    and by an energy barrier. These features are sufficient to yield a small
+    anti-crossing when employed in a transverse-field annealing process. A closely
+    related approach is employed in [DJA]_.
 
     Note that for small values of ``num_variables``, the loops can be as small
     as a single edge.
-
-    The ground state of this problem is `+1` for all variables.
 
     Args:
         num_variables:

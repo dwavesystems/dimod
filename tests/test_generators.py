@@ -51,6 +51,9 @@ class TestRandomGNMRandomBQM(unittest.TestCase):
                 bqm = dimod.generators.gnm_random_bqm(n, m, 'SPIN')
                 self.assertEqual(bqm.shape, (n, m))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.gnm_random_bqm(2, 1, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomGNPRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
@@ -126,6 +129,9 @@ class TestRandomGNPRandomBQM(unittest.TestCase):
         bqm = dimod.generators.gnp_random_bqm(1, 0, 'SPIN')
         self.assertEqual(bqm.shape, (1, 0))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.gnp_random_bqm(2, 1, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomUniform(unittest.TestCase):
     def test_singleton(self):
@@ -151,6 +157,9 @@ class TestRandomUniform(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.uniform(2, "SPIN", cls=dimod.BinaryQuadraticModel)
 
 class TestRandomRandint(unittest.TestCase):
     def test_singleton(self):
@@ -176,6 +185,9 @@ class TestRandomRandint(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.randint(3, dimod.BINARY, cls=dimod.BinaryQuadraticModel)
 
 class TestRandomRanR(unittest.TestCase):
     def test_singleton(self):
@@ -209,6 +221,9 @@ class TestRandomRanR(unittest.TestCase):
         self.assertTrue(all(val <= 5 for val in bqm.quadratic.values()))
         self.assertTrue(all(val >= -5 for val in bqm.quadratic.values()))
 
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.ran_r(2, 3, cls=dimod.BinaryQuadraticModel)
 
 class TestChimeraAnticluster(unittest.TestCase):
     def test_singletile(self):
@@ -328,6 +343,11 @@ class TestFCL(unittest.TestCase):
 
         self.assertNotEqual(bqm2, bqm1)
 
+    def test_too_few_good_cycles(self):
+
+        with self.assertRaises(RuntimeError):
+            dimod.generators.frustrated_loop(4, 3, R=1, seed=1)
+
     def test_planted_solution(self):
         G = self.G
 
@@ -440,6 +460,10 @@ class TestDoped(unittest.TestCase):
         total = len(bqm.quadratic)
         fm = sum([val == -1 for val in bqm.quadratic.values()])
         self.assertAlmostEqual(fm / total, 0.3, places=2)
+
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.random.doped(0.3, 10, cls=dimod.BinaryQuadraticModel)
 
 
 class TestKnapsack(unittest.TestCase):
@@ -638,7 +662,7 @@ class TestGates(unittest.TestCase):
         }
         bqm = dimod.generators.multiplication_circuit(2, 3)
         self.assertEqual(set(bqm.variables), mc2_3_vars)
-  
+
         # Verify correct variables for 3x2 circuit
         mc3_2_vars = {
             'a0', 'a1', 'a2',
