@@ -95,12 +95,17 @@ def fulladder_gate(in0: Variable, in1: Variable, in2: Variable, sum_: Variable, 
 
     Examples:
         >>> bqm = dimod.generators.fulladder_gate('a1', 'a2', 'a3', 's', 'c')
-        >>> print(dimod.ExactSolver().sample(bqm).lowest().slice(0, 6, 2))
+        >>> print(dimod.ExactSolver().sample(bqm).lowest())
           a1 a2 a3  c  s energy num_oc.
         0  0  0  0  0  0    0.0       1
-        1  0  1  0  0  1    0.0       1
-        2  1  1  1  1  1    0.0       1
-        ['BINARY', 3 rows, 3 samples, 5 variables]
+        1  0  0  1  0  1    0.0       1
+        2  0  1  0  0  1    0.0       1
+        3  1  0  0  0  1    0.0       1
+        4  1  1  1  1  1    0.0       1
+        5  1  0  1  1  0    0.0       1
+        6  0  1  1  1  0    0.0       1
+        7  1  1  0  1  0    0.0       1
+        ['BINARY', 8 rows, 8 samples, 5 variables]
 
     """
     bqm = BinaryQuadraticModel(Vartype.BINARY)
