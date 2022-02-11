@@ -54,7 +54,9 @@ Methods
    ConstrainedQuadraticModel.is_equal
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
+   ConstrainedQuadraticModel.relabel_constraints
    ConstrainedQuadraticModel.relabel_variables
+   ConstrainedQuadraticModel.remove_constraint
    ConstrainedQuadraticModel.set_lower_bound
    ConstrainedQuadraticModel.set_objective
    ConstrainedQuadraticModel.set_upper_bound

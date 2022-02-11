@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.relabel_constraints()`` method.
+    See `#1066 <https://github.com/dwavesystems/dimod/issues/1066>`_.
+  - |
+    Add ``ConstrainedQuadraticModel.remove_constraint()`` method.
+    See `#1104 <https://github.com/dwavesystems/dimod/issues/1104>`_.

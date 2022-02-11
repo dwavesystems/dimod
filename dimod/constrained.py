@@ -16,6 +16,8 @@
 Constrained Quadratic Model class.
 """
 
+from __future__ import annotations
+
 import collections.abc as abc
 import copy
 import json
@@ -41,7 +43,7 @@ from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import Bias, Variable
-from dimod.utilities import new_label
+from dimod.utilities import iter_safe_relabels, new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
 from dimod.serialization.lp import make_lp_grammar, get_variables_from_parsed_lp, constraint_symbols, obj_senses
@@ -1099,6 +1101,38 @@ class ConstrainedQuadraticModel:
             count += sum(lhs.degree(v) > 0 for v in lhs.variables)
         return count
 
+    def relabel_constraints(self, mapping: Mapping[Hashable, Hashable]):
+        """Relabel the constraints.
+
+        Note that this method does not maintain the constraint order.
+
+        Args:
+            mapping: A mapping from the old constraint labels to the new.
+
+        Examples:
+            >>> x, y, z = dimod.Binaries(['x', 'y', 'z'])
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(x + y == 1, label='c0')
+            'c0'
+            >>> cqm.add_constraint(y*z == 0, label='c1')
+            'c1'
+            >>> cqm.relabel_constraints({'c1': 'c2'})
+            >>> list(cqm.constraints)
+            ['c0', 'c2']
+
+        """
+        for submap in iter_safe_relabels(mapping, self.constraints):
+            for old, new in submap.items():
+                try:
+                    self.constraints[new] = self.constraints[old]
+                except KeyError:
+                    continue  # do nothing
+                del self.constraints[old]
+
+                if old in self.discrete:
+                    self.discrete.add(new)
+                    self.discrete.remove(old)
+
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],
                           inplace: bool = True,
@@ -1122,6 +1156,34 @@ class ConstrainedQuadraticModel:
             constraint.lhs.relabel_variables(mapping, inplace=True)
 
         return self
+
+    def remove_constraint(self, label: Hashable, *, cascade: bool = False):
+        """Remove a constraint from the model.
+
+        Args:
+            label: The constraint label.
+            cascade: If ``cascade`` is true, then any variables in the removed
+                constraint that are not in any other constraints and that
+                contribute no energy to the objective will also be removed.
+
+        """
+        try:
+            comparison = self.constraints.pop(label)
+        except KeyError:
+            raise ValueError(f"{label!r} is not a constraint") from None
+        self.discrete.discard(label)  # if it's discrete
+
+        if cascade:
+            for v in comparison.lhs.variables:
+                if self.objective.degree(v) or self.objective.get_linear(v):
+                    # it's used somewhere in the objective
+                    continue
+
+                if any(v in comp.lhs.variables for comp in self.constraints.values()):
+                    # it's used in at least one constraint
+                    continue
+
+                self.objective.remove_variable(v)
 
     def set_lower_bound(self, v: Variable, lb: float):
         """Set the lower bound for a variable.
