@@ -372,12 +372,12 @@ def iter_safe_relabels(mapping: typing.Mapping[Variable, Variable],
     try:
         new_labels = {new: old for old, new in mapping.items()}
     except TypeError:
-        raise ValueError("mapping targets must be hashable objects")
+        raise ValueError("mapping values must be hashable objects")
 
     if len(new_labels) < len(mapping):
         for old, new in mapping.items():
             if new_labels[new] != old:
-                raise ValueError("cannot map two variables to the same label: "
+                raise ValueError("cannot map two items to the same label: "
                                  f"{old!r} and {new_labels[new]!r} are both mapped to {new!r}")
         raise RuntimeError  # should never get here, but just in case...
 
@@ -385,9 +385,8 @@ def iter_safe_relabels(mapping: typing.Mapping[Variable, Variable],
 
     for v in new_labels:
         if v in existing and v not in old_labels:
-            msg = ("A variable cannot be relabeled {!r} without also "
-                   "relabeling the existing variable of the same name")
-            raise ValueError(msg.format(v))
+            raise ValueError(f"an item cannot be relabelled {v!r} without also "
+                             "relabeling the existing item of the same name")
 
     if any(v in new_labels for v in old_labels):
         yield from resolve_label_conflict(mapping, existing, old_labels, new_labels)
