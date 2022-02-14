@@ -4,6 +4,76 @@
 Symbolic Math
 =============
 
+*dimod*'s support for symbolic math can simplify your coding of problems. For example,
+a problem of finding the rectangle with the greatest area for a given perimeter,
+:math:`P = 8`,
+
+.. math::
+
+  \max_{i,j} \quad ij
+
+  \textrm{s.t.} \quad 2i+2j \le P
+
+formulated as an :term:`objective`---maximize\ [#]_ :math:`ij`, the multiplication
+of side :math:`i` by side :math:`j`---subject to the :term:`constraint` that the
+summation of the rectangle's four sides not exceed the perimeter,
+:math:`2i+2j \le P`, can be represented as such,
+
+>>> print(objective.to_polystring())            # doctest:+SKIP
+-i*j
+>>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
+2*i + 2*j <= 8
+
+.. [#] The coded ``objective`` is set to negative because D-Wave samplers minimize
+  rather than maximize.
+
+The foundation for this symbolic representation is single-variable models.
+
+Variables as Models
+===================
+
+To symbolically represent an objective or constraint, you first need symbolic
+representations of variables. In problems such as that of the example above, the
+type of variable needed might be integer:
+
+>>> from dimod import Integer
+>>> i = Integer('i')
+>>> i
+QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+Such a variable is represented by one of dimod's supported quadratic models with a
+single variable; here, variable ``i`` is a
+:class:`~dimod.quadratic.quadratic_model.QuadraticModel` with one variable with
+the label ``'i'``. This works because quadratic models are problems of the form,
+
+.. math::
+
+    \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
+
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
+variables and :math:`a_{i}, b_{ij}, c` are real values. If you set :math:`a_1=1`
+and all remaining coefficients to zero, the model represents a single variable,
+:math:`x_1`.
+
+Similarly, a linear term, such as :math:`3.7i`, can be represented by this same
+model by setting the appropriate linear coefficient on the ``'i'``--labeled variable:
+
+>>> 3.75 * i
+QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+And adding a non-zero quadratic coefficient, :math:`b_{11}`
+
+>>> 2.2 * i * i + 3.75 * i
+QuadraticModel({'i': 3.75}, {('i', 'i'): 2.2}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+, not a free-floating variable labeled ``x``. Consequently,
+you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
+by adding the two models, :code:`x + bqm`. This adds the variable labeled ``'x'``
+in the single-variable BQM, ``x`` to model ``bqm``. You cannot add ``x`` to a
+model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
+
+dimod supports various methods of creating
+
 dimod enables easy incorporation of binary and integer variables as
 :ref:`single-variable models <generators_symbolic_math>`. For example, you can
 represent such binary variables as follows:
