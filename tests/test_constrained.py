@@ -716,6 +716,43 @@ class FromQM(unittest.TestCase):
         self.assertTrue(cqm.objective.is_equal(qm))
 
 
+class TestRelabelConstraints(unittest.TestCase):
+    def test_discrete(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+
+        c0 = cqm.add_constraint(x + y - x*y <= 5, label='c0')
+        c1 = cqm.add_discrete(x + y == 1, label='c1')
+
+        cqm.relabel_constraints({c1: 'c2'})
+
+        self.assertEqual(set(cqm.constraints), {'c0', 'c2'})
+        self.assertEqual(cqm.discrete, {'c2'})
+        self.assertEqual(cqm.constraints['c2'].lhs, x + y)
+
+    def test_superset(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+
+        c0 = cqm.add_constraint(x + y - x*y <= 5, label='c0')
+        c1 = cqm.add_discrete(x + y == 1, label='c1')
+
+        cqm.relabel_constraints({'a': 'b'})
+
+    def test_swap(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+
+        c0 = cqm.add_constraint(x + y <= 5)
+        c1 = cqm.add_constraint(x*y == 1)
+
+        cqm.relabel_constraints({c0: c1, c1: c0})
+
+        self.assertEqual(set(cqm.constraints), {c0, c1})
+        self.assertEqual(cqm.constraints[c0].lhs, x*y)
+        self.assertEqual(cqm.constraints[c1].lhs, x+y)
+
+
 class TestRelabelVariables(unittest.TestCase):
     def test_copy(self):
         cqm = CQM()
@@ -745,6 +782,37 @@ class TestRelabelVariables(unittest.TestCase):
         self.assertEqual(cqm.objective.variables, [1, 0, 'w'])
         self.assertEqual(cqm.constraints[c0].lhs.variables, [1, 'w'])
         self.assertEqual(cqm.constraints[c1].lhs.variables, ['w', 0])
+
+
+class TestRemoveConstraint(unittest.TestCase):
+    def test_cascade(self):
+        cqm = CQM()
+        u, v, w = dimod.Binaries('uvw')
+
+        cqm.set_objective(u)
+        cqm.add_constraint(v == 1)
+        c0 = cqm.add_constraint(u + v + w == 0, label='c0')
+        c1 = cqm.add_constraint(u + v + w == 0, label='c1')
+
+        cqm.remove_constraint(c0, cascade=False)
+        self.assertEqual(cqm.variables, ['u', 'v', 'w'])
+        cqm.remove_constraint(c1, cascade=True)
+        self.assertEqual(cqm.variables, ['u', 'v'])
+
+    def test_simple(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+
+        c0 = cqm.add_constraint(x + y - x*y <= 5, label='c0')
+        c1 = cqm.add_discrete(x + y == 1, label='c1')
+
+        cqm.remove_constraint(c1)
+
+        self.assertEqual(set(cqm.constraints), {c0})
+        self.assertEqual(cqm.discrete, set())
+
+        with self.assertRaises(ValueError):
+            cqm.remove_constraint('not a constraint')
 
 
 class TestSerialization(unittest.TestCase):
