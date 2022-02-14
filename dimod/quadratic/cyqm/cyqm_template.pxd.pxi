@@ -37,5 +37,6 @@ cdef class cyQM_template(cyQMBase):
     cdef const cppQuadraticModel[bias_type, index_type]* data(self)
     cpdef bint is_linear(self)
     cpdef void scale(self, bias_type)
+    cpdef Py_ssize_t nbytes(self, bint capacity=*)
     cpdef Py_ssize_t num_interactions(self)
     cpdef Py_ssize_t num_variables(self)

@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import copy
+import typing
 
 from collections.abc import Collection, KeysView, Callable
 from functools import reduce
@@ -248,6 +249,10 @@ class pyBQM:
             for v, bias in Nu.items():
                 if v not in seen:
                     yield u, v, bias
+
+    def nbytes(self, *args, **kwargs) -> typing.NoReturn:
+        raise TypeError(
+            "cannot return the number of bytes for a binary quadratic model with object dtype")
 
     def num_variables(self) -> int:
         return len(self._adj)

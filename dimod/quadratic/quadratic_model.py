@@ -899,6 +899,26 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.lower_bound
 
+    def nbytes(self, capacity: bool = False) -> int:
+        """Get the total bytes consumed by the biases, vartype info, bounds,
+        and indices.
+
+        Does not include the memory consumed by non-element attributes of
+        the quadratic model object.
+        Also does not include the memory consumed by the variable labels.
+
+        Args:
+            capacity: If ``capacity`` is true, also include the capacity_ of the
+                underlying vectors in the calculation.
+
+        Returns:
+            The number of bytes.
+
+        .. _capacity: https://www.cplusplus.com/reference/vector/vector/capacity/
+
+        """
+        return self.data.nbytes(capacity)
+
     def set_lower_bound(self, v: Variable, lb: float):
         """Set the lower bound for a variable.
 

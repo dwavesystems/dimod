@@ -89,6 +89,8 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bias_type& offset()
         bias_type quadratic(index_type, index_type)
         bias_type quadratic_at(index_type, index_type) except +
+        size_type nbytes()
+        size_type nbytes(bint)
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(index_type)
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(index_type, index_type)
         size_type num_variables()
@@ -133,6 +135,8 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bint is_linear()
         bias_type& linear(index_type)
         const bias_type& lower_bound(index_type)
+        size_type nbytes()
+        size_type nbytes(bint)
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
         size_type num_variables()
         size_type num_interactions()

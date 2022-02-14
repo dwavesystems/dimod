@@ -462,6 +462,9 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t vi = self.variables.index(v)
         return as_numpy_float(self.cppqm.lower_bound(vi))
 
+    cpdef Py_ssize_t nbytes(self, bint capacity = False):
+        return self.cppqm.nbytes(capacity)
+
     cpdef Py_ssize_t num_interactions(self):
         return self.cppqm.num_interactions()
 

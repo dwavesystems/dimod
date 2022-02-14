@@ -1592,6 +1592,28 @@ class TestLen(unittest.TestCase):
         self.assertEqual(len(bqm), 107)
 
 
+class TestNBytes(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_small(self, name, BQM):
+        bqm = BQM({'a': 1}, {'ab': 1, 'bc': 1}, 1.5, dimod.BINARY)
+
+        if bqm.dtype == object:
+            with self.assertRaises(TypeError):
+                bqm.nbytes()
+            return
+
+        itemsize = bqm.dtype.itemsize
+
+        size = sum([itemsize,  # offset
+                    bqm.num_variables*itemsize,  # linear
+                    2*bqm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    ])
+
+        self.assertEqual(bqm.nbytes(), size)
+        self.assertEqual(bqm.nbytes(), bqm.nbytes(False))
+        self.assertGreaterEqual(bqm.nbytes(True), bqm.nbytes(False))
+
+
 class TestNetworkxGraph(unittest.TestCase):
     def setUp(self):
         try:

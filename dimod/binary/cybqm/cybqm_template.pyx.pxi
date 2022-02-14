@@ -528,6 +528,8 @@ cdef class cyBQM_template(cyBQMBase):
             yield u, v, as_numpy_float(deref(it).bias)
             inc(it)
 
+    cpdef Py_ssize_t nbytes(self, bint capacity = False):
+        return self.cppbqm.nbytes(capacity)
 
     cpdef Py_ssize_t num_interactions(self):
         return self.cppbqm.num_interactions()
