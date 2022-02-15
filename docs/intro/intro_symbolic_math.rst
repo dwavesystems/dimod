@@ -40,38 +40,46 @@ Variables as Models
 ===================
 
 To symbolically represent an objective or constraint, you first need symbolic
-representations of variables. In problems such as that of the example above, the
-type of variable needed might be integer:
+representations of variables.
+
+You can use a quadratic model with a single variable to represent your
+variable; for example, if the type of variable you need is integer:
 
 >>> from dimod import Integer
 >>> i = Integer('i')
 >>> i
 QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
-Such a variable is represented by one of dimod's supported quadratic models with a
-single variable; here, variable ``i`` is a
-:class:`~dimod.quadratic.quadratic_model.QuadraticModel` with one variable with
-the label ``'i'``. This works because quadratic models are problems of the form,
+Here, variable ``i`` is a :class:`~dimod.quadratic.quadratic_model.QuadraticModel`
+with one variable with the label ``'i'``.
+
+This works because quadratic models have the form,
 
 .. math::
 
     \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
 
-where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
-variables and :math:`a_{i}, b_{ij}, c` are real values. If you set :math:`a_1=1`
-and all remaining coefficients to zero, the model represents a single variable,
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be integer variables
+(:math:`a_{i}, b_{ij}, c` are real values). If you set :math:`a_1=1` and all
+remaining coefficients to zero, the model represents a single variable,
 :math:`x_1`.
 
-Similarly, a linear term, such as :math:`3.7i`, can be represented by this same
-model by setting the appropriate linear coefficient on the ``'i'``--labeled variable:
+When your variable is in a linear term of a polynomial, such as :math:`3.7i`,
+the coefficient (:math:`3.7`) is represented in this same model by the value of
+the linear bias on the ``'i'``--labeled variable:
 
 >>> 3.75 * i
 QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
-And adding a non-zero quadratic coefficient, :math:`b_{11}`
+Similarly, when your variable is in a quadratic term, such as :math:`2.2i^2`, the
+coefficient (:math:`2.2`) is represented in this same model by the value of
+the quadratic bias, :math:`b_{1, 1} = 2.2`, on the ``'i'``--labeled variable:
 
->>> 2.2 * i * i + 3.75 * i
-QuadraticModel({'i': 3.75}, {('i', 'i'): 2.2}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+>>> (2.2 * i * i + 3.75 * i).quadratic
+{('i', 'i'): 2.2}
+
+Operations on Variables
+=======================
 
 , not a free-floating variable labeled ``x``. Consequently,
 you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
