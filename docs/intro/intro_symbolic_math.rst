@@ -90,7 +90,7 @@ Now consider a simple problem of an AND operation on two binary variables. For
 :math:`\{0, 1\}`--valued binary variables, the AND operation is equivalent to
 the multiplication of the two variables:
 
->>> from dimod import Binaries, , ExactSolver
+>>> from dimod import Binaries, ExactSolver
 >>> x, y = Binaries(["x", "y"])
 >>> bqm_and = x*y
 >>> bqm_and
@@ -102,15 +102,6 @@ BinaryQuadraticModel({'x': 0.0, 'y': 0.0}, {('y', 'x'): 1.0}, 0.0, 'BINARY')
 3  0  1    0.0       1
 2  1  1    1.0       1
 ['BINARY', 4 rows, 4 samples, 2 variables]
-
-Here, because all the variables are the same :class:`~dimod.Vartype`,
-:class:`~dimod.Vartype.BINARY`, dimod instantiates a
-:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` to represent
-each binary variable. If an operation includes more than one type of variable,
-the representation is always a quadratic model:
-
->>> type(bqm_and + 3.75 * i)
-dimod.quadratic.quadratic_model.QuadraticModel
 
 The symbolic multiplication between variables above implemented multiplication
 between the models representing each variable. Binary quadratic models (BQMs) are
@@ -127,6 +118,25 @@ where :math:`a_{i}, b_{ij}, c` are real values. The multiplication of two such
 models, with linear terms :math:`a_1 = 1`, reduced to
 :math:`\sum_{i=1} 1 x_1 * \sum_{i=1} 1 y_1 = x_1y_1`.
 
+Here, because all the variables are the same :class:`~dimod.Vartype`,
+:class:`~dimod.Vartype.BINARY`, dimod instantiates a
+:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` to represent
+each binary variable.
+
+>>> bqm_and.vartype == dimod.Vartype.BINARY
+True
+
+If an operation includes more than one type of variable, the representation is
+always a quadratic model and the :class:`~dimod.Vartype` is per variable:
+
+>>> type(bqm_and + 3.75 * i)
+dimod.quadratic.quadratic_model.QuadraticModel
+>>> (bqm_and + 3.75 * i).vartype("x") == dimod.Vartype.BINARY
+True
+>>> (bqm_and + 3.75 * i).vartype("i") == dimod.Vartype.INTEGER
+True
+
+
 .. note::
   It's important to remember that, for example, :code:`x = dimod.Binary('x')`
   instantiates a single-variable model with variable label ``'x'``, not a
@@ -139,40 +149,32 @@ models, with linear terms :math:`a_1 = 1`, reduced to
 Representing Constraints
 ========================
 
-dimod supports various methods of creating
+Many real-world problems include constraints. Typically constraints are either
+equality or inequality, in the form of a left-hand side(``lhs``), right-hand-side
+(``rhs``), and the "sense" (:math:`\le`, :math:`\ge`, or :math:`==`). For example,
+the constraint of the rectangle problem above,
 
-dimod enables easy incorporation of binary and integer variables as
-:ref:`single-variable models <generators_symbolic_math>`. For example, you can
-represent such binary variables as follows:
+.. math::
 
->>> from dimod import Binary, Spin
->>> x = Binary('x')
->>> s = Spin('s')
->>> x
-BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'BINARY')
+  \textrm{s.t.} \quad 2i+2j \le P
 
-Similarly for integers:
+has a ``lhs`` of :math:`2i+2j` a ``rhs`` of a some real number (:math:`8` in the
+example):
 
->>> from dimod import Integer
->>> i = Integer('i')
->>> i
-QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+>>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
+2*i + 2*j <= 8
 
-The construction of such variables as either a
-:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` or a
-:class:`~dimod.quadratic.quadratic_model.QuadraticModel` depends on the type of
-variable. Models with more than one type of variable, for example
-:func:`~dimod.binary.Binary` and :func:`~dimod.binary.Spin`, or one of those
-with :func:`~dimod.quadratic.Integer`, are of the
-:class:`~dimod.quadratic.quadratic_model.QuadraticModel` class.
+You can create such an equality or inequality symbolically, and it is shown
+with the model:
 
->>> z = x + s
->>> print("Type of {} is {}".format(z.to_polystring(), type(z)))
-Type of x + s is <class 'dimod.quadratic.quadratic_model.QuadraticModel'>
->>> for variable in z.variables:
-...     print("{} is of type {}.".format(variable, z.vartype(variable)))
-x is of type Vartype.BINARY.
-s is of type Vartype.SPIN.
+>>> type(3.75 * i <= 4)
+dimod.sym.Le
+>>> 3.75 * i <= 4
+QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64') <= 4
+
+
+For details on the supported senses, see the :class:`dimod.sym.Sense` class.
+
 
 You can express mathematical functions on these variables using Python functions such
 as :func:`sum`\ [#]_\ :
@@ -182,28 +184,6 @@ as :func:`sum`\ [#]_\ :
 
 >>> sum([3 * i, 2 * i]).to_polystring()
 '5*i'
-
-.. note::
-  It's important to remember that, for example, :code:`x = dimod.Binary('x')`
-  instantiates a single-variable model, in this case a
-  :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` with
-  variable label ``'x'``, not a free-floating variable labeled ``x``. Consequently,
-  you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
-  by adding the two models, :code:`x + bqm`. This adds the variable labeled ``'x'``
-  in the single-variable BQM, ``x`` to model ``bqm``. You cannot add ``x`` to a
-  model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
-
-Example: BQM
-============
-
-This example creates the BQM :math:`x + 2y -xy`:
-
->>> from dimod import Binary
->>> x = Binary('x')
->>> y = Binary('y')
->>> bqm = x + 2*y - x*y
->>> print(bqm.to_polystring())
-x + 2*y - x*y
 
 Example: CQM
 ============
