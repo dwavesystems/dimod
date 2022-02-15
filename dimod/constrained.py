@@ -72,18 +72,23 @@ class ConstrainedQuadraticModel:
 
         \begin{align}
             \text{Minimize an objective:} & \\
-            & \sum_{i} a_i x_i + \sum_{i<j} b_{ij} x_i x_j + c, \\
+            & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
             \text{Subject to constraints:} & \\
-            & \sum_i a_i^{(c)} x_i + \sum_{i<j} b_{ij}^{(c)} x_i x_j+ c^{(c)} \le 0,
+            & \sum_i a_i^{(c)} x_i + \sum_{i \le j} b_{ij}^{(c)} x_i x_j+ c^{(c)} \le 0,
             \quad c=1, \dots, C_{\rm ineq.}, \\
-            & \sum_i a_i^{(d)} x_i + \sum_{i<j} b_{ij}^{(d)} x_i x_j + c^{(d)} = 0,
+            & \sum_i a_i^{(d)} x_i + \sum_{i \le j} b_{ij}^{(d)} x_i x_j + c^{(d)} = 0,
             \quad d=1, \dots, C_{\rm eq.},
         \end{align}
 
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
     variables, :math:`a_{i}, b_{ij}, c` are real values and
     :math:`C_{\rm ineq.}, C_{\rm eq,}` are the number of inequality and
     equality constraints respectively.
+
+    .. [#]
+        For binary variables, the range of the quadratic-term summation is
+        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
 
     The objective and constraints are encoded as either :class:`.QuadraticModel`
     or :class:`.BinaryQuadraticModel` depending on the variable types used.
