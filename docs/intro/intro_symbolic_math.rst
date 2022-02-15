@@ -4,9 +4,9 @@
 Symbolic Math
 =============
 
-*dimod*'s support for symbolic math can simplify your coding of problems. For example,
-a problem of finding the rectangle with the greatest area for a given perimeter,
-:math:`P = 8`,
+*dimod*'s support for symbolic math can simplify your coding of problems. For
+example, consider a problem of finding the rectangle with the greatest area for
+a given perimeter, which you can formulate mathematically as,
 
 .. math::
 
@@ -14,18 +14,25 @@ a problem of finding the rectangle with the greatest area for a given perimeter,
 
   \textrm{s.t.} \quad 2i+2j \le P
 
-formulated as an :term:`objective`---maximize\ [#]_ :math:`ij`, the multiplication
-of side :math:`i` by side :math:`j`---subject to the :term:`constraint` that the
-summation of the rectangle's four sides not exceed the perimeter,
-:math:`2i+2j \le P`, can be represented as such,
+where the components are,
+
+* **Variables**: :math:`i` and :math:`j` are the lengths of two sides and :math:`P`
+  is the length of the perimeter.
+* **Objective**: maximize the area, which is given by the formula
+  :math:`ij`.
+* **Constraint**: subject to the summation of the rectangle's four sides not
+  exceeding the given length of the perimeter; that is, :math:`2i+2j \le P`.
+
+*dimod*'s symbolic math enables an intuitive representation of such problems:
 
 >>> print(objective.to_polystring())            # doctest:+SKIP
 -i*j
 >>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
 2*i + 2*j <= 8
 
-.. [#] The coded ``objective`` is set to negative because D-Wave samplers minimize
-  rather than maximize.
+Here, the coded ``objective`` is set to negative because D-Wave samplers minimize
+rather than maximize, and :math:`P` in the ``constraint`` was selected arbitrarily
+to be 8.
 
 The foundation for this symbolic representation is single-variable models.
 
@@ -48,7 +55,7 @@ the label ``'i'``. This works because quadratic models are problems of the form,
 
 .. math::
 
-    \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
+    \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
 
 where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
 variables and :math:`a_{i}, b_{ij}, c` are real values. If you set :math:`a_1=1`
