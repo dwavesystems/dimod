@@ -896,7 +896,7 @@ class ConstrainedQuadraticModel:
         return new
 
     def flip_variable(self, v: Variable):
-        """Flip the specified binary variable in the objective and constraints.
+        r"""Flip the specified binary variable in the objective and constraints.
 
         Note that this may terminate a constraint's status as a discrete constraint
         (see :meth:`add_discrete`). Subsequently flipping the variable again does
@@ -1303,8 +1303,18 @@ class ConstrainedQuadraticModel:
         """
         return self.objective.lower_bound(v)
 
-    def num_biases(self) -> int:
-        """Number of biases across the objective and constraints.
+    def num_biases(self, vartype: Optional[VartypeLike] = None, *,
+                   linear_only: bool = False,
+                   ) -> int:
+        """The number of biases across the objective and constraints.
+
+        Args:
+            vartype: If provided, only variables of the given type are counted.
+
+            linear_only: Only count the linear biases.
+
+        Returns:
+            The number of biases.
 
         Examples:
             This example counts the three linear biases (including a linear bias
@@ -1316,15 +1326,42 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_objective(2*x + 3*i - x*y + i*x)
             >>> cqm.num_biases()
             5
-        """
-        num_biases = len(self.objective.linear) + len(self.objective.quadratic)
-        num_biases += sum(len(const.lhs.linear) + len(const.lhs.quadratic)
-                          for const in self.constraints.values())
-        return num_biases
 
-    def num_quadratic_variables(self) -> int:
-        """Return the total number of variables with at least one quadratic
-        interaction across all constraints.
+        """
+        if vartype is None:
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                return qm.num_variables + (0 if linear_only else qm.num_interactions)
+        else:
+            vartype = as_vartype(vartype, extended=True)
+
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                if isinstance(qm, BinaryQuadraticModel):
+                    if qm.vartype is not vartype:
+                        return 0
+                    return qm.num_variables + (0 if linear_only else qm.num_interactions)
+                else:
+                    num_biases = sum(qm.vartype(v) is vartype for v in qm.variables)
+                    if not linear_only:
+                        num_biases += sum(qm.vartype(u) is vartype or qm.vartype(v) is vartype
+                                          for u, v, _ in qm.iter_quadratic())
+                    return num_biases
+
+        return count(self.objective) + sum(count(const.lhs) for const in self.constraints.values())
+
+    def num_quadratic_variables(self, vartype: Optional[VartypeLike] = None, *,
+                                include_objective: Optional[bool] = None,
+                                ) -> int:
+        """The total number of variables with at least one quadratic interaction
+        across the constraints and objective.
+
+        Args:
+            vartype: If provided, only variables of the given type are counted.
+
+            include_objective: Whether to include variables in the objective
+                in the count. Currently defaults to false.
+
+        Return:
+            The number of variables.
 
         Examples:
             This example counts the two variables participating in interaction
@@ -1338,12 +1375,40 @@ class ConstrainedQuadraticModel:
             'Constraint1'
             >>> cqm.num_quadratic_variables()
             2
+
+        .. deprecated:: 0.10.14
+
+            In dimod 0.12.0``include_objective`` will default to true.
+
         """
-        count = 0
-        for const in self.constraints.values():
-            lhs = const.lhs
-            count += sum(lhs.degree(v) > 0 for v in lhs.variables)
-        return count
+        if include_objective is None:
+            warnings.warn(
+                "in dimod 0.12.0 the default value of include_objective will change to true. "
+                "To suppress this warning while keeping the existing behavior, set include_objective=False. "
+                "To get the new behavior, set include_objective=True",
+                DeprecationWarning,
+                stacklevel=2,
+                )
+
+        if vartype is None:
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                return sum(qm.degree(v) > 0 for v in qm.variables)
+        else:
+            vartype = as_vartype(vartype, extended=True)
+
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                if isinstance(qm, BinaryQuadraticModel):
+                    return sum(qm.degree(v) > 0 for v in qm.variables) if qm.vartype is vartype else 0
+                else:
+                    return sum(qm.vartype(v) is vartype and qm.degree(v) > 0
+                               for v in qm.variables)
+
+        n = sum(count(const.lhs) for const in self.constraints.values())
+
+        if include_objective:
+            n += count(self.objective)
+
+        return n
 
     def relabel_constraints(self, mapping: Mapping[Hashable, Hashable]):
         """Relabel the constraints.
@@ -1643,7 +1708,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.1):
+        Format Specification (Version 1.3):
 
             This format is inspired by the `NPY format`_
 
@@ -1667,6 +1732,8 @@ class ConstrainedQuadraticModel:
                      num_constraints=len(cqm.constraints),
                      num_biases=cqm.num_biases(),
                      num_quadratic_variables=cqm.num_quadratic_variables(),
+                     num_quadratic_real_variables=cqm.num_quadratic_variables('REAL', include_objective=True),
+                     num_real_linear_biases=cqm.num_biases('REAL', linear_only=True),
                      )
 
             it is terminated by a newline character and padded with spaces to
@@ -1681,6 +1748,12 @@ class ConstrainedQuadraticModel:
             the `lhs` as a fileview, the `rhs` as a float and the sense
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
+
+        Format Specification (Version 1.2):
+
+            This format is the same as Version 1.3, except that the data dict
+            does not have ``num_quadratic_real_variables`` and
+            ``num_real_linear_biases``.
 
         Format Specification (Version 1.0):
 
@@ -1703,10 +1776,12 @@ class ConstrainedQuadraticModel:
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
                     num_biases=self.num_biases(),
-                    num_quadratic_variables=self.num_quadratic_variables(),
+                    num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
+                    num_quadratic_real_variables=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                    num_real_linear_biases=self.num_biases(Vartype.REAL, linear_only=True),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 1))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 2))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:

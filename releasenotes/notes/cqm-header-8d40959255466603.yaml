@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    ``ConstrainedQuadraticModel.to_file()`` now uses serialization format 1.3.
+    This format is backwards compatibile.
+  - |
+    Add ``vartype`` and ``linear_only`` arguments to ``ConstrainedQuadraticModel.num_biases()``.
+  - |
+    Add ``vartype`` and ``include_objective`` arguments to ``ConstrainedQuadraticModel.num_quadratic_variables()``.
+deprecations:
+  - |
+    In the future, ``ConstrainedQuadraticModel.num_quadratic_variables()``
+    will also count the objective towards the count by default.

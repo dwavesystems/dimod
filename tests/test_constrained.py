@@ -705,6 +705,43 @@ class TestFromDQM(unittest.TestCase):
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
 
 
+class TestNumBiases(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + z + i + j + i*x)
+        cqm.add_constraint(x + y + z + x*y + z*y <= 5)
+        cqm.add_constraint(i + x + i*x == 5)
+
+        self.assertEqual(cqm.num_biases(), 14)
+        self.assertEqual(cqm.num_biases(linear_only=True), 10)
+        self.assertEqual(cqm.num_biases('BINARY'), 11)
+        self.assertEqual(cqm.num_biases('SPIN'), 0)
+        self.assertEqual(cqm.num_biases('INTEGER'), 5)
+        self.assertEqual(cqm.num_biases('BINARY', linear_only=True), 7)
+
+
+class TestNumQuadraticVariables(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + z + i + j + i*x)
+        cqm.add_constraint(x + y + z + x*y + z*y <= 5)
+        cqm.add_constraint(i + x + i*x == 5)
+
+        with self.assertWarns(DeprecationWarning):
+            cqm.num_quadratic_variables()
+
+        self.assertEqual(cqm.num_quadratic_variables(include_objective=False), 5)
+        self.assertEqual(cqm.num_quadratic_variables(include_objective=True), 7)
+        self.assertEqual(cqm.num_quadratic_variables('BINARY', include_objective=False), 4)
+        self.assertEqual(cqm.num_quadratic_variables('BINARY', include_objective=True), 5)
+
+
 class FromQM(unittest.TestCase):
     def test_from_bqm(self):
         bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
@@ -874,8 +911,48 @@ class TestSerialization(unittest.TestCase):
         header_info = read_header(cqm.to_file(), b'DIMODCQM')
 
         self.assertEqual(header_info.data,
-                         {'num_biases': 11, 'num_constraints': 2,
-                          'num_quadratic_variables': 4, 'num_variables': 3})
+                         dict(num_biases=11,
+                              num_constraints=2,
+                              num_quadratic_variables=4,
+                              num_variables=3,
+                              num_quadratic_real_variables=0,
+                              num_real_linear_biases=0,
+                              ))
+
+    def test_header_real(self):
+        from dimod.serialization.fileview import read_header
+
+        x, y = dimod.Binaries('xy')
+        s = Spin('s')
+        i = Integer('i')
+        a, b = dimod.Reals('ab')
+
+        cqm = CQM()
+        cqm.set_objective(a + b + x + s*i)
+        cqm.add_constraint(a + b <= 5)
+        cqm.add_constraint(a - i == 4)
+        cqm.add_constraint(x + y + x*y == 5)
+
+        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
+                         dict(num_biases=14,
+                              num_constraints=3,
+                              num_quadratic_variables=2,
+                              num_variables=6,
+                              num_quadratic_real_variables=0,
+                              num_real_linear_biases=5,
+                              ))
+
+        cqm.set_objective(a + b + x + s*i + a*b)
+        cqm.add_constraint(3*a*(1 - b) == 4)
+
+        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
+                         dict(num_biases=18,
+                              num_constraints=4,
+                              num_quadratic_variables=4,
+                              num_variables=6,
+                              num_quadratic_real_variables=4,
+                              num_real_linear_biases=7,
+                              ))
 
 
 class TestSetObjective(unittest.TestCase):
