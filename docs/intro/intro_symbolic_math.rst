@@ -109,7 +109,7 @@ of the form:
 
   .. math::
 
-      = \sum_{i=1} a_i v_i
+      \sum_{i=1} a_i v_i
       + \sum_{i<j} b_{i,j} v_i v_j
       + c
       \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
@@ -127,10 +127,11 @@ each binary variable.
 True
 
 If an operation includes more than one type of variable, the representation is
-always a quadratic model and the :class:`~dimod.Vartype` is per variable:
+always a :class:`~dimod.quadratic.quadratic_model.QuadraticModel` and the
+:class:`~dimod.Vartype` is per variable:
 
->>> type(bqm_and + 3.75 * i)
-dimod.quadratic.quadratic_model.QuadraticModel
+>>> print(type(bqm_and + 3.75 * i))
+<class 'dimod.quadratic.quadratic_model.QuadraticModel'>
 >>> (bqm_and + 3.75 * i).vartype("x") == dimod.Vartype.BINARY
 True
 >>> (bqm_and + 3.75 * i).vartype("i") == dimod.Vartype.INTEGER
@@ -167,50 +168,21 @@ example):
 You can create such an equality or inequality symbolically, and it is shown
 with the model:
 
->>> type(3.75 * i <= 4)
-dimod.sym.Le
+>>> print(type(3.75 * i <= 4))
+<class 'dimod.sym.Le'>
 >>> 3.75 * i <= 4
 QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64') <= 4
 
+See the :class:`dimod.sym.Sense` class for details.
 
-For details on the supported senses, see the :class:`dimod.sym.Sense` class.
+Performance
+===========
 
+*dimod*'s symbolic math is very useful for small models used for experimenting
+and formulating problems. It also offers some more performant functionality; for
+example, methods such as :func:`~dimod.quadratic.IntegerArray` for creating multiple
+variables with NumPy arrays or :func:`~dimod.binary.quicksum` as a replacement
+for the Python :func:`sum`.
 
-You can express mathematical functions on these variables using Python functions such
-as :func:`sum`\ [#]_\ :
-
-.. [#]
-  See the `Example: Adding Models`_ example for a performant summing function.
-
->>> sum([3 * i, 2 * i]).to_polystring()
-'5*i'
-
-Example: CQM
-============
-
-This example uses symbolic math to set an objective (:math:`2i - 0.5ij + 10`)
-and constraints (:math:`xj <= 3` and :math:`i + j >= 1`) in a simple CQM.
-
->>> from dimod import Binary, Integer, ConstrainedQuadraticModel
->>> x = Binary('x')
->>> i = Integer('i')
->>> j = Integer('j')
->>> cqm = ConstrainedQuadraticModel()
->>> cqm.set_objective(2*i - 0.5*i*j + 10)
->>> cqm.add_constraint(x*j <= 3)                   # doctest: +IGNORE_RESULT
->>> cqm.add_constraint(i + j >= 1)                 # doctest: +IGNORE_RESULT
-
-Example: Adding Models
-======================
-
-This example uses the performant :func:`~dimod.binary.quicksum` on
-:func:`~dimod.binary.BinaryArray` to add multiple models.
-
->>> import numpy as np
->>> from dimod import BinaryArray, quicksum
-...
->>> num_vars = 10; max_bias = 5
->>> var_labels = range(num_vars)
-...
->>> models = BinaryArray(var_labels)*np.random.randint(0, max_bias, size=num_vars)
->>> x = quicksum(models)
+See the examples of :func:`~dimod.binary.BinaryArray`, :func:`~dimod.quadratic.IntegerArray`,
+and :func:`~dimod.binary.SpinArray` for usage.
