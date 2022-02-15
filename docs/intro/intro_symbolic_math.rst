@@ -78,14 +78,66 @@ the quadratic bias, :math:`b_{1, 1} = 2.2`, on the ``'i'``--labeled variable:
 >>> (2.2 * i * i + 3.75 * i).quadratic
 {('i', 'i'): 2.2}
 
+You can see the various methods of creating variables in the
+:ref:`reference documentation <generators_symbolic_math>`.
+
+Typically, you have more than a single variable, and your variables interact.
+
 Operations on Variables
 =======================
 
-, not a free-floating variable labeled ``x``. Consequently,
-you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
-by adding the two models, :code:`x + bqm`. This adds the variable labeled ``'x'``
-in the single-variable BQM, ``x`` to model ``bqm``. You cannot add ``x`` to a
-model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
+Now consider a simple problem of an AND operation on two binary variables. For
+:math:`\{0, 1\}`--valued binary variables, the AND operation is equivalent to
+the multiplication of the two variables:
+
+>>> from dimod import Binaries, , ExactSolver
+>>> x, y = Binaries(["x", "y"])
+>>> bqm_and = x*y
+>>> bqm_and
+BinaryQuadraticModel({'x': 0.0, 'y': 0.0}, {('y', 'x'): 1.0}, 0.0, 'BINARY')
+>>> print(ExactSolver().sample(bqm_and))
+   x  y energy num_oc.
+0  0  0    0.0       1
+1  1  0    0.0       1
+3  0  1    0.0       1
+2  1  1    1.0       1
+['BINARY', 4 rows, 4 samples, 2 variables]
+
+Here, because all the variables are the same :class:`~dimod.Vartype`,
+:class:`~dimod.Vartype.BINARY`, dimod instantiates a
+:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` to represent
+each binary variable. If an operation includes more than one type of variable,
+the representation is always a quadratic model:
+
+>>> type(bqm_and + 3.75 * i)
+dimod.quadratic.quadratic_model.QuadraticModel
+
+The symbolic multiplication between variables above implemented multiplication
+between the models representing each variable. Binary quadratic models (BQMs) are
+of the form:
+
+  .. math::
+
+      = \sum_{i=1} a_i v_i
+      + \sum_{i<j} b_{i,j} v_i v_j
+      + c
+      \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
+
+where :math:`a_{i}, b_{ij}, c` are real values. The multiplication of two such
+models, with linear terms :math:`a_1 = 1`, reduced to
+:math:`\sum_{i=1} 1 x_1 * \sum_{i=1} 1 y_1 = x_1y_1`.
+
+.. note::
+  It's important to remember that, for example, :code:`x = dimod.Binary('x')`
+  instantiates a single-variable model with variable label ``'x'``, not a
+  free-floating variable labeled ``x``. Consequently, you can add ``x`` to another
+  model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`, by adding the two
+  models, :code:`x + bqm`. This adds the variable labeled ``'x'`` in the
+  single-variable BQM, ``x``, to model ``bqm``. You cannot add ``x`` to a
+  model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
+
+Representing Constraints
+========================
 
 dimod supports various methods of creating
 
