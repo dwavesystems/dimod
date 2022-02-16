@@ -124,10 +124,15 @@ class QuadraticModel(QuadraticViewsMixin):
 
     .. math::
 
-        E(x) = \sum_i a_i x_i + \sum_{i<j} b_{i, j} x_i x_j + c
+        E(x) = \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
 
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary or integer
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
     variables and :math:`a_{i}, b_{ij}, c` are real values.
+
+    .. [#]
+        For binary variables, the range of the quadratic-term summation is
+        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
 
     """
     _DATA_CLASSES = {
