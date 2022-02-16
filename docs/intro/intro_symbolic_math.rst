@@ -10,30 +10,34 @@ a given perimeter, which you can formulate mathematically as,
 
 .. math::
 
-  \max_{i,j} \quad ij
+  \textrm{Objective: } \quad &\max_{i,j} \quad ij
 
-  \textrm{s.t.} \quad 2i+2j \le P
+  \textrm{Constraint:} \quad &2i+2j \le 8
 
 where the components are,
 
 * **Variables**: :math:`i` and :math:`j` are the lengths of two sides of the
-  rectangle and and :math:`P` is the length of the perimeter.
+  rectangle and the length of the perimeter is arbitrarily selected to be 8.
 * **Objective**: maximize the area, which is given by the standard geometric
   formula :math:`ij`.
-* **Constraint**: subject to (s.t.) not exceeding the given perimeter length;
+* **Constraint**: subject to not exceeding the given perimeter length;
   that is, :math:`2i+2j`, the summation of the rectangle's four sides, is
-  constrained to a maximum value of :math:`P`.
+  constrained to a maximum value of 8.
 
 *dimod*'s symbolic math enables an intuitive coding of such problems:
 
->>> print(objective.to_polystring())            # doctest:+SKIP
+>>> i, j = dimod.Integers(["i", "j"])
+>>> objective = -i * j
+>>> constraint = 2 * i + 2 * j <= 8
+>>> print(objective.to_polystring())
 -i*j
->>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
+>>> print(constraint.to_polystring())
 2*i + 2*j <= 8
 
-Here the coded ``objective`` is set to negative because D-Wave samplers minimize
-rather than maximize, and :math:`P` in the ``constraint`` was selected arbitrarily
-to be 8.
+Here variables :code:`i,j` are of type integer, perhaps representing the number
+of tiles laid horizontally and vertically in creating a rectangular floor, and
+the coded ``objective`` is set to negative because D-Wave samplers minimize
+rather than maximize.
 
 The foundation for this symbolic representation is single-variable models.
 
@@ -64,8 +68,8 @@ where :math:`\{ x_i\}_{i=1, \dots, N}` can be integer variables
 remaining coefficients to zero, the model represents a single variable,
 :math:`x_1`.
 
-When your variable is used in a linear term of a polynomial, such as :math:`3.7i`,
-the coefficient (:math:`3.7`) is represented in this same model by the value of
+When your variable is used in a linear term of a polynomial, such as :math:`3.75i`,
+the coefficient (:math:`3.75`) is represented in this same model by the value of
 the linear bias on the ``'i'``--labeled variable:
 
 >>> 3.75 * i
@@ -75,8 +79,8 @@ Similarly, when your variable is in a quadratic term, such as :math:`2.2i^2`, th
 coefficient (:math:`2.2`) is represented in this same model by the value of
 the quadratic bias, :math:`b_{1, 1} = 2.2`:
 
->>> (3.75 * i + 2.2 * i * i).quadratic
-{('i', 'i'): 2.2}
+>>> 3.75 * i + 2.2 * i * i
+QuadraticModel({'i': 3.75}, {('i', 'i'): 2.2}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
 You can see the various methods of creating such variables in the
 :ref:`Generators <generators_symbolic_math>` reference documentation.
@@ -122,7 +126,7 @@ In this AND example, because all the variables are the same :class:`~dimod.Varty
 dimod represents each binary variable, and their multiplication, with
 :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` objects.
 
->>> bqm_and.vartype == dimod.Vartype.BINARY
+>>> bqm_and.vartype is dimod.Vartype.BINARY
 True
 
 If an operation includes more than one type of variable, the representation is
