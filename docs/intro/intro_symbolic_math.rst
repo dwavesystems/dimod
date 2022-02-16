@@ -18,12 +18,13 @@ where the components are,
 
 * **Variables**: :math:`i` and :math:`j` are the lengths of two sides and :math:`P`
   is the length of the perimeter.
-* **Objective**: maximize the area, which is given by the formula
-  :math:`ij`.
-* **Constraint**: subject to the summation of the rectangle's four sides not
-  exceeding the given length of the perimeter; that is, :math:`2i+2j \le P`.
+* **Objective**: maximize the area, which is given by the standard geometric
+  formula :math:`ij`.
+* **Constraint**: subject to not exceeding the given perimeter length; that is,
+  :math:`2i+2j`, the summation of the rectangle's four sides, is constrained to
+  a maximum value of :math:`P`.
 
-*dimod*'s symbolic math enables an intuitive representation of such problems:
+*dimod*'s symbolic math enables an intuitive coding of such problems:
 
 >>> print(objective.to_polystring())            # doctest:+SKIP
 -i*j
@@ -86,7 +87,7 @@ Typically, you have more than a single variable, and your variables interact.
 Operations on Variables
 =======================
 
-Now consider a simple problem of an AND operation on two binary variables. For
+Consider a simple problem of an AND operation on two binary variables. For
 :math:`\{0, 1\}`--valued binary variables, the AND operation is equivalent to
 the multiplication of the two variables:
 
@@ -159,8 +160,7 @@ the constraint of the rectangle problem above,
 
   \textrm{s.t.} \quad 2i+2j \le P
 
-has a ``lhs`` of :math:`2i+2j` a ``rhs`` of a some real number (:math:`8` in the
-example):
+has a ``lhs`` of :math:`2i+2j` and a ``rhs`` of a some real number (:math:`8`):
 
 >>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
 2*i + 2*j <= 8
