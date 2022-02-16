@@ -16,13 +16,13 @@ a given perimeter, which you can formulate mathematically as,
 
 where the components are,
 
-* **Variables**: :math:`i` and :math:`j` are the lengths of two sides and :math:`P`
-  is the length of the perimeter.
+* **Variables**: :math:`i` and :math:`j` are the lengths of two sides of the
+  rectangle and and :math:`P` is the length of the perimeter.
 * **Objective**: maximize the area, which is given by the standard geometric
   formula :math:`ij`.
-* **Constraint**: subject to not exceeding the given perimeter length; that is,
-  :math:`2i+2j`, the summation of the rectangle's four sides, is constrained to
-  a maximum value of :math:`P`.
+* **Constraint**: subject to (s.t.) not exceeding the given perimeter length;
+  that is, :math:`2i+2j`, the summation of the rectangle's four sides, is
+  constrained to a maximum value of :math:`P`.
 
 *dimod*'s symbolic math enables an intuitive coding of such problems:
 
@@ -31,7 +31,7 @@ where the components are,
 >>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
 2*i + 2*j <= 8
 
-Here, the coded ``objective`` is set to negative because D-Wave samplers minimize
+Here the coded ``objective`` is set to negative because D-Wave samplers minimize
 rather than maximize, and :math:`P` in the ``constraint`` was selected arbitrarily
 to be 8.
 
@@ -43,18 +43,17 @@ Variables as Models
 To symbolically represent an objective or constraint, you first need symbolic
 representations of variables.
 
-You can use a quadratic model with a single variable to represent your
-variable; for example, if the type of variable you need is integer:
+Quadratic models with a single variable can represent your variables; for example,
+if the type of variable you need is integer:
 
->>> from dimod import Integer
->>> i = Integer('i')
+>>> i = dimod.Integer('i')
 >>> i
 QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
 Here, variable ``i`` is a :class:`~dimod.quadratic.quadratic_model.QuadraticModel`
-with one variable with the label ``'i'``.
+that contains one variable with the label ``'i'``.
 
-This works because quadratic models have the form,
+This works because quadratic models (QMs) have the form,
 
 .. math::
 
@@ -65,7 +64,7 @@ where :math:`\{ x_i\}_{i=1, \dots, N}` can be integer variables
 remaining coefficients to zero, the model represents a single variable,
 :math:`x_1`.
 
-When your variable is in a linear term of a polynomial, such as :math:`3.7i`,
+When your variable is used in a linear term of a polynomial, such as :math:`3.7i`,
 the coefficient (:math:`3.7`) is represented in this same model by the value of
 the linear bias on the ``'i'``--labeled variable:
 
@@ -74,13 +73,13 @@ QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
 Similarly, when your variable is in a quadratic term, such as :math:`2.2i^2`, the
 coefficient (:math:`2.2`) is represented in this same model by the value of
-the quadratic bias, :math:`b_{1, 1} = 2.2`, on the ``'i'``--labeled variable:
+the quadratic bias, :math:`b_{1, 1} = 2.2`:
 
->>> (2.2 * i * i + 3.75 * i).quadratic
+>>> (3.75 * i + 2.2 * i * i).quadratic
 {('i', 'i'): 2.2}
 
-You can see the various methods of creating variables in the
-:ref:`reference documentation <generators_symbolic_math>`.
+You can see the various methods of creating such variables in the
+:ref:`Generators <generators_symbolic_math>` reference documentation.
 
 Typically, you have more than a single variable, and your variables interact.
 
@@ -89,14 +88,13 @@ Operations on Variables
 
 Consider a simple problem of an AND operation on two binary variables. For
 :math:`\{0, 1\}`--valued binary variables, the AND operation is equivalent to
-the multiplication of the two variables:
+multiplication of the two variables:
 
->>> from dimod import Binaries, ExactSolver
->>> x, y = Binaries(["x", "y"])
+>>> x, y = dimod.Binaries(["x", "y"])
 >>> bqm_and = x*y
 >>> bqm_and
 BinaryQuadraticModel({'x': 0.0, 'y': 0.0}, {('y', 'x'): 1.0}, 0.0, 'BINARY')
->>> print(ExactSolver().sample(bqm_and))
+>>> print(dimod.ExactSolver().sample(bqm_and))
    x  y energy num_oc.
 0  0  0    0.0       1
 1  1  0    0.0       1
@@ -104,7 +102,7 @@ BinaryQuadraticModel({'x': 0.0, 'y': 0.0}, {('y', 'x'): 1.0}, 0.0, 'BINARY')
 2  1  1    1.0       1
 ['BINARY', 4 rows, 4 samples, 2 variables]
 
-The symbolic multiplication between variables above implemented multiplication
+The symbolic multiplication between variables above executes a multiplication
 between the models representing each variable. Binary quadratic models (BQMs) are
 of the form:
 
@@ -116,13 +114,13 @@ of the form:
       \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
 
 where :math:`a_{i}, b_{ij}, c` are real values. The multiplication of two such
-models, with linear terms :math:`a_1 = 1`, reduced to
-:math:`\sum_{i=1} 1 x_1 * \sum_{i=1} 1 y_1 = x_1y_1`.
+models, with linear terms :math:`a_1 = 1`, reduces to
+:math:`\sum_{i=1} 1 v_1 * \sum_{i=1} 1 u_1 = v_1 u_1`, a multiplication of two
+variables.
 
-Here, because all the variables are the same :class:`~dimod.Vartype`,
-:class:`~dimod.Vartype.BINARY`, dimod instantiates a
-:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` to represent
-each binary variable.
+In this AND example, because all the variables are the same :class:`~dimod.Vartype`,
+dimod represents each binary variable, and their multiplication, with
+:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` objects.
 
 >>> bqm_and.vartype == dimod.Vartype.BINARY
 True
@@ -131,36 +129,42 @@ If an operation includes more than one type of variable, the representation is
 always a :class:`~dimod.quadratic.quadratic_model.QuadraticModel` and the
 :class:`~dimod.Vartype` is per variable:
 
->>> print(type(bqm_and + 3.75 * i))
+>>> qm = bqm_and + 3.75 * i
+>>> print(type(qm))
 <class 'dimod.quadratic.quadratic_model.QuadraticModel'>
->>> (bqm_and + 3.75 * i).vartype("x") == dimod.Vartype.BINARY
+>>> qm.vartype("x") == dimod.Vartype.BINARY
 True
->>> (bqm_and + 3.75 * i).vartype("i") == dimod.Vartype.INTEGER
+>>> qm.vartype("i") == dimod.Vartype.INTEGER
 True
-
 
 .. note::
-  It's important to remember that, for example, :code:`x = dimod.Binary('x')`
-  instantiates a single-variable model with variable label ``'x'``, not a
-  free-floating variable labeled ``x``. Consequently, you can add ``x`` to another
-  model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`, by adding the two
-  models, :code:`x + bqm`. This adds the variable labeled ``'x'`` in the
-  single-variable BQM, ``x``, to model ``bqm``. You cannot add ``x`` to a
-  model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
+
+  An important distinction is that :code:`x = dimod.Binary('x')`, for example,
+  instantiates a model with a variable label ``'x'`` and not a free-floating variable
+  labeled ``x``. Consequently, you can add ``x`` to another model by adding the two
+  models,
+
+  >>> bqm = dimod.BinaryQuadraticModel('BINARY')
+  >>> bqm += x
+
+  which adds the variable labeled ``'x'`` in the single-variable BQM, ``x``, to
+  model ``bqm``. You cannot add ``x`` to a model---as though it were variable
+  ``'x'``---by doing :code:`bqm.add_variable(x)`.
 
 Representing Constraints
 ========================
 
 Many real-world problems include constraints. Typically constraints are either
 equality or inequality, in the form of a left-hand side(``lhs``), right-hand-side
-(``rhs``), and the "sense" (:math:`\le`, :math:`\ge`, or :math:`==`). For example,
-the constraint of the rectangle problem above,
+(``rhs``), and the :class:`dimod.sym.Sense` (:math:`\le`, :math:`\ge`, or
+:math:`==`). For example, the constraint of the rectangle problem above,
 
 .. math::
 
   \textrm{s.t.} \quad 2i+2j \le P
 
-has a ``lhs`` of :math:`2i+2j` and a ``rhs`` of a some real number (:math:`8`):
+has a ``lhs`` of :math:`2i+2j` less or equal to a ``rhs`` of a some real number
+(:math:`8`):
 
 >>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
 2*i + 2*j <= 8
@@ -172,8 +176,6 @@ with the model:
 <class 'dimod.sym.Le'>
 >>> 3.75 * i <= 4
 QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64') <= 4
-
-See the :class:`dimod.sym.Sense` class for details.
 
 Performance
 ===========
