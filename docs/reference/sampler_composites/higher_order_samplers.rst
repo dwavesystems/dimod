@@ -26,7 +26,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ExactPolySolver.sample
    ExactPolySolver.sample_ising

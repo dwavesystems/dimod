@@ -17,7 +17,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    HigherOrderComposite.child
    HigherOrderComposite.children
@@ -28,7 +28,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    HigherOrderComposite.sample_poly
    HigherOrderComposite.sample_hising
@@ -43,7 +43,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyFixedVariableComposite.child
    PolyFixedVariableComposite.children
@@ -54,7 +54,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyFixedVariableComposite.sample_poly
    PolyFixedVariableComposite.sample_hising
@@ -69,7 +69,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyScaleComposite.child
    PolyScaleComposite.children
@@ -80,7 +80,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyScaleComposite.sample_poly
    PolyScaleComposite.sample_hising
@@ -95,7 +95,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyTruncateComposite.child
    PolyTruncateComposite.children
@@ -106,7 +106,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolyTruncateComposite.sample_poly
    PolyTruncateComposite.sample_hising
