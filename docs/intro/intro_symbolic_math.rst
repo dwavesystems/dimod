@@ -179,7 +179,7 @@ with the model:
 >>> print(type(3.75 * i <= 4))
 <class 'dimod.sym.Le'>
 >>> 3.75 * i <= 4
-QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64') <= 4
+Le(QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64'), 4)
 
 Performance
 ===========
