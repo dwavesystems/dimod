@@ -15,14 +15,51 @@
 import itertools
 import unittest
 
-from dimod import Binary, Integer, Spin, quicksum
+import dimod
+
+
+class TestComparison(unittest.TestCase):
+    def test_repr(self):
+        x, y = dimod.Binaries('xy')
+        i, = dimod.Integers('i')
+
+        self.assertEqual(repr(x + y <= 5), "Le(BinaryQuadraticModel({'x': 1.0, 'y': 1.0}, {}, 0.0, 'BINARY'), 5)")
+        self.assertEqual(repr(x + y == 5), "Eq(BinaryQuadraticModel({'x': 1.0, 'y': 1.0}, {}, 0.0, 'BINARY'), 5)")
+        self.assertEqual(repr(x + y >= 5), "Ge(BinaryQuadraticModel({'x': 1.0, 'y': 1.0}, {}, 0.0, 'BINARY'), 5)")
+        self.assertEqual(repr(x + i <= 5), "Le(QuadraticModel({'x': 1.0, 'i': 1.0}, {}, 0.0, {'x': 'BINARY', 'i': 'INTEGER'}, dtype='float64'), 5)")
+        self.assertEqual(repr(x + i == 5), "Eq(QuadraticModel({'x': 1.0, 'i': 1.0}, {}, 0.0, {'x': 'BINARY', 'i': 'INTEGER'}, dtype='float64'), 5)")
+        self.assertEqual(repr(x + i >= 5), "Ge(QuadraticModel({'x': 1.0, 'i': 1.0}, {}, 0.0, {'x': 'BINARY', 'i': 'INTEGER'}, dtype='float64'), 5)")
+
+    def test_str(self):
+        x, y = dimod.Binaries('xy')
+        i, = dimod.Integers('i')
+
+        self.assertEqual(str(x + y <= 5), "x + y <= 5")
+        self.assertEqual(str(x + y == 5), "x + y == 5")
+        self.assertEqual(str(x + y >= 5), "x + y >= 5")
+        self.assertEqual(str(x + i <= 5), "x + i <= 5")
+        self.assertEqual(str(x + i == 5), "x + i == 5")
+        self.assertEqual(str(x + i >= 5), "x + i >= 5")
+
+    def test_to_polystring(self):
+        x, y = dimod.Binaries('xy')
+        i, = dimod.Integers('i')
+
+        self.assertEqual((x + y <= 5).to_polystring(), "x + y <= 5")
+        self.assertEqual((x + y == 5).to_polystring(), "x + y == 5")
+        self.assertEqual((x + y >= 5).to_polystring(), "x + y >= 5")
+        self.assertEqual((x + i <= 5).to_polystring(), "x + i <= 5")
+        self.assertEqual((x + i == 5).to_polystring(), "x + i == 5")
+        self.assertEqual((x + i >= 5).to_polystring(), "x + i >= 5")
+
+        self.assertEqual((x + y <= 5).to_polystring(lambda v: f'T{v}'), "Tx + Ty <= 5")
 
 
 class TestExpressions(unittest.TestCase):
     def test_add_permutations(self):
-        x = Binary('x')
-        i = Integer('i')
-        s = Spin('s')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
 
         for perm in itertools.permutations([x, i, s, 1]):
             qm = sum(perm)
@@ -32,8 +69,8 @@ class TestExpressions(unittest.TestCase):
             self.assertEqual(qm.quadratic, {})
 
     def test_expressions(self):
-        i = Integer('i')
-        j = Integer('j')
+        i = dimod.Integer('i')
+        j = dimod.Integer('j')
 
         qm = (i - 1)*(j - 1)
 
@@ -42,17 +79,17 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(qm.offset, 1)
 
     def test_mul_permutations(self):
-        x = Binary('x')
-        i = Integer('i')
-        s = Spin('s')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
 
         for t0, t1 in itertools.permutations([x, i, s, 1], 2):
             qm = t0*t1
 
     def test_sub_permutations(self):
-        x = Binary('x')
-        i = Integer('i')
-        s = Spin('s')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
 
         for t0, t1 in itertools.permutations([x, i, s, 1], 2):
             qm = t0 - t1
@@ -60,23 +97,23 @@ class TestExpressions(unittest.TestCase):
 
 class QuickSum(unittest.TestCase):
     def test_empty(self):
-        self.assertEqual(quicksum([]), 0)
+        self.assertEqual(dimod.quicksum([]), 0)
 
     def test_promotion(self):
-        x = Binary('x')
-        i = Integer('i')
-        s = Spin('s')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
 
         for perm in itertools.permutations([2*x, i, s, 1]):
-            qm = quicksum(perm)
+            qm = dimod.quicksum(perm)
 
             self.assertEqual(qm.linear, {'x': 2, 'i': 1, 's': 1})
             self.assertEqual(qm.offset, 1)
             self.assertEqual(qm.quadratic, {})
 
     def test_copy(self):
-        x = Binary('x')
+        x = dimod.Binary('x')
 
-        newx = quicksum([x])
+        newx = dimod.quicksum([x])
 
         self.assertIsNot(newx, x)

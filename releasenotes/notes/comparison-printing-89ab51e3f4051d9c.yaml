@@ -1,0 +1,8 @@
+---
+features:
+  - Add ``Comparison.to_polystring()`` method.
+  - Printing ``Comparison`` objects now returns an equation representation of the comparison as a string.
+fixes:
+  - |
+    ``Comparison.__repr__()`` now correctly returns a representation that
+    can be passed to ``eval()``.
