@@ -42,6 +42,7 @@ cdef class cyBQM_template(cyBQMBase):
     cpdef Py_ssize_t change_vartype(self, object) except -1
     cdef const cppBinaryQuadraticModel[bias_type, index_type]* data(self)
     cpdef bint is_linear(self)
+    cpdef Py_ssize_t nbytes(self, bint capacity=*)
     cpdef Py_ssize_t num_interactions(self)
     cpdef Py_ssize_t num_variables(self)
     cpdef Py_ssize_t resize(self, Py_ssize_t) except? 0

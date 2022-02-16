@@ -970,4 +970,39 @@ SCENARIO("variables in a quadratic model can be swapped", "[qm]") {
         }
     }
 }
+
+TEMPLATE_TEST_CASE(
+        "Scenario: the size of quadratic models in bytes can be determined",
+        "[qm]", double, float) {
+    GIVEN("a binary quadratic model") {
+        auto bqm = dimod::BinaryQuadraticModel<TestType>(
+                5, dimod::Vartype::BINARY);
+        bqm.add_quadratic(0, 1, 1.5);
+        bqm.add_quadratic(1, 2, 1.5);
+        bqm.add_quadratic(2, 3, 1.5);
+
+        THEN("we can determine the number of bytes used by the elements") {
+            CHECK(bqm.nbytes() ==
+                  (bqm.num_variables() + 2 * bqm.num_interactions()) *
+                                  sizeof(TestType) +
+                          2 * bqm.num_interactions() * sizeof(int) + sizeof(TestType));
+            CHECK(bqm.nbytes(true) >= bqm.nbytes());
+        }
+
+        AND_GIVEN("a quadratic model") {
+            auto qm = dimod::QuadraticModel<TestType>(bqm);
+
+            THEN("we can determine the number of bytes used by the elements") {
+                CHECK(qm.nbytes() ==
+                      (qm.num_variables() + 2 * qm.num_interactions()) *
+                                      sizeof(TestType) +
+                              2 * qm.num_interactions() * sizeof(int) +
+                              qm.num_variables() *
+                                      sizeof(dimod::VarInfo<TestType>) +
+                              sizeof(TestType));
+                CHECK(qm.nbytes(true) >= qm.nbytes());
+            }
+        }
+    }
+}
 }  // namespace dimod

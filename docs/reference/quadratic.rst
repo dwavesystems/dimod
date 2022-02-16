@@ -79,6 +79,7 @@ Methods
    ~QuadraticModel.iter_neighborhood
    ~QuadraticModel.iter_quadratic
    ~QuadraticModel.lower_bound
+   ~QuadraticModel.nbytes
    ~QuadraticModel.set_lower_bound
    ~QuadraticModel.set_upper_bound
    ~QuadraticModel.reduce_linear
@@ -174,6 +175,7 @@ Methods
    ~BinaryQuadraticModel.get_linear
    ~BinaryQuadraticModel.get_quadratic
    ~BinaryQuadraticModel.maximum_energy_delta
+   ~BinaryQuadraticModel.nbytes
    ~BinaryQuadraticModel.normalize
    ~BinaryQuadraticModel.reduce_linear
    ~BinaryQuadraticModel.reduce_neighborhood

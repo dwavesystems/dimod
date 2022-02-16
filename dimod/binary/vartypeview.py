@@ -202,6 +202,9 @@ class VartypeView:
             for u, v, bias in self.data.iter_quadratic():
                 yield u, v, bias / 4
 
+    def nbytes(self, capacity: bool = False) -> int:
+        return self.data.nbytes(capacity=capacity)
+
     def num_interactions(self):
         return self.data.num_interactions()
 

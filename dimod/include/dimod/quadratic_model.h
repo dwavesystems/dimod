@@ -229,6 +229,22 @@ class Neighborhood {
     }
 
     /**
+     * Total bytes consumed by the biases and indices.
+     *
+     * If `capacity` is true, use the capacity of the underlying vectors rather
+     * than the size.
+     */
+    size_type nbytes(bool capacity = false) const noexcept {
+        if (capacity) {
+            return this->neighbors.capacity() * sizeof(index_type) +
+                   this->quadratic_biases.capacity() * sizeof(bias_type);
+        } else {
+            return this->neighbors.size() * sizeof(index_type) +
+                   this->quadratic_biases.size() * sizeof(bias_type);
+        }
+    }
+
+    /**
      * Return the bias at neighbor `v` or the default value.
      *
      * Return the bias of `v` if `v` is in the neighborhood, otherwise return
@@ -467,6 +483,25 @@ class QuadraticModelBase {
      */
     bias_type quadratic_at(index_type u, index_type v) const {
         return adj_[u].at(v);
+    }
+
+    /**
+     * Total bytes consumed by the biases and indices.
+     *
+     * If `capacity` is true, use the capacity of the underlying vectors rather
+     * than the size.
+     */
+    size_type nbytes(bool capacity = false) const noexcept {
+        size_type count = sizeof(bias_type);  // offset
+        if (capacity) {
+            count += this->linear_biases_.capacity() * sizeof(bias_type);
+        } else {
+            count += this->linear_biases_.size() * sizeof(bias_type);
+        }
+        for (size_type v = 0; v < this->num_variables(); ++v) {
+            count += this->adj_[v].nbytes(capacity);
+        }
+        return count;
     }
 
     /// Return the number of variables in the quadratic model.
@@ -1152,6 +1187,22 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
     constexpr bias_type max_integer() {
         return vartype_limits<bias_type, Vartype::INTEGER>::max();
+    }
+
+    /**
+     * Total bytes consumed by the biases, vartype info, bounds, and indices.
+     *
+     * If `capacity` is true, use the capacity of the underlying vectors rather
+     * than the size.
+     */
+    size_type nbytes(bool capacity = false) const noexcept {
+        size_type count = base_type::nbytes(capacity);
+        if (capacity) {
+            count += this->varinfo_.capacity() * sizeof(VarInfo<bias_type>);
+        } else {
+            count += this->varinfo_.size() * sizeof(VarInfo<bias_type>);
+        }
+        return count;
     }
 
     // Resize the model to contain `n` variables.

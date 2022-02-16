@@ -1,0 +1,12 @@
+---
+features:
+
+  - |
+    Add methods to report memory usage of quadratic models:
+
+    * Add ``QuadraticModel.nbytes()`` method.
+    * Add ``BinaryQuadraticModel.nbytes()`` method.
+    * Add ``QuadraticModel::nbytes()`` method to C++ the code.
+    * Add ``BinaryQuadraticModel::nbytes()`` method to C++ the code.
+
+    See `#668 <https://github.com/dwavesystems/dimod/issues/668>`_

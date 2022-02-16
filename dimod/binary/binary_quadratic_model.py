@@ -1644,6 +1644,28 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.get_quadratic
 
+    def nbytes(self, capacity: bool = False) -> int:
+        """Get the total bytes consumed by the biases and indices.
+
+        Does not include the memory consumed by non-element attributes of
+        the binary quadratic model object.
+        Also does not include the memory consumed by the variable labels.
+
+        Args:
+            capacity: If ``capacity`` is true, also include the capacity_ of the
+                underlying vectors in the calculation.
+
+        Returns:
+            The number of bytes.
+
+        Raises:
+            TypeError: If :attr:`.dtype` is :class:`object`.
+
+        .. _capacity: https://www.cplusplus.com/reference/vector/vector/capacity/
+
+        """
+        return self.data.nbytes(capacity)
+
     def normalize(self, bias_range: Union[float, Tuple[float, float]] = 1,
                   quadratic_range: Union[float, Tuple[float, float], None] = None,
                   ignored_variables: Optional[Iterable[Variable]] = None,

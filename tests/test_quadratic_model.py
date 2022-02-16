@@ -606,6 +606,29 @@ class TestIsEqual(unittest.TestCase):
         self.assertTrue(qm.is_equal(bqm))
 
 
+class TestNBytes(unittest.TestCase):
+    @parameterized.expand([(np.float32,), (np.float64,)])
+    def test_small(self, dtype):
+        qm = dimod.QuadraticModel(dtype=dtype)
+        qm.add_variable('INTEGER', 'a')
+        qm.add_variable('BINARY', 'b')
+        qm.add_variable('SPIN', 'c')
+        qm.set_quadratic('a', 'b', 1)
+        qm.set_quadratic('b', 'c', 1)
+
+        itemsize = np.dtype(dtype).itemsize
+
+        size = sum([itemsize,  # offset
+                    qm.num_variables*itemsize,  # linear
+                    2*qm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    qm.num_variables*3*itemsize,  # vartype info and bounds
+                    ])
+
+        self.assertEqual(qm.nbytes(), size)
+        self.assertEqual(qm.nbytes(), qm.nbytes(False))
+        self.assertGreaterEqual(qm.nbytes(True), qm.nbytes(False))
+
+
 class TestOffset(unittest.TestCase):
     def test_setting(self):
         qm = QM()
