@@ -10,4 +10,4 @@ features:
 deprecations:
   - |
     In the future, ``ConstrainedQuadraticModel.num_quadratic_variables()``
-    will also count the objective towards the count by default.
+    will also include the objective towards the count by default.
