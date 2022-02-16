@@ -1312,12 +1312,14 @@ class ConstrainedQuadraticModel:
     def num_biases(self, vartype: Optional[VartypeLike] = None, *,
                    linear_only: bool = False,
                    ) -> int:
-        """The number of biases across the objective and constraints.
+        """Number of biases in the constrained quadratic model.
+        
+        Includes biases in both the objective and any constraints.
 
         Args:
-            vartype: If provided, only variables of the given type are counted.
+            vartype: Count only variables of the specified :class:`~dimod.Vartype`.
 
-            linear_only: Only count the linear biases.
+            linear_only: Count only linear biases.
 
         Returns:
             The number of biases.
@@ -1357,14 +1359,14 @@ class ConstrainedQuadraticModel:
     def num_quadratic_variables(self, vartype: Optional[VartypeLike] = None, *,
                                 include_objective: Optional[bool] = None,
                                 ) -> int:
-        """The total number of variables with at least one quadratic interaction
-        across the constraints and objective.
+        """Number of variables with at least one quadratic interaction in the constrained quadratic model.
+        
+        Includes interactions in both the objective and any constraints.
 
         Args:
-            vartype: If provided, only variables of the given type are counted.
+            vartype: Count only variables of the specified :class:`~dimod.Vartype`.
 
-            include_objective: Whether to include variables in the objective
-                in the count. Currently defaults to false.
+            include_objective: Count also variables in the objective. Currently defaults to false.
 
         Return:
             The number of variables.
@@ -1384,7 +1386,7 @@ class ConstrainedQuadraticModel:
 
         .. deprecated:: 0.10.14
 
-            In dimod 0.12.0``include_objective`` will default to true.
+            In dimod 0.12.0 ``include_objective`` will default to true.
 
         """
         if include_objective is None:
