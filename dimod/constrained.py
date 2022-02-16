@@ -1408,8 +1408,7 @@ class ConstrainedQuadraticModel:
                 if isinstance(qm, BinaryQuadraticModel):
                     return sum(qm.degree(v) > 0 for v in qm.variables) if qm.vartype is vartype else 0
                 else:
-                    return sum(qm.vartype(v) is vartype and qm.degree(v) > 0
-                               for v in qm.variables)
+                    return sum(qm.vartype(v) is vartype and qm.degree(v) > 0 for v in qm.variables)
 
         n = sum(count(const.lhs) for const in self.constraints.values())
 
