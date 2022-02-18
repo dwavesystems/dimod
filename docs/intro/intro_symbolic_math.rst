@@ -90,21 +90,21 @@ Typically, you have more than a single variable, and your variables interact.
 Operations on Variables
 =======================
 
-Consider a simple problem of an AND operation on two binary variables. For
-:math:`\{0, 1\}`--valued binary variables, the AND operation is equivalent to
+Consider a simple problem of a NOT operation between two binary variables. For
+:math:`\{-1, 1\}`--valued binary variables, the NOT operation is equivalent to
 multiplication of the two variables:
 
->>> x, y = dimod.Binaries(["x", "y"])
->>> bqm_and = x*y
->>> bqm_and
-BinaryQuadraticModel({'x': 0.0, 'y': 0.0}, {('y', 'x'): 1.0}, 0.0, 'BINARY')
->>> print(dimod.ExactSolver().sample(bqm_and))
-   x  y energy num_oc.
-0  0  0    0.0       1
-1  1  0    0.0       1
-3  0  1    0.0       1
-2  1  1    1.0       1
-['BINARY', 4 rows, 4 samples, 2 variables]
+>>> s1, s2 = dimod.Spins(["s1", "s2"])
+>>> bqm_not = s1*s2
+>>> bqm_not
+BinaryQuadraticModel({'s1': 0.0, 's2': 0.0}, {('s2', 's1'): 1.0}, 0.0, 'SPIN')
+>>> print(dimod.ExactSolver().sample(bqm_not))
+  s1 s2 energy num_oc.
+1 +1 -1   -1.0       1
+3 -1 +1   -1.0       1
+0 -1 -1    1.0       1
+2 +1 +1    1.0       1
+['SPIN', 4 rows, 4 samples, 2 variables]
 
 The symbolic multiplication between variables above executes a multiplication
 between the models representing each variable. Binary quadratic models (BQMs) are
@@ -122,21 +122,21 @@ models, with linear terms :math:`a_1 = 1`, reduces to
 :math:`\sum_{i=1} 1 v_1 * \sum_{i=1} 1 u_1 = v_1 u_1`, a multiplication of two
 variables.
 
-In this AND example, because all the variables are the same :class:`~dimod.Vartype`,
+In this NOT example, because all the variables are the same :class:`~dimod.Vartype`,
 dimod represents each binary variable, and their multiplication, with
 :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` objects.
 
->>> bqm_and.vartype is dimod.Vartype.BINARY
+>>> bqm_not.vartype is dimod.Vartype.SPIN
 True
 
 If an operation includes more than one type of variable, the representation is
 always a :class:`~dimod.quadratic.quadratic_model.QuadraticModel` and the
 :class:`~dimod.Vartype` is per variable:
 
->>> qm = bqm_and + 3.75 * i
+>>> qm = bqm_not + 3.75 * i
 >>> print(type(qm))
 <class 'dimod.quadratic.quadratic_model.QuadraticModel'>
->>> qm.vartype("x") == dimod.Vartype.BINARY
+>>> qm.vartype("s1") == dimod.Vartype.SPIN
 True
 >>> qm.vartype("i") == dimod.Vartype.INTEGER
 True
@@ -148,6 +148,7 @@ True
   labeled ``x``. Consequently, you can add ``x`` to another model by adding the two
   models,
 
+  >>> x = dimod.Binary("x")
   >>> bqm = dimod.BinaryQuadraticModel('BINARY')
   >>> bqm += x
 
