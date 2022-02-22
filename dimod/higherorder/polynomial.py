@@ -261,7 +261,7 @@ class BinaryPolynomial(abc.MutableMapping):
             ...                               'BINARY')
             >>> poly2 = poly.relabel_variables({'x': 'k', 'y': 'l'}, inplace=False)
             >>> poly2.variables
-            {'l', 'k', 'z'}
+            {'z', 'l', 'k'
         """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
@@ -453,7 +453,7 @@ class BinaryPolynomial(abc.MutableMapping):
             >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b', 'c'): -1}, dimod.BINARY)
             >>> H, off = poly.to_hubo()
             >>> H
-            {('a',): -1, ('c', 'a', 'b'): -1}
+            {('a',): -1, ('b', 'c', 'a'): -1}
         """
         if self.vartype is Vartype.SPIN:
             return self.to_binary().to_hubo()
