@@ -46,18 +46,18 @@ class BinaryPolynomial(abc.MutableMapping):
         vartype (:class:`.Vartype`/str/set):
             Variable type for the binary quadratic model. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
     Attributes:
         degree (int):
-            The degree of the polynomial.
+            Degree of the polynomial.
 
         variables (set):
-            The variables.
+            Variables of the polynomial.
 
         vartype (:class:`.Vartype`):
-            One of :class:`.Vartype.SPIN` or :class:`.Vartype.BINARY`.
+            One of :class:`~dimod.Vartype.SPIN` or :class:`~dimod.Vartype.BINARY`.
 
     Examples:
 
@@ -179,7 +179,7 @@ class BinaryPolynomial(abc.MutableMapping):
         return type(self)(self, self.vartype)
 
     def energy(self, sample_like, dtype=float):
-        """The energy of the given sample.
+        """Energy of the given sample.
 
         Args:
             sample_like (samples_like):
@@ -187,17 +187,22 @@ class BinaryPolynomial(abc.MutableMapping):
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (:class:`numpy.dtype`, optional):
-                The data type of the returned energies. Defaults to float.
+                Data type of the returned energy. Defaults to float.
 
         Returns:
             The energy.
 
+        Examples:
+            >>> poly = dimod.BinaryPolynomial({('x', 'y'): -1, ('x', 'y', 'z'): 0.5},
+            ...                               'BINARY')
+            >>> poly.energy({'x': 1, 'y': 1, 'z': 0})
+            -1.0
         """
         energy, = self.energies(sample_like, dtype=dtype)
         return energy
 
     def energies(self, samples_like, dtype=float):
-        """The energies of the given samples.
+        """Energies of the given samples.
 
         Args:
             samples_like (samples_like):
@@ -205,11 +210,16 @@ class BinaryPolynomial(abc.MutableMapping):
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (:class:`numpy.dtype`, optional):
-                The data type of the returned energies. Defaults to float.
+                Data type of the returned energies. Defaults to float.
 
         Returns:
             :obj:`numpy.ndarray`: The energies.
 
+        Examples:
+            >>> poly = dimod.BinaryPolynomial({('x', 'y'): -1, ('x', 'y', 'z'): 0.5},
+            ...                               'BINARY')
+            >>> poly.energies([{'x': 1, 'y': 1, 'z': 0}, {'x': 1, 'y': 1, 'z': 1}])
+            array([-1. , -0.5])
         """
         samples, labels = as_samples(samples_like)
         if labels:
@@ -246,6 +256,12 @@ class BinaryPolynomial(abc.MutableMapping):
             :class:`.BinaryPolynomial`: A binary polynomial with the variables
             relabeled. If `inplace` is set to True, returns itself.
 
+        Examples:
+            >>> poly = dimod.BinaryPolynomial({('x', 'y'): -1, ('x', 'y', 'z'): 0.5},
+            ...                               'BINARY')
+            >>> poly2 = poly.relabel_variables({'x': 'k', 'y': 'l'}, inplace=False)
+            >>> poly2.variables
+            {'l', 'k', 'z'}
         """
         if not inplace:
             return self.copy().relabel_variables(mapping, inplace=True)
@@ -262,20 +278,18 @@ class BinaryPolynomial(abc.MutableMapping):
         return self
 
     def normalize(self, bias_range=1, poly_range=None, ignored_terms=None):
-        """Normalizes the biases of the binary polynomial such that they fall in
-        the provided range(s).
+        """Normalize biases of the binary polynomial to fit the provided range(s).
 
-        If `poly_range` is provided, then `bias_range` will be treated as
-        the range for the linear biases and `poly_range` will be used for
-        the range of the other biases.
+        If ``poly_range`` is provided, ``bias_range`` is used as the range for
+        linear biases only while ``poly_range`` is used for other biases.
 
         Args:
             bias_range (number/pair):
-                Value/range by which to normalize the all the biases, or if
-                `poly_range` is provided, just the linear biases.
+                Value/range by which to normalize all biases, or, if ``poly_range``
+                is provided, just the linear biases.
 
             poly_range (number/pair, optional):
-                Value/range by which to normalize the higher order biases.
+                Value/range by which to normalize higher-order biases.
 
             ignored_terms (iterable, optional):
                 Biases associated with these terms are not scaled.
@@ -360,7 +374,7 @@ class BinaryPolynomial(abc.MutableMapping):
             :obj:`.BinaryPolynomial`
 
         Examples:
-            >>> poly = dimod.BinaryPolynomial.from_hising({'a': 2}, {'ab': -1}, 0)
+            >>> poly = dimod.BinaryPolynomial.from_hising({'a': 2}, {('a', 'b'): -1}, 0)
             >>> poly.degree
             2
 
@@ -380,7 +394,7 @@ class BinaryPolynomial(abc.MutableMapping):
             the linear offset.
 
         Examples:
-            >>> poly = dimod.BinaryPolynomial({'a': -1, 'ab': 1, 'abc': -1}, dimod.SPIN)
+            >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b'): 1, ('a', 'b', 'c'): -1}, dimod.SPIN)
             >>> h, J, off = poly.to_hising()
             >>> h
             {'a': -1}
@@ -435,6 +449,11 @@ class BinaryPolynomial(abc.MutableMapping):
             tuple: A 2-tuple of the form (`H`, `offset`) where `H` is the HUBO
             and `offset` is the linear offset.
 
+        Examples:
+            >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b', 'c'): -1}, dimod.BINARY)
+            >>> H, off = poly.to_hubo()
+            >>> H
+            {('a',): -1, ('c', 'a', 'b'): -1}
         """
         if self.vartype is Vartype.SPIN:
             return self.to_binary().to_hubo()
