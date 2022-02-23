@@ -455,7 +455,7 @@ class BinaryPolynomial(abc.MutableMapping):
             >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b', 'c'): -1}, dimod.BINARY)
             >>> H, off = poly.to_hubo()
             >>> H
-            {('a',): -1, ('c', 'b', 'a'): -1}
+            {('a',): -1, ('c', 'a', 'b'): -1}
         """
         if self.vartype is Vartype.SPIN:
             return self.to_binary().to_hubo()
