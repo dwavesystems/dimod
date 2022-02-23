@@ -183,7 +183,7 @@ class BinaryPolynomial(abc.MutableMapping):
 
         Args:
             sample_like (samples_like):
-                A raw sample. `sample_like` is an extension of
+                A raw sample. `sample-like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (:class:`numpy.dtype`, optional):
@@ -206,7 +206,7 @@ class BinaryPolynomial(abc.MutableMapping):
 
         Args:
             samples_like (samples_like):
-                A collection of raw samples. `samples_like` is an extension of
+                A collection of raw samples. `samples-like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
 
             dtype (:class:`numpy.dtype`, optional):
@@ -218,7 +218,9 @@ class BinaryPolynomial(abc.MutableMapping):
         Examples:
             >>> poly = dimod.BinaryPolynomial({('x', 'y'): -1, ('x', 'y', 'z'): 0.5},
             ...                               'BINARY')
-            >>> poly.energies([{'x': 1, 'y': 1, 'z': 0}, {'x': 1, 'y': 1, 'z': 1}])
+            >>> samples = [{'x': 1, 'y': 1, 'z': 0},
+            ...            {'x': 1, 'y': 1, 'z': 1}]
+            >>> poly.energies(samples)
             array([-1. , -0.5])
         """
         samples, labels = as_samples(samples_like)

@@ -24,7 +24,6 @@ from collections import defaultdict
 from functools import partial
 
 import numpy as np
-from numpy.typing import ArrayLike
 
 import dimod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -104,7 +103,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
         List[Tuple[FrozenSet[Hashable], Number]],
         List[Tuple[FrozenSet[Hashable], Hashable]]
     ]:
-    """Reduce a binary polynomial to a linear and quadratic terms, plus constraints.
+    """Reduce a binary polynomial to linear and quadratic terms, plus constraints.
 
     Introduces auxillary variables and constraints to reduce the polynomial
     to linear and quadratic terms.
@@ -364,7 +363,7 @@ def poly_energy(sample_like, poly: Mapping[Tuple[Variable, Variable], Bias]) -> 
 
 
 def poly_energies(samples_like, poly: Mapping[Tuple[Variable, Variable], Bias]
-                  ) -> ArrayLike:
+                  ) -> np.ndarray:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
@@ -373,11 +372,19 @@ def poly_energies(samples_like, poly: Mapping[Tuple[Variable, Variable], Bias]
             NumPy's array_like structure. See :func:`.as_samples`.
 
         poly:
-            Polynomial as a dict of form `{term: bias, ...}``, where `term` is a
+            Polynomial as a dict of form `{term: bias, ...}`, where `term` is a
             tuple of variables and `bias` the associated bias. Variable
             labeling/indexing here must match that of ``samples_like``.
 
     Returns: Energies of the samples.
+
+    Examples:
+        >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b'): 1, ('a', 'b', 'c'): -1},
+        ...                               dimod.BINARY)
+        >>> samples = [{'a': 1, 'b': 1, 'c': 0},
+        ...            {'a': 1, 'b': 1, 'c': 1}]
+        >>> dimod.poly_energies(samples, poly)
+        array([ 0., -1.])
 
     """
     return BinaryPolynomial(poly, 'SPIN').energies(samples_like)

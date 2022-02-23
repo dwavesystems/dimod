@@ -41,8 +41,8 @@ Functions
 .. autosummary::
    :toctree: generated/
 
-   poly_energy
    poly_energies
+   poly_energy
 
 Reducing to a Binary Quadratic Model
 ====================================
