@@ -24,6 +24,7 @@ from collections import defaultdict
 from functools import partial
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 import dimod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
@@ -117,7 +118,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
 
     Example:
         >>> poly = dimod.BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY)
-        >>> dimod.reduce_binary_polynomial(poly)
+        >>> dimod.reduce_binary_polynomial(poly)           # doctest:+SKIP
         ([(frozenset({0}), -1),
           (frozenset({1}), 1),
           (frozenset({2}), 1.5),
@@ -340,22 +341,30 @@ def poly_energy(sample_like, poly: Mapping[Tuple[Variable, Variable], Bias]) -> 
     """Calculate energy of a sample from a higher order polynomial.
 
     Args:
-         sample (samples_like):
+         sample_like (samples_like):
             A raw sample. `samples-like` is an extension of NumPy's
             array_like structure. See :func:`.as_samples`.
 
         poly (dict):
-            Polynomial as a dict of form ``{term: bias, ...}``, where `term` is a
+            Polynomial as a dict of form `{term: bias, ...}`, where `term` is a
             tuple of one or more variables and `bias` the associated bias.
+            Variable labeling/indexing here must match that of ``sample_like``
 
-    Returns:
-        float: Energy of the sample.
+    Returns: Energy of the sample.
+
+    Examples:
+        >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b'): 1, ('a', 'b', 'c'): -1},
+        ...                               dimod.BINARY)
+        >>> sample = {'a': 1, 'b': 1, 'c': 0}
+        >>> dimod.poly_energy(sample, poly)
+        0.0
 
     """
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
-def poly_energies(samples_like, poly):
+def poly_energies(samples_like, poly: Mapping[Tuple[Variable, Variable], Bias]
+                  ) -> ArrayLike:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
@@ -363,14 +372,12 @@ def poly_energies(samples_like, poly):
             A collection of raw samples. `samples-like` is an extension of
             NumPy's array_like structure. See :func:`.as_samples`.
 
-        poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a
+        poly:
+            Polynomial as a dict of form `{term: bias, ...}``, where `term` is a
             tuple of variables and `bias` the associated bias. Variable
-            labeling/indexing of terms in poly dict must match that of the
-            sample(s).
+            labeling/indexing here must match that of ``samples_like``.
 
-    Returns:
-        list/:obj:`numpy.ndarray`: The energy of the sample(s).
+    Returns: Energies of the samples.
 
     """
     return BinaryPolynomial(poly, 'SPIN').energies(samples_like)
