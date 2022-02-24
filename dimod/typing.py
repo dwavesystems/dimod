@@ -46,7 +46,10 @@ __all__ = ['Bias',
            'VartypeLike',
            ]
 
-Bias = Union[int, float, np.number]
+# use float for python types, https://www.python.org/dev/peps/pep-0484/#the-numeric-tower
+# exclude np.complexfloating from numpy types
+Bias = Union[float, np.floating, np.integer]
+
 Variable = Hashable  # todo: exclude None
 
 try:

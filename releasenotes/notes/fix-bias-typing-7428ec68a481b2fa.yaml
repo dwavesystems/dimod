@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fix ``dimod.typing.Bias`` to correctly exclude ``numpy.complexfloating``.
