@@ -48,7 +48,6 @@ __all__ = ['Bias',
 
 Bias = Union[int, float, np.number]
 Variable = Hashable  # todo: exclude None
-Polynomial = Mapping[Sequence[Variable], Bias]
 
 try:
     import networkx as nx
@@ -66,6 +65,7 @@ else:
         nx.Graph,
         ]
 
+Polynomial = Mapping[Sequence[Variable], Bias]
 
 class QuadraticVectors(NamedTuple):
     row_indices: NDArray[np.integer]
