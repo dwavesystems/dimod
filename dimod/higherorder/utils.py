@@ -269,15 +269,16 @@ def make_quadratic_cqm(poly: Union[Polynomial, BinaryPolynomial],
     return cqm
 
 
-def make_quadratic(poly: Polynomial, strength: float,
+def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
                    vartype: Optional[Vartype] = None,
                    bqm: Optional[BinaryQuadraticModel] = None) -> BinaryQuadraticModel:
     """Create a binary quadratic model from a higher order polynomial.
 
     Args:
         poly:
-            Polynomial as a dict of form `{term: bias, ...}`, where `term` is a
-            tuple of one or more variables and `bias` the associated bias.
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`.
 
         strength:
             Energy penalty for violating the product constraint.
@@ -336,7 +337,8 @@ def make_quadratic(poly: Polynomial, strength: float,
     return bqm
 
 
-def poly_energy(sample_like: SamplesLike, poly: Polynomial) -> float:
+def poly_energy(sample_like: SamplesLike,
+                poly: Union[Polynomial, BinaryPolynomial]) -> float:
     """Calculate energy of a sample from a higher order polynomial.
 
     Args:
@@ -345,8 +347,9 @@ def poly_energy(sample_like: SamplesLike, poly: Polynomial) -> float:
             array_like structure. See :func:`.as_samples`.
 
         poly (dict):
-            Polynomial as a dict of form `{term: bias, ...}`, where `term` is a
-            tuple of one or more variables and `bias` the associated bias.
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`.
             Variable labeling/indexing here must match that of ``sample_like``
 
     Returns: Energy of the sample.
@@ -362,7 +365,8 @@ def poly_energy(sample_like: SamplesLike, poly: Polynomial) -> float:
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
-def poly_energies(samples_like: SamplesLike, poly: Polynomial) -> np.ndarray:
+def poly_energies(samples_like: SamplesLike,
+                  poly: Union[Polynomial, BinaryPolynomial]) -> np.ndarray:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
@@ -371,9 +375,10 @@ def poly_energies(samples_like: SamplesLike, poly: Polynomial) -> np.ndarray:
             NumPy's array_like structure. See :func:`.as_samples`.
 
         poly:
-            Polynomial as a dict of form `{term: bias, ...}`, where `term` is a
-            tuple of variables and `bias` the associated bias. Variable
-            labeling/indexing here must match that of ``samples_like``.
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`. Variable labeling/indexing here must
+            match that of ``samples_like``.
 
     Returns: Energies of the samples.
 
