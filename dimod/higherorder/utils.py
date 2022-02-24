@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from typing import Tuple, List, Hashable, FrozenSet
+from typing import Hashable, FrozenSet, List, Mapping, Optional, Tuple, Union
 from numbers import Number
 
 import itertools
@@ -30,6 +30,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
+from dimod.typing import Bias, Polynomial, SamplesLike, Variable
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['make_quadratic', 'make_quadratic_cqm', 'reduce_binary_polynomial']
@@ -102,18 +103,21 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
         List[Tuple[FrozenSet[Hashable], Number]],
         List[Tuple[FrozenSet[Hashable], Hashable]]
     ]:
-    """ Reduce a Binary polynomial to a list of quadratic terms and constraints
-    by introducing auxillary variables and creating costraints.
-    
+    """Reduce a binary polynomial to linear and quadratic terms, plus constraints.
+
+    Introduces auxillary variables and constraints to reduce the polynomial
+    to linear and quadratic terms.
+
     Args:
-        poly: BinaryPolynomial
+        poly: a binary polynomial that might have higher order terms.
 
     Returns:
-        ([(term, bias)*], [((orig_var1, orig_var2), aux_var)*])
+        Two-tuple of a list of terms and their biases, as tuples, and a list of
+        the original and auxiliary variables, as a tuple.
 
     Example:
         >>> poly = dimod.BinaryPolynomial({(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}, dimod.BINARY)
-        >>> reduce_binary_polynomial(poly) # doctest: +SKIP
+        >>> dimod.reduce_binary_polynomial(poly)           # doctest:+SKIP
         ([(frozenset({0}), -1),
           (frozenset({1}), 1),
           (frozenset({2}), 1.5),
@@ -176,7 +180,7 @@ def reduce_binary_polynomial(poly: BinaryPolynomial) -> Tuple[
 
     return reduced_terms, constraints
 
-  
+
 def _init_quadratic_model(qm, vartype, qm_factory):
     if vartype is None:
         if qm is None:
@@ -215,28 +219,29 @@ def _init_objective(bqm, reduced_terms):
                    'Please file a bug report.')
             raise RuntimeError(msg)
 
-def make_quadratic_cqm(poly, vartype=None, cqm=None):
+def make_quadratic_cqm(poly: Union[Polynomial, BinaryPolynomial],
+                       vartype: Optional[Vartype] = None,
+                       cqm: Optional[ConstrainedQuadraticModel] = None
+                       ) -> ConstrainedQuadraticModel:
     """Create a constrained quadratic model from a higher order polynomial.
 
     Args:
-        poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
-            variables and `bias` the associated bias.
+        poly:
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`.
 
-        vartype (:class:`.Vartype`/str/set, optional):
+        vartype:
             Variable type for the binary quadratic model. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-            If `poly is a BinaryPolynomial , `vartype` is not required.
+            If ``poly`` is a :class:`.BinaryPolynomial` , ``vartype`` is not required.
 
-        cqm (:class:`.BinaryQuadraticModel`, optional):
-            The terms of the reduced polynomial are added to this constrained quadratic model.
-            If not provided, a new constrained quadratic model is created.
-
-    Returns:
-        :class:`.ConstrainedQuadraticModel`
+        cqm:
+            Terms of the reduced polynomial are added to this constrained quadratic
+            model. If not provided, a new constrained quadratic model is created.
 
     Examples:
 
@@ -264,33 +269,33 @@ def make_quadratic_cqm(poly, vartype=None, cqm=None):
     return cqm
 
 
-def make_quadratic(poly, strength, vartype=None, bqm=None):
+def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
+                   vartype: Optional[Vartype] = None,
+                   bqm: Optional[BinaryQuadraticModel] = None) -> BinaryQuadraticModel:
     """Create a binary quadratic model from a higher order polynomial.
 
     Args:
-        poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a tuple of
-            variables and `bias` the associated bias.
+        poly:
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`.
 
-        strength (float):
-            The energy penalty for violating the prodcut constraint.
+        strength:
+            Energy penalty for violating the product constraint.
             Insufficient strength can result in the binary quadratic model not
             having the same minimizations as the polynomial.
 
-        vartype (:class:`.Vartype`/str/set, optional):
+        vartype:
             Variable type for the binary quadratic model. Accepted input values:
 
-            * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-            * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
-            If `bqm` is provided, `vartype` is not required.
+            If ``bqm`` is provided, ``vartype`` is not required.
 
-        bqm (:class:`.BinaryQuadraticModel`, optional):
-            The terms of the reduced polynomial are added to this binary quadratic model.
+        bqm:
+            Terms of the reduced polynomial are added to this binary quadratic model.
             If not provided, a new binary quadratic model is created.
-
-    Returns:
-        :class:`.BinaryQuadraticModel`
 
     Examples:
 
@@ -332,41 +337,58 @@ def make_quadratic(poly, strength, vartype=None, bqm=None):
     return bqm
 
 
-def poly_energy(sample_like, poly):
-    """Calculates energy of a sample from a higher order polynomial.
+def poly_energy(sample_like: SamplesLike,
+                poly: Union[Polynomial, BinaryPolynomial]) -> float:
+    """Calculate energy of a sample from a higher order polynomial.
 
     Args:
-         sample (samples_like):
-            A raw sample. `samples_like` is an extension of NumPy's
+         sample_like:
+            A raw sample. `samples-like` is an extension of NumPy's
             array_like structure. See :func:`.as_samples`.
 
         poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a
-            tuple of variables and `bias` the associated bias.
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`.
+            Variable labeling/indexing here must match that of ``sample_like``
 
-    Returns:
-        float: The energy of the sample.
+    Returns: Energy of the sample.
+
+    Examples:
+        >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b'): 1, ('a', 'b', 'c'): -1},
+        ...                               dimod.BINARY)
+        >>> sample = {'a': 1, 'b': 1, 'c': 0}
+        >>> dimod.poly_energy(sample, poly)
+        0.0
 
     """
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
-def poly_energies(samples_like, poly):
+def poly_energies(samples_like: SamplesLike,
+                  poly: Union[Polynomial, BinaryPolynomial]) -> np.ndarray:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
-        sample (samples_like):
-            A collection of raw samples. `samples_like` is an extension of
+        samples_like:
+            A collection of raw samples. `samples-like` is an extension of
             NumPy's array_like structure. See :func:`.as_samples`.
 
-        poly (dict):
-            Polynomial as a dict of form {term: bias, ...}, where `term` is a
-            tuple of variables and `bias` the associated bias. Variable
-            labeling/indexing of terms in poly dict must match that of the
-            sample(s).
+        poly:
+            Either a polynomial, as a dict of form `{term: bias, ...}`, where `term`
+            is a tuple of one or more variables and `bias` the associated bias,
+            or a :class:`.BinaryPolynomial`. Variable labeling/indexing here must
+            match that of ``samples_like``.
 
-    Returns:
-        list/:obj:`numpy.ndarray`: The energy of the sample(s).
+    Returns: Energies of the samples.
+
+    Examples:
+        >>> poly = dimod.BinaryPolynomial({'a': -1, ('a', 'b'): 1, ('a', 'b', 'c'): -1},
+        ...                               dimod.BINARY)
+        >>> samples = [{'a': 1, 'b': 1, 'c': 0},
+        ...            {'a': 1, 'b': 1, 'c': 1}]
+        >>> dimod.poly_energies(samples, poly)
+        array([ 0., -1.])
 
     """
     return BinaryPolynomial(poly, 'SPIN').energies(samples_like)

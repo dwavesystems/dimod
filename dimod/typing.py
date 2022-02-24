@@ -17,7 +17,7 @@ Type hints for common dimod inputs.
 """
 import typing
 
-from typing import Collection, Hashable, NamedTuple, Sequence, Tuple, Union
+from typing import Collection, Hashable, Mapping, NamedTuple, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -39,15 +39,15 @@ except ImportError:
 
 __all__ = ['Bias',
            'GraphLike',
+           'Polynomial',
            'SampleLike',
            'SamplesLike',
            'Variable',
            'VartypeLike',
            ]
 
-
-Variable = Hashable  # todo: exclude None
 Bias = Union[int, float, np.number]
+Variable = Hashable  # todo: exclude None
 
 try:
     import networkx as nx
@@ -65,6 +65,7 @@ else:
         nx.Graph,
         ]
 
+Polynomial = Mapping[Sequence[Variable], Bias]
 
 class QuadraticVectors(NamedTuple):
     row_indices: NDArray[np.integer]

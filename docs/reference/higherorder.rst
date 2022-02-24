@@ -33,6 +33,17 @@ Methods
    BinaryPolynomial.to_hubo
    BinaryPolynomial.to_spin
 
+Functions
+=========
+
+.. automodule:: dimod.higherorder.utils
+
+.. autosummary::
+   :toctree: generated/
+
+   poly_energies
+   poly_energy
+
 Reducing to a Binary Quadratic Model
 ====================================
 
@@ -42,4 +53,5 @@ Reducing to a Binary Quadratic Model
    :toctree: generated/
 
    make_quadratic
+   make_quadratic_cqm
    reduce_binary_polynomial
