@@ -30,7 +30,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
-from dimod.typing import Bias, SamplesLike, Variable
+from dimod.typing import Bias, Polynomial, SamplesLike, Variable
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['make_quadratic', 'make_quadratic_cqm', 'reduce_binary_polynomial']
@@ -219,7 +219,7 @@ def _init_objective(bqm, reduced_terms):
                    'Please file a bug report.')
             raise RuntimeError(msg)
 
-def make_quadratic_cqm(poly: Union[Mapping[Tuple[Variable, Variable], Bias], BinaryPolynomial],
+def make_quadratic_cqm(poly: Union[Polynomial, BinaryPolynomial],
                        vartype: Optional[Vartype] = None,
                        cqm: Optional[ConstrainedQuadraticModel] = None
                        ) -> ConstrainedQuadraticModel:
@@ -269,7 +269,7 @@ def make_quadratic_cqm(poly: Union[Mapping[Tuple[Variable, Variable], Bias], Bin
     return cqm
 
 
-def make_quadratic(poly: Mapping[Tuple[Variable, Variable], Bias], strength: float,
+def make_quadratic(poly: Polynomial, strength: float,
                    vartype: Optional[Vartype] = None,
                    bqm: Optional[BinaryQuadraticModel] = None) -> BinaryQuadraticModel:
     """Create a binary quadratic model from a higher order polynomial.
@@ -336,8 +336,7 @@ def make_quadratic(poly: Mapping[Tuple[Variable, Variable], Bias], strength: flo
     return bqm
 
 
-def poly_energy(sample_like: SamplesLike,
-                poly: Mapping[Tuple[Variable, Variable], Bias]) -> float:
+def poly_energy(sample_like: SamplesLike, poly: Polynomial) -> float:
     """Calculate energy of a sample from a higher order polynomial.
 
     Args:
@@ -363,8 +362,7 @@ def poly_energy(sample_like: SamplesLike,
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
-def poly_energies(samples_like: SamplesLike,
-                  poly: Mapping[Tuple[Variable, Variable], Bias]) -> np.ndarray:
+def poly_energies(samples_like: SamplesLike, poly: Polynomial) -> np.ndarray:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
