@@ -4,96 +4,192 @@
 Symbolic Math
 =============
 
-dimod enables easy incorporation of binary and integer variables as
-:ref:`single-variable models <generators_symbolic_math>`. For example, you can
-represent such binary variables as follows:
+*dimod*'s support for symbolic math can simplify your coding of problems. For
+example, consider a problem of finding the rectangle with the greatest area for
+a given perimeter, which you can formulate mathematically as,
 
->>> from dimod import Binary, Spin
->>> x = Binary('x')
->>> s = Spin('s')
->>> x
-BinaryQuadraticModel({'x': 1.0}, {}, 0.0, 'BINARY')
+.. math::
 
-Similarly for integers:
+  \textrm{Objective: } \quad &\max_{i,j} \quad ij
 
->>> from dimod import Integer
->>> i = Integer('i')
+  \textrm{Constraint:} \quad &2i+2j \le 8
+
+where the components are,
+
+* **Variables**: :math:`i` and :math:`j` are the lengths of two sides of the
+  rectangle and the length of the perimeter is arbitrarily selected to be 8.
+* **Objective**: maximize the area, which is given by the standard geometric
+  formula :math:`ij`.
+* **Constraint**: subject to not exceeding the given perimeter length;
+  that is, :math:`2i+2j`, the summation of the rectangle's four sides, is
+  constrained to a maximum value of 8.
+
+*dimod*'s symbolic math enables an intuitive coding of such problems:
+
+>>> i, j = dimod.Integers(["i", "j"])
+>>> objective = -i * j
+>>> constraint = 2 * i + 2 * j <= 8
+>>> print(objective.to_polystring())
+-i*j
+>>> print(constraint.to_polystring())
+2*i + 2*j <= 8
+
+Here variables :code:`i,j` are of type integer, perhaps representing the number
+of tiles laid horizontally and vertically in creating a rectangular floor, and
+the coded ``objective`` is set to negative because D-Wave samplers minimize
+rather than maximize.
+
+The foundation for this symbolic representation is single-variable models.
+
+Variables as Models
+===================
+
+To symbolically represent an objective or constraint, you first need symbolic
+representations of variables.
+
+Quadratic models with a single variable can represent your variables; for example,
+if the type of variable you need is integer:
+
+>>> i = dimod.Integer('i')
 >>> i
 QuadraticModel({'i': 1.0}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
 
-The construction of such variables as either a
-:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` or a
-:class:`~dimod.quadratic.quadratic_model.QuadraticModel` depends on the type of
-variable. Models with more than one type of variable, for example
-:func:`~dimod.binary.Binary` and :func:`~dimod.binary.Spin`, or one of those
-with :func:`~dimod.quadratic.Integer`, are of the
-:class:`~dimod.quadratic.quadratic_model.QuadraticModel` class.
+Here, variable ``i`` is a :class:`~dimod.quadratic.quadratic_model.QuadraticModel`
+that contains one variable with the label ``'i'``.
 
->>> z = x + s
->>> print("Type of {} is {}".format(z.to_polystring(), type(z)))
-Type of x + s is <class 'dimod.quadratic.quadratic_model.QuadraticModel'>
->>> for variable in z.variables:
-...     print("{} is of type {}.".format(variable, z.vartype(variable)))
-x is of type Vartype.BINARY.
-s is of type Vartype.SPIN.
+This works because quadratic models (QMs) have the form,
 
-You can express mathematical functions on these variables using Python functions such
-as :func:`sum`\ [#]_\ :
+.. math::
 
-.. [#]
-  See the `Example: Adding Models`_ example for a performant summing function.
+    \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
 
->>> sum([3 * i, 2 * i]).to_polystring()
-'5*i'
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be integer variables
+(:math:`a_{i}, b_{ij}, c` are real values). If you set :math:`a_1=1` and all
+remaining coefficients to zero, the model represents a single variable,
+:math:`x_1`.
+
+When your variable is used in a linear term of a polynomial, such as :math:`3.75i`,
+the coefficient (:math:`3.75`) is represented in this same model by the value of
+the linear bias on the ``'i'``--labeled variable:
+
+>>> 3.75 * i
+QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+Similarly, when your variable is in a quadratic term, such as :math:`2.2i^2`, the
+coefficient (:math:`2.2`) is represented in this same model by the value of
+the quadratic bias, :math:`b_{1, 1} = 2.2`:
+
+>>> 3.75 * i + 2.2 * i * i
+QuadraticModel({'i': 3.75}, {('i', 'i'): 2.2}, 0.0, {'i': 'INTEGER'}, dtype='float64')
+
+You can see the various methods of creating such variables in the
+:ref:`Generators <generators_symbolic_math>` reference documentation.
+
+Typically, you have more than a single variable, and your variables interact.
+
+Operations on Variables
+=======================
+
+Consider a simple problem of a NOT operation between two binary variables. For
+:math:`\{-1, 1\}`--valued binary variables, the NOT operation is equivalent to
+multiplication of the two variables:
+
+>>> s1, s2 = dimod.Spins(["s1", "s2"])
+>>> bqm_not = s1*s2
+>>> bqm_not
+BinaryQuadraticModel({'s1': 0.0, 's2': 0.0}, {('s2', 's1'): 1.0}, 0.0, 'SPIN')
+>>> print(dimod.ExactSolver().sample(bqm_not))
+  s1 s2 energy num_oc.
+1 +1 -1   -1.0       1
+3 -1 +1   -1.0       1
+0 -1 -1    1.0       1
+2 +1 +1    1.0       1
+['SPIN', 4 rows, 4 samples, 2 variables]
+
+The symbolic multiplication between variables above executes a multiplication
+between the models representing each variable. Binary quadratic models (BQMs) are
+of the form:
+
+  .. math::
+
+      \sum_{i=1} a_i v_i
+      + \sum_{i<j} b_{i,j} v_i v_j
+      + c
+      \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
+
+where :math:`a_{i}, b_{ij}, c` are real values. The multiplication of two such
+models, with linear terms :math:`a_1 = 1`, reduces to
+:math:`\sum_{i=1} 1 v_1 * \sum_{i=1} 1 u_1 = v_1 u_1`, a multiplication of two
+variables.
+
+In this NOT example, because all the variables are the same :class:`~dimod.Vartype`,
+dimod represents each binary variable, and their multiplication, with
+:class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` objects.
+
+>>> bqm_not.vartype is dimod.Vartype.SPIN
+True
+
+If an operation includes more than one type of variable, the representation is
+always a :class:`~dimod.quadratic.quadratic_model.QuadraticModel` and the
+:class:`~dimod.Vartype` is per variable:
+
+>>> qm = bqm_not + 3.75 * i
+>>> print(type(qm))
+<class 'dimod.quadratic.quadratic_model.QuadraticModel'>
+>>> qm.vartype("s1") == dimod.Vartype.SPIN
+True
+>>> qm.vartype("i") == dimod.Vartype.INTEGER
+True
 
 .. note::
-  It's important to remember that, for example, :code:`x = dimod.Binary('x')`
-  instantiates a single-variable model, in this case a
-  :class:`~dimod.binary.binary_quadratic_model.BinaryQuadraticModel` with
-  variable label ``'x'``, not a free-floating variable labeled ``x``. Consequently,
-  you can add ``x`` to another model, say :code:`bqm = dimod.BinaryQuadraticModel('BINARY')`,
-  by adding the two models, :code:`x + bqm`. This adds the variable labeled ``'x'``
-  in the single-variable BQM, ``x`` to model ``bqm``. You cannot add ``x`` to a
-  model---as though it were variable ``'x'``---by doing :code:`bqm.add_variable(x)`.
 
-Example: BQM
-============
+  An important distinction is that :code:`x = dimod.Binary('x')`, for example,
+  instantiates a model with a variable label ``'x'`` and not a free-floating variable
+  labeled ``x``. Consequently, you can add ``x`` to another model by adding the two
+  models,
 
-This example creates the BQM :math:`x + 2y -xy`:
+  >>> x = dimod.Binary("x")
+  >>> bqm = dimod.BinaryQuadraticModel('BINARY')
+  >>> bqm += x
 
->>> from dimod import Binary
->>> x = Binary('x')
->>> y = Binary('y')
->>> bqm = x + 2*y - x*y
->>> print(bqm.to_polystring())
-x + 2*y - x*y
+  which adds the variable labeled ``'x'`` in the single-variable BQM, ``x``, to
+  model ``bqm``. You cannot add ``x`` to a model---as though it were variable
+  ``'x'``---by doing :code:`bqm.add_variable(x)`.
 
-Example: CQM
-============
+Representing Constraints
+========================
 
-This example uses symbolic math to set an objective (:math:`2i - 0.5ij + 10`)
-and constraints (:math:`xj <= 3` and :math:`i + j >= 1`) in a simple CQM.
+Many real-world problems include constraints. Typically constraints are either
+equality or inequality, in the form of a left-hand side(``lhs``), right-hand-side
+(``rhs``), and the :class:`dimod.sym.Sense` (:math:`\le`, :math:`\ge`, or
+:math:`==`). For example, the constraint of the rectangle problem above,
 
->>> from dimod import Binary, Integer, ConstrainedQuadraticModel
->>> x = Binary('x')
->>> i = Integer('i')
->>> j = Integer('j')
->>> cqm = ConstrainedQuadraticModel()
->>> cqm.set_objective(2*i - 0.5*i*j + 10)
->>> cqm.add_constraint(x*j <= 3)                   # doctest: +IGNORE_RESULT
->>> cqm.add_constraint(i + j >= 1)                 # doctest: +IGNORE_RESULT
+.. math::
 
-Example: Adding Models
-======================
+  \textrm{s.t.} \quad 2i+2j \le P
 
-This example uses the performant :func:`~dimod.binary.quicksum` on
-:func:`~dimod.binary.BinaryArray` to add multiple models.
+has a ``lhs`` of :math:`2i+2j` less or equal to a ``rhs`` of a some real number
+(:math:`8`):
 
->>> import numpy as np
->>> from dimod import BinaryArray, quicksum
-...
->>> num_vars = 10; max_bias = 5
->>> var_labels = range(num_vars)
-...
->>> models = BinaryArray(var_labels)*np.random.randint(0, max_bias, size=num_vars)
->>> x = quicksum(models)
+>>> print(constraint.lhs.to_polystring(), constraint.sense.value, constraint.rhs)  # doctest:+SKIP
+2*i + 2*j <= 8
+
+You can create such an equality or inequality symbolically, and it is shown
+with the model:
+
+>>> print(type(3.75 * i <= 4))
+<class 'dimod.sym.Le'>
+>>> 3.75 * i <= 4
+Le(QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64'), 4)
+
+Performance
+===========
+
+*dimod*'s symbolic math is very useful for small models used for experimenting
+and formulating problems. It also offers some more performant functionality; for
+example, methods such as :func:`~dimod.quadratic.IntegerArray` for creating multiple
+variables with NumPy arrays or :func:`~dimod.binary.quicksum` as a replacement
+for the Python :func:`sum`.
+
+See the examples of :func:`~dimod.binary.BinaryArray`, :func:`~dimod.quadratic.IntegerArray`,
+and :func:`~dimod.binary.SpinArray` for usage.
