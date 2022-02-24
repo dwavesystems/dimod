@@ -30,7 +30,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import as_samples
-from dimod.typing import Bias, Variable
+from dimod.typing import Bias, SamplesLike, Variable
 from dimod.vartypes import as_vartype, Vartype
 
 __all__ = ['make_quadratic', 'make_quadratic_cqm', 'reduce_binary_polynomial']
@@ -336,11 +336,12 @@ def make_quadratic(poly: Mapping[Tuple[Variable, Variable], Bias], strength: flo
     return bqm
 
 
-def poly_energy(sample_like, poly: Mapping[Tuple[Variable, Variable], Bias]) -> float:
+def poly_energy(sample_like: SamplesLike,
+                poly: Mapping[Tuple[Variable, Variable], Bias]) -> float:
     """Calculate energy of a sample from a higher order polynomial.
 
     Args:
-         sample_like (samples_like):
+         sample_like:
             A raw sample. `samples-like` is an extension of NumPy's
             array_like structure. See :func:`.as_samples`.
 
@@ -362,12 +363,12 @@ def poly_energy(sample_like, poly: Mapping[Tuple[Variable, Variable], Bias]) -> 
     return BinaryPolynomial(poly, 'SPIN').energy(sample_like)
 
 
-def poly_energies(samples_like, poly: Mapping[Tuple[Variable, Variable], Bias]
-                  ) -> np.ndarray:
+def poly_energies(samples_like: SamplesLike,
+                  poly: Mapping[Tuple[Variable, Variable], Bias]) -> np.ndarray:
     """Calculates energy of samples from a higher order polynomial.
 
     Args:
-        samples_like (samples_like):
+        samples_like:
             A collection of raw samples. `samples-like` is an extension of
             NumPy's array_like structure. See :func:`.as_samples`.
 
