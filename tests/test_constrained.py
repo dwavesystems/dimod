@@ -184,20 +184,6 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
-class TestAdjVector(unittest.TestCase):
-    # this will be deprecated in the future
-    def test_construction(self):
-        cqm = CQM()
-
-        with self.assertWarns(DeprecationWarning):
-            bqm = dimod.AdjVectorBQM({'ab': 1}, 'SPIN')
-
-        cqm.set_objective(bqm)
-        label = cqm.add_constraint(bqm, sense='==', rhs=1)
-        self.assertIsInstance(cqm.objective, dimod.QuadraticModel)
-        self.assertIsInstance(cqm.constraints[label].lhs, BQM)
-
-
 class TestBounds(unittest.TestCase):
     def test_inconsistent(self):
         i0 = Integer('i')
