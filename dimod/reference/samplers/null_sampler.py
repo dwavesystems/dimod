@@ -17,6 +17,7 @@ import collections.abc as abc
 
 import numpy as np
 
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core.sampler import Sampler
 from dimod.sampleset import SampleSet
 
@@ -41,7 +42,7 @@ class NullSampler(Sampler):
         >>> len(sampleset)
         0
 
-        The next example shows how to enable additional parameters for the null 
+        The next example shows how to enable additional parameters for the null
         sampler.
 
         >>> bqm = dimod.BinaryQuadraticModel.from_qubo({('a', 'b'): 1})
@@ -52,7 +53,7 @@ class NullSampler(Sampler):
     properties = None
 
     parameters = None
-    """Keyword arguments accepted by the sampling methods"""
+    """Keyword arguments accepted by the sampling methods."""
 
     def __init__(self, parameters=None):
         self.properties = {}
@@ -64,20 +65,20 @@ class NullSampler(Sampler):
             else:
                 self.parameters.update((param, []) for param in parameters)
 
-    def sample(self, bqm, **kwargs):
+    def sample(self, bqm: BinaryQuadraticModel, **kwargs) -> SampleSet:
         """Return an empty sample set.
 
         Args:
-            bqm (:obj:`.BinaryQuadraticModel`):
-                The binary quadratic model determines the variables labels in
-                the sample set.
+            bqm:
+                Binary quadratic model (BQM) that determines the variables labels
+                in the sample set.
 
             kwargs:
-                As specified when constructing the null sampler.
+                User-defined parameters specified when constructing the null
+                sampler, with values that are ignored.
 
         Returns:
-            :obj:`.SampleSet`: The empty sample set.
-
+            Empty sample set with the same variables as the given BQM.
 
         """
         samples = np.empty((0, len(bqm)))
