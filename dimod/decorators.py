@@ -21,7 +21,6 @@ import warnings
 from functools import wraps
 from numbers import Integral
 
-from dimod.core.structured import Structured
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
 from dimod.utilities import new_label
 from dimod.vartypes import as_vartype

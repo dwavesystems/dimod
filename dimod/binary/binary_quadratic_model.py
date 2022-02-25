@@ -41,7 +41,6 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
-from dimod.core.bqm import BQM as BQMabc
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
 from dimod.quadratic.quadratic_model import _VariableArray
@@ -62,6 +61,7 @@ __all__ = ['BinaryQuadraticModel',
            'as_bqm',
            'Spin', 'Binary', 'Spins', 'Binaries', 'SpinArray', 'BinaryArray',
            'quicksum',
+           'AdjDictBQM', 'AdjVectorBQM',
            ]
 
 BQM_MAGIC_PREFIX = b'DIMODBQM'
@@ -2521,6 +2521,10 @@ class Float64BQM(BQM, default_dtype=np.float64):
     pass
 
 
+AdjDictBQM = DictBQM
+AdjVectorBQM = Float64BQM
+
+
 @unique_variable_labels
 def Binary(label: Optional[Variable] = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
@@ -2819,7 +2823,3 @@ def quicksum(iterable: Iterable[Union[BinaryQuadraticModel, QuadraticModel, Bias
 
 # register fileview loader
 load.register(BQM_MAGIC_PREFIX, BinaryQuadraticModel.from_file)
-
-# register with the old (deprecated) abc so that old instance checks will
-# continue to work
-BQMabc.register(BinaryQuadraticModel)

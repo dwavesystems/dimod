@@ -1,0 +1,11 @@
+---
+upgrade:
+  - |
+    ``AdjVectorBQM`` and ``AdjDictBQM`` are now aliases for
+    ``BinaryQuadraticModel`` and ``DictBQM`` respectively rather than
+    having their own implementation with a slightly different API.
+    They were previously deprecated in dimod 0.10.0.
+  - |
+    The ``dimod.bqm`` namespace has been removed.
+  - |
+    The ``dimod.core.bqm`` namespace has been removed.

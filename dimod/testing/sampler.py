@@ -25,8 +25,6 @@ __all__ = ['load_sampler_bqm_tests']
 BQM_SUBCLASSES = [dimod.Float32BQM,
                   dimod.Float64BQM,
                   dimod.DictBQM,
-                  dimod.AdjVectorBQM,
-                  dimod.AdjDictBQM,
                   ]
 
 
