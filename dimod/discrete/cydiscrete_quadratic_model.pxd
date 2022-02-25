@@ -21,7 +21,6 @@ from libcpp.vector cimport vector
 cimport numpy as np
 
 from dimod.libcpp cimport cppBinaryQuadraticModel
-from dimod.bqm.common cimport Integral32plus, Numeric, Numeric32plus
 
 ctypedef np.float64_t bias_type
 ctypedef np.int32_t index_type
@@ -32,6 +31,28 @@ ctypedef fused Unsigned:
     np.uint32_t
     np.uint64_t
 
+ctypedef fused Integral32plus:
+    np.uint32_t
+    np.uint64_t
+    np.int32_t
+    np.int64_t
+
+ctypedef fused Numeric:
+    np.uint8_t
+    np.uint16_t
+    np.uint32_t
+    np.uint64_t
+    np.int8_t
+    np.int16_t
+    np.int32_t
+    np.int64_t
+    np.float32_t
+    np.float64_t
+
+ctypedef fused Numeric32plus:
+    Integral32plus
+    np.float32_t
+    np.float64_t
 
 cdef class cyDiscreteQuadraticModel:
     cdef cppBinaryQuadraticModel[bias_type, index_type] cppbqm
