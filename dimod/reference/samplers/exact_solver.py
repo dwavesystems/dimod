@@ -20,18 +20,17 @@ Note:
     energy for every possible sample, they are very slow.
 """
 from itertools import product
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
+from dimod.constrained import ConstrainedQuadraticModel
 from dimod.core.polysampler import PolySampler
 from dimod.core.sampler import Sampler
+from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
-if TYPE_CHECKING:
-    from dimod import DiscreteQuadraticModel, ConstrainedQuadraticModel
 
 __all__ = ['ExactSolver', 'ExactPolySolver', 'ExactDQMSolver', 'ExactCQMSolver']
 
@@ -102,7 +101,7 @@ class ExactPolySolver(PolySampler):
         >>> h = {'a': -0.5, 'b': 1.0, 'c': 0.}
         >>> J = {('a', 'b'): -1.5, ('a', 'b', 'c'): -1.0}
         >>> sampleset = dimod.ExactPolySolver().sample_hising(h, J)
-        >>> print(sampleset)
+        >>> print(sampleset)                                # doctest: +SKIP
            a  b  c energy num_oc.
         1 -1 -1 +1   -3.0       1
         5 +1 +1 +1   -2.0       1
@@ -148,9 +147,9 @@ class ExactDQMSolver():
 
     Notes:
         This solver calculates the energy for every possible
-        combination of variable cases. If variable i has
-        k_i many cases, this will be k_1 * k_2 * ... * k_n
-        which grows exponentially for constant k_i in the
+        combination of variable cases. If variable :math:`i` has
+        :math:`k_i` cases, this results in :math:`k_1 * k_2 * ... * k_n` cases,
+        which grows exponentially for constant :math:`k_i` in the
         number of variables.
 
     """
@@ -159,15 +158,15 @@ class ExactDQMSolver():
         self.properties = {}
         self.parameters = {}
 
-    def sample_dqm(self, dqm: 'DiscreteQuadraticModel', **kwargs) -> SampleSet:
+    def sample_dqm(self, dqm: DiscreteQuadraticModel, **kwargs) -> SampleSet:
         """Sample from a discrete quadratic model.
 
         Args:
-            dqm (:class:`~dimod.DiscreteQuadraticModel`):
+            dqm:
                 Discrete quadratic model to be sampled from.
 
         Returns:
-            :class:`~dimod.SampleSet`
+            All possible solutions to the discrete quadratic model.
 
         """
         Sampler.remove_unknown_kwargs(self, **kwargs)
@@ -186,19 +185,19 @@ class ExactCQMSolver():
 
     Notes:
         This solver calculates the energy for every possible
-        combination of variable cases. It becomes slow very quickly
+        combination of variable assignments. It becomes slow very quickly
 
     Examples:
         This example solves a CQM with 3 variables and 1 constraint.
 
-        >>> from dimod import ConstrainedQuadraticModel, Binary
+        >>> from dimod import ConstrainedQuadraticModel, Binaries, ExactCQMSolver
         >>> cqm = ConstrainedQuadraticModel()
-        >>> x, y, z = Binary('x'), Binary('y'), Binary('z')
+        >>> x, y, z = Binaries(['x', 'y', 'z'])
         >>> cqm.set_objective(x*y + 2*y*z)
         >>> cqm.add_constraint(x*y == 1, label='constraint_1')
         'constraint_1'
-        >>> sampleset = dimod.ExactCQMSolver().sample_cqm(cqm)
-        >>> print(sampleset)      # doctest: +SKIP
+        >>> sampleset = ExactCQMSolver().sample_cqm(cqm)
+        >>> print(sampleset)
           x y z energy num_oc. is_sat. is_fea.
         0 0 0 0    0.0       1 arra...   False
         1 0 1 0    0.0       1 arra...   False
@@ -215,23 +214,24 @@ class ExactCQMSolver():
         self.properties = {}
         self.parameters = {}
 
-    def sample_cqm(self, cqm: 'ConstrainedQuadraticModel', rtol: float = 1e-6, atol: float = 1e-8, **kwargs) -> SampleSet:
+    def sample_cqm(self, cqm: ConstrainedQuadraticModel, rtol: float = 1e-6,
+                   atol: float = 1e-8, **kwargs) -> SampleSet:
         """Sample from a constrained quadratic model.
 
         Args:
-            cqm (:class:`~dimod.ConstrainedQuadraticModel`):
+            cqm:
                 Constrained quadratic model to be sampled from.
-            rtol (float):
+            rtol:
                 Relative tolerance for constraint violation. The fraction of a
                 constraint's right hand side which any violation must be smaller
                 than for the constraint to be satisfied.
-            atol (float):
+            atol:
                 Absolute tolerance for constraint violations. A constant any
                 violation must be smaller than for the constraint to be satisfied.
 
         Returns:
-            A sampleset of all possible samples, with the fields is_feasible
-            and is_satisfied containing total and individual constraint
+            A sampleset of all possible samples, with the fields ``is_feasible``
+            and ``is_satisfied`` containing total and individual constraint
             violation information, respectively.
 
         """
