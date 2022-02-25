@@ -33,7 +33,6 @@ from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, Name
 
 import numpy as np
 
-from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.exceptions import InfeasibileModelError
@@ -212,7 +211,7 @@ class ConstrainedQuadraticModel:
 
     def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
         # todo: singledispatchmethod in 3.8+
-        if isinstance(model, (BinaryQuadraticModel, BQMabc)):
+        if isinstance(model, BinaryQuadraticModel):
             vartype = model.vartype
 
             for v in model.variables:
@@ -246,7 +245,7 @@ class ConstrainedQuadraticModel:
 
         """
         # in python 3.8+ we can use singledispatchmethod
-        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_constraint_from_comparison(data, *args, **kwargs)
@@ -301,9 +300,6 @@ class ConstrainedQuadraticModel:
                 label = uuid.uuid4().hex[:6]
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
-
-        if isinstance(qm, BQMabc):
-            qm = as_bqm(qm)  # handle legacy BQMs
 
         self._add_variables_from(qm)
 
@@ -444,7 +440,7 @@ class ConstrainedQuadraticModel:
 
         """
         # in python 3.8+ we can use singledispatchmethod
-        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_discrete_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_discrete_from_comparison(data, *args, **kwargs)

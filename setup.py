@@ -67,9 +67,6 @@ setup(
     cmdclass=dict(build_ext=build_ext),
     ext_modules=cythonize(
         ['dimod/binary/cybqm/*.pyx',
-         'dimod/bqm/adjvectorbqm.pyx',
-         'dimod/bqm/utils.pyx',
-         'dimod/bqm/common.pyx',
          'dimod/cyutilities.pyx',
          'dimod/cyvariables.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',

@@ -15,8 +15,6 @@
 # version is used by serialization below so we need it before everything
 __version__ = '0.11.0.dev0'
 
-from dimod.bqm import *
-
 from dimod.constrained import *
 import dimod.constrained
 
