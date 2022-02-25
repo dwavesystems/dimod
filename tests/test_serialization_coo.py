@@ -188,3 +188,16 @@ class TestCOO(unittest.TestCase):
         s = coo.dumps(bqm, vartype_header=True)
         with self.assertRaises(ValueError):
             coo.loads(s, dimod.BinaryQuadraticModel, dimod.BINARY)
+
+    def test_deprecation_load(self):
+        with self.assertWarns(DeprecationWarning):
+            filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'coo_qubo.qubo')
+
+            with open(filepath, 'r') as fp:
+                bqm = coo.load(fp, cls=dimod.BinaryQuadraticModel, vartype=dimod.Vartype.SPIN)
+
+    def test_deprecation_loads(self):
+        with self.assertWarns(DeprecationWarning):
+            contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+
+            bqm = coo.loads(contents, cls=dimod.BinaryQuadraticModel, vartype=dimod.Vartype.BINARY)
