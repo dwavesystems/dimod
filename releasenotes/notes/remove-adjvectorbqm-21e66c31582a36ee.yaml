@@ -9,4 +9,5 @@ upgrade:
     The ``dimod.bqm`` namespace has been removed.
   - |
     The ``dimod.core.bqm`` namespace has been removed.
-  - ``dimod::AdjVectorBQM`` has been removed from the C++ code.
+  - |
+    ``dimod::AdjVectorBQM`` has been removed from the C++ code.
