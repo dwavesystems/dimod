@@ -45,10 +45,11 @@ class SimulatedAnnealingSampler(Sampler):
     """
     properties = None
 
-    parameters = None
-    """dict: Keyword arguments accepted by the sampling methods.
+    parameters: dict = None
+    """Keyword arguments accepted by the sampling methods.
 
-    Contents are exactly `{'beta_range': [], num_reads': [], 'num_sweeps': []}`
+    Contents are a dict with the following keys:
+    `{'beta_range': [], num_reads': [], 'num_sweeps': []}`.
     """
 
     def __init__(self):
@@ -82,6 +83,8 @@ class SimulatedAnnealingSampler(Sampler):
         Note:
             This is a reference implementation, not optimized for speed
             and therefore not an appropriate sampler for benchmarking.
+            For a more performant implementation of simulated annealing,
+            use the :obj:`neal.sampler.SimulatedAnnealingSampler` sampler. 
 
         """
 
