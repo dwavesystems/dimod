@@ -148,6 +148,10 @@ def loads(s: str, cls: None = None,
             * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
             * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
 
+    .. deprecated:: 0.10.15
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
     """
 
     if cls is not None:
@@ -178,6 +182,12 @@ def load(fp: typing.TextIO, cls: None = None,
         >>> from dimod.serialization import coo
         >>> with open('my_bqm.txt', 'r') as f:          # doctest: +SKIP
         ...     my_bqm = coo.load(f, vartype=dimod.Vartype.SPIN)
+    
+    .. deprecated:: 0.10.15
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
+
     """
 
     if cls is not None:

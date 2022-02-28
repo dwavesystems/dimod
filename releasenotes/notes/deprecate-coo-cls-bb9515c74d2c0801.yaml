@@ -1,5 +1,5 @@
 ---
 deprecations:
   - |
-    Deprecate ``cls`` parameter in ``dimod.serialization.load()``
-    and ``dimod.serialization.loads()``.
+    Deprecate ``cls`` parameter in ``dimod.serialization.coo.load()``
+    and ``dimod.serialization.coo.loads()``.
