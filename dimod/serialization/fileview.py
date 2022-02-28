@@ -268,9 +268,11 @@ def load(fp, cls=None):
         file_like.seek(pos)
 
         try:
-            return _loaders[prefix](file_like)
+            loader = _loaders[prefix]
         except KeyError:
             pass
+        else:
+            return loader(file_like)
 
     raise ValueError("cannot load the given file-like")
 

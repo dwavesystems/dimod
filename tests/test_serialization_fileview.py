@@ -24,7 +24,7 @@ from parameterized import parameterized, parameterized_class
 import dimod
 
 from dimod.binary import BinaryQuadraticModel, DictBQM, Float32BQM, Float64BQM
-from dimod.serialization.fileview import FileView, load
+from dimod.serialization.fileview import FileView, load, register
 
 SUPPORTED_VERSIONS = [(1, 0), (2, 0)]
 
@@ -208,3 +208,23 @@ class TestLoad(unittest.TestCase):
         self.assertEqual(dqm.num_cases(), new.num_cases())
         self.assertEqual(dqm.get_quadratic_case('a', 0, 'b', 5),
                          new.get_quadratic_case('a', 0, 'b', 5))
+
+    def test_exception_propagation(self):
+        # register a fake one
+
+        def keyerror(fp):
+            raise KeyError("kaboom")
+
+        def valueerror(fp):
+            raise ValueError("kaboom2")
+
+        register(b'KEYERROR_TEST', keyerror)
+        register(b'VALUERROR_TEST', valueerror)
+
+        with self.assertRaises(KeyError) as err:
+            load(b'KEYERROR_TEST SOME DATA')
+        self.assertEqual(err.exception.args[0], 'kaboom')
+
+        with self.assertRaises(ValueError) as err:
+            load(b'VALUERROR_TEST SOME DATA')
+        self.assertEqual(err.exception.args[0], 'kaboom2')

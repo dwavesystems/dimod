@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    ``dimod.serialization.fileview.load()`` now correctly propagates ``KeyError``
+    from the loading function.
