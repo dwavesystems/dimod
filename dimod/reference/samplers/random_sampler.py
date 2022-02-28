@@ -19,9 +19,7 @@ A sampler that gives random samples.
 from dimod.core.sampler import Sampler
 from dimod.reference.samplers.identity_sampler import IdentitySampler
 
-
 __all__ = ['RandomSampler']
-
 
 class RandomSampler(Sampler):
     """A sampler that gives random samples for testing.
@@ -37,10 +35,10 @@ class RandomSampler(Sampler):
     """
     properties = None
 
-    parameters = None
-    """dict: Keyword arguments accepted by the sampling methods.
+    parameters: dict = None
+    """Keyword arguments accepted by the sampling methods.
 
-    Contents are exactly `{'num_reads': []}`
+    Contents are a dict with the following keys: ``{'num_reads': []}``.
     """
 
     def __init__(self):
@@ -48,7 +46,7 @@ class RandomSampler(Sampler):
         self.properties = {}
 
     def sample(self, bqm, num_reads=10, seed=None, **kwargs):
-        """Give random samples for a binary quadratic model.
+        """Return random samples for a binary quadratic model.
 
         Variable assignments are chosen by coin flip.
 
@@ -72,5 +70,5 @@ class RandomSampler(Sampler):
         # in order to save on future changes that decouple them, we won't
         # subclass
         return IdentitySampler().sample(bqm, num_reads=num_reads, seed=seed,
-                                        initial_states_generator='random', 
+                                        initial_states_generator='random',
                                         **kwargs)

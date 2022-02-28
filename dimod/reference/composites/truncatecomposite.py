@@ -13,7 +13,8 @@
 #    limitations under the License.
 
 """
-A composite that truncates the response based on options provided by the user.
+A composite that truncates the returned :obj:`dimod.SampleSet` based on options
+specified by the user.
 """
 
 import numpy as np
@@ -24,17 +25,17 @@ __all__ = 'TruncateComposite',
 
 
 class TruncateComposite(ComposedSampler):
-    """Composite to truncate the returned samples
+    """Composite to truncate the returned sample set.
 
     Inherits from :class:`dimod.ComposedSampler`.
 
-    Post-processing is expensive and sometimes one might want to only
-    treat the lowest energy samples. This composite layer allows one to
-    pre-select the samples within a multi-composite pipeline
+    Post-processing can be expensive and sometimes you might want to only
+    handle the lowest-energy samples. This composite layer allows you to
+    pre-select the samples within a multi-composite pipeline.
 
     Args:
         child_sampler (:obj:`dimod.Sampler`):
-            A dimod sampler
+            A dimod sampler.
 
         n (int):
             Maximum number of rows in the returned sample set.
@@ -45,11 +46,19 @@ class TruncateComposite(ComposedSampler):
             underlying array.
 
         aggregate (bool, optional, default=False):
-            If True, aggregate the samples before truncating.
+            If True, aggregates the samples before truncating and sets the value
+            of the ``num_occurrences`` field in the returned :class:`~dimod.SampleSet`
+            to the number of accumulated samples for each occurrence.
 
-    Note:
-        If aggregate is True :attr:`.SampleSet.record.num_occurrences` are
-        accumulated but no other fields are.
+    Examples:
+        >>> sampler = dimod.TruncateComposite(dimod.RandomSampler(), n=2, aggregate=True)
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({"a": 1, "b": 2}, {("a", "b"): -1})
+        >>> sampleset = sampler.sample(bqm, num_reads=100)
+        >>> print(sampleset)                                 # doctest:+SKIP
+           a  b energy num_oc.
+        0 -1 -1   -4.0      16
+        1 +1 -1    0.0      22
+        ['SPIN', 2 rows, 38 samples, 2 variables]
 
     """
 
@@ -75,7 +84,7 @@ class TruncateComposite(ComposedSampler):
         return {'child_properties': self.child.properties.copy()}
 
     def sample(self, bqm, **kwargs):
-        """Sample from the problem provided by BQM and truncate output.
+        """Sample from the binary quadratic model and truncate returned sample set.
 
         Args:
             bqm (:obj:`dimod.BinaryQuadraticModel`):

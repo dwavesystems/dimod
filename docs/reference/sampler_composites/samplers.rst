@@ -10,10 +10,10 @@ The `dimod` package includes several example samplers.
     :local:
     :depth: 1
 
-Other Ocean packages provide production samplers; for example, the 
-:std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides 
+Other Ocean packages provide production samplers; for example, the
+:std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides
 :std:doc:`samplers for D-Wave systems <oceandocs:docs_system/reference/samplers>`
-and :std:doc:`dwave-neal <oceandocs:docs_neal/sdk_index>` provides 
+and :std:doc:`dwave-neal <oceandocs:docs_neal/sdk_index>` provides
 a simulated-annealing sampler.
 
 .. automodule:: dimod.reference.samplers
@@ -21,16 +21,6 @@ a simulated-annealing sampler.
 
 Exact Solver
 ------------
-
-A simple exact solver for testing and debugging code using your local CPU.
-
-Note:
-    This sampler is designed for use in testing. Because it calculates the
-    energy for every possible sample, it is very slow.
-
-
-Class
-~~~~~
 
 .. autoclass:: ExactSolver
 
@@ -44,41 +34,8 @@ Methods
    ExactSolver.sample_ising
    ExactSolver.sample_qubo
 
-Exact DQM Solver
-----------------
-
-A simple DQM exact solver for testing and debugging code using your local CPU.
-
-Note:
-    This sampler is designed for use in testing. Because it calculates the
-    energy for every possible sample, it is very slow.
-
-
-Class
-~~~~~
-
-.. autoclass:: ExactDQMSolver
-
-Methods
-~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ExactDQMSolver.sample_dqm
-
 Exact CQM Solver
 ----------------
-
-A simple CQM exact solver for testing and debugging code using your local CPU.
-
-Note:
-    This sampler is designed for use in testing. Because it calculates the
-    energy and constraint violations for every possible sample, it is very slow.
-
-
-Class
-~~~~~
 
 .. autoclass:: ExactCQMSolver
 
@@ -90,13 +47,21 @@ Methods
 
    ExactCQMSolver.sample_cqm
 
-Identity Sampler
+Exact DQM Solver
 ----------------
 
-.. automodule:: dimod.reference.samplers.identity_sampler
+.. autoclass:: ExactDQMSolver
 
-Class
-~~~~~
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ExactDQMSolver.sample_dqm
+
+Identity Sampler
+----------------
 
 .. autoclass:: IdentitySampler
 
@@ -121,11 +86,6 @@ Methods
 Null Sampler
 ------------
 
-.. automodule:: dimod.reference.samplers.null_sampler
-
-Class
-~~~~~
-
 .. autoclass:: NullSampler
 
 Properties
@@ -148,11 +108,6 @@ Methods
 
 Random Sampler
 --------------
-
-.. automodule:: dimod.reference.samplers.random_sampler
-
-Class
-~~~~~
 
 .. autoclass:: RandomSampler
 
@@ -177,10 +132,8 @@ Methods
 Simulated Annealing Sampler
 ---------------------------
 
-.. automodule:: dimod.reference.samplers.simulated_annealing
-
-Class
-~~~~~
+.. tip:: :obj:`neal.sampler.SimulatedAnnealingSampler` is a more performant
+  implementation of simulated annealing you can use for solving problems.
 
 .. autoclass:: SimulatedAnnealingSampler
 
