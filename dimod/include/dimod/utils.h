@@ -24,11 +24,6 @@
 namespace dimod {
 namespace utils {
 
-    template <class V, class B>
-    bool comp_v(std::pair<V, B> ub, V v) {
-        return ub.first < v;
-    }
-
     // zip_sort is a modification of the code found here :
     // https://www.geeksforgeeks.org/iterative-quick-sort/
 
