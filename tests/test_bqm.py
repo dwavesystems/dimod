@@ -232,7 +232,7 @@ class TestBinary(unittest.TestCase):
         self.assertIsInstance(binary_array, np.ndarray)
         for element in binary_array:
             self.assertIsInstance(element, BinaryQuadraticModel)
-    
+
     def test_binary_array_label_init(self):
         labels = 'ijk'
         binary_array = dimod.BinaryArray(labels=labels)
@@ -758,12 +758,11 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, BQM.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
 
-    @parameterized.expand(BQM_CLSs.items())
-    def test_from_coo_string(self, name, BQM):
+    def test_from_coo_string(self):
         contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
         with self.assertWarns(DeprecationWarning):
-            bqm = BQM.from_coo(contents, dimod.SPIN)
-        self.assertEqual(bqm, BQM.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
+            bqm = BinaryQuadraticModel.from_coo(contents, dimod.SPIN)
+        self.assertEqual(bqm, BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
 
     @parameterized.expand(BQM_CLSs.items())
     def test_coo_functional_file_empty_BINARY(self, name, BQM):
@@ -803,9 +802,8 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQM_CLSs.items())
-    def test_coo_functional_file_BINARY(self, name, BQM):
-        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+    def test_coo_functional_file_BINARY(self):
+        bqm = BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
 
         tmpdir = tempfile.mkdtemp()
         filename = path.join(tmpdir, 'test.qubo')
@@ -816,15 +814,14 @@ class TestCoo(unittest.TestCase):
 
         with open(filename, 'r') as file:
             with self.assertWarns(DeprecationWarning):
-                new_bqm = BQM.from_coo(file, dimod.BINARY)
+                new_bqm = BinaryQuadraticModel.from_coo(file, dimod.BINARY)
 
         shutil.rmtree(tmpdir)
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQM_CLSs.items())
-    def test_coo_functional_file_SPIN(self, name, BQM):
-        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+    def test_coo_functional_file_SPIN(self):
+        bqm = BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
         tmpdir = tempfile.mkdtemp()
         filename = path.join(tmpdir, 'test.qubo')
@@ -835,7 +832,7 @@ class TestCoo(unittest.TestCase):
 
         with open(filename, 'r') as file:
             with self.assertWarns(DeprecationWarning):
-                new_bqm = BQM.from_coo(file, dimod.SPIN)
+                new_bqm = BinaryQuadraticModel.from_coo(file, dimod.SPIN)
 
         shutil.rmtree(tmpdir)
 
@@ -863,14 +860,13 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQM_CLSs.items())
-    def test_coo_functional_string_BINARY(self, name, BQM):
-        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
+    def test_coo_functional_string_BINARY(self):
+        bqm = BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
 
         with self.assertWarns(DeprecationWarning):
             s = bqm.to_coo()
         with self.assertWarns(DeprecationWarning):
-            new_bqm = BQM.from_coo(s, dimod.BINARY)
+            new_bqm = BinaryQuadraticModel.from_coo(s, dimod.BINARY)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -885,14 +881,13 @@ class TestCoo(unittest.TestCase):
 
         self.assertEqual(bqm, new_bqm)
 
-    @parameterized.expand(BQM_CLSs.items())
-    def test_coo_functional_string_SPIN(self, name, BQM):
-        bqm = BQM({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
+    def test_coo_functional_string_SPIN(self):
+        bqm = BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
         with self.assertWarns(DeprecationWarning):
             s = bqm.to_coo()
         with self.assertWarns(DeprecationWarning):
-            new_bqm = BQM.from_coo(s, dimod.SPIN)
+            new_bqm = BinaryQuadraticModel.from_coo(s, dimod.SPIN)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -2376,7 +2371,7 @@ class TestSpin(unittest.TestCase):
         self.assertIsInstance(spin_array, np.ndarray)
         for element in spin_array:
             self.assertIsInstance(element, BinaryQuadraticModel)
-    
+
     def test_spin_array_label_init(self):
         labels = 'ijk'
         spin_array = dimod.SpinArray(labels=labels)
