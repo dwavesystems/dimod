@@ -54,13 +54,13 @@ class TestCOO(unittest.TestCase):
         filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'coo_qubo.qubo')
 
         with open(filepath, 'r') as fp:
-            bqm = coo.load(fp, dimod.BinaryQuadraticModel, dimod.BINARY)
+            bqm = coo.load(fp, vartype=dimod.BINARY)
 
         self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_qubo({(0, 0): -1, (1, 1): -1, (2, 2): -1, (3, 3): -1}))
 
     def test_loads(self):
         contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
-        bqm = coo.loads(contents, dimod.BinaryQuadraticModel, dimod.SPIN)
+        bqm = coo.loads(contents, vartype=dimod.SPIN)
         self.assertEqual(bqm, dimod.BinaryQuadraticModel.from_ising({0: 1.}, {(0, 1): 2, (2, 3): .4}))
 
     def test_functional_file_empty_BINARY(self):
@@ -74,7 +74,7 @@ class TestCOO(unittest.TestCase):
             coo.dump(bqm, fp=file)
 
         with open(filename, 'r') as file:
-            new_bqm = coo.load(file, dimod.BinaryQuadraticModel, dimod.BINARY)
+            new_bqm = coo.load(file, vartype=dimod.BINARY)
 
         shutil.rmtree(tmpdir)
 
@@ -91,7 +91,7 @@ class TestCOO(unittest.TestCase):
             coo.dump(bqm, fp=file)
 
         with open(filename, 'r') as file:
-            new_bqm = coo.load(file, dimod.BinaryQuadraticModel, dimod.SPIN)
+            new_bqm = coo.load(file, vartype=dimod.SPIN)
 
         shutil.rmtree(tmpdir)
 
@@ -108,7 +108,7 @@ class TestCOO(unittest.TestCase):
             coo.dump(bqm, fp=file)
 
         with open(filename, 'r') as file:
-            new_bqm = coo.load(file, dimod.BinaryQuadraticModel, dimod.BINARY)
+            new_bqm = coo.load(file, vartype=dimod.BINARY)
 
         shutil.rmtree(tmpdir)
 
@@ -125,7 +125,7 @@ class TestCOO(unittest.TestCase):
             coo.dump(bqm, fp=file)
 
         with open(filename, 'r') as file:
-            new_bqm = coo.load(file, dimod.BinaryQuadraticModel, dimod.SPIN)
+            new_bqm = coo.load(file, vartype=dimod.SPIN)
 
         shutil.rmtree(tmpdir)
 
@@ -136,7 +136,7 @@ class TestCOO(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
         s = coo.dumps(bqm)
-        new_bqm = coo.loads(s, dimod.BinaryQuadraticModel, dimod.BINARY)
+        new_bqm = coo.loads(s, vartype=dimod.BINARY)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -145,7 +145,7 @@ class TestCOO(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel.empty(dimod.SPIN)
 
         s = coo.dumps(bqm)
-        new_bqm = coo.loads(s, dimod.BinaryQuadraticModel, dimod.SPIN)
+        new_bqm = coo.loads(s, vartype=dimod.SPIN)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -154,7 +154,7 @@ class TestCOO(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.BINARY)
 
         s = coo.dumps(bqm)
-        new_bqm = coo.loads(s, dimod.BinaryQuadraticModel, dimod.BINARY)
+        new_bqm = coo.loads(s, vartype=dimod.BINARY)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -163,7 +163,7 @@ class TestCOO(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
         s = coo.dumps(bqm)
-        new_bqm = coo.loads(s, dimod.BinaryQuadraticModel, dimod.SPIN)
+        new_bqm = coo.loads(s, vartype=dimod.SPIN)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -171,7 +171,7 @@ class TestCOO(unittest.TestCase):
         bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
         s = coo.dumps(bqm, vartype_header=True)
-        new_bqm = coo.loads(s, dimod.BinaryQuadraticModel)
+        new_bqm = coo.loads(s)
 
         self.assertEqual(bqm, new_bqm)
 
@@ -180,11 +180,24 @@ class TestCOO(unittest.TestCase):
 
         s = coo.dumps(bqm)
         with self.assertRaises(ValueError):
-            coo.loads(s, dimod.BinaryQuadraticModel)
+            coo.loads(s)
 
     def test_conflicting_vartype(self):
         bqm = dimod.BinaryQuadraticModel({0: 1.}, {(0, 1): 2, (2, 3): .4}, 0.0, dimod.SPIN)
 
         s = coo.dumps(bqm, vartype_header=True)
         with self.assertRaises(ValueError):
-            coo.loads(s, dimod.BinaryQuadraticModel, dimod.BINARY)
+            coo.loads(s, vartype=dimod.BINARY)
+
+    def test_deprecation_load(self):
+        with self.assertWarns(DeprecationWarning):
+            filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'coo_qubo.qubo')
+
+            with open(filepath, 'r') as fp:
+                bqm = coo.load(fp, cls=dimod.BinaryQuadraticModel, vartype=dimod.Vartype.SPIN)
+
+    def test_deprecation_loads(self):
+        with self.assertWarns(DeprecationWarning):
+            contents = "0 0 1.000000\n0 1 2.000000\n2 3 0.400000"
+
+            bqm = coo.loads(contents, cls=dimod.BinaryQuadraticModel, vartype=dimod.Vartype.BINARY)

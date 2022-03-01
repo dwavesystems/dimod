@@ -13,14 +13,12 @@
 #    limitations under the License.
 
 """
-A simple text encoding of dimod BQMs.
+A simple text encoding of dimod binary quadratic models (BQMs).
 
 The COOrdinate_ list is a sparse matrix representation which can be used to
-store binary quadratic models. This format is best used when readability is
-important.
+store BQMs. This format is best used when readability is important.
 
-Note that this format only works for BQMs that are labelled with positive
-integers.
+.. note:: This format works only for BQMs labelled with positive integers.
 
 .. _COOrdinate: https://en.wikipedia.org/wiki/Sparse_matrix#Coordinate_list_(COO)
 
@@ -37,7 +35,7 @@ Examples:
     0 1 1.000000
     1 2 -4.500000
 
-    We can also include the vartype as a header.
+    Include the :class:`~dimod.Vartype` as a header.
 
     >>> Q = {(0, 0): -1, (0, 1): 1, (1, 2): -4.5}
     >>> bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
@@ -47,7 +45,8 @@ Examples:
     0 1 1.000000
     1 2 -4.500000
 
-    Loading from a COO string. Note that you must specify a vartype.
+    Load from a COO string. You must specify a :class:`~dimod.Vartype` if absent
+    from the input string.
 
     >>> coo_string = '''
     ... 0 0 -1
@@ -57,7 +56,7 @@ Examples:
     >>> coo.loads(coo_string, vartype=dimod.BINARY)
     BinaryQuadraticModel({0: -1.0, 1: 0.0, 2: 0.0}, {(1, 0): 1.0, (2, 1): -4.5}, 0.0, 'BINARY')
 
-    Or provide the vartype as a header.
+    You can provide the :class:`~dimod.Vartype` as a header in the string.
 
     >>> coo_string = '''
     ... # vartype=BINARY
@@ -71,10 +70,12 @@ Examples:
 """
 
 import re
+import typing
+import warnings
 
 from numbers import Integral
 
-from dimod import Vartype
+from dimod.vartypes import Vartype
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 
 _LINE_REGEX = r'^\s*(\d+)\s+(\d+)\s+([+-]?\d*(?:\.\d+)?)\s*$'
@@ -95,24 +96,105 @@ The header should be in the first line and look like
 """
 
 
-def dumps(bqm, vartype_header=False):
-    """Dump a binary quadratic model to a string in COOrdinate format."""
+def dumps(bqm: BinaryQuadraticModel, vartype_header: bool = False) -> str:
+    """Dump a binary quadratic model to a string in COOrdinate format.
+
+    Args:
+
+        bqm: Binary quadratic model to save as a string in COO format.
+
+        vartype_header: If True, prefixes the :class:`~dimod.Vartype` to the output
+            as a comment line (e.g., ``# vartype=SPIN``).
+
+    """
     return '\n'.join(_iter_triplets(bqm, vartype_header))
 
 
-def dump(bqm, fp, vartype_header=False):
-    """Dump a binary quadratic model to a file in COOrdinate format."""
+def dump(bqm: BinaryQuadraticModel, fp: typing.TextIO, vartype_header: bool = False):
+    """Dump a binary quadratic model to a file in COOrdinate format.
+
+    Args:
+
+        bqm: Binary quadratic model to save to a file in COO format.
+
+        fp: File pointer to a file opened in write mode.
+
+        vartype_header: Prefix the :class:`~dimod.Vartype` to the output.
+
+    Examples:
+        >>> from dimod.serialization import coo
+        >>> bqm = dimod.BinaryQuadraticModel.from_ising({0: 1, 1: 2}, {(0, 1): -1})
+        >>> with open('my_saved_bqm.txt', 'w') as f:           # doctest: +SKIP
+        ...    coo.dump(bqm, f, vartype_header=True)
+
+    """
     for triplet in _iter_triplets(bqm, vartype_header):
         fp.write('%s\n' % triplet)
 
 
-def loads(s, cls=BinaryQuadraticModel, vartype=None):
-    """Load a COOrdinate formatted binary quadratic model from a string."""
-    return load(s.split('\n'), cls=cls, vartype=vartype)
+def loads(s: str, cls: None = None,
+          vartype: typing.Optional[Vartype] = None) -> BinaryQuadraticModel:
+    """Load a binary quadratic model from a COOrdinate-formatted string.
+
+    Args:
+
+        s: String containing a COO-formatted binary quadratic model.
+
+        cls: Deprecated. Does nothing.
+
+        vartype: The valid variable types for binary quadratic models, is
+          one of:
+
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    .. deprecated:: 0.10.15
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
+    """
+
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated since 0.10.15 and will "
+                      "be removed in dimod 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
+    return load(s.split('\n'), vartype=vartype)
 
 
-def load(fp, cls=BinaryQuadraticModel, vartype=None):
-    """Load a COOrdinate formatted binary quadratic model from a file."""
+def load(fp: typing.TextIO, cls: None = None,
+         vartype:  typing.Optional[Vartype] = None) -> BinaryQuadraticModel:
+    """Load a binary quadratic model from a COOrdinate-formatted file.
+
+    Args:
+
+        fp: File pointer to a file opened in read mode.
+
+        cls: Deprecated. Does nothing.
+
+        vartype: The valid variable types for binary quadratic models, is
+          one of:
+
+            * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, +1}``
+            * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+
+    Examples:
+        >>> from dimod.serialization import coo
+        >>> with open('my_bqm.txt', 'r') as f:          # doctest: +SKIP
+        ...     my_bqm = coo.load(f, vartype=dimod.Vartype.SPIN)
+    
+    .. deprecated:: 0.10.15
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
+
+    """
+
+    if cls is not None:
+        warnings.warn("cls keyword argument is deprecated since 0.10.15 and will "
+                      "be removed in dimod 0.11. Does nothing.", DeprecationWarning,
+                      stacklevel=2)
+
     pattern = re.compile(_LINE_REGEX)
     vartype_pattern = re.compile(_VARTYPE_HEADER_REGEX)
 
@@ -135,7 +217,7 @@ def load(fp, cls=BinaryQuadraticModel, vartype=None):
     if vartype is None:
         raise ValueError("vartype must be provided either as a header or as an argument")
 
-    bqm = cls.empty(vartype)
+    bqm = BinaryQuadraticModel.empty(vartype)
 
     for u, v, bias in triplets:
         if u == v:
