@@ -626,11 +626,16 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def shapeable(cls) -> bool:
         """Returns True if the binary quadratic model is shapeable.
 
-        This method is deprecated. All BQMs are shapeable.
+        .. deprecated:: 0.10.0
+
+            All BQMs are shapeable. This method will be removed in dimod
+            0.12.0.
+
         """
         name = cls.__name__
         warnings.warn(
-            f"{name}.shapeable() is deprecated. All BQMs are shapeable.",
+            f"{name}.shapeable() is deprecated since dimod 0.10.0 and will be "
+            "removed in 0.12.0. All BQMs are shapeable.",
             DeprecationWarning,
             stacklevel=2)
         return True
@@ -847,10 +852,18 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     """Alias for :meth:`add_linear_from`."""
 
     def add_offset(self, bias):
-        """Add offset to to the model."""
+        """Add offset to to the model.
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.add_offset(bias)`` will be removed in dimod 0.12.0.
+            Use ``bqm.offset += bias`` instead.
+
+        """
         name = type(self).__name__
         warnings.warn(
-            f"{name}.add_offset(b) is deprecated. Please use bqm.offset += b.",
+            f"{name}.add_offset(bias) is deprecated since dimod 0.10.0 and will be "
+            "removed in 0.12.0. Please use bqm.offset += bias.",
             DeprecationWarning,
             stacklevel=2)
         self.offset += bias
@@ -1175,11 +1188,17 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             :func:`~dimod.serialization.coo.load` or
             :func:`~dimod.serialization.coo.loads` instead.
 
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.from_coo()`` will be removed in dimod
+            0.12.0. Use :func:`~dimod.serialization.coo.load()` or
+            :func:`~dimod.serialization.coo.loads()` instead.
+
         """
         warnings.warn('BinaryQuadraticModel.from_coo() is deprecated since '
-                      'dimod 0.10.0, '
-                      'use dimod.serialization.coo.load(bqm) or '
-                      'dimod.serialization.coo.loads(bqm, fp) instead.',
+                      'dimod 0.10.0 and will be removed in 0.12.0. '
+                      'Use dimod.serialization.coo.load() or '
+                      'dimod.serialization.coo.loads() instead.',
                       DeprecationWarning, stacklevel=2)
 
         import dimod.serialization.coo as coo
@@ -1327,11 +1346,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Returns:
             Binary quadratic model.
 
-        .. note:: This method is deprecated. Use :func:`.from_networkx_graph`.
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.from_networkx_graph()`` will be removed
+            in dimod 0.12.0. Use :func:`~dimod.converters.from_networkx_graph()`
+            instead.
 
         """
         warnings.warn('BinaryQuadraticModel.from_networkx_graph() is deprecated since '
-                      'dimod 0.10.0. '
+                      'dimod 0.10.0 and will be removed in 0.12.0. '
                       'Use dimod.from_networkx_graph(bqm) instead.',
                       DeprecationWarning, stacklevel=2)
         from dimod.converters import from_networkx_graph  # avoid circular import
@@ -1341,8 +1364,17 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     @classmethod
     def from_numpy_matrix(cls, mat, variable_order=None, offset=0,
                           interactions=None):
+        """Deprecated.
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.from_numpy_matrix()`` will be removed
+            in dimod 0.12.0. Use ``BinaryQuadraticModel(mat, 'BINARY')``
+            instead.
+
+        """
         warnings.warn('BQM.from_numpy_matrix(M) is deprecated since dimod '
-                      '0.10.0. Use BQM(M, "BINARY") instead.',
+                      '0.10.0 and will be removed in 0.12.0. Use BQM(M, "BINARY") instead.',
                       DeprecationWarning, stacklevel=2)
         bqm = cls(mat, Vartype.BINARY)
         bqm.offset = offset
@@ -1484,7 +1516,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return bqm
 
     def has_variable(self, v):
-        warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0. '
+        """Deprecated.
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.has_variable()`` will be removed in dimod 0.12.0.
+            Use ``v in bqm.variables`` instead.
+
+        """
+        warnings.warn('bqm.has_variable(v) is deprecated since dimod 0.10.0 and will be removed in 0.12.0. '
                       'Use v in bqm.variables instead.',
                       DeprecationWarning, stacklevel=2)
         return v in self.data.variables
@@ -1578,19 +1618,35 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self.data.iter_neighborhood
 
     def iter_neighbors(self, u):
-        warnings.warn('bqm.iter_neighbors(v) is deprecated since dimod 0.10.0.'
-                      ' Use (v for v, _ in bqm.iter_neighborhood(v)) instead.',
+        """Deprecated
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.iter_neighbors(u)`` will be removed in dimod 0.12.0.
+            Use ``(v for v, _ in bqm.iter_neighborhood(u))`` instead.
+
+        """
+        warnings.warn('bqm.iter_neighbors(u) is deprecated since dimod 0.10.0 '
+                      'and will be removed in 0.12.0.'
+                      ' Use (v for v, _ in bqm.iter_neighborhood(u)) instead.',
                       DeprecationWarning, stacklevel=2)
         for v, _ in self.iter_neighborhood(u):
             yield v
 
     def iter_quadratic(self, variables=None) -> Iterator[Tuple[Variable, Variable, Bias]]:
-        """Iterate over the quadratic biases"""
+        """Iterate over the quadratic biases.
+
+        .. deprecated:: 0.10.0
+
+            Argument ``variables`` will be removed in dimod 0.12.0.
+            Use ``bqm.iter_neighborhood(v)`` instead.
+
+        """
         if variables is None:
             yield from self.data.iter_quadratic()
         else:
             warnings.warn('passing variables to bqm.iter_quadratic() is '
-                          'deprecated since dimod 0.10.0. Use '
+                          'deprecated since dimod 0.10.0 and will be removed in 0.12.0. Use '
                           'bqm.iter_neighborhood(v) instead.',
                           DeprecationWarning, stacklevel=2)
 
@@ -1616,11 +1672,14 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Yields:
             hashable: A variable in the binary quadratic model.
 
-        Note:
-            This method is deprecated, use `iter(bqm.variables)` instead.
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.iter_variables()`` will be removed in dimod 0.12.0.
+            Use ``iter(bqm.variables)`` instead.
 
         """
-        warnings.warn('bqm.iter_variables() is deprecated since dimod 0.10.0. '
+        warnings.warn('bqm.iter_variables() is deprecated since dimod 0.10.0 '
+                      'and will be removed in 0.12.0. '
                       'Use iter(bqm.variables) instead.', stacklevel=2)
         return iter(self.variables)
 
@@ -2208,18 +2267,30 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             :class:`networkx.Graph`: A NetworkX graph with biases stored as
             node/edge attributes.
 
-        .. note:: This method is deprecated. Use :func:`.to_networkx_graph`.
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.to_networkx_graph()`` will be removed in dimod 0.12.0.
+            Use :func:`dimod.converters.to_networkx_graph()` instead.
 
         """
         warnings.warn('BinaryQuadraticModel.to_networkx_graph() is deprecated since '
-                      'dimod 0.10.0. '
-                      'Use bqm.to_networkx_graph() instead.',
+                      'dimod 0.10.0 and will be removed in 0.12.0. '
+                      'Use dimod.to_networkx_graph() instead.',
                       DeprecationWarning, stacklevel=2)
         from dimod.converters import to_networkx_graph  # avoid circular import
         return to_networkx_graph(self, node_attribute_name, edge_attribute_name)
 
     def to_numpy_matrix(self, variable_order=None):
-        warnings.warn('bqm.to_numpy_matrix() is deprecated since dimod 0.10.0',
+        """Deprecated
+
+        .. deprecated:: 0.10.0
+
+            ``BinaryQuadraticModel.to_numpy_matrix()`` will be removed in dimod 0.12.0.
+
+        """
+        warnings.warn('bqm.to_numpy_matrix() is deprecated since dimod 0.10.0 '
+                      'and will be removed in 0.12.0',
                       DeprecationWarning, stacklevel=2)
 
         if variable_order is None:
@@ -2297,16 +2368,21 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
             ``labels`` are the variable labels used.
 
+        .. deprecated:: 0.10.0
+
+            The ``dtype`` and ``index_dtype`` keyword arguments will be removed
+            in 0.12.0. They currently do nothing.
+
         """
         if dtype is not None:
             warnings.warn(
                 "The 'dtype' keyword argument is deprecated since dimod 0.10.0"
-                " and does nothing",
+                " and will be removed in 0.12.0. Does nothing",
                 DeprecationWarning, stacklevel=2)
         if index_dtype is not None:
             warnings.warn(
                 "The 'index_dtype' keyword argument is deprecated since dimod "
-                "0.10.0 and does nothing",
+                "0.10.0 and will be removed in 0.12.0. Does nothing",
                 DeprecationWarning, stacklevel=2)
 
         try:
@@ -2432,10 +2508,16 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
             :func:`json.dumps`, :func:`json.dump` JSON encoding functions
 
+        .. deprecated:: 0.10.0
+
+            The ``bias_dtype`` keyword argument will be removed in 0.12.0.
+            Does nothing.
+
         """
         if bias_dtype is not None:
             warnings.warn(
-                "The 'bias_dtype' keyword argument is deprecated  and does nothing",
+                "The 'bias_dtype' keyword argument is deprecated since dimod "
+                "0.10.0 and will be removed in 0.12.0. Does nothing",
                 DeprecationWarning, stacklevel=2)
 
         from dimod import __version__

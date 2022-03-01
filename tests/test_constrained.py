@@ -609,34 +609,6 @@ class TestCQMtoBQM(unittest.TestCase):
             self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
 
 
-class TestDeprecated(unittest.TestCase):
-    def test_typedvariables(self):
-        cqm = CQM()
-
-        x = Binary('x')
-        s = Spin('s')
-        i = Integer('i')
-
-        cqm.set_objective(x + i)
-        cqm.add_constraint(i + s <= 1)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(cqm.variables.lower_bounds, {'x': 0.0, 'i': 0.0, 's': -1.0})
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(cqm.variables.upper_bounds, {'x': 1.0, 'i': 9007199254740991.0, 's': 1})
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(len(cqm.variables.lower_bounds), 3)
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(len(cqm.variables.upper_bounds), 3)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(list(cqm.variables.vartypes),
-                             [dimod.BINARY, dimod.INTEGER, dimod.SPIN])
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertIs(cqm.variables.vartype('x'), dimod.BINARY)
-
-
 class TestFromDQM(unittest.TestCase):
     def test_case_label(self):
         dqm = dimod.CaseLabelDQM()

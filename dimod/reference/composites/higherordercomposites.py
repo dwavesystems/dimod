@@ -88,15 +88,6 @@ class HigherOrderComposite(ComposedPolySampler):
     def properties(self):
         return {'child_properties': self.child.properties.copy()}
 
-    def sample_ising(self, h, J, offset=0, *args, **kwargs):
-        # need to handle offset input for backwards compatibility
-        if offset:
-            J[()] = offset
-        warnings.warn("HigherOrderComposite.sample_ising is deprecated and "
-                      "will be removed in dimod 0.10.0",
-                      DeprecationWarning, stacklevel=2)
-        return ComposedPolySampler.sample_ising(self, h, J, *args, **kwargs)
-
     def sample_poly(self, poly, penalty_strength=1.0,
                     keep_penalty_variables=False,
                     discard_unsatisfied=False, **parameters):

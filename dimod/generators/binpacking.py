@@ -12,8 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import warnings
-
 from typing import Tuple
 
 import numpy as np
@@ -21,7 +19,7 @@ import numpy as np
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 
-__all__ = ['bin_packing', 'random_bin_packing']
+__all__ = ['random_bin_packing']
 
 
 def random_bin_packing(num_items: int,
@@ -78,15 +76,3 @@ def random_bin_packing(num_items: int,
             sense="<=", label='capacity_bin_{}'.format(j))
 
     return model
-
-
-# We want to use bin_packing in the future for problems with specified weights/
-# capacities, so we'll deprecate it and use the more explicit random_bin_packing.
-# Once the deprecation period is over we can use the bin_packing with a different
-# api.
-def bin_packing(*args, **kwargs) -> ConstrainedQuadraticModel:
-    warnings.warn("bin_packing was deprecated after 0.10.6 and will be removed in 0.11.0, "
-                  "use random_bin_packing instead.",
-                  DeprecationWarning,
-                  stacklevel=2)
-    return random_bin_packing(*args, **kwargs)
