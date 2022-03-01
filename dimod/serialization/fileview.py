@@ -266,6 +266,11 @@ def load(fp, cls=None):
         >>> _ = bqm_file.seek(0)
         >>> qm = dimod.QuadraticModel.from_bqm(load(bqm_file))
 
+    .. deprecated:: 0.10.0
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
+
     """
     if cls is not None:
         warnings.warn("'cls' keyword argument is deprecated and ignored",
