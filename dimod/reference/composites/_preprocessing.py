@@ -14,34 +14,31 @@
 
 """Unified warnings/exceptions for stuff moved to dwave-preprocessing."""
 
-import warnings
-
-__all__ = ['NotFound', 'DeprecatedToPreprocessing']
-
-
-class NotFound:
-    pass
+__all__ = ['DeprecatedToPreprocessing']
 
 
 class DeprecatedToPreprocessing:
+    """Removed.
+
+    .. deprecated:: 0.10.0
+
+        The following composites were migrated to
+        `dwave-preprocessing <https://github.com/dwavesystems/dwave-preprocessing>`_
+
+        * ``ClipComposite``
+        * ``ConnectedComponentsComposite``
+        * ``FixedVariableComposite``
+        * ``RoofDualityComposite``
+        * ``ScaleComposite``
+        * ``SpinReversalTransformComposite``
+
+        You must install ``dwave-preprocessing`` in order to use them.
+
+    """
     def __init__(self, *args, **kwargs):
-        if isinstance(self, NotFound):
-            # we recommend --no-deps because its dependencies are the same as
-            # dimods and it would be a circular install otherwise
-            raise TypeError(
-                f"{type(self).__name__!r} has been moved to dwave-preprocessing. "
+        raise TypeError(
+                f"{type(self).__name__!r} was moved to dwave-preprocessing in dimod 0.10.0. "
                 "You must install dwave-preprocessing in order to use it. "
-                "You can do so with "
-                "'pip install \"dwave-preprocessing<0.4\" --no-deps'.",
-                )
-
-        # otherwise warn about it's new location but let it proceed
-        warnings.warn(
-            f"{type(self).__name__!s} has been moved to dwave-preprocessing "
-            "and will be removed from dimod 0.11.0. To avoid this warning, "
-            "import it with 'from dwave.preprocessing import "
-            f"{type(self).__name__!s}'.",
-            DeprecationWarning, stacklevel=2
+                "You can do so with 'pip install dwave-preprocessing'. "
+                "This stub class will be removed in dimod 0.13.0.",
             )
-
-        super().__init__(*args, **kwargs)

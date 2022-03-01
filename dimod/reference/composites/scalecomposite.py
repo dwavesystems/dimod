@@ -11,17 +11,10 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-"""
-A composite that scales problem variables as directed. If a scaling value is
-not specified, calculates it based on quadratic and bias ranges.
 
 """
-
-try:
-    from dwave.preprocessing import ScaleComposite as _ScaleComposite
-except ImportError:
-    from dimod.reference.composites._preprocessing import NotFound as _ScaleComposite
+Removed
+"""
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
@@ -29,8 +22,5 @@ from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 __all__ = ['ScaleComposite']
 
 
-class ScaleComposite(DeprecatedToPreprocessing, _ScaleComposite):
+class ScaleComposite(DeprecatedToPreprocessing):
     pass
-
-
-ScaleComposite.__doc__ = _ScaleComposite.__doc__

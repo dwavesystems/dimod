@@ -90,14 +90,14 @@ class TrackingComposite(ComposedSampler):
         In the case that you want to nest the tracking composite, there are two
         patterns for retrieving the data
 
-        >>> from dimod import ScaleComposite, TrackingComposite, ExactSolver
+        >>> from dimod import TruncateComposite, TrackingComposite, ExactSolver
         ...
-        >>> sampler = ScaleComposite(TrackingComposite(ExactSolver()))
+        >>> sampler = TruncateComposite(TrackingComposite(ExactSolver()), 10)
         >>> sampler.child.inputs  # empty because we haven't called sample
         []
 
         >>> intermediate_sampler = TrackingComposite(ExactSolver())
-        >>> sampler = ScaleComposite(intermediate_sampler)
+        >>> sampler = TruncateComposite(intermediate_sampler, 10)
         >>> intermediate_sampler.inputs
         []
 

@@ -12,49 +12,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import warnings
-
-from dimod.vartypes import Vartype
+import typing
 
 
-def fix_variables(bqm, sampling_mode=True):
-    """Determine assignments for some variables of a binary quadratic model.
+def fix_variables(*args, **kwargs) -> typing.NoReturn:
+    """Removed
 
-    Roof duality finds a lower bound for the minimum of a quadratic polynomial. It
-    can also find minimizing assignments for some of the polynomial's variables;
-    these fixed variables take the same values in all optimal solutions [BHT]_ [BH]_.
-    A quadratic pseudo-Boolean function can be represented as a network to find
-    the lower bound through network-flow computations. `fix_variables` uses maximum
-    flow in the implication network to correctly fix variables. Consequently, you can
-    find an assignment for the remaining variables that attains the optimal value.
+    .. deprecated:: 0.10.0
 
-    Args:
-        bqm (:obj:`.BinaryQuadraticModel`)
-            A binary quadratic model.
+        This function was migrated to
+        `dwave-preprocessing <https://github.com/dwavesystems/dwave-preprocessing>`_
 
-        sampling_mode (bool, optional, default=True):
-            In sampling mode, only roof-duality is used. When `sampling_mode` is false, strongly
-            connected components are used to fix more variables, but in some optimal solutions
-            these variables may take different values.
-
-    Returns:
-        dict: Variable assignments for some variables of the specified binary quadratic model.
-
-    .. [BHT] Boros, E., P.L. Hammer, G. Tavares. Preprocessing of Unconstraint Quadratic Binary
-        Optimization. Rutcor Research Report 10-2006, April, 2006.
-
-    .. [BH] Boros, E., P.L. Hammer. Pseudo-Boolean optimization. Discrete Applied Mathematics 123,
-        (2002), pp. 155-225
+        Use ``dwave.preprocessing.roof_duality`` instead.
 
     """
-    try:
-        from dwave.preprocessing import roof_duality
-    except ImportError:
-        raise TypeError("you must install dwave-preprocessing to use this function") from None
-
-    warnings.warn("fix_variables() is deprecated and will be removed in dimod 0.11.0, "
-                  "please install dwave-preprocessing and use dwave.preprocessing.roof_duality "
-                  "instead", DeprecationWarning, stacklevel=2)
-
-    _, mapping = roof_duality(bqm, strict=sampling_mode)
-    return mapping
+    raise TypeError(
+        "fix_variables() was moved to dwave-preprocessing in dimod 0.10.0. "
+        "Install dwave-preprocessing and use dwave.preprocessing.roof_duality instead. "
+        "You can do so with 'pip install dwave-preprocessing'. "
+        "This stub function will be removed in dimod 0.13.0.",
+        )

@@ -1,0 +1,20 @@
+---
+upgrade:
+  - |
+    Some composites were migrated to
+    `dwave-preprocessing <https://github.com/dwavesystems/dwave-preprocessing>`_
+    in dimod0.10.0. Trying to import and use these composites from dimod now
+    raises an exception rather than a warning. The affected composites:
+
+    * ``ClipComposite``
+    * ``ConnectedComponentsComposite``
+    * ``FixedVariableComposite``
+    * ``RoofDualityComposite``
+    * ``ScaleComposite``
+    * ``SpinReversalTransformComposite``
+
+  - |
+    The ``fix_variables()`` was migrated to
+    `dwave-preprocessing <https://github.com/dwavesystems/dwave-preprocessing>`_
+    in dimod 0.10.0. Trying to import and use it now raises an exception
+    rather than a warning.
