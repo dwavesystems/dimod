@@ -192,20 +192,6 @@ class ConstrainedQuadraticModel:
 
         self._variables = variables = self.objective.variables
 
-        # to support backwards compatibility (0.10.0 - 0.10.5), we annotate
-        # this object with some attributes. All of these will be removed in
-        # 0.11.0
-        def vartype(v):
-            warnings.warn(
-                "cqm.variables.vartype(v) is deprecated and will be removed in dimod 0.11.0, "
-                "use cqm.vartype(v) instead.", DeprecationWarning, stacklevel=2)
-            return self.vartype(v)
-
-        variables.vartype = vartype  # method
-        variables.vartypes = _Vartypes(self)
-        variables.lower_bounds = _LowerBounds(self)
-        variables.upper_bounds = _UpperBounds(self)
-
         return variables
 
     def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
@@ -2024,72 +2010,6 @@ class ConstrainedQuadraticModel:
 
 
 CQM = ConstrainedQuadraticModel
-
-
-class _Vartypes(abc.Sequence):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, index: int) -> Vartype:
-        warnings.warn(
-            "cqm.variables.vartypes[i] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.vartype(cqm.variables[i]) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.vartype(self.cqm.variables[index])
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.vartypes is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
-
-
-class _LowerBounds(abc.Mapping):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, key: Variable) -> float:
-        warnings.warn(
-            "cqm.variables.lower_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.lower_bound(v) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.lower_bound(key)
-
-    def __iter__(self) -> Iterator[Variable]:
-        warnings.warn(
-            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        yield from self.cqm.variables
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
-
-
-class _UpperBounds(abc.Mapping):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, key: Variable) -> float:
-        warnings.warn(
-            "cqm.variables.upper_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.upper_bound(v) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.upper_bound(key)
-
-    def __iter__(self) -> Iterator[Variable]:
-        warnings.warn(
-            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        yield from self.cqm.variables
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
 
 
 def _qm_to_bqm(qm: QuadraticModel, integers: MutableMapping[Variable, BinaryQuadraticModel],

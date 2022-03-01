@@ -102,29 +102,6 @@ class PolySampler(abc.ABC):
         """
         return self.sample_poly(BinaryPolynomial.from_hubo(H), **kwargs)
 
-    def sample(self, bqm, *args, **kwargs):
-        msg = ("PolySampler.sample is deprecated and will be removed in dimod "
-               "0.10.0. In the future, when using PolySamplers, you should use "
-               ".sample_poly")
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        poly = BinaryPolynomial(bqm.quadratic)
-        poly.update(((v,), bias) for v, bias in bqm.linear.items())
-        return self.sample_poly(poly, *args, **kwargs)
-
-    def sample_ising(self, *args, **kwargs):
-        msg = ("PolySampler.sample_ising is deprecated and will be removed in dimod "
-               "0.10.0. In the future, when using PolySamplers, you should use "
-               ".sample_hising")
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        return self.sample_hising(*args, **kwargs)
-
-    def sample_qubo(self, *args, **kwargs):
-        msg = ("PolySampler.sample_qubo is deprecated and will be removed in dimod "
-               "0.10.0. In the future, when using PolySamplers, you should use "
-               ".sample_hubo")
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        return self.sample_hubo(*args, **kwargs)
-
 
 class ComposedPolySampler(PolySampler, Composite):
     """Abstract base class for dimod composed polynomial samplers.

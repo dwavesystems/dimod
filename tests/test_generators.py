@@ -492,10 +492,6 @@ class TestKnapsack(unittest.TestCase):
         lhs = cqm.constraints['capacity'].lhs.energy(x)
         self.assertLessEqual(lhs, 0)
 
-    def test_deprecation(self):
-        with self.assertWarns(DeprecationWarning):
-            dimod.generators.knapsack(5)
-
 
 class TestBinPacking(unittest.TestCase):
 
@@ -536,10 +532,6 @@ class TestBinPacking(unittest.TestCase):
             lhs = cqm.constraints['capacity_bin_{}'.format(i)].lhs.energy(x)
             self.assertLessEqual(lhs, 0)
 
-    def test_deprecation(self):
-        with self.assertWarns(DeprecationWarning):
-            dimod.generators.bin_packing(5)
-
 
 class TestMultiKnapsack(unittest.TestCase):
 
@@ -549,10 +541,6 @@ class TestMultiKnapsack(unittest.TestCase):
         cqm = dimod.generators.random_multi_knapsack(num_items=num_items, num_bins=num_bins)
         self.assertEqual(len(cqm.variables), num_items*num_bins)
         self.assertEqual(len(cqm.constraints), num_bins+num_items)
-
-    def test_deprecation(self):
-        with self.assertWarns(DeprecationWarning):
-            dimod.generators.multi_knapsack(5, 5)
 
 
 class TestGates(unittest.TestCase):
