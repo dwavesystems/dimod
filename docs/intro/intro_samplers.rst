@@ -61,20 +61,31 @@ This example uses a composed sampler on the
 example detailed in the :std:doc:`Getting Started <oceandocs:getting_started>`
 documentation.
 
-The :class:`~dwave.preprocessing.composites.FixVariablesComposite`
-composite sets the value and removes specified variables from the BQM before
-sending it to the sampler.
+The :class:`~dimod.reference.composites.structure.StructureComposite`
+composite enforces the shape of the binary quadratic model. In this case we
+only want to accept binary quadratic models with nodes labelled ``'x'``,
+``'y'``, and ``'z'``.
 
->>> from dimod import ExactSolver
->>> from dwave.preprocessing import FixVariablesComposite
+>>> from dimod import ExactSolver, StructureComposite
+>>> nodelist = ['x', 'y', 'z']
+>>> edgelist = [('x', 'y'), ('x', 'z'), ('y', 'z')]
+>>> composed_sampler = StructureComposite(ExactSolver(), nodelist, edgelist)
 >>> Q = {('x', 'x'): -1, ('x', 'z'): 2, ('z', 'x'): 0, ('z', 'z'): -1}
->>> composed_sampler = FixVariablesComposite(ExactSolver())
->>> sampleset = composed_sampler.sample_qubo(Q, fixed_variables={'x': 1})
+>>> sampleset = composed_sampler.sample_qubo(Q)
 >>> print(sampleset)
    x  z energy num_oc.
-0  1  0   -1.0       1
-1  1  1    0.0       1
-['BINARY', 2 rows, 2 samples, 2 variables]
+1  1  0   -1.0       1
+3  0  1   -1.0       1
+0  0  0    0.0       1
+2  1  1    0.0       1
+['BINARY', 4 rows, 4 samples, 2 variables]
+>>> Q = {('a', 'a'): -1, ('a', 'b'): 2, ('b', 'a'): 0, ('b', 'b'): -1}
+>>> try:
+...     sampleset = composed_sampler.sample_qubo(Q)
+... except ValueError:
+...     print("incorrect structure!")
+incorrect structure!
+
 
 Creating Samplers
 =================

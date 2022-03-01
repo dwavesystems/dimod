@@ -13,15 +13,8 @@
 #    limitations under the License.
 
 """
-A composite that breaks the problem into sub-problems corresponding to the
-connected components of the binary
-quadratic model graph before sending to its child sampler.
+Removed
 """
-
-try:
-    from dwave.preprocessing import ConnectedComponentsComposite as _ConnectedComponentsComposite
-except ImportError:
-    from dimod.reference.composites._preprocessing import NotFound as _ConnectedComponentsComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
@@ -29,8 +22,5 @@ from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 __all__ = ['ConnectedComponentsComposite']
 
 
-class ConnectedComponentsComposite(DeprecatedToPreprocessing, _ConnectedComponentsComposite):
+class ConnectedComponentsComposite(DeprecatedToPreprocessing):
     pass
-
-
-ConnectedComponentsComposite.__doc__ = _ConnectedComponentsComposite.__doc__
