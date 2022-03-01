@@ -48,6 +48,7 @@ Methods
    ConstrainedQuadraticModel.from_qm
    ConstrainedQuadraticModel.from_quadratic_model
    ConstrainedQuadraticModel.from_file
+   ConstrainedQuadraticModel.from_lp_file
    ConstrainedQuadraticModel.iter_constraint_data
    ConstrainedQuadraticModel.iter_violations
    ConstrainedQuadraticModel.is_almost_equal

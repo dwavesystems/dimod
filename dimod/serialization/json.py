@@ -46,7 +46,7 @@ __all__ = 'DimodEncoder', 'DimodDecoder', 'dimod_object_hook'
 
 
 class DimodEncoder(json.JSONEncoder):
-    """Subclass the JSONEncoder for dimod objects.
+    """Subclass of :class:`json.JSONEnecoder` for dimod objects.
     """
     def default(self, obj):
         if isinstance(obj, SampleSet):
@@ -86,9 +86,9 @@ def dimod_object_hook(obj):
 
 
 class DimodDecoder(json.JSONDecoder):
-    """Subclass the JSONDecoder for dimod objects.
+    """Subclass of :class:`json.JSONDecoder` for dimod objects.
 
-    Uses :func:`.dimod_object_hook`.
+    Uses the :func:`.dimod_object_hook` function.
     """
     def __init__(self, *args, **kwargs):
         json.JSONDecoder.__init__(self, object_hook=dimod_object_hook, *args, **kwargs)

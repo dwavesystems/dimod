@@ -1488,15 +1488,16 @@ class ConstrainedQuadraticModel:
                      fp: Union[BinaryIO, ByteString],
                      lower_bound_default: Optional[int] = None,
                      upper_bound_default: Optional[int] = None) -> "ConstrainedQuadraticModel":
-        """Create a CQM model from a LP file.
+        """Create a constrained quadratic model from an LP file.
 
         Args:
-            fp: file-like object in the LP format
-            lower_bound_default: in case lower bounds for integer are not given, this will be the default
-            upper_bound_default: in case upper bounds for integer are not given, this will be the default
+            fp: file-like object in LP (linear program) format.
+            lower_bound_default: Default lower bound for integer variables.
+            upper_bound_default: Default upper bound for integer variables.
 
         Returns:
-            The model encoded in the LP file as a :class:`ConstrainedQuadraticModel`.
+            :class:`ConstrainedQuadraticModel` representing the model encoded in
+            the LP file.
         """
         grammar = make_lp_grammar()
         parse_output = grammar.parseFile(fp)

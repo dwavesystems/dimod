@@ -41,14 +41,14 @@ def set_printoptions(**kwargs):
 
     Args:
         width (int, optional, default=79):
-            The maximum number of characters to a single line.
+            Maximum number of characters to a single line.
 
         depth (int, optional, default=None):
-            The maximum number of rows printed, summation is used if
-            exceeded. Default is unlimited.
+            Maximum number of rows printed. Summation is used if exceeded.
+            Default is unlimited.
 
         sorted_by (str/None, optional, default='energy'):
-            Selects the field used to sort the samples when printing samplesets.
+            Selects the field used to sort the samples when printing sample sets.
             If None, samples are printed in record order.
 
     Note:
@@ -205,28 +205,28 @@ class _SampleTable(object):
 
 
 class Formatter(object):
-    """Used to create nice string formats for dimod objects.
+    """Sets formatting for printing :class:`~dimod.SampleSet` objects.
 
     Args:
         width (int, optional, default=79):
-            The maximum number of characters to a single line.
+            Maximum number of characters to a single line.
 
         depth (int, optional, default=None):
-            The maximum number of rows printed, summation is used if
-            exceeded. Default is unlimited.
+            Maximum number of rows printed. Summation is used if exceeded.
+            Default is unlimited.
 
         sorted_by (str/None, optional, default='energy'):
-            Selects the field used to sort the samples when printing samplesets.
+            Selects the field used to sort samples when printing sample sets.
             If None, samples are printed in record order.
 
     Examples:
         >>> from dimod.serialization.format import Formatter
         >>> sampleset = dimod.SampleSet.from_samples(([-1, 1], ['a', 'b']), dimod.SPIN, energy=1)
-        >>> Formatter(width=45).print(sampleset)
+        >>> Formatter(width=45).fprint(sampleset)
            a  b energy num_oc.
         0 -1 +1      1       1
         ['SPIN', 1 rows, 1 samples, 2 variables]
-        >>> Formatter(width=30).print(sampleset)
+        >>> Formatter(width=30).fprint(sampleset)
            a  b energy num_oc.
         0 -1 +1      1       1
         ['SPIN',

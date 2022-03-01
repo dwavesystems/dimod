@@ -130,6 +130,14 @@ class VariablesSection(Section):
 
 
 def FileView(bqm, version=(1, 0), ignore_labels=False):
+    """
+    Deprecated. Use :func:`~dimod.binary.BinaryQuadraticModel.to_file` instead.
+
+    .. deprecated:: 0.10.0
+
+        This function will be removed in dimod 0.12.0.
+
+    """
     warnings.warn("FileView is deprecated, please use `bqm.to_file` instead",
                   DeprecationWarning, stacklevel=2)
     return bqm.to_file(version=version, ignore_labels=ignore_labels)
@@ -238,14 +246,30 @@ def load(fp, cls=None):
 
     Args:
         fp (bytes-like/file-like):
-            If file-like, should be readable, seekable file-like object. If
-            bytes-like it will be wrapped with `io.BytesIO`.
+            If file-like, should be a readable, seekable file-like object. If
+            bytes-like, it will be wrapped with :class:`io.BytesIO`.
 
         cls (class, optional):
-            Deprecated keyword argument. Is ignored.
+            Deprecated keyword argument. Does nothing.
 
     Returns:
         The loaded model.
+
+    Examples:
+        This example saves a binary quadratic model to a
+        :func:`~tempfile.TemporaryFile` and then uses :func:`~.load` to read that
+        file into a quadratic model.
+
+        >>> from dimod.serialization.fileview import load
+        >>> bqm = dimod.BQM({0: 1.0}, {(0, 1): 2, (2, 3): 0.4}, 0.0, dimod.BINARY)
+        >>> bqm_file = bqm.to_file()
+        >>> _ = bqm_file.seek(0)
+        >>> qm = dimod.QuadraticModel.from_bqm(load(bqm_file))
+
+    .. deprecated:: 0.10.0
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
 
     """
     if cls is not None:

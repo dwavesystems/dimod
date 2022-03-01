@@ -84,13 +84,9 @@ JSON
 .. currentmodule:: dimod.serialization.json
 .. automodule:: dimod.serialization.json
 
-.. autosummary::
-   :toctree: generated/
-
-   DimodEncoder
-   DimodDecoder
-   dimod_object_hook
-
+.. autofunction:: DimodEncoder
+.. autofunction:: DimodDecoder
+.. autofunction:: dimod_object_hook
 
 Testing
 =======
