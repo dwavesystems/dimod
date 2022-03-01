@@ -57,6 +57,12 @@ def chimera_anticluster(m: int, n: Optional[int] = None, t: int = 4,
 
     Returns:
         A binary quadratic model.
+
+    .. deprecated:: 0.10.6
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
 
     if cls is not None:

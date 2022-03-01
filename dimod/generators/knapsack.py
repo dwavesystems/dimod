@@ -12,15 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import warnings
-
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from typing import Tuple
 
-__all__ = ['knapsack', 'random_knapsack']
+__all__ = ['random_knapsack']
 
 
 def random_knapsack(num_items: int,
@@ -71,15 +69,3 @@ def random_knapsack(num_items: int,
     model.add_constraint(constraint, sense="<=", label='capacity')
 
     return model
-
-
-# We want to use knapsack in the future for problems with specified weights/
-# values, so we'll deprecate it and use the more explicit random_knapsack.
-# Once the deprecation period is over we can use the knapsack with a different
-# api.
-def knapsack(*args, **kwargs) -> ConstrainedQuadraticModel:
-    warnings.warn("knapsack was deprecated after 0.10.6 and will be removed in 0.11.0. "
-                  "Use random_bin_packing instead.",
-                  DeprecationWarning,
-                  stacklevel=2)
-    return random_knapsack(*args, **kwargs)

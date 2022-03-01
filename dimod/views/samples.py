@@ -63,7 +63,6 @@ class IndexValuesView(abc.ValuesView):
         return iter(self._mapping._data.flat)
 
 
-# developer note: Iterator functionality is deprecated
 class SamplesArray(abc.Sequence, abc.Iterator):
     __slots__ = ('_samples', '_variables',
                  '_itercount')  # used for deprecated iteration feature

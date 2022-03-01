@@ -320,6 +320,11 @@ def as_samples(samples_like: SamplesLike,
 
     .. _array_like: https://numpy.org/doc/stable/user/basics.creation.html
 
+    .. deprecated:: 0.10.13
+
+        Support for a 2-tuple of ``(dict, list)`` as a samples-like will be
+        removed in dimod 0.12.0.
+
     """
     # single dispatch should have handled everything except array-like and mixed
     if isinstance(samples_like, abc.Sequence) and any(isinstance(s, abc.Mapping) for s in samples_like):
@@ -387,7 +392,7 @@ def _as_samples_tuple(samples_like: typing.Tuple[ArrayLike, typing.Sequence[Vari
     # that in the future
     if isinstance(array_like, abc.Mapping):
         warnings.warn("support for (dict, labels) as a samples-like is deprecated "
-                      "and will be removed in dimod 0.12.0",
+                      "since dimod 0.10.13 and will be removed in 0.12.0",
                       DeprecationWarning, stacklevel=3)
 
         # make sure that it has the correct order by making a copy
@@ -1001,17 +1006,6 @@ class SampleSet(abc.Iterable, abc.Sized):
         """:class:`.Vartype` of the samples."""
         self.resolve()
         return self._vartype
-
-    @property
-    def is_writeable(self):
-        warn("SampleSet.is_writeable is deprecated and always returns True",
-             DeprecationWarning, stacklevel=2)
-        return True
-
-    @is_writeable.setter
-    def is_writeable(self, b):
-        if not b:
-            raise ValueError("SampleSet.is_writeable is deprecated and cannot be set False")
 
     ###############################################################################################
     # Views
