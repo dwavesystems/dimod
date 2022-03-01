@@ -72,3 +72,9 @@ Utility Functions
    concatenate
    drop_variables
    keep_variables
+
+Printing
+========
+
+.. autofunction:: dimod.serialization.format.Formatter
+.. autofunction:: dimod.serialization.format.set_printoptions

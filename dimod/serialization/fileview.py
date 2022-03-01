@@ -263,7 +263,7 @@ def load(fp, cls=None):
         >>> from dimod.serialization.fileview import load
         >>> bqm = dimod.BQM({0: 1.0}, {(0, 1): 2, (2, 3): 0.4}, 0.0, dimod.BINARY)
         >>> bqm_file = bqm.to_file()
-        >>> bqm_file.seek(0)
+        >>> _ = bqm_file.seek(0)
         >>> qm = dimod.QuadraticModel.from_bqm(load(bqm_file))
 
     """
