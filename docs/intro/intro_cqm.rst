@@ -37,7 +37,7 @@ This example creates a CQM representing a
 `knapsack problem <https://en.wikipedia.org/wiki/Knapsack_problem>`_ of ten
 items.
 
->>> cqm = dimod.generators.knapsack(10)
+>>> cqm = dimod.generators.random_knapsack(10)
 
 Typically you construct a model when reformulating your problem, using such
 techniques as those presented in D-Wave's system documentation's

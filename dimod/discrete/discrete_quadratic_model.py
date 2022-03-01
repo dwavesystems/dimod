@@ -849,6 +849,11 @@ class DiscreteQuadraticModel:
         See Also:
             :meth:`DiscreteQuadraticModel.from_file`
 
+        .. deprecated:: 0.9.9
+
+            The ``compressed`` keyword argument will be removed in dimod 0.12.0.
+            Use ``compress`` instead.
+
         """
 
         file = SpooledTemporaryFile(max_size=spool_size)
@@ -867,8 +872,9 @@ class DiscreteQuadraticModel:
         # the section containing most of the data, encoded with numpy
         if compressed is not None:
             warnings.warn(
-                "Argument 'compressed' is deprecated and in future will raise "
-                "an exception; please use 'compress' instead.",
+                "Argument 'compressed' is deprecated since dimod 0.9.9 "
+                "and will be removed in 0.12.0. "
+                "Use 'compress' instead.",
                 DeprecationWarning, stacklevel=2
                 )
             compress = compressed or compress

@@ -28,6 +28,6 @@ Methods
 .. autosummary::
    :toctree: generated/
 
-   ExactPolySolver.sample
-   ExactPolySolver.sample_ising
-   ExactPolySolver.sample_qubo
+   ExactPolySolver.sample_hising
+   ExactPolySolver.sample_hubo
+   ExactPolySolver.sample_poly

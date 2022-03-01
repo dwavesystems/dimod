@@ -68,11 +68,15 @@ def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
     Returns:
         A binary quadratic model.
 
-    """
+    .. deprecated:: 0.10.13
 
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
+    """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if isinstance(variables, abc.Sequence):
@@ -169,10 +173,15 @@ def gnp_random_bqm(n: Union[int, Sequence[Variable]],
     Notes:
         This algorithm runs in O(n^2) time and space.
 
+    .. deprecated:: 0.10.13
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if isinstance(n, abc.Sequence):
@@ -249,10 +258,15 @@ def uniform(graph: GraphLike, vartype: VartypeLike,
     Returns:
         A binary quadratic model.
 
+    .. deprecated:: 0.10.13
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if seed is None:
@@ -308,10 +322,15 @@ def randint(graph: GraphLike, vartype: VartypeLike,
     Returns:
         A binary quadratic model.
 
+    .. deprecated:: 0.10.13
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if seed is None:
@@ -376,10 +395,15 @@ def ran_r(r: int, graph: GraphLike,
         Catherine C. McGeoch. Benchmarking a quantum annealing processor with the
         time-to-target metric. https://arxiv.org/abs/1508.05087
 
+    .. deprecated:: 0.10.13
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if not isinstance(r, int):
@@ -443,10 +467,15 @@ def doped(p: float, graph: GraphLike,
     Returns:
         A binary quadratic model.
 
+    .. deprecated:: 0.10.13
+
+        The ``cls`` keyword argument will be removed in 0.12.0.
+        It currently does nothing.
+
     """
     if cls is not None:
-        warnings.warn("cls keyword argument is deprecated after 0.10.13 and will "
-                      "be removed in 0.11. Does nothing.", DeprecationWarning,
+        warnings.warn("cls keyword argument is deprecated since 0.10.13 and will "
+                      "be removed in 0.12. Does nothing.", DeprecationWarning,
                       stacklevel=2)
 
     if seed is None:
