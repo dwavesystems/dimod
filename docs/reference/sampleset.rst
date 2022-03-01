@@ -76,5 +76,7 @@ Utility Functions
 Printing
 ========
 
-.. autofunction:: dimod.serialization.format.Formatter
-.. autofunction:: dimod.serialization.format.set_printoptions
+.. currentmodule:: dimod.serialization.format
+
+.. autofunction:: Formatter
+.. autofunction:: set_printoptions
