@@ -13,19 +13,8 @@
 #    limitations under the License.
 
 """
-On the D-Wave system, coupling :math:`J_{i,j}` adds a small bias to qubits :math:`i` and
-:math:`j` due to leakage. This can become significant for chained qubits. Additionally,
-qubits are biased to some small degree in one direction or another.
-Applying a spin-reversal transform can improve results by reducing the impact of possible
-analog and systematic errors. A spin-reversal transform does not alter the Ising problem;
-the transform simply amounts to reinterpreting spin up as spin down, and visa-versa, for
-a particular spin.
+Removed.
 """
-
-try:
-    from dwave.preprocessing import SpinReversalTransformComposite as _SpinReversalTransformComposite
-except ImportError:
-    from dimod.reference.composites._preprocessing import NotFound as _SpinReversalTransformComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
@@ -33,8 +22,5 @@ from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 __all__ = ['SpinReversalTransformComposite']
 
 
-class SpinReversalTransformComposite(DeprecatedToPreprocessing, _SpinReversalTransformComposite):
+class SpinReversalTransformComposite(DeprecatedToPreprocessing):
     pass
-
-
-SpinReversalTransformComposite.__doc__ = _SpinReversalTransformComposite.__doc__
