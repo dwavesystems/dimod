@@ -1005,4 +1005,24 @@ TEMPLATE_TEST_CASE(
         }
     }
 }
+
+SCENARIO("quadratic models with square terms") {
+    GIVEN("a quadratic model with square terms") {
+        auto qm = QuadraticModel<double>();
+        auto i = qm.add_variable(Vartype::INTEGER);
+        auto j = qm.add_variable(Vartype::INTEGER);
+
+        qm.add_quadratic(i, i, 1);
+        qm.add_quadratic(i, j, 2);
+        qm.add_quadratic(j, j, 3);
+
+        WHEN("the energy is calculated") {
+            std::vector<int> sample = {5, -1};
+            auto en = qm.energy(sample);
+            THEN("the energy incorporates the square terms") {
+                CHECK(en == 18);
+            }
+        }
+    }
+}
 }  // namespace dimod

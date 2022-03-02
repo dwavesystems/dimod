@@ -407,7 +407,7 @@ class QuadraticModelBase {
             en += u_val * linear(u);
 
             auto span = neighborhood(u);
-            for (auto nit = span.first; nit != span.second && (*nit).first < u;
+            for (auto nit = span.first; nit != span.second && (*nit).first <= u;
                  ++nit) {
                 auto v_val = *(sample_start + (*nit).first);
                 auto bias = (*nit).second;
