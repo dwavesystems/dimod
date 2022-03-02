@@ -296,6 +296,11 @@ class TestEnergies(unittest.TestCase):
         self.assertAlmostEqual((i*j).energy({'i': 4294967296, 'j': 4294967296}),
                                1.8446744073709552e+19)
 
+    def test_bug1136(self):
+        # https://github.com/dwavesystems/dimod/issues/1136
+        i = dimod.Integer('i')
+        self.assertEqual((i**2).energy({'i': 1}), 1)
+
     def test_empty(self):
         empty = dimod.QuadraticModel()
 
@@ -352,6 +357,10 @@ class TestEnergies(unittest.TestCase):
                 arr = np.array([5, 2], dtype=dtype)
                 with self.assertRaises(ValueError):
                     qm.energy((arr, 'ij'))
+
+    def test_squared(self):
+        i, j = dimod.Integers('ij')
+        self.assertEqual((i**2 + 2*i*j + 3*j*j).energy({'i': 5, 'j': -1}), 18)
 
     def test_superset(self):
         a = Integer('a')

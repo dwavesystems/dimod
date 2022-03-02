@@ -350,7 +350,7 @@ cdef class cyQM_template(cyQMBase):
                 energies[si] += self.cppqm.linear(ui) * samples[si, qm_to_sample[ui]];
 
                 span = self.cppqm.neighborhood(ui)
-                while span.first != span.second and deref(span.first).first < ui:
+                while span.first != span.second and deref(span.first).first <= ui:
                     vi = deref(span.first).first
 
                     energies[si] += deref(span.first).second * samples[si, qm_to_sample[ui]] * samples[si, qm_to_sample[vi]]
