@@ -95,45 +95,45 @@ class ConstrainedQuadraticModel:
 
     Example:
 
-        Solve a simple `bin packing problem <https://w.wiki/3jz4>`_. In this
-        problem we wish to pack a set of items of different weights into
-        the smallest number of bins possible.
+        This example solves the simple `bin packing problem <https://w.wiki/3jz4>`_
+        problem of packing a set of items of different weights into the smallest
+        possible number of bins.
 
-        See :func:`~dimod.generators.bin_packing` for a general function to
-        generate bin packing problems. We follow the same naming conventions
-        in this example.
+        `dimod` provides a general :func:`~dimod.generators.random_bin_packing`
+        function to generate bin packing problems, and this example follows the
+        same naming conventions.
 
-        Let's start with four object weights and assume that each bin has a
-        capacity of 1.
+        Consider four objects with weights between 0 and 1, and assume that each
+        bin has a capacity to hold up to a total weight of 1.
 
         >>> weights = [.9, .7, .2, .1]
         >>> capacity = 1
 
-        Let :math:`y_j` indicate that we used bin :math:`j`. We know that we
-        will use four or fewer total bins.
+        Variable :math:`y_j` indicates that bin :math:`j` is used. Clearly, no
+        more than four bins are needed.
 
         >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
 
-        Let :math:`x_{i,j}` indicate that we put item :math:`i` in bin
+        Variable :math:`x_{i,j}` indicates that item :math:`i` is put in bin
         :math:`j`.
 
         >>> x = [[dimod.Binary(f'x_{i}_{j}') for j in range(len(weights))]
         ...      for i in range(len(weights))]
 
-        Create an empty constrained quadratic model with no objective or
-        constraints.
+        Create an empty constrained quadratic model ("empty" meaning that no
+        objective or constraints have set).
 
         >>> cqm = dimod.ConstrainedQuadraticModel()
 
-        We wish to minimize the number of bins used. Therefore our objective
+        The problem is to minimize the number of bins used. Therefore the objective
         is to minimize the value of :math:`\sum_j y_j`.
 
         >>> cqm.set_objective(sum(y))
 
-        We also need to enforce the constraint that each item can only go
-        in one bin. We can express this constraint, for a given item :math:`i`,
+        Any feasible solution must meet the constraint that each item can only go
+        in one bin. You can express this constraint, for a given item :math:`i`,
         with :math:`\sum_j x_{i, j} == 1`. Note that the label of each
-        constraint is returned so that we can access them in the future if
+        constraint is returned so that you can access them in the future if
         desired.
 
         >>> for i in range(len(weights)):
@@ -143,10 +143,9 @@ class ConstrainedQuadraticModel:
         'item_placing_2'
         'item_placing_3'
 
-        Finally, we need to enforce the limits on each bin. We can express
-        this constraint, for a given bin :math:`j`, with
-        :math:`\sum_i x_{i, j} * w_i <= c` where :math:`w_i` is the weight
-        of item :math:`i` and :math:`c` is the capacity.
+        Finally, enforce the limits on each bin. You can express this constraint,
+        for a given bin :math:`j`, with :math:`\sum_i x_{i, j} * w_i <= c` where
+        :math:`w_i` is the weight of item :math:`i` and :math:`c` is the capacity.
 
         >>> for j in range(len(weights)):
         ...     cqm.add_constraint(
@@ -167,7 +166,7 @@ class ConstrainedQuadraticModel:
 
     @property
     def constraints(self) -> Dict[Hashable, Comparison]:
-        """The constraints as a dictionary.
+        """Constraints as a dictionary.
 
         This dictionary and its contents should not be modified.
         """
@@ -181,12 +180,12 @@ class ConstrainedQuadraticModel:
 
     @property
     def objective(self) -> QuadraticModel:
-        """The objective to be minimized."""
+        """Objective to be minimized."""
         return self._objective
 
     @property
     def variables(self) -> Variables:
-        """The variables in use over the objective and all constraints."""
+        """Variables in use over the objective and all constraints."""
         try:
             return self._variables
         except AttributeError:
@@ -264,28 +263,41 @@ class ConstrainedQuadraticModel:
         """Add a constraint from a quadratic model.
 
         Args:
-            qm: A quadratic model or binary quadratic model.
+            qm: Quadratic model or binary quadratic model.
 
             sense: One of `<=', '>=', '=='.
 
-            rhs: The right hand side of the constraint.
+            rhs: Right hand side of the constraint.
 
-            label: A label for the constraint. Must be unique. If no label
+            label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            copy: If `True`, the BQM is copied. This can be set to `False` to
-                improve performance, but subsequently mutating the bqm can
+            copy: If `True`, model ``qm`` is copied. This can be set to `False`
+                to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
         Returns:
-            The label of the added constraint.
+            Label of the added constraint.
 
         Examples:
+            This example adds a constraint from the single-variable binary
+            quadratic model ``x``.
+
             >>> from dimod import ConstrainedQuadraticModel, Binary
             >>> cqm = ConstrainedQuadraticModel()
             >>> x = Binary('x')
             >>> cqm.add_constraint_from_model(x, '>=', 0, 'Min x')
             'Min x'
+            >>> print(cqm.constraints["Min x"].to_polystring())
+            x >= 0
+
+            Adding a constraint without copying the model requires caution:
+
+            >>> cqm.add_constraint_from_model(x, "<=", 3, "Risky constraint", copy=False)
+            'Risky constraint'
+            >>> x *= 2
+            >>> print(cqm.constraints["Risky constraint"].to_polystring())
+            2*x <= 3
         """
         variables = self.variables
 
@@ -328,14 +340,14 @@ class ConstrainedQuadraticModel:
         """Add a constraint from a comparison.
 
         Args:
-            comp: A comparison object.
+            comp: Comparison object.
 
-            label: A label for the constraint. Must be unique. If no label
+            label: Label for the constraint. Must be unique. If no label
                 is provided, one is generated using :mod:`uuid`.
 
-            copy: If `True`, the model is copied. You can set to `False` to
-                improve performance, but subsequently mutating the model can
-                cause issues.
+            copy: If `True`, the model used in the comparison is copied. You can
+                set to `False` to improve performance, but subsequently mutating
+                the model can cause issues.
 
         Returns:
             Label of the added constraint.
@@ -346,6 +358,17 @@ class ConstrainedQuadraticModel:
             >>> cqm = ConstrainedQuadraticModel()
             >>> cqm.add_constraint_from_comparison(i <= 3, label='Max i')
             'Max i'
+            >>> print(cqm.constraints["Max i"].to_polystring())
+            i <= 3
+
+            Adding a constraint without copying the comparison's model requires
+            caution:
+
+            >>> cqm.add_constraint_from_comparison(i >= 1, label="Risky constraint", copy=False)
+            'Risky constraint'
+            >>> i *= 2
+            >>> print(cqm.constraints["Risky constraint"].to_polystring())
+            2*i >= 1
         """
         if not isinstance(comp.rhs, Number):
             raise TypeError("comparison should have a numeric rhs")
@@ -365,18 +388,18 @@ class ConstrainedQuadraticModel:
         """Add a constraint from an iterable of tuples.
 
         Args:
-            iterable: An iterable of terms as tuples. The variables must
+            iterable: Iterable of terms as tuples. The variables must
                 have already been added to the object.
 
             sense: One of `<=', '>=', '=='.
 
             rhs: The right hand side of the constraint.
 
-            label: A label for the constraint. Must be unique. If no label
+            label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
         Returns:
-            The label of the added constraint.
+            Label of the added constraint.
 
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer, Binary
@@ -387,6 +410,8 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_variable('y', 'BINARY')    # doctest: +IGNORE_RESULT
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
+            >>> print(cqm.constraints[label1].to_polystring())
+            2*i + 3*j + x*y + i*j <= 1
 
         """
         qm = self._iterable_to_qm(iterable)
@@ -396,14 +421,20 @@ class ConstrainedQuadraticModel:
             qm, sense, rhs=rhs, label=label, copy=False)
 
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
-        """Add a one-hot constraint.
+        """A convenience wrapper for other methods that add one-hot constraints.
 
-        Add a special kind of one-hot constraint. These one-hot constraints
-        must be disjoint, that is they must not have any overlapping variables.
+        You can use one-hot constraints to represent discrete variables; for
+        example a ``color`` variable that can be assigned a single value from the
+        set ``["red", "blue", "green"]``.
 
-        Note that constraints added by :meth:`add_discrete` and other similar
-        methods are guaranteed to be satisfied in solutions returned by
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
+        constraints.
+
+        Adds a special kind of one-hot constraint: such constraints must be
+        disjoint (that is, variables in such a constraint must not be used
+        elsewhere in the model) and constraints added by the methods wrapped by
+        :meth:`add_discrete` are guaranteed to be satisfied in solutions returned
+        by the :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
 
         See also:
             :meth:`~.ConstrainedQuadraticModel.add_discrete_from_model`
@@ -431,14 +462,14 @@ class ConstrainedQuadraticModel:
             Add a discrete constraint over variables ``a, b, c`` from a
             model.
 
-            >>> a, b, c = dimod.Binaries('abc')
+            >>> a, b, c = dimod.Binaries(['a', 'b', 'c'])
             >>> cqm.add_discrete(sum([a, b, c]), label='discrete-abc')
             'discrete-abc'
 
             Add a discrete constraint over variables ``d, e, f`` from a
             comparison.
 
-            >>> d, e, f = dimod.Binaries('def')
+            >>> d, e, f = dimod.Binaries(['d', 'e', 'f'])
             >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
             'discrete-def'
 
@@ -457,27 +488,33 @@ class ConstrainedQuadraticModel:
                                      comp: Comparison,
                                      label: Optional[Hashable] = None,
                                      copy: bool = True) -> Hashable:
-        """Add a one-hot constraint.
+        """Add a one-hot constraint from a comparison.
 
-        Add a special kind of one-hot constraint. These one-hot constraints
-        must be disjoint, that is they must not have any overlapping variables.
+        You can use one-hot constraints to represent discrete variables; for
+        example a ``color`` variable that can be assigned a single value from the
+        set ``["red", "blue", "green"]``.
 
-        Note that constraints added by :meth:`add_discrete` and other similar
-        methods are guaranteed to be satisfied in solutions returned by
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
+        constraints.
+
+        Adds a special kind of one-hot constraint: such constraints must be
+        disjoint (that is, variables in such a constraint must not be used
+        elsewhere in the model) and constraints added by this method are
+        guaranteed to be satisfied in solutions returned by the
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
 
         Args:
-            comp: A comparison object. The comparison must be a linear
+            comp: Comparison object. The comparison must be a linear
                 equality constraint with all of the linear biases on the
                 left-hand side equal to one and the right hand side equal
                 to one.
 
-            label: A label for the constraint. Must be unique. If no label
+            label: Label for the constraint. Must be unique. If no label
                 is provided, one is generated using :mod:`uuid`.
 
-            copy: If `True`, the model is copied. You can set to `False` to
-                improve performance, but subsequently mutating the model can
-                cause issues.
+            copy: If `True`, the model used in the comparison is copied. You can
+                set to `False` to improve performance, but subsequently mutating
+                the model can cause issues.
 
         Returns:
             Label of the added constraint.
@@ -485,9 +522,9 @@ class ConstrainedQuadraticModel:
         Examples:
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> d, e, f = dimod.Binaries('def')
-            >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
-            'discrete-def'
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
+            'One color'
 
         """
         if comp.sense is not Sense.Eq:
@@ -500,14 +537,20 @@ class ConstrainedQuadraticModel:
     def add_discrete_from_iterable(self,
                                    variables: Iterable[Variable],
                                    label: Optional[Hashable] = None) -> Hashable:
-        """Add a one-hot constraint.
+        """Add a one-hot constraint from an iterable.
 
-        Add a special kind of one-hot constraint. These one-hot constraints
-        must be disjoint, that is they must not have any overlapping variables.
+        You can use one-hot constraints to represent discrete variables; for
+        example a ``color`` variable that can be assigned a single value from the
+        set ``["red", "blue", "green"]``.
 
-        Note that constraints added by :meth:`add_discrete` and other similar
-        methods are guaranteed to be satisfied in solutions returned by
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
+        constraints.
+
+        Adds a special kind of one-hot constraint: such constraints must be
+        disjoint (that is, variables in such a constraint must not be used
+        elsewhere in the model) and constraints added by this method are
+        guaranteed to be satisfied in solutions returned by the
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
 
         Args:
             variables: An iterable of variables.
@@ -557,14 +600,17 @@ class ConstrainedQuadraticModel:
                                 qm: Union[BinaryQuadraticModel, QuadraticModel],
                                 label: Optional[Hashable] = None,
                                 copy: bool = True) -> Hashable:
-        """Add a one-hot constraint.
+        """Add a one-hot constraint from a model.
 
-        Add a special kind of one-hot constraint. These one-hot constraints
-        must be disjoint, that is they must not have any overlapping variables.
+        You can use one-hot constraints to represent discrete variables; for
+        example a ``color`` variable that can be assigned a single value from the
+        set ``["red", "blue", "green"]``.
 
-        Note that constraints added by :meth:`add_discrete` and other similar
-        methods are guaranteed to be satisfied in solutions returned by
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler`.
+        Add a special kind of one-hot constraint: such constraints must be
+        disjoint (that is, variables in such a constraint must not be used
+        elsewhere in the model) and constraints added by this method are
+        guaranteed to be satisfied in solutions returned by the
+        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
 
         Args:
             qm: A quadratic model or binary quadratic model.
