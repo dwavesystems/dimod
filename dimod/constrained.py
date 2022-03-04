@@ -423,17 +423,17 @@ class ConstrainedQuadraticModel:
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.
 
-        You can use one-hot constraints to represent discrete variables; for
-        example a ``color`` variable that can be assigned a single value from the
-        set ``["red", "blue", "green"]``.
+        One-hot constraints can represent discrete variables (for example a
+        ``color`` variable that has values ``{"red", "blue", "green"}``) by
+        requiring that only one of a set of two or more binary variables is
+        assigned a value of 1.
 
-        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
-        constraints.
+        These constraints support only :class:`~dimod.Vartype.BINARY` variables
+        and must be disjoint; that is, variables in such a constraint must not be
+        used elsewhere in the model.
 
-        Adds a special kind of one-hot constraint: such constraints must be
-        disjoint (that is, variables in such a constraint must not be used
-        elsewhere in the model) and constraints added by the methods wrapped by
-        :meth:`add_discrete` are guaranteed to be satisfied in solutions returned
+        Constraints added by the methods wrapped by :meth:`add_discrete` are
+        guaranteed to be satisfied in solutions returned
         by the :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
 
         See also:
@@ -490,18 +490,18 @@ class ConstrainedQuadraticModel:
                                      copy: bool = True) -> Hashable:
         """Add a one-hot constraint from a comparison.
 
-        You can use one-hot constraints to represent discrete variables; for
-        example a ``color`` variable that can be assigned a single value from the
-        set ``["red", "blue", "green"]``.
+        One-hot constraints can represent discrete variables (for example a
+        ``color`` variable that has values ``{"red", "blue", "green"}``) by
+        requiring that only one of a set of two or more binary variables is
+        assigned a value of 1.
 
-        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
-        constraints.
+        These constraints support only :class:`~dimod.Vartype.BINARY` variables
+        and must be disjoint; that is, variables in such a constraint must not be
+        used elsewhere in the model.
 
-        Adds a special kind of one-hot constraint: such constraints must be
-        disjoint (that is, variables in such a constraint must not be used
-        elsewhere in the model) and constraints added by this method are
-        guaranteed to be satisfied in solutions returned by the
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
+        Constraints added by this method are guaranteed to be satisfied in
+        solutions returned by the :class:`~dwave.system.samplers.LeapHybridCQMSampler`
+        hybrid sampler.
 
         Args:
             comp: Comparison object. The comparison must be a linear
@@ -539,18 +539,18 @@ class ConstrainedQuadraticModel:
                                    label: Optional[Hashable] = None) -> Hashable:
         """Add a one-hot constraint from an iterable.
 
-        You can use one-hot constraints to represent discrete variables; for
-        example a ``color`` variable that can be assigned a single value from the
-        set ``["red", "blue", "green"]``.
+        One-hot constraints can represent discrete variables (for example a
+        ``color`` variable that has values ``{"red", "blue", "green"}``) by
+        requiring that only one of a set of two or more binary variables is
+        assigned a value of 1.
 
-        Only :class:`~dimod.Vartype.BINARY` variables are supported for these
-        constraints.
+        These constraints support only :class:`~dimod.Vartype.BINARY` variables
+        and must be disjoint; that is, variables in such a constraint must not be
+        used elsewhere in the model.
 
-        Adds a special kind of one-hot constraint: such constraints must be
-        disjoint (that is, variables in such a constraint must not be used
-        elsewhere in the model) and constraints added by this method are
-        guaranteed to be satisfied in solutions returned by the
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
+        Constraints added by this method are guaranteed to be satisfied in
+        solutions returned by the :class:`~dwave.system.samplers.LeapHybridCQMSampler`
+        hybrid sampler.
 
         Args:
             variables: An iterable of variables.
@@ -564,14 +564,16 @@ class ConstrainedQuadraticModel:
         Examples:
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> iterable = ['x', 'y', 'z']
-            >>> for v in iterable:
+            >>> color = ["red", "blue", "green"]
+            >>> for v in color:
             ...      cqm.add_variable(v, 'BINARY')
-            'x'
-            'y'
-            'z'
-            >>> cqm.add_discrete(iterable, label='discrete-xyz')
-            'discrete-xyz'
+            'red'
+            'blue'
+            'green'
+            >>> cqm.add_discrete(color, label='one-color')
+            'one-color'
+            >>> print(cqm.constraints['one-color'].to_polystring())
+            red + blue + green == 1
 
         """
         if label is not None and label in self.constraints:
@@ -602,15 +604,18 @@ class ConstrainedQuadraticModel:
                                 copy: bool = True) -> Hashable:
         """Add a one-hot constraint from a model.
 
-        You can use one-hot constraints to represent discrete variables; for
-        example a ``color`` variable that can be assigned a single value from the
-        set ``["red", "blue", "green"]``.
+        One-hot constraints can represent discrete variables (for example a
+        ``color`` variable that has values ``{"red", "blue", "green"}``) by
+        requiring that only one of a set of two or more binary variables is
+        assigned a value of 1.
 
-        Add a special kind of one-hot constraint: such constraints must be
-        disjoint (that is, variables in such a constraint must not be used
-        elsewhere in the model) and constraints added by this method are
-        guaranteed to be satisfied in solutions returned by the
-        :class:`~dwave.system.samplers.LeapHybridCQMSampler` hybrid sampler.
+        These constraints support only :class:`~dimod.Vartype.BINARY` variables
+        and must be disjoint; that is, variables in such a constraint must not be
+        used elsewhere in the model.
+
+        Constraints added by this method are guaranteed to be satisfied in
+        solutions returned by the :class:`~dwave.system.samplers.LeapHybridCQMSampler`
+        hybrid sampler.
 
         Args:
             qm: A quadratic model or binary quadratic model.
@@ -631,9 +636,11 @@ class ConstrainedQuadraticModel:
         Examples:
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> a, b, c = dimod.Binaries('abc')
-            >>> cqm.add_discrete(sum([a, b, c]), label='discrete-abc')
-            'discrete-abc'
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete(sum([r, g, b]), label="One color")
+            'One color'
+            >>> print(cqm.constraints["One color"].to_polystring())
+            red + green + blue == 1
 
         """
         vartype = qm.vartype if isinstance(qm, QuadraticModel) else lambda v: qm.vartype
