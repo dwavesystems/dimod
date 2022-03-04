@@ -42,7 +42,7 @@ from dimod.sampleset import as_samples
 from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
-from dimod.typing import Bias, Variable
+from dimod.typing import Bias, Variable, SamplesLike
 from dimod.utilities import iter_safe_relabels, new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
@@ -671,25 +671,25 @@ class ConstrainedQuadraticModel:
         """Add a variable to the model.
 
         Args:
-            variable: A variable label.
+            variable: Variable label.
 
             vartype:
                 Variable type. One of:
 
-                * :class:`.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
-                * :class:`.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
-                * :class:`.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
 
             lower_bound:
-                A lower bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                Lower bound on the variable. Ignored when the variable is
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
 
             upper_bound:
-                An upper bound on the variable. Ignored when the variable is
-                not :class:`Vartype.INTEGER`.
+                Upper bound on the variable. Ignored when the variable is
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
 
         Returns:
-            The variable label.
+            Variable label.
 
         Raises:
             ValueError: If ``v`` is already a variable in the model and
@@ -706,7 +706,7 @@ class ConstrainedQuadraticModel:
         return self.objective.add_variable(
             vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
-    def check_feasible(self, sample_like, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
+    def check_feasible(self, sample_like: SamplesLike, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
         r"""Return the feasibility of the given sample.
 
         A sample is feasible if all constraints are satisfied. A constraint's
@@ -719,13 +719,32 @@ class ConstrainedQuadraticModel:
         where ``violation`` and ``rhs_energy`` are as returned by :meth:`.iter_constraint_data`.
 
         Args:
-            sample_like: A sample.
-            rtol: The relative tolerance.
-            atol: the absolute tolerance.
+            sample_like: A sample. `sample-like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
+            rtol: Relative tolerance.
+            atol: Absolute tolerance.
 
         Returns:
             True if the sample is feasible (given the tolerances).
 
+        Examples:
+            This example violates a constraint that :math:`i \le 4` by `0.2`,
+            which is greater than the absolute tolerance set by ``atol = 0.1``
+            but within the relative tolerance of :math:`0.1 * 4 = 0.4`.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> i = dimod.Integer("i")
+            >>> cqm.add_constraint_from_comparison(i <= 4, label="Max i")
+            'Max i'
+            >>> cqm.check_feasible({"i": 4.2}, atol=0.1)
+            False
+            >>> next(cqm.iter_constraint_data({"i": 4.2})).rhs_energy
+            4
+            >>> cqm.check_feasible({"i": 4.2}, rtol=0.1)
+            True
+
+            Note that the :func:`next` function is used here because the model
+            has just a single constraint.
         """
         return all(datum.violation <= atol + rtol*abs(datum.rhs_energy)
                    for datum in self.iter_constraint_data(sample_like))
@@ -738,27 +757,51 @@ class ConstrainedQuadraticModel:
         Note that this function does not test feasibility.
 
         Args:
-            v: A variable in the model.
+            v: Variable label for a variable in the model.
 
-            value: A value to assign that variable.
+            value: Value to assign variable ``v``.
 
-            cascade: If ``True``, then some other variable may be removed
-                from the model based on the assignment of ``v``.
-                Currently handles the following cases: fixing the value in a
-                discrete constraint (see :meth:`add_discrete`) to ``1``; fixing
-                all but one of the value in a discrete constratint to `0`;
-                fixing a variable in an equality constraint with two
-                variables, e.g. fixing ``i`` to ``3`` in ``i + j == 7`` will
-                also fix ``j`` to ``4``.
+            cascade: If ``True``, additional variables may be removed from the
+                model based on the assignment of ``v``.
+                Currently handles the following cases:
+
+                * Discrete constraints (see :meth:`add_discrete`)
+
+                  Fixing one of the binary variables to `1` fixes the remaining
+                  to `0`. Fixing all but one of the binary variables to `0`
+                  fixes the remaining to `1`.
+
+                * Equality constraint
+
+                  Fixing one of two variables fixes the other. For example fixing
+                  ``i`` to `3` in ``i + j == 7`` also fixes ``j`` to `4`
 
         Returns:
-            The assignments of any additional variables fixed.
-            If ``cascade==False`` then this will be exactly ``{}``.
-            If ``casecade==True`` then additional variable may be fixed.
+            Assignments of any additional variables fixed.
+            For ``cascade==False``, this is always ``{}``.
+            If you set ``cascade==True``, additional variables may be fixed.
             See above.
 
         Raises:
-            ValueError: If ``v`` is not a variable in the model.
+            ValueError: If ``v`` is not the label of a variable in the model.
+
+        Examples:
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
+            'One color'
+            >>> cqm.fix_variable("red", 1, cascade=True)
+            {'green': 0, 'blue': 0}
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
+            'One color'
+            >>> cqm.fix_variable("red", 0, cascade=True)
+            {}
+            >>> cqm.fix_variable("blue", 0, cascade=True)
+            {'green': 1}
 
         """
         if v not in self.variables:
@@ -810,23 +853,31 @@ class ConstrainedQuadraticModel:
         """Fix the value of the variables and remove them.
 
         Args:
-            fixed: A dictionary or an iterable of 2-tuples of variable assignments.
+            fixed: Dictionary or iterable of 2-tuples of variable assignments.
             cascade: See :meth:`.fix_variable`.
 
         Returns:
-            The assignments of any additional variables fixed.
-            If ``cascade==False`` then this will be exactly ``{}``.
-            If ``casecade==True`` then additional variable may be fixed.
+            Assignments of any additional variables fixed.
+            For ``cascade==False``, this is always ``{}``.
+            If you set ``cascade==True``, additional variables may be fixed.
             See :meth:`.fix_variable`.
 
         Raises:
-            ValueError: If given a variable not in the model.
+            ValueError: If given a label for a variable not in the model.
 
             :exc:`~dimod.exceptions.InfeasibileModelError`: If fixing the
-                given variables will result in an infeasible model. Note that
-                this exception is only raised in some obvious cases, it
-                is possible to fix variable to create an infeasible model
-                without raising this error.
+                given variables results in an infeasible model. Raising this
+                exception is currently supported for only some simple cases;
+                variable fixes may create an infeasible model without raising
+                this error.
+
+        Examples:
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
+            'One color'
+            >>> cqm.fix_variables({"red": 0, "green": 0}, cascade=True)
+            {'blue': 1}
 
         """
         if isinstance(fixed, Mapping):
@@ -845,10 +896,43 @@ class ConstrainedQuadraticModel:
         return new
 
     def flip_variable(self, v: Variable):
-        """Flip the specified variable in the objective and constraints.
+        """Flip the specified binary variable in the objective and constraints.
 
-        Note that this may remove a constraint as being tracked as discrete.
-        Subsequently flipping the variable again will not restore it.
+        Note that this may terminate a constraint's status as a discrete constraint
+        (see :meth:`add_discrete`). Subsequently flipping the variable again does
+        not restore that status.
+
+        Args:
+            v: Variable label of a :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN` variable.
+
+        Raises:
+            ValueError: If given a non-binary variable to flip.
+
+        Examples:
+            This example flips :math:`x`` in an objective, :math:`2xy-2x`, which
+            is equivalent for binary variables with values :math:`\{0, 1\}` to
+            the substitution :math:`x \Rightarrow 1-x`, creating a new objective,
+            :math:`2xy-2x \Rightarrow 2(1-x)y -2(1-x) = 2y -2xy -2 -2x`.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> x, y = dimod.Binaries(["x", "y"])
+            >>> cqm.set_objective(2 * x * y - 2 * x)
+            >>> cqm.flip_variable("x")
+            >>> print(cqm.objective.to_polystring())
+            -2 + 2*x + 2*y - 2*x*y
+
+            The next example flips a variable in a one-hot constraint. Subsequently
+            fixing one of this discrete constaint's binary variables to `1`
+            does not ensure the remaining variables are assigned `0`.
+
+            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
+            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
+            'One color'
+            >>> cqm.flip_variable("red")
+            >>> cqm.fix_variable("blue", 1, cascade=True)
+            {}
+
         """
         self.objective.flip_variable(v)  # checks that it exists and is the correct vartype
 
@@ -871,7 +955,7 @@ class ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a discrete quadratic model.
 
         Args:
-            dqm: a discrete quadratic model.
+            dqm: Discrete quadratic model.
 
             relabel_func (optional): A function that takes two arguments, the
                 variable label and the case label, and returns a new variable
@@ -926,8 +1010,8 @@ class ConstrainedQuadraticModel:
         binary quadratic model.
 
         The specified model is set as the objective to be minimzed in the constructed
-        constrained quadratic model (CQM). You can then add constraints that any feasible
-        solutions should meet.
+        constrained quadratic model (CQM). You can then add constraints that
+        feasible solutions should meet.
 
         Args:
             qm: Binary quadratic model (BQM) or quadratic model (QM).
@@ -958,7 +1042,22 @@ class ConstrainedQuadraticModel:
     def from_file(cls, fp: Union[BinaryIO, ByteString]) -> "ConstrainedQuadraticModel":
         """Construct from a file-like object.
 
+        Args:
+            fp: File pointer. If file-like, should be a readable, seekable
+                file-like object. If bytes-like, it will be wrapped with
+                :class:`io.BytesIO`.
+
         The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
+
+        Examples:
+            >>> cqm1 = dimod.ConstrainedQuadraticModel()
+            >>> x, y = dimod.Binaries(["x", "y"])
+            >>> cqm1.set_objective(2 * x * y - 2 * x)
+            >>> cqm_file = cqm1.to_file()
+            >>> cqm2 = dimod.ConstrainedQuadraticModel.from_file(cqm_file)
+            >>> print(cqm2.objective.to_polystring())
+            -2*x + 2*x*y
+
         """
         if isinstance(fp, ByteString):
             file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
@@ -998,25 +1097,41 @@ class ConstrainedQuadraticModel:
 
         return cqm
 
-    def iter_constraint_data(self, sample_like) -> Iterator[ConstraintData]:
+    def iter_constraint_data(self, sample_like: SamplesLike) -> Iterator[ConstraintData]:
         """Yield information about the constraints for the given sample.
 
         Args:
-            sample_like: A sample.
+            sample_like: A sample. `sample-like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`.
 
         Yields:
-            A :class:`collections.namedtuple` with ``label``, ``lhs_energy``,
-            ``rhs_energy``, ``sense``, ``activity``, and ``violation`` fields.
-            ``label`` is the constraint label.
-            ``lhs_energy`` is the energy of the left hand side of the constraint.
-            ``rhs_energy`` is the energy of the right hand side of the constraint.
-            ``sense`` is the :class:`dimod.sym.Sense` of the constraint.
-            ``activity`` is ``lhs_energy - rhs_energy``
-            ``violation`` is determined by the type of constraint. If ``violation``
-            is positive, that means that the constraint has been violated by
-            that amount. If it is negative, that means that the constraint has
-            been satisfied by the amount.
+            A :class:`collections.namedtuple` with the following fields.
 
+            * ``label``: Constraint label.
+            * ``lhs_energy``:  Energy of the left hand side of the constraint.
+            * ``rhs_energy``: Energy of the right hand side of the constraint.
+            * ``sense``: :class:`dimod.sym.Sense` of the constraint.
+            * ``activity``: Equals ``lhs_energy - rhs_energy``.
+            * ``violation``: Ammount by which the constraint is violated, if
+              positive, or satisfied, if negative. Determined by the type of
+              constraint.
+
+        Examples:
+            The sample in this example sets a value of ``2`` for two constraints,
+            :math:`i \le 3` and :math:`j \ge 3`, which satisfies the first and
+            violates the second by the same ammount, flipping the sign of the
+            ``violation`` field.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> i, j = dimod.Integers(["i", "j"])
+            >>> cqm.add_constraint_from_comparison(i <= 3, label="Upper limit")
+            'Upper limit'
+            >>> cqm.add_constraint_from_comparison(j >= 3, label="Lower limit")
+            'Lower limit'
+            >>> for constraint in cqm.iter_constraint_data({"i": 2, "j": 2}):
+            ...     print(constraint.label, constraint.violation)
+            Upper limit -1.0
+            Lower limit 1.0
         """
 
         sample, labels = as_samples(sample_like)
@@ -1050,18 +1165,20 @@ class ConstrainedQuadraticModel:
                 label=label,
                 )
 
-    def iter_violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
-                        ) -> Iterator[Tuple[Hashable, Bias]]:
+    def iter_violations(self, sample_like: SamplesLike, *,
+            skip_satisfied: bool = False,
+            clip: bool = False,) -> Iterator[Tuple[Hashable, Bias]]:
         """Yield violations for all constraints.
 
         Args:
-            sample_like: A sample over the CQM variables.
+            sample_like: A sample. `sample-like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`..
             skip_satisfied: If True, does not yield constraints that are satisfied.
             clip: If True, negative violations are rounded up to 0.
 
         Yields:
             A 2-tuple containing the constraint label and the amount of
-            constraints violation.
+            constraint's violation.
 
         Example:
 
@@ -1528,8 +1645,9 @@ class ConstrainedQuadraticModel:
         """The vartype of the given variable."""
         return self.objective.vartype(v)
 
-    def violations(self, sample_like, *, skip_satisfied: bool = False, clip: bool = False,
-                   ) -> Dict[Hashable, Bias]:
+    def violations(self, sample_like: SamplesLike, *,
+                   skip_satisfied: bool = False,
+                   clip: bool = False,) -> Dict[Hashable, Bias]:
         """Return a dictionary mapping constraint labels to the amount the constraints are violated.
 
         This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
