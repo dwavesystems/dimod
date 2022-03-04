@@ -292,6 +292,17 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(samples.variables, [0, 1, 2])
         np.testing.assert_array_equal(np.flip(raw, 1), samples.record.sample)
 
+    def test_from_cqm(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+        x, y, z = dimod.Binaries(['x', 'y', 'z'])
+        cqm.set_objective(x*y + 2*y*z)
+        cqm.add_constraint(x*y == 1, label='constraint_1')
+        samples = dimod.SampleSet.from_samples_cqm({'x': 0, 'y': 1, 'z': 1}, cqm)
+        self.assertEqual(samples,
+                         dimod.SampleSet.from_samples(
+                            ([0, 1, 1], 'xyz'), dimod.INTEGER, energy=2, is_feasible=False,
+                            is_satisfied=[False], info={'constraint_labels': ['constraint_1']}))
+
 
 class TestDiscreteSampleSet(unittest.TestCase):
     def test_aggregate(self):

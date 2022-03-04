@@ -51,6 +51,7 @@ Methods
    SampleSet.from_future
    SampleSet.from_samples
    SampleSet.from_samples_bqm
+   SampleSet.from_samples_cqm
    SampleSet.from_serializable
    SampleSet.lowest
    SampleSet.resolve

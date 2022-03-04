@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``SampleSet.from_samples_cqm()`` method.
