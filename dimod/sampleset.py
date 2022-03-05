@@ -837,7 +837,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> x, y, z = dimod.Binaries(['x', 'y', 'z'])
             >>> cqm.set_objective(x*y + 2*y*z)
-            >>> cqm.add_constraint(x*y == 1, label='constraint_1')
+            >>> label = cqm.add_constraint(x*y == 1, label='constraint_1')
             >>> sampleset = dimod.SampleSet.from_samples_cqm({'x': 0, 'y': 1, 'z': 1}, cqm)
 
         """
