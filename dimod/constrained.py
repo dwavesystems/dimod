@@ -96,7 +96,7 @@ class ConstrainedQuadraticModel:
     Example:
 
         This example solves the simple `bin packing problem <https://w.wiki/3jz4>`_
-        problem of packing a set of items of different weights into the smallest
+        of packing a set of items of different weights into the smallest
         possible number of bins.
 
         `dimod` provides a general :func:`~dimod.generators.random_bin_packing`
@@ -429,8 +429,8 @@ class ConstrainedQuadraticModel:
         assigned a value of 1.
 
         These constraints support only :class:`~dimod.Vartype.BINARY` variables
-        and must be disjoint; that is, variables in such a constraint must not be
-        used elsewhere in the model.
+        and must be disjoint; that is, variables in one such constraint must not
+        be used in others in the model.
 
         Constraints added by the methods wrapped by :meth:`add_discrete` are
         guaranteed to be satisfied in solutions returned
@@ -1043,9 +1043,7 @@ class ConstrainedQuadraticModel:
         """Construct from a file-like object.
 
         Args:
-            fp: File pointer. If file-like, should be a readable, seekable
-                file-like object. If bytes-like, it will be wrapped with
-                :class:`io.BytesIO`.
+            fp: File pointer to a readable, seekable file-like object.
 
         The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
 
@@ -1166,8 +1164,9 @@ class ConstrainedQuadraticModel:
                 )
 
     def iter_violations(self, sample_like: SamplesLike, *,
-            skip_satisfied: bool = False,
-            clip: bool = False,) -> Iterator[Tuple[Hashable, Bias]]:
+                        skip_satisfied: bool = False,
+                        clip: bool = False,
+                        ) -> Iterator[Tuple[Hashable, Bias]]:
         """Yield violations for all constraints.
 
         Args:
@@ -1749,7 +1748,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_upper_bound("i", 5)
             >>> cqm.upper_bound("i")
             5.0
-            >>> qm.upper_bound("j")
+            >>> cqm.upper_bound("j")
             3.0
 
         """
