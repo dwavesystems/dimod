@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import operator
+import os
 
 from copy import deepcopy
 
@@ -20,6 +21,8 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
+
+import dimod
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
@@ -35,10 +38,15 @@ cdef class cyQM_template(cyQMBase):
         self.index_dtype = np.dtype(INDEX_DTYPE)
         self.variables = Variables()
 
+        self.REAL_INTERACTIONS = dimod.REAL_INTERACTIONS
+
     def __deepcopy__(self, memo):
         cdef cyQM_template new = type(self)()
         new.cppqm = self.cppqm
         new.variables = deepcopy(self.variables, memo)
+
+        new.REAL_INTERACTIONS = self.REAL_INTERACTIONS
+
         memo[id(self)] = new
         return new
 
@@ -185,15 +193,37 @@ cdef class cyQM_template(cyQMBase):
             for vi in range(length):
                 self.add_linear(vi, linear[vi])
 
-    def add_quadratic(self, u, v, bias_type bias):
-        cdef Py_ssize_t ui = self.variables.index(u)
-        cdef Py_ssize_t vi = self.variables.index(v)
+    cdef Py_ssize_t _add_quadratic(self, index_type ui, index_type vi, bias_type bias) except -1:
+        # note: does not test that ui, vi are valid
 
-        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+
+        if not self.REAL_INTERACTIONS:
+            if self.cppqm.vartype(ui) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[ui]!r}) "
+                    "cannot have interactions"
+                    )
+            if self.cppqm.vartype(vi) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[vi]!r}) "
+                    "cannot have interactions"
+                    )
 
         self.cppqm.add_quadratic(ui, vi, bias)
+
+    def add_quadratic(self, object u, object v, bias_type bias):
+        cdef Py_ssize_t ui = self.variables.index(u)
+        cdef Py_ssize_t vi = self.variables.index(v)
+        self._add_quadratic(ui, vi, bias)
 
     def add_quadratic_from_arrays(self,
                                   ConstInteger[::1] irow, ConstInteger[::1] icol,
@@ -208,7 +238,7 @@ cdef class cyQM_template(cyQMBase):
                 raise ValueError("variables must already exist")
 
             for vi in range(length):
-                self.cppqm.add_quadratic(irow[vi], icol[vi], qdata[vi])
+                self._add_quadratic(irow[vi], icol[vi], qdata[vi])
         else:
             for vi in range(length):
                 self.add_quadratic(irow[vi], icol[vi], qdata[vi])
@@ -216,16 +246,10 @@ cdef class cyQM_template(cyQMBase):
     def add_quadratic_from_iterable(self, quadratic):
         cdef Py_ssize_t ui, vi
         cdef bias_type bias
-
         for u, v, bias in quadratic:
             ui = self.variables.index(u)
             vi = self.variables.index(v)
-
-            if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                             or self.cppqm.vartype(ui) == cppVartype.BINARY):
-                raise ValueError(f"{u!r} cannot have an interaction with itself")
-
-            self.cppqm.add_quadratic(ui, vi, bias)
+            self._add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
         # as_vartype will raise for unsupported vartypes
@@ -420,9 +444,15 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
 
         cdef bias_type bias
         try:
@@ -702,9 +732,27 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+
+        if not self.REAL_INTERACTIONS:
+            if self.cppqm.vartype(ui) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[ui]!r}) "
+                    "cannot have interactions"
+                    )
+            if self.cppqm.vartype(vi) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[vi]!r}) "
+                    "cannot have interactions"
+                    )
 
         self.cppqm.set_quadratic(ui, vi, bias)
 

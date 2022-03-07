@@ -62,3 +62,6 @@ from dimod.utilities import *
 import dimod.utilities
 
 from dimod.vartypes import *
+
+# flags for some global features
+REAL_INTERACTIONS = False
