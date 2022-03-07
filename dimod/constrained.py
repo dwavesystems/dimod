@@ -1177,7 +1177,7 @@ class ConstrainedQuadraticModel:
             clip: If True, negative violations are rounded up to 0.
 
         Yields:
-            A 2-tuple containing the constraint label and the amount of
+            A 2-tuple containing the constraint label and the amount of the
             constraint's violation.
 
         Example:
@@ -1233,7 +1233,27 @@ class ConstrainedQuadraticModel:
 
     def is_almost_equal(self, other: 'ConstrainedQuadraticModel',
                         places: int = 7) -> bool:
-        """Return True if the given model's objective and constraints are almost equal."""
+        """Test for near equality to a given constrained quadratic model.
+
+        All biases of the objective and constraints are compared.
+
+        Args:
+            other:
+                Constrained quadratic model with which to compare biases.
+            places:
+                Number of decimal places to which the Python :func:`round`
+                function calculates approximate equality.
+
+        Examples:
+            >>> cqm1 = dimod.ConstrainedQuadraticModel.from_quadratic_model(
+            ...   dimod.BinaryQuadraticModel({0: 0.1234}, {(0, 1): -1.1234}, 0, "BINARY"))
+            >>> cqm2 = dimod.ConstrainedQuadraticModel.from_quadratic_model(
+            ...   dimod.BinaryQuadraticModel({0: 0.1232}, {(0, 1): -1.1229}, 0, "BINARY"))
+            >>> cqm1.is_almost_equal(cqm2, 4)
+            False
+            >>> cqm1.is_almost_equal(cqm2, 3)
+            True
+        """
         def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
             return (c0.sense is c1.sense
                     and c0.lhs.is_almost_equal(c1.lhs, places=places)
@@ -1245,7 +1265,14 @@ class ConstrainedQuadraticModel:
                         for label, constraint in self.constraints.items()))
 
     def is_equal(self, other: 'ConstrainedQuadraticModel') -> bool:
-        """Return True if the given model has the same objective and constraints."""
+        """Test for equality to a given constrained quadratic model.
+
+        All biases of the objective and constraints are compared.
+
+        Args:
+            other:
+                Constrained quadratic model with which to compare biases.
+        """
         def constraint_eq(c0: Comparison, c1: Comparison) -> bool:
             return (c0.sense is c1.sense
                     and c0.lhs.is_equal(c1.lhs)
@@ -1257,11 +1284,37 @@ class ConstrainedQuadraticModel:
                         for label, constraint in self.constraints.items()))
 
     def lower_bound(self, v: Variable) -> Bias:
-        """Return the lower bound on the specified variable."""
+        """Return the lower bound on the specified variable.
+
+        Args:
+            v: Variable label for a variable in the model.
+
+        Examples:
+            >>> i = dimod.Integer("i", lower_bound=3)
+            >>> j = dimod.Integer("j", upper_bound=3)
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint_from_comparison(i + j >= 4, label="Lower limit")
+            'Lower limit'
+            >>> cqm.lower_bound("i")
+            3.0
+
+        """
         return self.objective.lower_bound(v)
 
     def num_biases(self) -> int:
-        """The number of biases accross the objective and constraints."""
+        """Number of biases across the objective and constraints.
+
+        Examples:
+            This example counts the three linear biases (including a linear bias
+            implicitly set to zero for variable ``y``) and two quadratic baises.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> i = dimod.Integer("i")
+            >>> x, y = dimod.Binaries(["x", "y"])
+            >>> cqm.set_objective(2*x + 3*i - x*y + i*x)
+            >>> cqm.num_biases()
+            5
+        """
         num_biases = len(self.objective.linear) + len(self.objective.quadratic)
         num_biases += sum(len(const.lhs.linear) + len(const.lhs.quadratic)
                           for const in self.constraints.values())
@@ -1269,7 +1322,21 @@ class ConstrainedQuadraticModel:
 
     def num_quadratic_variables(self) -> int:
         """Return the total number of variables with at least one quadratic
-        interaction accross all constraints."""
+        interaction across all constraints.
+
+        Examples:
+            This example counts the two variables participating in interaction
+            ``3*i*k`` in constraint ``Constraint1`` but not variable ``j``'s
+            interaction ``2*i*j`` in the objective.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> i, j, k = dimod.Integers(["i", "j", "k"])
+            >>> cqm.set_objective(i - 2*i*j)
+            >>> cqm.add_constraint_from_comparison(3*i*k - 2*j <= 4, label="Constraint1")
+            'Constraint1'
+            >>> cqm.num_quadratic_variables()
+            2
+        """
         count = 0
         for const in self.constraints.values():
             lhs = const.lhs
@@ -1282,7 +1349,7 @@ class ConstrainedQuadraticModel:
         Note that this method does not maintain the constraint order.
 
         Args:
-            mapping: A mapping from the old constraint labels to the new.
+            mapping: Mapping from the old constraint labels to the new.
 
         Examples:
             >>> x, y, z = dimod.Binaries(['x', 'y', 'z'])
@@ -1315,12 +1382,13 @@ class ConstrainedQuadraticModel:
         """Relabel the variables of the objective and constraints.
 
         Args:
-            mapping: A mapping from the old variable labels to the new.
-            inplace: Whether to act on the model in-place or return a copy.
+            mapping: Mapping from the old variable labels to the new.
+            inplace: Relabels the model's variables in-place if True, or returns
+                a copy of the model with relabeled variables if False.
 
         Returns:
-            A constrained quadratic model. Either ``self`` if ``inplace`` or a
-            copy.
+            A constrained quadratic model. Itself by default, or a copy if
+            ``inplace`` is set to False.
 
         """
         if not inplace:
@@ -1336,11 +1404,22 @@ class ConstrainedQuadraticModel:
         """Remove a constraint from the model.
 
         Args:
-            label: The constraint label.
-            cascade: If ``cascade`` is true, then any variables in the removed
-                constraint that are not in any other constraints and that
-                contribute no energy to the objective will also be removed.
+            label: Label of the constraint to remove.
+            cascade: If set to True, also removes any variables found only in the
+                removed constraint that contribute no energy to the objective.
 
+        Examples:
+            This example also removes variable ``k`` from the model when removing
+            the constraint while keeping the variables used in the objective.
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> i, j, k = dimod.Integers(["i", "j", "k"])
+            >>> cqm.set_objective(2 * i - 3 * i * j)
+            >>> cqm.add_constraint_from_comparison(i * k - 2 * j <= 4, label="C1")
+            'C1'
+            >>> cqm.remove_constraint("C1", cascade=True)
+            >>> cqm.variables
+            Variables(['i', 'j'])
         """
         try:
             comparison = self.constraints.pop(label)
@@ -1364,13 +1443,18 @@ class ConstrainedQuadraticModel:
         """Set the lower bound for a variable.
 
         Args:
-            v: Variable in the constrained quadratic model.
+            v: Variable label of a variable in the constrained quadratic model.
             lb: Lower bound to set for variable ``v``.
 
         Raises:
             ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
                 or :class:`~dimod.Vartype.BINARY` variable.
 
+        Examples:
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variable("j", "INTEGER", upper_bound=5)
+            'j'
+            >>> cqm.set_lower_bound("j", 2)
         """
         self.objective.set_lower_bound(v, lb)
         for comp in self.constraints.values():
@@ -1384,7 +1468,7 @@ class ConstrainedQuadraticModel:
 
         Args:
             objective: Binary quadratic model (BQM) or quadratic model (QM) or
-            an iterable of tuples.
+                an iterable of tuples.
 
         Examples:
             >>> from dimod import Integer, ConstrainedQuadraticModel
@@ -1414,13 +1498,18 @@ class ConstrainedQuadraticModel:
         """Set the upper bound for a variable.
 
         Args:
-            v: Variable in the constrained quadratic model.
+            v: Variable label of a variable in the constrained quadratic model.
             ub: Upper bound to set for variable ``v``.
 
         Raises:
             ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
                 or :class:`~dimod.Vartype.BINARY` variable.
 
+        Examples:
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variable("j", "INTEGER", lower_bound=2)
+            'j'
+            >>> cqm.set_upper_bound("j", 5)
         """
         self.objective.set_upper_bound(v, ub)
         for comp in self.constraints.values():

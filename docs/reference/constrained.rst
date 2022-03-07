@@ -53,6 +53,7 @@ Methods
    ConstrainedQuadraticModel.iter_violations
    ConstrainedQuadraticModel.is_almost_equal
    ConstrainedQuadraticModel.is_equal
+   ConstrainedQuadraticModel.lower_bound
    ConstrainedQuadraticModel.num_biases
    ConstrainedQuadraticModel.num_quadratic_variables
    ConstrainedQuadraticModel.relabel_constraints
