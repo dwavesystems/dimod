@@ -812,6 +812,14 @@ class TestRemoveConstraint(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     def test_functional(self):
         cqm = CQM()
 

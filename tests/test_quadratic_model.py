@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import itertools
+import os
 import shutil
 import tempfile
 import unittest
@@ -402,6 +403,14 @@ class TestEnergies(unittest.TestCase):
 
 
 class TestFileSerialization(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
         qm = QM(dtype=dtype)
@@ -678,6 +687,36 @@ class TestReal(unittest.TestCase):
         qm_2 = Real()
         self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
 
+    def test_interactions(self):
+        a, b = dimod.Reals('ab')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
+
+        qm = a + b + x + i + s
+
+        for u, v in ['ab', 'ax', 'xa', 'ai', 'ia', 'sa', 'as', 'aa']:
+            with self.subTest('add', u=u, v=v):
+                with self.assertRaises(ValueError):
+                    qm.add_quadratic(u, v, 0)
+            with self.subTest('set', u=u, v=v):
+                with self.assertRaises(ValueError):
+                    qm.set_quadratic(u, v, 0)
+
+    def test_interactions_with_flag(self):
+        a, b = dimod.Reals('ab')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
+
+        qm = a + b + x + i + s
+
+        qm.data.REAL_INTERACTIONS = True
+
+        for u, v in ['ab', 'ax', 'xa', 'ai', 'ia', 'sa', 'as', 'aa']:
+            qm.add_quadratic(u, v, 0)
+            qm.set_quadratic(u, v, 0)
+
 
 class TestRemoveInteraction(unittest.TestCase):
     def test_several(self):
@@ -737,6 +776,14 @@ class TestSpinToBinary(unittest.TestCase):
 
 
 class TestSymbolic(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     def test_add_number(self):
         qm = QuadraticModel()
         new = qm + 1
