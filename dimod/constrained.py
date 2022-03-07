@@ -1595,7 +1595,7 @@ class ConstrainedQuadraticModel:
             qm.remove_interaction(u, u)
 
     def substitute_self_loops(self) -> Dict[Variable, Variable]:
-        """Replace any integer self-loops in the objective or constraints.
+        """Replace any self-loops in the objective or constraints.
 
         Self-loop :math:`i^2` is removed by introducing a new variable
         :math:`j` with interaction :math:`i*j` and adding constraint
@@ -1687,6 +1687,14 @@ class ConstrainedQuadraticModel:
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
+        Examples:
+            >>> cqm1 = dimod.ConstrainedQuadraticModel()
+            >>> x, y = dimod.Binaries(["x", "y"])
+            >>> cqm1.set_objective(2 * x * y - 2 * x)
+            >>> cqm_file = cqm1.to_file()
+            >>> cqm2 = dimod.ConstrainedQuadraticModel.from_file(cqm_file)
+            >>> print(cqm2.objective.to_polystring())
+            -2*x + 2*x*y
         """
         file = SpooledTemporaryFile(max_size=spool_size)
 
@@ -1727,19 +1735,69 @@ class ConstrainedQuadraticModel:
         return file
 
     def upper_bound(self, v: Variable) -> Bias:
-        """Return the upper bound on the specified variable."""
+        """Return the upper bound on the specified variable.
+
+        Args:
+            v: Variable label for a variable in the model.
+
+        Examples:
+            >>> i = dimod.Integer("i", upper_bound=3)
+            >>> j = dimod.Integer("j", upper_bound=3)
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint_from_comparison(i + j >= 1, label="Upper limit")
+            'Upper limit'
+            >>> cqm.set_upper_bound("i", 5)
+            >>> cqm.upper_bound("i")
+            5.0
+            >>> qm.upper_bound("j")
+            3.0
+
+        """
         return self.objective.upper_bound(v)
 
     def vartype(self, v: Variable) -> Vartype:
-        """The vartype of the given variable."""
+        """Vartype of the given variable.
+
+        Args:
+            v: Variable label for a variable in the model.
+
+        """
         return self.objective.vartype(v)
 
     def violations(self, sample_like: SamplesLike, *,
                    skip_satisfied: bool = False,
                    clip: bool = False,) -> Dict[Hashable, Bias]:
-        """Return a dictionary mapping constraint labels to the amount the constraints are violated.
+        """Return a dict of violations for all constraints.
 
-        This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
+        The dictionary maps constraint labels to the amount each constraint is
+        violated. This method is a shortcut for ``dict(cqm.iter_violations(sample))``.
+
+        Args:
+            sample_like: A sample. `sample-like` is an extension of
+                NumPy's array_like structure. See :func:`.as_samples`..
+            skip_satisfied: If True, does not yield constraints that are satisfied.
+            clip: If True, negative violations are rounded up to 0.
+
+        Returns:
+            A dict of 2-tuples containing the constraint label and the amount of
+            the constraint's violation.
+
+        Examples:
+
+            This example meets one constraint exactly, is well within the
+            requirement of a second, and violates a third.
+
+            >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i + j + k == 10, label='equal')
+            'equal'
+            >>> cqm.add_constraint(i + j <= 15, label='less equal')
+            'less equal'
+            >>> cqm.add_constraint(j - k >= 0, label='greater equal')
+            'greater equal'
+            >>> sample = {"i": 3, "j": 2, "k": 5}
+            >>> cqm.violations(sample)
+            {'equal': 0.0, 'less equal': -10.0, 'greater equal': 3.0}
         """
         return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied, clip=clip))
 
