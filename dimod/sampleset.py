@@ -781,6 +781,9 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
 
         """
+        if len(samples_like) == 0:
+            return cls.from_samples(([], bqm.variables), energy=[], vartype=bqm.vartype, **kwargs)
+
         # more performant to do this once, here rather than again in bqm.energies
         # and in cls.from_samples
         samples_like = as_samples(samples_like)

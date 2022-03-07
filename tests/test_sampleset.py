@@ -292,6 +292,12 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(samples.variables, [0, 1, 2])
         np.testing.assert_array_equal(np.flip(raw, 1), samples.record.sample)
 
+    def test_from_bqm_empty_list(self):
+        bqm = dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1})
+        sampleset = dimod.SampleSet.from_samples_bqm([], bqm)
+        self.assertEqual(len(sampleset), 0)
+        self.assertEqual(set(sampleset.variables), set('ab'))
+
     def test_from_cqm(self):
         cqm = dimod.ConstrainedQuadraticModel()
         x, y, z = dimod.Binaries(['x', 'y', 'z'])
