@@ -948,6 +948,9 @@ class ConstrainedQuadraticModel:
     def iter_constraint_data(self, sample_like) -> Iterator[ConstraintData]:
         """Yield information about the constraints for the given sample.
 
+        Note that this method iterates over constraints in the same order as
+        they appear in :attr:`.constraints`.
+
         Args:
             sample_like: A sample.
 
