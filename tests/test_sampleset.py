@@ -309,6 +309,13 @@ class TestConstruction(unittest.TestCase):
                             ([0, 1, 1], 'xyz'), dimod.INTEGER, energy=2, is_feasible=False,
                             is_satisfied=[False], info={'constraint_labels': ['constraint_1']}))
 
+    def test_from_cqm_empty_list(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+        cqm.set_objective(dimod.BinaryQuadraticModel.from_ising({}, {'ab': -1}))
+        sampleset = dimod.SampleSet.from_samples_cqm([], cqm)
+        self.assertEqual(len(sampleset), 0)
+        self.assertEqual(set(sampleset.variables), set('ab'))
+
 
 class TestDiscreteSampleSet(unittest.TestCase):
     def test_aggregate(self):

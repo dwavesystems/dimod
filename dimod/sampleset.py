@@ -844,6 +844,10 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset = dimod.SampleSet.from_samples_cqm({'x': 0, 'y': 1, 'z': 1}, cqm)
 
         """
+        if len(samples_like) == 0:
+            return cls.from_samples(([], cqm.variables), energy=[], vartype='INTEGER',
+                                    is_satisfied=[], is_feasible=[], **kwargs)
+
         # more performant to do this once, here rather than again in cqm.objective.energies
         # and in cls.from_samples
         samples_like = samples, labels = as_samples(samples_like)
