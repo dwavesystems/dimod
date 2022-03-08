@@ -274,7 +274,7 @@ class TestChildStructureDFS(unittest.TestCase):
         with self.assertRaises(ValueError):
             dimod.child_structure_dfs(nested)
 
-class TestInnerChildProperties(unittest.TestCase):
+class TestInnermostChildProperties(unittest.TestCase):
         
     class Dummy(dimod.Sampler):
         def __init__(self, annealing_time_range):
@@ -293,13 +293,13 @@ class TestInnerChildProperties(unittest.TestCase):
         # not a composed sampler
         annealing_time_range = [1, 1000]
         sampler = self.Dummy(annealing_time_range)
-        properties = dimod.inner_child_properties(sampler)
+        properties = dimod.innermost_child_properties(sampler)
         self.assertEqual(properties["annealing_time_range"], annealing_time_range)
 
     def test_composed_sampler(self):
         annealing_time_range = [1, 1000]
         sampler = dimod.ClipComposite(dimod.ScaleComposite(self.Dummy(annealing_time_range)))
-        properties = dimod.inner_child_properties(sampler)
+        properties = dimod.innermost_child_properties(sampler)
         self.assertEqual(properties["annealing_time_range"], annealing_time_range)
 
 

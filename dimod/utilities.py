@@ -12,6 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
 import copy
 import itertools
 import os
@@ -22,14 +24,16 @@ from functools import reduce
 
 import numpy as np
 
+import dimod
 from dimod.typing import Variable
+
 
 __all__ = ['ising_energy',
            'qubo_energy',
            'ising_to_qubo',
            'qubo_to_ising',
            'child_structure_dfs',
-           'inner_child_properties',
+           'innermost_child_properties',
            'get_include',
            ]
 
@@ -450,9 +454,8 @@ def child_structure_dfs(sampler, seen=None):
 
     raise ValueError("no structured sampler found")
 
-def inner_child_properties(sampler):
-    """
-    Returns the properties of inner-most child sampler in a composite.
+def innermost_child_properties(sampler: dimod.Sampler) -> typing.Dict[str, typing.Any]:
+    """Returns the properties of the inner-most child sampler in a composite.
 
     Args:
         sampler: A dimod sampler
@@ -462,16 +465,15 @@ def inner_child_properties(sampler):
 
     Example:
     >>> sampler = EmbeddingComposite(ScaleComposite(qpu_sampler))
-    >>> inner_child_properties(sampler)["annealing_time_range]
+    >>> inner_child_properties(sampler)["annealing_time_range"]
     [0.5, 2000.0]
     """
 
-    def get_properties(properties):
-        if "child_properties" in properties:
-            return get_properties(properties["child_properties"])
-        else:
-            return properties
-    return get_properties(sampler.properties)
+    try:
+        return innermost_child_properties(sampler.child)
+    except AttributeError:
+        return sampler.properties
+
 
 def get_include():
     """Return the directory with dimod's header files."""
