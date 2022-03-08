@@ -858,9 +858,8 @@ class SampleSet(abc.Iterable, abc.Sized):
                          for datum in cqm.iter_constraint_data((s, labels))] for s in samples]
         is_feasible = [all(satisfied) for satisfied in is_satisfied]
 
-        info = kwargs.get('info', {})
-        info['constraint_labels'] = list(cqm.constraints.keys())
-        kwargs['info'] = info
+        kwargs.setdefault('info', {})
+        kwargs['info']['constraint_labels'] = list(cqm.constraints.keys())
 
         return cls.from_samples(samples_like, energy=energies, vartype='INTEGER',
                                 is_satisfied=is_satisfied, is_feasible=is_feasible, **kwargs)
