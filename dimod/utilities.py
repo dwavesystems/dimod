@@ -29,6 +29,7 @@ __all__ = ['ising_energy',
            'ising_to_qubo',
            'qubo_to_ising',
            'child_structure_dfs',
+           'inner_child_properties',
            'get_include',
            ]
 
@@ -449,6 +450,28 @@ def child_structure_dfs(sampler, seen=None):
 
     raise ValueError("no structured sampler found")
 
+def inner_child_properties(sampler):
+    """
+    Returns the properties of inner-most child sampler in a composite.
+
+    Args:
+        sampler: A dimod sampler
+
+    Returns:
+        properties (dict): The properties of the inner-most sampler
+
+    Example:
+    >>> sampler = EmbeddingComposite(ScaleComposite(qpu_sampler))
+    >>> inner_child_properties(sampler)["annealing_time_range]
+    [0.5, 2000.0]
+    """
+
+    def get_properties(properties):
+        if "child_properties" in properties:
+            return get_properties(properties["child_properties"])
+        else:
+            return properties
+    return get_properties(sampler.properties)
 
 def get_include():
     """Return the directory with dimod's header files."""
