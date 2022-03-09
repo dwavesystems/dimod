@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    ``SampleSet.from_samples_bqm`` now handles empty list input correctly.

@@ -241,14 +241,8 @@ class ExactCQMSolver():
             return SampleSet.from_samples([], 'INTEGER', energy=[])
 
         cases = _all_cases_cqm(cqm)
-        energies = cqm.objective.energies(cases)
 
-        is_satisfied = [[info.violation <= atol + rtol*info.rhs_energy for info in cqm.iter_constraint_data((c,cases[1]))] for c in cases[0]]
-        is_feasible = [all(satisfied) for satisfied in is_satisfied]
-
-        # from_samples requires a single vartype argument, but QuadraticModel
-        # and therefore CQM allow mixed vartypes. For now, only passing 'INTEGER'
-        return SampleSet.from_samples(cases, 'INTEGER', energies, is_feasible=is_feasible, is_satisfied=is_satisfied)
+        return SampleSet.from_samples_cqm(cases, cqm, rtol=rtol, atol=atol, **kwargs)
 
 
 def _graycode(bqm):

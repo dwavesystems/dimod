@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import itertools
 import json
 import unittest
 
@@ -1266,3 +1267,14 @@ class TestCQMFromLPFile(unittest.TestCase):
                 self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 3.5,
                                        msg='constraint c1, linear(x0) should be 3.5')
 
+
+class TestIterConstraintData(unittest.TestCase):
+    def test_iteration_order(self):
+        cqm = CQM()
+        x, y, z = dimod.Binaries(['x', 'y', 'z'])
+        cqm.set_objective(x*y + 2*y*z)
+        for a, b, c in itertools.permutations([x, y, z]):
+            cqm.add_constraint(a * (b - c) <= 0)
+        self.assertEqual(len(cqm.constraints), 6)
+        self.assertEqual(list(cqm.constraints.keys()),
+            [datum.label for datum in cqm.iter_constraint_data({'x': 1, 'y': 0, 'z': 0})])

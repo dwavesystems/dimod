@@ -781,6 +781,9 @@ class SampleSet(abc.Iterable, abc.Sized):
             >>> sampleset = dimod.SampleSet.from_samples_bqm({'a': -1, 'b': 1}, bqm)
 
         """
+        if len(samples_like) == 0:
+            return cls.from_samples(([], bqm.variables), energy=[], vartype=bqm.vartype, **kwargs)
+
         # more performant to do this once, here rather than again in bqm.energies
         # and in cls.from_samples
         samples_like = as_samples(samples_like)
@@ -788,6 +791,78 @@ class SampleSet(abc.Iterable, abc.Sized):
         energies = bqm.energies(samples_like)
 
         return cls.from_samples(samples_like, energy=energies, vartype=bqm.vartype, **kwargs)
+
+    @classmethod
+    def from_samples_cqm(cls, samples_like, cqm, rtol=1e-6, atol=1e-8, **kwargs):
+        """Build a sample set from raw samples and a constrained quadratic model.
+
+        The constrained quadratic model is used to calculate energies and feasibility.
+
+        Args:
+            samples_like:
+                A collection of raw samples. 'samples_like' is an extension of NumPy's array_like.
+                See :func:`.as_samples`.
+
+            cqm (:obj:`.ConstrainedQuadraticModel`):
+                A constrained quadratic model.
+
+            rtol (float, optional, default=1e-6):
+                Relative tolerance for constraint violation.
+                See :meth:`.ConstrainedQuadraticModel.check_feasible` for more information.
+
+            atol (float, optional, default=1e-8):
+                Absolute tolerance for constraint violations.
+                See :meth:`.ConstrainedQuadraticModel.check_feasible` for more information.
+
+            info (dict, optional):
+                Information about the :class:`SampleSet` as a whole formatted as a dict.
+
+            num_occurrences (array_like, optional):
+                Number of occurrences for each sample. If not provided, defaults to a vector of 1s.
+
+            aggregate_samples (bool, optional, default=False):
+                If True, all samples in returned :obj:`.SampleSet` are unique,
+                with `num_occurrences` accounting for any duplicate samples in
+                `samples_like`.
+
+            sort_labels (bool, optional, default=True):
+                Return :attr:`.SampleSet.variables` in sorted order. For mixed
+                (unsortable) types, the given order is maintained.
+
+            **vectors (array_like):
+                Other per-sample data.
+
+        Returns:
+            :obj:`.SampleSet`
+
+        Examples:
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> x, y, z = dimod.Binaries(['x', 'y', 'z'])
+            >>> cqm.set_objective(x*y + 2*y*z)
+            >>> label = cqm.add_constraint(x*y == 1, label='constraint_1')
+            >>> sampleset = dimod.SampleSet.from_samples_cqm({'x': 0, 'y': 1, 'z': 1}, cqm)
+
+        """
+        if len(samples_like) == 0:
+            return cls.from_samples(([], cqm.variables), energy=[], vartype='INTEGER',
+                                    is_satisfied=[], is_feasible=[], **kwargs)
+
+        # more performant to do this once, here rather than again in cqm.objective.energies
+        # and in cls.from_samples
+        samples_like = samples, labels = as_samples(samples_like)
+
+        energies = cqm.objective.energies(samples_like)
+
+        is_satisfied = [[datum.violation <= atol + rtol*abs(datum.rhs_energy)
+                         for datum in cqm.iter_constraint_data((s, labels))] for s in samples]
+        is_feasible = [all(satisfied) for satisfied in is_satisfied]
+
+        kwargs.setdefault('info', {})
+        kwargs['info']['constraint_labels'] = list(cqm.constraints.keys())
+
+        return cls.from_samples(samples_like, energy=energies, vartype='INTEGER',
+                                is_satisfied=is_satisfied, is_feasible=is_feasible, **kwargs)
 
     @classmethod
     def from_future(cls, future, result_hook=None):

@@ -1098,6 +1098,9 @@ class ConstrainedQuadraticModel:
     def iter_constraint_data(self, sample_like: SamplesLike) -> Iterator[ConstraintData]:
         """Yield information about the constraints for the given sample.
 
+        Note that this method iterates over constraints in the same order as
+        they appear in :attr:`.constraints`.
+
         Args:
             sample_like: A sample. `sample-like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.

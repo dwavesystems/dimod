@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    ``ExactCQMSolver.sample_cqm`` now uses ``SampleSet.from_samples_cqm``.  This
+    corrects a small error in the calculation of constraint satisfaction.
