@@ -105,6 +105,7 @@ non-empty dicts.
             return self._parameters
 
 """
+from __future__ import annotations
 
 import abc
 import typing
@@ -317,3 +318,6 @@ class Sampler(metaclass=SamplerABCMeta):
             kwargs.pop(kw)
 
         return kwargs
+    
+    def innermost_child(self) -> Sampler:
+            return self

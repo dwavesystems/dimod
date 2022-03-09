@@ -362,3 +362,20 @@ class TestSamplerClass(unittest.TestCase):
 
         # Check that known kwargs are kept and unknown kwargs are removed
         self.assertDictEqual(kwargs, {'a': 1})
+
+    def test_innermost_child(self):
+        class Dummy(dimod.Sampler):
+            def sample(self, **kwargs):
+                kwargs = self.remove_unknown_kwargs(**kwargs)
+                return kwargs
+
+            @property
+            def parameters(self):
+                return {'a':[]}
+
+            @property
+            def properties(self):
+                return {'b':[]}
+
+        sampler = Dummy()
+        self.assertDictEqual(sampler.innermost_child().properties, {'b':[]})
