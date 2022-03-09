@@ -45,7 +45,6 @@ Examples:
     For more examples, see the source code for the composed
     documented in :ref:`quadratic_composites`.
 """
-from __future__ import annotations
 
 import abc
 
@@ -76,15 +75,15 @@ class Composite(abc.ABC):
         except IndexError:
             raise RuntimeError("A Composite must have at least one child Sampler")
 
+    def innermost_child(self) -> Sampler:
+        """Returns the inner-most child sampler"""
+        return self.child.innermost_child()    
 
 
-class ComposedSampler(Sampler, Composite):
+class ComposedSampler(Composite, Sampler):
     """Abstract base class for dimod composed samplers.
 
     Inherits from :class:`.Sampler` and :class:`.Composite`.
 
     """
-
-    def innermost_child(self) -> Sampler:
-        """Returns the inner-most child sampler"""
-        return self.child.innermost_child()    
+    pass
