@@ -12,9 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import typing
 import warnings
-
-from typing import Tuple
 
 import numpy as np
 
@@ -25,8 +24,8 @@ __all__ = ['bin_packing', 'random_bin_packing']
 
 
 def random_bin_packing(num_items: int,
-                       seed: int = 32,
-                       weight_range: Tuple[int, int] = (10, 30),
+                       seed: typing.Optional[int] = None,
+                       weight_range: typing.Tuple[int, int] = (10, 30),
                        ) -> ConstrainedQuadraticModel:
     """Generate a bin packing problem as a constrained quadratic model.
 
