@@ -386,10 +386,14 @@ class ConstrainedQuadraticModel:
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer, Binary
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('j', 'INTEGER')   # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('x', 'BINARY')    # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('y', 'BINARY')    # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('INTEGER', 'i')
+            'i'
+            >>> cqm.add_variable('INTEGER', 'j')
+            'j'
+            >>> cqm.add_variable('BINARY', 'x')
+            'x'
+            >>> cqm.add_variable('BINARY', 'y')
+            'y'
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
             >>> print(cqm.constraints[label1].to_polystring())
@@ -434,7 +438,7 @@ class ConstrainedQuadraticModel:
 
             >>> iterable = ['x', 'y', 'z']
             >>> for v in iterable:
-            ...      cqm.add_variable(v, 'BINARY')
+            ...      cqm.add_variable('BINARY', v)
             'x'
             'y'
             'z'
@@ -548,7 +552,7 @@ class ConstrainedQuadraticModel:
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> color = ["red", "blue", "green"]
             >>> for v in color:
-            ...      cqm.add_variable(v, 'BINARY')
+            ...      cqm.add_variable('BINARY', v)
             'red'
             'blue'
             'green'
@@ -645,22 +649,26 @@ class ConstrainedQuadraticModel:
         self.discrete.add(label)
         return label
 
-    def add_variable(self, v: Variable, vartype: VartypeLike,
+    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
                      *,
-                     lower_bound: Optional[float] = None,
+                     lower_bound: float = 0,
                      upper_bound: Optional[float] = None,
                      ) -> Variable:
         """Add a variable to the model.
 
         Args:
-            variable: Variable label.
-
             vartype:
                 Variable type. One of:
 
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
+
+            v:
+                Label for the variable. Defaults to the length of the
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
 
             lower_bound:
                 Lower bound on the variable. Ignored when the variable is
@@ -681,10 +689,21 @@ class ConstrainedQuadraticModel:
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_variable('i', 'INTEGER')
+            >>> cqm.add_variable('INTEGER', 'i')
             'i'
 
         """
+        try:
+            vartype = as_vartype(vartype, extended=True)
+        except TypeError:
+            # in dimod<0.11 the argument order was v, vartype so let's allow that case
+            warnings.warn(
+                "Parameter order CQM.add_variable(v, vartype) "
+                "is deprecated since dimod 0.11.0 and will be removed in 0.13.0. "
+                "Use CQM.add_variable(vartype, v) instead.",
+                DeprecationWarning, stacklevel=2)
+            v, vartype = vartype, v
+
         return self.objective.add_variable(
             vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
@@ -1502,9 +1521,9 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable("j", "INTEGER", upper_bound=5)
+            >>> cqm.add_variable('INTEGER', 'j', upper_bound=5)
             'j'
-            >>> cqm.set_lower_bound("j", 2)
+            >>> cqm.set_lower_bound('j', 2)
         """
         self.objective.set_lower_bound(v, lb)
         for comp in self.constraints.values():
@@ -1557,9 +1576,9 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable("j", "INTEGER", lower_bound=2)
+            >>> cqm.add_variable('INTEGER', 'j', lower_bound=2)
             'j'
-            >>> cqm.set_upper_bound("j", 5)
+            >>> cqm.set_upper_bound('j', 5)
         """
         self.objective.set_upper_bound(v, ub)
         for comp in self.constraints.values():

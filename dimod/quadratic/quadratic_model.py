@@ -469,11 +469,12 @@ class QuadraticModel(QuadraticViewsMixin):
         else:
             self.data.add_quadratic_from_iterable(quadratic)
 
-
     @forwarding_method
-    def add_variable(self, vartype: VartypeLike,
-                     v: Optional[Variable] = None,
-                     *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> Variable:
+    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
+                     *,
+                     lower_bound: float = 0,
+                     upper_bound: Optional[float] = None,
+                     ) -> Variable:
         """Add a variable to the quadratic model.
 
         Args:
