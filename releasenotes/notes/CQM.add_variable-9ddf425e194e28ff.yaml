@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    Deprecate support for the ``ConstrainedQuadraticModel.add_variable(v, vartype)``
+    argument order. Use ``ConstrainedQuadraticModel.add_variable(vartype, v)``
+    instead.
+    See `#969 <https://github.com/dwavesystems/dimod/issues/969>`_.

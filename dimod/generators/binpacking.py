@@ -18,6 +18,7 @@ import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
+from dimod.vartypes import BINARY
 
 __all__ = ['random_bin_packing']
 
@@ -53,7 +54,7 @@ def random_bin_packing(num_items: int,
     bin_capacity = int(num_items * np.mean(weights) / 5)
     model = ConstrainedQuadraticModel()
 
-    obj = BinaryQuadraticModel(vartype='BINARY')
+    obj = BinaryQuadraticModel(BINARY)
     y = {j: obj.add_variable(f'y_{j}') for j in range(max_num_bins)}
 
     for j in range(max_num_bins):
@@ -61,7 +62,7 @@ def random_bin_packing(num_items: int,
 
     model.set_objective(obj)
 
-    x = {(i, j): model.add_variable(f'x_{i}_{j}', vartype='BINARY') for i in range(num_items) for
+    x = {(i, j): model.add_variable(BINARY, f'x_{i}_{j}') for i in range(num_items) for
          j in range(max_num_bins)}
 
     # Each item goes to one bin

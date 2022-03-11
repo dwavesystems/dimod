@@ -32,14 +32,27 @@ class TestAddVariable(unittest.TestCase):
         cqm.set_lower_bound('i', 1)
         cqm.set_upper_bound('i', 5)
         with self.assertRaises(ValueError):
-            cqm.add_variable('i', 'INTEGER', lower_bound=-1)
+            cqm.add_variable('INTEGER', 'i', lower_bound=-1)
         with self.assertRaises(ValueError):
-            cqm.add_variable('i', 'INTEGER', upper_bound=6)
+            cqm.add_variable('INTEGER', 'i', upper_bound=6)
 
     def test_return_value(self):
         cqm = dimod.CQM()
-        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
-        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
+        self.assertEqual(cqm.add_variable('INTEGER', 'i'), 'i')
+        self.assertEqual(cqm.add_variable('INTEGER', 'i'), 'i')
+
+    def test_deprecation(self):
+        cqm = dimod.CQM()
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('a', 'INTEGER')
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('b', dimod.INTEGER)
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('c', frozenset((-1, 1)))
+
+        # ambiguous cases should use the new format
+        self.assertEqual(cqm.add_variable('SPIN', 'BINARY'), 'BINARY')
+        self.assertEqual(cqm.vartype('BINARY'), dimod.SPIN)
 
 
 class TestAddConstraint(unittest.TestCase):
@@ -84,9 +97,9 @@ class TestAddConstraint(unittest.TestCase):
     def test_terms(self):
         cqm = CQM()
 
-        a = cqm.add_variable('a', 'BINARY')
-        b = cqm.add_variable('b', 'BINARY')
-        c = cqm.add_variable('c', 'INTEGER')
+        a = cqm.add_variable('BINARY', 'a')
+        b = cqm.add_variable('BINARY', 'b')
+        c = cqm.add_variable('INTEGER', 'c')
 
         cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)], sense='<=')
 
@@ -205,12 +218,12 @@ class TestBounds(unittest.TestCase):
         i1 = Integer('i', upper_bound=1)
 
         cqm = CQM()
-        cqm.add_variable('i', 'INTEGER')
+        cqm.add_variable('INTEGER', 'i')
         cqm.set_objective(i0)
         with self.assertRaises(ValueError):
             cqm.add_constraint(i1 <= 1)
 
-        cqm.add_variable('i', 'INTEGER')
+        cqm.add_variable('INTEGER', 'i')
 
     def test_setting(self):
         i = Integer('i')
@@ -956,9 +969,9 @@ class TestSetObjective(unittest.TestCase):
     def test_terms_objective(self):
         cqm = CQM()
 
-        a = cqm.add_variable('a', 'BINARY')
-        b = cqm.add_variable('b', 'BINARY')
-        c = cqm.add_variable('c', 'INTEGER')
+        a = cqm.add_variable('BINARY', 'a')
+        b = cqm.add_variable('BINARY', 'b')
+        c = cqm.add_variable('INTEGER', 'c')
 
         cqm.set_objective([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)])
         energy = cqm.objective.energy({'a': 1, 'b': 0, 'c': 10})
