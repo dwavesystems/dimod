@@ -41,6 +41,7 @@ import numpy as np
 from dimod import __version__
 from dimod.sampleset import SampleSet
 from dimod.vartypes import Vartype
+from dimod import BinaryQuadraticModel
 
 __all__ = 'DimodEncoder', 'DimodDecoder', 'dimod_object_hook'
 
