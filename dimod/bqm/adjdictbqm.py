@@ -201,16 +201,18 @@ class AdjDictBQM(ShapeableBQM):
         adj = self._adj
 
         if isinstance(quadratic, abc.Mapping):
-            for (u, v), bias in quadratic.items():
-                self.add_variable(u)
-                self.add_variable(v)
+            for quadraticitem in quadratic.items():
+                key = quadraticitem[0]
+                bias = quadraticitem[1]
+                self.add_variable(key[0])
+                self.add_variable(key[1])
 
-                if u == v and vartype is Vartype.SPIN:
+                if key[0] == key[1] and vartype is Vartype.SPIN:
                     offset = offset + bias  # not += on off-chance it's mutable
-                elif u in adj[v]:
-                    adj[u][v] = adj[v][u] = adj[u][v] + bias
+                elif key[0] in adj[key[1]]:
+                    adj[key[0]][key[1]] = adj[key[1]][key[0]] = adj[key[0]][key[1]] + bias
                 else:
-                    adj[u][v] = adj[v][u] = bias
+                    adj[key[0]][key[1]] = adj[key[1]][key[0]] = bias
         elif isinstance(quadratic, abc.Iterator):
             for u, v, bias in quadratic:
                 self.add_variable(u)
