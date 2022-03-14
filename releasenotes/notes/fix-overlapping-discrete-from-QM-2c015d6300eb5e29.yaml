@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    ``ConstrainedQuadraticModel.add_discrete()``,
+    ``ConstrainedQuadraticModel.add_constraint_from_iterable()``, and
+    ``ConstrainedQuadraticModel.add_discrete_from_model()``
+    now correctly raise an error when given a binary variable that overlaps with an existing
+    discrete constraint.
+    See `#1149 <https://github.com/dwavesystems/dimod/issues/1149>`_.
