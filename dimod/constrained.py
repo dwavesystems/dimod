@@ -1021,11 +1021,18 @@ class ConstrainedQuadraticModel:
         return cls.from_quadratic_model(qm)
 
     @classmethod
-    def from_file(cls, fp: Union[BinaryIO, ByteString]) -> "ConstrainedQuadraticModel":
+    def from_file(cls,
+                  fp: Union[BinaryIO, ByteString],
+                  *,
+                  check_header: bool = True,
+                  ) -> ConstrainedQuadraticModel:
         """Construct from a file-like object.
 
         Args:
             fp: File pointer to a readable, seekable file-like object.
+
+            check_header: If True, the header is checked for consistency
+                against the deserialized model. Otherwise it is ignored.
 
         The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
 
@@ -1046,8 +1053,8 @@ class ConstrainedQuadraticModel:
 
         header_info = read_header(file_like, CQM_MAGIC_PREFIX)
 
-        if header_info.version >= (2, 0):
-            raise ValueError("cannot load a BQM serialized with version "
+        if not (1, 0) <= header_info.version <= (1, 2):
+            raise ValueError("cannot load a CQM serialized with version "
                              f"{header_info.version!r}, try upgrading your "
                              "dimod version")
 
@@ -1074,6 +1081,26 @@ class ConstrainedQuadraticModel:
                 cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
                 if discrete:
                     cqm.discrete.add(label)
+
+        if check_header:
+            expected = dict(num_variables=len(cqm.variables),
+                            num_constraints=len(cqm.constraints),
+                            num_biases=cqm.num_biases(),
+                            )
+            if header_info.version >= (1, 1):
+                expected.update(
+                    num_quadratic_variables=cqm.num_quadratic_variables(include_objective=False))
+            if header_info.version >= (1, 2):
+                expected.update(
+                    num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                    num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
+                    )
+
+            if expected != header_info.data:
+                raise ValueError(
+                    "header data does not match the deserialized CQM. "
+                    f"Expected {expected!r}, recieved {header_info.data!r}"
+                    )
 
         return cqm
 
@@ -1691,7 +1718,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.3):
+        Format Specification (Version 1.2):
 
             This format is inspired by the `NPY format`_
 
@@ -1715,8 +1742,8 @@ class ConstrainedQuadraticModel:
                      num_constraints=len(cqm.constraints),
                      num_biases=cqm.num_biases(),
                      num_quadratic_variables=cqm.num_quadratic_variables(),
-                     num_quadratic_real_variables=cqm.num_quadratic_variables('REAL', include_objective=True),
-                     num_real_linear_biases=cqm.num_biases('REAL', linear_only=True),
+                     num_quadratic_variables_real=cqm.num_quadratic_variables('REAL', include_objective=True),
+                     num_linear_biases_real=cqm.num_biases('REAL', linear_only=True),
                      )
 
             it is terminated by a newline character and padded with spaces to
@@ -1732,11 +1759,11 @@ class ConstrainedQuadraticModel:
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
 
-        Format Specification (Version 1.2):
+        Format Specification (Version 1.1):
 
-            This format is the same as Version 1.3, except that the data dict
-            does not have ``num_quadratic_real_variables`` and
-            ``num_real_linear_biases``.
+            This format is the same as Version 1.2, except that the data dict
+            does not have ``num_quadratic_variables_real`` and
+            ``num_linear_biases_real``.
 
         Format Specification (Version 1.0):
 
@@ -1760,8 +1787,8 @@ class ConstrainedQuadraticModel:
                     num_constraints=len(self.constraints),
                     num_biases=self.num_biases(),
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
-                    num_quadratic_real_variables=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
-                    num_real_linear_biases=self.num_biases(Vartype.REAL, linear_only=True),
+                    num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
                     )
 
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 2))

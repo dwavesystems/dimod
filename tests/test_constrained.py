@@ -881,8 +881,8 @@ class TestSerialization(unittest.TestCase):
                               num_constraints=2,
                               num_quadratic_variables=4,
                               num_variables=3,
-                              num_quadratic_real_variables=0,
-                              num_real_linear_biases=0,
+                              num_quadratic_variables_real=0,
+                              num_linear_biases_real=0,
                               ))
 
     def test_header_real(self):
@@ -904,8 +904,8 @@ class TestSerialization(unittest.TestCase):
                               num_constraints=3,
                               num_quadratic_variables=2,
                               num_variables=6,
-                              num_quadratic_real_variables=0,
-                              num_real_linear_biases=5,
+                              num_quadratic_variables_real=0,
+                              num_linear_biases_real=5,
                               ))
 
         cqm.set_objective(a + b + x + s*i + a*b)
@@ -916,8 +916,8 @@ class TestSerialization(unittest.TestCase):
                               num_constraints=4,
                               num_quadratic_variables=4,
                               num_variables=6,
-                              num_quadratic_real_variables=4,
-                              num_real_linear_biases=7,
+                              num_quadratic_variables_real=4,
+                              num_linear_biases_real=7,
                               ))
 
 
