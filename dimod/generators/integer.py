@@ -64,8 +64,8 @@ def binary_encoding(v: Variable, upper_bound: int) -> BinaryQuadraticModel:
     # note: the paper above also gives a nice way to handle bounded coefficients
     # if we want to do that in the future.
 
-    if upper_bound <= 1:
-        raise ValueError("upper_bound must be greater than or equal to 1, "
+    if upper_bound < 2:
+        raise ValueError("upper_bound must be greater than or equal to 2, "
                          f"received {upper_bound}")
     upper_bound = math.floor(upper_bound)
 
