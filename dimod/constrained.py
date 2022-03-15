@@ -652,7 +652,13 @@ class ConstrainedQuadraticModel:
             raise ValueError("discrete constraints must have at least two variables")
 
         for v, bias in qm.iter_linear():
-            if not vartype(v) is Vartype.BINARY:
+            if v in self.variables:
+                # it already exists, let's make sure it's not already used
+                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                    raise ValueError(f"variable {v!r} is already used in a discrete variable")
+                if self.vartype(v) is not Vartype.BINARY:
+                    raise ValueError(f"variable {v!r} has already been added but is not BINARY")
+            elif not vartype(v) is Vartype.BINARY:
                 raise ValueError("all variables in a discrete constraint must be binary, "
                                  f"{v!r} is {vartype(v).name!r}")
             # we could maybe do a scaling, but let's just keep it simple for now
