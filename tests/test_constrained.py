@@ -156,6 +156,29 @@ class TestAddDiscrete(unittest.TestCase):
         self.assertIn(c, cqm.discrete)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
+    def test_qm_overlap(self):
+        b1 = dimod.Binary('b1')
+        b2 = dimod.Binary('b2')
+        b3 = dimod.Binary('b3')
+
+        cqm = dimod.CQM()
+        cqm.add_discrete(dimod.quicksum([b1, b2]))
+        with self.assertRaises(ValueError):
+            cqm.add_discrete(dimod.quicksum([b1, b3]))
+
+    def test_qm_not_binary(self):
+        x, y = dimod.Binaries('xy')
+        i, j = dimod.Integers('ij')
+        ii = dimod.Binary('i')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint(i <= 5)
+        with self.assertRaises(ValueError):
+            cqm.add_discrete(x + y + ii)
+
+        with self.assertRaises(ValueError):
+            cqm.add_discrete(x + j)
+
     def test_simple(self):
         cqm = CQM()
         cqm.add_discrete('abc')

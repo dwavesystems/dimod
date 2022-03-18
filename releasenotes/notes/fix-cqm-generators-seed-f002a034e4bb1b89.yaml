@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    ``dimod.generators.random_knapsack()`` and ``dimod.generators.random_bin_packing()``
+    no longer use a fixed seed by default.

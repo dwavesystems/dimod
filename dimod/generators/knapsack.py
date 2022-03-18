@@ -12,21 +12,21 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import typing
 import warnings
 
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
-from typing import Tuple
 
 __all__ = ['knapsack', 'random_knapsack']
 
 
 def random_knapsack(num_items: int,
-                    seed: int = 32,
-                    value_range: Tuple[int, int] = (10, 30),
-                    weight_range: Tuple[int, int] = (10, 30),
+                    seed: typing.Optional[int] = None,
+                    value_range: typing.Tuple[int, int] = (10, 30),
+                    weight_range: typing.Tuple[int, int] = (10, 30),
                     tightness_ratio: float = 0.5,
                     ) -> ConstrainedQuadraticModel:
     """Generates a constrained quadratic model encoding a knapsack problem.
