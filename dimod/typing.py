@@ -17,8 +17,6 @@ Type hints for common dimod inputs.
 """
 import typing
 
-from typing import Collection, Hashable, Mapping, NamedTuple, Sequence, Tuple, Union
-
 import numpy as np
 
 from dimod.vartypes import VartypeLike
@@ -48,63 +46,110 @@ __all__ = ['Bias',
 
 # use float for python types, https://www.python.org/dev/peps/pep-0484/#the-numeric-tower
 # exclude np.complexfloating from numpy types
-Bias = Union[float, np.floating, np.integer]
+Bias = typing.Union[float, np.floating, np.integer]
+"""A :obj:`~typing.Union` representing objects that can be used as biases.
 
-Variable = Hashable  # todo: exclude None
+This includes:
+
+* Python's :class:`int` and :class:`float`.
+* NumPy's :class:`~numpy.floating` and :class:`~numpy.integer`.
+
+"""
+
+# it would be nice to be able to exclude None from Variable. We can define
+# a special abstract base class that excludes None, but making it behave like
+# a typing class is a pain accross our supported Python versions. In the future
+# we should handle it
+
+Variable = typing.Hashable
+"""Objects that can be used as variable labels.
+
+.. note::
+
+    In `dimod` variables can be labelled using any hashable object except for
+    :obj:`None`. However, for simplicity we alias :class:`~typing.Hashable` which
+    does permit :obj:`None`.
+
+"""
+
+
+GraphLike = typing.Union[
+    int,  # number of nodes
+    typing.Tuple[typing.Collection[Variable], typing.Collection[typing.Tuple[Variable, Variable]]],
+    typing.Collection[typing.Tuple[Variable, Variable]],  # edges
+    ]
+"""Objects that can be interpreted as a graph.
+
+This includes:
+
+* An :class:`int`, interpreted as a complete graph with nodes labelled ``range(n)``.
+* A list of edges
+* A 2-tuple containing a list of nodes and a list of edges
+* A :class:`networkx.Graph`.
+
+"""
 
 try:
     import networkx as nx
 except ImportError:
-    GraphLike = Union[
-        int,  # number of nodes
-        Tuple[Collection[Variable], Collection[Tuple[Variable, Variable]]],  # nodes/edges
-        Collection[Tuple[Variable, Variable]],  # edges
-        ]
+    pass
 else:
-    GraphLike = Union[
-        int,  # number of nodes
-        Tuple[Collection[Variable], Collection[Tuple[Variable, Variable]]],  # nodes/edges
-        Collection[Tuple[Variable, Variable]],  # edges
-        nx.Graph,
-        ]
+    GraphLike = typing.Union[GraphLike, nx.Graph]
 
-Polynomial = Mapping[Sequence[Variable], Bias]
+Polynomial = typing.Mapping[typing.Sequence[Variable], Bias]
+"""A polynomial represented by a mapping."""
 
-class QuadraticVectors(NamedTuple):
+
+class QuadraticVectors(typing.NamedTuple):
     row_indices: NDArray[np.integer]
     col_indices: NDArray[np.integer]
     biases: NDArray[np.floating]
 
 
-class BQMVectors(NamedTuple):
+class BQMVectors(typing.NamedTuple):
     linear_biases: NDArray[np.floating]
     quadratic: QuadraticVectors
     offset: Bias
 
 
-class LabelledBQMVectors(NamedTuple):
+class LabelledBQMVectors(typing.NamedTuple):
     linear_biases: NDArray[np.floating]
     quadratic: QuadraticVectors
     offset: Bias
-    labels: Sequence[Variable]
+    labels: typing.Sequence[Variable]
 
 
-class DQMVectors(NamedTuple):
+class DQMVectors(typing.NamedTuple):
     case_starts: NDArray[np.integer]
     linear_biases: NDArray[np.floating]
     quadratic: QuadraticVectors
-    labels: Sequence[Variable]
+    labels: typing.Sequence[Variable]
     offset: Bias
 
 
-SampleLike = Union[
+SampleLike = typing.Union[
     typing.Sequence[float],
     typing.Mapping[Variable, Bias],
     ArrayLike,  # this is overgenerous, but we cannot easily specify it better
     ]
+"""Objects that can be interpreted as a single sample.
+
+This includes:
+
+* A one-dimensional NumPy array_like_.
+* A 2-:class:`tuple` containing a one-dimensional NumPy array_like_ and a
+  list of variable labels.
+* A :class:`dict` where the keys are variable labels and the values are the
+  assignments.
+
+NumPy array_like_ is a very flexible definition.
+
+.. _array_like: https://numpy.org/devdocs/glossary.html#term-array_like
+
+"""
 
 
-SamplesLike = Union[
+SamplesLike = typing.Union[
     SampleLike,
     typing.Sequence[typing.Sequence[float]],  # 2d array
     typing.Tuple[typing.Sequence[float], typing.List[Variable]],
@@ -112,3 +157,16 @@ SamplesLike = Union[
     typing.Sequence[SampleLike],
     typing.Iterator[SampleLike],
     ]
+"""Objects that can be interpreted as a collection of samples.
+
+This includes:
+
+* Any :obj:`SampleLike`.
+* A two-dimensional NumPy array_like_.
+* A 2-:class:`tuple` containing a two-dimensional array_like_ and a
+  list of variable labels.
+* A :class:`list` of :class:`dict` where each dict has the same keys.
+
+.. _array_like: https://numpy.org/devdocs/glossary.html#term-array_like
+
+"""

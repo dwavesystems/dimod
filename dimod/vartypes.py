@@ -121,7 +121,18 @@ DISCRETE = Vartype.DISCRETE
 REAL = Vartype.REAL
 
 
+# when we drop 3.7 we can just use typing.Literal
 VartypeLike = typing.Union[Vartype, str, frozenset]
+"""Objects that can be interpreted as a variable type.
+
+This includes:
+
+* :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+* :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+* :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+* :class:`~dimod.Vartype.REAL`, ``'REAL'``
+
+"""
 
 
 def _vartype_miss(vartype, extended):
