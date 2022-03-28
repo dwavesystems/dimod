@@ -60,6 +60,7 @@ Methods
    ~QuadraticModel.add_quadratic_from
    ~QuadraticModel.add_variable
    ~QuadraticModel.add_variables_from
+   ~QuadraticModel.add_variables_from_model
    ~QuadraticModel.change_vartype
    ~QuadraticModel.copy
    ~QuadraticModel.degree

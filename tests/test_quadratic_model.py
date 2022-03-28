@@ -122,6 +122,66 @@ class TestAddVariable(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         qm.add_variable(vartype, 'y', lower_bound=.1, upper_bound=.9)
 
+
+class TestAddVariablesFromModel(unittest.TestCase):
+    def test_qm(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm)
+        self.assertEqual(new.variables, qm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 1}, 'SPIN')
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(bqm)
+        self.assertEqual(new.variables, 'ab')
+        self.assertEqual(new.vartype('a'), dimod.SPIN)
+        self.assertEqual(new.vartype('b'), dimod.SPIN)
+
+    def test_cqm(self):
+        i, j = dimod.Integers('ij')
+        k = dimod.Integer('k')
+
+        cqm = dimod.ConstrainedQuadraticModel()
+        cqm.add_constraint(i + k <= 5)
+        cqm.add_constraint(j == 5)
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(cqm)
+        self.assertEqual(new.variables, cqm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), cqm.vartype(v))
+            self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
+
+    def test_subset(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm, variables='isx')
+
+        self.assertEqual(new.variables, 'isx')
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
         qm = QM(vartypes={'i': 'INTEGER', 's': 'SPIN', 'x': 'BINARY'})

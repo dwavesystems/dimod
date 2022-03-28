@@ -12,10 +12,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
 import struct
 import tempfile
 
-from collections.abc import Callable
+from collections.abc import Callable, Set
 from copy import deepcopy
 from numbers import Number
 from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Sized, Tuple, Union
@@ -43,7 +45,7 @@ from dimod.views.quadratic import QuadraticViewsMixin
 
 if TYPE_CHECKING:
     # avoid circular imports
-    from dimod import BinaryQuadraticModel
+    from dimod import BinaryQuadraticModel, ConstrainedQuadraticModel
 
 
 __all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray']
@@ -523,6 +525,53 @@ class QuadraticModel(QuadraticViewsMixin):
         vartype = as_vartype(vartype, extended=True)
         for v in variables:
             self.add_variable(vartype, v)
+
+    def add_variables_from_model(self,
+                                 model: Union[BinaryQuadraticModel,
+                                              ConstrainedQuadraticModel,
+                                              QuadraticModel],
+                                 *,
+                                 variables: Optional[Iterable[Variable]] = None,
+                                 ):
+        """Add variables from another model.
+
+        Args:
+            model: A binary quadratic model, constrained quadratic model or
+                quadratic model.
+
+            variables: The variables from the model to add. If not specified
+                all of the variables are added.
+
+        Examples:
+            >>> qm0 = dimod.Integer('i', lower_bound=5, upper_bound=10) + dimod.Binary('x')
+            >>> qm1 = dimod.QuadraticModel()
+            >>> qm1.add_variables_from_model(qm0)
+            >>> qm1.variables
+            Variables(['i', 'x'])
+            >>> qm1.lower_bound('i')
+            5.0
+
+        """
+        # avoid circular import
+        from dimod.binary import BinaryQuadraticModel
+        from dimod.constrained import ConstrainedQuadraticModel
+
+        if isinstance(model, ConstrainedQuadraticModel):
+            return self.add_variables_from_model(model.objective, variables=variables)
+
+        if variables is None:
+            variables = model.variables
+
+        vartype = model.vartype if isinstance(model, QuadraticModel) else lambda v: model.vartype
+
+        for v in variables:
+            vt = vartype(v)
+            if vt is Vartype.SPIN or vt is Vartype.BINARY:
+                self.add_variable(vt, v)
+            else:
+                self.add_variable(vt, v,
+                                  lower_bound=model.lower_bound(v),
+                                  upper_bound=model.upper_bound(v))
 
     def change_vartype(self, vartype: VartypeLike, v: Variable) -> "QuadraticModel":
         """Change the variable type of the given variable, updating the biases.
