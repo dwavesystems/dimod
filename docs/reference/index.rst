@@ -14,9 +14,9 @@ Reference Documentation
    generators
    sampler_composites/index
    sampleset
-   typing
    utilities
    variables
    vartypes
    exceptions
+   typing
    cpp
