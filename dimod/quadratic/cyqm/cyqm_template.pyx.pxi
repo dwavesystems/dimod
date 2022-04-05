@@ -253,7 +253,8 @@ cdef class cyQM_template(cyQMBase):
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
         # as_vartype will raise for unsupported vartypes
-        vartype = as_vartype(vartype, extended=True)
+        if not isinstance(vartype, Vartype):  # not needed, but faster
+            vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
 
         cdef bias_type lb

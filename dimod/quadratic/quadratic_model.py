@@ -524,8 +524,9 @@ class QuadraticModel(QuadraticViewsMixin):
 
         """
         vartype = as_vartype(vartype, extended=True)
+        _add = self.data.add_variable
         for v in variables:
-            self.add_variable(vartype, v)
+            _add(vartype, v)
 
     def change_vartype(self, vartype: VartypeLike, v: Variable) -> "QuadraticModel":
         """Change the variable type of the given variable, updating the biases.
