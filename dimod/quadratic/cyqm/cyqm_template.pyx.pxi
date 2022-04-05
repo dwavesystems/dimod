@@ -226,8 +226,8 @@ cdef class cyQM_template(cyQMBase):
             self.cppqm.add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
-        # as_vartype will raise for unsupported vartypes
-        vartype = as_vartype(vartype, extended=True)
+        if not isinstance(vartype, Vartype):  # redundant, but provides a bit of a speedup
+            vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
 
         cdef bias_type lb
