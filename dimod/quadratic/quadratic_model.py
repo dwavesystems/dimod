@@ -423,7 +423,7 @@ class QuadraticModel(QuadraticViewsMixin):
         Raises:
             ValueError: If a specified variable is not in the model.
         """
-        add_linear = self.add_linear
+        add_linear = self.data.add_linear
 
         if isinstance(linear, Mapping):
             for v, bias in linear.items():
@@ -523,8 +523,9 @@ class QuadraticModel(QuadraticViewsMixin):
 
         """
         vartype = as_vartype(vartype, extended=True)
+        add_variable = self.data.add_variable
         for v in variables:
-            self.add_variable(vartype, v)
+            add_variable(vartype, v)
 
     def add_variables_from_model(self,
                                  model: Union[BinaryQuadraticModel,
