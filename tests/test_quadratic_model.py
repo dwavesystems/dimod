@@ -851,6 +851,48 @@ class TestToPolyString(unittest.TestCase):
         self.assertEqual((-i*j - x).to_polystring(), '-x - i*j')
 
 
+class TestUpdate(unittest.TestCase):
+    def test_bqm(self):
+        for dtype in [np.float32, np.float64, object]:
+            with self.subTest(dtype=np.dtype(dtype).name):
+                bqm = dimod.BQM({'a': 1}, {'ab': 4}, 5, 'BINARY', dtype=dtype)
+
+                qm = dimod.QM()
+
+                qm.update(bqm)
+
+                self.assertEqual(bqm.linear, qm.linear)
+                self.assertEqual(bqm.quadratic, qm.quadratic)
+                self.assertEqual(bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+                # add it again, everything should double
+                qm.update(bqm)
+
+                self.assertEqual({'a': 2, 'b': 0}, qm.linear)
+                self.assertEqual({('a', 'b'): 8}, qm.quadratic)
+                self.assertEqual(2*bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+    def test_qm(self):
+        i = dimod.Integer('i', lower_bound=-5, upper_bound=10)
+        x, y = dimod.Binaries('xy')
+
+        other = i + 2*x * 3*y + 4*i*i + 5*i*x + 7
+
+        new = dimod.QM()
+        new.update(other)
+
+        self.assertTrue(new.is_equal(other))
+
+        # add it again
+        new.update(other)
+
+        self.assertTrue(new.is_equal(2*other))
+
+
 class TestViews(unittest.TestCase):
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
