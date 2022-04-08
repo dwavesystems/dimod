@@ -2127,12 +2127,9 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             bias in the objective.
 
     Returns:
-        A 2-tuple containing:
-
-            A binary quadratic model
-
-            A function that converts samples over the binary quadratic model
-            back into samples for the constrained quadratic model.
+        A 2-tuple containing a binary quadratic model and a function that converts
+        samples over the binary quadratic model back into samples for the
+        constrained quadratic model.
 
     Example:
 
