@@ -243,7 +243,7 @@ cdef class cyVariables:
 
     cpdef cyVariables copy(self):
         """Return a copy of the Variables object."""
-        cpdef cyVariables new = self.__new__(type(self))
+        cdef cyVariables new = self.__new__(type(self))
         new._index_to_label = dict(self._index_to_label)
         new._label_to_index = dict(self._label_to_index)
         new._stop = self._stop
