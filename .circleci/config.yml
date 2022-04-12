@@ -30,6 +30,12 @@ jobs:
       - restore_cache: &build-linux-restore-cache
           keys:
             - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
+      - when:
+          condition:
+            equal: [3.10.0, << parameters.python-version>>]
+          steps:
+            # NumPy only has manylinux2014 images for Python 3.10 so we follow them
+            - run: echo 'export CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014' >> $BASH_ENV
       - run: &build-linux-wheels
           name: build wheels
           command: |
@@ -378,6 +384,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
+              # if 3.10 version changes remember to update build-linux
               python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0]
       - build-linux-aarch64: *build
       - build-sdist
