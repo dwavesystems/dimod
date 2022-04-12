@@ -20,6 +20,8 @@ import dimod
 
 import os.path as path
 
+import numpy as np
+
 from dimod import BQM, Spin, Binary, CQM, Integer
 from dimod.sym import Sense
 
@@ -958,6 +960,26 @@ class TestSerialization(unittest.TestCase):
 
 
 class TestSetObjective(unittest.TestCase):
+    def test_bqm(self):
+        for dtype in [np.float32, np.float64, object]:
+            with self.subTest(dtype=np.dtype(dtype).name):
+                bqm = dimod.BQM({'a': 1}, {'ab': 4}, 5, 'BINARY', dtype=dtype)
+
+                cqm = dimod.CQM()
+
+                cqm.set_objective(bqm)
+
+                self.assertEqual(cqm.objective.linear, bqm.linear)
+                self.assertEqual(cqm.objective.quadratic, bqm.quadratic)
+                self.assertEqual(cqm.objective.offset, bqm.offset)
+
+                # doing it again should do nothing
+                cqm.set_objective(bqm)
+
+                self.assertEqual(cqm.objective.linear, bqm.linear)
+                self.assertEqual(cqm.objective.quadratic, bqm.quadratic)
+                self.assertEqual(cqm.objective.offset, bqm.offset)
+
     def test_empty(self):
         self.assertEqual(CQM().objective.num_variables, 0)
 

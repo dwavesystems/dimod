@@ -1003,6 +1003,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         vartype_ = vartype;
     }
 
+    bias_type lower_bound(index_type v) const {
+        return vartype_info<bias_type>::default_min(this->vartype_);
+    }
+
     /**
      *  Return the number of interactions in the quadratic model.
      * 
@@ -1034,6 +1038,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         } else {
             base_type::set_quadratic(u, v, bias);
         }
+    }
+
+    bias_type upper_bound(index_type v) const {
+        return vartype_info<bias_type>::default_max(this->vartype_);
     }
 
     /// Return the vartype of the binary quadratic model.

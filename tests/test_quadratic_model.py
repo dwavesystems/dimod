@@ -123,6 +123,66 @@ class TestAddVariable(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         qm.add_variable(vartype, 'y', lower_bound=.1, upper_bound=.9)
 
+
+class TestAddVariablesFromModel(unittest.TestCase):
+    def test_qm(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm)
+        self.assertEqual(new.variables, qm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 1}, 'SPIN')
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(bqm)
+        self.assertEqual(new.variables, 'ab')
+        self.assertEqual(new.vartype('a'), dimod.SPIN)
+        self.assertEqual(new.vartype('b'), dimod.SPIN)
+
+    def test_cqm(self):
+        i, j = dimod.Integers('ij')
+        k = dimod.Integer('k')
+
+        cqm = dimod.ConstrainedQuadraticModel()
+        cqm.add_constraint(i + k <= 5)
+        cqm.add_constraint(j == 5)
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(cqm)
+        self.assertEqual(new.variables, cqm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), cqm.vartype(v))
+            self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
+
+    def test_subset(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm, variables='isx')
+
+        self.assertEqual(new.variables, 'isx')
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
         qm = QM(vartypes={'i': 'INTEGER', 's': 'SPIN', 'x': 'BINARY'})
@@ -887,6 +947,48 @@ class TestToPolyString(unittest.TestCase):
         self.assertEqual((i*j + x).to_polystring(), 'x + i*j')
         self.assertEqual((i*j).to_polystring(), 'i*j')
         self.assertEqual((-i*j - x).to_polystring(), '-x - i*j')
+
+
+class TestUpdate(unittest.TestCase):
+    def test_bqm(self):
+        for dtype in [np.float32, np.float64, object]:
+            with self.subTest(dtype=np.dtype(dtype).name):
+                bqm = dimod.BQM({'a': 1}, {'ab': 4}, 5, 'BINARY', dtype=dtype)
+
+                qm = dimod.QM()
+
+                qm.update(bqm)
+
+                self.assertEqual(bqm.linear, qm.linear)
+                self.assertEqual(bqm.quadratic, qm.quadratic)
+                self.assertEqual(bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+                # add it again, everything should double
+                qm.update(bqm)
+
+                self.assertEqual({'a': 2, 'b': 0}, qm.linear)
+                self.assertEqual({('a', 'b'): 8}, qm.quadratic)
+                self.assertEqual(2*bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+    def test_qm(self):
+        i = dimod.Integer('i', lower_bound=-5, upper_bound=10)
+        x, y = dimod.Binaries('xy')
+
+        other = i + 2*x * 3*y + 4*i*i + 5*i*x + 7
+
+        new = dimod.QM()
+        new.update(other)
+
+        self.assertTrue(new.is_equal(other))
+
+        # add it again
+        new.update(other)
+
+        self.assertTrue(new.is_equal(2*other))
 
 
 class TestViews(unittest.TestCase):

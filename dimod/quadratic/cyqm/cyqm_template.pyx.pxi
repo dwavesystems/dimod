@@ -21,15 +21,22 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
+from libcpp.vector cimport vector
 
 import dimod
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
 from dimod.libcpp cimport cppvartype_info
+from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
+
+
+ctypedef fused cyBQM_and_QM:
+    cyBQM
+    cyQM
 
 
 cdef class cyQM_template(cyQMBase):
@@ -252,8 +259,8 @@ cdef class cyQM_template(cyQMBase):
             self._add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
-        # as_vartype will raise for unsupported vartypes
-        vartype = as_vartype(vartype, extended=True)
+        if not isinstance(vartype, Vartype):  # redundant, but provides a bit of a speedup
+            vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
 
         cdef bias_type lb
@@ -755,6 +762,71 @@ cdef class cyQM_template(cyQMBase):
                     )
 
         self.cppqm.set_quadratic(ui, vi, bias)
+
+    def update(self, cyBQM_and_QM other):
+        # we'll need a mapping from the other's variables to ours
+        cdef vector[Py_ssize_t] mapping
+        mapping.reserve(other.num_variables())
+
+        cdef Py_ssize_t vi
+
+        # first make sure that any variables that overlap match in terms of
+        # vartype and bounds
+        for vi in range(other.num_variables()):
+            v = other.variables.at(vi)
+            if self.variables.count(v):
+                # there is a variable already
+                mapping.push_back(self.variables.index(v))
+
+                if self.cppqm.vartype(mapping[vi]) != other.data().vartype(vi):
+                    raise ValueError(f"conflicting vartypes: {v!r}")
+
+                if self.cppqm.lower_bound(mapping[vi]) != other.data().lower_bound(vi):
+                    raise ValueError(f"conflicting lower bounds: {v!r}")
+
+                if self.cppqm.upper_bound(mapping[vi]) != other.data().upper_bound(vi):
+                    raise ValueError(f"conflicting upper bounds: {v!r}")
+            else:
+                # not yet present, let's just track that fact for now
+                # in case there is a mismatch so we don't modify our object yet
+                mapping.push_back(-1)
+
+        for vi in range(mapping.size()):
+            if mapping[vi] != -1:
+                continue  # already added and checked
+
+            mapping[vi] = self.num_variables()  # we're about to add a new one
+
+            v = other.variables.at(vi)
+            vartype = other.vartype(v)
+
+            self.add_variable(vartype, v,
+                              lower_bound=other.data().lower_bound(vi),
+                              upper_bound=other.data().upper_bound(vi),
+                              )
+
+        # variables are in place!
+        
+        # the linear biases
+        for vi in range(mapping.size()):
+            self._add_linear(mapping[vi], other.data().linear(vi))
+
+        # the quadratic biases
+        # dev note: for even more speed we could check that mapping is
+        # a range, and in that case can just add them without the indirection
+        # or the sorting.
+        it = other.data().cbegin_quadratic()
+        while it != other.data().cend_quadratic():
+            self.cppqm.add_quadratic(
+                mapping[deref(it).u],
+                mapping[deref(it).v],
+                deref(it).bias
+                )
+            inc(it)
+
+        # the offset
+        cdef bias_type *b = &(self.cppqm.offset())
+        b[0] += other.data().offset()
 
     def upper_bound(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)

@@ -1582,19 +1582,13 @@ class ConstrainedQuadraticModel:
         """
         if isinstance(objective, Iterable):
             objective = self._iterable_to_qm(objective)
+
         # clear out current objective, keeping only the variables
-        self.objective.quadratic.clear()  # there may be a more performant way...
-        for v in self.objective.variables:
-            self.objective.set_linear(v, 0)
-        # offset is overwritten later
+        if not self.objective.is_linear():
+            self.objective.quadratic.clear()  # there may be a more performant way...
+        self.objective.scale(0)  # set all the remaining biases to 0
 
-        # now add everything from the new objective
-        self._add_variables_from(objective)
-
-        for v in objective.variables:
-            self.objective.set_linear(v, objective.get_linear(v))
-        self.objective.add_quadratic_from(objective.iter_quadratic())
-        self.objective.offset = objective.offset
+        self.objective.update(objective)
 
     def set_upper_bound(self, v: Variable, ub: float):
         """Set the upper bound for a variable.
@@ -2165,12 +2159,9 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             bias in the objective.
 
     Returns:
-        A 2-tuple containing:
-
-            A binary quadratic model
-
-            A function that converts samples over the binary quadratic model
-            back into samples for the constrained quadratic model.
+        A 2-tuple containing a binary quadratic model and a function that converts
+        samples over the binary quadratic model back into samples for the
+        constrained quadratic model.
 
     Example:
 
