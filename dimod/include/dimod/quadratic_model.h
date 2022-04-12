@@ -1179,7 +1179,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     void resize(index_type n) {
         // we could do this as an assert, but let's be careful since
         // we're often calling this from python
-        if (n > this->num_variables()) {
+        if (n > static_cast<index_type>(this->num_variables())) {
             throw std::logic_error(
                     "n must be smaller than the number of variables when no "
                     "`vartype` is specified");
