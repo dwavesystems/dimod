@@ -46,8 +46,7 @@ namespace utils {
                     "overflow will occur.");
         }
 
-        std::int64_t* stack =
-                (std::int64_t*)malloc(length * sizeof(std::int64_t));
+        std::int64_t* stack = (std::int64_t*)malloc(length * sizeof(std::int64_t));
         std::int64_t top = -1;
         std::int64_t low = 0;
         std::int64_t high = length - 1;

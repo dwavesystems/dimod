@@ -39,17 +39,13 @@ class ConstQuadraticIterator {
     using iterator_category = std::forward_iterator_tag;
 
     // empty constructor is needed for Cython
-    ConstQuadraticIterator()
-            : qm_ptr_(nullptr), v_(0), i_(0), term_ptr_(nullptr) {}
+    ConstQuadraticIterator() : qm_ptr_(nullptr), v_(0), i_(0), term_ptr_(nullptr) {}
 
     // for the copy constructor, we want to copy the pointer to the quadratic
     // model, but not to the term_ptr_, since that's managed by each iterator
     // separately
     ConstQuadraticIterator(const ConstQuadraticIterator<Bias, Index>& other)
-            : qm_ptr_(other.qm_ptr_),
-              v_(other.v_),
-              i_(other.i_),
-              term_ptr_(nullptr) {
+            : qm_ptr_(other.qm_ptr_), v_(other.v_), i_(other.i_), term_ptr_(nullptr) {
         advance();
     }
 
