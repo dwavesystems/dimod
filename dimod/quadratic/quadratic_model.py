@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import struct
 import tempfile
+import typing
 
 from collections.abc import Callable, Set
 from copy import deepcopy
@@ -1316,7 +1317,7 @@ class QuadraticModel(QuadraticViewsMixin):
         file.seek(0)
         return file
 
-    def update(self, other: 'QuadraticModel'):
+    def update(self, other: typing.Union[QuadraticModel, BinaryQuadraticModel]):
         """Update the quadratic model from another quadratic model.
 
         Adds to the quadratic model the variables, linear biases, quadratic biases,
@@ -1346,23 +1347,53 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> print(qm1.get_quadratic('s2', 's1'), qm1.get_quadratic('s3', 's1'))
             -2.0 1.0
         """
-        # this can be improved a great deal with c++, but for now let's use
-        # python for simplicity
+        try:
+            return self.data.update(other.data)
+        except (AttributeError, TypeError):
+            pass
+
+        # looks like we have a model that either has object dtype or isn't
+        # a cython model we recognize, so let's fall back on python
+
+        # need a couple methods to be generic between bqm and qm
+        vartype = other.vartype if callable(other.vartype) else lambda v: other.vartype
+
+        def lower_bound(v: Variable) -> Bias:
+            try:
+                return other.lower_bound(v)
+            except AttributeError:
+                pass
+
+            if other.vartype is Vartype.SPIN:
+                return -1
+            elif other.vartype is Vartype.BINARY:
+                return 0
+            else:
+                raise RuntimeError  # shouldn't ever happen
+
+        def upper_bound(v: Variable) -> Bias:
+            try:
+                return other.upper_bound(v)
+            except AttributeError:
+                pass
+
+            return 1
 
         for v in other.variables:
             if v not in self.variables:
                 continue
-            if self.vartype(v) != other.vartype(v):
+
+            if self.vartype(v) != vartype(v):
                 raise ValueError(f"conflicting vartypes: {v!r}")
-            if self.lower_bound(v) != other.lower_bound(v):
+            if self.lower_bound(v) != lower_bound(v):
                 raise ValueError(f"conflicting lower bounds: {v!r}")
-            if self.upper_bound(v) != other.upper_bound(v):
+            if self.upper_bound(v) != upper_bound(v):
                 raise ValueError(f"conflicting upper bounds: {v!r}")
 
         for v in other.variables:
-            self.add_linear(self.add_variable(other.vartype(v), v,
-                                              lower_bound=other.lower_bound(v),
-                                              upper_bound=other.upper_bound(v)),
+            self.add_linear(self.add_variable(vartype(v), v,
+                                              lower_bound=lower_bound(v),
+                                              upper_bound=upper_bound(v)),
                             other.get_linear(v))
 
         for u, v, bias in other.iter_quadratic():
