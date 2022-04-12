@@ -60,7 +60,7 @@ from collections.abc import Container, Iterable
 
 __all__ = ['as_vartype',
            'Vartype', 'ExtendedVartype',
-           'SPIN', 'BINARY', 'DISCRETE', 'INTEGER',
+           'SPIN', 'BINARY', 'DISCRETE', 'INTEGER', 'REAL',
            ]
 
 
@@ -77,7 +77,17 @@ class Integers(Container):
         return self
 
 
-integers = Integers()
+class Real(Container):
+    """Container for testing real membership."""
+    def __contains__(self, item):
+        try:
+            return float(item) == item
+        except TypeError:
+            return False
+
+    def __deepcopy__(self, memo):
+        memo[id(self)] = self
+        return self
 
 
 class Vartype(enum.Enum):
@@ -90,11 +100,14 @@ class Vartype(enum.Enum):
            models that have values that are either 0 or 1.
         INTEGER: Vartype for variables in quadratic models
             that have values of type int.
+        REAL: Vartype for variables in quadratic models
+            that have values of type float.
+
     """
     SPIN = frozenset({-1, 1})
     BINARY = frozenset({0, 1})
-    INTEGER = integers
-    DISCRETE = integers  # alias for INTEGER
+    INTEGER = DISCRETE = Integers()  # DISCRETE is an alias for INTEGER
+    REAL = Real()
 
 
 # Deprecated alias
@@ -105,16 +118,29 @@ SPIN = Vartype.SPIN
 BINARY = Vartype.BINARY
 INTEGER = Vartype.INTEGER
 DISCRETE = Vartype.DISCRETE
+REAL = Vartype.REAL
 
 
+# when we drop 3.7 we can just use typing.Literal
 VartypeLike = typing.Union[Vartype, str, frozenset]
+"""Objects that can be interpreted as a variable type.
+
+This includes:
+
+* :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+* :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+* :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+* :class:`~dimod.Vartype.REAL`, ``'REAL'``
+
+"""
 
 
 def _vartype_miss(vartype, extended):
     if extended:
         candidates = ("Vartype.SPIN, 'SPIN', {-1, 1}, "
-                      "Vartype.BINARY, 'BINARY', {0, 1},"
-                      "Vartype.INTEGER, or 'INTEGER'")
+                      "Vartype.BINARY, 'BINARY', {0, 1}, "
+                      "Vartype.INTEGER, 'INTEGER', "
+                      "Vartype.REAL, or 'REAL'")
     else:
         candidates = ("Vartype.SPIN, 'SPIN', {-1, 1}, "
                       "Vartype.BINARY, 'BINARY', or {0, 1}")
@@ -138,13 +164,13 @@ def as_vartype(vartype: VartypeLike, extended: bool = False) -> Vartype:
             If `True`, vartype can also be:
 
             * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
-            * :class:`~dimod.Vartype.DISCRETE`, ``'DISCRETE'``
+            * :class:`~dimod.Vartype.REAL`, ``'REAL'``
 
 
     Returns:
         :class:`.Vartype`: Either :class:`~dimod.Vartype.SPIN` or
         :class:`~dimod.Vartype.BINARY`. If `extended` is True, can also
-        be :class:`~dimod.Vartype.INTEGER`.
+        be :class:`~dimod.Vartype.INTEGER` or :class:`~dimod.Vartype.REAL`
 
     See also:
         :func:`~dimod.decorators.vartype_argument`

@@ -1,0 +1,15 @@
+---
+prelude: >
+    Add support for real-valued variables.
+features:
+  - |
+    Add C++ ``Vartype::REAL``, a new variable type for real-valued variables.
+  - |
+    Support variables with ``Vartype::REAL`` in C++ ``QuadraticModel``.
+  - |
+    Add ``Vartype.REAL``, a new variable type for real-valued variables.
+  - |
+    Add ``Real()`` and ``Reals()`` functions for creating quadratic models with
+    a single real-valued variable.
+  - |
+    Support variables with ``Vartype.REAL`` in ``QuadraticModel``.

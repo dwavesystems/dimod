@@ -720,6 +720,32 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
             }
         }
 
+        WHEN("we add a real variable with a self-loop") {
+            auto v = qm.add_variable(Vartype::REAL);
+            qm.set_quadratic(v, v, 1.5);
+
+            THEN("it is accounted for correctly in num_interactions") {
+                CHECK(qm.num_interactions() == 1);
+            }
+            THEN("we can retrieve the quadratic bias") {
+                CHECK(qm.quadratic(v, v) == 1.5);
+            }
+
+            AND_WHEN("we add another variable with another self-loop") {
+                auto u = qm.add_variable(Vartype::REAL);
+
+                qm.add_quadratic(u, u, -2);
+
+                THEN("it is accounted for correctly in num_interactions") {
+                    CHECK(qm.num_interactions() == 2);
+                }
+                THEN("we can retrieve the quadratic bias") {
+                    CHECK(qm.quadratic(v, v) == 1.5);
+                    CHECK(qm.quadratic(u, u) == -2);
+                }
+            }
+        }
+
         WHEN("we add two integer variables with an interaction") {
           auto u = qm.add_variable(Vartype::INTEGER);
           auto v = qm.add_variable(Vartype::INTEGER);
@@ -981,11 +1007,17 @@ TEMPLATE_TEST_CASE(
         bqm.add_quadratic(1, 2, 1.5);
         bqm.add_quadratic(2, 3, 1.5);
 
+        auto pair_size = sizeof(std::pair<int, TestType>);
+
+        // this assumption is not guaranteed across compilers, but it
+        // is required for this test to make sense
+        CHECK(pair_size == 2 * sizeof(TestType));
+
         THEN("we can determine the number of bytes used by the elements") {
             CHECK(bqm.nbytes() ==
-                  (bqm.num_variables() + 2 * bqm.num_interactions()) *
-                                  sizeof(TestType) +
-                          2 * bqm.num_interactions() * sizeof(int) + sizeof(TestType));
+                  bqm.num_variables() * sizeof(TestType)            // linear
+                          + 2 * bqm.num_interactions() * pair_size  // quadratic
+                          + sizeof(TestType));                      // offset
             CHECK(bqm.nbytes(true) >= bqm.nbytes());
         }
 
@@ -994,12 +1026,13 @@ TEMPLATE_TEST_CASE(
 
             THEN("we can determine the number of bytes used by the elements") {
                 CHECK(qm.nbytes() ==
-                      (qm.num_variables() + 2 * qm.num_interactions()) *
-                                      sizeof(TestType) +
-                              2 * qm.num_interactions() * sizeof(int) +
-                              qm.num_variables() *
-                                      sizeof(dimod::VarInfo<TestType>) +
-                              sizeof(TestType));
+                      qm.num_variables() * sizeof(TestType)  // linear
+                              + 2 * qm.num_interactions() *
+                                        pair_size  // quadratic
+                              + sizeof(TestType)   // offset
+                              + qm.num_variables() *
+                                        sizeof(dimod::VarInfo<
+                                                TestType>));  // vartypes
                 CHECK(qm.nbytes(true) >= qm.nbytes());
             }
         }

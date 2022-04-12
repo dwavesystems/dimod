@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add a global flag ``dimod.REAL_INTERACTIONS``. When this flag is set to
+    ``False``, variables with variable type ``Vartype.REAL`` cannot have
+    interactions.
+    ``dimod.REAL_INTERACTIONS`` is set to ``False`` by default.

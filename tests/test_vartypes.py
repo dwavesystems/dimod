@@ -24,3 +24,4 @@ class TestCopy(unittest.TestCase):
         self.assertIs(dimod.BINARY, deepcopy(dimod.BINARY))
         self.assertIs(dimod.INTEGER, deepcopy(dimod.INTEGER))
         self.assertIs(dimod.SPIN, deepcopy(dimod.SPIN))
+        self.assertIs(dimod.REAL, deepcopy(dimod.REAL))

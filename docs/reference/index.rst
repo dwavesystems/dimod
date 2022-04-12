@@ -18,4 +18,5 @@ Reference Documentation
    variables
    vartypes
    exceptions
+   typing
    cpp

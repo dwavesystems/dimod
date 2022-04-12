@@ -13,15 +13,8 @@
 #    limitations under the License.
 
 """
-A composite that clips problem variables below and above threshold. if lower
-and upper bounds is not given it does nothing.
-
+Removed
 """
-
-try:
-    from dwave.preprocessing import ClipComposite as _ClipComposite
-except ImportError:
-    from dimod.reference.composites._preprocessing import NotFound as _ClipComposite
 
 from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 
@@ -29,8 +22,5 @@ from dimod.reference.composites._preprocessing import DeprecatedToPreprocessing
 __all__ = ['ClipComposite']
 
 
-class ClipComposite(DeprecatedToPreprocessing, _ClipComposite):
+class ClipComposite(DeprecatedToPreprocessing):
     pass
-
-
-ClipComposite.__doc__ = _ClipComposite.__doc__

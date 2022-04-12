@@ -1,0 +1,35 @@
+---
+features:
+  - |
+    Improved deprecation warnings and documentation.
+    See `#192 <https://github.com/dwavesystems/dwave-ocean-sdk/issues/192>`_.
+upgrade:
+  - |
+    Remove ``.vartypes``, ``.lower_bounds``, and ``.upper_bounds`` attributes
+    from ``ConstrainedQuadraticModel.variables``. These were previously
+    deprecated in dimod 0.10.6.
+  - |
+    Remove ``.vartype()`` method
+    from ``ConstrainedQuadraticModel.variables``. It was previously
+    deprecated in dimod 0.10.6.
+  - |
+    Remove ``bqm_index_labelled_input`` decorator. It was previously deprecated
+    in dimod 0.10.8.
+  - |
+    Remove ``SampleSet.is_writeable`` attribute.
+  - |
+    Remove ``dimod.generators.knapsack()``. It was previously deprecated in
+    dimod 0.10.6.
+  - |
+    Remove ``dimod.generators.multi_knapsack()``. It was previously deprecated in
+    dimod 0.10.6.
+  - |
+    Remove ``dimod.generators.bin_packing()``. It was previously deprecated in
+    dimod 0.10.6.
+  - |
+    Remove ``HigherOrderComposite.sample_ising()`` method. It was previously
+    scheduled to be removed in dimod 0.10.0.
+  - |
+    Remove ``PolySampler.sample()``, ``PolySampler.sample_ising()``, and
+    ``PolySampler.sample_qubo()`` methods. These were previously scheduled
+    to be removed in dimod 0.10.0.

@@ -931,9 +931,6 @@ class TestDeprecation(unittest.TestCase):
             self.assertFalse(bqm.has_variable(0))
             self.assertFalse(bqm.has_variable(2))
 
-    def test_abc(self):
-        self.assertIsInstance(dimod.BQM('SPIN'), dimod.core.bqm.BQM)
-
 
 class TestDictBQM(unittest.TestCase):
     def test_numeric_required_args(self):
@@ -1601,7 +1598,7 @@ class TestNBytes(unittest.TestCase):
 
         size = sum([itemsize,  # offset
                     bqm.num_variables*itemsize,  # linear
-                    2*bqm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    2*bqm.num_interactions*(2*itemsize),  # quadratic
                     ])
 
         self.assertEqual(bqm.nbytes(), size)

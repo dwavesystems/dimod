@@ -30,7 +30,8 @@ namespace dimod {
 enum Vartype {
     BINARY,  ///< Variables that are either 0 or 1.
     SPIN,    ///< Variables that are either -1 or 1.
-    INTEGER  ///< Variables that are integer valued.
+    INTEGER,  ///< Variables that are integer valued.
+    REAL  ///< Variables that are real valued.
 };
 
 /// Compile-time limits by variable type.
@@ -65,6 +66,14 @@ class vartype_limits<Bias, Vartype::INTEGER> {
     }
     static constexpr Bias min() noexcept { return -max(); }
 };
+template <class Bias>
+class vartype_limits<Bias, Vartype::REAL> {
+ public:
+    static constexpr Bias default_max() noexcept { return max(); }
+    static constexpr Bias default_min() noexcept { return 0; }
+    static constexpr Bias max() noexcept { return 1e30; }
+    static constexpr Bias min() noexcept { return -1e30; }
+};
 
 /// Runtime limits by variable type.
 template <class Bias>
@@ -77,6 +86,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::default_max();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::default_max();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::default_max();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -88,6 +99,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::default_min();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::default_min();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::default_min();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -99,6 +112,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::max();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::max();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::max();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -110,6 +125,8 @@ class vartype_info {
             return vartype_limits<Bias, Vartype::SPIN>::min();
         } else if (vartype == Vartype::INTEGER) {
             return vartype_limits<Bias, Vartype::INTEGER>::min();
+        } else if (vartype == Vartype::REAL) {
+            return vartype_limits<Bias, Vartype::REAL>::min();
         } else {
             throw std::logic_error("unknown vartype");
         }
@@ -136,12 +153,14 @@ class Neighborhood {
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
 
-    /// A random access iterator to `pair<const index_type&, bias_type&>`.
-    using iterator = NeighborhoodIterator<Bias, Index>;
+    /// Exactly `pair<index_type, bias_type>`.
+    using value_type = typename std::pair<index_type, bias_type>;
 
-    /// A random access iterator to `const pair<const index_type&, const
-    /// bias_type&>.`
-    using const_iterator = ConstNeighborhoodIterator<Bias, Index>;
+    /// A random access iterator to `pair<index_type, bias_type>`.
+    using iterator = typename std::vector<value_type>::iterator;
+
+    /// A random access iterator to `const pair<index_type, bias_type>.`
+    using const_iterator = typename std::vector<value_type>::const_iterator;
 
     /**
      * Return a reference to the bias associated with `v`.
@@ -150,28 +169,27 @@ class Neighborhood {
      * neighborhood and throws a `std::out_of_range` exception if it is not.
      */
     bias_type at(index_type v) const {
-        auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        auto idx = std::distance(neighbors.begin(), it);
-        if (it != neighbors.end() && (*it) == v) {
+        auto it = this->lower_bound(v);
+        if (it != this->cend() && it->first == v) {
             // it exists
-            return quadratic_biases[idx];
+            return it->second;
         } else {
             // it doesn't exist
-            throw std::out_of_range("given variables have no interaction");
+            throw std::out_of_range("given variable has no interaction");
         }
     }
 
     /// Returns an iterator to the beginning.
-    iterator begin() { return iterator(this, 0); }
+    iterator begin() { return this->neighborhood_.begin(); }
 
     /// Returns an iterator to the end.
-    iterator end() { return iterator(this, size()); }
+    iterator end() { return this->neighborhood_.end(); }
 
     /// Returns a const_iterator to the beginning.
-    const_iterator cbegin() const { return const_iterator(this, 0); }
+    const_iterator cbegin() const { return this->neighborhood_.cbegin(); }
 
     /// Returns a const_iterator to the end.
-    const_iterator cend() const { return const_iterator(this, size()); }
+    const_iterator cend() const { return this->neighborhood_.cend(); }
 
     /**
      * Insert a neighbor, bias pair at the end of the neighborhood.
@@ -181,8 +199,7 @@ class Neighborhood {
      * last element.
      */
     void emplace_back(index_type v, bias_type bias) {
-        neighbors.push_back(v);
-        quadratic_biases.push_back(bias);
+        this->neighborhood_.emplace_back(v, bias);
     }
 
     /**
@@ -191,14 +208,10 @@ class Neighborhood {
      * Returns the number of element removed, either 0 or 1.
      */
     size_type erase(index_type v) {
-        auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        if (it != neighbors.end() && (*it) == v) {
+        auto it = this->lower_bound(v);
+        if (it != this->end() && it->first == v) {
             // is there to erase
-            auto idx = std::distance(neighbors.begin(), it);
-
-            neighbors.erase(it);
-            quadratic_biases.erase(quadratic_biases.begin() + idx);
-
+            this->neighborhood_.erase(it);
             return 1;
         } else {
             return 0;
@@ -207,25 +220,17 @@ class Neighborhood {
 
     /// Erase elements from the neighborhood.
     void erase(iterator first, iterator last) {
-        auto start_dist = std::distance(begin(), first);
-        auto end_dist = std::distance(end(), last);
-
-        quadratic_biases.erase(quadratic_biases.begin() + start_dist,
-                               quadratic_biases.end() + end_dist);
-        neighbors.erase(neighbors.begin() + start_dist,
-                        neighbors.end() + end_dist);
+        this->neighborhood_.erase(first, last);
     }
 
     /// Return an iterator to the first element that does not come before `v`.
     iterator lower_bound(index_type v) {
-        auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        return iterator(this, std::distance(neighbors.begin(), it));
+        return std::lower_bound(this->begin(), this->end(), v, this->cmp);
     }
 
     /// Return an iterator to the first element that does not come before `v`.
     const_iterator lower_bound(index_type v) const {
-        auto it = std::lower_bound(neighbors.cbegin(), neighbors.cend(), v);
-        return const_iterator(this, std::distance(neighbors.begin(), it));
+        return std::lower_bound(this->cbegin(), this->cend(), v, this->cmp);
     }
 
     /**
@@ -235,12 +240,13 @@ class Neighborhood {
      * than the size.
      */
     size_type nbytes(bool capacity = false) const noexcept {
+        // so there is no guaruntee that the compiler will not implement
+        // pair as pointers or whatever, but this seems like a reasonable
+        // assumption.
         if (capacity) {
-            return this->neighbors.capacity() * sizeof(index_type) +
-                   this->quadratic_biases.capacity() * sizeof(bias_type);
+            return this->neighborhood_.capacity() * sizeof(std::pair<index_type, bias_type>);
         } else {
-            return this->neighbors.size() * sizeof(index_type) +
-                   this->quadratic_biases.size() * sizeof(bias_type);
+            return this->neighborhood_.size() * sizeof(std::pair<index_type, bias_type>);
         }
     }
 
@@ -251,11 +257,11 @@ class Neighborhood {
      * the `value` provided without inserting `v`.
      */
     bias_type get(index_type v, bias_type value = 0) const {
-        auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        auto idx = std::distance(neighbors.begin(), it);
-        if (it != neighbors.end() && (*it) == v) {
+        auto it = this->lower_bound(v);
+
+        if (it != this->cend() && it->first == v) {
             // it exists
-            return quadratic_biases[idx];
+            return it->second;
         } else {
             // it doesn't exist
             return value;
@@ -264,18 +270,15 @@ class Neighborhood {
 
     /// Request that the neighborhood capacity be at least enough to contain `n`
     /// elements.
-    void reserve(index_type n) {
-        neighbors.reserve(n);
-        quadratic_biases.reserve(n);
-    }
+    void reserve(index_type n) { this->neighborhood_.reserve(n); }
 
     /// Return the size of the neighborhood.
-    size_type size() const { return neighbors.size(); }
+    size_type size() const { return this->neighborhood_.size(); }
 
     /// Sort the neighborhood and sum the biases of duplicate variables.
     void sort_and_sum() {
-        if (!std::is_sorted(neighbors.begin(), neighbors.end())) {
-            utils::zip_sort(neighbors, quadratic_biases);
+        if (!std::is_sorted(this->begin(), this->end())) {
+            std::sort(this->begin(), this->end());
         }
 
         // now remove any duplicates, summing the biases of duplicates
@@ -283,56 +286,50 @@ class Neighborhood {
         size_type j = 1;
 
         // walk quickly through the neighborhood until we find a duplicate
-        while (j < neighbors.size() && neighbors[i] != neighbors[j]) {
+        while (j < this->neighborhood_.size() &&
+               this->neighborhood_[i].first != this->neighborhood_[j].first) {
             ++i;
             ++j;
         }
 
         // if we found one, move into de-duplication
-        if (j < neighbors.size()) {
-            while (j < neighbors.size()) {
-                if (neighbors[i] == neighbors[j]) {
-                    quadratic_biases[i] += quadratic_biases[j];
-                    ++j;
-                } else {
-                    ++i;
-                    neighbors[i] = neighbors[j];
-                    quadratic_biases[i] = quadratic_biases[j];
-                    ++j;
-                }
+        while (j < this->neighborhood_.size()) {
+            if (this->neighborhood_[i].first == this->neighborhood_[j].first) {
+                this->neighborhood_[i].second += this->neighborhood_[j].second;
+                ++j;
+            } else {
+                ++i;
+                this->neighborhood_[i] = this->neighborhood_[j];
+                ++j;
             }
-
-            // finally resize to contain only the unique values
-            neighbors.resize(i + 1);
-            quadratic_biases.resize(i + 1);
         }
+
+        // finally resize to contain only the unique values
+        this->neighborhood_.resize(i + 1);
     }
 
     /**
      * Access the bias of `v`.
      *
-     * If `v` is in the neighborhood, the function returns a reference to its
-     * bias. If `v` is not in the neighborhood, it is inserted and a reference
-     * is returned to its bias.
+     * If `v` is in the neighborhood, the function returns a reference to
+     * its bias. If `v` is not in the neighborhood, it is inserted and a
+     * reference is returned to its bias.
      */
     bias_type& operator[](index_type v) {
-        auto it = std::lower_bound(neighbors.begin(), neighbors.end(), v);
-        auto idx = std::distance(neighbors.begin(), it);
-        if (it == neighbors.end() || (*it) != v) {
+        auto it = this->lower_bound(v);
+        if (it == this->end() || it->first != v) {
             // it doesn't exist so insert
-            neighbors.insert(it, v);
-            quadratic_biases.insert(quadratic_biases.begin() + idx, 0);
+            it = this->neighborhood_.emplace(it, v, 0);
         }
-
-        return quadratic_biases[idx];
+        return it->second;
     }
 
  protected:
-    std::vector<index_type> neighbors;
-    std::vector<bias_type> quadratic_biases;
+    std::vector<value_type> neighborhood_;
 
-    friend class NeighborhoodIterator<Bias, Index>;
-    friend class ConstNeighborhoodIterator<Bias, Index>;
+    static inline bool cmp(value_type ub, index_type v) {
+        return ub.first < v;
+    }
 };
 
 template <class Bias, class Index = int>
@@ -1105,7 +1102,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
                 base_type::linear(u) += bias;
             } else if (vartype == Vartype::SPIN) {
                 base_type::offset_ += bias;
-            } else if (vartype == Vartype::INTEGER) {
+            } else if (vartype == Vartype::INTEGER ||
+                       vartype == Vartype::REAL) {
                 base_type::add_quadratic(u, u, bias);
             } else {
                 throw std::logic_error("unknown vartype");
@@ -1185,6 +1183,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
             this->change_vartype(Vartype::BINARY, v);
             this->change_vartype(Vartype::INTEGER, v);
         } else {
+            // todo: support integer to real and vice versa, need to figure
+            // out how to handle bounds in that case though
             throw std::logic_error("invalid vartype change");
         }
     }
