@@ -32,7 +32,9 @@ jobs:
             - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
       - when:
           condition:
-            equal: [3.10.0, << parameters.python-version>>]
+            matches:
+              pattern: "^3\\.10.*$"
+              value: << parameters.python-version >>
           steps:
             # NumPy only has manylinux2014 images for Python 3.10 so we follow them
             - run: echo 'export CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014' >> $BASH_ENV
