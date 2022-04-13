@@ -386,7 +386,6 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              # if 3.10 version changes remember to update build-linux
               python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0]
       - build-linux-aarch64: *build
       - build-sdist
