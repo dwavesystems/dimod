@@ -183,6 +183,33 @@ class TestAddVariablesFromModel(unittest.TestCase):
             self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
 
 
+class TestAddLinear(unittest.TestCase):
+    def test_default_vartype(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('BINARY', 'x')
+
+        qm.add_linear_from({'i': 1, 'x': 2, 'y': 3, 'z': 4}, default_vartype='BINARY')
+
+        self.assertEqual(qm.linear, {'i': 1, 'x': 2, 'y': 3, 'z': 4})
+        self.assertEqual(qm.vartype('i'), dimod.INTEGER)
+        for v in 'xyz':
+            self.assertEqual(qm.vartype(v), dimod.BINARY)
+
+        qm.add_linear_from({'x': 3, 'j': 1}, default_vartype='INTEGER',
+                           default_lower_bound=-2, default_upper_bound=7)
+
+        self.assertEqual(qm.linear['x'], 5)
+        self.assertEqual(qm.vartype('j'), dimod.INTEGER)
+        self.assertEqual(qm.lower_bound('j'), -2)
+        self.assertEqual(qm.upper_bound('j'), 7)
+
+    def test_missing(self):
+        qm = dimod.QuadraticModel()
+        with self.assertRaises(ValueError):
+            qm.add_linear('a', 1)
+
+
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
         qm = QM(vartypes={'i': 'INTEGER', 's': 'SPIN', 'x': 'BINARY'})

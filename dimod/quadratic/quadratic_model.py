@@ -398,20 +398,42 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.variables
 
     @forwarding_method
-    def add_linear(self, v: Variable, bias: Bias):
+    def add_linear(self, v: Variable, bias: Bias, *,
+                   default_vartype=None,
+                   default_lower_bound=None,
+                   default_upper_bound=None,
+                   ):
         """Add a linear bias to an existing variable.
 
         Args:
             v: Variable label.
             bias: Linear bias for the variable.
+            default_vartype: The vartype of any variables not already in the
+                model. If ``default_vartype`` is ``None`` then missing
+                variables raise a ``ValueError``.
+            default_lower_bound: The lower bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
+            default_upper_bound: The upper bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
 
         Raises:
-            ValueError: If the variable is not in the model.
+            ValueError: If the variable is not in the model and
+            ``default_vartype`` is ``None``.
+
         """
         return self.data.add_linear
 
-    def add_linear_from(self, linear: Union[Mapping[Variable, Bias],
-                                            Iterable[Tuple[Variable, Bias]]]):
+    def add_linear_from(self,
+                        linear: Union[Mapping[Variable, Bias], Iterable[Tuple[Variable, Bias]]],
+                        *,
+                        default_vartype=None,
+                        default_lower_bound=None,
+                        default_upper_bound=None,
+                        ):
         """Add variables and linear biases to a quadratic model.
 
         Args:
@@ -420,18 +442,36 @@ class QuadraticModel(QuadraticViewsMixin):
                 form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
                 where ``v`` is a variable and ``bias`` is its associated linear
                 bias.
+            default_vartype: The vartype of any variables not already in the
+                model. If ``default_vartype`` is ``None`` then missing
+                variables raise a ``ValueError``.
+            default_lower_bound: The lower bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
+            default_upper_bound: The upper bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
 
         Raises:
-            ValueError: If a specified variable is not in the model.
+            ValueError: If the variable is not in the model and
+            ``default_vartype`` is ``None``.
+
         """
         add_linear = self.data.add_linear
 
+        if default_vartype is not None:
+            default_vartype = as_vartype(default_vartype, extended=True)
+
         if isinstance(linear, Mapping):
-            for v, bias in linear.items():
-                add_linear(v, bias)
-        else:
-            for v, bias in linear:
-                add_linear(v, bias)
+            linear = linear.items()
+
+        for v, bias in linear:
+            add_linear(v, bias,
+                       default_vartype=default_vartype,
+                       default_lower_bound=default_lower_bound,
+                       default_upper_bound=default_upper_bound)
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):

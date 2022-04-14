@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add the ability to specify a default variable type and bounds for missing
+    variables when calling ``QuadraticModel.add_linear()`` and
+    ``QuadraticModel.add_linear_from()``.
