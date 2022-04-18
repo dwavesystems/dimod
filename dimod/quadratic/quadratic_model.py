@@ -403,7 +403,8 @@ class QuadraticModel(QuadraticViewsMixin):
                    default_lower_bound=None,
                    default_upper_bound=None,
                    ):
-        """Add a linear bias to an existing variable.
+        """Add a linear bias to an existing variable or a new variable with
+        specified vartype.
 
         Args:
             v: Variable label.
