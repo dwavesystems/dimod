@@ -183,8 +183,24 @@ cdef class cyQM_template(cyQMBase):
         cdef bias_type *b = &(self.cppqm.linear(vi))
         b[0] = bias
 
-    def add_linear(self, v, bias_type bias):
-        cdef Py_ssize_t vi = self.variables.index(v)
+    def add_linear(self, v, bias_type bias, *,
+                   default_vartype=None,
+                   default_lower_bound=None,
+                   default_upper_bound=None,
+                   ):
+        cdef Py_ssize_t vi
+
+        if default_vartype is None or self.variables.count(v):
+            # already present
+            vi = self.variables.index(v)
+        else:
+            # we need to add it
+            vi = self.num_variables()
+            self.add_variable(default_vartype, v,
+                              lower_bound=default_lower_bound,
+                              upper_bound=default_upper_bound,
+                              )
+
         self._add_linear(vi, bias)
 
     def add_linear_from_array(self, ConstNumeric[:] linear):
