@@ -3,6 +3,8 @@ sphinx<4.1.0
 sphinx_rtd_theme
 
 breathe
+nbsphinx==0.8.8
+pandoc==2.1
 
 networkx==2.5
 

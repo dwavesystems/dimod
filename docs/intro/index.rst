@@ -24,3 +24,4 @@ The following sections give an orientation to dimod with usage examples:
   intro_samplers
   intro_samples
   intro_symbolic_math
+  intro_scaling
