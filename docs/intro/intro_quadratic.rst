@@ -29,6 +29,8 @@ formulate the constraints as penalties: see
 Supported Models
 ================
 
+.. _intro_qm_qm:
+
 * **Quadratic Models**
 
   The :term:`quadratic model` (QM) class, :class:`~dimod.QuadraticModel`, encodes
@@ -38,6 +40,8 @@ Supported Models
   For an introduction to QMs, see
   :std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`. For the QM class,
   its attributes and methods, see the :ref:`QM reference documentation <qm>`.
+
+.. _intro_qm_bqm:
 
 * **Binary Quadratic Models**
 
