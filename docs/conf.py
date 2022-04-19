@@ -41,7 +41,6 @@ extensions = [
     'sphinx.ext.ifconfig',
     'breathe',
     'reno.sphinxext',
-    'nbsphinx',
 ]
 
 autosummary_generate = True
