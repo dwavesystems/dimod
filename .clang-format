@@ -2,7 +2,7 @@
 Language: Cpp
 BasedOnStyle: Google
 
-ColumnLimit: 80
+ColumnLimit: 100
 NamespaceIndentation: Inner
 
 # Scaled by a factor of 2 such that the base indent is 4

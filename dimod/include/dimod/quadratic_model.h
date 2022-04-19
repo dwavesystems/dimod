@@ -28,10 +28,10 @@ namespace dimod {
 
 /// Encode the domain of a variable.
 enum Vartype {
-    BINARY,  ///< Variables that are either 0 or 1.
-    SPIN,    ///< Variables that are either -1 or 1.
+    BINARY,   ///< Variables that are either 0 or 1.
+    SPIN,     ///< Variables that are either -1 or 1.
     INTEGER,  ///< Variables that are integer valued.
-    REAL  ///< Variables that are real valued.
+    REAL      ///< Variables that are real valued.
 };
 
 /// Compile-time limits by variable type.
@@ -198,9 +198,7 @@ class Neighborhood {
      * only be used when you know that the neighbor is greater than the current
      * last element.
      */
-    void emplace_back(index_type v, bias_type bias) {
-        this->neighborhood_.emplace_back(v, bias);
-    }
+    void emplace_back(index_type v, bias_type bias) { this->neighborhood_.emplace_back(v, bias); }
 
     /**
      * Erase an element from the neighborhood.
@@ -219,9 +217,7 @@ class Neighborhood {
     }
 
     /// Erase elements from the neighborhood.
-    void erase(iterator first, iterator last) {
-        this->neighborhood_.erase(first, last);
-    }
+    void erase(iterator first, iterator last) { this->neighborhood_.erase(first, last); }
 
     /// Return an iterator to the first element that does not come before `v`.
     iterator lower_bound(index_type v) {
@@ -327,9 +323,7 @@ class Neighborhood {
  protected:
     std::vector<value_type> neighborhood_;
 
-    static inline bool cmp(value_type ub, index_type v) {
-        return ub.first < v;
-    }
+    static inline bool cmp(value_type ub, index_type v) { return ub.first < v; }
 };
 
 template <class Bias, class Index = int>
@@ -377,9 +371,7 @@ class QuadraticModelBase {
         return true;
     }
 
-    const_quadratic_iterator cbegin_quadratic() const {
-        return const_quadratic_iterator(this, 0);
-    }
+    const_quadratic_iterator cbegin_quadratic() const { return const_quadratic_iterator(this, 0); }
 
     const_quadratic_iterator cend_quadratic() const {
         return const_quadratic_iterator(this, this->num_variables());
@@ -404,8 +396,7 @@ class QuadraticModelBase {
             en += u_val * linear(u);
 
             auto span = neighborhood(u);
-            for (auto nit = span.first; nit != span.second && (*nit).first <= u;
-                 ++nit) {
+            for (auto nit = span.first; nit != span.second && (*nit).first <= u; ++nit) {
                 auto v_val = *(sample_start + (*nit).first);
                 auto bias = (*nit).second;
                 en += bias * u_val * v_val;
@@ -436,8 +427,8 @@ class QuadraticModelBase {
     const bias_type& linear(index_type v) const { return linear_biases_[v]; }
 
     /// Return a pair of iterators - the start and end of the neighborhood
-    std::pair<const_neighborhood_iterator, const_neighborhood_iterator>
-    neighborhood(index_type u) const {
+    std::pair<const_neighborhood_iterator, const_neighborhood_iterator> neighborhood(
+            index_type u) const {
         return std::make_pair(adj_[u].cbegin(), adj_[u].cend());
     }
 
@@ -451,8 +442,8 @@ class QuadraticModelBase {
      * @returns A pair of iterators pointing to the start and end of the
      *     neighborhood.
      */
-    std::pair<const_neighborhood_iterator, const_neighborhood_iterator>
-    neighborhood(index_type u, index_type start) const {
+    std::pair<const_neighborhood_iterator, const_neighborhood_iterator> neighborhood(
+            index_type u, index_type start) const {
         return std::make_pair(adj_[u].lower_bound(start), adj_[u].cend());
     }
 
@@ -465,9 +456,7 @@ class QuadraticModelBase {
      * each quadratic bias is stored twice.
      *
      */
-    bias_type quadratic(index_type u, index_type v) const {
-        return adj_[u].get(v);
-    }
+    bias_type quadratic(index_type u, index_type v) const { return adj_[u].get(v); }
 
     /**
      * Return the quadratic bias associated with `u`, `v`.
@@ -478,9 +467,7 @@ class QuadraticModelBase {
      * Raises an `out_of_range` error if either `u` or `v` are not variables or
      * if they do not have an interaction then the function throws an exception.
      */
-    bias_type quadratic_at(index_type u, index_type v) const {
-        return adj_[u].at(v);
-    }
+    bias_type quadratic_at(index_type u, index_type v) const { return adj_[u].at(v); }
 
     /**
      * Total bytes consumed by the biases and indices.
@@ -553,8 +540,7 @@ class QuadraticModelBase {
             // we could determine which neighborhoods need to be trimmed rather
             // than just doing them all.
             for (index_type v = 0; v < n; ++v) {
-                this->adj_[v].erase(this->adj_[v].lower_bound(n),
-                                    this->adj_[v].end());
+                this->adj_[v].erase(this->adj_[v].lower_bound(n), this->adj_[v].end());
             }
         }
 
@@ -676,12 +662,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     BinaryQuadraticModel() : base_type(), vartype_(Vartype::BINARY) {}
 
     /// Create a BQM of the given `vartype`.
-    explicit BinaryQuadraticModel(Vartype vartype)
-            : base_type(), vartype_(vartype) {}
+    explicit BinaryQuadraticModel(Vartype vartype) : base_type(), vartype_(vartype) {}
 
     /// Create a BQM with `n` variables of the given `vartype`.
-    BinaryQuadraticModel(index_type n, Vartype vartype)
-            : BinaryQuadraticModel(vartype) {
+    BinaryQuadraticModel(index_type n, Vartype vartype) : BinaryQuadraticModel(vartype) {
         this->resize(n);
     }
 
@@ -699,8 +683,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      *
      */
     template <class T>
-    BinaryQuadraticModel(const T dense[], index_type num_variables,
-                         Vartype vartype)
+    BinaryQuadraticModel(const T dense[], index_type num_variables, Vartype vartype)
             : BinaryQuadraticModel(num_variables, vartype) {
         add_quadratic(dense, num_variables);
     }
@@ -764,8 +747,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      * should map the variables of `bqm` to new labels.
      */
     template <class B, class I, class T>
-    void add_bqm(const BinaryQuadraticModel<B, I>& bqm,
-                 const std::vector<T>& mapping) {
+    void add_bqm(const BinaryQuadraticModel<B, I>& bqm, const std::vector<T>& mapping) {
         if (bqm.vartype() != this->vartype()) {
             // we could do this without the copy, but for now let's just do
             // it simply
@@ -783,8 +765,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             return;
 
         // make sure we're big enough
-        T max_v = *std::max_element(mapping.begin(),
-                                    mapping.begin() + bqm.num_variables());
+        T max_v = *std::max_element(mapping.begin(), mapping.begin() + bqm.num_variables());
         if (max_v < 0) {
             throw std::out_of_range("contents of mapping must be non-negative");
         } else if ((size_type)max_v >= this->num_variables()) {
@@ -802,8 +783,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
 
             index_type this_v = mapping[v];
 
-            this->adj_[this_v].reserve(this->adj_[this_v].size() +
-                                       bqm.adj_[v].size());
+            this->adj_[this_v].reserve(this->adj_[this_v].size() + bqm.adj_[v].size());
 
             auto span = bqm.neighborhood(v);
             for (auto it = span.first; it != span.second; ++it) {
@@ -857,8 +837,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         bias_type qbias;
         for (index_type u = 0; u < num_variables; ++u) {
             for (index_type v = u + 1; v < num_variables; ++v) {
-                qbias = dense[u * num_variables + v] +
-                        dense[v * num_variables + u];
+                qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
 
                 if (qbias != 0) {
                     base_type::adj_[u].emplace_back(v, qbias);
@@ -902,13 +881,12 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
      * data. `length` must be the number of (row, column, bias) entries.
      */
     template <class ItRow, class ItCol, class ItBias>
-    void add_quadratic(ItRow row_iterator, ItCol col_iterator,
-                       ItBias bias_iterator, index_type length) {
+    void add_quadratic(ItRow row_iterator, ItCol col_iterator, ItBias bias_iterator,
+                       index_type length) {
         // determine the number of variables so we can resize ourself if needed
         if (length > 0) {
-            index_type max_label = std::max(
-                    *std::max_element(row_iterator, row_iterator + length),
-                    *std::max_element(col_iterator, col_iterator + length));
+            index_type max_label = std::max(*std::max_element(row_iterator, row_iterator + length),
+                                            *std::max_element(col_iterator, col_iterator + length));
 
             if ((size_t)max_label >= base_type::num_variables()) {
                 this->resize(max_label + 1);
@@ -1009,7 +987,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
 
     /**
      *  Return the number of interactions in the quadratic model.
-     * 
+     *
      * `O(num_variables)` complexity.
      */
     size_type num_interactions() const {
@@ -1023,9 +1001,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     /// The number of other variables `v` interacts with.
-    size_type num_interactions(index_type v) const {
-        return base_type::num_interactions(v);
-    }
+    size_type num_interactions(index_type v) const { return base_type::num_interactions(v); }
 
     /// Set the quadratic bias for the given variables.
     void set_quadratic(index_type u, index_type v, bias_type bias) {
@@ -1033,8 +1009,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             // unlike add_quadratic, this is not really well defined for
             // binary quadratic models. I.e. if there is a linear bias, do we
             // overwrite? Or?
-            throw std::domain_error(
-                    "Cannot set the quadratic bias of a variable with itself");
+            throw std::domain_error("Cannot set the quadratic bias of a variable with itself");
         } else {
             base_type::set_quadratic(u, v, bias);
         }
@@ -1054,7 +1029,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     Vartype vartype_;
 };
 
-template<class T>
+template <class T>
 struct VarInfo {
     Vartype vartype;
     T lb;
@@ -1081,17 +1056,13 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     QuadraticModel() : base_type(), varinfo_() {}
 
     template <class B, class T>
-    explicit QuadraticModel(const BinaryQuadraticModel<B, T>& bqm)
-            : base_type(bqm) {
-        assert(bqm.vartype() == Vartype::BINARY ||
-               bqm.vartype() == Vartype::SPIN);
+    explicit QuadraticModel(const BinaryQuadraticModel<B, T>& bqm) : base_type(bqm) {
+        assert(bqm.vartype() == Vartype::BINARY || bqm.vartype() == Vartype::SPIN);
 
-        auto info = VarInfo<bias_type>(
-                bqm.vartype(), vartype_info<bias_type>::min(bqm.vartype()),
-                vartype_info<bias_type>::max(bqm.vartype()));
+        auto info = VarInfo<bias_type>(bqm.vartype(), vartype_info<bias_type>::min(bqm.vartype()),
+                                       vartype_info<bias_type>::max(bqm.vartype()));
 
-        this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(),
-                              info);
+        this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(), info);
     }
 
     void add_quadratic(index_type u, index_type v, bias_type bias) {
@@ -1102,8 +1073,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
                 base_type::linear(u) += bias;
             } else if (vartype == Vartype::SPIN) {
                 base_type::offset_ += bias;
-            } else if (vartype == Vartype::INTEGER ||
-                       vartype == Vartype::REAL) {
+            } else if (vartype == Vartype::INTEGER || vartype == Vartype::REAL) {
                 base_type::add_quadratic(u, u, bias);
             } else {
                 throw std::logic_error("unknown vartype");
@@ -1114,9 +1084,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     index_type add_variable(Vartype vartype) {
-        return this->add_variable(
-                vartype, vartype_info<bias_type>::default_min(vartype),
-                vartype_info<bias_type>::default_max(vartype));
+        return this->add_variable(vartype, vartype_info<bias_type>::default_min(vartype),
+                                  vartype_info<bias_type>::default_max(vartype));
     }
 
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub) {
@@ -1146,8 +1115,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
         if (this->vartype(v) == Vartype::BINARY && vartype == Vartype::SPIN) {
             // binary to spin
-            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end();
-                 ++it) {
+            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end(); ++it) {
                 this->linear(it->first) += it->second / 2;
                 this->adj_[it->first][v] /= 2;  // log(n)
                 it->second /= 2;
@@ -1158,11 +1126,9 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
             this->vartype(v) = Vartype::SPIN;
             this->lower_bound(v) = -1;
             this->upper_bound(v) = +1;
-        } else if (this->vartype(v) == Vartype::SPIN &&
-                   vartype == Vartype::BINARY) {
+        } else if (this->vartype(v) == Vartype::SPIN && vartype == Vartype::BINARY) {
             // spin to binary
-            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end();
-                 ++it) {
+            for (auto it = this->adj_[v].begin(); it != this->adj_[v].end(); ++it) {
                 this->linear(it->first) -= it->second;
                 this->adj_[it->first][v] *= 2;  // log(n)
                 it->second *= 2;
@@ -1173,12 +1139,10 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
             this->vartype(v) = Vartype::BINARY;
             this->lower_bound(v) = 0;
             this->upper_bound(v) = 1;
-        } else if (this->vartype(v) == Vartype::BINARY &&
-                   vartype == Vartype::INTEGER) {
+        } else if (this->vartype(v) == Vartype::BINARY && vartype == Vartype::INTEGER) {
             // binary to integer
             this->varinfo_[v].vartype = Vartype::INTEGER;
-        } else if (this->vartype(v) == Vartype::SPIN &&
-                   vartype == Vartype::INTEGER) {
+        } else if (this->vartype(v) == Vartype::SPIN && vartype == Vartype::INTEGER) {
             // spin to integer (via spin to binary)
             this->change_vartype(Vartype::BINARY, v);
             this->change_vartype(Vartype::INTEGER, v);
@@ -1193,9 +1157,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
     const bias_type& lower_bound(index_type v) const { return varinfo_[v].lb; }
 
-    constexpr bias_type max_integer() {
-        return vartype_limits<bias_type, Vartype::INTEGER>::max();
-    }
+    constexpr bias_type max_integer() { return vartype_limits<bias_type, Vartype::INTEGER>::max(); }
 
     /**
      * Total bytes consumed by the biases, vartype info, bounds, and indices.
@@ -1217,7 +1179,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     void resize(index_type n) {
         // we could do this as an assert, but let's be careful since
         // we're often calling this from python
-        if (n > this->num_variables()) {
+        if (n > static_cast<index_type>(this->num_variables())) {
             throw std::logic_error(
                     "n must be smaller than the number of variables when no "
                     "`vartype` is specified");
@@ -1239,8 +1201,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
         } else if (vartype == Vartype::SPIN) {
             this->resize(n, vartype, -1, +1);
         } else {
-            throw std::logic_error(
-                    "must provide bounds for integer vartypes when resizing");
+            throw std::logic_error("must provide bounds for integer vartypes when resizing");
         }
     }
 
@@ -1268,8 +1229,7 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     void set_quadratic(index_type u, index_type v, bias_type bias) {
-        if (u == v && (this->vartype(u) == Vartype::SPIN ||
-                       this->vartype(u) == Vartype::BINARY)) {
+        if (u == v && (this->vartype(u) == Vartype::SPIN || this->vartype(u) == Vartype::BINARY)) {
             throw std::domain_error(
                     "Cannot set the quadratic bias of a spin or binary "
                     "variable with itself");
@@ -1296,10 +1256,8 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
     std::vector<VarInfo<bias_type>> varinfo_;
 };
 
-
 template <class B, class N>
-std::ostream& operator<<(std::ostream& os,
-                         const BinaryQuadraticModel<B, N>& bqm) {
+std::ostream& operator<<(std::ostream& os, const BinaryQuadraticModel<B, N>& bqm) {
     os << "BinaryQuadraticModel\n";
 
     if (bqm.vartype() == Vartype::SPIN) {
@@ -1323,10 +1281,8 @@ std::ostream& operator<<(std::ostream& os,
     os << "  quadratic (" << bqm.num_interactions() << " interactions):\n";
     for (size_t u = 0; u < bqm.num_variables(); ++u) {
         auto span = bqm.neighborhood(u);
-        for (auto nit = span.first; nit != span.second && (*nit).first < u;
-             ++nit) {
-            os << "    " << u << " " << (*nit).first << " " << (*nit).second
-               << "\n";
+        for (auto nit = span.first; nit != span.second && (*nit).first < u; ++nit) {
+            os << "    " << u << " " << (*nit).first << " " << (*nit).second << "\n";
         }
     }
 

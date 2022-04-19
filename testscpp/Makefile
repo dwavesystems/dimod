@@ -17,8 +17,8 @@ tests: test_main.out
 	./test_main 
 
 test_main: test_main.cpp
-	g++ -std=c++11 -Wall -c test_main.cpp
-	g++ -std=c++11 -Wall test_main.o tests/*.cpp -o test_main -I $(SRC)
+	g++ -std=c++11 -Wall -Werror -c test_main.cpp
+	g++ -std=c++11 -Wall -Werror test_main.o tests/*.cpp -o test_main -I $(SRC)
 
 catch2:
 	git submodule init

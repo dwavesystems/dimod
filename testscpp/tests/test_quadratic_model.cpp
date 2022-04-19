@@ -20,9 +20,8 @@
 namespace dimod {
 
 TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
-                       ((typename Bias, Vartype vartype), Bias, vartype),
-                       (double, Vartype::BINARY), (double, Vartype::SPIN),
-                       (float, Vartype::BINARY), (float, Vartype::SPIN)) {
+                       ((typename Bias, Vartype vartype), Bias, vartype), (double, Vartype::BINARY),
+                       (double, Vartype::SPIN), (float, Vartype::BINARY), (float, Vartype::SPIN)) {
     GIVEN("an empty BQM") {
         auto bqm = BinaryQuadraticModel<Bias>(vartype);
 
@@ -47,8 +46,8 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                 bqm.linear(0) = 1;
                 bqm.linear(1) = 2;
                 bqm.linear(2) = 3;
-                bqm.set_quadratic(0,1,1);
-                bqm.set_quadratic(1,2,2);
+                bqm.set_quadratic(0, 1, 1);
+                bqm.set_quadratic(1, 2, 2);
 
                 bqm.scale(scale_factor);
 
@@ -57,8 +56,8 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                     REQUIRE(bqm.linear(0) == 5.5);
                     REQUIRE(bqm.linear(1) == 11.0);
                     REQUIRE(bqm.linear(2) == 16.5);
-                    REQUIRE(bqm.quadratic(0,1) == 5.5);
-                    REQUIRE(bqm.quadratic(1,2) == 11.0);
+                    REQUIRE(bqm.quadratic(0, 1) == 5.5);
+                    REQUIRE(bqm.quadratic(1, 2) == 11.0);
                 }
             }
         }
@@ -91,8 +90,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                     REQUIRE(bqm.num_interactions() == 2);
                     REQUIRE(bqm.quadratic(0, 1) == 2);
                     REQUIRE(bqm.quadratic(2, 1) == -3);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
-                                      std::out_of_range);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
                 }
             }
         }
@@ -125,8 +123,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                     REQUIRE(bqm.num_interactions() == 2);
                     REQUIRE(bqm.quadratic(0, 1) == 6);
                     REQUIRE(bqm.quadratic(2, 1) == -3);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
-                                      std::out_of_range);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
                 }
             }
         }
@@ -151,10 +148,8 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                     REQUIRE(bqm.quadratic(1, 0) == -6);
                     REQUIRE(bqm.quadratic(2, 1) == 1);
                     REQUIRE(bqm.quadratic(1, 2) == 1);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2),
-                                      std::out_of_range);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(2, 0),
-                                      std::out_of_range);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
+                    REQUIRE_THROWS_AS(bqm.quadratic_at(2, 0), std::out_of_range);
                 }
             }
         }
@@ -201,8 +196,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
 
         THEN("we can iterate over the neighborhood") {
             auto span = bqm.neighborhood(0);
-            auto pairs = std::vector<std::pair<std::size_t, Bias>>(span.first,
-                                                                   span.second);
+            auto pairs = std::vector<std::pair<std::size_t, Bias>>(span.first, span.second);
 
             REQUIRE(pairs[0].first == 1);
             REQUIRE(pairs[0].second == 2);
@@ -279,8 +273,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
 
                 THEN("the energies will match") {
                     for (size_t si = 0; si < energies.size(); ++si) {
-                        REQUIRE(energies[si] ==
-                                Approx(bqm.energy(spn_samples[si])));
+                        REQUIRE(energies[si] == Approx(bqm.energy(spn_samples[si])));
                     }
                 }
             }
@@ -289,8 +282,7 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
                 bqm.change_vartype(Vartype::BINARY);
                 THEN("the energies will match") {
                     for (size_t si = 0; si < energies.size(); ++si) {
-                        REQUIRE(energies[si] ==
-                                Approx(bqm.energy(bin_samples[si])));
+                        REQUIRE(energies[si] == Approx(bqm.energy(bin_samples[si])));
                     }
                 }
             }
@@ -298,13 +290,12 @@ TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
     }
 }
 
-TEMPLATE_TEST_CASE_SIG(
-        "Scenario: BQMs can be combined", "[bqm]",
-        ((typename B0, typename B1, Vartype vartype), B0, B1, vartype),
-        (float, float, Vartype::BINARY), (double, float, Vartype::BINARY),
-        (float, double, Vartype::BINARY), (double, double, Vartype::BINARY),
-        (float, float, Vartype::SPIN), (double, float, Vartype::SPIN),
-        (float, double, Vartype::SPIN), (double, double, Vartype::SPIN)) {
+TEMPLATE_TEST_CASE_SIG("Scenario: BQMs can be combined", "[bqm]",
+                       ((typename B0, typename B1, Vartype vartype), B0, B1, vartype),
+                       (float, float, Vartype::BINARY), (double, float, Vartype::BINARY),
+                       (float, double, Vartype::BINARY), (double, double, Vartype::BINARY),
+                       (float, float, Vartype::SPIN), (double, float, Vartype::SPIN),
+                       (float, double, Vartype::SPIN), (double, double, Vartype::SPIN)) {
     GIVEN("a BQM with 3 variables") {
         auto bqm0 = BinaryQuadraticModel<B0>(3, vartype);
         bqm0.linear(2) = -1;
@@ -404,16 +395,14 @@ TEMPLATE_TEST_CASE_SIG(
                     bqm0_cp.add_bqm(bqm1_cp);
 
                     REQUIRE(bqm0.num_variables() == bqm0_cp.num_variables());
-                    REQUIRE(bqm0.num_interactions() ==
-                            bqm0_cp.num_interactions());
+                    REQUIRE(bqm0.num_interactions() == bqm0_cp.num_interactions());
                     REQUIRE(bqm0.offset() == Approx(bqm0_cp.offset()));
                     for (auto u = 0u; u < bqm0.num_variables(); ++u) {
                         REQUIRE(bqm0.linear(u) == Approx(bqm0_cp.linear(u)));
 
                         auto span = bqm0.neighborhood(u);
                         for (auto it = span.first; it != span.second; ++it) {
-                            REQUIRE((*it).second == Approx(bqm0_cp.quadratic_at(
-                                                            u, (*it).first)));
+                            REQUIRE((*it).second == Approx(bqm0_cp.quadratic_at(u, (*it).first)));
                         }
                     }
                 }
@@ -550,8 +539,8 @@ SCENARIO("Neighborhood can be manipulated") {
             }
 
             THEN("we can create a vector from the neighborhood") {
-                std::vector<std::pair<size_t, float>> pairs(
-                        neighborhood.begin(), neighborhood.end());
+                std::vector<std::pair<size_t, float>> pairs(neighborhood.begin(),
+                                                            neighborhood.end());
 
                 REQUIRE(pairs[0].first == 0);
                 REQUIRE(pairs[0].second == .5);
@@ -562,8 +551,8 @@ SCENARIO("Neighborhood can be manipulated") {
             }
 
             THEN("we can create a vector from the const neighborhood") {
-                std::vector<std::pair<size_t, float>> pairs(
-                        neighborhood.cbegin(), neighborhood.cend());
+                std::vector<std::pair<size_t, float>> pairs(neighborhood.cbegin(),
+                                                            neighborhood.cend());
 
                 REQUIRE(pairs[0].first == 0);
                 REQUIRE(pairs[0].second == .5);
@@ -589,8 +578,7 @@ SCENARIO("Neighborhood can be manipulated") {
             }
 
             THEN("we can erase some with an iterator") {
-                neighborhood.erase(neighborhood.begin() + 1,
-                                   neighborhood.end());
+                neighborhood.erase(neighborhood.begin() + 1, neighborhood.end());
                 REQUIRE(neighborhood.size() == 1);
             }
         }
@@ -658,12 +646,9 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
                 CHECK(qm.linear(v_spn) == 0);
 
                 CHECK(qm.num_interactions() == 0);
-                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_bin),
-                                std::out_of_range);
-                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn),
-                                std::out_of_range);
-                CHECK_THROWS_AS(qm.quadratic_at(v_bin, v_spn),
-                                std::out_of_range);
+                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_bin), std::out_of_range);
+                CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn), std::out_of_range);
+                CHECK_THROWS_AS(qm.quadratic_at(v_bin, v_spn), std::out_of_range);
             }
 
             AND_WHEN("we set some quadratic biases") {
@@ -674,17 +659,14 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
                     REQUIRE(qm.num_variables() == 3);
                     CHECK(qm.quadratic(v_int, v_bin) == 1.5);
                     CHECK(qm.quadratic(v_bin, v_spn) == -3);
-                    CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn),
-                                    std::out_of_range);
+                    CHECK_THROWS_AS(qm.quadratic_at(v_int, v_spn), std::out_of_range);
                 }
             }
 
             AND_WHEN("we set some quadratic biases on self-loops") {
                 qm.set_quadratic(v_int, v_int, 1.5);
-                CHECK_THROWS_AS(qm.set_quadratic(v_bin, v_bin, -3),
-                                std::domain_error);
-                CHECK_THROWS_AS(qm.set_quadratic(v_spn, v_spn, -3),
-                                std::domain_error);
+                CHECK_THROWS_AS(qm.set_quadratic(v_bin, v_bin, -3), std::domain_error);
+                CHECK_THROWS_AS(qm.set_quadratic(v_spn, v_spn, -3), std::domain_error);
 
                 THEN("we can read them back out") {
                     REQUIRE(qm.num_variables() == 3);
@@ -701,9 +683,7 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
             THEN("it is accounted for correctly in num_interactions") {
                 CHECK(qm.num_interactions() == 1);
             }
-            THEN("we can retrieve the quadratic bias") {
-                CHECK(qm.quadratic(v, v) == 1.5);
-            }
+            THEN("we can retrieve the quadratic bias") { CHECK(qm.quadratic(v, v) == 1.5); }
 
             AND_WHEN("we add another variable with another self-loop") {
                 auto u = qm.add_variable(Vartype::INTEGER);
@@ -727,9 +707,7 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
             THEN("it is accounted for correctly in num_interactions") {
                 CHECK(qm.num_interactions() == 1);
             }
-            THEN("we can retrieve the quadratic bias") {
-                CHECK(qm.quadratic(v, v) == 1.5);
-            }
+            THEN("we can retrieve the quadratic bias") { CHECK(qm.quadratic(v, v) == 1.5); }
 
             AND_WHEN("we add another variable with another self-loop") {
                 auto u = qm.add_variable(Vartype::REAL);
@@ -747,19 +725,19 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
         }
 
         WHEN("we add two integer variables with an interaction") {
-          auto u = qm.add_variable(Vartype::INTEGER);
-          auto v = qm.add_variable(Vartype::INTEGER);
+            auto u = qm.add_variable(Vartype::INTEGER);
+            auto v = qm.add_variable(Vartype::INTEGER);
 
-          qm.set_quadratic(u, v, 1);
+            qm.set_quadratic(u, v, 1);
 
-          AND_WHEN("we calculate the energy of a sample with large biases") {
-            // https://github.com/dwavesystems/dimod/issues/982
-            std::vector<std::int64_t> samples = {4294967296, 4294967296};
+            AND_WHEN("we calculate the energy of a sample with large biases") {
+                // https://github.com/dwavesystems/dimod/issues/982
+                std::vector<std::int64_t> samples = {4294967296, 4294967296};
 
-            THEN("we get the value we expect") {
-              CHECK(qm.energy(samples) == Approx(1.8446744069414584e+19));
+                THEN("we get the value we expect") {
+                    CHECK(qm.energy(samples) == Approx(1.8446744069414584e+19));
+                }
             }
-          }
         }
 
         WHEN("the quadratic model is resized") {
@@ -810,8 +788,7 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
     }
 }
 
-SCENARIO("A quadratic model can be constructed from a binary quadratic model",
-         "[bqm]") {
+SCENARIO("A quadratic model can be constructed from a binary quadratic model", "[bqm]") {
     GIVEN("A binary quadratic model") {
         auto bqm = BinaryQuadraticModel<float>(3, Vartype::SPIN);
         bqm.linear(0) = 4;
@@ -842,8 +819,7 @@ SCENARIO("A quadratic model can be constructed from a binary quadratic model",
     }
 }
 
-SCENARIO("The variables of a quadratic model can have their vartypes changed",
-         "[qm]") {
+SCENARIO("The variables of a quadratic model can have their vartypes changed", "[qm]") {
     GIVEN("A quadratic model with a spin and a binary variable") {
         auto qm = QuadraticModel<double>();
         auto s = qm.add_variable(Vartype::SPIN);
@@ -997,12 +973,10 @@ SCENARIO("variables in a quadratic model can be swapped", "[qm]") {
     }
 }
 
-TEMPLATE_TEST_CASE(
-        "Scenario: the size of quadratic models in bytes can be determined",
-        "[qm]", double, float) {
+TEMPLATE_TEST_CASE("Scenario: the size of quadratic models in bytes can be determined", "[qm]",
+                   double, float) {
     GIVEN("a binary quadratic model") {
-        auto bqm = dimod::BinaryQuadraticModel<TestType>(
-                5, dimod::Vartype::BINARY);
+        auto bqm = dimod::BinaryQuadraticModel<TestType>(5, dimod::Vartype::BINARY);
         bqm.add_quadratic(0, 1, 1.5);
         bqm.add_quadratic(1, 2, 1.5);
         bqm.add_quadratic(2, 3, 1.5);
@@ -1014,10 +988,9 @@ TEMPLATE_TEST_CASE(
         CHECK(pair_size == 2 * sizeof(TestType));
 
         THEN("we can determine the number of bytes used by the elements") {
-            CHECK(bqm.nbytes() ==
-                  bqm.num_variables() * sizeof(TestType)            // linear
-                          + 2 * bqm.num_interactions() * pair_size  // quadratic
-                          + sizeof(TestType));                      // offset
+            CHECK(bqm.nbytes() == bqm.num_variables() * sizeof(TestType)            // linear
+                                          + 2 * bqm.num_interactions() * pair_size  // quadratic
+                                          + sizeof(TestType));                      // offset
             CHECK(bqm.nbytes(true) >= bqm.nbytes());
         }
 
@@ -1026,13 +999,10 @@ TEMPLATE_TEST_CASE(
 
             THEN("we can determine the number of bytes used by the elements") {
                 CHECK(qm.nbytes() ==
-                      qm.num_variables() * sizeof(TestType)  // linear
-                              + 2 * qm.num_interactions() *
-                                        pair_size  // quadratic
-                              + sizeof(TestType)   // offset
-                              + qm.num_variables() *
-                                        sizeof(dimod::VarInfo<
-                                                TestType>));  // vartypes
+                      qm.num_variables() * sizeof(TestType)            // linear
+                              + 2 * qm.num_interactions() * pair_size  // quadratic
+                              + sizeof(TestType)                       // offset
+                              + qm.num_variables() * sizeof(dimod::VarInfo<TestType>));  // vartypes
                 CHECK(qm.nbytes(true) >= qm.nbytes());
             }
         }
@@ -1052,9 +1022,7 @@ SCENARIO("quadratic models with square terms") {
         WHEN("the energy is calculated") {
             std::vector<int> sample = {5, -1};
             auto en = qm.energy(sample);
-            THEN("the energy incorporates the square terms") {
-                CHECK(en == 18);
-            }
+            THEN("the energy incorporates the square terms") { CHECK(en == 18); }
         }
     }
 }

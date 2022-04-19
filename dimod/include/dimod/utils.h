@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-#define BLOCK_SIZE 64  // Block size for cache blocking.
-
 namespace dimod {
 namespace utils {
 
@@ -40,14 +38,13 @@ namespace utils {
 
         if (length < 2) {
             return;
-        } else if (length > std::numeric_limits<int64_t>::max()) {
+        } else if (length > static_cast<std::size_t>(std::numeric_limits<int64_t>::max())) {
             throw std::logic_error(
                     "Length of arrays are too big for sorting. Numerical "
                     "overflow will occur.");
         }
 
-        std::int64_t* stack =
-                (std::int64_t*)malloc(length * sizeof(std::int64_t));
+        std::int64_t* stack = (std::int64_t*)malloc(length * sizeof(std::int64_t));
         std::int64_t top = -1;
         std::int64_t low = 0;
         std::int64_t high = length - 1;
