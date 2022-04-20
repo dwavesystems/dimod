@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    added missing import of BinaryQuadraticModel required be DimodDecoder
