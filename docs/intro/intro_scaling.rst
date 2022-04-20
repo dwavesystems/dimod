@@ -34,7 +34,7 @@ We assume that each bin has a capacity of ``1``.
 We start by generating weights for the items we wish to pack.
 A packing problem with ``n`` items will result in a  CQM with ``n*(n+1)`` binary variables.
 
-.. code-block:: python
+.. testcode::
 
     import numpy as np
 
@@ -45,7 +45,7 @@ A packing problem with ``n`` items will result in a  CQM with ``n*(n+1)`` binary
 The first implementation is optimized for readability and pedagogy.
 Though as we will see, this comes at the cost of speed.
 
-.. code-block:: python
+.. testcode::
 
     import typing
 
@@ -81,6 +81,11 @@ Though as we will see, this comes at the cost of speed.
 
 Let's see how long the construction takes.
 
+.. testcode::
+    :hide:
+
+    bin_packing(weights)
+
 .. code-block:: ipythonconsole
 
     In [1]: %timeit bin_packing(weights)
@@ -100,7 +105,7 @@ as a replacement for the Python :func:`sum`.
 Python's :func:`sum` creates a large number of intermediate objects, whereas
 :func:`~dimod.binary.quicksum` does not.
 
-.. code-block:: python
+.. testcode::
 
     import typing
 
@@ -136,6 +141,11 @@ Python's :func:`sum` creates a large number of intermediate objects, whereas
 
 This results in some time savings.
 
+.. testcode::
+    :hide:
+
+    bin_packing(weights)
+
 .. code-block:: ipythonconsole
 
     In [1]: %timeit bin_packing(weights)
@@ -151,7 +161,7 @@ difference between variables and labels.
 
 We can demonstrate the performance difference with a small example.
 
-.. code-block:: python
+.. testcode::
 
     import dimod
 
@@ -165,6 +175,12 @@ We can demonstrate the performance difference with a small example.
 
 Working directly with the variable labels and a single BQM object gives a significant speedup
 
+.. testcode::
+    :hide:
+
+    make_bqm_symbolic(1000)
+    make_bqm_labels(1000)
+
 .. code-block:: ipythonconsole
 
     In [1]: %timeit make_bqm_symbolic(1000)
@@ -174,7 +190,7 @@ Working directly with the variable labels and a single BQM object gives a signif
 
 Let's apply the construction by labels to our binpacking example
 
-.. code-block:: python
+.. testcode::
 
     import typing
 
@@ -216,6 +232,11 @@ Let's apply the construction by labels to our binpacking example
 
 This gives us significant time savings
 
+.. testcode::
+    :hide:
+
+    bin_packing(weights)
+
 .. code-block:: ipythonconsole
 
     In [1]: %timeit bin_packing(weights)
@@ -229,7 +250,7 @@ create a copy of the objects given to it.
 However, in this case we are immediately discarding the models created in our
 function, so we can safely skip the copy step.
 
-.. code-block:: python
+.. testcode::
 
     import typing
 
@@ -270,6 +291,11 @@ function, so we can safely skip the copy step.
         return cqm
 
 This results in another performance improvement.
+
+.. testcode::
+    :hide:
+
+    bin_packing(weights)
 
 .. code-block:: ipythonconsole
 
