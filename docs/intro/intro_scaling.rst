@@ -13,6 +13,9 @@ While the code examples below focus on
 applicable to :ref:`binary quadratic models (BQMs) <intro_qm_bqm>` and
 :ref:`quadratic models (QMs) <intro_qm_qm>`.
 
+This section does not discuss
+`algorithmic complexity <https://en.wikipedia.org/wiki/Computational_complexity_theory>`_
+or problem formulation.
 For information about problem formulation, the
 :doc:`sysdocs_gettingstarted:doc_getting_started` guide provides an introduction
 and the :doc:`sysdocs_gettingstarted:doc_handbook` guide describes more advanced
@@ -104,8 +107,8 @@ Time the construction:
     Because runtimes are highly system dependent, running the code on your system
     will likely result in different values. The results shown here are illustrative.
 
-Summation
-=========
+Use ``quicksum``
+================
 
 The easiest improvement you can make is to substitute :func:`~dimod.binary.quicksum`
 for the Python :func:`sum`, which creates a large number of intermediate objects
@@ -157,8 +160,8 @@ This simple change already reduces the runtime.
     In [1]: %timeit bin_packing(weights)
     294 ms ± 9.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
-Model Construction
-==================
+Construct Models Directly
+=========================
 
 You can achieve an even bigger improvement by skipping symbolic construction
 altogether, working directly with variable labels and a single BQM object.
@@ -246,12 +249,13 @@ This change significantly reduces runtime.
     In [1]: %timeit bin_packing(weights)
     95.5 ms ± 2.87 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
-Constraints
-===========
+Add Constraints Without Copying
+===============================
 
 By default, the :meth:`~dimod.ConstrainedQuadraticModel.add_constraint` method
-creates a copy of the objects you give it. If these objects are used solely for
-the construction of constraints, as in this case, you can safely skip the copying.
+creates a copy of the objects you give it to avert mutation of objects that might
+be used elsewhere in your code. If these objects are used solely for the
+construction of constraints, as in this case, you can safely skip the copying.
 
 .. testcode::
 
