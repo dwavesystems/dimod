@@ -4,19 +4,25 @@
 Scaling for Production
 ======================
 
-This tutorial is aimed at users who wish to scale their application problems to
-the industrial scale supported by the Leap Hybrid Solvers.
+This section provides guidance on coding your application for performance
+on problems of the industrial scale supported by
+`Leap's <https://cloud.dwavesys.com/leap>`_ quantum-classical hybrid solvers.
 
-This guide will focus on :ref:`intro_cqm` though most of the concept are
-applicable to :ref:`Binary Quadratic Models (BQMs) <intro_qm_bqm>`
-and :ref:`Quadratic Models (QMs) <intro_qm_qm>`.
+While the code examples below focus on
+:ref:`constrained quadratic models (CQMs) <intro_cqm>`, most the guidance is also
+applicable to :ref:`binary quadratic models (BQMs) <intro_qm_bqm>` and
+:ref:`quadratic models (QMs) <intro_qm_qm>`.
 
-This guide does not discuss algorithmic complexity or problem formulation.
-For those topics, see the :doc:`sysdocs_gettingstarted:doc_getting_started`.
+This section does not discuss
+`algorithmic complexity <https://en.wikipedia.org/wiki/Computational_complexity_theory>`_
+or problem formulation.
+For information about problem formulation, the
+:doc:`sysdocs_gettingstarted:doc_getting_started` guide provides an introduction
+and the :doc:`sysdocs_gettingstarted:doc_handbook` guide describes more advanced
+techniques.
 
-
-Your first application
-======================
+Simple Example Application
+==========================
 
 .. tip::
 
@@ -25,14 +31,16 @@ Your first application
         our needs. E.g. has non-pip-installable requirements, doesn't play
         nicely with intersphinx, etc.
 
-    You can easily run the code for this tutorial by downloading the
-    :download:`Jupyter Notebook <intro_scaling.ipynb>`.
+    You can run the following code by downloading the `Jupyter <https://jupyter.org/>`_
+    :download:`Notebook <intro_scaling.ipynb>`.
 
-Let us construct a simple `bin packing <https://w.wiki/3jz4>`_ problem.
-We assume that each bin has a capacity of ``1``.
+The code below formulates a simple `bin packing <https://w.wiki/3jz4>`_ problem,
+as explained in the Ocean SDK's :doc:`oceandocs:examples/hybrid_cqm_binpacking`
+example.
 
-We start by generating weights for the items we wish to pack.
-A packing problem with ``n`` items will result in a  CQM with ``n*(n+1)`` binary variables.
+For simplicity, assume that each bin has a capacity of `1` and start by
+generating weights for the items you wish to pack. A packing problem with `n`
+items results in a  CQM with :math:`n \times (n+1)` binary variables.
 
 .. testcode::
 
@@ -42,8 +50,11 @@ A packing problem with ``n`` items will result in a  CQM with ``n*(n+1)`` binary
 
     weights = np.random.default_rng(42).random(num_items)
 
-The first implementation is optimized for readability and pedagogy.
-Though as we will see, this comes at the cost of speed.
+Initial Code
+============
+
+The first implementation is written for readability and pedagogy.
+As shown below, this comes at the cost of speed.
 
 .. testcode::
 
@@ -56,30 +67,30 @@ Though as we will see, this comes at the cost of speed.
         """Generate a bin packing problem as a constrained quadratic model."""
 
         n = len(weights)
-        
+
         # y_j indicates that bin j is used
         y = [dimod.Binary(f'y_{j}') for j in range(n)]
-        
+
         # x_i,j indicates that item i is put in bin j
         x = [[dimod.Binary(f'x_{i},{j}') for j in range(n)] for i in range(n)]
-        
+
         cqm = dimod.ConstrainedQuadraticModel()
-        
-        # we wish to minimize the number of bins used
+
+        # minimize the number of bins used
         cqm.set_objective(sum(y))
-        
-        # each item can only go in one bin
+
+        # each item can go in only one bin
         for i in range(n):
             cqm.add_constraint(sum(x[i]) == 1, label=f'item_placing_{i}')
-            
+
         # each bin has a capacity that must be respected
         for j in range(n):
             cqm.add_constraint(sum(weights[i] * x[i][j] for i in range(n)) - y[j] <= 0,
                                label=f'capacity_bin_{j}')
-            
+
         return cqm
 
-Let's see how long the construction takes.
+Time the construction:
 
 .. testcode::
     :hide:
@@ -93,17 +104,15 @@ Let's see how long the construction takes.
 
 .. note::
 
-    Runtimes are highly system dependent. The numbers here are meant to be
-    representative. You may get different values when you run them on your
-    own system.
+    Because runtimes are highly system dependent, running the code on your system
+    will likely result in different values. The results shown here are illustrative.
 
-Use quicksum
-============
+Use the quicksum Function
+=========================
 
-The first and easiest change we wan make is to use :func:`~dimod.binary.quicksum`
-as a replacement for the Python :func:`sum`.
-Python's :func:`sum` creates a large number of intermediate objects, whereas
-:func:`~dimod.binary.quicksum` does not.
+The easiest improvement you can make is to substitute :func:`~dimod.binary.quicksum`
+for the Python :func:`sum`, which creates a large number of intermediate objects
+not created by :func:`~dimod.binary.quicksum`.
 
 .. testcode::
 
@@ -116,30 +125,30 @@ Python's :func:`sum` creates a large number of intermediate objects, whereas
         """Generate a bin packing problem as a constrained quadratic model."""
 
         n = len(weights)
-        
+
         # y_j indicates that bin j is used
         y = [dimod.Binary(f'y_{j}') for j in range(n)]
-        
+
         # x_i,j indicates that item i is put in bin j
         x = [[dimod.Binary(f'x_{i},{j}') for j in range(n)] for i in range(n)]
-        
+
         cqm = dimod.ConstrainedQuadraticModel()
-        
-        # we wish to minimize the number of bins used
+
+        # minimize the number of bins used
         cqm.set_objective(dimod.quicksum(y))
-        
+
         # each item can only go in one bin
         for i in range(n):
             cqm.add_constraint(dimod.quicksum(x[i]) == 1, label=f'item_placing_{i}')
-            
+
         # each bin has a capacity that must be respected
         for j in range(n):
             cqm.add_constraint(dimod.quicksum(weights[i] * x[i][j] for i in range(n)) - y[j] <= 0,
                                label=f'capacity_bin_{j}')
-            
+
         return cqm
 
-This results in some time savings.
+This simple change already reduces the runtime.
 
 .. testcode::
     :hide:
@@ -151,15 +160,15 @@ This results in some time savings.
     In [1]: %timeit bin_packing(weights)
     294 ms ± 9.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
-Construct the models individually
-=================================
+Construct Models Directly
+=========================
 
-Although :func:`~dimod.binary.quicksum` improves the performance, we can get an
-even bigger improvement by skipping symbolic construction altogether.
-See :ref:`Symbolic Math <intro_symbolic_math>` for a discussion of the
-difference between variables and labels.
+You can achieve an even bigger improvement by skipping symbolic construction
+altogether, working directly with variable labels and a single BQM object.
 
-We can demonstrate the performance difference with a small example.
+The following small example demonstrates the performance difference. See
+:ref:`Symbolic Math <intro_symbolic_math>` for a discussion of the difference
+between variables and labels.
 
 .. testcode::
 
@@ -172,8 +181,6 @@ We can demonstrate the performance difference with a small example.
         bqm = dimod.BinaryQuadraticModel('BINARY')
         bqm.add_linear_from((v, 2) for v in range(num_variables))
         return bqm
-
-Working directly with the variable labels and a single BQM object gives a significant speedup
 
 .. testcode::
     :hide:
@@ -188,7 +195,7 @@ Working directly with the variable labels and a single BQM object gives a signif
     In [2]: %timeit make_bqm_labels(1000)
     194 µs ± 2.32 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
 
-Let's apply the construction by labels to our binpacking example
+Apply this same model construction to the binpacking example:
 
 .. testcode::
 
@@ -201,36 +208,36 @@ Let's apply the construction by labels to our binpacking example
         """Generate a bin packing problem as a constrained quadratic model."""
 
         n = len(weights)
-        
+
         # y_j indicates that bin j is used
         y_labels = [f'y_{j}' for j in range(n)]
-        
+
         # x_i,j indicates that item i is put in bin j
         x_labels = [[f'x_{i},{j}' for j in range(n)] for i in range(n)]
-        
+
         cqm = dimod.ConstrainedQuadraticModel()
-        
-        # we wish to minimize the number of bins used
+
+        # minimize the number of bins used
         objective = dimod.QuadraticModel()
         objective.add_linear_from(((v, 1) for v in y_labels), default_vartype='BINARY')
         cqm.set_objective(objective)
-        
+
         # each item can only go in one bin
         for i in range(n):
             lhs = dimod.QuadraticModel()
             lhs.add_linear_from(((v, 1) for v in x_labels[i]), default_vartype='BINARY')
             cqm.add_constraint_from_model(lhs, rhs=1, sense='==', label=f'item_placing_{i}')
-            
+
         # each bin has a capacity that must be respected
         for j in range(n):
             lhs = dimod.QuadraticModel()
             lhs.add_linear_from(((x_labels[i][j], weights[i]) for i in range(n)), default_vartype='BINARY')
             lhs.add_linear(y_labels[j], -1, default_vartype='BINARY')
             cqm.add_constraint_from_model(lhs, rhs=0, sense='<=', label=f'capacity_bin_{j}')
-            
+
         return cqm
 
-This gives us significant time savings
+This change significantly reduces runtime.
 
 .. testcode::
     :hide:
@@ -242,13 +249,13 @@ This gives us significant time savings
     In [1]: %timeit bin_packing(weights)
     95.5 ms ± 2.87 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
-Don't copy constraints
-======================
+Add Constraints Without Copying
+===============================
 
-By default :meth:`~dimod.ConstrainedQuadraticModel.add_constraint`
-create a copy of the objects given to it.
-However, in this case we are immediately discarding the models created in our
-function, so we can safely skip the copy step.
+By default, the :meth:`~dimod.ConstrainedQuadraticModel.add_constraint` method
+creates a copy of the objects you give it to avert mutation of objects that might
+be used elsewhere in your code. If these objects are used solely for the
+construction of constraints, as in this case, you can safely skip the copying.
 
 .. testcode::
 
@@ -261,33 +268,33 @@ function, so we can safely skip the copy step.
         """Generate a bin packing problem as a constrained quadratic model."""
 
         n = len(weights)
-        
+
         # y_j indicates that bin j is used
         y_labels = [f'y_{j}' for j in range(n)]
-        
+
         # x_i,j indicates that item i is put in bin j
         x_labels = [[f'x_{i},{j}' for j in range(n)] for i in range(n)]
-        
+
         cqm = dimod.ConstrainedQuadraticModel()
-        
+
         # we wish to minimize the number of bins used
         objective = dimod.QuadraticModel()
         objective.add_linear_from(((v, 1) for v in y_labels), default_vartype='BINARY')
         cqm.set_objective(objective)
-        
+
         # each item can only go in one bin
         for i in range(n):
             lhs = dimod.QuadraticModel()
             lhs.add_linear_from(((v, 1) for v in x_labels[i]), default_vartype='BINARY')
             cqm.add_constraint_from_model(lhs, rhs=1, sense='==', label=f'item_placing_{i}', copy=False)
-            
+
         # each bin has a capacity that must be respected
         for j in range(n):
             lhs = dimod.QuadraticModel()
             lhs.add_linear_from(((x_labels[i][j], weights[i]) for i in range(n)), default_vartype='BINARY')
             lhs.add_linear(y_labels[j], -1, default_vartype='BINARY')
             cqm.add_constraint_from_model(lhs, rhs=0, sense='<=', label=f'capacity_bin_{j}', copy=False)
-            
+
         return cqm
 
 This results in another performance improvement.
