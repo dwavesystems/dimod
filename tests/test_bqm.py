@@ -1132,7 +1132,7 @@ class TestEnergies(unittest.TestCase):
                 arr = np.array([5, 2.5], dtype=dtype)
                 self.assertEqual(bqm.energy((arr, 'xy')), -40)
 
-        for dtype in [np.complex]:
+        for dtype in [complex]:
             with self.subTest(dtype):
                 arr = np.array([5, 2], dtype=dtype)
                 with self.assertRaises(ValueError):
@@ -2611,7 +2611,7 @@ class TestToFromSerializable(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     def test_variable_labels(self):
-        h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
+        h = {0: 0, 1: 1, np.int64(2): 2, np.float64(3): 3,
              fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,
              '6': 6}
         J = {}

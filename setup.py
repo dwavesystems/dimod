@@ -80,7 +80,7 @@ setup(
         'dimod/include/',
         ],
     install_requires=[
-        'numpy>=1.19.1,<2.0.0',
+        'numpy>=1.20.0,<2.0.0',
         'pyparsing>=2.4.7, <3.0.0',
         ],
     # we use the generic 'all' so that in the future we can add or remove
