@@ -80,6 +80,29 @@ class TestDuplicates(unittest.TestCase):
             self.assertEqual(len(variables), len(set(zeros)))
 
 
+class TestGetItem(unittest.TestCase):
+    def test_empty(self):
+        variables = Variables()
+        with self.assertRaises(IndexError):
+            variables[0]
+        with self.assertRaises(IndexError):
+            variables[-1]
+
+    def test_values(self):
+        variables = Variables('abc')
+
+        self.assertEqual(variables[0], 'a')
+        self.assertEqual(variables[1], 'b')
+        self.assertEqual(variables[2], 'c')
+        with self.assertRaises(IndexError):
+            variables[3]
+        self.assertEqual(variables[-1], 'c')
+        self.assertEqual(variables[-2], 'b')
+        self.assertEqual(variables[-3], 'a')
+        with self.assertRaises(IndexError):
+            variables[-4]
+
+
 class TestIndex(unittest.TestCase):
     def test_permissive(self):
         variables = Variables()

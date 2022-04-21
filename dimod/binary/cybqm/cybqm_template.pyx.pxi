@@ -685,7 +685,7 @@ cdef class cyBQM_template(cyBQMBase):
         if v is None:
             try:
                 v = self.variables[-1]
-            except KeyError:
+            except IndexError:
                 raise ValueError("cannot pop from an empty model")
 
         cdef Py_ssize_t vi = self.variables.index(v)
