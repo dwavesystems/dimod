@@ -416,14 +416,10 @@ workflows:
             parameters:
               # test the lowest numpy version and the highest minor of each
               # currently deployed
-              numpy-version: [==1.19.1, ~=1.20.0, ~=1.21.0, ~=1.22.0]
+              numpy-version: [==1.20.0, ~=1.21.0, ~=1.22.0]
               python-version: *python-versions
             exclude:
-              - numpy-version: ==1.19.1  # NumPy 1.19.1 does not support 3.9
-                python-version: 3.9.4
-              - numpy-version: ==1.19.1  # NumPy 1.19.1 does not support 3.10
-                python-version: 3.10.0
-              - numpy-version: ~=1.20.0  # NumPy 1.20 does not support 3.10
+              - numpy-version: ==1.20.0  # NumPy 1.20 does not support 3.10
                 python-version: 3.10.0
               - numpy-version: ~=1.22.0  # NumPy 1.22 does not support 3.7
                 python-version: 3.7.9

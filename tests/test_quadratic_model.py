@@ -440,7 +440,7 @@ class TestEnergies(unittest.TestCase):
                 arr = np.array([5, 2.5], dtype=dtype)
                 self.assertEqual(qm.energy((arr, 'ij')), -40)
 
-        for dtype in [np.complex]:
+        for dtype in [complex]:
             with self.subTest(dtype):
                 arr = np.array([5, 2], dtype=dtype)
                 with self.assertRaises(ValueError):
