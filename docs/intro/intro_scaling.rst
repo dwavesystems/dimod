@@ -107,8 +107,8 @@ Time the construction:
     Because runtimes are highly system dependent, running the code on your system
     will likely result in different values. The results shown here are illustrative.
 
-Use ``quicksum``
-================
+Use the quicksum Function
+=========================
 
 The easiest improvement you can make is to substitute :func:`~dimod.binary.quicksum`
 for the Python :func:`sum`, which creates a large number of intermediate objects
