@@ -223,7 +223,7 @@ cdef class cyVariables:
         if idx < 0:
             idx = self._stop + idx
 
-        if idx >= self._stop:
+        if not 0 <= idx < self._stop:
             raise IndexError('index out of range')
 
         cdef object v

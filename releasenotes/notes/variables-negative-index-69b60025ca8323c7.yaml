@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    ``dimod.variables.Variables`` objects now correctly raise an ``IndexError``
+    when given negative indices that are out of range.
