@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Refactor ``dimod.typing.SamplesLike`` and ``dimod.typing.SampleLike``.
+    ``SampleLike`` now correctly includes constructions like ``([0, 1], 'ab')``.

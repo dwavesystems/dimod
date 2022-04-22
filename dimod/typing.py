@@ -128,9 +128,11 @@ class DQMVectors(typing.NamedTuple):
 
 
 SampleLike = typing.Union[
-    typing.Sequence[float],
+    typing.Sequence[Bias],
     typing.Mapping[Variable, Bias],
-    ArrayLike,  # this is overgenerous, but we cannot easily specify it better
+    typing.Tuple[typing.Sequence[Bias], typing.Sequence[Variable]],
+    typing.Tuple[np.ndarray, typing.Sequence[Variable]],
+    np.ndarray,  # this is overgenerous, but there is no way to specify 1-dimensional
     ]
 """Objects that can be interpreted as a single sample.
 
@@ -151,9 +153,8 @@ NumPy array_like_ is a very flexible definition.
 
 SamplesLike = typing.Union[
     SampleLike,
-    typing.Sequence[typing.Sequence[float]],  # 2d array
-    typing.Tuple[typing.Sequence[float], typing.List[Variable]],
-    typing.Tuple[typing.Sequence[typing.Sequence[float]], typing.List[Variable]],
+    typing.Sequence[typing.Sequence[Bias]],  # 2d array
+    typing.Tuple[typing.Sequence[typing.Sequence[Bias]], typing.Sequence[Variable]],
     typing.Sequence[SampleLike],
     typing.Iterator[SampleLike],
     ]
