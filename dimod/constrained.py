@@ -250,7 +250,7 @@ class ConstrainedQuadraticModel:
         Args:
             qm: Quadratic model or binary quadratic model.
 
-            sense: One of `<=', '>=', '=='.
+            sense: One of `<=`, `>=`, `==`.
 
             rhs: Right hand side of the constraint.
 
@@ -373,7 +373,7 @@ class ConstrainedQuadraticModel:
             iterable: Iterable of terms as tuples. The variables must
                 have already been added to the object.
 
-            sense: One of `<=', '>=', '=='.
+            sense: One of `<=`, `>=`, `==`.
 
             rhs: The right hand side of the constraint.
 
