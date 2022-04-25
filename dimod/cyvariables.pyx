@@ -65,6 +65,15 @@ cdef class cyVariables:
             new._append(self.at(i), permissive=False)
         return new
 
+    def __iter__(self):
+        cdef Py_ssize_t i
+
+        if self._is_range():
+            yield from range(self._stop)
+        else:
+            for i in range(self._stop):
+                yield self.at(i)
+
     def __len__(self):
         return self.size()
 
