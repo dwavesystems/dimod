@@ -836,7 +836,7 @@ class DiscreteQuadraticModel:
 
             **Variable Data**
 
-            The first 4 bytes are exactly `"VARS"`.
+            The first 4 bytes are exactly ``"VARS"``.
 
             The next 4 bytes form a little-endian unsigned int, the length of
             the variables array ``VARIABLES_LENGTH``.
