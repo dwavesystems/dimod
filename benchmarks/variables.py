@@ -12,15 +12,32 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import dimod
+from dimod.variables import Variables
+
+
+class TimeConstuction:
+    num_variables = 1000
+
+    iterables = dict(range=range(num_variables),
+                     strings=list(map(str, range(num_variables))),
+                     integers=list(range(1000)),
+                     empty=[],
+                     none=None,
+                     )
+
+    params = iterables.keys()
+    param_names = ['iterable']
+
+    def time_construction(self, key):
+        Variables(self.iterables[key])
 
 
 class TimeIteration:
     num_variables = 1000
 
-    variables = dict(string=dimod.variables.Variables(map(str, range(num_variables))),
-                     index=dimod.variables.Variables(range(num_variables)),
-                     integer=dimod.variables.Variables(range(num_variables, 0, -1))
+    variables = dict(string=Variables(map(str, range(num_variables))),
+                     index=Variables(range(num_variables)),
+                     integer=Variables(range(num_variables, 0, -1))
                      )
 
     params = variables.keys()
