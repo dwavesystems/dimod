@@ -47,8 +47,6 @@ Functions
 Reducing to a Binary Quadratic Model
 ====================================
 
-.. automodule:: dimod.higherorder.utils
-
 .. autosummary::
    :toctree: generated/
 

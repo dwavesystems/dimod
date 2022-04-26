@@ -274,18 +274,21 @@ def multiplication_circuit(num_arg1_bits: int, num_arg2_bits: Optional[int] = No
     The generated BQM represents the binary multiplication :math:`ab=p`,
     where the args are binary variables of length ``num_arg1_bits`` and
     ``num_arg2_bits``; for example, :math:`2^ma_{num_arg1_bits} + ... + 4a_2 + 2a_1 + a0`.
-    The square below shows a graphic representation of the circuit::
-      ________________________________________________________________________________
-      |                                         and20         and10         and00    |
-      |                                           |             |             |      |
-      |                           and21         add11──and11  add01──and01    |      |
-      |                             |┌───────────┘|┌───────────┘|             |      |
-      |             and22         add12──and12  add02──and02    |             |      |
-      |               |┌───────────┘|┌───────────┘|             |             |      |
-      |             add13─────────add03           |             |             |      |
-      |  ┌───────────┘|             |             |             |             |      |
-      | p5            p4            p3            p2            p1            p0     |
-      --------------------------------------------------------------------------------
+    The square below shows a graphic representation of the circuit:
+
+    .. code-block::
+
+        ________________________________________________________________________________
+        |                                         and20         and10         and00    |
+        |                                           |             |             |      |
+        |                           and21         add11──and11  add01──and01    |      |
+        |                             |┌───────────┘|┌───────────┘|             |      |
+        |             and22         add12──and12  add02──and02    |             |      |
+        |               |┌───────────┘|┌───────────┘|             |             |      |
+        |             add13─────────add03           |             |             |      |
+        |  ┌───────────┘|             |             |             |             |      |
+        | p5            p4            p3            p2            p1            p0     |
+        --------------------------------------------------------------------------------
 
     Args:
         num_arg1_bits: Number of bits in the first argument.

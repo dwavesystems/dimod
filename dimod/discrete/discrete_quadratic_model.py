@@ -797,7 +797,7 @@ class DiscreteQuadraticModel:
 
             **Header**
 
-            The first 8 bytes are a magic string: exactly `"DIMODDQM"`.
+            The first 8 bytes are a magic string: exactly ``"DIMODDQM"``.
 
             The next 1 byte is an unsigned byte: the major version of the file
             format.
@@ -808,7 +808,7 @@ class DiscreteQuadraticModel:
             The next 4 bytes form a little-endian unsigned int, the length of
             the header data `HEADER_LEN`.
 
-            The next `HEADER_LEN` bytes form the header data. This is a
+            The next ``HEADER_LEN`` bytes form the header data. This is a
             json-serialized dictionary. The dictionary is exactly:
 
             .. code-block:: python
@@ -828,21 +828,21 @@ class DiscreteQuadraticModel:
             The first 4 bytes are exactly `"BIAS"`
 
             The next 4 bytes form a little-endian unsigned int, the length of
-            the DQM data `DATA_LEN`.
+            the DQM data ``DATA_LEN``.
 
-            The next `DATA_LEN` bytes are the vectors as returned by
+            The next ``DATA_LEN`` bytes are the vectors as returned by
             :meth:`DiscreteQuadraticModel.to_numpy_vectors` saved using
             :func:`numpy.save`.
 
             **Variable Data**
 
-            The first 4 bytes are exactly "VARS".
+            The first 4 bytes are exactly ``"VARS"``.
 
             The next 4 bytes form a little-endian unsigned int, the length of
-            the variables array `VARIABLES_LENGTH`.
+            the variables array ``VARIABLES_LENGTH``.
 
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
-            constructed by `json.dumps(list(bqm.variables)).
+            constructed by ``json.dumps(list(bqm.variables))``.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -896,7 +896,7 @@ class DiscreteQuadraticModel:
 
         Returns:
             :class:`DQMVectors`: A named tuple with fields `['case_starts',
-            'linear_biases', 'quadratic', 'labels'].
+            'linear_biases', 'quadratic', 'labels']`.
 
             - `case_starts`: A length
               :meth:`~DiscreteQuadraticModel.num_variables` array. The cases
