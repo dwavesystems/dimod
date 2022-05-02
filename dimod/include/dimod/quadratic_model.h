@@ -575,6 +575,13 @@ class QuadraticModelBase {
         }
     }
 
+    /// Exchange the contents of the quadratic model with the contents of `other`.
+    void swap(QuadraticModelBase<bias_type, index_type>& other) {
+        std::swap(this->linear_biases_, other.linear_biases_);
+        std::swap(this->adj_, other.adj_);
+        std::swap(this->offset_, other.offset_);
+    }
+
     /// Swap the linear and quadratic biases between two variables.
     void swap_variables(index_type u, index_type v) {
         assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
@@ -1015,6 +1022,12 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
     }
 
+    /// Exchange the contents of the binary quadratic model with the contents of `other`.
+    void swap(BinaryQuadraticModel<bias_type, index_type>& other) {
+        base_type::swap(other);
+        std::swap(this->vartype_, other.vartype_);
+    }
+
     bias_type upper_bound(index_type v) const {
         return vartype_info<bias_type>::default_max(this->vartype_);
     }
@@ -1246,7 +1259,12 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
     const Vartype& vartype(index_type v) const { return varinfo_[v].vartype; }
 
-    /// Swap the linear and quadratic biases between two variables.
+    void swap(QuadraticModel<bias_type, index_type>& other) {
+        base_type::swap(other);
+        std::swap(this->varinfo_, other.varinfo_);
+    }
+
+    /// Exchange the contents of the quadratic model with the contents of `other`.
     void swap_variables(index_type u, index_type v) {
         base_type::swap_variables(u, v);  // also handles asserts
         std::swap(this->varinfo_[u], this->varinfo_[v]);

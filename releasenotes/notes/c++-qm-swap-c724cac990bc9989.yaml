@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``QuadraticModel::swap()`` and ``BinaryQuadraticModel::swap()`` methods
+    to the C++ code.
+    See `#928 <https://github.com/dwavesystems/dimod/issues/928>`_.
