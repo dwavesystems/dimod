@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Set the lagrange multiplier to one if the maximum absolute bias is zero
+
