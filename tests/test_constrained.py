@@ -578,6 +578,16 @@ class TestCQMtoBQM(unittest.TestCase):
 
         self.assertEqual(bqm, (x + y + z - 1)*(x + y + z - 1))
 
+    def test_bqm_equality_constraint_no_lagrange(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = CQM()
+        cqm.add_constraint(x + y + z == 1)
+
+        bqm, inverter = dimod.cqm_to_bqm(cqm)
+
+        self.assertEqual(bqm, (x + y + z - 1)*(x + y + z - 1))
+
     def test_bqm_equality_constraint_offset(self):
         x, y, z = dimod.Binaries('xyz')
 
