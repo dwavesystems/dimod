@@ -1,6 +1,6 @@
 ---
 fixes:
   - |
-    In the `cqm_to_bqm` function, set the lagrange multiplier to one
+    In the `cqm_to_bqm` function, set the Lagrange multiplier to one
     if the maximum absolute bias is zero.
 
