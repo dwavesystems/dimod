@@ -2231,7 +2231,10 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             max_bias = max(-bqm.linear.min(), bqm.linear.max())
             if not bqm.is_linear():
                 max_bias = max(-bqm.quadratic.min(), bqm.quadratic.max(), max_bias)
-            lagrange_multiplier = 10 * max_bias
+            if max_bias:
+                lagrange_multiplier = 10 * max_bias
+            else:
+                lagrange_multiplier = 1
         else:
             lagrange_multiplier = 0  # doesn't matter
 
