@@ -119,6 +119,8 @@ dimod/discrete/*.cpp
 dimod/discrete/*.html
 dimod/quadratic/cyqm/*.cpp
 dimod/quadratic/cyqm/*.html
+dimod/serialization/*.cpp
+dimod/serialization/*.html
 tests/*.cpp
 tests/*.html
 

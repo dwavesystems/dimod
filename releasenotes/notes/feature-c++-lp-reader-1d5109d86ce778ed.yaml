@@ -1,0 +1,8 @@
+---
+features:
+  - Add ``dimod.serialization.lp.read_lp_file()`` and ``dimod.serialization.read_lp()`` functions.
+  - Improve the performance of the ``ConstrainedQuadraticModel.from_lp_file()`` method.
+upgrade:
+  - |
+    Some malformed LP-files that previously caused ``ConstrainedQuadraticModel.from_lp_file()``
+    to emit a warning now raise an error instead.
