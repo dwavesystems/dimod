@@ -1,0 +1,3 @@
+---
+upgrade:
+  - Drop support for Numpy 1.19

@@ -1,4 +1,4 @@
-# Copyright 2021 D-Wave Systems Inc.
+# Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,17 +12,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import unittest
+import numpy as np
 
 import dimod
 
 
-class TestConstruction(unittest.TestCase):
-    def test_new_bqm(self):
-        bqm = dimod.BQM({'a': 1}, {'ab': 3}, 6, 'SPIN')
-        with self.assertWarns(DeprecationWarning):
-            new = dimod.AdjDictBQM(bqm)
-        self.assertEqual(bqm.linear, new.linear)
-        self.assertEqual(bqm.quadratic, new.quadratic)
-        self.assertEqual(bqm.offset, new.offset)
-        self.assertEqual(bqm.vartype, new.vartype)
+class TimeSetObjective:
+    def setUp(self):
+        self.qm = dimod.QM.from_bqm(dimod.BQM(np.ones((500, 500)), 'SPIN'))
+
+    def time_qm(self):
+        dimod.CQM().set_objective(self.qm)

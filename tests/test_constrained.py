@@ -20,6 +20,8 @@ import dimod
 
 import os.path as path
 
+import numpy as np
+
 from dimod import BQM, Spin, Binary, CQM, Integer
 from dimod.sym import Sense
 
@@ -32,14 +34,27 @@ class TestAddVariable(unittest.TestCase):
         cqm.set_lower_bound('i', 1)
         cqm.set_upper_bound('i', 5)
         with self.assertRaises(ValueError):
-            cqm.add_variable('i', 'INTEGER', lower_bound=-1)
+            cqm.add_variable('INTEGER', 'i', lower_bound=-1)
         with self.assertRaises(ValueError):
-            cqm.add_variable('i', 'INTEGER', upper_bound=6)
+            cqm.add_variable('INTEGER', 'i', upper_bound=6)
 
     def test_return_value(self):
         cqm = dimod.CQM()
-        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
-        self.assertEqual(cqm.add_variable('i', 'INTEGER'), 'i')
+        self.assertEqual(cqm.add_variable('INTEGER', 'i'), 'i')
+        self.assertEqual(cqm.add_variable('INTEGER', 'i'), 'i')
+
+    def test_deprecation(self):
+        cqm = dimod.CQM()
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('a', 'INTEGER')
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('b', dimod.INTEGER)
+        with self.assertWarns(DeprecationWarning):
+            cqm.add_variable('c', frozenset((-1, 1)))
+
+        # ambiguous cases should use the new format
+        self.assertEqual(cqm.add_variable('SPIN', 'BINARY'), 'BINARY')
+        self.assertEqual(cqm.vartype('BINARY'), dimod.SPIN)
 
 
 class TestAddConstraint(unittest.TestCase):
@@ -84,9 +99,9 @@ class TestAddConstraint(unittest.TestCase):
     def test_terms(self):
         cqm = CQM()
 
-        a = cqm.add_variable('a', 'BINARY')
-        b = cqm.add_variable('b', 'BINARY')
-        c = cqm.add_variable('c', 'INTEGER')
+        a = cqm.add_variable('BINARY', 'a')
+        b = cqm.add_variable('BINARY', 'b')
+        c = cqm.add_variable('INTEGER', 'c')
 
         cqm.add_constraint([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)], sense='<=')
 
@@ -184,20 +199,6 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
-class TestAdjVector(unittest.TestCase):
-    # this will be deprecated in the future
-    def test_construction(self):
-        cqm = CQM()
-
-        with self.assertWarns(DeprecationWarning):
-            bqm = dimod.AdjVectorBQM({'ab': 1}, 'SPIN')
-
-        cqm.set_objective(bqm)
-        label = cqm.add_constraint(bqm, sense='==', rhs=1)
-        self.assertIsInstance(cqm.objective, dimod.QuadraticModel)
-        self.assertIsInstance(cqm.constraints[label].lhs, BQM)
-
-
 class TestBounds(unittest.TestCase):
     def test_inconsistent(self):
         i0 = Integer('i')
@@ -219,12 +220,12 @@ class TestBounds(unittest.TestCase):
         i1 = Integer('i', upper_bound=1)
 
         cqm = CQM()
-        cqm.add_variable('i', 'INTEGER')
+        cqm.add_variable('INTEGER', 'i')
         cqm.set_objective(i0)
         with self.assertRaises(ValueError):
             cqm.add_constraint(i1 <= 1)
 
-        cqm.add_variable('i', 'INTEGER')
+        cqm.add_variable('INTEGER', 'i')
 
     def test_setting(self):
         i = Integer('i')
@@ -647,34 +648,6 @@ class TestCQMtoBQM(unittest.TestCase):
             self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
 
 
-class TestDeprecated(unittest.TestCase):
-    def test_typedvariables(self):
-        cqm = CQM()
-
-        x = Binary('x')
-        s = Spin('s')
-        i = Integer('i')
-
-        cqm.set_objective(x + i)
-        cqm.add_constraint(i + s <= 1)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(cqm.variables.lower_bounds, {'x': 0.0, 'i': 0.0, 's': -1.0})
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(cqm.variables.upper_bounds, {'x': 1.0, 'i': 9007199254740991.0, 's': 1})
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(len(cqm.variables.lower_bounds), 3)
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(len(cqm.variables.upper_bounds), 3)
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(list(cqm.variables.vartypes),
-                             [dimod.BINARY, dimod.INTEGER, dimod.SPIN])
-
-        with self.assertWarns(DeprecationWarning):
-            self.assertIs(cqm.variables.vartype('x'), dimod.BINARY)
-
-
 class TestFromDQM(unittest.TestCase):
     def test_case_label(self):
         dqm = dimod.CaseLabelDQM()
@@ -726,6 +699,43 @@ class TestFromDQM(unittest.TestCase):
 
         # keys of constraints are the variables of DQM
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
+
+
+class TestNumBiases(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + z + i + j + i*x)
+        cqm.add_constraint(x + y + z + x*y + z*y <= 5)
+        cqm.add_constraint(i + x + i*x == 5)
+
+        self.assertEqual(cqm.num_biases(), 14)
+        self.assertEqual(cqm.num_biases(linear_only=True), 10)
+        self.assertEqual(cqm.num_biases('BINARY'), 11)
+        self.assertEqual(cqm.num_biases('SPIN'), 0)
+        self.assertEqual(cqm.num_biases('INTEGER'), 5)
+        self.assertEqual(cqm.num_biases('BINARY', linear_only=True), 7)
+
+
+class TestNumQuadraticVariables(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(x + y + z + i + j + i*x)
+        cqm.add_constraint(x + y + z + x*y + z*y <= 5)
+        cqm.add_constraint(i + x + i*x == 5)
+
+        with self.assertWarns(DeprecationWarning):
+            cqm.num_quadratic_variables()
+
+        self.assertEqual(cqm.num_quadratic_variables(include_objective=False), 5)
+        self.assertEqual(cqm.num_quadratic_variables(include_objective=True), 7)
+        self.assertEqual(cqm.num_quadratic_variables('BINARY', include_objective=False), 4)
+        self.assertEqual(cqm.num_quadratic_variables('BINARY', include_objective=True), 5)
 
 
 class FromQM(unittest.TestCase):
@@ -840,6 +850,14 @@ class TestRemoveConstraint(unittest.TestCase):
 
 
 class TestSerialization(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     def test_functional(self):
         cqm = CQM()
 
@@ -897,11 +915,71 @@ class TestSerialization(unittest.TestCase):
         header_info = read_header(cqm.to_file(), b'DIMODCQM')
 
         self.assertEqual(header_info.data,
-                         {'num_biases': 11, 'num_constraints': 2,
-                          'num_quadratic_variables': 4, 'num_variables': 3})
+                         dict(num_biases=11,
+                              num_constraints=2,
+                              num_quadratic_variables=4,
+                              num_variables=3,
+                              num_quadratic_variables_real=0,
+                              num_linear_biases_real=0,
+                              ))
+
+    def test_header_real(self):
+        from dimod.serialization.fileview import read_header
+
+        x, y = dimod.Binaries('xy')
+        s = Spin('s')
+        i = Integer('i')
+        a, b = dimod.Reals('ab')
+
+        cqm = CQM()
+        cqm.set_objective(a + b + x + s*i)
+        cqm.add_constraint(a + b <= 5)
+        cqm.add_constraint(a - i == 4)
+        cqm.add_constraint(x + y + x*y == 5)
+
+        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
+                         dict(num_biases=14,
+                              num_constraints=3,
+                              num_quadratic_variables=2,
+                              num_variables=6,
+                              num_quadratic_variables_real=0,
+                              num_linear_biases_real=5,
+                              ))
+
+        cqm.set_objective(a + b + x + s*i + a*b)
+        cqm.add_constraint(3*a*(1 - b) == 4)
+
+        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
+                         dict(num_biases=18,
+                              num_constraints=4,
+                              num_quadratic_variables=4,
+                              num_variables=6,
+                              num_quadratic_variables_real=4,
+                              num_linear_biases_real=7,
+                              ))
 
 
 class TestSetObjective(unittest.TestCase):
+    def test_bqm(self):
+        for dtype in [np.float32, np.float64, object]:
+            with self.subTest(dtype=np.dtype(dtype).name):
+                bqm = dimod.BQM({'a': 1}, {'ab': 4}, 5, 'BINARY', dtype=dtype)
+
+                cqm = dimod.CQM()
+
+                cqm.set_objective(bqm)
+
+                self.assertEqual(cqm.objective.linear, bqm.linear)
+                self.assertEqual(cqm.objective.quadratic, bqm.quadratic)
+                self.assertEqual(cqm.objective.offset, bqm.offset)
+
+                # doing it again should do nothing
+                cqm.set_objective(bqm)
+
+                self.assertEqual(cqm.objective.linear, bqm.linear)
+                self.assertEqual(cqm.objective.quadratic, bqm.quadratic)
+                self.assertEqual(cqm.objective.offset, bqm.offset)
+
     def test_empty(self):
         self.assertEqual(CQM().objective.num_variables, 0)
 
@@ -913,9 +991,9 @@ class TestSetObjective(unittest.TestCase):
     def test_terms_objective(self):
         cqm = CQM()
 
-        a = cqm.add_variable('a', 'BINARY')
-        b = cqm.add_variable('b', 'BINARY')
-        c = cqm.add_variable('c', 'INTEGER')
+        a = cqm.add_variable('BINARY', 'a')
+        b = cqm.add_variable('BINARY', 'b')
+        c = cqm.add_variable('INTEGER', 'c')
 
         cqm.set_objective([(a, b, 1), (b, 2.5,), (3,), (c, 1.5)])
         energy = cqm.objective.energy({'a': 1, 'b': 0, 'c': 10})

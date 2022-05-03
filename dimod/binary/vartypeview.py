@@ -244,7 +244,10 @@ class VartypeView:
     @view_method
     def remove_variable(self, v: Optional[Variable] = None) -> Variable:
         if v is None:
-            v = self.variables[-1]
+            try:
+                v = self.variables[-1]
+            except IndexError:
+                raise ValueError("cannot pop from an empty model")
         # set everything associated with `v` to 0
         for u, _ in self.iter_neighborhood(v):
             self.set_quadratic(u, v, 0)

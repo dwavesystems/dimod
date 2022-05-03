@@ -138,7 +138,8 @@ def FileView(bqm, version=(1, 0), ignore_labels=False):
         This function will be removed in dimod 0.12.0.
 
     """
-    warnings.warn("FileView is deprecated, please use `bqm.to_file` instead",
+    warnings.warn("FileView is deprecated since dimod 0.10.0 and will be removed in 0.12.0. "
+                  "Use `bqm.to_file` instead",
                   DeprecationWarning, stacklevel=2)
     return bqm.to_file(version=version, ignore_labels=ignore_labels)
 
@@ -273,7 +274,8 @@ def load(fp, cls=None):
 
     """
     if cls is not None:
-        warnings.warn("'cls' keyword argument is deprecated and ignored",
+        warnings.warn("'cls' keyword argument is deprecated since dimod 0.10.0 and "
+                      "will be removed in 0.12.0. It does nothing.",
                       DeprecationWarning, stacklevel=2)
 
     if isinstance(fp, ByteString):

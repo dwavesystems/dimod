@@ -12,10 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from __future__ import annotations
+
 import struct
 import tempfile
+import typing
 
-from collections.abc import Callable
+from collections.abc import Callable, Set
 from copy import deepcopy
 from numbers import Number
 from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Sized, Tuple, Union
@@ -43,10 +46,10 @@ from dimod.views.quadratic import QuadraticViewsMixin
 
 if TYPE_CHECKING:
     # avoid circular imports
-    from dimod import BinaryQuadraticModel
+    from dimod import BinaryQuadraticModel, ConstrainedQuadraticModel
 
 
-__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray']
+__all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray', 'Real', 'Reals']
 
 
 QM_MAGIC_PREFIX = b'DIMODQM'
@@ -241,7 +244,7 @@ class QuadraticModel(QuadraticViewsMixin):
                             new.add_linear(u, ubias*vbias)
                         elif u_vartype is Vartype.SPIN:
                             new.offset += ubias * vbias
-                        elif u_vartype is Vartype.INTEGER:
+                        elif u_vartype is Vartype.INTEGER or u_vartype is Vartype.REAL:
                             new.add_quadratic(u, v, ubias*vbias)
                         else:
                             raise RuntimeError("unexpected vartype")
@@ -395,20 +398,43 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.variables
 
     @forwarding_method
-    def add_linear(self, v: Variable, bias: Bias):
-        """Add a linear bias to an existing variable.
+    def add_linear(self, v: Variable, bias: Bias, *,
+                   default_vartype=None,
+                   default_lower_bound=None,
+                   default_upper_bound=None,
+                   ):
+        """Add a linear bias to an existing variable or a new variable with
+        specified vartype.
 
         Args:
             v: Variable label.
             bias: Linear bias for the variable.
+            default_vartype: The vartype of any variables not already in the
+                model. If ``default_vartype`` is ``None`` then missing
+                variables raise a ``ValueError``.
+            default_lower_bound: The lower bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
+            default_upper_bound: The upper bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
 
         Raises:
-            ValueError: If the variable is not in the model.
+            ValueError: If the variable is not in the model and
+            ``default_vartype`` is ``None``.
+
         """
         return self.data.add_linear
 
-    def add_linear_from(self, linear: Union[Mapping[Variable, Bias],
-                                            Iterable[Tuple[Variable, Bias]]]):
+    def add_linear_from(self,
+                        linear: Union[Mapping[Variable, Bias], Iterable[Tuple[Variable, Bias]]],
+                        *,
+                        default_vartype=None,
+                        default_lower_bound=None,
+                        default_upper_bound=None,
+                        ):
         """Add variables and linear biases to a quadratic model.
 
         Args:
@@ -417,18 +443,36 @@ class QuadraticModel(QuadraticViewsMixin):
                 form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
                 where ``v`` is a variable and ``bias`` is its associated linear
                 bias.
+            default_vartype: The vartype of any variables not already in the
+                model. If ``default_vartype`` is ``None`` then missing
+                variables raise a ``ValueError``.
+            default_lower_bound: The lower bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
+            default_upper_bound: The upper bound of any variables not already
+                in the model. Ignored if ``default_vartype`` is ``None`` or
+                when the variable is :class:`~dimod.Vartype.BINARY` or
+                :class:`~dimod.Vartype.SPIN`.
 
         Raises:
-            ValueError: If a specified variable is not in the model.
+            ValueError: If the variable is not in the model and
+            ``default_vartype`` is ``None``.
+
         """
-        add_linear = self.add_linear
+        add_linear = self.data.add_linear
+
+        if default_vartype is not None:
+            default_vartype = as_vartype(default_vartype, extended=True)
 
         if isinstance(linear, Mapping):
-            for v, bias in linear.items():
-                add_linear(v, bias)
-        else:
-            for v, bias in linear:
-                add_linear(v, bias)
+            linear = linear.items()
+
+        for v, bias in linear:
+            add_linear(v, bias,
+                       default_vartype=default_vartype,
+                       default_lower_bound=default_lower_bound,
+                       default_upper_bound=default_upper_bound)
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
@@ -469,11 +513,12 @@ class QuadraticModel(QuadraticViewsMixin):
         else:
             self.data.add_quadratic_from_iterable(quadratic)
 
-
     @forwarding_method
-    def add_variable(self, vartype: VartypeLike,
-                     v: Optional[Variable] = None,
-                     *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> Variable:
+    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
+                     *,
+                     lower_bound: float = 0,
+                     upper_bound: Optional[float] = None,
+                     ) -> Variable:
         """Add a variable to the quadratic model.
 
         Args:
@@ -483,6 +528,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
 
             v:
                 Label for the variable. Defaults to the length of the
@@ -511,6 +557,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
 
             variables: Iterable of variable labels.
 
@@ -521,8 +568,56 @@ class QuadraticModel(QuadraticViewsMixin):
 
         """
         vartype = as_vartype(vartype, extended=True)
+        add_variable = self.data.add_variable
         for v in variables:
-            self.add_variable(vartype, v)
+            add_variable(vartype, v)
+
+    def add_variables_from_model(self,
+                                 model: Union[BinaryQuadraticModel,
+                                              ConstrainedQuadraticModel,
+                                              QuadraticModel],
+                                 *,
+                                 variables: Optional[Iterable[Variable]] = None,
+                                 ):
+        """Add variables from another model.
+
+        Args:
+            model: A binary quadratic model, constrained quadratic model or
+                quadratic model.
+
+            variables: The variables from the model to add. If not specified
+                all of the variables are added.
+
+        Examples:
+            >>> qm0 = dimod.Integer('i', lower_bound=5, upper_bound=10) + dimod.Binary('x')
+            >>> qm1 = dimod.QuadraticModel()
+            >>> qm1.add_variables_from_model(qm0)
+            >>> qm1.variables
+            Variables(['i', 'x'])
+            >>> qm1.lower_bound('i')
+            5.0
+
+        """
+        # avoid circular import
+        from dimod.binary import BinaryQuadraticModel
+        from dimod.constrained import ConstrainedQuadraticModel
+
+        if isinstance(model, ConstrainedQuadraticModel):
+            return self.add_variables_from_model(model.objective, variables=variables)
+
+        if variables is None:
+            variables = model.variables
+
+        vartype = model.vartype if isinstance(model, QuadraticModel) else lambda v: model.vartype
+
+        for v in variables:
+            vt = vartype(v)
+            if vt is Vartype.SPIN or vt is Vartype.BINARY:
+                self.add_variable(vt, v)
+            else:
+                self.add_variable(vt, v,
+                                  lower_bound=model.lower_bound(v),
+                                  upper_bound=model.upper_bound(v))
 
     def change_vartype(self, vartype: VartypeLike, v: Variable) -> "QuadraticModel":
         """Change the variable type of the given variable, updating the biases.
@@ -533,6 +628,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
 
             v: Variable to change to the specified ``vartype``.
 
@@ -1266,7 +1362,7 @@ class QuadraticModel(QuadraticViewsMixin):
         file.seek(0)
         return file
 
-    def update(self, other: 'QuadraticModel'):
+    def update(self, other: typing.Union[QuadraticModel, BinaryQuadraticModel]):
         """Update the quadratic model from another quadratic model.
 
         Adds to the quadratic model the variables, linear biases, quadratic biases,
@@ -1296,23 +1392,53 @@ class QuadraticModel(QuadraticViewsMixin):
             >>> print(qm1.get_quadratic('s2', 's1'), qm1.get_quadratic('s3', 's1'))
             -2.0 1.0
         """
-        # this can be improved a great deal with c++, but for now let's use
-        # python for simplicity
+        try:
+            return self.data.update(other.data)
+        except (AttributeError, TypeError):
+            pass
+
+        # looks like we have a model that either has object dtype or isn't
+        # a cython model we recognize, so let's fall back on python
+
+        # need a couple methods to be generic between bqm and qm
+        vartype = other.vartype if callable(other.vartype) else lambda v: other.vartype
+
+        def lower_bound(v: Variable) -> Bias:
+            try:
+                return other.lower_bound(v)
+            except AttributeError:
+                pass
+
+            if other.vartype is Vartype.SPIN:
+                return -1
+            elif other.vartype is Vartype.BINARY:
+                return 0
+            else:
+                raise RuntimeError  # shouldn't ever happen
+
+        def upper_bound(v: Variable) -> Bias:
+            try:
+                return other.upper_bound(v)
+            except AttributeError:
+                pass
+
+            return 1
 
         for v in other.variables:
             if v not in self.variables:
                 continue
-            if self.vartype(v) != other.vartype(v):
+
+            if self.vartype(v) != vartype(v):
                 raise ValueError(f"conflicting vartypes: {v!r}")
-            if self.lower_bound(v) != other.lower_bound(v):
+            if self.lower_bound(v) != lower_bound(v):
                 raise ValueError(f"conflicting lower bounds: {v!r}")
-            if self.upper_bound(v) != other.upper_bound(v):
+            if self.upper_bound(v) != upper_bound(v):
                 raise ValueError(f"conflicting upper bounds: {v!r}")
 
         for v in other.variables:
-            self.add_linear(self.add_variable(other.vartype(v), v,
-                                              lower_bound=other.lower_bound(v),
-                                              upper_bound=other.upper_bound(v)),
+            self.add_linear(self.add_variable(vartype(v), v,
+                                              lower_bound=lower_bound(v),
+                                              upper_bound=upper_bound(v)),
                             other.get_linear(v))
 
         for u, v, bias in other.iter_quadratic():
@@ -1441,6 +1567,49 @@ def _VariableArray(variable_generator: Callable,
         variable_array[index] = element
 
     return variable_array
+
+
+@unique_variable_labels
+def Real(label: Optional[Variable] = None, bias: Bias = 1,
+         dtype: Optional[DTypeLike] = None,
+         *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> QuadraticModel:
+    """Return a quadratic model with a single real-valued variable.
+
+    Args:
+        label: Hashable label to identify the variable. Defaults to a
+            generated :class:`uuid.UUID` as a string.
+        bias: The bias to apply to the variable.
+        dtype: Data type for the returned quadratic model.
+        lower_bound: Keyword-only argument to specify the lower bound.
+        upper_bound: Keyword-only argument to specify the upper bound.
+
+    Returns:
+        Instance of :class:`.QuadraticModel`.
+
+    """
+    qm = QM(dtype=dtype)
+    v = qm.add_variable(Vartype.REAL, label, lower_bound=lower_bound, upper_bound=upper_bound)
+    qm.set_linear(v, bias)
+    return qm
+
+
+def Reals(labels: Union[int, Iterable[Variable]],
+          dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+    """Yield quadratic models, each with a single real-valued variable.
+
+    Args:
+        labels: Either an iterable of variable labels or a number. If a number
+            labels are generated using :class:`uuid.UUID`.
+        dtype: Data type for the returned quadratic models.
+
+    Yields:
+        Quadratic models, each with a single real-valued variable.
+
+    """
+    if isinstance(labels, Iterable):
+        yield from (Real(v, dtype=dtype) for v in labels)
+    else:
+        yield from (Real(dtype=dtype) for _ in range(labels))
 
 # register fileview loader
 load.register(QM_MAGIC_PREFIX, QuadraticModel.from_file)

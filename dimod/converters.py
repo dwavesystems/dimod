@@ -90,6 +90,8 @@ def from_networkx_graph(G, vartype=None,
             Attribute name for quadratic biases. If the edge does not have a
             matching attribute then the bias defaults to 0.
 
+        cls: Deprecated keyword argument. Does nothing.
+
         dtype: The dtype of the binary quadratic model. Defaults to `object`.
 
     Returns:
@@ -111,10 +113,17 @@ def from_networkx_graph(G, vartype=None,
         ...                                 vartype='BINARY',
         ...                                 edge_attribute_name='quadratic')
 
+    .. deprecated:: 0.10.0
+
+        The ``cls`` keyword will be removed in dimod 0.12.0. It currently does
+        nothing.
+
     """
     if cls is not None:
-        warnings.warn("'cls' keyword argument is deprecated as of 0.10.0 and "
-                      "does nothing.", DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "'cls' keyword argument is deprecated since dimod 0.10.0 and will be removed in 0.12.0. "
+            "It does nothing.",
+            DeprecationWarning, stacklevel=2)
     if vartype is None:
         if not hasattr(G, 'vartype'):
             msg = ("either 'vartype' argument must be provided or "

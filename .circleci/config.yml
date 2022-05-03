@@ -30,13 +30,21 @@ jobs:
       - restore_cache: &build-linux-restore-cache
           keys:
             - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
+      - when:
+          condition:
+            matches:
+              pattern: "^3\\.10.*$"
+              value: << parameters.python-version >>
+          steps:
+            # NumPy only has manylinux2014 images for Python 3.10 so we follow them
+            - run: echo 'export CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014' >> $BASH_ENV
       - run: &build-linux-wheels
           name: build wheels
           command: |
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.3.0
+            pip install cibuildwheel==2.4.0
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -123,7 +131,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.3.0
+            python -m pip install cibuildwheel==2.4.0
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
@@ -233,6 +241,13 @@ jobs:
           command: |
             . env/bin/activate
             make -C docs/ linkcheck
+      - run:
+          # If we add more notebooks in the future we can make this more general.
+          # We avoid a (slow) dimod install by playing around with the path.
+          name: test scaling guide
+          command: |
+            . env/bin/activate
+            PYTHONPATH=$(pwd):$PYTHONPATH jupyter nbconvert --to notebook --execute docs/intro/intro_scaling.ipynb
 
   test-linux:
     parameters:
@@ -401,14 +416,10 @@ workflows:
             parameters:
               # test the lowest numpy version and the highest minor of each
               # currently deployed
-              numpy-version: [==1.19.1, ~=1.20.0, ~=1.21.0, ~=1.22.0]
+              numpy-version: [==1.20.0, ~=1.21.0, ~=1.22.0]
               python-version: *python-versions
             exclude:
-              - numpy-version: ==1.19.1  # NumPy 1.19.1 does not support 3.9
-                python-version: 3.9.4
-              - numpy-version: ==1.19.1  # NumPy 1.19.1 does not support 3.10
-                python-version: 3.10.0
-              - numpy-version: ~=1.20.0  # NumPy 1.20 does not support 3.10
+              - numpy-version: ==1.20.0  # NumPy 1.20 does not support 3.10
                 python-version: 3.10.0
               - numpy-version: ~=1.22.0  # NumPy 1.22 does not support 3.7
                 python-version: 3.7.9

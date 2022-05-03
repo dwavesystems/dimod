@@ -931,9 +931,6 @@ class TestDeprecation(unittest.TestCase):
             self.assertFalse(bqm.has_variable(0))
             self.assertFalse(bqm.has_variable(2))
 
-    def test_abc(self):
-        self.assertIsInstance(dimod.BQM('SPIN'), dimod.core.bqm.BQM)
-
 
 class TestDictBQM(unittest.TestCase):
     def test_numeric_required_args(self):
@@ -1135,7 +1132,7 @@ class TestEnergies(unittest.TestCase):
                 arr = np.array([5, 2.5], dtype=dtype)
                 self.assertEqual(bqm.energy((arr, 'xy')), -40)
 
-        for dtype in [np.complex]:
+        for dtype in [complex]:
             with self.subTest(dtype):
                 arr = np.array([5, 2], dtype=dtype)
                 with self.assertRaises(ValueError):
@@ -1601,7 +1598,7 @@ class TestNBytes(unittest.TestCase):
 
         size = sum([itemsize,  # offset
                     bqm.num_variables*itemsize,  # linear
-                    2*bqm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    2*bqm.num_interactions*(2*itemsize),  # quadratic
                     ])
 
         self.assertEqual(bqm.nbytes(), size)
@@ -2614,7 +2611,7 @@ class TestToFromSerializable(unittest.TestCase):
         self.assertEqual(bqm, new)
 
     def test_variable_labels(self):
-        h = {0: 0, 1: 1, np.int64(2): 2, np.float(3): 3,
+        h = {0: 0, 1: 1, np.int64(2): 2, np.float64(3): 3,
              fractions.Fraction(4, 1): 4, fractions.Fraction(5, 2): 5,
              '6': 6}
         J = {}

@@ -67,9 +67,6 @@ setup(
     cmdclass=dict(build_ext=build_ext),
     ext_modules=cythonize(
         ['dimod/binary/cybqm/*.pyx',
-         'dimod/bqm/adjvectorbqm.pyx',
-         'dimod/bqm/utils.pyx',
-         'dimod/bqm/common.pyx',
          'dimod/cyutilities.pyx',
          'dimod/cyvariables.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',
@@ -83,11 +80,10 @@ setup(
         'dimod/include/',
         ],
     install_requires=[
-        'numpy>=1.19.1,<2.0.0',
+        'numpy>=1.20.0,<2.0.0',
         'pyparsing>=2.4.7, <3.0.0',
         ],
-    # we use the generic 'all' so that in the future when we remove
-    # dwave-preprocessing we can leave it in as an empty list. Thereby not
-    # breaking any packages that have dimod[all] in their requirments.
-    extras_require=dict(all='dwave-preprocessing>=0.3,<0.4'),
+    # we use the generic 'all' so that in the future we can add or remove
+    # packages without breaking things
+    extras_require=dict(all=''),
 )

@@ -1,4 +1,4 @@
-# Copyright 2019 D-Wave Systems Inc.
+# Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,10 +12,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dimod.bqm.adjvectorbqm cimport cyAdjVectorBQM
+import numpy as np
 
-ctypedef fused cyBQM:
-    cyAdjVectorBQM
+from dimod.typing import Bias
 
-ctypedef fused cyShapeableBQM:
-    cyAdjVectorBQM
+
+# built-in numeric types
+a: Bias = 1
+b: Bias = 1.
+c: Bias = complex(1, 1)  # E: Incompatible types in assignment
+
+# built-in non-numeric
+r: Bias = 'hello'  # E: Incompatible types in assignment
+s: Bias = [0, 1]  # E: Incompatible types in assignment
+
+# NumPy numeric types
+j: Bias = np.int64(1)
+k: Bias = np.int8(1)
+l: Bias = np.float32(1)
+m: Bias = np.float64(1)
+n: Bias = np.complex64(5)  # E: Incompatible types in assignment

@@ -84,10 +84,12 @@ if typing.TYPE_CHECKING:
 
 __all__ = ['Structured']
 
+
 class _Structure(typing.NamedTuple):
     nodelist: typing.List[Variable]
     edgelist: typing.List[typing.Tuple[Variable, Variable]]
     adjacency: typing.Dict[Variable, typing.Set]
+
 
 class Structured(abc.ABC):
     """The abstract base class for dimod structured samplers.

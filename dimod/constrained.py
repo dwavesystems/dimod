@@ -33,7 +33,6 @@ from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, Name
 
 import numpy as np
 
-from dimod.core.bqm import BQM as BQMabc
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.exceptions import InfeasibileModelError
@@ -193,25 +192,11 @@ class ConstrainedQuadraticModel:
 
         self._variables = variables = self.objective.variables
 
-        # to support backwards compatibility (0.10.0 - 0.10.5), we annotate
-        # this object with some attributes. All of these will be removed in
-        # 0.11.0
-        def vartype(v):
-            warnings.warn(
-                "cqm.variables.vartype(v) is deprecated and will be removed in dimod 0.11.0, "
-                "use cqm.vartype(v) instead.", DeprecationWarning, stacklevel=2)
-            return self.vartype(v)
-
-        variables.vartype = vartype  # method
-        variables.vartypes = _Vartypes(self)
-        variables.lower_bounds = _LowerBounds(self)
-        variables.upper_bounds = _UpperBounds(self)
-
         return variables
 
     def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
         # todo: singledispatchmethod in 3.8+
-        if isinstance(model, (BinaryQuadraticModel, BQMabc)):
+        if isinstance(model, BinaryQuadraticModel):
             vartype = model.vartype
 
             for v in model.variables:
@@ -245,7 +230,7 @@ class ConstrainedQuadraticModel:
 
         """
         # in python 3.8+ we can use singledispatchmethod
-        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_constraint_from_comparison(data, *args, **kwargs)
@@ -265,7 +250,7 @@ class ConstrainedQuadraticModel:
         Args:
             qm: Quadratic model or binary quadratic model.
 
-            sense: One of `<=', '>=', '=='.
+            sense: One of `<=`, `>=`, `==`.
 
             rhs: Right hand side of the constraint.
 
@@ -313,9 +298,6 @@ class ConstrainedQuadraticModel:
                 label = uuid.uuid4().hex[:6]
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
-
-        if isinstance(qm, BQMabc):
-            qm = as_bqm(qm)  # handle legacy BQMs
 
         self._add_variables_from(qm)
 
@@ -391,7 +373,7 @@ class ConstrainedQuadraticModel:
             iterable: Iterable of terms as tuples. The variables must
                 have already been added to the object.
 
-            sense: One of `<=', '>=', '=='.
+            sense: One of `<=`, `>=`, `==`.
 
             rhs: The right hand side of the constraint.
 
@@ -404,10 +386,14 @@ class ConstrainedQuadraticModel:
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer, Binary
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_variable('i', 'INTEGER')   # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('j', 'INTEGER')   # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('x', 'BINARY')    # doctest: +IGNORE_RESULT
-            >>> cqm.add_variable('y', 'BINARY')    # doctest: +IGNORE_RESULT
+            >>> cqm.add_variable('INTEGER', 'i')
+            'i'
+            >>> cqm.add_variable('INTEGER', 'j')
+            'j'
+            >>> cqm.add_variable('BINARY', 'x')
+            'x'
+            >>> cqm.add_variable('BINARY', 'y')
+            'y'
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
             >>> print(cqm.constraints[label1].to_polystring())
@@ -452,7 +438,7 @@ class ConstrainedQuadraticModel:
 
             >>> iterable = ['x', 'y', 'z']
             >>> for v in iterable:
-            ...      cqm.add_variable(v, 'BINARY')
+            ...      cqm.add_variable('BINARY', v)
             'x'
             'y'
             'z'
@@ -475,7 +461,7 @@ class ConstrainedQuadraticModel:
 
         """
         # in python 3.8+ we can use singledispatchmethod
-        if isinstance(data, (BinaryQuadraticModel, QuadraticModel, BQMabc)):
+        if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_discrete_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_discrete_from_comparison(data, *args, **kwargs)
@@ -566,7 +552,7 @@ class ConstrainedQuadraticModel:
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> color = ["red", "blue", "green"]
             >>> for v in color:
-            ...      cqm.add_variable(v, 'BINARY')
+            ...      cqm.add_variable('BINARY', v)
             'red'
             'blue'
             'green'
@@ -669,22 +655,26 @@ class ConstrainedQuadraticModel:
         self.discrete.add(label)
         return label
 
-    def add_variable(self, v: Variable, vartype: VartypeLike,
+    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
                      *,
-                     lower_bound: Optional[float] = None,
+                     lower_bound: float = 0,
                      upper_bound: Optional[float] = None,
                      ) -> Variable:
         """Add a variable to the model.
 
         Args:
-            variable: Variable label.
-
             vartype:
                 Variable type. One of:
 
                 * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
                 * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
+
+            v:
+                Label for the variable. Defaults to the length of the
+                quadratic model, if that label is available. Otherwise defaults
+                to the lowest available positive integer label.
 
             lower_bound:
                 Lower bound on the variable. Ignored when the variable is
@@ -705,10 +695,21 @@ class ConstrainedQuadraticModel:
         Examples:
             >>> from dimod import ConstrainedQuadraticModel, Integer
             >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_variable('i', 'INTEGER')
+            >>> cqm.add_variable('INTEGER', 'i')
             'i'
 
         """
+        try:
+            vartype = as_vartype(vartype, extended=True)
+        except TypeError:
+            # in dimod<0.11 the argument order was v, vartype so let's allow that case
+            warnings.warn(
+                "Parameter order CQM.add_variable(v, vartype) "
+                "is deprecated since dimod 0.11.0 and will be removed in 0.13.0. "
+                "Use CQM.add_variable(vartype, v) instead.",
+                DeprecationWarning, stacklevel=2)
+            v, vartype = vartype, v
+
         return self.objective.add_variable(
             vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
 
@@ -902,7 +903,7 @@ class ConstrainedQuadraticModel:
         return new
 
     def flip_variable(self, v: Variable):
-        """Flip the specified binary variable in the objective and constraints.
+        r"""Flip the specified binary variable in the objective and constraints.
 
         Note that this may terminate a constraint's status as a discrete constraint
         (see :meth:`add_discrete`). Subsequently flipping the variable again does
@@ -1045,11 +1046,18 @@ class ConstrainedQuadraticModel:
         return cls.from_quadratic_model(qm)
 
     @classmethod
-    def from_file(cls, fp: Union[BinaryIO, ByteString]) -> "ConstrainedQuadraticModel":
+    def from_file(cls,
+                  fp: Union[BinaryIO, ByteString],
+                  *,
+                  check_header: bool = True,
+                  ) -> ConstrainedQuadraticModel:
         """Construct from a file-like object.
 
         Args:
             fp: File pointer to a readable, seekable file-like object.
+
+            check_header: If True, the header is checked for consistency
+                against the deserialized model. Otherwise it is ignored.
 
         The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
 
@@ -1070,8 +1078,8 @@ class ConstrainedQuadraticModel:
 
         header_info = read_header(file_like, CQM_MAGIC_PREFIX)
 
-        if header_info.version >= (2, 0):
-            raise ValueError("cannot load a BQM serialized with version "
+        if not (1, 0) <= header_info.version <= (1, 2):
+            raise ValueError("cannot load a CQM serialized with version "
                              f"{header_info.version!r}, try upgrading your "
                              "dimod version")
 
@@ -1098,6 +1106,26 @@ class ConstrainedQuadraticModel:
                 cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
                 if discrete:
                     cqm.discrete.add(label)
+
+        if check_header:
+            expected = dict(num_variables=len(cqm.variables),
+                            num_constraints=len(cqm.constraints),
+                            num_biases=cqm.num_biases(),
+                            )
+            if header_info.version >= (1, 1):
+                expected.update(
+                    num_quadratic_variables=cqm.num_quadratic_variables(include_objective=False))
+            if header_info.version >= (1, 2):
+                expected.update(
+                    num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                    num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
+                    )
+
+            if expected != header_info.data:
+                raise ValueError(
+                    "header data does not match the deserialized CQM. "
+                    f"Expected {expected!r}, recieved {header_info.data!r}"
+                    )
 
         return cqm
 
@@ -1309,8 +1337,20 @@ class ConstrainedQuadraticModel:
         """
         return self.objective.lower_bound(v)
 
-    def num_biases(self) -> int:
-        """Number of biases across the objective and constraints.
+    def num_biases(self, vartype: Optional[VartypeLike] = None, *,
+                   linear_only: bool = False,
+                   ) -> int:
+        """Number of biases in the constrained quadratic model.
+        
+        Includes biases in both the objective and any constraints.
+
+        Args:
+            vartype: Count only variables of the specified :class:`~dimod.Vartype`.
+
+            linear_only: Count only linear biases.
+
+        Returns:
+            The number of biases.
 
         Examples:
             This example counts the three linear biases (including a linear bias
@@ -1322,15 +1362,42 @@ class ConstrainedQuadraticModel:
             >>> cqm.set_objective(2*x + 3*i - x*y + i*x)
             >>> cqm.num_biases()
             5
-        """
-        num_biases = len(self.objective.linear) + len(self.objective.quadratic)
-        num_biases += sum(len(const.lhs.linear) + len(const.lhs.quadratic)
-                          for const in self.constraints.values())
-        return num_biases
 
-    def num_quadratic_variables(self) -> int:
-        """Return the total number of variables with at least one quadratic
-        interaction across all constraints.
+        """
+        if vartype is None:
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                return qm.num_variables + (0 if linear_only else qm.num_interactions)
+        else:
+            vartype = as_vartype(vartype, extended=True)
+
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                if isinstance(qm, BinaryQuadraticModel):
+                    if qm.vartype is not vartype:
+                        return 0
+                    return qm.num_variables + (0 if linear_only else qm.num_interactions)
+                else:
+                    num_biases = sum(qm.vartype(v) is vartype for v in qm.variables)
+                    if not linear_only:
+                        num_biases += sum(qm.vartype(u) is vartype or qm.vartype(v) is vartype
+                                          for u, v, _ in qm.iter_quadratic())
+                    return num_biases
+
+        return count(self.objective) + sum(count(const.lhs) for const in self.constraints.values())
+
+    def num_quadratic_variables(self, vartype: Optional[VartypeLike] = None, *,
+                                include_objective: Optional[bool] = None,
+                                ) -> int:
+        """Number of variables with at least one quadratic interaction in the constrained quadratic model.
+        
+        Includes interactions in both the objective and any constraints.
+
+        Args:
+            vartype: Count only variables of the specified :class:`~dimod.Vartype`.
+
+            include_objective: Count also variables in the objective. Currently defaults to false.
+
+        Return:
+            The number of variables.
 
         Examples:
             This example counts the two variables participating in interaction
@@ -1344,12 +1411,39 @@ class ConstrainedQuadraticModel:
             'Constraint1'
             >>> cqm.num_quadratic_variables()
             2
+
+        .. deprecated:: 0.10.14
+
+            In dimod 0.12.0 ``include_objective`` will default to true.
+
         """
-        count = 0
-        for const in self.constraints.values():
-            lhs = const.lhs
-            count += sum(lhs.degree(v) > 0 for v in lhs.variables)
-        return count
+        if include_objective is None:
+            warnings.warn(
+                "in dimod 0.12.0 the default value of include_objective will change to true. "
+                "To suppress this warning while keeping the existing behavior, set include_objective=False. "
+                "To get the new behavior, set include_objective=True",
+                DeprecationWarning,
+                stacklevel=2,
+                )
+
+        if vartype is None:
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                return sum(qm.degree(v) > 0 for v in qm.variables)
+        else:
+            vartype = as_vartype(vartype, extended=True)
+
+            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+                if isinstance(qm, BinaryQuadraticModel):
+                    return sum(qm.degree(v) > 0 for v in qm.variables) if qm.vartype is vartype else 0
+                else:
+                    return sum(qm.vartype(v) is vartype and qm.degree(v) > 0 for v in qm.variables)
+
+        n = sum(count(const.lhs) for const in self.constraints.values())
+
+        if include_objective:
+            n += count(self.objective)
+
+        return n
 
     def relabel_constraints(self, mapping: Mapping[Hashable, Hashable]):
         """Relabel the constraints.
@@ -1460,9 +1554,9 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable("j", "INTEGER", upper_bound=5)
+            >>> cqm.add_variable('INTEGER', 'j', upper_bound=5)
             'j'
-            >>> cqm.set_lower_bound("j", 2)
+            >>> cqm.set_lower_bound('j', 2)
         """
         self.objective.set_lower_bound(v, lb)
         for comp in self.constraints.values():
@@ -1488,19 +1582,13 @@ class ConstrainedQuadraticModel:
         """
         if isinstance(objective, Iterable):
             objective = self._iterable_to_qm(objective)
+
         # clear out current objective, keeping only the variables
-        self.objective.quadratic.clear()  # there may be a more performant way...
-        for v in self.objective.variables:
-            self.objective.set_linear(v, 0)
-        # offset is overwritten later
+        if not self.objective.is_linear():
+            self.objective.quadratic.clear()  # there may be a more performant way...
+        self.objective.scale(0)  # set all the remaining biases to 0
 
-        # now add everything from the new objective
-        self._add_variables_from(objective)
-
-        for v in objective.variables:
-            self.objective.set_linear(v, objective.get_linear(v))
-        self.objective.add_quadratic_from(objective.iter_quadratic())
-        self.objective.offset = objective.offset
+        self.objective.update(objective)
 
     def set_upper_bound(self, v: Variable, ub: float):
         """Set the upper bound for a variable.
@@ -1515,9 +1603,9 @@ class ConstrainedQuadraticModel:
 
         Examples:
             >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable("j", "INTEGER", lower_bound=2)
+            >>> cqm.add_variable('INTEGER', 'j', lower_bound=2)
             'j'
-            >>> cqm.set_upper_bound("j", 5)
+            >>> cqm.set_upper_bound('j', 5)
         """
         self.objective.set_upper_bound(v, ub)
         for comp in self.constraints.values():
@@ -1649,7 +1737,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.1):
+        Format Specification (Version 1.2):
 
             This format is inspired by the `NPY format`_
 
@@ -1673,6 +1761,8 @@ class ConstrainedQuadraticModel:
                      num_constraints=len(cqm.constraints),
                      num_biases=cqm.num_biases(),
                      num_quadratic_variables=cqm.num_quadratic_variables(),
+                     num_quadratic_variables_real=cqm.num_quadratic_variables('REAL', include_objective=True),
+                     num_linear_biases_real=cqm.num_biases('REAL', linear_only=True),
                      )
 
             it is terminated by a newline character and padded with spaces to
@@ -1687,6 +1777,12 @@ class ConstrainedQuadraticModel:
             the `lhs` as a fileview, the `rhs` as a float and the sense
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
+
+        Format Specification (Version 1.1):
+
+            This format is the same as Version 1.2, except that the data dict
+            does not have ``num_quadratic_variables_real`` and
+            ``num_linear_biases_real``.
 
         Format Specification (Version 1.0):
 
@@ -1709,10 +1805,12 @@ class ConstrainedQuadraticModel:
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
                     num_biases=self.num_biases(),
-                    num_quadratic_variables=self.num_quadratic_variables(),
+                    num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
+                    num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 1))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 2))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
@@ -1954,72 +2052,6 @@ class ConstrainedQuadraticModel:
 CQM = ConstrainedQuadraticModel
 
 
-class _Vartypes(abc.Sequence):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, index: int) -> Vartype:
-        warnings.warn(
-            "cqm.variables.vartypes[i] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.vartype(cqm.variables[i]) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.vartype(self.cqm.variables[index])
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.vartypes is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
-
-
-class _LowerBounds(abc.Mapping):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, key: Variable) -> float:
-        warnings.warn(
-            "cqm.variables.lower_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.lower_bound(v) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.lower_bound(key)
-
-    def __iter__(self) -> Iterator[Variable]:
-        warnings.warn(
-            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        yield from self.cqm.variables
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.lower_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
-
-
-class _UpperBounds(abc.Mapping):
-    """Support deprecated attribute on ``CQM.variables``"""
-    def __init__(self, cqm: ConstrainedQuadraticModel):
-        self.cqm: ConstrainedQuadraticModel = cqm
-
-    def __getitem__(self, key: Variable) -> float:
-        warnings.warn(
-            "cqm.variables.upper_bounds[v] is deprecated and will be removed in dimod 0.11.0, "
-            "use cqm.upper_bound(v) instead.", DeprecationWarning, stacklevel=3)
-        return self.cqm.upper_bound(key)
-
-    def __iter__(self) -> Iterator[Variable]:
-        warnings.warn(
-            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        yield from self.cqm.variables
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "cqm.variables.upper_bounds is deprecated and will be removed in dimod 0.11.0",
-            DeprecationWarning, stacklevel=3)
-        return len(self.cqm.variables)
-
-
 def _qm_to_bqm(qm: QuadraticModel, integers: MutableMapping[Variable, BinaryQuadraticModel],
                ) -> BinaryQuadraticModel:
     # dev note: probably we'll want to make this function or something similar
@@ -2127,12 +2159,9 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             bias in the objective.
 
     Returns:
-        A 2-tuple containing:
-
-            A binary quadratic model
-
-            A function that converts samples over the binary quadratic model
-            back into samples for the constrained quadratic model.
+        A 2-tuple containing a binary quadratic model and a function that converts
+        samples over the binary quadratic model back into samples for the
+        constrained quadratic model.
 
     Example:
 

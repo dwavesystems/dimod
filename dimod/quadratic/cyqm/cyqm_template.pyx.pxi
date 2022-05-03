@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import operator
+import os
 
 from copy import deepcopy
 
@@ -20,13 +21,22 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
+from libcpp.vector cimport vector
+
+import dimod
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
 from dimod.libcpp cimport cppvartype_info
+from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
+
+
+ctypedef fused cyBQM_and_QM:
+    cyBQM
+    cyQM
 
 
 cdef class cyQM_template(cyQMBase):
@@ -35,10 +45,15 @@ cdef class cyQM_template(cyQMBase):
         self.index_dtype = np.dtype(INDEX_DTYPE)
         self.variables = Variables()
 
+        self.REAL_INTERACTIONS = dimod.REAL_INTERACTIONS
+
     def __deepcopy__(self, memo):
         cdef cyQM_template new = type(self)()
         new.cppqm = self.cppqm
         new.variables = deepcopy(self.variables, memo)
+
+        new.REAL_INTERACTIONS = self.REAL_INTERACTIONS
+
         memo[id(self)] = new
         return new
 
@@ -154,6 +169,8 @@ cdef class cyQM_template(cyQMBase):
                 cpp_vartype = cppVartype.SPIN
             elif vartype_view[vi] == 2:
                 cpp_vartype = cppVartype.INTEGER
+            elif vartype_view[vi] == 3:
+                cpp_vartype = cppVartype.REAL
             else:
                 raise RuntimeError
             self.cppqm.add_variable(cpp_vartype, lb_view[vi], ub_view[vi])
@@ -166,8 +183,24 @@ cdef class cyQM_template(cyQMBase):
         cdef bias_type *b = &(self.cppqm.linear(vi))
         b[0] = bias
 
-    def add_linear(self, v, bias_type bias):
-        cdef Py_ssize_t vi = self.variables.index(v)
+    def add_linear(self, v, bias_type bias, *,
+                   default_vartype=None,
+                   default_lower_bound=None,
+                   default_upper_bound=None,
+                   ):
+        cdef Py_ssize_t vi
+
+        if default_vartype is None or self.variables.count(v):
+            # already present
+            vi = self.variables.index(v)
+        else:
+            # we need to add it
+            vi = self.num_variables()
+            self.add_variable(default_vartype, v,
+                              lower_bound=default_lower_bound,
+                              upper_bound=default_upper_bound,
+                              )
+
         self._add_linear(vi, bias)
 
     def add_linear_from_array(self, ConstNumeric[:] linear):
@@ -183,15 +216,37 @@ cdef class cyQM_template(cyQMBase):
             for vi in range(length):
                 self.add_linear(vi, linear[vi])
 
-    def add_quadratic(self, u, v, bias_type bias):
-        cdef Py_ssize_t ui = self.variables.index(u)
-        cdef Py_ssize_t vi = self.variables.index(v)
+    cdef Py_ssize_t _add_quadratic(self, index_type ui, index_type vi, bias_type bias) except -1:
+        # note: does not test that ui, vi are valid
 
-        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+
+        if not self.REAL_INTERACTIONS:
+            if self.cppqm.vartype(ui) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[ui]!r}) "
+                    "cannot have interactions"
+                    )
+            if self.cppqm.vartype(vi) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[vi]!r}) "
+                    "cannot have interactions"
+                    )
 
         self.cppqm.add_quadratic(ui, vi, bias)
+
+    def add_quadratic(self, object u, object v, bias_type bias):
+        cdef Py_ssize_t ui = self.variables.index(u)
+        cdef Py_ssize_t vi = self.variables.index(v)
+        self._add_quadratic(ui, vi, bias)
 
     def add_quadratic_from_arrays(self,
                                   ConstInteger[::1] irow, ConstInteger[::1] icol,
@@ -206,7 +261,7 @@ cdef class cyQM_template(cyQMBase):
                 raise ValueError("variables must already exist")
 
             for vi in range(length):
-                self.cppqm.add_quadratic(irow[vi], icol[vi], qdata[vi])
+                self._add_quadratic(irow[vi], icol[vi], qdata[vi])
         else:
             for vi in range(length):
                 self.add_quadratic(irow[vi], icol[vi], qdata[vi])
@@ -214,20 +269,14 @@ cdef class cyQM_template(cyQMBase):
     def add_quadratic_from_iterable(self, quadratic):
         cdef Py_ssize_t ui, vi
         cdef bias_type bias
-
         for u, v, bias in quadratic:
             ui = self.variables.index(u)
             vi = self.variables.index(v)
-
-            if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                             or self.cppqm.vartype(ui) == cppVartype.BINARY):
-                raise ValueError(f"{u!r} cannot have an interaction with itself")
-            
-            self.cppqm.add_quadratic(ui, vi, bias)
+            self._add_quadratic(ui, vi, bias)
 
     def add_variable(self, vartype, label=None, *, lower_bound=None, upper_bound=None):
-        # as_vartype will raise for unsupported vartypes
-        vartype = as_vartype(vartype, extended=True)
+        if not isinstance(vartype, Vartype):  # redundant, but provides a bit of a speedup
+            vartype = as_vartype(vartype, extended=True)
         cdef cppVartype cppvartype = self.cppvartype(vartype)
 
         cdef bias_type lb
@@ -261,7 +310,7 @@ cdef class cyQM_template(cyQMBase):
             # in this case we just ignore the provided values
             lb = cppvartype_info[bias_type].default_min(cppvartype)
             ub = cppvartype_info[bias_type].default_max(cppvartype)
-        elif cppvartype == cppVartype.INTEGER:
+        elif cppvartype == cppVartype.INTEGER or cppvartype == cppVartype.REAL:
             if lower_bound is None:
                 lb = cppvartype_info[bias_type].default_min(cppvartype)
             else:
@@ -279,7 +328,7 @@ cdef class cyQM_template(cyQMBase):
             if lb > ub:
                 raise ValueError("lower_bound must be less than or equal to upper_bound")
 
-            if ceil(lb) > floor(ub):
+            if cppvartype == cppVartype.INTEGER and ceil(lb) > floor(ub):
                 raise ValueError("there must be at least one valid integer between lower_bound and upper_bound")
         else:
             raise RuntimeError("unknown vartype")
@@ -418,9 +467,15 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and (self.cppqm.vartype(ui) == cppVartype.SPIN
-                         or self.cppqm.vartype(ui) == cppVartype.BINARY):
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
 
         cdef bias_type bias
         try:
@@ -700,10 +755,94 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t ui = self.variables.index(u)
         cdef Py_ssize_t vi = self.variables.index(v)
 
-        if ui == vi and self.cppqm.vartype(ui) != cppVartype.INTEGER:
-            raise ValueError(f"{u!r} cannot have an interaction with itself")
-        
+        if ui == vi:
+            if self.cppqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.cppqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+
+        if not self.REAL_INTERACTIONS:
+            if self.cppqm.vartype(ui) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[ui]!r}) "
+                    "cannot have interactions"
+                    )
+            if self.cppqm.vartype(vi) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[vi]!r}) "
+                    "cannot have interactions"
+                    )
+
         self.cppqm.set_quadratic(ui, vi, bias)
+
+    def update(self, cyBQM_and_QM other):
+        # we'll need a mapping from the other's variables to ours
+        cdef vector[Py_ssize_t] mapping
+        mapping.reserve(other.num_variables())
+
+        cdef Py_ssize_t vi
+
+        # first make sure that any variables that overlap match in terms of
+        # vartype and bounds
+        for vi in range(other.num_variables()):
+            v = other.variables.at(vi)
+            if self.variables.count(v):
+                # there is a variable already
+                mapping.push_back(self.variables.index(v))
+
+                if self.cppqm.vartype(mapping[vi]) != other.data().vartype(vi):
+                    raise ValueError(f"conflicting vartypes: {v!r}")
+
+                if self.cppqm.lower_bound(mapping[vi]) != other.data().lower_bound(vi):
+                    raise ValueError(f"conflicting lower bounds: {v!r}")
+
+                if self.cppqm.upper_bound(mapping[vi]) != other.data().upper_bound(vi):
+                    raise ValueError(f"conflicting upper bounds: {v!r}")
+            else:
+                # not yet present, let's just track that fact for now
+                # in case there is a mismatch so we don't modify our object yet
+                mapping.push_back(-1)
+
+        for vi in range(mapping.size()):
+            if mapping[vi] != -1:
+                continue  # already added and checked
+
+            mapping[vi] = self.num_variables()  # we're about to add a new one
+
+            v = other.variables.at(vi)
+            vartype = other.vartype(v)
+
+            self.add_variable(vartype, v,
+                              lower_bound=other.data().lower_bound(vi),
+                              upper_bound=other.data().upper_bound(vi),
+                              )
+
+        # variables are in place!
+        
+        # the linear biases
+        for vi in range(mapping.size()):
+            self._add_linear(mapping[vi], other.data().linear(vi))
+
+        # the quadratic biases
+        # dev note: for even more speed we could check that mapping is
+        # a range, and in that case can just add them without the indirection
+        # or the sorting.
+        it = other.data().cbegin_quadratic()
+        while it != other.data().cend_quadratic():
+            self.cppqm.add_quadratic(
+                mapping[deref(it).u],
+                mapping[deref(it).v],
+                deref(it).bias
+                )
+            inc(it)
+
+        # the offset
+        cdef bias_type *b = &(self.cppqm.offset())
+        b[0] += other.data().offset()
 
     def upper_bound(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
@@ -719,5 +858,7 @@ cdef class cyQM_template(cyQMBase):
             return Vartype.SPIN
         elif cppvartype == cppVartype.INTEGER:
             return Vartype.INTEGER
+        elif cppvartype == cppVartype.REAL:
+            return Vartype.REAL
         else:
             raise RuntimeError("unexpected vartype")

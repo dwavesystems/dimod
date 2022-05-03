@@ -38,6 +38,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         BINARY
         SPIN
         INTEGER
+        REAL
 
     cpdef cppclass cppvartype_info "dimod::vartype_info" [Bias]:
         @staticmethod
@@ -86,6 +87,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void change_vartype(cppVartype)
         bint is_linear()
         bias_type& linear(index_type)
+        const bias_type lower_bound(index_type)
         bias_type& offset()
         bias_type quadratic(index_type, index_type)
         bias_type quadratic_at(index_type, index_type) except +
@@ -101,7 +103,9 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except +
         void swap_variables(index_type, index_type)
+        const bias_type upper_bound(index_type)
         cppVartype& vartype()
+        cppVartype& vartype(index_type)
 
     cdef cppclass cppQuadraticModel "dimod::QuadraticModel" [Bias, Index]:
         ctypedef Bias bias_type

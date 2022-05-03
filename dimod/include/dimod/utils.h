@@ -19,15 +19,8 @@
 #include <utility>
 #include <vector>
 
-#define BLOCK_SIZE 64  // Block size for cache blocking.
-
 namespace dimod {
 namespace utils {
-
-    template <class V, class B>
-    bool comp_v(std::pair<V, B> ub, V v) {
-        return ub.first < v;
-    }
 
     // zip_sort is a modification of the code found here :
     // https://www.geeksforgeeks.org/iterative-quick-sort/
@@ -45,14 +38,13 @@ namespace utils {
 
         if (length < 2) {
             return;
-        } else if (length > std::numeric_limits<int64_t>::max()) {
+        } else if (length > static_cast<std::size_t>(std::numeric_limits<int64_t>::max())) {
             throw std::logic_error(
                     "Length of arrays are too big for sorting. Numerical "
                     "overflow will occur.");
         }
 
-        std::int64_t* stack =
-                (std::int64_t*)malloc(length * sizeof(std::int64_t));
+        std::int64_t* stack = (std::int64_t*)malloc(length * sizeof(std::int64_t));
         std::int64_t top = -1;
         std::int64_t low = 0;
         std::int64_t high = length - 1;

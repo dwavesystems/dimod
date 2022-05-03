@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Add ``BinaryQuadraticModel::lower_bound()`` and
+    ``BinaryQuadraticModel::upper_bound()`` methods to the C++ code.
+  - |
+    Improve the performance of the ``QuadraticModel.update()`` method.
+  - |
+    Improve the performance of the ``ConstrainedQuadraticModel.set_objective()`` method.
+  - |
+    ``QuadraticModel.update()`` now accepts binary quadratic models in addition
+    to quadratic models.

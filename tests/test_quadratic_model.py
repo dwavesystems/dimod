@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import itertools
+import os
 import shutil
 import tempfile
 import unittest
@@ -24,7 +25,7 @@ from parameterized import parameterized
 
 import dimod
 
-from dimod import Spin, Binary, Integer, QM, QuadraticModel
+from dimod import Spin, Binary, Integer, QM, QuadraticModel, Real, Reals
 
 
 VARTYPES = dict(BINARY=dimod.BINARY, SPIN=dimod.SPIN, INTEGER=dimod.INTEGER)
@@ -121,6 +122,93 @@ class TestAddVariable(unittest.TestCase):
                 else:
                     with self.assertRaises(ValueError):
                         qm.add_variable(vartype, 'y', lower_bound=.1, upper_bound=.9)
+
+
+class TestAddVariablesFromModel(unittest.TestCase):
+    def test_qm(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm)
+        self.assertEqual(new.variables, qm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+    def test_bqm(self):
+        bqm = dimod.BinaryQuadraticModel({'a': 1}, {'ab': 1}, 'SPIN')
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(bqm)
+        self.assertEqual(new.variables, 'ab')
+        self.assertEqual(new.vartype('a'), dimod.SPIN)
+        self.assertEqual(new.vartype('b'), dimod.SPIN)
+
+    def test_cqm(self):
+        i, j = dimod.Integers('ij')
+        k = dimod.Integer('k')
+
+        cqm = dimod.ConstrainedQuadraticModel()
+        cqm.add_constraint(i + k <= 5)
+        cqm.add_constraint(j == 5)
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(cqm)
+        self.assertEqual(new.variables, cqm.variables)
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), cqm.vartype(v))
+            self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
+
+    def test_subset(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('INTEGER', 'j', lower_bound=-1)
+        qm.add_variable('INTEGER', 'k', lower_bound=-5, upper_bound=10)
+        qm.add_variable('SPIN', 's')
+        qm.add_variable('BINARY', 'x')
+
+        new = dimod.QuadraticModel()
+        new.add_variables_from_model(qm, variables='isx')
+
+        self.assertEqual(new.variables, 'isx')
+        for v in new.variables:
+            self.assertEqual(new.vartype(v), qm.vartype(v))
+            self.assertEqual(new.lower_bound(v), qm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), qm.upper_bound(v))
+
+
+class TestAddLinear(unittest.TestCase):
+    def test_default_vartype(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i')
+        qm.add_variable('BINARY', 'x')
+
+        qm.add_linear_from({'i': 1, 'x': 2, 'y': 3, 'z': 4}, default_vartype='BINARY')
+
+        self.assertEqual(qm.linear, {'i': 1, 'x': 2, 'y': 3, 'z': 4})
+        self.assertEqual(qm.vartype('i'), dimod.INTEGER)
+        for v in 'xyz':
+            self.assertEqual(qm.vartype(v), dimod.BINARY)
+
+        qm.add_linear_from({'x': 3, 'j': 1}, default_vartype='INTEGER',
+                           default_lower_bound=-2, default_upper_bound=7)
+
+        self.assertEqual(qm.linear['x'], 5)
+        self.assertEqual(qm.vartype('j'), dimod.INTEGER)
+        self.assertEqual(qm.lower_bound('j'), -2)
+        self.assertEqual(qm.upper_bound('j'), 7)
+
+    def test_missing(self):
+        qm = dimod.QuadraticModel()
+        with self.assertRaises(ValueError):
+            qm.add_linear('a', 1)
+
 
 class TestAddQuadratic(unittest.TestCase):
     def test_self_loop_spin(self):
@@ -352,7 +440,7 @@ class TestEnergies(unittest.TestCase):
                 arr = np.array([5, 2.5], dtype=dtype)
                 self.assertEqual(qm.energy((arr, 'ij')), -40)
 
-        for dtype in [np.complex]:
+        for dtype in [complex]:
             with self.subTest(dtype):
                 arr = np.array([5, 2], dtype=dtype)
                 with self.assertRaises(ValueError):
@@ -402,6 +490,14 @@ class TestEnergies(unittest.TestCase):
 
 
 class TestFileSerialization(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     @parameterized.expand([(np.float32,), (np.float64,)])
     def test_empty(self, dtype):
         qm = QM(dtype=dtype)
@@ -421,11 +517,13 @@ class TestFileSerialization(unittest.TestCase):
         qm.add_variable('INTEGER', 'i')
         qm.add_variable('BINARY', 'x')
         qm.add_variable('SPIN', 's')
+        qm.add_variable('REAL', 'a')
 
         qm.set_linear('i', 3)
         qm.set_quadratic('s', 'i', 2)
         qm.set_quadratic('x', 's', -2)
         qm.set_quadratic('i', 'i', 5)
+        qm.set_quadratic('i', 'a', 6)
         qm.offset = 7
 
         with tempfile.TemporaryFile() as tf:
@@ -629,7 +727,7 @@ class TestNBytes(unittest.TestCase):
 
         size = sum([itemsize,  # offset
                     qm.num_variables*itemsize,  # linear
-                    2*qm.num_interactions*(itemsize + np.dtype(np.float32).itemsize),  # quadratic
+                    2*qm.num_interactions*(2*itemsize),  # quadratic
                     qm.num_variables*3*itemsize,  # vartype info and bounds
                     ])
 
@@ -645,6 +743,66 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(qm.offset, 5)
         qm.offset -= 2
         self.assertEqual(qm.offset, 3)
+
+
+class TestReal(unittest.TestCase):
+    def test_init_no_label(self):
+        a = dimod.Real()
+        self.assertIsInstance(a.variables[0], str)
+
+    def test_multiple_labelled(self):
+        i, j, k = dimod.Reals('ijk')
+
+        self.assertEqual(i.variables[0], 'i')
+        self.assertEqual(j.variables[0], 'j')
+        self.assertEqual(k.variables[0], 'k')
+        self.assertIs(i.vartype('i'), dimod.REAL)
+        self.assertIs(j.vartype('j'), dimod.REAL)
+        self.assertIs(k.vartype('k'), dimod.REAL)
+
+    def test_multiple_unlabelled(self):
+        i, j, k = dimod.Reals(3)
+
+        self.assertNotEqual(i.variables[0], j.variables[0])
+        self.assertNotEqual(i.variables[0], k.variables[0])
+        self.assertIs(i.vartype(i.variables[0]), dimod.REAL)
+        self.assertIs(j.vartype(j.variables[0]), dimod.REAL)
+        self.assertIs(k.vartype(k.variables[0]), dimod.REAL)
+
+    def test_no_label_collision(self):
+        qm_1 = Real()
+        qm_2 = Real()
+        self.assertNotEqual(qm_1.variables[0], qm_2.variables[0])
+
+    def test_interactions(self):
+        a, b = dimod.Reals('ab')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
+
+        qm = a + b + x + i + s
+
+        for u, v in ['ab', 'ax', 'xa', 'ai', 'ia', 'sa', 'as', 'aa']:
+            with self.subTest('add', u=u, v=v):
+                with self.assertRaises(ValueError):
+                    qm.add_quadratic(u, v, 0)
+            with self.subTest('set', u=u, v=v):
+                with self.assertRaises(ValueError):
+                    qm.set_quadratic(u, v, 0)
+
+    def test_interactions_with_flag(self):
+        a, b = dimod.Reals('ab')
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+        s = dimod.Spin('s')
+
+        qm = a + b + x + i + s
+
+        qm.data.REAL_INTERACTIONS = True
+
+        for u, v in ['ab', 'ax', 'xa', 'ai', 'ia', 'sa', 'as', 'aa']:
+            qm.add_quadratic(u, v, 0)
+            qm.set_quadratic(u, v, 0)
 
 
 class TestRemoveInteraction(unittest.TestCase):
@@ -705,6 +863,14 @@ class TestSpinToBinary(unittest.TestCase):
 
 
 class TestSymbolic(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        dimod.REAL_INTERACTIONS = True
+
+    @classmethod
+    def tearDownClass(cls):
+        dimod.REAL_INTERACTIONS = False
+
     def test_add_number(self):
         qm = QuadraticModel()
         new = qm + 1
@@ -748,7 +914,7 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue(
             qm.is_equal(QM({'i': 1, 'j': -1}, {}, -5, {'i': 'INTEGER', 'j': 'INTEGER'})))
 
-    def test_expressions(self):
+    def test_expressions_integer(self):
         i = Integer('i')
         j = Integer('j')
 
@@ -764,6 +930,25 @@ class TestSymbolic(unittest.TestCase):
         self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'INTEGER'})))
         self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'INTEGER'})))
         self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'INTEGER'})))
+        self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
+        self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
+
+    def test_expressions_real(self):
+        i = Real('i')
+        j = Real('j')
+
+        self.assertTrue((i*j).is_equal(QM({}, {'ij': 1}, 0, {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i*i).is_equal(QM({}, {'ii': 1}, 0, {'i': 'REAL'})))
+        self.assertTrue(((2*i)*(3*i)).is_equal(QM({}, {'ii': 6}, 0, {'i': 'REAL'})))
+        self.assertTrue((i + j).is_equal(QM({'i': 1, 'j': 1}, {}, 0,
+                                            {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i + 2*j).is_equal(QM({'i': 1, 'j': 2}, {}, 0,
+                                              {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((i - 2*j).is_equal(QM({'i': 1, 'j': -2}, {}, 0,
+                                              {'i': 'REAL', 'j': 'REAL'})))
+        self.assertTrue((-i).is_equal(QM({'i': -1}, {}, 0, {'i': 'REAL'})))
+        self.assertTrue((1 - i).is_equal(QM({'i': -1}, {}, 1, {'i': 'REAL'})))
+        self.assertTrue((i - 1).is_equal(QM({'i': 1}, {}, -1, {'i': 'REAL'})))
         self.assertTrue(((i - j)**2).is_equal((i - j)*(i - j)))
         self.assertTrue(((2*i + 4*i*j + 6) / 2.).is_equal(i + 2*i*j + 3))
 
@@ -789,6 +974,48 @@ class TestToPolyString(unittest.TestCase):
         self.assertEqual((i*j + x).to_polystring(), 'x + i*j')
         self.assertEqual((i*j).to_polystring(), 'i*j')
         self.assertEqual((-i*j - x).to_polystring(), '-x - i*j')
+
+
+class TestUpdate(unittest.TestCase):
+    def test_bqm(self):
+        for dtype in [np.float32, np.float64, object]:
+            with self.subTest(dtype=np.dtype(dtype).name):
+                bqm = dimod.BQM({'a': 1}, {'ab': 4}, 5, 'BINARY', dtype=dtype)
+
+                qm = dimod.QM()
+
+                qm.update(bqm)
+
+                self.assertEqual(bqm.linear, qm.linear)
+                self.assertEqual(bqm.quadratic, qm.quadratic)
+                self.assertEqual(bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+                # add it again, everything should double
+                qm.update(bqm)
+
+                self.assertEqual({'a': 2, 'b': 0}, qm.linear)
+                self.assertEqual({('a', 'b'): 8}, qm.quadratic)
+                self.assertEqual(2*bqm.offset, qm.offset)
+                self.assertEqual(qm.vartype('a'), dimod.BINARY)
+                self.assertEqual(qm.vartype('b'), dimod.BINARY)
+
+    def test_qm(self):
+        i = dimod.Integer('i', lower_bound=-5, upper_bound=10)
+        x, y = dimod.Binaries('xy')
+
+        other = i + 2*x * 3*y + 4*i*i + 5*i*x + 7
+
+        new = dimod.QM()
+        new.update(other)
+
+        self.assertTrue(new.is_equal(other))
+
+        # add it again
+        new.update(other)
+
+        self.assertTrue(new.is_equal(2*other))
 
 
 class TestViews(unittest.TestCase):

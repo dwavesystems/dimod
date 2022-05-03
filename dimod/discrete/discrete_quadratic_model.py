@@ -797,7 +797,7 @@ class DiscreteQuadraticModel:
 
             **Header**
 
-            The first 8 bytes are a magic string: exactly `"DIMODDQM"`.
+            The first 8 bytes are a magic string: exactly ``"DIMODDQM"``.
 
             The next 1 byte is an unsigned byte: the major version of the file
             format.
@@ -808,7 +808,7 @@ class DiscreteQuadraticModel:
             The next 4 bytes form a little-endian unsigned int, the length of
             the header data `HEADER_LEN`.
 
-            The next `HEADER_LEN` bytes form the header data. This is a
+            The next ``HEADER_LEN`` bytes form the header data. This is a
             json-serialized dictionary. The dictionary is exactly:
 
             .. code-block:: python
@@ -828,26 +828,31 @@ class DiscreteQuadraticModel:
             The first 4 bytes are exactly `"BIAS"`
 
             The next 4 bytes form a little-endian unsigned int, the length of
-            the DQM data `DATA_LEN`.
+            the DQM data ``DATA_LEN``.
 
-            The next `DATA_LEN` bytes are the vectors as returned by
+            The next ``DATA_LEN`` bytes are the vectors as returned by
             :meth:`DiscreteQuadraticModel.to_numpy_vectors` saved using
             :func:`numpy.save`.
 
             **Variable Data**
 
-            The first 4 bytes are exactly "VARS".
+            The first 4 bytes are exactly ``"VARS"``.
 
             The next 4 bytes form a little-endian unsigned int, the length of
-            the variables array `VARIABLES_LENGTH`.
+            the variables array ``VARIABLES_LENGTH``.
 
             The next VARIABLES_LENGTH bytes are a json-serialized array. As
-            constructed by `json.dumps(list(bqm.variables)).
+            constructed by ``json.dumps(list(bqm.variables))``.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
         See Also:
             :meth:`DiscreteQuadraticModel.from_file`
+
+        .. deprecated:: 0.9.9
+
+            The ``compressed`` keyword argument will be removed in dimod 0.12.0.
+            Use ``compress`` instead.
 
         """
 
@@ -867,8 +872,9 @@ class DiscreteQuadraticModel:
         # the section containing most of the data, encoded with numpy
         if compressed is not None:
             warnings.warn(
-                "Argument 'compressed' is deprecated and in future will raise "
-                "an exception; please use 'compress' instead.",
+                "Argument 'compressed' is deprecated since dimod 0.9.9 "
+                "and will be removed in 0.12.0. "
+                "Use 'compress' instead.",
                 DeprecationWarning, stacklevel=2
                 )
             compress = compressed or compress
@@ -890,7 +896,7 @@ class DiscreteQuadraticModel:
 
         Returns:
             :class:`DQMVectors`: A named tuple with fields `['case_starts',
-            'linear_biases', 'quadratic', 'labels'].
+            'linear_biases', 'quadratic', 'labels']`.
 
             - `case_starts`: A length
               :meth:`~DiscreteQuadraticModel.num_variables` array. The cases

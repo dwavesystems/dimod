@@ -65,6 +65,15 @@ cdef class cyVariables:
             new._append(self.at(i), permissive=False)
         return new
 
+    def __iter__(self):
+        cdef Py_ssize_t i
+
+        if self._is_range():
+            yield from range(self._stop)
+        else:
+            for i in range(self._stop):
+                yield self.at(i)
+
     def __len__(self):
         return self.size()
 
@@ -223,7 +232,7 @@ cdef class cyVariables:
         if idx < 0:
             idx = self._stop + idx
 
-        if idx >= self._stop:
+        if not 0 <= idx < self._stop:
             raise IndexError('index out of range')
 
         cdef object v
@@ -243,7 +252,7 @@ cdef class cyVariables:
 
     cpdef cyVariables copy(self):
         """Return a copy of the Variables object."""
-        cpdef cyVariables new = self.__new__(type(self))
+        cdef cyVariables new = self.__new__(type(self))
         new._index_to_label = dict(self._index_to_label)
         new._label_to_index = dict(self._label_to_index)
         new._stop = self._stop
