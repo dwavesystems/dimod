@@ -1915,23 +1915,36 @@ class ConstrainedQuadraticModel:
         """Create a constrained quadratic model from an LP file.
 
         Args:
-            fp: file-like object in LP (linear program) format.
-            lower_bound_default: Default lower bound for integer variables.
-            upper_bound_default: Default upper bound for integer variables.
+            fp: A file-like or a binary string.
+            lower_bound_default: Deprecated. Does nothing.
+            upper_bound_default: Deprecated. Does nothing.
 
         Returns:
-            :class:`ConstrainedQuadraticModel` representing the model encoded in
-            the LP file.
+            The constrained quadratic model defined by the LP file.
+
+        .. deprecated:: 0.11.0
+
+            This method will be removed in dimod 0.13.0.
+            Use :func:`~dimod.lp.load` or :func:`~dimod.lp.loads` instead.
+
+        .. deprecated:: 0.11.0
+
+            The ``lower_bound_default`` and ``upper_bound_default`` keyword
+            arguments are deprecated and do nothing.
+
         """
-        from dimod.serialization.lp import read_lp
+        from dimod.lp import load, loads
 
-        if isinstance(fp, (str, bytes)) and os.path.isfile(fp):
-            raise NotImplementedError
+        warnings.warn(
+            "this method is deprecated as of dimod 0.11.0 "
+            "and will be removed in 0.13.0. "
+            "Use dimod.lp.load() or dimod.lp.load() instead.",
+            DeprecationWarning, stacklevel=2)
+
+        if isinstance(fp, (str, bytes)) and not os.path.isfile(fp):
+            obj = loads(fp)
         else:
-            obj = read_lp(fp)
-
-        if not isinstance(obj, cls):
-            raise NotImplementedError
+            obj = load(fp)
 
         return obj
 

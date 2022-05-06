@@ -88,6 +88,18 @@ JSON
 .. autofunction:: DimodDecoder
 .. autofunction:: dimod_object_hook
 
+LP
+--
+
+.. currentmodule:: dimod.lp
+.. automodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+   
+   lp.load
+   lp.loads
+
 Testing
 =======
 

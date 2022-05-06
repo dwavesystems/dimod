@@ -1,8 +1,18 @@
 ---
 features:
-  - Add ``dimod.serialization.lp.read_lp_file()`` and ``dimod.serialization.read_lp()`` functions.
+  - Add ``read_lp_file()`` and ``read_lp()`` functions.
   - Improve the performance of the ``ConstrainedQuadraticModel.from_lp_file()`` method.
 upgrade:
   - |
     Some malformed LP-files that previously caused ``ConstrainedQuadraticModel.from_lp_file()``
     to emit a warning now raise an error instead.
+deprecations:
+  - |
+    Deprecate ``ConstrainedQuadraticModel.from_lp_file()`` method. Users should
+    use the more explicit ``read_lp_file()`` and ``read_lp()`` functions instead.
+    The ``ConstrainedQuadraticModel.from_lp_file()`` will be removed in
+    dimod 0.13.0.
+  - |
+    The ``default_lower_bounds`` and ``default_upper_bounds`` keyword arguments
+    for ``ConstrainedQuadraticModel.from_lp_file()`` are deprecated and do
+    nothing.

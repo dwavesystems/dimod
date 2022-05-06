@@ -67,11 +67,9 @@ setup(
     cmdclass=dict(build_ext=build_ext),
     ext_modules=cythonize(
         ['dimod/binary/cybqm/*.pyx',
-         'dimod/cyutilities.pyx',
-         'dimod/cyvariables.pyx',
          'dimod/discrete/cydiscrete_quadratic_model.pyx',
          'dimod/quadratic/cyqm/*.pyx',
-         'dimod/serialization/cylp.pyx',
+         'dimod/*.pyx',
          ],
         annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),

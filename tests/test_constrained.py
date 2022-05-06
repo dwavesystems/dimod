@@ -1046,7 +1046,8 @@ class TestCQMFromLPFile(unittest.TestCase):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_linear.lp')
 
         with open(filepath) as f:
-            cqm = CQM.from_lp_file(f)
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='wrong number of constraints')
@@ -1076,7 +1077,8 @@ class TestCQMFromLPFile(unittest.TestCase):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic.lp')
 
         with open(filepath) as f:
-            cqm = CQM.from_lp_file(f)
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 4, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
@@ -1136,8 +1138,9 @@ class TestCQMFromLPFile(unittest.TestCase):
     def test_integer(self):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_integer.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 5, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 6, msg='wrong number of constraints')
@@ -1249,8 +1252,9 @@ class TestCQMFromLPFile(unittest.TestCase):
     def test_pure_quadratic(self):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_variables.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
@@ -1294,8 +1298,9 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_nameless_objective.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 0, msg='expected 0 constraints')
@@ -1304,8 +1309,9 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_nameless_constraint.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 3, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')
@@ -1316,8 +1322,9 @@ class TestCQMFromLPFile(unittest.TestCase):
         # see https://www.gurobi.com/documentation/9.1/refman/lp_format.html)
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_objective.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='wrong number of constraints')
@@ -1347,15 +1354,17 @@ class TestCQMFromLPFile(unittest.TestCase):
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_constraint.lp')
 
         with open(filepath, 'r') as f:
-            with self.assertRaises(ValueError):
-                cqm = CQM.from_lp_file(f)
+            with self.assertWarns(DeprecationWarning):
+                with self.assertRaises(ValueError):
+                    cqm = CQM.from_lp_file(f)
 
     def test_quadratic_binary(self):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_binary.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 1, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')
@@ -1372,8 +1381,9 @@ class TestCQMFromLPFile(unittest.TestCase):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_variable_multiple_times.lp')
 
-        with open(filepath, 'r') as f:
-            cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
         self.assertEqual(len(cqm.variables), 1, msg='wrong number of variables')
         self.assertEqual(len(cqm.constraints), 1, msg='expected 1 constraint')

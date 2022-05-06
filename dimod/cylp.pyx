@@ -25,16 +25,14 @@ cimport numpy as np
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.libcpp cimport cppread_lp, cppLPModel, cppQuadraticModel
 from dimod.quadratic cimport cyQM_float64
+from dimod.quadratic.cyqm.cyqm_float64 cimport bias_type, index_type
+from dimod.quadratic.cyqm.cyqm_float64 import BIAS_DTYPE
 from dimod.quadratic import QuadraticModel
 
 
-ctypedef np.float64_t bias_type
-ctypedef np.int32_t index_type
-dtype = np.float64
-
-
-cdef void swap_qm(cyQM_float64 qm, cppQuadraticModel[bias_type, index_type]& cppqm, unordered_map[string, index_type] labels) except +:
+cdef void _swap_qm(cyQM_float64 qm, cppQuadraticModel[bias_type, index_type]& cppqm, unordered_map[string, index_type] labels) except +:
     assert cppqm.num_variables() == labels.size()
+    assert qm.num_variables() == 0
 
     qm.cppqm.swap(cppqm)
 
@@ -52,24 +50,26 @@ cdef void swap_qm(cyQM_float64 qm, cppQuadraticModel[bias_type, index_type]& cpp
         inc(vit)
 
 
-# todo: annotations (in Python)
-# todo: dtype
-def read_lp_file(object filename):
+def cyread_lp_file(object filename):
+    """Create a constrained quadratic model from the given LP file."""
 
     if not os.path.isfile(filename):
-        raise NotImplementedError
+        raise ValueError(f"no file named {filename}")
 
     cdef string _filename = filename.encode()
     cdef cppLPModel[bias_type, index_type] lpmodel = cppread_lp[bias_type, index_type](_filename)
 
     cqm = ConstrainedQuadraticModel()
 
-    swap_qm(cqm.objective.data, lpmodel.objective.model, lpmodel.objective.labels)
+    if cqm.objective.dtype != BIAS_DTYPE:
+        raise RuntimeError("unexpected dtype")
+
+    _swap_qm(cqm.objective.data, lpmodel.objective.model, lpmodel.objective.labels)
 
     cdef Py_ssize_t i
     for i in range(lpmodel.constraints.size()):
-        lhs = QuadraticModel()
-        swap_qm(lhs.data, lpmodel.constraints[i].lhs.model, lpmodel.constraints[i].lhs.labels)
+        lhs = QuadraticModel(dtype=BIAS_DTYPE)
+        _swap_qm(lhs.data, lpmodel.constraints[i].lhs.model, lpmodel.constraints[i].lhs.labels)
 
         cqm.add_constraint_from_model(
             lhs,

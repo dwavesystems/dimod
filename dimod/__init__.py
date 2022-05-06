@@ -58,6 +58,8 @@ from dimod.sampleset import *
 
 from dimod.serialization.format import set_printoptions
 
+import dimod.lp
+
 from dimod.utilities import *
 import dimod.utilities
 
