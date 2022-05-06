@@ -21,6 +21,7 @@ from __future__ import annotations
 import collections.abc as abc
 import copy
 import json
+import os.path
 import re
 import tempfile
 import uuid
@@ -45,7 +46,6 @@ from dimod.typing import Bias, Variable, SamplesLike
 from dimod.utilities import iter_safe_relabels, new_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
-from dimod.serialization.lp import make_lp_grammar, get_variables_from_parsed_lp, constraint_symbols, obj_senses
 
 __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
@@ -1915,138 +1915,38 @@ class ConstrainedQuadraticModel:
         """Create a constrained quadratic model from an LP file.
 
         Args:
-            fp: file-like object in LP (linear program) format.
-            lower_bound_default: Default lower bound for integer variables.
-            upper_bound_default: Default upper bound for integer variables.
+            fp: A file-like or a binary string.
+            lower_bound_default: Deprecated. Does nothing.
+            upper_bound_default: Deprecated. Does nothing.
 
         Returns:
-            :class:`ConstrainedQuadraticModel` representing the model encoded in
-            the LP file.
+            The constrained quadratic model defined by the LP file.
+
+        .. deprecated:: 0.11.0
+
+            This method will be removed in dimod 0.13.0.
+            Use :func:`~dimod.lp.load` or :func:`~dimod.lp.loads` instead.
+
+        .. deprecated:: 0.11.0
+
+            The ``lower_bound_default`` and ``upper_bound_default`` keyword
+            arguments are deprecated and do nothing.
+
         """
-        grammar = make_lp_grammar()
-        parse_output = grammar.parseFile(fp)
-        obj = get_variables_from_parsed_lp(parse_output, lower_bound_default, upper_bound_default)
+        from dimod.lp import load, loads
 
-        cqm = ConstrainedQuadraticModel()
+        warnings.warn(
+            "this method is deprecated as of dimod 0.11.0 "
+            "and will be removed in 0.13.0. "
+            "Use dimod.lp.load() or dimod.lp.load() instead.",
+            DeprecationWarning, stacklevel=2)
 
-        # parse and set the objective
-        obj_coefficient = 1
-        for oe in parse_output.objective:
+        if isinstance(fp, (str, bytes)) and not os.path.isfile(fp):
+            obj = loads(fp)
+        else:
+            obj = load(fp)
 
-            if isinstance(oe, str):
-                if oe in obj_senses.keys():
-                    obj_coefficient = obj_senses[oe]
-
-            else:
-                if len(oe) == 2:
-                    if oe.name != "":
-                        # linear term
-                        obj.add_linear(oe.name[0], obj_coefficient * oe.coef)
-
-                    else:
-                        # this is a pure squared term
-                        varname = oe.squared_name[0]
-                        vartype = obj.vartype(varname)
-
-                        if vartype is Vartype.BINARY:
-                            obj.add_linear(varname, obj_coefficient * oe.coef * 0.5)
-                        elif vartype is Vartype.INTEGER:
-                            obj.add_quadratic(varname, varname,
-                                              obj_coefficient * oe.coef * 0.5)
-                        else:
-                            raise TypeError("Unexpected variable type: {}".format(vartype))
-
-                elif len(oe) == 3:
-                    # bilinear term
-                    var1 = oe.name[0]
-                    var2 = oe.second_var_name[0]
-                    obj.add_quadratic(var1, var2, obj_coefficient * oe.coef * 0.5)
-
-        cqm.set_objective(obj)
-
-        # adding constraints
-        for c in parse_output.constraints:
-
-            try:
-                cname = c.name[0]
-            except IndexError:
-                # the constraint is nameless, set this to None now
-                cname = None
-
-            csense = constraint_symbols[c.sense]
-            ccoef = c.rhs
-            constraint = QuadraticModel()
-
-            if not c.lin_expr and not c.quad_expr:
-                # empty constraint
-                warnings.warn('The LP file contained an empty constraint and it will be ignored',
-                              stacklevel=2)
-                continue
-
-            if c.lin_expr:
-
-                for le in c.lin_expr:
-                    var = le.name[0]
-                    vartype = obj.vartype(var)
-                    lb = obj.lower_bound(var)
-                    ub = obj.upper_bound(var)
-                    if vartype is Vartype.BINARY:
-                        constraint.add_variable(Vartype.BINARY, var)
-                    elif vartype is Vartype.INTEGER:
-                        constraint.add_variable(Vartype.INTEGER, var, lower_bound=lb, upper_bound=ub)
-                    else:
-                        raise ValueError("Unexpected vartype: {}".format(vartype))
-                    constraint.add_linear(var, le.coef)
-
-            if c.quad_expr:
-
-                for qe in c.quad_expr:
-                    if qe.name != "":
-                        var1 = qe.name[0]
-                        vartype1 = obj.vartype(var1)
-                        lb1 = obj.lower_bound(var1)
-                        ub1 = obj.upper_bound(var1)
-
-                        if vartype1 is Vartype.BINARY:
-                            constraint.add_variable(vartype1, var1)
-                        elif vartype1 is Vartype.INTEGER:
-                            constraint.add_variable(vartype1, var1, lower_bound=lb1, upper_bound=ub1)
-                        else:
-                            raise ValueError("Unexpected vartype: {}".format(vartype1))
-
-                        var2 = qe.second_var_name[0]
-                        vartype2 = obj.vartype(var2)
-                        lb2 = obj.lower_bound(var2)
-                        ub2 = obj.upper_bound(var2)
-
-                        if vartype2 is Vartype.BINARY:
-                            constraint.add_variable(vartype2, var2)
-                        elif vartype2 is Vartype.INTEGER:
-                            constraint.add_variable(vartype2, var2, lower_bound=lb2, upper_bound=ub2)
-
-                        constraint.add_quadratic(var1, var2, qe.coef)
-
-                    else:
-                        # this is a pure squared term
-                        var = qe.squared_name[0]
-                        vartype = obj.vartype(var)
-                        lb = obj.lower_bound(var)
-                        ub = obj.upper_bound(var)
-                        if vartype is Vartype.BINARY:
-                            constraint.add_variable(vartype, var)
-                            constraint.add_linear(var, qe.coef)
-                        elif vartype is Vartype.INTEGER:
-                            constraint.add_variable(vartype, var, lower_bound=lb, upper_bound=ub)
-                            constraint.add_quadratic(var, var, qe.coef)
-                        else:
-                            raise TypeError("Unexpected variable type: {}".format(vartype))
-
-            # finally mode the RHS to the LHS with a minus sign
-            constraint.offset = - ccoef
-
-            cqm.add_constraint(constraint, label=cname, sense=csense)
-
-        return cqm
+        return obj
 
 
 CQM = ConstrainedQuadraticModel

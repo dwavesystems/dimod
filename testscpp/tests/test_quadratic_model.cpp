@@ -1026,4 +1026,53 @@ SCENARIO("quadratic models with square terms") {
         }
     }
 }
+
+SCENARIO("quadratic models can be swapped", "[qm]") {
+    GIVEN("two quadratic models") {
+        auto qm0 = dimod::QuadraticModel<double>();
+        auto s = qm0.add_variable(Vartype::SPIN);
+        auto x = qm0.add_variable(Vartype::BINARY);
+        auto i = qm0.add_variable(Vartype::INTEGER, -5, 5);
+
+        qm0.linear(s) = 1;
+        qm0.linear(x) = 2;
+        qm0.linear(i) = 3;
+        qm0.add_quadratic(s, x, 4);
+        qm0.add_quadratic(s, i, 5);
+        qm0.add_quadratic(x, i, 6);
+        qm0.add_quadratic(i, i, 7);
+        qm0.offset() = 8;
+
+        auto qm1 = dimod::QuadraticModel<double>();
+        auto t = qm1.add_variable(Vartype::SPIN);
+        auto y = qm1.add_variable(Vartype::BINARY);
+        auto j = qm1.add_variable(Vartype::INTEGER, -10, 10);
+
+        qm1.linear(t) = -1;
+        qm1.linear(y) = -2;
+        qm1.linear(j) = -3;
+        qm1.add_quadratic(t, y, -4);
+        qm1.add_quadratic(t, j, -5);
+        qm1.add_quadratic(x, j, -6);
+        qm1.add_quadratic(j, j, -7);
+
+        WHEN("the swap() method is called") {
+            qm0.swap(qm1);
+
+            THEN("their contents are swapped") {
+                CHECK(qm0.linear(s) == -1);
+                CHECK(qm1.linear(t) == +1);
+
+                CHECK(qm0.quadratic(t, y) == -4);
+                CHECK(qm1.quadratic(s, x) == +4);
+
+                CHECK(qm0.offset() == 0);
+                CHECK(qm1.offset() == 8);
+
+                CHECK(qm0.lower_bound(i) == -10);
+                CHECK(qm1.upper_bound(j) == 5);
+            }
+        }
+    }
+}
 }  // namespace dimod

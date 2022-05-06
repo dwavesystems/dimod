@@ -30,6 +30,8 @@ generate the relevant C++ code.
 """
 
 from libcpp.pair cimport pair
+from libcpp.string cimport string
+from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 
 
@@ -151,6 +153,25 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void resize(index_type) except +
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type)
+        void swap(cppQuadraticModel&)
         void swap_variables(index_type, index_type)
         const bias_type& upper_bound(index_type)
         const cppVartype& vartype(index_type)
+
+cdef extern from "dimod/lp.h" namespace "dimod::lp" nogil:
+    cdef cppclass cppExpression "dimod::lp::Expression" [Bias, Index]:
+        cppQuadraticModel[Bias, Index] model
+        unordered_map[string, Index] labels
+        string name
+
+    cdef cppclass cppConstraint "dimod::lp::Constraint" [Bias, Index]:
+        cppExpression[Bias, Index] lhs
+        string sense
+        Bias rhs
+
+    cdef cppclass cppLPModel "dimod::lp::LPModel" [Bias, Index]:
+        cppExpression[Bias, Index] objective
+        vector[cppConstraint[Bias, Index]] constraints
+        bint minimize
+
+    cppLPModel[Bias, Index] cppread_lp "dimod::lp::read" [Bias, Index] (const string) except +

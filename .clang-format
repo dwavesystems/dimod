@@ -3,7 +3,7 @@ Language: Cpp
 BasedOnStyle: Google
 
 ColumnLimit: 100
-NamespaceIndentation: Inner
+NamespaceIndentation: None
 
 # Scaled by a factor of 2 such that the base indent is 4
 AccessModifierOffset: -3
