@@ -98,21 +98,21 @@ class TestObjective(unittest.TestCase):
         self.assertFalse(cqm.constraints)
         self.assertTrue(cqm.objective.is_equal(x + y))
 
-    # todo
-    # def test_scientific_notation(self):
-    #     lp = """
-    #     Minimize
-    #       obj: 2e3 x0 + 2.1e-04 x0^2
-    #     Subject To
-    #       x0 <= 1
-    #     General
-    #       x0
-    #     End
-    #     """
+    def test_scientific_notation(self):
+        lp = """
+        Minimize
+          obj: 2e3 x0 + [4.1e-02 x0*x0]/2
+        Subject To
+          x0 <= 1
+        General
+          x0
+        End
+        """
+        cqm = read_lp(lp)
 
-    #     x0 = dimod.Integer('i0')
+        x0 = dimod.Integer('x0')
 
-    #     cqm = read_lp(lp)
+        self.assertTrue(cqm.objective.is_equal(2e3 * x0 + (4.1e-2 * x0 * x0) / 2))
 
 
 class TestReadLp(unittest.TestCase):
