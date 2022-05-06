@@ -1,6 +1,6 @@
 ---
 features:
-  - Add ``read_lp_file()`` and ``read_lp()`` functions.
+  - Add ``lp.loads()`` and ``lp.load()`` functions.
   - Improve the performance of the ``ConstrainedQuadraticModel.from_lp_file()`` method.
 upgrade:
   - |
@@ -9,7 +9,7 @@ upgrade:
 deprecations:
   - |
     Deprecate ``ConstrainedQuadraticModel.from_lp_file()`` method. Users should
-    use the more explicit ``read_lp_file()`` and ``read_lp()`` functions instead.
+    use the more explicit ``lp.loads()`` and ``lp.load()`` functions instead.
     The ``ConstrainedQuadraticModel.from_lp_file()`` will be removed in
     dimod 0.13.0.
   - |
