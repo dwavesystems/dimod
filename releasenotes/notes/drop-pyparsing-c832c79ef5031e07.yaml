@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Drop `pyparsing` dependency. The functionality that required it was
+    removed in version 0.11.0.
