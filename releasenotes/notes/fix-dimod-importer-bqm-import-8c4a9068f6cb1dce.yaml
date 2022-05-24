@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Added missing import of ``BinaryQuadraticModel`` required by ``dimod.serialization.json.DimodDecoder``

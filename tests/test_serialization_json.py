@@ -70,3 +70,10 @@ class TestFunctional(unittest.TestCase):
 
         new = json.loads(json.dumps(obj, cls=DimodEncoder), cls=DimodDecoder)
         self.assertEqual(obj, new)
+
+    def test_bqm(self):
+        num_variables = 100
+        bqm = dimod.BinaryQuadraticModel.from_ising({v: .1*v for v in range(num_variables)}, {})
+
+        new = json.loads(json.dumps(bqm.to_serializable(), cls=DimodEncoder), cls=DimodDecoder)
+        self.assertEqual(bqm, new)
