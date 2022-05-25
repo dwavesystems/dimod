@@ -933,3 +933,7 @@ class TestSatisfiability(unittest.TestCase):
                     # in the ground state they should not be all equal
                     ss = dimod.ExactSolver().sample(bqm)
                     self.assertEqual(set(ss.first.sample.values()), {-1, +1})
+
+    def test_labels(self):
+        self.assertEqual(dimod.generators.nae3sat(10).variables, range(10))
+        self.assertEqual(dimod.generators.nae3sat('abdef').variables, 'abdef')
