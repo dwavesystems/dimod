@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import unittest
+import unittest.mock
 
 import dimod
 
@@ -895,3 +896,40 @@ class TestMaximumWeightIndependentSet(unittest.TestCase):
         self.assertEqual(
             dimod.generators.maximum_weight_independent_set(G.edges, G.nodes('weight')).shape,
             (0, 0))
+
+
+class TestSatisfiability(unittest.TestCase):
+    def test_empty(self):
+        bqm = dimod.generators.nae3sat(0)
+        self.assertFalse(bqm.num_variables)
+        self.assertIs(bqm.vartype, dimod.SPIN)
+
+    def test_replace(self):
+        # rho is high enough that there should be overlap but we should get
+        # no error
+        dimod.generators.nae3sat(10, 15)
+
+        # cannot sample without replacement
+        with self.assertRaises(ValueError):
+            dimod.generators.nae3sat(10, 15, replace=False)
+
+    def test_nae(self):
+
+        # we want the clause to have no negations
+        class MyGen(np.random.Generator):
+            def __init__(self):
+                super().__init__(np.random.PCG64(5))
+
+            def integers(self, *args, **kwargs):
+                return np.asarray([1, 1, 1])
+
+        seed = MyGen()
+
+        for trial in range(10):
+            for replace in [True, False]:
+                with self.subTest(replace=replace, trial=trial):
+                    bqm = dimod.generators.nae3sat(3, .3, replace=replace, seed=seed)
+
+                    # in the ground state they should not be all equal
+                    ss = dimod.ExactSolver().sample(bqm)
+                    self.assertEqual(set(ss.first.sample.values()), {-1, +1})

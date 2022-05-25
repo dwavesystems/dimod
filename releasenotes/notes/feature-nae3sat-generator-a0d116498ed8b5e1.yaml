@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``dimod.generators.nae3sat()`` function for generating
+    not-all-equal 3-satisfiability problems as binary quadratic models.

@@ -1,86 +1,137 @@
+# Copyright 2022 D-Wave Systems Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
+from __future__ import annotations
+
+import collections.abc
+import itertools
+import math
+import typing
+
 import numpy as np
-import dimod
+
+import dimod  # for typing
+
+from dimod.binary import BinaryQuadraticModel
+from dimod.vartypes import Vartype
 
 
 __all__ = ["nae3sat"]
 
 
-def kmc_sat(num_variables, num_clauses=1, k=3, seed=None):
-    """k Max-Cut SAT problem generator.
+def _iter_interactions(num_variables: int, num_clauses: int,
+                       seed: typing.Union[None, int, np.random.Generator] = None,
+                       ) -> typing.Iterator[typing.Tuple[int, int, int]]:
 
-    This generator makesinstances of the kMC-SAT problem. This problem class is a conjunction of
-    one or more clauses, where in each clause a max-sat problem is formulated. The value `k` corresponds
-    to the number of clauses per variable.
+    rng = np.random.default_rng(seed)
 
-    When k=3, this probem is known as not-all-equal 3 SAT (NAE3SAT), since the max-sat solution of each
-    clause correspond to the three variables not taking the same value. When k=4, this problem is known
-    as 2in4 SAT, since the max-sat solution corresponds to having two True and two False variables on
-    each clause.
-
-    Input:
-        * num_variables (int): The number of variables in the problem
-        * num_clauses (int): The number of clauses in the problem
-        * k (int): The number of variables per clause
-        * seed (int): A seed to be passed to the random number generator
-
-    Returns:
-        * clause_vars (2D np.array): Each row is a clause, each column is a variable
-        * clause_signs (2D np.array): Each row is a clause, each column indicates if the variable is negated
-    """
-
-    rnd = np.random.RandomState(seed)
-    clause_vars = np.zeros(shape=(num_clauses, k), dtype=int)
-    for c in range(num_clauses):
-        clause_vars[c, :] = rnd.choice(num_variables, size=k, replace=False)
-    clause_signs = rnd.choice([-1, 1], size=(num_clauses, k))
-    return clause_vars, clause_signs
+    for _ in range(num_clauses):
+        x, y, z = rng.choice(num_variables, 3, replace=False)
+        xs, ys, zs = 2 * rng.integers(0, 1, endpoint=True, size=3) - 1
+        yield (x, y, xs*ys)
+        yield (x, z, xs*zs)
+        yield (y, z, ys*zs)
 
 
-def kmc_sat_to_bqm(clause_vars, clause_signs):
-    """Translator from k Max-Cut SAT instance to Binary Quadratic Model
+def _iter_interactions_without_replacement(
+        num_variables: int, num_clauses: int,
+        seed: typing.Union[None, int, np.random.Generator] = None,
+        ) -> typing.Iterator[typing.Tuple[int, int, int]]:
 
-    Input:
-        * clause_vars (2D np.array): Each row is a clause, each column is a variable
-        * clause_signs (2D np.array): Each row is a clause, each column indicates if the variable is negated
+    try:
+        max_num_clauses = math.comb(num_variables, 3)
+    except AttributeError:
+        # Python < 3.8
+        # This is a bit less picky and has overflow issues but
+        # probably fine for any cases users are likely to actually
+        # submit
+        max_num_clauses = math.factorial(num_variables)
+        max_num_clauses //= (6 * math.factorial(num_variables - 3))
 
-    Returns:
-        * bqm (dimod.BinaryQuadraticModel): Problem bqm
-    """
+    if num_clauses > max_num_clauses:
+        raise ValueError("rho results in too many clauses")
 
-    bqm = dimod.BinaryQuadraticModel(vartype="SPIN")
-    for vars, signs in zip(clause_vars, clause_signs):
-        bqm.add_interactions_from(
-            {
-                (vars[i], vars[j]): signs[i] * signs[j]
-                for i in range(len(vars))
-                for j in range(i)
-            }
-        )
-    return bqm
+    rng = np.random.default_rng(seed)
+
+    seen: typing.Set[typing.FrozenSet[int]] = set()
+    while len(seen) < num_clauses:
+        x, y, z = rng.choice(num_variables, 3, replace=False)
+
+        fz = frozenset((x, y, z))  # so we're order-invarient
+        if fz in seen:
+            continue
+        seen.add(fz)
+
+        xs, ys, zs = 2 * rng.integers(0, 1, endpoint=True, size=3) - 1
+
+        yield (x, y, xs*ys)
+        yield (x, z, xs*zs)
+        yield (y, z, ys*zs)
 
 
-def nae3sat(num_variables, rho=2.1, seed=None):
-
+def nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
+            rho: float = 2.1,
+            *,
+            seed: typing.Union[None, int, np.random.Generator] = None,
+            replace: bool = True,
+            ) -> BinaryQuadraticModel:
     """Generator for Not-All-Equal 3-SAT (NAE3SAT) Binary Quadratic Models.
 
-    NAE3SAT is an NP-complete problem class that consists in satistying a number of conjunctive
+    NAE3SAT_ is an NP-complete problem class that consists in satistying a number of conjunctive
     clauses that involve three variables (or variable negations). The variables on each clause
-    should be not-all-equal. Ie. all solutions except 111 or 000 are valid for each class.
+    should be not-all-equal. Ie. all solutions except ``(+1, +1, +1)`` or
+    ``(-1, -1, -1)`` are valid for each class.
 
-    Input:
-        * num_variables (int): The number of variables in the problem
-        * rho (float): The clause-to-variable ratio
+    .. _NAE3SAT: https://en.wikipedia.org/wiki/Not-all-equal_3-satisfiability
+
+    Args:
+        num_variables: The number of variables in the problem.
+        rho: The clause-to-variable ratio.
+        seed: Passed to :func:`numpy.random.default_rng()`, which is used
+            to generate the clauses and the negations.
+        replace: If true, then clauses are randomly sampled from the space
+            of all possible clauses. This can result in the same three variables
+            being present in multiple clauses.
+            As the number of variables grows the probability of this happening
+            shrinks rapidly and therefore it is often better to allow sampling
+            with replacement for performance.
 
     Returns:
-        * bqm (dimod.BinaryQuadraticModel): Problem bqm
-    """
+        A binary quadratic models with spin variables.
 
-    rnd = np.random.RandomState(seed)
-    num_clauses = rnd.choice(
-        range(int(rho * num_variables) - 1, int(rho * num_variables) + 2)
-    )
-    clause_vars, clause_signs = kmc_sat(
-        num_variables=num_variables, num_clauses=num_clauses, k=3, seed=seed
-    )
-    bqm = kmc_sat_to_bqm(clause_vars=clause_vars, clause_signs=clause_signs)
+    """
+    if isinstance(variables, collections.abc.Sequence):
+        num_variables = len(variables)
+        labels = variables
+    elif variables < 0:
+        raise ValueError("variables must be a sequence or a positive integer")
+    else:
+        num_variables = variables
+        labels = None
+
+    if rho < 0:
+        raise ValueError("rho must be positive")
+
+    num_clauses = round(rho * num_variables)
+
+    bqm = BinaryQuadraticModel(num_variables, Vartype.SPIN)
+    if replace:
+        bqm.add_quadratic_from(_iter_interactions(num_variables, num_clauses, seed))
+    else:
+        bqm.add_quadratic_from(_iter_interactions_without_replacement(num_variables, num_clauses, seed))
+
+    if labels:
+        bqm.relabel_variables(dict(enumerate(labels)))
+
     return bqm

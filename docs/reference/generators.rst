@@ -57,12 +57,21 @@ Random
    doped
    gnm_random_bqm
    gnp_random_bqm
+   nae3sat
    randint
    random_bin_packing
    random_knapsack
    random_multi_knapsack
    ran_r
    uniform
+
+Satisfiability
+==============
+
+.. autosummary::
+   :toctree: generated/
+
+   nae3sat
 
 .. _generators_symbolic_math:
 
