@@ -900,20 +900,14 @@ class TestMaximumWeightIndependentSet(unittest.TestCase):
 
 class TestSatisfiability(unittest.TestCase):
     def test_empty(self):
-        bqm = dimod.generators.nae3sat(0)
-        self.assertFalse(bqm.num_variables)
-        self.assertIs(bqm.vartype, dimod.SPIN)
+        for n in range(3):
+            with self.assertRaises(ValueError):
+                dimod.generators.random_nae3sat(n, 0)
+        for n in range(4):
+            with self.assertRaises(ValueError):
+                dimod.generators.random_2in4sat(n, 0)
 
-    def test_replace(self):
-        # rho is high enough that there should be overlap but we should get
-        # no error
-        dimod.generators.nae3sat(10, 15)
-
-        # cannot sample without replacement
-        with self.assertRaises(ValueError):
-            dimod.generators.nae3sat(10, 15, replace=False)
-
-    def test_nae(self):
+    def test_nae3sat(self):
 
         # we want the clause to have no negations
         class MyGen(np.random.Generator):
@@ -926,14 +920,33 @@ class TestSatisfiability(unittest.TestCase):
         seed = MyGen()
 
         for trial in range(10):
-            for replace in [True, False]:
-                with self.subTest(replace=replace, trial=trial):
-                    bqm = dimod.generators.nae3sat(3, .3, replace=replace, seed=seed)
+            with self.subTest(trial=trial):
+                bqm = dimod.generators.random_nae3sat(3, 1, seed=seed)
 
-                    # in the ground state they should not be all equal
-                    ss = dimod.ExactSolver().sample(bqm)
-                    self.assertEqual(set(ss.first.sample.values()), {-1, +1})
+                # in the ground state they should not be all equal
+                ss = dimod.ExactSolver().sample(bqm)
+                self.assertEqual(set(ss.first.sample.values()), {-1, +1})
+
+    def test_2in4sat(self):
+
+        # we want the clause to have no negations
+        class MyGen(np.random.Generator):
+            def __init__(self):
+                super().__init__(np.random.PCG64(5))
+
+            def integers(self, *args, **kwargs):
+                return np.asarray([1, 1, 1, 1])
+
+        seed = MyGen()
+
+        for trial in range(10):
+            with self.subTest(trial=trial):
+                bqm = dimod.generators.random_2in4sat(4, 1, seed=seed)
+
+                # in the ground state they should not be all equal
+                ss = dimod.ExactSolver().sample(bqm)
+                self.assertEqual(sum(ss.first.sample.values()), 0)
 
     def test_labels(self):
-        self.assertEqual(dimod.generators.nae3sat(10).variables, range(10))
-        self.assertEqual(dimod.generators.nae3sat('abdef').variables, 'abdef')
+        self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))
+        self.assertEqual(dimod.generators.random_2in4sat('abdef', 1).variables, 'abdef')
