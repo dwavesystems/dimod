@@ -365,8 +365,26 @@ class QuadraticModelBase {
         assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
         assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
 
-        this->adj_[u][v] += bias;
-        if (u != v) {
+        if (u == v) {
+            switch (this->vartype(u)) {
+                case Vartype::BINARY: {
+                    // 1*1 == 1 and 0*0 == 0 so this is linear
+                    this->linear(u) += bias;
+                    break;
+                }
+                case Vartype::SPIN: {
+                    // -1*-1 == +1*+1 == 1 so this is a constant offset
+                    this->offset_ += bias;
+                    break;
+                }
+                default: {
+                    // self-loop
+                    this->adj_[u][v] += bias;
+                    break;
+                }
+            }
+        } else {
+            this->adj_[u][v] += bias;
             this->adj_[v][u] += bias;
         }
     }
@@ -389,10 +407,26 @@ class QuadraticModelBase {
         assert(this->adj_[v].back().first <= u && static_cast<size_t>(u) < this->num_variables());
         assert(this->adj_[u].back().first <= v && static_cast<size_t>(v) < this->num_variables());
 
-        // todo: handle vartype, see https://github.com/dwavesystems/dimod/pull/1193
-
-        this->adj_[u].emplace_back(v, bias);
-        if (u != v) {
+        if (u == v) {
+            switch (this->vartype(u)) {
+                case Vartype::BINARY: {
+                    // 1*1 == 1 and 0*0 == 0 so this is linear
+                    this->linear(u) += bias;
+                    break;
+                }
+                case Vartype::SPIN: {
+                    // -1*-1 == +1*+1 == 1 so this is a constant offset
+                    this->offset() += bias;
+                    break;
+                }
+                default: {
+                    // self-loop
+                    this->adj_[u].emplace_back(v, bias);
+                    break;
+                }
+            }
+        } else {
+            this->adj_[u].emplace_back(v, bias);
             this->adj_[v].emplace_back(u, bias);
         }
     }
@@ -608,12 +642,29 @@ class QuadraticModelBase {
         }
     }
 
+    /// Set the quadratic bias for the given variables.
     void set_quadratic(index_type u, index_type v, bias_type bias) {
         assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
         assert(0 <= v && static_cast<size_t>(v) < this->num_variables());
 
-        this->adj_[u][v] = bias;
-        if (u != v) {
+        if (u == v) {
+            switch (this->vartype(u)) {
+                // unlike add_quadratic, setting is not really defined.
+                case Vartype::BINARY: {
+                    throw std::domain_error(
+                            "Cannot set the quadratic bias of a binary variable with itself");
+                }
+                case Vartype::SPIN: {
+                    throw std::domain_error(
+                            "Cannot set the quadratic bias of a spin variable with itself");
+                }
+                default: {
+                    this->adj_[u][v] = bias;
+                    break;
+                }
+            }
+        } else {
+            this->adj_[u][v] = bias;
             this->adj_[v][u] = bias;
         }
     }
@@ -677,6 +728,8 @@ class QuadraticModelBase {
             this->adj_[v].erase(v);
         }
     }
+
+    virtual const Vartype& vartype(index_type) const = 0;
 
  protected:
     std::vector<bias_type> linear_biases_;
@@ -844,40 +897,7 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
         }
     }
 
-    /// Add quadratic bias for the given variables.
-    void add_quadratic(index_type u, index_type v, bias_type bias) {
-        if (u == v) {
-            assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
-            if (vartype_ == Vartype::BINARY) {
-                base_type::linear(u) += bias;
-            } else if (vartype_ == Vartype::SPIN) {
-                base_type::offset_ += bias;
-            } else {
-                throw std::logic_error("unknown vartype");
-            }
-        } else {
-            base_type::add_quadratic(u, v, bias);
-        }
-    }
-
-    void add_quadratic_back(index_type u, index_type v, bias_type bias) {
-        // all of this can be sucked into QuadraticModelBase::add_quadratic_back
-        // once https://github.com/dwavesystems/dimod/pull/1193 is merged
-        if (u == v) {
-            switch (this->vartype(u)) {
-                case Vartype::BINARY: {
-                    this->linear(u) += bias;
-                    return;
-                }
-                case Vartype::SPIN: {
-                    this->offset() += bias;
-                    return;
-                }
-            }
-        }
-
-        base_type::add_quadratic_back(u, v, bias);
-    }
+    using base_type::add_quadratic;
 
     /*
      * Add quadratic biases to the BQM from a dense matrix.
@@ -1072,18 +1092,6 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     /// The number of other variables `v` interacts with.
     size_type num_interactions(index_type v) const { return base_type::num_interactions(v); }
 
-    /// Set the quadratic bias for the given variables.
-    void set_quadratic(index_type u, index_type v, bias_type bias) {
-        if (u == v) {
-            // unlike add_quadratic, this is not really well defined for
-            // binary quadratic models. I.e. if there is a linear bias, do we
-            // overwrite? Or?
-            throw std::domain_error("Cannot set the quadratic bias of a variable with itself");
-        } else {
-            base_type::set_quadratic(u, v, bias);
-        }
-    }
-
     /// Exchange the contents of the binary quadratic model with the contents of `other`.
     void swap(BinaryQuadraticModel<bias_type, index_type>& other) {
         base_type::swap(other);
@@ -1138,43 +1146,6 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
                                        vartype_info<bias_type>::max(bqm.vartype()));
 
         this->varinfo_.insert(this->varinfo_.begin(), bqm.num_variables(), info);
-    }
-
-    void add_quadratic(index_type u, index_type v, bias_type bias) {
-        if (u == v) {
-            assert(0 <= u && static_cast<size_t>(u) < this->num_variables());
-            auto vartype = this->vartype(u);
-            if (vartype == Vartype::BINARY) {
-                base_type::linear(u) += bias;
-            } else if (vartype == Vartype::SPIN) {
-                base_type::offset_ += bias;
-            } else if (vartype == Vartype::INTEGER || vartype == Vartype::REAL) {
-                base_type::add_quadratic(u, u, bias);
-            } else {
-                throw std::logic_error("unknown vartype");
-            }
-        } else {
-            base_type::add_quadratic(u, v, bias);
-        }
-    }
-
-    void add_quadratic_back(index_type u, index_type v, bias_type bias) {
-        // all of this can be sucked into QuadraticModelBase::add_quadratic_back
-        // once https://github.com/dwavesystems/dimod/pull/1193 is merged
-        if (u == v) {
-            switch (this->vartype(u)) {
-                case Vartype::BINARY: {
-                    this->linear(u) += bias;
-                    return;
-                }
-                case Vartype::SPIN: {
-                    this->offset() += bias;
-                    return;
-                }
-            }
-        }
-
-        base_type::add_quadratic_back(u, v, bias);
     }
 
     index_type add_variable(Vartype vartype) {
@@ -1325,16 +1296,6 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
         this->varinfo_.resize(n, VarInfo<bias_type>(vartype, lb, ub));
         base_type::resize(n);
-    }
-
-    void set_quadratic(index_type u, index_type v, bias_type bias) {
-        if (u == v && (this->vartype(u) == Vartype::SPIN || this->vartype(u) == Vartype::BINARY)) {
-            throw std::domain_error(
-                    "Cannot set the quadratic bias of a spin or binary "
-                    "variable with itself");
-        } else {
-            base_type::set_quadratic(u, v, bias);
-        }
     }
 
     bias_type& upper_bound(index_type v) { return varinfo_[v].ub; }
