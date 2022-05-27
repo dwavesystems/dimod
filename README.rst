@@ -59,7 +59,7 @@ Installation
 
 .. installation-start-marker
 
-Installation from [PyPI](https://pypi.org/project/dimod/):
+Installation from `PyPI <https://pypi.org/project/dimod>`_:
 
 .. code-block:: bash
 
