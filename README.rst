@@ -59,26 +59,11 @@ Installation
 
 .. installation-start-marker
 
-Compatible with Python 3.6+:
+Installation from [PyPI](https://pypi.org/project/dimod/):
 
 .. code-block:: bash
 
     pip install dimod
-
-To install from source (requires ``pip>=10.0.0``):
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
-    python setup.py install
-
-When developing on dimod, it is often convenient to build the extensions
-in place:
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
-    python setup.py build_ext --inplace
 
 .. installation-end-marker
 
