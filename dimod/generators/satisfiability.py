@@ -31,11 +31,12 @@ __all__ = ["random_nae3sat", "random_2in4sat"]
 
 def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          *,
-                         is_planted: bool = True,
+                         is_planted: bool = False,
                          seed: typing.Union[None, int, np.random.Generator] = None,
                          ) -> typing.Iterator[typing.Tuple[int, int, int]]:
     rng = np.random.default_rng(seed)
 
+    # Use of for and while loops is for clarity, optimizations are possible.
     for _ in range(num_clauses):
         # randomly select the variables
         variables = rng.choice(num_variables, k, replace=False)
@@ -57,7 +58,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
                   k: int,
                   num_clauses: int,
                   *,
-                  is_planted: bool = True,
+                  is_planted: bool = False,
                   seed: typing.Union[None, int, np.random.Generator] = None,
                   ) -> BinaryQuadraticModel:
     """Generate a random k Max-Cut satisfiability problem as a binary quadratic model.
@@ -130,7 +131,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
-                   is_planted: bool = True,
+                   is_planted: bool = False,
                    seed: typing.Union[None, int, np.random.Generator] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a random not-all-equal 3-satisfiability problem as a binary quadratic model.
@@ -185,7 +186,7 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
         optimization problems.
 
     """
-    return random_kmcsat(variables, 3, num_clauses, seed=seed, is_planted=is_planted)
+    return random_kmcsat(variables, 3, num_clauses, is_planted=is_planted, seed=seed)
 
 
 def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
@@ -237,4 +238,4 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
        https://epubs.siam.org/doi/10.1137/090750755
 
     """
-    return random_kmcsat(variables, 4, num_clauses, seed=seed, is_planted=is_planted)
+    return random_kmcsat(variables, 4, num_clauses, is_planted=is_planted, seed=seed)
