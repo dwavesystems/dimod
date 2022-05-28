@@ -16,6 +16,7 @@ import unittest
 import unittest.mock
 
 import dimod
+import itertools
 
 import numpy as np
 
