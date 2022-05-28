@@ -946,7 +946,30 @@ class TestSatisfiability(unittest.TestCase):
                 # in the ground state they should not be all equal
                 ss = dimod.ExactSolver().sample(bqm)
                 self.assertEqual(sum(ss.first.sample.values()), 0)
-
+                
+    def test_planting_sat(self):
+        #NP-hard to prove successful planting (rule out lower energies), this test
+        #could fail coincidentally, but unlikely.        
+        num_var = 6 # test is 2^num_var, keep small.
+        num_clauses = 24 #Deep in UNSAT phase (num_clause/num_var>>2.1), very unlikely to be SAT by chance.
+        
+        bqm = dimod.generators.random_nae3sat(num_var, num_clauses, seed=seed, is_planted=True)
+        E_SAT = - num_clauses;
+        all_energies = bqm.energies((np.array(list(itertools.product([-1,1], repeat=num_var))),bqm.variables))
+        self.assertEqual(np.min(all_energies),E_SAT))
+        self.assertEqual(all_energies[0],E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1],E_SAT)) #all 1 state
+        disp(all_energies)
+        
+        num_clauses = 12 #Deep in UNSAT phase (num_clause/num_var>>0.9), very unlikely to be SAT by chance.
+        bqm = dimod.generators.random_2in4sat(num_var, num_clauses, seed=seed, is_planted=True)
+        E_SAT = - 2*num_clauses;
+        all_energies = bqm.energies((np.array(list(itertools.product([-1,1], repeat=num_var))),bqm.variables))
+        disp(all_energies)
+        self.assertEqual(np.min(all_energies),E_SAT))
+        self.assertEqual(all_energies[0],E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1],E_SAT)) #all 1 state
+        
     def test_labels(self):
         self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))
         self.assertEqual(dimod.generators.random_2in4sat('abdef', 1).variables, 'abdef')

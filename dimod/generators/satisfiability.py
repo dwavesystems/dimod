@@ -31,6 +31,7 @@ __all__ = ["random_nae3sat", "random_2in4sat"]
 
 def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          *,
+                         is_planted: bool = True,
                          seed: typing.Union[None, int, np.random.Generator] = None,
                          ) -> typing.Iterator[typing.Tuple[int, int, int]]:
     rng = np.random.default_rng(seed)
@@ -41,7 +42,12 @@ def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
 
         # randomly assign the negations
         signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
-
+        while is_planted and abs(sum(signs))>1:
+            # Rejection sample until signs are compatible with an all 1 ground
+            # state:
+            signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
+            
+            
         # get the interactions for each clause
         for (u, usign), (v, vsign) in itertools.combinations(zip(variables, signs), 2):
             yield u, v, usign*vsign
@@ -51,6 +57,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
                   k: int,
                   num_clauses: int,
                   *,
+                  is_planted: bool = True,
                   seed: typing.Union[None, int, np.random.Generator] = None,
                   ) -> BinaryQuadraticModel:
     """Generate a random k Max-Cut satisfiability problem as a binary quadratic model.
@@ -59,6 +66,12 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
     that consists in satisfying a number of conjunctive
     clauses of ``k`` literals (variables, or their negations).
     Each clause should encode a max-cut problem over the clause literals.
+    
+    Each clause contributes -:code:`k//2' to the energy when the clause is 
+    satisfied, and at least 0 when unsatisfied. The energy :math:`H(s)` for a 
+    spin assignment :math:`s` is thus lower bounded by :math:`E_{SAT}=-`:code:`k//2 * num_clauses`, 
+    this lower bound matches the ground state energy in satisfiable instances. 
+    For k>3, energy penalties per clause violation are non-uniform.
 
     .. [#] Adam Douglass, Andrew D. King & Jack Raymond,
        "Constructing SAT Filters with a Quantum Annealer",
@@ -66,18 +79,26 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 
     Args:
         num_variables: The number of variables in the problem.
+        k: number of variables participating in the clause.
         num_clauses: The number of clauses. Each clause contains three literals.
+        is_planted: Create literals uniformly subject to the constraint that the
+            all 1 (and all -1) are ground states (satisfy all clauses).
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
-
     Returns:
         A binary quadratic model with spin variables.
 
-    .. note:: The clauses are randomly sampled from the space of 4-variable
+    .. note:: The clauses are randomly sampled from the space of k-variable
         clauses *with replacement* which can result in collisions. However,
         collisions are allowed in standard problem definitions, are absent with
         high probability in interesting cases, and are almost always harmless
-        when they do occur.
+        when they do occur. For large problems planting of an all 1 solution can
+        be achieved (in some special cases) without modification of the hardness
+        qualities of the instance class. Planting of a not all 1 ground state
+        can be achieved with a spin-reversal transform without loss of generality.
+    .. [#] Lenka Zdeborova and Florent Krzakala,
+       "Quiet Planting in the Locked Constraint Satisfaction Problems",
+       https://epubs.siam.org/doi/10.1137/090750755
 
     """
     if isinstance(variables, collections.abc.Sequence):
@@ -86,15 +107,19 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
     else:
         num_variables = variables
         labels = None
-
-    if num_variables < k:
+    if k < 1:
+        raise ValueError("Number of variables per clause must be atleast 1")
+    elif k > num_variables:
+        raise ValueError(f"Number of variables per clause must be at most {num_variables}")
+    elif num_variables < k:
         raise ValueError(f"must use at least {k} variables")
 
     if num_clauses < 0:
         raise ValueError("num_clauses must be non-negative")
 
     bqm = BinaryQuadraticModel(num_variables, Vartype.SPIN)
-    bqm.add_quadratic_from(_kmcsat_interactions(num_variables, k, num_clauses, seed=seed))
+    bqm.add_quadratic_from(_kmcsat_interactions(num_variables, k, num_clauses,
+                                                is_planted=is_planted, seed=seed))
 
     if labels:
         bqm.relabel_variables(dict(enumerate(labels)))
@@ -105,6 +130,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
+                   is_planted: bool = True,
                    seed: typing.Union[None, int, np.random.Generator] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a random not-all-equal 3-satisfiability problem as a binary quadratic model.
@@ -115,6 +141,12 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     For valid solutions, the literals in each clause should be not-all-equal;
     i.e. any assignment of values except ``(+1, +1, +1)`` or ``(-1, -1, -1)``
     are valid for each clause.
+
+    Each clause contributes -1 to the energy when the clause is satisfied,
+    and +3 when unsatisfied. The energy :math:`H(s)` for a spin assignment :math:`s` 
+    is thus lower bounded by :math:`E_{SAT}=-`:code:`num_clauses`, this lower 
+    bound matches the ground state energy in satisfiable instances. The number 
+    of violated clauses is :math:`(H(s) - E_{SAT})/4`.
 
     NAE3SAT problems have been studied with the D-Wave quantum annealer [#]_.
 
@@ -127,6 +159,8 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     Args:
         num_variables: The number of variables in the problem.
         num_clauses: The number of clauses. Each clause contains three literals.
+        is_planted: Create literals uniformly subject to the constraint that the
+            all 1 (and all -1) are ground states satisfying all clauses.
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
 
@@ -145,15 +179,19 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
         clauses *with replacement* which can result in collisions. However,
         collisions are allowed in standard problem definitions, are absent with
         high probability in interesting cases, and are almost always harmless
-        when they do occur.
+        when they do occur. Planting of a not all 1 solution state
+        can be achieved with a spin-reversal transform without loss of 
+        generality, planting can significantly modify the hardness of 
+        optimization problems.
 
     """
-    return random_kmcsat(variables, 3, num_clauses, seed=seed)
+    return random_kmcsat(variables, 3, num_clauses, seed=seed, is_planted=is_planted)
 
 
 def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
+                   is_planted: bool = False,
                    seed: typing.Union[None, int, np.random.Generator] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a random 2-in-4 satisfiability problem as a binary quadratic model.
@@ -164,6 +202,12 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     For valid solutions, two of the literals in each clause should ``+1`` and
     the other two should be ``-1``.
 
+    Each clause contributes -2 to the energy when the clause is satisfied,
+    and at least 0 when unsatisfied. The energy :math:`H(s)` for a spin 
+    assignment :math:`s` is thus lower bounded by :math:`E_{SAT}=-2`:code:`num_clauses`, 
+    this lower bound matches the ground state energy in satisfiable instances. 
+    The number of violated clauses is at most :math:`(H(s) - E_{SAT})/2`.
+
     .. [#] Adam Douglass, Andrew D. King & Jack Raymond,
        "Constructing SAT Filters with a Quantum Annealer",
        https://link.springer.com/chapter/10.1007/978-3-319-24318-4_9
@@ -171,9 +215,10 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     Args:
         num_variables: The number of variables in the problem.
         num_clauses: The number of clauses. Each clause contains three literals.
+        is_planted: Create literals uniformly subject to the constraint that the
+            all 1 (and all -1) are ground states satisfying all clauses.
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
-
     Returns:
         A binary quadratic model with spin variables.
 
@@ -181,7 +226,15 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
         clauses *with replacement* which can result in collisions. However,
         collisions are allowed in standard problem definitions, are absent with
         high probability in interesting cases, and are almost always harmless
-        when they do occur.
+        when they do occur. Planting of a not all 1 ground state
+        can be achieved with a spin-reversal transform without loss of 
+        generality, planting can significantly modify the hardness of 
+        optimization problems. However, for large problems planting of a 
+        solution can be achieved (in the SAT phase) without modification of the
+        hardness qualities of the instance class. [#]_ 
+    .. [#] Lenka Zdeborova and Florent Krzakala,
+       "Quiet Planting in the Locked Constraint Satisfaction Problems",
+       https://epubs.siam.org/doi/10.1137/090750755
 
     """
-    return random_kmcsat(variables, 4, num_clauses, seed=seed)
+    return random_kmcsat(variables, 4, num_clauses, seed=seed, is_planted=is_planted)
