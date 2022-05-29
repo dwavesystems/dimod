@@ -949,25 +949,34 @@ class TestSatisfiability(unittest.TestCase):
                 self.assertEqual(sum(ss.first.sample.values()), 0)
                 
     def test_planting_sat(self):
-        #NP-hard to prove successful planting (rule out lower energies), this test
-        #could fail coincidentally, but unlikely.        
-        num_var = 6 # test is 2^num_var, keep small.
-        num_clauses = 24 #Deep in UNSAT phase (num_clause/num_var>>2.1), very unlikely to be SAT by chance.
+        # NP-hard to prove successful planting (rule out lower energies), this
+        # test could fail coincidentally, but unlikely.        
+
+        # test run time is O(2^num_var), keep num_var small.
+        num_var = 6
+        all_spin_assignments = np.array(list(itertools.product([-1, 1], repeat=num_var)))
+
+        # NAE3SAT
+        # Deep in UNSAT phase (num_clause/num_var>>2.1), very unlikely to be
+        # SAT by chance.
+        num_clauses = 24 
+        bqm = dimod.generators.random_nae3sat(num_var, num_clauses, planted_solution=True)
+        E_SAT = - num_clauses
+        all_energies = bqm.energies((all_spin_assignments, bqm.variables))
+        self.assertEqual(np.min(all_energies), E_SAT)
+        self.assertEqual(all_energies[0], E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1], E_SAT) #all 1 state
         
-        bqm = dimod.generators.random_nae3sat(num_var, num_clauses, is_planted=True)
-        E_SAT = - num_clauses;
-        all_energies = bqm.energies((np.array(list(itertools.product([-1,1], repeat=num_var))),bqm.variables))
-        self.assertEqual(np.min(all_energies),E_SAT)
-        self.assertEqual(all_energies[0],E_SAT) #all -1 state
-        self.assertEqual(all_energies[-1],E_SAT) #all 1 state
-        
-        num_clauses = 12 #Deep in UNSAT phase (num_clause/num_var>>0.9), very unlikely to be SAT by chance.
-        bqm = dimod.generators.random_2in4sat(num_var, num_clauses, is_planted=True)
-        E_SAT = - 2*num_clauses;
-        all_energies = bqm.energies((np.array(list(itertools.product([-1,1], repeat=num_var))),bqm.variables))
-        self.assertEqual(np.min(all_energies),E_SAT)
-        self.assertEqual(all_energies[0],E_SAT) #all -1 state
-        self.assertEqual(all_energies[-1],E_SAT) #all 1 state
+        # 2in4SAT
+        # Deep in UNSAT phase (num_clause/num_var>>0.9), very unlikely to be
+        # SAT by chance.
+        num_clauses = 12
+        bqm = dimod.generators.random_2in4sat(num_var, num_clauses, planted_solution=True)
+        E_SAT = - 2*num_clauses
+        all_energies = bqm.energies((all_spin_assignments, bqm.variables))
+        self.assertEqual(np.min(all_energies), E_SAT)
+        self.assertEqual(all_energies[0], E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1], E_SAT) #all 1 state
         
     def test_labels(self):
         self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))

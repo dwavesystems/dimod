@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``planted_solution`` keyword argument to ``dimod.generators.random_nae3sat()`` and ``dimod.generators.random_2in4sat()`` functions.
