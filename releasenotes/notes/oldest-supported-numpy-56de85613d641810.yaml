@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Build with `oldest-supported-numpy <https://github.com/scipy/oldest-supported-numpy>`_ for compatibility.
+    See `#208 <https://github.com/dwavesystems/dwave-ocean-sdk/issues/208>`_.
