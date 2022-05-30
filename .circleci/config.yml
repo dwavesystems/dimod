@@ -17,7 +17,7 @@ jobs:
         type: string
 
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     environment:
       <<: *global-environment
@@ -98,7 +98,7 @@ jobs:
 
   build-sdist:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - checkout
@@ -138,7 +138,7 @@ jobs:
 
   deploy-all:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - attach_workspace:
@@ -157,7 +157,7 @@ jobs:
 
   test-airspeed-velocity:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - checkout
@@ -180,14 +180,15 @@ jobs:
   # suffices to just do it once
   test-codecov:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - checkout
       - run:
           name: run c++ coverage
           command: |
-            sudo apt-get install lcov
+            sudo apt update
+            sudo apt install lcov
             make -C testscpp/ catch2 coverage
       - run:
           name: run python coverage
@@ -205,13 +206,13 @@ jobs:
 
   test-doctest:
     docker:
-      - image: circleci/python:3.7 # as of march 2019 RTD uses 3.7
+      - image: cimg/python:3.7 # as of may 2022 RTD uses 3.7
 
     steps:
       - checkout
       - run:
           name: install doxygen
-          command: sudo apt-get install doxygen
+          command: sudo apt update && sudo apt install doxygen
       - run:
           name: install dependencies
           command: |
@@ -257,7 +258,7 @@ jobs:
         type: string
 
     docker:
-      - image: circleci/python:<< parameters.python-version >>
+      - image: cimg/python:<< parameters.python-version >>
 
     steps:
       - checkout
@@ -281,7 +282,7 @@ jobs:
 
   test-linux-cpp11:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - checkout
@@ -337,7 +338,7 @@ jobs:
 
   test-sdist:
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
 
     steps:
       - checkout
