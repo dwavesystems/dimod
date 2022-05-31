@@ -31,7 +31,7 @@ __all__ = ["random_nae3sat", "random_2in4sat"]
 
 def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          *,
-                         planted_solution: bool = False,
+                         plant_solution: bool = False,
                          seed: typing.Union[None, int, np.random.Generator] = None,
                          ) -> typing.Iterator[typing.Tuple[int, int, int]]:
     rng = np.random.default_rng(seed)
@@ -43,7 +43,7 @@ def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
 
         # randomly assign the negations
         signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
-        while planted_solution and abs(sum(signs))>1:
+        while plant_solution and abs(sum(signs))>1:
             # Rejection sample until signs are compatible with an all 1 ground
             # state:
             signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
@@ -58,12 +58,12 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
                   k: int,
                   num_clauses: int,
                   *,
-                  planted_solution: bool = False,
+                  plant_solution: bool = False,
                   seed: typing.Union[None, int, np.random.Generator] = None,
                   ) -> BinaryQuadraticModel:
     """Generate a random k Max-Cut satisfiability problem as a binary quadratic model.
 
-    kMC-SAT [#]_ is an NP-complete problem class
+    kMC-SAT [#ZK]_ is an NP-complete problem class
     that consists in satisfying a number of
     clauses of ``k`` literals (variables, or their negations).
     Each clause should encode a max-cut problem over the clause literals.
@@ -79,7 +79,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
         num_variables: The number of variables in the problem.
         k: number of variables participating in the clause.
         num_clauses: The number of clauses. Each clause contains three literals.
-        planted_solution: Create literals uniformly subject to the constraint that the
+        plant_solution: Create literals uniformly subject to the constraint that the
             all 1 (and all -1) are ground states (satisfy all clauses).
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
@@ -95,11 +95,11 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
         For large problems planting of an all 1 solution can
         be achieved (in some special cases) without modification of the hardness
         qualities of the instance class. Planting of a not all 1 ground state
-        can be achieved with a spin-reversal transform without loss of generality. [#]_
-    .. [#] Lenka Zdeborova and Florent Krzakala,
+        can be achieved with a spin-reversal transform without loss of generality. [#DKR]_
+    .. [#ZK] Lenka Zdeborová and Florent Krzakala,
        "Quiet Planting in the Locked Constraint Satisfaction Problems",
        https://epubs.siam.org/doi/10.1137/090750755
-    .. [#] Adam Douglass, Andrew D. King & Jack Raymond,
+    .. [#DKR] Adam Douglass, Andrew D. King & Jack Raymond,
        "Constructing SAT Filters with a Quantum Annealer",
        https://link.springer.com/chapter/10.1007/978-3-319-24318-4_9
     """
@@ -121,7 +121,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 
     bqm = BinaryQuadraticModel(num_variables, Vartype.SPIN)
     bqm.add_quadratic_from(_kmcsat_interactions(num_variables, k, num_clauses,
-                                                planted_solution=planted_solution, seed=seed))
+                                                plant_solution=plant_solution, seed=seed))
 
     if labels:
         bqm.relabel_variables(dict(enumerate(labels)))
@@ -132,7 +132,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
-                   planted_solution: bool = False,
+                   plant_solution: bool = False,
                    seed: typing.Union[None, int, np.random.Generator] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a random not-all-equal 3-satisfiability problem as a binary quadratic model.
@@ -150,7 +150,7 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     bound matches the ground state energy in satisfiable instances. The number 
     of violated clauses is :math:`(H(s) - E_{SAT})/4`.
 
-    NAE3SAT problems have been studied with the D-Wave quantum annealer [#]_.
+    NAE3SAT problems have been studied with the D-Wave quantum annealer [#DKR]_.
 
     .. _NAE3SAT: https://en.wikipedia.org/wiki/Not-all-equal_3-satisfiability
 
@@ -158,7 +158,7 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     Args:
         num_variables: The number of variables in the problem.
         num_clauses: The number of clauses. Each clause contains three literals.
-        planted_solution: Create literals uniformly subject to the constraint that the
+        plant_solution: Create literals uniformly subject to the constraint that the
             all 1 (and all -1) are ground states satisfying all clauses.
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
@@ -185,23 +185,23 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
         generality. Planting can significantly modify the hardness of 
         optimization problems.
 
-    .. [#] Adam Douglass, Andrew D. King & Jack Raymond,
+    .. [#DKR] Adam Douglass, Andrew D. King & Jack Raymond,
        "Constructing SAT Filters with a Quantum Annealer",
        https://link.springer.com/chapter/10.1007/978-3-319-24318-4_9
 
     """
-    return random_kmcsat(variables, 3, num_clauses, planted_solution=planted_solution, seed=seed)
+    return random_kmcsat(variables, 3, num_clauses, plant_solution=plant_solution, seed=seed)
 
 
 def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
-                   planted_solution: bool = False,
+                   plant_solution: bool = False,
                    seed: typing.Union[None, int, np.random.Generator] = None,
                    ) -> BinaryQuadraticModel:
     """Generate a random 2-in-4 satisfiability problem as a binary quadratic model.
 
-    2-in-4 satisfiability [#]_ is an NP-complete problem class
+    2-in-4 satisfiability [#DKR]_ is an NP-complete problem class
     that consists in satisfying a number of conjunctive
     clauses of four literals (variables, or their negations).
     For valid solutions, two of the literals in each clause should ``+1`` and
@@ -217,7 +217,7 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     Args:
         num_variables: The number of variables in the problem.
         num_clauses: The number of clauses. Each clause contains three literals.
-        planted_solution: Create literals uniformly subject to the constraint that the
+        plant_solution: Create literals uniformly subject to the constraint that the
             all 1 (and all -1) are ground states satisfying all clauses.
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
@@ -235,13 +235,13 @@ def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
         generality. Planting can significantly modify the hardness of 
         optimization problems. However, for large problems planting of a 
         solution can be achieved (in the SAT phase) without modification of the
-        hardness qualities of the instance class. [#]_ 
-    .. [#] Adam Douglass, Andrew D. King & Jack Raymond,
+        hardness qualities of the instance class. [#ZK]_ 
+    .. [#DKR] Adam Douglass, Andrew D. King & Jack Raymond,
        "Constructing SAT Filters with a Quantum Annealer",
        https://link.springer.com/chapter/10.1007/978-3-319-24318-4_9
-    .. [#] Lenka Zdeborova and Florent Krzakala,
+    .. [#ZK] Lenka Zdeborová and Florent Krzakala,
        "Quiet Planting in the Locked Constraint Satisfaction Problems",
        https://epubs.siam.org/doi/10.1137/090750755
 
     """
-    return random_kmcsat(variables, 4, num_clauses, planted_solution=planted_solution, seed=seed)
+    return random_kmcsat(variables, 4, num_clauses, plant_solution=plant_solution, seed=seed)

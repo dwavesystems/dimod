@@ -1,4 +1,9 @@
 ---
 features:
   - |
-    Add ``planted_solution`` keyword argument to ``dimod.generators.random_nae3sat()`` and ``dimod.generators.random_2in4sat()`` functions.
+    Add ``plant_solution`` keyword argument to ``dimod.generators.random_nae3sat()``, ``dimod.generators.random_2in4sat()`` and ``dimod.generators.frustrated_loop`` functions.
+    Add 
+deprecations:
+  - |
+    Deprecated ``planted_solution`` keyword argument in ``dimod.generators.frustrated_loop``.
+    
