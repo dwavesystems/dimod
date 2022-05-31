@@ -87,7 +87,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 13.2.0
+      xcode: 13.4.0
 
     environment:
       <<: *global-environment
@@ -297,7 +297,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 13.2.0
+      xcode: 13.4.0
 
     environment:
       <<: *global-environment
@@ -313,7 +313,7 @@ jobs:
             brew install pyenv
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.2.0
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
       - run:
           name: install python
           command: |
@@ -321,7 +321,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.2.0
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
       - run:
           name: install
           command: |
