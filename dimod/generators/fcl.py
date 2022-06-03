@@ -12,13 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import math
 import warnings
 
 from typing import Callable, Collection, List, Mapping, Optional
 
 import numpy.random
 
+from numpy import prod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 from dimod.typing import GraphLike, Variable
@@ -142,7 +142,7 @@ def frustrated_loop(graph: GraphLike,
         else:
             # randomly select from all frustrated loops (odd number of AFM edges)
             cycle_J = {(cycle[i], cycle[i+1]) : -1 for i in range(len(cycle)-1)}
-            cycle_J[(cycle[-1],cycle[0])] = (1 - 2*(len(cycle_J) & 1))*math.prod(cycle_J.values())
+            cycle_J[(cycle[-1],cycle[0])] = (1 - 2*(len(cycle_J) & 1))*prod(list(cycle_J.values()))
             
         # update the bqm
         bqm.add_interactions_from(cycle_J)
@@ -161,10 +161,11 @@ def frustrated_loop(graph: GraphLike,
                       "spin labels to match desired planting or "
                       "(2) SpinReversalComposite for presentation of a randomized "
                       "planted solution to some solver.",
-                      DeprecationWarning)
+                      DeprecationWarning, stacklevel=3)
         # A spin-reversal transform for a BQM with zero linear biases
         for e in bqm.quadratic:
-            bqm.quadratic[e] = bqm.quadratic[e]*planted_solution[e[0]]*planted_solution[e[1]]
+            bqm.set_quadratic(e[0], e[1],
+                              bqm.quadratic[e]*planted_solution[e[0]]*planted_solution[e[1]])
 
     return bqm
 

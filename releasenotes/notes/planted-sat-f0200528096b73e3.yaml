@@ -5,5 +5,5 @@ features:
     Add 
 deprecations:
   - |
-    Deprecated ``planted_solution`` keyword argument in ``dimod.generators.frustrated_loop``.
+    Deprecated ``planted_solution`` keyword argument in ``dimod.generators.frustrated_loop()``.
     

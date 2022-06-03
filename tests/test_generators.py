@@ -385,23 +385,25 @@ class TestFCL(unittest.TestCase):
         num_var = 3
         triangle = nx.Graph()
         triangle.add_edges_from({(u, v) for u in range(num_var) for v in range(u)})
-        
-        bqm = dimod.generators.frustrated_loop(triangle, 1, plant_solution=False)
         all_spin_assignments = np.array(list(itertools.product([-1, 1], repeat=num_var)))
-        all_energies = bqm.energies((all_spin_assignments,bqm.variables))
-        E_SAT = -1
-        self.assertLessEqual(E_SAT,np.min(all_energies))
-        self.assertEqual(all_energies[0],E_SAT) # All -1 planted
-        self.assertEqual(all_energies[-1],E_SAT) # All 1 planted
+        for plant_solution in [True, False]:
+            bqm = dimod.generators.frustrated_loop(triangle, 1, plant_solution=plant_solution)
+            all_energies = bqm.energies((all_spin_assignments,bqm.variables))
+            E_SAT = -1
+            self.assertLessEqual(E_SAT,np.min(all_energies))
+            self.assertEqual(all_energies[0],E_SAT) # All -1 planted
+            self.assertEqual(all_energies[-1],E_SAT) # All 1 planted
         
         
                         
     def test_planted_solution(self):
-        # This will be deprecated
+        # This tests a deprecated workflow,
+        # test_plant_solution provides a generalized test for successful planting.
         G = self.G
 
         planted = {v:v%2*2-1 for v in G}
-        bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
 
         inv_solution = {k:-v for k,v in planted.items()}
         self.assertEqual(bqm.energy(planted),bqm.energy(inv_solution))
