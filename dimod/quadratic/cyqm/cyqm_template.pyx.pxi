@@ -21,6 +21,7 @@ cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
+from libc.string cimport memcpy
 from libcpp.vector cimport vector
 
 import dimod
@@ -105,17 +106,24 @@ cdef class cyQM_template(cyQMBase):
 
         return neighbors[:i]
 
-    def _ilower_triangle_load(self, Py_ssize_t vi, Py_ssize_t num_neighbors, buff):
-        dtype = np.dtype([('v', self.index_dtype), ('b', self.dtype)],
-                         align=False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ilower_triangle_load(self, Py_ssize_t vi, Py_ssize_t num_neighbors, const unsigned char[:] buff):
+        cdef Py_ssize_t index_itemsize = self.index_dtype.itemsize
+        cdef Py_ssize_t bias_itemsize = self.dtype.itemsize
+        cdef Py_ssize_t itemsize = index_itemsize + bias_itemsize
 
-        arr = np.frombuffer(buff[:dtype.itemsize*num_neighbors], dtype=dtype)
-        cdef const index_type[:] index_view = arr['v']
-        cdef const bias_type[:] bias_view = arr['b']
+        if num_neighbors*itemsize > buff.size:
+            raise RuntimeError
 
         cdef Py_ssize_t i
+        cdef index_type ui
+        cdef bias_type bias
         for i in range(num_neighbors):
-            self.cppqm.add_quadratic(vi, index_view[i], bias_view[i])
+            memcpy(&ui, &buff[i*itemsize], index_itemsize)
+            memcpy(&bias, &buff[i*itemsize+index_itemsize], bias_itemsize)
+
+            self.cppqm.add_quadratic_back(ui, vi, bias)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
