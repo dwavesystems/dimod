@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix a performance regression to ``QuadraticModel.add_linear_from()`` introduced by
+    `#1170 <https://github.com/dwavesystems/dimod/pull/1170>`_ as part of
+    the `0.11.0 <https://github.com/dwavesystems/dimod/releases/tag/0.11.0>`_
+    release.

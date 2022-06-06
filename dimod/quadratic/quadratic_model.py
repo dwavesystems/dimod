@@ -462,17 +462,38 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         add_linear = self.data.add_linear
 
-        if default_vartype is not None:
-            default_vartype = as_vartype(default_vartype, extended=True)
-
         if isinstance(linear, Mapping):
             linear = linear.items()
 
-        for v, bias in linear:
-            add_linear(v, bias,
-                       default_vartype=default_vartype,
-                       default_lower_bound=default_lower_bound,
-                       default_upper_bound=default_upper_bound)
+        # checking whether the keyword arguments are present actually
+        # results in a pretty shocking performance difference, almost x2
+        # for when they are not there
+        # I did try using functools.partial() as well
+        if default_vartype is None:
+            if default_lower_bound is None and default_upper_bound is None:
+                for v, bias in linear:
+                    add_linear(v, bias)
+            else:
+                for v, bias in linear:
+                    add_linear(v, bias,
+                               default_lower_bound=default_lower_bound,
+                               default_upper_bound=default_upper_bound,
+                               )
+        else:
+            default_vartype = as_vartype(default_vartype, extended=True)
+
+            if default_lower_bound is None and default_upper_bound is None:
+                for v, bias in linear:
+                    add_linear(v, bias,
+                               default_vartype=default_vartype,
+                               )
+            else:
+                for v, bias in linear:
+                    add_linear(v, bias,
+                               default_vartype=default_vartype,
+                               default_lower_bound=default_lower_bound,
+                               default_upper_bound=default_upper_bound,
+                               )
 
     @forwarding_method
     def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
