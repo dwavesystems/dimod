@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``dimod::QuadraticModel::add_quadratic_back()`` and
+    ``dimod::BinaryQuadraticModel::add_quadratic_back()`` methods in C++ code.
+  - |
+    Improve the performance of ``QuadraticModel.from_file()``, which also
+    improves the performance of ``ConstrainedQuadraticModel.from_file()``.

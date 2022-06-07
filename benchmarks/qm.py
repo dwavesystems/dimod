@@ -14,6 +14,8 @@
 
 import dimod
 
+import itertools
+
 
 class TimeAddLinearFrom:
     params = ([str, int], [dict, list])
@@ -37,3 +39,28 @@ class TimeAddVariablesFrom:
 
     def time_add_variables_from(self, *args):
         self.qm.add_variables_from('BINARY', self.variables)
+
+
+class TimeFromFile:
+
+    dense = dimod.QM()
+    dense.add_variables_from('BINARY', range(2500))
+    dense.add_quadratic_from((u, v, 1) for u, v in itertools.combinations(dense.variables, 2))
+
+    dense_fp = dense.to_file()
+
+    # ideally this would be more determistic than just specifying the seed, but
+    # this is a lot easier.
+    sparse = dimod.QM.from_bqm(dimod.generators.gnm_random_bqm(5000, 5000, 'SPIN', random_state=42))
+
+    sparse_fp = sparse.to_file()
+
+    def setup(self):
+        self.dense_fp.seek(0)
+        self.sparse_fp.seek(0)
+
+    def time_from_file_dense(self):
+        dimod.QM.from_file(self.dense_fp)
+
+    def time_from_file_sparse(self):
+        dimod.QM.from_file(self.sparse_fp)
