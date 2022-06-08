@@ -16,6 +16,7 @@ import unittest
 import unittest.mock
 
 import dimod
+import itertools
 
 import numpy as np
 
@@ -349,15 +350,64 @@ class TestFCL(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             dimod.generators.frustrated_loop(4, 3, R=1, seed=1)
 
+    def test_frustrated_loop_clique(self):
+        # More stringent test of special case:
+        
+        num_var = 6
+        all_spin_assignments = np.array(list(itertools.product([-1, 1], repeat=num_var)))
+        # Per loop added, atleast 1/4 chance all 1 is no longer a ground state
+        # (of energy -num_loops). Add a bunch so that coincidental test pass is
+        # highly unlikely:
+        num_loops = 24
+        
+        # Use of a clique means all loops are atleast triangles, contribute at
+        # most -1 to energy:
+        clique = nx.Graph()
+        clique.add_edges_from({(u, v) for u in range(num_var) for v in range(u)})
+                             
+        bqm = dimod.generators.frustrated_loop(clique, num_loops) 
+        all_energies = bqm.energies((all_spin_assignments,bqm.variables))
+        E_SAT = np.min(all_energies)
+        self.assertLessEqual(E_SAT,-num_loops)
+        self.assertEqual(all_energies[0],E_SAT) #All -1 planted
+        self.assertEqual(all_energies[-1],E_SAT) #All 1 planted
+        # Could add biclique graph to slightly extend concept.
+    
+    def test_plant_solution(self):
+        G = self.G
+        bqm = dimod.generators.frustrated_loop(G, 10, plant_solution=True)
+        planted1 = {v:1 for v in G}
+        planted2 = {v:-1 for v in G}
+        self.assertEqual(bqm.energy(planted1),bqm.energy(planted2))
+        # Check plant_solution=True option non-trivial:
+        bqm = dimod.generators.frustrated_loop(G, 10, plant_solution=False)
+        # Check that the loop is actually frustrated (in planted case):
+        num_var = 3
+        triangle = nx.Graph()
+        triangle.add_edges_from({(u, v) for u in range(num_var) for v in range(u)})
+        all_spin_assignments = np.array(list(itertools.product([-1, 1], repeat=num_var)))
+        for plant_solution in [True, False]:
+            bqm = dimod.generators.frustrated_loop(triangle, 1, plant_solution=plant_solution)
+            all_energies = bqm.energies((all_spin_assignments,bqm.variables))
+            E_SAT = -1
+            self.assertLessEqual(E_SAT,np.min(all_energies))
+            self.assertEqual(all_energies[0],E_SAT) # All -1 planted
+            self.assertEqual(all_energies[-1],E_SAT) # All 1 planted
+        
+        
+                        
     def test_planted_solution(self):
+        # This tests a deprecated workflow,
+        # test_plant_solution provides a generalized test for successful planting.
         G = self.G
 
         planted = {v:v%2*2-1 for v in G}
-        bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
+        with self.assertWarns(DeprecationWarning):
+            bqm = dimod.generators.frustrated_loop(G, 10, planted_solution=planted)
 
         inv_solution = {k:-v for k,v in planted.items()}
         self.assertEqual(bqm.energy(planted),bqm.energy(inv_solution))
-
+        
         all_ones = {v:1 for v in G}
         self.assertNotEqual(bqm.energy(planted),bqm.energy(all_ones))
 
@@ -946,7 +996,37 @@ class TestSatisfiability(unittest.TestCase):
                 # in the ground state they should not be all equal
                 ss = dimod.ExactSolver().sample(bqm)
                 self.assertEqual(sum(ss.first.sample.values()), 0)
+                
+    def test_planting_sat(self):
+        # NP-hard to prove successful planting (rule out lower energies), this
+        # test could fail coincidentally, but unlikely.        
 
+        # test run time is O(2^num_var), keep num_var small.
+        num_var = 6
+        all_spin_assignments = np.array(list(itertools.product([-1, 1], repeat=num_var)))
+
+        # NAE3SAT
+        # Deep in UNSAT phase (num_clause/num_var>>2.1), very unlikely to be
+        # SAT by chance.
+        num_clauses = 24 
+        bqm = dimod.generators.random_nae3sat(num_var, num_clauses, plant_solution=True)
+        E_SAT = - num_clauses
+        all_energies = bqm.energies((all_spin_assignments, bqm.variables))
+        self.assertEqual(np.min(all_energies), E_SAT)
+        self.assertEqual(all_energies[0], E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1], E_SAT) #all 1 state
+        
+        # 2in4SAT
+        # Deep in UNSAT phase (num_clause/num_var>>0.9), very unlikely to be
+        # SAT by chance.
+        num_clauses = 12
+        bqm = dimod.generators.random_2in4sat(num_var, num_clauses, plant_solution=True)
+        E_SAT = - 2*num_clauses
+        all_energies = bqm.energies((all_spin_assignments, bqm.variables))
+        self.assertEqual(np.min(all_energies), E_SAT)
+        self.assertEqual(all_energies[0], E_SAT) #all -1 state
+        self.assertEqual(all_energies[-1], E_SAT) #all 1 state
+        
     def test_labels(self):
         self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))
         self.assertEqual(dimod.generators.random_2in4sat('abdef', 1).variables, 'abdef')

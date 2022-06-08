@@ -12,10 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import warnings
+
 from typing import Callable, Collection, List, Mapping, Optional
 
 import numpy.random
 
+from numpy import prod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 from dimod.typing import GraphLike, Variable
@@ -33,18 +36,21 @@ def frustrated_loop(graph: GraphLike,
                     R: float = float('inf'),
                     cycle_predicates: Collection[Predicate] = tuple(),
                     max_failed_cycles: int = 100,
+                    plant_solution: bool = True,
                     planted_solution: Optional[Mapping[Variable, int]] = None,
                     seed: Optional[int] = None,
                     ) -> BinaryQuadraticModel:
     """Generate a frustrated-loop problem.
 
-    A generic frustrated-loop (FL) problem is a sum of Hamiltonians, each generated
-    from a single "good" loop, as follows:
+    A generic frustrated-loop (FL) problem is a sum of Hamiltonians, each 
+    generated from a single loop, as follows:
 
     1. Generate a loop by random walking on the specified graph, ``graph``.
     2. If the cycle meets provided predicates, continue; if not, return to  step 1.
-    3. Choose one edge of the loop to be anti-ferromagnetic (an interaction value
-       of `+1` for the edge) and all others ferromagnetic (`-1`).
+    3. Choose one edge of the loop uniformly at random to be anti-ferromagnetic 
+       (AFM, coupling value of `1`) and all others ferromagnetic 
+       (`-1`). Or if :code:`plant_solution is False`, sample uniformly couplers
+       subject to the constraint that there are an odd number of AFM couplers.
     4. Add the loop's interactions to the FL problem.
        If at any time the absolute value of an interaction in the FL problem,
        accumulated on an edge over good loops, exceeds a given maximum, ``R``,
@@ -73,10 +79,17 @@ def frustrated_loop(graph: GraphLike,
         max_failed_cycles:
             Maximum number of failures to find a cycle before terminating.
 
+        plant_solution: 
+            Select frustrated loops with only 1 AFM coupler all 1 (and all -1) 
+            solutions are among the ground states. 
+
         planted_solution:
-            Other solutions with the same energy may exist, but the energy value
-            of the (possibly degenerate) ground state will hold. If None,
-            planted_solution is: ``{v: -1 for v in graph}``
+            A dictionary assigning variables to spin states.  When provided, and
+            :code:`planted_solution=True` spin states are relabeled so that the
+            variable assignment becomes a planted ground state in place of the 
+            all 1 solution.  
+            This option is deprecated; use of spin-reversal transforms is 
+            recommended for this purpose.
 
         seed: Random seed.
 
@@ -94,8 +107,7 @@ def frustrated_loop(graph: GraphLike,
         raise ValueError("R should be a positive integer")
     if max_failed_cycles <= 0:
         raise ValueError("max_failed_cycles should be a positive integer")
-    if planted_solution is None:
-        planted_solution = {v: -1 for v in nodes}
+    
     r = numpy.random.RandomState(seed)
 
     adj = {v: set() for v in nodes}
@@ -122,17 +134,16 @@ def frustrated_loop(graph: GraphLike,
             continue
         good_cycles += 1
 
-        # If its a good cycle, modify J with it, according to plated solution
-        cycle_J = {}
-        for i, c in enumerate(cycle):
-            u, v = cycle[i - 1], cycle[i]
-            J = -planted_solution[u]*planted_solution[v]
-            cycle_J[(u, v)] = J
-
-        # randomly select an edge and flip it
-        idx = r.randint(len(cycle))
-        cycle_J[(cycle[idx - 1], cycle[idx])] *= -1
-
+        if plant_solution:
+            # randomly select from all frustrated loops with one AFM edge
+            cycle_J = {(cycle[i - 1], cycle[i]) : -1 for i in range(len(cycle))}
+            idx = r.randint(len(cycle))
+            cycle_J[(cycle[idx - 1], cycle[idx])] = 1
+        else:
+            # randomly select from all frustrated loops (odd number of AFM edges)
+            cycle_J = {(cycle[i], cycle[i+1]) : -1 for i in range(len(cycle)-1)}
+            cycle_J[(cycle[-1],cycle[0])] = (1 - 2*(len(cycle_J) & 1))*prod(list(cycle_J.values()))
+            
         # update the bqm
         bqm.add_interactions_from(cycle_J)
         for u, v in cycle_J:
@@ -143,6 +154,18 @@ def frustrated_loop(graph: GraphLike,
     if good_cycles < num_cycles:
         raise RuntimeError(f"number of found cycles, {good_cycles}, is below " 
                            f"requested {num_cycles}")
+
+    if planted_solution is not None:
+        warnings.warn("planted_solution is deprecated; use spin-reversal transforms: "
+                      "(1) bqm.flip_variable() for superficial reorientation of "
+                      "spin labels to match desired planting or "
+                      "(2) SpinReversalComposite for presentation of a randomized "
+                      "planted solution to some solver.",
+                      DeprecationWarning, stacklevel=3)
+        # A spin-reversal transform for a BQM with zero linear biases
+        for e in bqm.quadratic:
+            bqm.set_quadratic(e[0], e[1],
+                              bqm.quadratic[e]*planted_solution[e[0]]*planted_solution[e[1]])
 
     return bqm
 
