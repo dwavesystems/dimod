@@ -87,7 +87,7 @@ def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQua
         except AttributeError:
             filename = ''
 
-    if os.path.isfile(filename):
+    if (filename is not None) and os.path.isfile(filename):
         return cyread_lp_file(filename)        
 
     # copy it into somewhere that our reader can get it
