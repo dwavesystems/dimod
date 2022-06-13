@@ -64,6 +64,7 @@ Methods
    ~ConstrainedQuadraticModel.set_upper_bound
    ~ConstrainedQuadraticModel.substitute_self_loops
    ~ConstrainedQuadraticModel.to_file
+   ~ConstrainedQuadraticModel.to_lp_file
    ~ConstrainedQuadraticModel.upper_bound
    ~ConstrainedQuadraticModel.vartype
    ~ConstrainedQuadraticModel.violations
