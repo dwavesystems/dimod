@@ -254,7 +254,7 @@ jobs:
     parameters:
       python-version:
         type: string
-      numpy-version:
+      dependencies:
         type: string
 
     docker:
@@ -269,9 +269,8 @@ jobs:
           command: |
             python -m venv env
             . env/bin/activate
-            pip install -r requirements.txt
             pip install dimod --no-index -f dist/ --force-reinstall --no-deps
-            pip install 'numpy<< parameters.numpy-version >>' --upgrade --only-binary=numpy
+            pip install << parameters.dependencies >> --upgrade --only-binary=numpy
       - run: &unix-run-tests
           name: run tests
           command: |
@@ -410,20 +409,18 @@ workflows:
       - test-codecov
       - test-doctest
       - test-linux:
-          name: test-linux-numpy<< matrix.numpy-version >>-py<< matrix.python-version >>
+          name: test-linux-<< matrix.dependencies >>-py<< matrix.python-version >>
           requires:
             - build-linux
           matrix:
             parameters:
-              # test the lowest numpy version and the highest minor of each
-              # currently deployed
-              numpy-version: [==1.20.0, ~=1.21.0, ~=1.22.0]
+              # test the lowest supported numpy and the latest
+              dependencies: [oldest-supported-numpy, numpy]
               python-version: *python-versions
             exclude:
-              - numpy-version: ==1.20.0  # NumPy 1.20 does not support 3.10
-                python-version: 3.10.0
-              - numpy-version: ~=1.22.0  # NumPy 1.22 does not support 3.7
-                python-version: 3.7.9
+              # we don't support 1.14.5, the oldest version for Python 3.7.9
+              - python-version: 3.7.9
+                dependencies: oldest-supported-numpy
       - test-linux-cpp11
       - test-osx:
           name: test-osx-py<< matrix.python-version >>
