@@ -18,12 +18,20 @@ import unittest
 
 import dimod
 
+from dimod import Binary, BQM, CQM, Integer
 from dimod.lp import load, loads
+from parameterized import parameterized
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data', 'lp')
 
+LP_BAD_LABELS = [['😜'], ['x*y'], ['a+b'], ['e9'], ['E-24'], ['E8cats'], ['eels'], ['example'],
+                 [()], [frozenset()], ['.x'], ['0y'], [""], ['\\'], ['x' * 256], [b'x'], ['π']]
+LP_ODD_LABELS = [['$'], ['#'], ['%'], ['&'], ['"']]
+LP_TEST_VALUES = [[1e30], [1e-30], [-1e30], [-1e-30], [10], [-10], [0.1], [-0.1]]
+LP_MAX_LINE_LEN = 560
 
-class TestObjective(unittest.TestCase):
+
+class TestLoads(unittest.TestCase):
     def test_complex(self):
         lp = """
         minimize
@@ -127,3 +135,203 @@ class TestObjective(unittest.TestCase):
         x0 = dimod.Integer('x0')
 
         self.assertTrue(cqm.objective.is_equal(2e3 * x0 + (4.1e-2 * x0 * x0) / 2))
+
+
+class TestDumps(unittest.TestCase):
+
+    def _assert_cqms_are_equivalent(self, cqm, new):
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+
+        for key in cqm.constraints:
+            a = cqm.constraints[key]
+            b = new.constraints[key]
+            self.assertEqual(a.sense, b.sense)
+
+            if isinstance(a.lhs, dimod.Float32BQM):
+                self.assertTrue((a.lhs - a.rhs).is_almost_equal(b.lhs - b.rhs))
+            else:
+                self.assertTrue((a.lhs - a.rhs).is_equal(b.lhs - b.rhs))
+
+    def test_functional(self):
+        cqm = CQM()
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'BINARY')
+        cqm.add_constraint(bqm, '<=', label='c0')
+        cqm.add_constraint(bqm, '>=', label='c1')
+        cqm.set_objective(BQM({'c': -1}, {}, 'BINARY'))
+        cqm.add_constraint(Binary('a')*Integer('d')*5 == 3, label='c2')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_empty_model(self):
+        cqm = CQM()
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_no_constraints(self):
+        cqm = CQM()
+        cqm.set_objective(BQM({'a': -1, 'b': -1}, {'ab': 1}, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_no_objective(self):
+        cqm = CQM()
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'BINARY')
+        cqm.add_constraint(bqm, '<=', label='c0')
+        cqm.add_constraint(bqm, '>=', label='c1')
+        cqm.add_constraint(Binary('a') * Integer('d') * 5 <= 3, label='c2')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_quadratic_objective(self):
+        cqm = CQM()
+        cqm.set_objective(BQM({}, {'ab': 1}, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_objective_offset(self, value):
+        cqm = CQM()
+        cqm.set_objective(BQM({}, {'ab': 1}, value, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_spin_variables(self):
+        cqm = CQM()
+        cqm.set_objective(BQM({}, {'ab': 1}, 'SPIN'))
+
+        with self.assertRaises(ValueError):
+            dimod.lp.dumps(cqm)
+
+    @parameterized.expand(LP_BAD_LABELS)
+    def test_bad_variable_labels(self, label):
+        cqm = CQM()
+        cqm.set_objective(BQM({label: 1}, {}, 'BINARY'))
+
+        with self.assertRaises(ValueError):
+            dimod.lp.dumps(cqm)
+
+    @parameterized.expand(LP_ODD_LABELS)
+    def test_odd_variable_labels_no_constraints(self, label):
+        cqm = CQM()
+        cqm.set_objective(BQM({label: 1}, {}, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_ODD_LABELS)
+    def test_odd_variable_labels_with_constraints(self, label):
+        cqm = CQM()
+        cqm.set_objective(BQM({label: 1}, {}, 'BINARY'))
+        bqm = BQM({'a': -1}, {('a', label): 1}, 1.5, 'BINARY')
+        cqm.add_constraint(bqm, '<=', label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_BAD_LABELS)
+    def test_bad_constraint_labels(self, label):
+        cqm = CQM()
+        cqm.add_constraint(Binary('a') + Binary('b') == 1, label=label)
+
+        with self.assertRaises(ValueError):
+            dimod.lp.dumps(cqm)
+
+    @parameterized.expand(LP_ODD_LABELS)
+    def test_odd_constraint_labels(self, label):
+        cqm = CQM()
+        cqm.add_constraint(Binary('a') + Binary('b') == 1, label=label)
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_long_line_breaking(self):
+        cqm = CQM()
+        x = dimod.Binary('x' * 255)
+        y = dimod.Binary('y' * 255)
+        z = dimod.Binary('z' * 255)
+        cqm.set_objective(1e30*x*y + 1e30*y*z - 1e30*z*x)
+        cqm.add_constraint(1e30*x + 1e30*y + 1e30*z - 1e30*x*y + 1e30*y*z <= 1e30, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+        for line in dimod.lp.dumps(cqm).splitlines():
+            self.assertLess(len(line), LP_MAX_LINE_LEN)
+
+    def test_variable_bounds(self):
+        LOWER_BOUND = -10
+        UPPER_BOUND = 10
+
+        i = Integer('i', lower_bound=LOWER_BOUND)
+        j = Integer('j', upper_bound=UPPER_BOUND)
+        k = Integer('k', lower_bound=LOWER_BOUND, upper_bound=UPPER_BOUND)
+
+        cqm = CQM()
+        cqm.set_objective(i + j + k)
+        cqm.add_constraint(i*j - k <= 1, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+        self.assertEqual(new.lower_bound('i'), LOWER_BOUND)
+        self.assertEqual(new.upper_bound('i'), (1 << 53) - 1)
+        self.assertEqual(new.lower_bound('j'), 0)
+        self.assertEqual(new.upper_bound('j'), UPPER_BOUND)
+        self.assertEqual(new.lower_bound('k'), LOWER_BOUND)
+        self.assertEqual(new.upper_bound('k'), UPPER_BOUND)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_objective_linear_bias_values(self, value):
+        cqm = CQM()
+        cqm.set_objective(BQM({'a': value}, {}, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_objective_quadratic_bias_values(self, value):
+        cqm = CQM()
+        cqm.set_objective(BQM([], {'ab': value}, 'BINARY'))
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_constraint_linear_coefficient_values(self, value):
+        cqm = CQM()
+        cqm.add_constraint(Integer('a') * value + Integer('b') <= 1, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_constraint_quadratic_coefficient_values(self, value):
+        cqm = CQM()
+        cqm.add_constraint(Integer('a') * Integer('b') * value <= 1, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_constraint_rhs_values(self, value):
+        cqm = CQM()
+        cqm.add_constraint(Integer('a') + 0.1 * Integer('b') <= value, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+    @parameterized.expand(LP_TEST_VALUES)
+    def test_constraint_from_model_Float32BQM(self, value):
+        cqm = CQM()
+        bqm = dimod.Float32BQM({'a': value}, {}, 'BINARY')
+        cqm.add_constraint_from_model(bqm, '<=', label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)

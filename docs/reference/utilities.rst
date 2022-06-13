@@ -97,6 +97,8 @@ LP
 .. autosummary::
    :toctree: generated/
    
+   lp.dump
+   lp.dumps
    lp.load
    lp.loads
 
