@@ -1,5 +1,5 @@
 ---
 features:
   - |
-    Add ``ConstrainedQuadraticModel.to_lp_file()`` method to encode constrained
+    Add ``dimod.lp.dump()`` and ``dimod.lp.dumps()`` functions to encode constrained
     quadratic models as LP files.
