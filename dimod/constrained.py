@@ -1960,12 +1960,16 @@ class ConstrainedQuadraticModel:
 
         sio = StringIO()
         sio.write('Objective\n')
-        sio.write(f'  {self.objective.to_polystring(encoder=var_encoder)}\n')
+        sio.write('  ')
+        sio.write(self.objective.to_polystring(encoder=var_encoder))
+        sio.write('\n')
 
         sio.write('\n')
         sio.write('Constraints\n')
         for label, c in self.constraints.items():
-            sio.write(f'  {label}: {c.to_polystring(encoder=var_encoder)}\n')
+            sio.write(f'  {label}: ')
+            sio.write(c.to_polystring(encoder=var_encoder))
+            sio.write('\n')
 
         sio.write('\n')
         sio.write('Bounds\n')
