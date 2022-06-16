@@ -1441,3 +1441,17 @@ class TestStr(unittest.TestCase):
               0.0 <= Real('x') <= 1e+30
               -1.1 <= Real('y') <= 1.2
             ''').lstrip())
+
+    def test_spin_variables_have_no_bounds(self):
+        cqm = CQM()
+        cqm.set_objective(BQM({'a': 1, 'b': 1}, {}, 'SPIN'))
+
+        self.assertEqual(str(cqm), dedent(
+            '''
+            Objective
+              Spin('a') + Spin('b')
+
+            Constraints
+
+            Bounds
+            ''').lstrip())

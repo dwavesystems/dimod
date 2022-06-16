@@ -1970,7 +1970,7 @@ class ConstrainedQuadraticModel:
         sio.write('\n')
         sio.write('Bounds\n')
         for v in self.variables:
-            if self.vartype(v) is not Vartype.BINARY:
+            if self.vartype(v) not in (Vartype.BINARY, Vartype.SPIN):
                 sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
 
         return sio.getvalue()
