@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix ``dimod.lp.dump()`` and ``dimod.lp.dumps()`` to output bounds for REAL
+    variables.
