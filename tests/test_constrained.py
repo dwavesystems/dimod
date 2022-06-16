@@ -16,6 +16,8 @@ import itertools
 import json
 import unittest
 
+from textwrap import dedent
+
 import dimod
 
 import os.path as path
@@ -1407,3 +1409,35 @@ class TestIterConstraintData(unittest.TestCase):
         self.assertEqual(len(cqm.constraints), 6)
         self.assertEqual(list(cqm.constraints.keys()),
             [datum.label for datum in cqm.iter_constraint_data({'x': 1, 'y': 0, 'z': 0})])
+
+
+class TestStr(unittest.TestCase):
+    def test_one(self):
+        cqm = CQM()
+
+        m, n = dimod.Binaries(['m', 'n'])
+        j = dimod.Integer('j')
+        x, y = dimod.Reals(['x', 'y'])
+
+        cqm.set_objective(m*j + 2*n + x)
+        cqm.add_constraint(m * (j - n) <= 0, label='c0')
+        cqm.add_constraint(n * j + 2 * y >= 1, label='c1')
+        cqm.set_lower_bound('j', -10)
+        cqm.set_upper_bound('j', 11)
+        cqm.set_lower_bound('y', -1.1)
+        cqm.set_upper_bound('y', 1.2)
+
+        self.assertEqual(str(cqm), dedent(
+            '''
+            Objective
+              2*Binary('n') + Real('x') + 0*Real('y') + Binary('m')*Integer('j')
+
+            Constraints
+              c0: Binary('m')*Integer('j') - Binary('m')*Binary('n') <= 0
+              c1: 2*Real('y') + Binary('n')*Integer('j') >= 1
+
+            Bounds
+              -10.0 <= Integer('j') <= 11.0
+              0.0 <= Real('x') <= 1e+30
+              -1.1 <= Real('y') <= 1.2
+            ''').lstrip())

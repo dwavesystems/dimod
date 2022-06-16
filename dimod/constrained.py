@@ -28,6 +28,7 @@ import uuid
 import warnings
 import zipfile
 
+from io import StringIO
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
 from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, NamedTuple
@@ -1947,6 +1948,32 @@ class ConstrainedQuadraticModel:
             obj = load(fp)
 
         return obj
+
+    def __str__(self):
+        vartype_name = {Vartype.SPIN: 'Spin',
+                        Vartype.BINARY: 'Binary',
+                        Vartype.INTEGER: 'Integer',
+                        Vartype.REAL: 'Real'}
+
+        def var_encoder(v):
+            return f'{vartype_name[self.vartype(v)]}({v!r})'
+
+        sio = StringIO()
+        sio.write('Objective\n')
+        sio.write(f'  {self.objective.to_polystring(encoder=var_encoder)}\n')
+
+        sio.write('\n')
+        sio.write('Constraints\n')
+        for label, c in self.constraints.items():
+            sio.write(f'  {label}: {c.to_polystring(encoder=var_encoder)}\n')
+
+        sio.write('\n')
+        sio.write('Bounds\n')
+        for v in self.variables:
+            if self.vartype(v) is not Vartype.BINARY:
+                sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
+
+        return sio.getvalue()
 
 
 CQM = ConstrainedQuadraticModel
