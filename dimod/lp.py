@@ -221,7 +221,7 @@ def dump(cqm: dimod.ConstrainedQuadraticModel, file_like: typing.TextIO):
     f.write('Bounds\n')
 
     for v, vartype in vartypes.items():
-        if vartype is Vartype.INTEGER:
+        if vartype is not Vartype.BINARY:
             f.write(f' {cqm.lower_bound(v)} <= {v} <= {cqm.upper_bound(v)}\n')
 
     # write variable names
