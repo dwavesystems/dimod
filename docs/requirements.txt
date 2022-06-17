@@ -3,7 +3,7 @@ sphinx<4.1.0
 sphinx_rtd_theme
 
 breathe
-notebook==6.4.11
+notebook==6.4.12
 
 networkx==2.5
 
