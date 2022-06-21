@@ -423,7 +423,7 @@ class QuadraticModelBase {
      * `num_variables()` long.
      */
     template <class Iter>  // todo: allow different return types
-    bias_type energy(Iter sample_start) {
+    bias_type energy(Iter sample_start) const {
         bias_type en = offset();
 
         for (index_type u = 0; u < static_cast<index_type>(num_variables()); ++u) {
@@ -451,7 +451,7 @@ class QuadraticModelBase {
      * `num_variables()` long.
      */
     template <class T>
-    bias_type energy(const std::vector<T>& sample) {
+    bias_type energy(const std::vector<T>& sample) const {
         // todo: check length?
         return energy(sample.cbegin());
     }
