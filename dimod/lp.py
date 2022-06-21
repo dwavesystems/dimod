@@ -221,8 +221,10 @@ def dump(cqm: dimod.ConstrainedQuadraticModel, file_like: typing.TextIO):
     f.write('Bounds\n')
 
     for v, vartype in vartypes.items():
-        if vartype is not Vartype.BINARY:
+        if vartype in (Vartype.INTEGER, Vartype.REAL):
             f.write(f' {cqm.lower_bound(v)} <= {v} <= {cqm.upper_bound(v)}\n')
+        elif vartype is not Vartype.BINARY:
+            raise RuntimeError(f"unexpected vartype {vartype}")
 
     # write variable names
     for section, vartype_ in (('Binary', Vartype.BINARY), ('General', Vartype.INTEGER)):
