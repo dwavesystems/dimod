@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``dimod::QuadraticModelBase::energy()`` method to ``dimod/libcpp.pxd``
+    for Cython access.
