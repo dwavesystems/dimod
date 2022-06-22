@@ -22,7 +22,7 @@ from functools import wraps
 from numbers import Integral
 
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
-from dimod.utilities import new_label
+from dimod.utilities import new_variable_label
 from dimod.vartypes import as_vartype
 
 __all__ = ['nonblocking_sample_method',
@@ -415,7 +415,7 @@ def unique_variable_labels(f):
     @wraps(f)
     def conditional_unique_label(label = None, *args, **kwargs):
         if label is None:
-            qm = f(label=new_label(), *args, **kwargs)
+            qm = f(label=new_variable_label(), *args, **kwargs)
             return qm
         qm = f(label, *args, **kwargs)
         return qm
