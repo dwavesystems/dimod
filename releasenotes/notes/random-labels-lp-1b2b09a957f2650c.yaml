@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Randomly generated variable and constraint labels now begin with a letter
+    and do not contain dashes.  This ensures that they can be serialized to LP
+    files.  See `#1206 <https://github.com/dwavesystems/dimod/issues/1206>`_.

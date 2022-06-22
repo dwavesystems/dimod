@@ -575,4 +575,4 @@ def asnumericarrays(*arrays, requirements=None, min_itemsize=None):
 
 def new_variable_label() -> str:
     """Generate a new unique variable label as a string."""
-    return str(uuid.uuid4())
+    return 'v' + uuid.uuid4().hex

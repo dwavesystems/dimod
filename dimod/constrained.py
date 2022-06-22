@@ -293,9 +293,9 @@ class ConstrainedQuadraticModel:
         if label is None:
             # we support up to 100k constraints and :6 gives us 16777216
             # possible so pretty safe
-            label = uuid.uuid4().hex[:6]
+            label = 'c' + uuid.uuid4().hex[:6]
             while label in self.constraints:
-                label = uuid.uuid4().hex[:6]
+                label = 'c' + uuid.uuid4().hex[:6]
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
