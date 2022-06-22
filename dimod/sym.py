@@ -22,6 +22,24 @@ __all__ = ['Sense', 'Eq', 'Ge', 'Le']
 
 
 class Sense(enum.Enum):
+    """Sense of a constraint.
+
+    Supported values are:
+
+    * ``Le``: less or equal (:math:`\le`)
+    * ``Ge``: greater or equal (:math:`\ge`)
+    * ``Eq``: equal (:math:`=`)
+
+    Example:
+
+        >>> from dimod import ConstrainedQuadraticModel, Integer
+        >>> i = Integer("i")
+        >>> cqm = ConstrainedQuadraticModel()
+        >>> cqm.add_constraint(i <= 3, "i le 3")
+        'i le 3'
+
+    """
+
     Le = '<='
     Ge = '>='
     Eq = '=='
