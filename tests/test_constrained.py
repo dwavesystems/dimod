@@ -1459,3 +1459,34 @@ class TestStr(unittest.TestCase):
 
             Bounds
             ''').lstrip())
+
+    def test_list_length_limiting(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variables_from('INTEGER', range(6))
+        cqm.set_objective(qm)
+
+        for k, v in enumerate(cqm.variables):
+            cqm.add_constraint(Integer(v) <= 5, label=f'c{k}')
+
+        self.assertEqual(str(cqm), dedent(
+            '''
+            Constrained quadratic model: 6 variables, 6 constraints, 12 biases
+
+            Objective
+              0*Integer(0) + 0*Integer(1) + 0*Integer(2) + 0*Integer(3) + 0*Integer(4) + 0*Integer(5)
+
+            Constraints
+              c0: Integer(0) <= 5
+              c1: Integer(1) <= 5
+              c2: Integer(2) <= 5
+              ...
+              c5: Integer(5) <= 5
+
+            Bounds
+              0.0 <= Integer(0) <= 9007199254740991.0
+              0.0 <= Integer(1) <= 9007199254740991.0
+              0.0 <= Integer(2) <= 9007199254740991.0
+              ...
+              0.0 <= Integer(5) <= 9007199254740991.0
+            ''').lstrip())

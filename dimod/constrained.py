@@ -1959,6 +1959,35 @@ class ConstrainedQuadraticModel:
             return f'{vartype_name[self.vartype(v)]}({v!r})'
 
         sio = StringIO()
+
+        def render_limited_number(iterable, render_element):
+            limited = False
+            last = None
+
+            for k, x in enumerate(iterable):
+                assert x is not None
+
+                if last is not None:
+                    if k < 4:
+                        render_element(last)
+                    elif not limited:
+                        sio.write('  ...\n')
+                        limited = True
+
+                last = x
+
+            if last is not None:
+                render_element(last)
+
+        def render_constraint(item):
+            label, c = item
+            sio.write(f'  {label}: ')
+            sio.write(c.to_polystring(encoder=var_encoder))
+            sio.write('\n')
+
+        def render_bound(v):
+            sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
+
         sio.write('Constrained quadratic model: ')
         sio.write(f'{len(self.variables)} variables, ')
         sio.write(f'{len(self.constraints)} constraints, ')
@@ -1971,16 +2000,13 @@ class ConstrainedQuadraticModel:
 
         sio.write('\n')
         sio.write('Constraints\n')
-        for label, c in self.constraints.items():
-            sio.write(f'  {label}: ')
-            sio.write(c.to_polystring(encoder=var_encoder))
-            sio.write('\n')
+        render_limited_number(self.constraints.items(), render_constraint)
 
         sio.write('\n')
         sio.write('Bounds\n')
-        for v in self.variables:
-            if self.vartype(v) in (Vartype.INTEGER, Vartype.REAL):
-                sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
+        bound_vars = (v for v in self.variables
+                      if self.vartype(v) in (Vartype.INTEGER, Vartype.REAL))
+        render_limited_number(bound_vars, render_bound)
 
         return sio.getvalue()
 
