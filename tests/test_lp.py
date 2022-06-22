@@ -18,7 +18,7 @@ import unittest
 
 import dimod
 
-from dimod import Binary, BQM, CQM, Integer
+from dimod import Binary, BQM, CQM, Integer, Real
 from dimod.lp import load, loads
 from parameterized import parameterized
 
@@ -140,6 +140,8 @@ class TestLoads(unittest.TestCase):
 class TestDumps(unittest.TestCase):
 
     def _assert_cqms_are_equivalent(self, cqm, new):
+        self.assertEqual({v: cqm.vartype(v) for v in cqm.variables},
+                         {v: cqm.vartype(v) for v in new.variables})
         self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
 
@@ -265,7 +267,7 @@ class TestDumps(unittest.TestCase):
         for line in dimod.lp.dumps(cqm).splitlines():
             self.assertLess(len(line), LP_MAX_LINE_LEN)
 
-    def test_variable_bounds(self):
+    def test_integer_bounds(self):
         LOWER_BOUND = -10
         UPPER_BOUND = 10
 
@@ -286,6 +288,30 @@ class TestDumps(unittest.TestCase):
         self.assertEqual(new.upper_bound('j'), UPPER_BOUND)
         self.assertEqual(new.lower_bound('k'), LOWER_BOUND)
         self.assertEqual(new.upper_bound('k'), UPPER_BOUND)
+
+    def test_real_bounds(self):
+        LOWER_BOUND = -10.123
+        UPPER_BOUND = 10.456
+
+        x = Real('x', lower_bound=LOWER_BOUND)
+        y = Real('y', upper_bound=UPPER_BOUND)
+        z = Real('z', lower_bound=LOWER_BOUND, upper_bound=UPPER_BOUND)
+
+        cqm = CQM()
+        cqm.set_objective(x + y + z)
+
+        # Real variables cannot have interactions, so add instead of multiply here
+        cqm.add_constraint(x + y - z <= 1, label='c0')
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
+
+        self.assertEqual(new.lower_bound('x'), LOWER_BOUND)
+        self.assertEqual(new.upper_bound('x'), 1e30)
+        self.assertEqual(new.lower_bound('y'), 0)
+        self.assertEqual(new.upper_bound('y'), UPPER_BOUND)
+        self.assertEqual(new.lower_bound('z'), LOWER_BOUND)
+        self.assertEqual(new.upper_bound('z'), UPPER_BOUND)
 
     @parameterized.expand(LP_TEST_VALUES)
     def test_objective_linear_bias_values(self, value):
