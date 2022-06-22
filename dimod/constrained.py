@@ -1959,6 +1959,11 @@ class ConstrainedQuadraticModel:
             return f'{vartype_name[self.vartype(v)]}({v!r})'
 
         sio = StringIO()
+        sio.write('Constrained quadratic model: ')
+        sio.write(f'{len(self.variables)} variables, ')
+        sio.write(f'{len(self.constraints)} constraints, ')
+        sio.write(f'{self.num_biases()} biases\n\n')
+
         sio.write('Objective\n')
         sio.write('  ')
         sio.write(self.objective.to_polystring(encoder=var_encoder))

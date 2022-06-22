@@ -1429,6 +1429,8 @@ class TestStr(unittest.TestCase):
 
         self.assertEqual(str(cqm), dedent(
             '''
+            Constrained quadratic model: 5 variables, 2 constraints, 15 biases
+
             Objective
               2*Binary('n') + Real('x') + 0*Real('y') + Binary('m')*Integer('j')
 
@@ -1448,6 +1450,8 @@ class TestStr(unittest.TestCase):
 
         self.assertEqual(str(cqm), dedent(
             '''
+            Constrained quadratic model: 2 variables, 0 constraints, 2 biases
+
             Objective
               Spin('a') + Spin('b')
 
