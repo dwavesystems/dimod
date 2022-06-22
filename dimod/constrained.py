@@ -43,7 +43,7 @@ from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import Bias, Variable, SamplesLike
-from dimod.utilities import iter_safe_relabels, new_label
+from dimod.utilities import iter_safe_relabels, new_variable_label
 from dimod.variables import Variables, serialize_variable, deserialize_variable
 from dimod.vartypes import Vartype, as_vartype, VartypeLike
 
@@ -293,9 +293,9 @@ class ConstrainedQuadraticModel:
         if label is None:
             # we support up to 100k constraints and :6 gives us 16777216
             # possible so pretty safe
-            label = uuid.uuid4().hex[:6]
+            label = 'c' + uuid.uuid4().hex[:6]
             while label in self.constraints:
-                label = uuid.uuid4().hex[:6]
+                label = 'c' + uuid.uuid4().hex[:6]
         elif label in self.constraints:
             raise ValueError("a constraint with that label already exists")
 
@@ -1668,13 +1668,13 @@ class ConstrainedQuadraticModel:
 
             if u not in mapping:
                 # we've never seen this integer before
-                new: Variable = new_label()
+                new: Variable = new_variable_label()
 
                 # on the off chance there are conflicts. Luckily self.variables
                 # is global accross all constraints/objective so we don't need
                 # to worry about accidentally picking something we'll regret
                 while new in self.constraints or new in self.variables:
-                    new = new_label()
+                    new = new_variable_label()
 
                 mapping[u] = new
 
@@ -2164,7 +2164,7 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             bqm.add_linear_inequality_constraint(
                 ((v, lhs.get_linear(v)) for v in lhs.variables),
                 lagrange_multiplier,
-                new_label(),
+                new_variable_label(),
                 constant=lhs.offset,
                 lb=rhs,
                 ub=np.iinfo(np.int64).max,
@@ -2173,7 +2173,7 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             bqm.add_linear_inequality_constraint(
                 ((v, lhs.get_linear(v)) for v in lhs.variables),
                 lagrange_multiplier,
-                new_label(),
+                new_variable_label(),
                 constant=lhs.offset,
                 lb=np.iinfo(np.int64).min,
                 ub=rhs,

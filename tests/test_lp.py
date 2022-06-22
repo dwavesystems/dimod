@@ -361,3 +361,14 @@ class TestDumps(unittest.TestCase):
 
         new = dimod.lp.loads(dimod.lp.dumps(cqm))
         self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_random_labels(self):
+        cqm = CQM()
+        a, b = dimod.Binaries([None, None])
+        i, j = dimod.Integers([None, None])
+        cqm.set_objective(a * i - b * j)
+        cqm.add_constraint(a + 2 * j <= 1)
+        cqm.add_constraint(-b + 2 * i >= 1)
+
+        new = dimod.lp.loads(dimod.lp.dumps(cqm))
+        self._assert_cqms_are_equivalent(cqm, new)
