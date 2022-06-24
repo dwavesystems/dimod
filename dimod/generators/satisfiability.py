@@ -87,12 +87,17 @@ def _kmcsat_clauses(num_variables: int, k: int, num_clauses: int,
                     degrees = _cut_poissonian_degree_distribution(num_variables, num_clauses*k, cut=2, seed=rng)
                     G = nx.bipartite.configuration_model(degrees, clause_degree_sequence, create_using=nx.Graph(), seed=rngNX)
                     max_config_model_rejections = max_config_model_rejections - 1
+                    
                 if max_config_model_rejections == 0:
-                    warnings.warn('configuration model consistently rejected sampled cutPoissonian '
-                                  'degree sequences, the model returned contains clauses with < k literals. '
-                                  'Likely cause is a pathological parameterization of the graph ensemble. '
-                                  'If you intended sampling to fail set max_config_model_rejections=0 to '
-                                  'suppress this warning', UserWarning, stacklevel=3
+                    warn_message = ('configuration model consistently rejected sampled cutPoissonian '
+                                    'degree sequences, the model returned contains clauses with < k literals. '
+                                    'Likely cause is a pathological parameterization of the graph ensemble. '
+                                    'If you intended sampling to fail set max_config_model_rejections=0 to '
+                                    'suppress this warning. Expected ' + str(num_clauses*k) +
+                                    ' stubs, last attempt ' + str(G.number_of_edges())
+                    )
+                    warnings.warn(warn_message,
+                                  UserWarning, stacklevel=3
                     )
             # Extract a list of variables for each clause from the graphical representation
             for i in range(num_variables, num_variables+num_clauses):
@@ -266,6 +271,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 def random_kmcsat_cqm(variables_list_obj: list = [],
                       signs_list_obj: list = [],
                       *,
+                      constraint_form = 'quadratic',
                       variables_list_cons: list = [],
                       signs_list_cons: list = []):
 
@@ -277,20 +283,31 @@ def random_kmcsat_cqm(variables_list_obj: list = [],
     num_variables=num_variables + 1
     
     cqm = dimod.CQM()
+    #Add the binary variables we need up front
+    for i in range(num_variables):
+        cqm.add_variable('SPIN')
     if len(variables_list_obj)>0:
         num_clauses=len(variables_list_obj)
         k=len(variables_list_obj[0])
         bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
-        cqm.from_bqm(bqm)
+        cqm.from_quadratic_model(bqm)
     
     for variables,signs in zip(variables_list_cons, signs_list_cons):
         num_clauses = 1
         k = len(variables)
-        val = -(k//2)*(k-k//2) + (k//2)*(k//2-1)/2 + (k-k//2)*(k-k//2-1)/2 
-        bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
-        cqm.add_constraint_from_model(
-            random_kmcsat(num_variables,k,num_clauses,variables_list=[variables],signs_list=[signs]), '==', val)
-    
+        if constraint_form == 'quadratic':
+            val = -(k//2)*(k-k//2) + (k//2)*(k//2-1)/2 + (k-k//2)*(k-k//2-1)/2 
+            bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
+            label = cqm.add_constraint_from_model(
+                random_kmcsat(num_variables,k,num_clauses,variables_list=[variables],signs_list=[signs]), '==', val)
+            #print(cqm.constraints[label].to_polystring())
+        else:
+            equation_form = [(v,s) for v,s in zip(variables,signs)]
+            if k&1:
+                #Slack variable equality:
+                aux_label = cqm.add_variable('SPIN')
+                equation_form.append((aux_label,1))
+            label = cqm.add_constraint_from_iterable(equation_form, '==', rhs=0)
     return cqm
                   
 
