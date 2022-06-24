@@ -17,39 +17,128 @@ from __future__ import annotations
 import collections.abc
 import itertools
 import typing
+import sys
 
 import numpy as np
 
 import dimod  # for typing
+import warnings
+import networkx as nx # for configuration_model
 
 from dimod.binary import BinaryQuadraticModel
 from dimod.vartypes import Vartype
 
+__all__ = ["random_nae3sat", "random_2in4sat","random_kmcsat","random_kmcsat_cqm"]
 
-__all__ = ["random_nae3sat", "random_2in4sat"]
+def _cut_poissonian_degree_distribution(num_variables,num_stubs,cut=2,seed=None):
+    ''' Sampling of the cutPoisson distribution by rejection sampling method.
+    
+    Select degree distribution uniformly at random from Poissonian
+    distribution subject to constraint that sockets are not exhausted
+    and degree is equal to or greater than cut.
+    '''
+    if num_stubs < num_variables*cut:
+        raise ValueError('Mean connectivity must be at least as large as the cut value')
+    rng = np.random.default_rng(seed)
+    
+    degrees = []
+    while num_variables > 1 and num_stubs > cut*num_variables:
+        lam = (num_stubs/num_variables/2)
+        degree = rng.poisson(lam=lam)
+        if degree >= cut and num_stubs-degree>=cut*(num_variables-1): 
+            degrees.append(degree)
+            num_variables = num_variables-1
+            num_stubs = num_stubs - degree
+    if num_variables == 1:
+        degrees.append(num_stubs)
+    else:
+        degrees = degrees + [cut]*num_variables
+    return degrees
 
+def _kmcsat_clauses(num_variables: int, k: int, num_clauses: int,
+                    *,
+                    variables_list: list = None,
+                    signs_list: list = None,
+                    plant_solution: bool = False,
+                    graph_ensemble: str = 'Poissonian',
+                    max_config_model_rejections = 1024,
+                    seed: typing.Union[None, int, np.random.Generator] = None,
+) -> (list, list):
+    
+    rng = np.random.default_rng(seed)
+    if variables_list is None:
+        rngNX = np.random.RandomState(rng.integers(32767)) # networkx requires legacy method
+        # Use of for and while loops, and rejection sampling, is for clarity, optimizations are possible.
+
+        # Establish connectivity pattern amongst variables (the graph):
+        variables_list = []
+        if graph_ensemble == 'cutPoissonian':
+            # Sample sequentially connectivity and reject unviable cases:
+            clause_degree_sequence = [k]*num_clauses
+
+            degrees = _cut_poissonian_degree_distribution(num_variables, num_clauses*k, cut=2, seed=rng)
+            G = nx.bipartite.configuration_model(degrees, clause_degree_sequence, create_using=nx.Graph(), seed=rngNX)
+            if max_config_model_rejections > 0:
+                # A single-shot of the configuration model does not guarantee that all clauses contain k
+                # variables. A small subset may contain fewer than k variables. By default we enforce
+                # via rejection sampling a requirement that all clauses contain exactly k variables:
+                while max_config_model_rejections > 0 and G.number_of_edges() != num_clauses*k:
+                    # An overflow is possible, but only for pathological cases
+                    degrees = _cut_poissonian_degree_distribution(num_variables, num_clauses*k, cut=2, seed=rng)
+                    G = nx.bipartite.configuration_model(degrees, clause_degree_sequence, create_using=nx.Graph(), seed=rngNX)
+                    max_config_model_rejections = max_config_model_rejections - 1
+                if max_config_model_rejections == 0:
+                    warnings.warn('configuration model consistently rejected sampled cutPoissonian '
+                                  'degree sequences, the model returned contains clauses with < k literals. '
+                                  'Likely cause is a pathological parameterization of the graph ensemble. '
+                                  'If you intended sampling to fail set max_config_model_rejections=0 to '
+                                  'suppress this warning', UserWarning, stacklevel=3
+                    )
+            # Extract a list of variables for each clause from the graphical representation
+            for i in range(num_variables, num_variables+num_clauses):
+                variables_list.append(list(G.neighbors(i)))
+        else:
+            if graph_ensemble is None or graph_ensemble == 'Poissonian':
+                pass
+            else:
+                raise ValueError('Unsupported graph ensemble, supported types are'
+                             '"Poissonian" (by default) and "cutPoissonian".')
+            for _ in range(num_clauses):
+                # randomly select the variables
+                variables_list.append(rng.choice(num_variables, k, replace=False))
+    
+    if signs_list is None:
+        signs_list = []
+        # Convert variables to literals:
+        for variables in variables_list:
+            # randomly assign the negations
+            k = len(variables)
+            signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
+            while plant_solution and abs(sum(signs))>1:
+                # Rejection sample until signs are compatible with an all 1 ground
+                # state:
+                signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
+            signs_list.append(signs)
+    return variables_list,signs_list
 
 def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          *,
+                         variables_list: list = None,
+                         signs_list: list = None,
                          plant_solution: bool = False,
+                         graph_ensemble: str = 'Poissonian',
+                         max_config_model_rejections = 1024,
                          seed: typing.Union[None, int, np.random.Generator] = None,
-                         ) -> typing.Iterator[typing.Tuple[int, int, int]]:
-    rng = np.random.default_rng(seed)
-
-    # Use of for and while loops is for clarity, optimizations are possible.
-    for _ in range(num_clauses):
-        # randomly select the variables
-        variables = rng.choice(num_variables, k, replace=False)
-
-        # randomly assign the negations
-        signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
-        while plant_solution and abs(sum(signs))>1:
-            # Rejection sample until signs are compatible with an all 1 ground
-            # state:
-            signs = 2 * rng.integers(0, 1, endpoint=True, size=k) - 1
-            
-            
-        # get the interactions for each clause
+) -> typing.Iterator[typing.Tuple[int, int, int]]:
+    variables_list, signs_list = _kmcsat_clauses(num_variables, k, num_clauses,
+                                                 variables_list = variables_list,
+                                                 signs_list = signs_list,
+                                                 plant_solution=plant_solution,
+                                                 graph_ensemble=graph_ensemble,
+                                                 max_config_model_rejections=max_config_model_rejections,
+                                                 seed=seed)
+    # get the interactions for each clause
+    for variables,signs in zip(variables_list,signs_list):
         for (u, usign), (v, vsign) in itertools.combinations(zip(variables, signs), 2):
             yield u, v, usign*vsign
 
@@ -58,7 +147,11 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
                   k: int,
                   num_clauses: int,
                   *,
+                  variables_list: list = None,
+                  signs_list: list = None,
                   plant_solution: bool = False,
+                  graph_ensemble: str = 'Poissonian',
+                  max_config_model_rejections = 1024,
                   seed: typing.Union[None, int, np.random.Generator] = None,
                   ) -> BinaryQuadraticModel:
     """Generate a random k Max-Cut satisfiability problem as a binary quadratic model.
@@ -81,6 +174,19 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
         num_clauses: The number of clauses. Each clause contains three literals.
         plant_solution: Create literals uniformly subject to the constraint that the
             all 1 (and all -1) are ground states (satisfy all clauses).
+        graph_ensemble: By default, variables are assigned uniformly at random
+            to clauses yielding a 'Poissonian' ensemble. An alternative choice
+            is CutPoissonian that guarantees all variables participate in a
+            at least two interactions - with high probability a single giant
+            problem component containing all variables is produced. 
+        max_config_model_rejections: This is relevant only when selecting
+            ``graph_ensemble``='cutPoissonian'. The creation of this ensemble
+            requires sampling of graphs with fixed degree sequences via the 
+            configuration model, which is not guaranteed to succeed. When 
+            sampling fails some max-cut SAT clauses are assigned fewer than 
+            k literals. A failure mode can be avoided wih high probability, 
+            except at pathological parameterization, by setting a large value 
+            (the default). 
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
     Returns:
@@ -96,6 +202,33 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
         be achieved (in some special cases) without modification of the hardness
         qualities of the instance class. Planting of a not all 1 ground state
         can be achieved with a spin-reversal transform without loss of generality. [#DKR]_
+
+        A 1RSB analysis indicates the following critical behaviour [#MM] (page 443) in
+        canonical random graphs as a function of the clause to variable ratio
+        alpha = num_clauses /num_var.
+        graph_class k alpha_dynamical  alpha_sat
+        Poisson     3 1.50             2.11 (alpha_rigidity=1.72)
+                    4 0.58             0.64
+                    5 1.02             1.39
+                    6 0.48             0.57
+        cutPoisson  3 1.61             2.16
+                    4 0.62             0.7067L
+                    5 1.08             1.41
+                    6 0.47             0.5959L
+        In a Poisson graph, each clause connects at random to variables, the
+        marginal connectivity distribution of variables converges to a Poisson 
+        distribution.
+        In a cutPoisson graph, each clause connects at random to variables, 
+        subject to the constraint each variable has connectivity atleast 2.
+        For locked problems (marked L) the threshold is exact, and planting 
+        is quiet (for alpha<alpha_S, planting=true/false are statistically
+        similar in free energy [extensive properties, those that determine
+        computational hardness]).
+
+    .. [#MM] Marc Mézard and Andrea Montanari
+       "Information, Physics and Computation"
+       DOI: DOI:10.1093/acprof:oso/9780198570837.001.0001
+       "https://web.stanford.edu/~montanar/RESEARCH/book.html"
     .. [#ZK] Lenka Zdeborová and Florent Krzakala,
        "Quiet Planting in the Locked Constraint Satisfaction Problems",
        https://epubs.siam.org/doi/10.1137/090750755
@@ -121,6 +254,8 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 
     bqm = BinaryQuadraticModel(num_variables, Vartype.SPIN)
     bqm.add_quadratic_from(_kmcsat_interactions(num_variables, k, num_clauses,
+                                                variables_list = variables_list,
+                                                signs_list = signs_list,
                                                 plant_solution=plant_solution, seed=seed))
 
     if labels:
@@ -128,6 +263,36 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 
     return bqm
 
+def random_kmcsat_cqm(variables_list_obj: list = [],
+                      signs_list_obj: list = [],
+                      *,
+                      variables_list_cons: list = [],
+                      signs_list_cons: list = []):
+
+    num_variables=0
+    if len(variables_list_obj)>0:
+        num_variables = max(num_variables,np.max(np.array(variables_list_obj)))
+    if len(variables_list_cons)>0:
+        num_variables=max(num_variables,np.max(np.array(variables_list_cons)))
+    num_variables=num_variables + 1
+    
+    cqm = dimod.CQM()
+    if len(variables_list_obj)>0:
+        num_clauses=len(variables_list_obj)
+        k=len(variables_list_obj[0])
+        bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
+        cqm.from_bqm(bqm)
+    
+    for variables,signs in zip(variables_list_cons, signs_list_cons):
+        num_clauses = 1
+        k = len(variables)
+        val = -(k//2)*(k-k//2) + (k//2)*(k//2-1)/2 + (k-k//2)*(k-k//2-1)/2 
+        bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
+        cqm.add_constraint_from_model(
+            random_kmcsat(num_variables,k,num_clauses,variables_list=[variables],signs_list=[signs]), '==', val)
+    
+    return cqm
+                  
 
 def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
@@ -162,7 +327,7 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
             all 1 (and all -1) are ground states satisfying all clauses.
         seed: Passed to :func:`numpy.random.default_rng()`, which is used
             to generate the clauses and the variable negations.
-
+    
     Returns:
         A binary quadratic model with spin variables.
 
