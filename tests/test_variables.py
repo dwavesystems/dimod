@@ -17,8 +17,8 @@ import copy
 import decimal
 import fractions
 import itertools
-import time
 import unittest
+import unittest.mock
 
 import numpy as np
 
@@ -38,20 +38,26 @@ class TestAppend(unittest.TestCase):
 
 
 class TestConstruction(unittest.TestCase):
-    def test_range(self):
-        # several different ranges should all take the same time approximately
+    @unittest.mock.patch("dimod.variables.Variables._append")
+    def test_range(self, mock):
+        # test that we bypass the append method
+
+        class Boom(Exception):
+            pass
+
+        def boom(*args, **kwargs):
+            raise Boom()
+
+        mock.side_effect = boom
+
         times = []
         for n in [0, 1, 10, 100, 1000, 10000]:
-            t = time.perf_counter()
             variables = Variables(range(n))
-            times.append(time.perf_counter() - t)
-
             self.assertEqual(variables, range(n))
 
-        # the times should all be about the same. But let's be generous and
-        # give a large margin to account for other stuff going on in the
-        # environment
-        self.assertLessEqual(max(times), 10*min(times))
+        # test that the test works
+        with self.assertRaises(Boom):
+            Variables('abc')
 
     def test_range_negative(self):
         variables = Variables(range(-10))
