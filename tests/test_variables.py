@@ -17,6 +17,7 @@ import copy
 import decimal
 import fractions
 import itertools
+import time
 import unittest
 
 import numpy as np
@@ -34,6 +35,33 @@ class TestAppend(unittest.TestCase):
         variables._append()
 
         self.assertEqual(variables, [1, 0, 2])
+
+
+class TestConstruction(unittest.TestCase):
+    def test_range(self):
+        # several different ranges should all take the same time approximately
+        times = []
+        for n in [0, 1, 10, 100, 1000, 10000]:
+            t = time.perf_counter()
+            variables = Variables(range(n))
+            times.append(time.perf_counter() - t)
+
+            self.assertEqual(variables, range(n))
+
+        # the times should all be about the same. But let's be generous and
+        # give a large margin to account for other stuff going on in the
+        # environment
+        self.assertLessEqual(max(times), 10*min(times))
+
+    def test_range_negative(self):
+        variables = Variables(range(-10))
+        self.assertEqual(variables, [])
+        self.assertEqual(variables, range(-10))
+
+    def test_variables(self):
+        v = Variables('abc')
+        self.assertEqual(v, 'abc')
+        self.assertEqual(Variables(v), v)
 
 
 class TestCopy(unittest.TestCase):

@@ -32,8 +32,20 @@ cdef class cyVariables:
         self._stop = 0
 
         if iterable is not None:
-            for v in iterable:
-                self._append(v, permissive=True)
+            if isinstance(iterable, cyVariables):
+                self.__init_cyvariables__(iterable)
+            elif isinstance(iterable, range) and iterable.start == 0 and iterable.step == 1:
+                # Unlike range, ._stop is a private property so we don't allow
+                # it to be negative
+                self._stop = max(iterable.stop, 0)  
+            else:
+                self._extend(iterable, permissive=True)
+
+    def __init_cyvariables__(self, cyVariables iterable):
+        # everything is hashable, and this is not a deep copy
+        self._index_to_label.update(iterable._index_to_label)
+        self._label_to_index.update(iterable._label_to_index)
+        self._stop = iterable._stop
 
     def __contains__(self, v):
         return bool(self.count(v))
@@ -150,7 +162,9 @@ cdef class cyVariables:
         classes that have :class:`.Variables` as an attribute, not by the
         the user.
         """
-        # todo: performance improvements for range etc
+        # todo: performance improvements for range etc. Unlike in the __init__
+        # we cannot make assumptions about our current state, so we would need
+        # to check all of that
         for v in iterable:
             self._append(v, permissive=permissive)
 

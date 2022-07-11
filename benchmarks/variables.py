@@ -23,6 +23,7 @@ class TimeConstuction:
                      integers=list(range(1000)),
                      empty=[],
                      none=None,
+                     variables=Variables(range(1000)),
                      )
 
     params = iterables.keys()

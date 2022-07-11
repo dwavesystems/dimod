@@ -1,0 +1,3 @@
+---
+features:
+  - Speed up the construction of `Variables` objects from a `range` or another `Variables`.
