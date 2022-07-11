@@ -1949,7 +1949,7 @@ class ConstrainedQuadraticModel:
 
         return obj
 
-    _STR_MAX_DISPLAY_ITEMS = 4
+    _STR_MAX_DISPLAY_ITEMS = 10
 
     def __str__(self):
         vartype_name = {Vartype.SPIN: 'Spin',

@@ -1461,6 +1461,9 @@ class TestStr(unittest.TestCase):
             ''').lstrip())
 
     def test_list_length_limiting(self):
+        default_max_display_items = CQM._STR_MAX_DISPLAY_ITEMS
+        CQM._STR_MAX_DISPLAY_ITEMS = 4
+
         cqm = CQM()
         qm = dimod.QuadraticModel()
         qm.add_variables_from('INTEGER', range(6))
@@ -1490,3 +1493,5 @@ class TestStr(unittest.TestCase):
               0.0 <= Integer(4) <= 9007199254740991.0
               0.0 <= Integer(5) <= 9007199254740991.0
             ''').lstrip())
+
+        CQM._STR_MAX_DISPLAY_ITEMS = default_max_display_items
