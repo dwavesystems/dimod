@@ -1,0 +1,10 @@
+---
+features:
+  - Speed up the construction of `Variables` objects from a `range` or another `Variables`.
+  - Add optional keyword argument ``labels_type`` to the ``as_samples()`` function.
+  - |
+    Speed up ``BinaryQuadraticModel.energies()`` and ``QuadraticModel.energies()`` in cases
+    where the model has a small subset of the variables in the samples.
+  - |
+    Speed up ``SampleSet.from_samples_cqm()`` in cases where there are constraints
+    with a small number of variables relative to the objective.

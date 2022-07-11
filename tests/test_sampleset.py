@@ -134,6 +134,32 @@ class Test_as_samples(unittest.TestCase):
         with self.assertRaises(TypeError):
             dimod.as_samples((([-1] for _ in range(10)), 'a'))
 
+    def test_labels_type(self):
+        with self.subTest('str'):
+            arr = np.ones((5, 5))
+            lbl = 'abcde'
+            samples, labels = dimod.as_samples((arr, lbl),
+                                               labels_type=dimod.variables.Variables)
+            self.assertIsInstance(labels, dimod.variables.Variables)
+            self.assertEqual(lbl, labels)
+            self.assertIs(arr, samples)
+
+        with self.subTest('Variables'):
+            arr = np.ones((5, 5))
+            lbl = dimod.variables.Variables('abcde')
+            samples, labels = dimod.as_samples((arr, lbl),
+                                               labels_type=dimod.variables.Variables)
+            self.assertIsInstance(labels, dimod.variables.Variables)
+            self.assertEqual(lbl, 'abcde')
+            self.assertIs(arr, samples)
+            self.assertIs(lbl, labels)
+
+        with self.subTest('mapping'):
+            samples, labels = dimod.as_samples({'a': 1, 'b': 1},
+                                               labels_type=dimod.variables.Variables)
+            self.assertIsInstance(labels, dimod.variables.Variables)
+            self.assertEqual(set(labels), set('ab'))
+
     def test_list_of_empty(self):
         arr, labels = dimod.as_samples([[], [], []])
         np.testing.assert_array_equal(arr, np.empty((3, 0)))
@@ -308,6 +334,8 @@ class TestConstruction(unittest.TestCase):
                          dimod.SampleSet.from_samples(
                             ([0, 1, 1], 'xyz'), dimod.INTEGER, energy=2, is_feasible=False,
                             is_satisfied=[False], info={'constraint_labels': ['constraint_1']}))
+        self.assertEqual(samples.record.is_satisfied.dtype, np.dtype(bool))
+        self.assertEqual(samples.record.is_feasible.dtype, np.dtype(bool))
 
     def test_from_cqm_empty_list(self):
         cqm = dimod.ConstrainedQuadraticModel()
@@ -315,6 +343,9 @@ class TestConstruction(unittest.TestCase):
         sampleset = dimod.SampleSet.from_samples_cqm([], cqm)
         self.assertEqual(len(sampleset), 0)
         self.assertEqual(set(sampleset.variables), set('ab'))
+        self.assertEqual(sampleset.record.is_satisfied.dtype, np.dtype(bool))
+        self.assertEqual(sampleset.record.is_feasible.dtype, np.dtype(bool))
+        self.assertEqual(sampleset.record.is_satisfied.shape, (0, 0))
 
 
 class TestDiscreteSampleSet(unittest.TestCase):

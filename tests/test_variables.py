@@ -18,6 +18,7 @@ import decimal
 import fractions
 import itertools
 import unittest
+import unittest.mock
 
 import numpy as np
 
@@ -34,6 +35,39 @@ class TestAppend(unittest.TestCase):
         variables._append()
 
         self.assertEqual(variables, [1, 0, 2])
+
+
+class TestConstruction(unittest.TestCase):
+    @unittest.mock.patch("dimod.variables.Variables._append")
+    def test_range(self, mock):
+        # test that we bypass the append method
+
+        class Boom(Exception):
+            pass
+
+        def boom(*args, **kwargs):
+            raise Boom()
+
+        mock.side_effect = boom
+
+        times = []
+        for n in [0, 1, 10, 100, 1000, 10000]:
+            variables = Variables(range(n))
+            self.assertEqual(variables, range(n))
+
+        # test that the test works
+        with self.assertRaises(Boom):
+            Variables('abc')
+
+    def test_range_negative(self):
+        variables = Variables(range(-10))
+        self.assertEqual(variables, [])
+        self.assertEqual(variables, range(-10))
+
+    def test_variables(self):
+        v = Variables('abc')
+        self.assertEqual(v, 'abc')
+        self.assertEqual(Variables(v), v)
 
 
 class TestCopy(unittest.TestCase):
