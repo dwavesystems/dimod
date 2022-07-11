@@ -1963,23 +1963,27 @@ class ConstrainedQuadraticModel:
         sio = StringIO()
 
         def render_limited_number(iterable, render_element):
+            tail_limit = self._STR_MAX_DISPLAY_ITEMS // 2
+            head_limit = self._STR_MAX_DISPLAY_ITEMS - tail_limit
             limited = False
-            last = None
+            tail = []
 
             for k, x in enumerate(iterable):
                 assert x is not None
 
-                if last is not None:
-                    if k < self._STR_MAX_DISPLAY_ITEMS:
-                        render_element(last)
-                    elif not limited:
-                        sio.write('  ...\n')
-                        limited = True
+                if k < head_limit:
+                    render_element(x)
+                else:
+                    tail.append(x)
 
-                last = x
+                    if len(tail) > tail_limit:
+                        if not limited:
+                            sio.write('  ...\n')
+                            limited = True
+                        tail.pop(0)
 
-            if last is not None:
-                render_element(last)
+            while tail:
+                render_element(tail.pop(0))
 
         def render_constraint(item):
             label, c = item

@@ -1479,14 +1479,14 @@ class TestStr(unittest.TestCase):
             Constraints
               c0: Integer(0) <= 5
               c1: Integer(1) <= 5
-              c2: Integer(2) <= 5
               ...
+              c4: Integer(4) <= 5
               c5: Integer(5) <= 5
 
             Bounds
               0.0 <= Integer(0) <= 9007199254740991.0
               0.0 <= Integer(1) <= 9007199254740991.0
-              0.0 <= Integer(2) <= 9007199254740991.0
               ...
+              0.0 <= Integer(4) <= 9007199254740991.0
               0.0 <= Integer(5) <= 9007199254740991.0
             ''').lstrip())
