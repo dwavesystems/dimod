@@ -1168,8 +1168,9 @@ class ConstrainedQuadraticModel:
             Upper limit -1.0
             Lower limit 1.0
         """
-
-        sample, labels = as_samples(sample_like)
+        # We go ahead and coerce to Variables for performance, since .energies() prefers
+        # that format
+        sample, labels = as_samples(sample_like, labels_type=Variables)
 
         if sample.shape[0] != 1:
             raise ValueError("sample_like should be a single sample, "

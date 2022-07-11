@@ -863,21 +863,41 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         """
         if len(samples_like) == 0:
-            return cls.from_samples(([], cqm.variables), energy=[], vartype='INTEGER',
-                                    is_satisfied=[], is_feasible=[], **kwargs)
+            return cls.from_samples(([], cqm.variables),
+                                    energy=[],
+                                    vartype='INTEGER',
+                                    is_satisfied=np.empty((0, len(cqm.constraints)), dtype=bool),
+                                    is_feasible=np.empty(0, dtype=bool),
+                                    **kwargs)
 
         # more performant to do this once, here rather than again in cqm.objective.energies
         # and in cls.from_samples
-        samples_like = samples, labels = as_samples(samples_like)
+        # We go ahead and coerce to Variables for performance, since .energies() prefers
+        # that format
+        samples_like = samples, labels = as_samples(samples_like, labels_type=Variables)
 
         energies = cqm.objective.energies(samples_like)
 
-        is_satisfied = [[datum.violation <= atol + rtol*abs(datum.rhs_energy)
-                         for datum in cqm.iter_constraint_data((s, labels))] for s in samples]
-        is_feasible = [all(satisfied) for satisfied in is_satisfied]
+        constraint_labels = []
+        is_satisfied = np.empty((samples.shape[0], len(cqm.constraints)), dtype=bool)
+        for i, (label, comparison) in enumerate(cqm.constraints.items()):
+            constraint_labels.append(label)
 
-        kwargs.setdefault('info', {})
-        kwargs['info']['constraint_labels'] = list(cqm.constraints.keys())
+            lhs = comparison.lhs.energies(samples_like)
+            rhs = comparison.rhs
+            sense = comparison.sense
+            if sense is Sense.Eq:
+                is_satisfied[:, i] = np.abs(lhs - rhs) <= atol + rtol*abs(rhs)
+            elif sense is Sense.Ge:
+                is_satisfied[:, i] = lhs - rhs >= -atol - rtol*abs(rhs)
+            elif sense is Sense.Le:
+                is_satisfied[:, i] = lhs - rhs <= atol + rtol*abs(rhs)
+            else:
+                raise RuntimeError("unexpected sense")
+
+        is_feasible = is_satisfied.all(axis=1)
+
+        kwargs.setdefault('info', {})['constraint_labels'] = constraint_labels
 
         return cls.from_samples(samples_like, energy=energies, vartype='INTEGER',
                                 is_satisfied=is_satisfied, is_feasible=is_feasible, **kwargs)

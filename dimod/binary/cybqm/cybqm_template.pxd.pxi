@@ -33,7 +33,7 @@ cdef class cyBQM_template(cyBQMBase):
 
     cdef void _add_linear(self, Py_ssize_t, bias_type)
     cdef void _add_offset(self, bias_type)
-    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, object labels)
+    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels)
     cdef Py_ssize_t _index(self, object, bint permissive=*) except -1
     cdef void _set_linear(self, Py_ssize_t, bias_type)
     cdef void _set_offset(self, bias_type)

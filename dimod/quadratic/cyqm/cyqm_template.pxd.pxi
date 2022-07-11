@@ -34,7 +34,7 @@ cdef class cyQM_template(cyQMBase):
 
     cdef void _add_linear(self, Py_ssize_t, bias_type)
     cdef Py_ssize_t _add_quadratic(self, index_type, index_type, bias_type) except -1
-    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, object labels)
+    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels)
     cdef void _set_linear(self, Py_ssize_t, bias_type)
     cdef cppVartype cppvartype(self, object) except? cppVartype.SPIN
     cdef const cppQuadraticModel[bias_type, index_type]* data(self)

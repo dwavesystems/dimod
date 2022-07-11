@@ -316,29 +316,23 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t vi = self._index(v)
         return self.cppbqm.num_interactions(vi)
 
-    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, object labels):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels):
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef Py_ssize_t num_variables = samples.shape[1]
 
-        if num_variables != len(labels):
+        if num_variables != labels.size():
             # as_samples should never return inconsistent sizes, but we do this
             # check because the boundscheck is off and we otherwise might get
             # segfaults
             raise RuntimeError("as_samples returned an inconsistent samples/variables")
 
-        # get the indices of the BQM variables. Use -1 to signal that a
-        # variable's index has not yet been set
-        cdef Py_ssize_t[::1] bqm_to_sample = np.full(self.num_variables(), -1, dtype=np.intp)
+        # get the indices of the QM variables
+        cdef Py_ssize_t[::1] bqm_to_sample = np.empty(self.num_variables(), dtype=np.intp)
         cdef Py_ssize_t si
-        for si in range(num_variables):
-            v = labels[si]
-            if self.variables.count(v):
-                bqm_to_sample[self.variables.index(v)] = si
-
-        # make sure that all of the BQM variables are accounted for
         for si in range(self.num_variables()):
-            if bqm_to_sample[si] == -1:
-                raise ValueError(f"missing variable {self.variables[si]!r} in sample(s)")
+            bqm_to_sample[si] = labels.index(self.variables.at(si))
 
         cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
 
@@ -363,7 +357,7 @@ cdef class cyBQM_template(cyBQMBase):
         return energies
 
     def energies(self, samples_like, dtype=None):
-        samples, labels = as_samples(samples_like)
+        samples, labels = as_samples(samples_like, labels_type=Variables)
 
         # we need contiguous and unsigned. as_samples actually enforces contiguous
         # but no harm in double checking for some future-proofness
