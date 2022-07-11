@@ -1949,6 +1949,8 @@ class ConstrainedQuadraticModel:
 
         return obj
 
+    _STR_MAX_DISPLAY_ITEMS = 4
+
     def __str__(self):
         vartype_name = {Vartype.SPIN: 'Spin',
                         Vartype.BINARY: 'Binary',
@@ -1968,7 +1970,7 @@ class ConstrainedQuadraticModel:
                 assert x is not None
 
                 if last is not None:
-                    if k < 4:
+                    if k < self._STR_MAX_DISPLAY_ITEMS:
                         render_element(last)
                     elif not limited:
                         sio.write('  ...\n')
