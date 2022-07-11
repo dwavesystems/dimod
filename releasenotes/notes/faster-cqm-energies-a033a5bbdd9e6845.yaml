@@ -1,3 +1,4 @@
 ---
 features:
   - Speed up the construction of `Variables` objects from a `range` or another `Variables`.
+  - Add optional keyword argument ``labels_type`` to the ``as_samples()`` function.

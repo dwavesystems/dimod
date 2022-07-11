@@ -247,7 +247,8 @@ def as_samples(samples_like: SamplesLike,
                dtype: Optional[DTypeLike] = None,
                copy: bool = False,
                order: ArrayOrder = 'C',
-               ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+               labels_type: type = list,
+               ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
@@ -267,12 +268,15 @@ def as_samples(samples_like: SamplesLike,
         order:
             Specify the memory layout of the array. See :func:`numpy.array`.
 
+        labels_type:
+            The return type of the variables labels.
+            ``labels_type`` should be a :class:`~collections.abc.Sequence`.
+            The ``labels_type`` constructor should accept zero arguments, or an
+            iterable as a single argument.
+
     Returns:
-        tuple: A 2-tuple containing:
-
-            :obj:`numpy.ndarray`: Samples.
-
-            list: Variable labels
+        A 2-tuple containing the samples as a :class:`~numpy.ndarray` and
+        the variables labels, as a ``labels_type``.
 
     Examples:
         The following examples convert a variety of samples_like objects:
@@ -328,17 +332,20 @@ def as_samples(samples_like: SamplesLike,
     """
     # single dispatch should have handled everything except array-like and mixed
     if isinstance(samples_like, abc.Sequence) and any(isinstance(s, abc.Mapping) for s in samples_like):
-        return as_samples(iter(samples_like), dtype=dtype, copy=copy, order=order)
+        return as_samples(iter(samples_like),
+                          dtype=dtype, copy=copy, order=order,
+                          labels_type=labels_type)
 
     # array-like
     arr = _sample_array(samples_like, dtype=dtype, copy=copy, order=order)
-    return arr, list(range(arr.shape[1]))
+    return arr, labels_type(range(arr.shape[1]))
 
 
 @as_samples.register(abc.Iterator)
 def _as_samples_iterator(samples_like: typing.Iterator[SampleLike],
+                         labels_type: type = list,
                          **kwargs,
-                         ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+                         ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
 
     stack = (as_samples(sl, **kwargs) for sl in samples_like)
 
@@ -360,6 +367,9 @@ def _as_samples_iterator(samples_like: typing.Iterator[SampleLike],
 
         samples_stack.append(samples)
 
+    if not isinstance(first_labels, labels_type):
+        first_labels = labels_type(first_labels)
+
     return np.vstack(samples_stack), first_labels
 
 
@@ -368,12 +378,14 @@ def _as_samples_dict(samples_like: typing.Mapping[Variable, float],
                      dtype: Optional[DTypeLike] = None,
                      copy: bool = False,
                      order: ArrayOrder = 'C',
-                     ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+                     labels_type: type = list,
+                     ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
     if samples_like:
         labels, samples = zip(*samples_like.items())
-        return as_samples((samples, labels), dtype=dtype, copy=copy, order=order)
+        return as_samples((samples, labels), dtype=dtype, copy=copy, order=order,
+                          labels_type=labels_type)
     else:
-        return np.empty((1, 0), dtype=dtype, order=order), []
+        return np.empty((1, 0), dtype=dtype, order=order), labels_type()
 
 
 @as_samples.register(tuple)
@@ -381,7 +393,8 @@ def _as_samples_tuple(samples_like: typing.Tuple[ArrayLike, typing.Sequence[Vari
                       dtype: Optional[DTypeLike] = None,
                       copy: bool = False,
                       order: ArrayOrder = 'C',
-                      ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+                      labels_type: type = list,
+                      ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
 
     try:
         array_like, labels = samples_like
@@ -410,9 +423,9 @@ def _as_samples_tuple(samples_like: typing.Tuple[ArrayLike, typing.Sequence[Vari
     arr = _sample_array(array_like, dtype=dtype, copy=copy, order=order)
 
     # make sure our labels are the correct type
-    if not isinstance(labels, list):
+    if not isinstance(labels, labels_type):
         # todo: generalize to other sequence types? Especially Variables
-        labels = list(labels)
+        labels = labels_type(labels)
 
     if not arr.size:
         arr.shape = (arr.shape[0], len(labels))
