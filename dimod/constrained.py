@@ -28,6 +28,7 @@ import uuid
 import warnings
 import zipfile
 
+from io import StringIO
 from numbers import Number
 from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
 from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, NamedTuple
@@ -1948,6 +1949,73 @@ class ConstrainedQuadraticModel:
             obj = load(fp)
 
         return obj
+
+    _STR_MAX_DISPLAY_ITEMS = 10
+
+    def __str__(self):
+        vartype_name = {Vartype.SPIN: 'Spin',
+                        Vartype.BINARY: 'Binary',
+                        Vartype.INTEGER: 'Integer',
+                        Vartype.REAL: 'Real'}
+
+        def var_encoder(v):
+            return f'{vartype_name[self.vartype(v)]}({v!r})'
+
+        sio = StringIO()
+
+        def render_limited_number(iterable, render_element):
+            tail_limit = self._STR_MAX_DISPLAY_ITEMS // 2
+            head_limit = self._STR_MAX_DISPLAY_ITEMS - tail_limit
+            limited = False
+            tail = []
+
+            for k, x in enumerate(iterable):
+                assert x is not None
+
+                if k < head_limit:
+                    render_element(x)
+                else:
+                    tail.append(x)
+
+                    if len(tail) > tail_limit:
+                        if not limited:
+                            sio.write('  ...\n')
+                            limited = True
+                        tail.pop(0)
+
+            while tail:
+                render_element(tail.pop(0))
+
+        def render_constraint(item):
+            label, c = item
+            sio.write(f'  {label}: ')
+            sio.write(c.to_polystring(encoder=var_encoder))
+            sio.write('\n')
+
+        def render_bound(v):
+            sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
+
+        sio.write('Constrained quadratic model: ')
+        sio.write(f'{len(self.variables)} variables, ')
+        sio.write(f'{len(self.constraints)} constraints, ')
+        sio.write(f'{self.num_biases()} biases\n\n')
+
+        sio.write('Objective\n')
+        sio.write('  ')
+        sio.write(self.objective.to_polystring(encoder=var_encoder))
+        sio.write('\n')
+
+        sio.write('\n')
+        sio.write('Constraints\n')
+        render_limited_number(self.constraints.items(), render_constraint)
+
+        sio.write('\n')
+        sio.write('Bounds\n')
+        bound_vars = (v for v in self.variables
+                      if self.vartype(v) in (Vartype.INTEGER, Vartype.REAL))
+        render_limited_number(bound_vars, render_bound)
+
+        return sio.getvalue()
 
 
 CQM = ConstrainedQuadraticModel
