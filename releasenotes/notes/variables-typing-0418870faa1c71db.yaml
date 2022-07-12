@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add typing support for the ``dimod.variables.Variables`` class.
+    See `#1221 <https://github.com/dwavesystems/dimod/issues/1221>`_.

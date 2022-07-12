@@ -28,6 +28,7 @@ The requirements for the class are:
 
 import collections.abc as abc
 import io
+import typing
 import warnings
 
 from numbers import Integral, Number
@@ -35,6 +36,7 @@ from operator import eq
 from pprint import PrettyPrinter
 
 from dimod.cyvariables import cyVariables
+from dimod.typing import Variable
 
 
 __all__ = ['Variables']
@@ -70,16 +72,39 @@ def iter_deserialize_variables(variables):
     yield from map(deserialize_variable, variables)
 
 
-class Variables(cyVariables, abc.Set, abc.Sequence):
+class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Variable]):
     """Set-like and list-like variables tracking.
 
     Args:
-        iterable (iterable):
+        iterable (iterable[:class:`~dimod.typing.Variable`], optional):
             An iterable of labels. Duplicate labels are ignored. All labels
             must be hashable.
 
+    Examples:
+
+        The variables object can be used to encode an ordered set of variables.
+
+        >>> variables = dimod.variables.Variables(['a', 'b', 0, 1])
+        >>> print(variables)
+        Variables(['a', 'b', 0, 1])
+
+        The variables object can be interacted with like a
+        :class:`~collections.abc.Sequence`.
+
+        >>> variables[0]
+        'a'
+        >>> variables[1::2]
+        Variables(['b', 1])
+        >>> len(variables)
+        4
+
+        And like a :class:`~collections.abc.Set`.
+
+        >>> variables & [0, 'a', 'f']
+        Variables([0, 'a'])
+
     """
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, abc.Sequence):
             return len(self) == len(other) and all(map(eq, self, other))
         elif isinstance(other, abc.Set):
@@ -87,10 +112,10 @@ class Variables(cyVariables, abc.Set, abc.Sequence):
         else:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not (self == other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         stream = io.StringIO()
         stream.write(type(self).__name__)
         stream.write('(')
@@ -111,17 +136,16 @@ class Variables(cyVariables, abc.Set, abc.Sequence):
         return stream.getvalue()
 
     @property
-    def is_range(self):
+    def is_range(self) -> bool:
         """Return True if the variables are labeled `[0,n)`."""
         return self._is_range()
 
-    def to_serializable(self):
+    def to_serializable(self) -> typing.List[typing.Union[int, float, str, tuple]]:
         """Return an object that is json-serializable.
 
         Returns:
-            list: A list of json-serializable objects. Handles some
-            common cases like NumPy scalars.
-            See :func:`iter_serialize_variables`.
+            A list of JSON-serializable objects. Handles some common cases like
+            NumPy scalars.
 
         """
         return list(iter_serialize_variables(self))

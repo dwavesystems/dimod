@@ -12,6 +12,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+# as of Cython 0.29.28, __annotations__ are not included for Cython objects.
+# so we specify their types in cyvariables.pyi.
+# As sphinx==5.0.2, Sphinx cannot read the .pyi file, so we still keep the
+# type information in the docstring.
+
 from numbers import Number
 
 from cpython.long cimport PyLong_Check
@@ -93,27 +98,30 @@ cdef class cyVariables:
         """Append a new variable.
 
         Args:
-            v (hashable, optional):
-                Add a new variable. If `None`, a new label will be generated.
+            v (:class:`~dimod.typing.Variable`, optional):
+                Add a new variable. If ``None``, a new label will be generated.
                 The generated label will be the index of the new variable if
                 that index is available, otherwise it will be the lowest
                 available non-negative integer.
 
             permissive (bool, optional, default=False):
-                If `False`, appending a variable that already exists will raise
-                a `ValueError`. If `True`, appending a variable that already
+                If ``False``, appending a variable that already exists will raise
+                a :exc:`ValueError`. If ``True``, appending a variable that already
                 exists will not change the container.
 
         Returns:
-            hashable: The label of the appended variable.
+            :class:`~dimod.typing.Variable`: The label of the appended variable.
 
         Raises:
-            ValueError: If the variable is present and `permissive` is
-            False.
+            ValueError: If the variable is present and ``permissive`` is
+                False.
 
-        This method is semi-public. it is intended to be used by
-        classes that have :class:`.Variables` as an attribute, not by the
-        the user.
+        .. Caution::
+
+            This method is semi-public. it is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
         """
         if v is None:
             v = self._stop
@@ -146,21 +154,24 @@ cdef class cyVariables:
         """Add new variables.
 
         Args:
-            iterable (iterable[hashable], optional):
+            iterable (iterable[:class:`~dimod.typing.Variable`]):
                 An iterable of hashable objects.
 
             permissive (bool, optional, default=False):
-                If `False`, appending a variable that already exists will raise
-                a `ValueError`. If `True`, appending a variable that already
+                If ``False``, appending a variable that already exists will raise
+                a :exc:`ValueError`. If ``True``, appending a variable that already
                 exists will not change the container.
 
         Raises:
-            ValueError: If a variable is present and `permissive` is
-            False.
+            ValueError: If the variable is present and ``permissive`` is
+                False.
 
-        This method is semi-public. it is intended to be used by
-        classes that have :class:`.Variables` as an attribute, not by the
-        the user.
+        .. Caution::
+
+            This method is semi-public. it is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
         """
         # todo: performance improvements for range etc. Unlike in the __init__
         # we cannot make assumptions about our current state, so we would need
@@ -171,11 +182,20 @@ cdef class cyVariables:
     cpdef object _pop(self):
         """Remove the last variable.
 
-        This method is semi-public. it is intended to be used by
-        classes that have :class:`.Variables` as an attribute, not by the
-        the user.
+        Returns:
+            :class:`~dimod.typing.Variable`: The removed variable.
+
+        Raises:
+            IndexError: If the container is empty.
+
+        .. Caution::
+
+            This method is semi-public. it is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
         """
-        if not self:
+        if not self.size():
             raise IndexError("Cannot pop when Variables is empty")
 
         self._stop = idx = self._stop - 1
@@ -188,14 +208,17 @@ cdef class cyVariables:
         """Relabel the variables in-place.
 
         Args:
-            mapping (dict):
+            mapping (dict[:class:`~dimod.typing.Variable`, :class:`~dimod.typing.Variable`]):
                 Mapping from current variable labels to new, as a dict. If
                 an incomplete mapping is specified, unmapped variables keep
                 their current labels.
 
-        This method is semi-public. it is intended to be used by
-        classes that have :class:`.Variables` as an attribute, not by the
-        the user.
+        .. Caution::
+
+            This method is semi-public. it is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
         """
         for submap in iter_safe_relabels(mapping, self):
             for old, new in submap.items():
@@ -214,7 +237,8 @@ cdef class cyVariables:
         """Relabel the variables as integers in-place.
 
         Returns:
-            dict: A mapping that will restore the original labels.
+            dict[int, :class:`~dimod.typing.Variable`]:
+                A mapping that will restore the original labels.
 
         Examples:
 
@@ -228,9 +252,12 @@ cdef class cyVariables:
             >>> print(variables)
             Variables(['a', 'b', 'c', 'd'])
 
-        This method is semi-public. it is intended to be used by
-        classes that have :class:`.Variables` as an attribute, not by the
-        the user.
+        .. Caution::
+
+            This method is semi-public. it is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
         """
         mapping = self._index_to_label.copy()
         self._index_to_label.clear()
@@ -308,7 +335,7 @@ cdef class cyVariables:
         """Return the index of `v`.
 
         Args:
-            v (hashable):
+            v (:class:`~dimod.typing.Variable`):
                 A variable.
 
             permissive (bool, optional, default=False):
@@ -319,8 +346,8 @@ cdef class cyVariables:
             int: The index of the given variable.
 
         Raises:
-            ValueError: If the variable is not present and `permissive` is
-            False.
+            ValueError: If the variable is present and ``permissive`` is
+                False.
 
         """
         if permissive:
