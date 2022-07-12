@@ -28,7 +28,7 @@ import networkx as nx # for configuration_model
 from dimod.binary import BinaryQuadraticModel
 from dimod.vartypes import Vartype
 
-__all__ = ["random_nae3sat", "random_2in4sat","random_kmcsat","random_kmcsat_cqm"]
+__all__ = ["random_nae3sat", "random_2in4sat","random_kmcsat","random_kmcsat_cqm","kmcsat_clauses"]
 
 def _cut_poissonian_degree_distribution(num_variables,num_stubs,cut=2,seed=None):
     ''' Sampling of the cutPoisson distribution by rejection sampling method.
@@ -55,7 +55,7 @@ def _cut_poissonian_degree_distribution(num_variables,num_stubs,cut=2,seed=None)
         degrees = degrees + [cut]*num_variables
     return degrees
 
-def _kmcsat_clauses(num_variables: int, k: int, num_clauses: int,
+def kmcsat_clauses(num_variables: int, k: int, num_clauses: int,
                     *,
                     variables_list: list = None,
                     signs_list: list = None,
@@ -135,13 +135,13 @@ def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          max_config_model_rejections = 1024,
                          seed: typing.Union[None, int, np.random.Generator] = None,
 ) -> typing.Iterator[typing.Tuple[int, int, int]]:
-    variables_list, signs_list = _kmcsat_clauses(num_variables, k, num_clauses,
-                                                 variables_list = variables_list,
-                                                 signs_list = signs_list,
-                                                 plant_solution=plant_solution,
-                                                 graph_ensemble=graph_ensemble,
-                                                 max_config_model_rejections=max_config_model_rejections,
-                                                 seed=seed)
+    variables_list, signs_list = kmcsat_clauses(num_variables, k, num_clauses,
+                                                variables_list = variables_list,
+                                                signs_list = signs_list,
+                                                plant_solution=plant_solution,
+                                                graph_ensemble=graph_ensemble,
+                                                max_config_model_rejections=max_config_model_rejections,
+                                                seed=seed)
     # get the interactions for each clause
     for variables,signs in zip(variables_list,signs_list):
         for (u, usign), (v, vsign) in itertools.combinations(zip(variables, signs), 2):
@@ -157,7 +157,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
                   plant_solution: bool = False,
                   graph_ensemble: str = 'Poissonian',
                   max_config_model_rejections = 1024,
-                  seed: typing.Union[None, int, np.random.Generator] = None,
+                  seed: typing.Union[None, int, np.random.Generator] = None
                   ) -> BinaryQuadraticModel:
     """Generate a random k Max-Cut satisfiability problem as a binary quadratic model.
 
@@ -268,38 +268,46 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
 
     return bqm
 
-def random_kmcsat_cqm(variables_list_obj: list = [],
+def random_kmcsat_cqm(num_variables = None,
+                      variables_list_obj: list = [],
                       signs_list_obj: list = [],
                       *,
-                      constraint_form = 'quadratic',
                       variables_list_cons: list = [],
-                      signs_list_cons: list = []):
-
-    num_variables=0
-    if len(variables_list_obj)>0:
-        num_variables = max(num_variables,np.max(np.array(variables_list_obj)))
-    if len(variables_list_cons)>0:
-        num_variables=max(num_variables,np.max(np.array(variables_list_cons)))
-    num_variables=num_variables + 1
+                      signs_list_cons: list = [],
+                      constraint_form = 'quadratic',
+                      binarize = True):
+    if num_variables == None:
+        num_variables=0
+        if len(variables_list_obj)>0:
+            num_variables = max(num_variables,np.max(np.array(variables_list_obj)))
+        if len(variables_list_cons)>0:
+            num_variables=max(num_variables,np.max(np.array(variables_list_cons)))
+        num_variables=num_variables + 1
     
     cqm = dimod.CQM()
     #Add the binary variables we need up front
     for i in range(num_variables):
-        cqm.add_variable('SPIN')
+        if binarize:
+            cqm.add_variable('BINARY')
+        else:
+            cqm.add_variable('SPIN')
     if len(variables_list_obj)>0:
         num_clauses=len(variables_list_obj)
         k=len(variables_list_obj[0])
         bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
-        cqm.from_quadratic_model(bqm)
+        if binarize:
+            bqm.change_vartype('BINARY')
+        cqm.set_objective(bqm)
     
     for variables,signs in zip(variables_list_cons, signs_list_cons):
         num_clauses = 1
         k = len(variables)
         if constraint_form == 'quadratic':
             val = -(k//2)*(k-k//2) + (k//2)*(k//2-1)/2 + (k-k//2)*(k-k//2-1)/2 
-            bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=variables_list_obj,signs_list=signs_list_obj)
-            label = cqm.add_constraint_from_model(
-                random_kmcsat(num_variables,k,num_clauses,variables_list=[variables],signs_list=[signs]), '==', val)
+            bqm = random_kmcsat(num_variables,k,num_clauses,variables_list=[variables],signs_list=[signs])
+            if binarize:
+                bqm.change_vartype('BINARY')
+            label = cqm.add_constraint_from_model(bqm, '==', val)
             #print(cqm.constraints[label].to_polystring())
         else:
             equation_form = [(v,s) for v,s in zip(variables,signs)]
@@ -307,7 +315,11 @@ def random_kmcsat_cqm(variables_list_obj: list = [],
                 #Slack variable equality:
                 aux_label = cqm.add_variable('SPIN')
                 equation_form.append((aux_label,1))
-            label = cqm.add_constraint_from_iterable(equation_form, '==', rhs=0)
+            if binarize:
+                rhs = (k+1)//2 
+            else: 
+                rhs = 0
+            label = cqm.add_constraint_from_iterable(equation_form, '==', rhs=rhs)
     return cqm
                   
 

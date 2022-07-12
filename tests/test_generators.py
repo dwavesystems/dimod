@@ -1108,6 +1108,11 @@ class TestSatisfiability(unittest.TestCase):
                                                signs_list_obj = signs_list,
                                                variables_list_cons = vars_list,
                                                signs_list_cons = signs_list)
+            dimod.generators.random_kmcsat_cqm(4,
+                                               variables_list_obj = vars_list,
+                                               signs_list_obj = signs_list,
+                                               variables_list_cons = vars_list,
+                                               signs_list_cons = signs_list)
         
     def test_labels(self):
         self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))
