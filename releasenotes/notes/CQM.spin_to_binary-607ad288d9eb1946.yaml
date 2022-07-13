@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``ConstrainedQuadraticModel.spin_to_binary()`` method.
