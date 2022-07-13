@@ -62,6 +62,7 @@ Methods
    ~ConstrainedQuadraticModel.set_lower_bound
    ~ConstrainedQuadraticModel.set_objective
    ~ConstrainedQuadraticModel.set_upper_bound
+   ~ConstrainedQuadraticModel.spin_to_binary
    ~ConstrainedQuadraticModel.substitute_self_loops
    ~ConstrainedQuadraticModel.to_file
    ~ConstrainedQuadraticModel.upper_bound

@@ -1615,6 +1615,32 @@ class ConstrainedQuadraticModel:
             if v in qm.variables:
                 qm.set_upper_bound(v, ub)
 
+    def spin_to_binary(self, inplace: bool = False) -> ConstrainedQuadraticModel:
+        """Convert any spin-valued variables to binary-valued.
+
+        Args:
+            inplace: If set to False, returns a new constrained quadratic model.
+                Otherwise, the constrained quadratic model is modified in-place.
+
+        """
+        if not inplace:
+            return copy.deepcopy(self).spin_to_binary(inplace=True)
+
+        self.objective.spin_to_binary(inplace=True)
+
+        for comparison in self.constraints.values():
+            lhs = comparison.lhs
+            if isinstance(lhs, QuadraticModel):
+                lhs.spin_to_binary(inplace=True)
+            elif isinstance(lhs, BinaryQuadraticModel):
+                if lhs.vartype is Vartype.SPIN:
+                    lhs.change_vartype(Vartype.BINARY, inplace=True)
+            else:
+                # shouldn't ever happen
+                raise RuntimeError("unexpected constraint type")
+
+        return self
+
     def _iterable_to_qm(self, iterable: Iterable) -> QuadraticModel:
         qm = QuadraticModel()
 

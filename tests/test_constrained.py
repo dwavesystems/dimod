@@ -861,6 +861,38 @@ class TestRemoveConstraint(unittest.TestCase):
             cqm.remove_constraint('not a constraint')
 
 
+class TestSpinToBinary(unittest.TestCase):
+    def test_simple(self):
+        cqm = CQM()
+
+        s, t = dimod.Spins('st')
+        x, = dimod.Binaries('x')
+        i, = dimod.Integers('i')
+
+        cqm.set_objective(s*i + t*x + s*t)
+        cqm.add_constraint(s + t + s*t <= 5, label='c0')
+        cqm.add_constraint(s + i >= 5, label='c1')
+
+        new = cqm.spin_to_binary(inplace=False)
+
+        self.assertEqual(new.objective.energy({'s': 0, 't': 1, 'x': 1, 'i': 105}),
+                         cqm.objective.energy({'s': -1, 't': 1, 'x': 1, 'i': 105}))
+        self.assertEqual(new.constraints['c0'].lhs.energy({'s': 0, 't': 1, 'x': 1, 'i': 105}),
+                         cqm.constraints['c0'].lhs.energy({'s': -1, 't': 1, 'x': 1, 'i': 105}))
+        self.assertEqual(new.constraints['c1'].lhs.energy({'s': 0, 't': 1, 'x': 1, 'i': 105}),
+                         cqm.constraints['c1'].lhs.energy({'s': -1, 't': 1, 'x': 1, 'i': 105}))
+
+        self.assertFalse(any(new.vartype(v) is dimod.SPIN for v in new.variables))
+        for lhs in (comp.lhs for comp in new.constraints.values()):
+            if isinstance(lhs, dimod.QM):
+                self.assertFalse(any(lhs.vartype(v) is dimod.SPIN for v in lhs.variables))
+            else:
+                self.assertIs(lhs.vartype, dimod.BINARY)
+
+        cqm.spin_to_binary(inplace=True)
+        self.assertTrue(new.is_equal(cqm))
+
+
 class TestSerialization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
