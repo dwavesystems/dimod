@@ -539,6 +539,43 @@ class TestIsEqual(unittest.TestCase):
         self.assertFalse(cqm0.is_equal(cqm1))
 
 
+class TestIsLinear(unittest.TestCase):
+    def test_empty(self):
+        cqm = dimod.CQM()
+        self.assertTrue(cqm.is_linear())
+
+    def test_linear(self):
+        cqm = dimod.CQM()
+
+        x, y = dimod.Binaries('xy')
+        i = dimod.Integer('i')
+
+        cqm.set_objective(x + y)
+        cqm.add_constraint(x - y <= 5)  # BQM constraint
+        cqm.add_constraint(i + x >= 5)  # QM constraint
+
+        self.assertTrue(cqm.is_linear())
+
+    def test_nonlinear(self):
+        x, y = dimod.Binaries('xy')
+        i = dimod.Integer('i')
+
+        with self.subTest("objective"):
+            cqm = dimod.CQM()
+            cqm.set_objective(x*y)
+            self.assertFalse(cqm.is_linear())
+
+        with self.subTest("bqm constraint"):
+            cqm = dimod.CQM()
+            cqm.add_constraint(x*y == 5)
+            self.assertFalse(cqm.is_linear())
+
+        with self.subTest("cqm constraint"):
+            cqm = dimod.CQM()
+            cqm.add_constraint(x*i >= 5)
+            self.assertFalse(cqm.is_linear())
+
+
 class TestCQMtoBQM(unittest.TestCase):
     def test_empty(self):
         bqm, inverter = dimod.cqm_to_bqm(dimod.CQM())
