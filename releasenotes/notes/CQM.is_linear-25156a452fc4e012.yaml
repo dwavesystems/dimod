@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``ConstrainedQuadraticModel.is_linear()`` method.

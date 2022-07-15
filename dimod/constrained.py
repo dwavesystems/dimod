@@ -1321,6 +1321,11 @@ class ConstrainedQuadraticModel:
                 and all(constraint_eq(constraint, other.constraints[label])
                         for label, constraint in self.constraints.items()))
 
+    def is_linear(self) -> bool:
+        """Return True if the model has no quadratic interactions."""
+        return (self.objective.is_linear() and
+                all(comp.lhs.is_linear() for comp in self.constraints.values()))
+
     def lower_bound(self, v: Variable) -> Bias:
         """Return the lower bound on the specified variable.
 
