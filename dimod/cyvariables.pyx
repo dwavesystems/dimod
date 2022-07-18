@@ -114,11 +114,11 @@ cdef class cyVariables:
 
         Raises:
             ValueError: If the variable is present and ``permissive`` is
-                False.
+                ``False``.
 
         .. Caution::
 
-            This method is semi-public. it is intended to be used by
+            This method is semi-public. It is intended to be used by
             classes that have :class:`.Variables` as an attribute, not by the
             the user.
 
@@ -164,11 +164,11 @@ cdef class cyVariables:
 
         Raises:
             ValueError: If the variable is present and ``permissive`` is
-                False.
+                ``False``.
 
         .. Caution::
 
-            This method is semi-public. it is intended to be used by
+            This method is semi-public. It is intended to be used by
             classes that have :class:`.Variables` as an attribute, not by the
             the user.
 
@@ -186,11 +186,11 @@ cdef class cyVariables:
             :class:`~dimod.typing.Variable`: The removed variable.
 
         Raises:
-            IndexError: If the container is empty.
+            :exc:`IndexError`: If the container is empty.
 
         .. Caution::
 
-            This method is semi-public. it is intended to be used by
+            This method is semi-public. It is intended to be used by
             classes that have :class:`.Variables` as an attribute, not by the
             the user.
 
@@ -215,7 +215,7 @@ cdef class cyVariables:
 
         .. Caution::
 
-            This method is semi-public. it is intended to be used by
+            This method is semi-public. It is intended to be used by
             classes that have :class:`.Variables` as an attribute, not by the
             the user.
 
@@ -254,7 +254,7 @@ cdef class cyVariables:
 
         .. Caution::
 
-            This method is semi-public. it is intended to be used by
+            This method is semi-public. It is intended to be used by
             classes that have :class:`.Variables` as an attribute, not by the
             the user.
 
@@ -346,8 +346,8 @@ cdef class cyVariables:
             int: The index of the given variable.
 
         Raises:
-            ValueError: If the variable is present and ``permissive`` is
-                False.
+            :exc:`ValueError`: If the variable is present and ``permissive`` is
+                ``False``.
 
         """
         if permissive:
