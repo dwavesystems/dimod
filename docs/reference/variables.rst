@@ -36,7 +36,7 @@ Mutation Methods
 
 .. Caution::
 
-   The :class:`.Variables` class comes with a number of semi-private methods
+   The :class:`.Variables` class comes with a number of semi-public methods
    that allow other classes to manipulate its contents. These are intended to
    be used by parent classes, not by the user. Modifying a :class:`.Variables`
    object that is an attribute of a class results in undefined behaviour.

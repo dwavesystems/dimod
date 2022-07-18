@@ -77,31 +77,47 @@ class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Varia
 
     Args:
         iterable (iterable[:class:`~dimod.typing.Variable`], optional):
-            An iterable of labels. Duplicate labels are ignored. All labels
-            must be hashable.
+            An :term:`iterable` of labels. Duplicate labels are ignored.
+            All labels must be :term:`hashable`.
 
     Examples:
 
-        The variables object can be used to encode an ordered set of variables.
+        The ``Variables`` object encodes an ordered set of variables.
 
         >>> variables = dimod.variables.Variables(['a', 'b', 0, 1])
         >>> print(variables)
         Variables(['a', 'b', 0, 1])
 
-        The variables object can be interacted with like a
-        :class:`~collections.abc.Sequence`.
+        ``Variables`` is a :term:`sequence`.
 
-        >>> variables[0]
+        >>> variables[0]  # O(1) element access using integer indices
         'a'
-        >>> variables[1::2]
-        Variables(['b', 1])
-        >>> len(variables)
+        >>> len(variables)  # defines a length
         4
 
-        And like a :class:`~collections.abc.Set`.
+        Unlike most other sequence types, ``Variables`` provides `O(1)`
+        lookup for the index of an element.
+
+        >>> 0 in variables  # O(1) lookup
+        True
+        >>> variables.index('b')  # O(1) lookup
+        1
+
+        Therefore ``Variables`` is also a set.
 
         >>> variables & [0, 'a', 'f']
         Variables([0, 'a'])
+
+        ``Variables`` inherits from :class:`~collections.abc.Sequence` and
+        :class:`~collections.abc.Set` so it inherits all of the provided
+        mixin method.
+
+        >>> list(reversed(variables))
+        [1, 0, 'b', 'a']
+        >>> variables.count('b')
+        1
+        >>> variables.count('hello')
+        0
 
     """
     def __eq__(self, other: object) -> bool:
@@ -141,7 +157,7 @@ class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Varia
         return self._is_range()
 
     def to_serializable(self) -> typing.List[typing.Union[int, float, str, tuple]]:
-        """Return an object that is json-serializable.
+        """Return an object that is JSON-serializable.
 
         Returns:
             A list of JSON-serializable objects. Handles some common cases like
