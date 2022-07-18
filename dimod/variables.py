@@ -110,7 +110,7 @@ class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Varia
 
         ``Variables`` inherits from :class:`~collections.abc.Sequence` and
         :class:`~collections.abc.Set` so it inherits all of the provided
-        mixin method.
+        mixin methods.
 
         >>> list(reversed(variables))
         [1, 0, 'b', 'a']
