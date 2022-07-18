@@ -45,6 +45,7 @@ Mutation Methods
    :toctree: generated/
 
     ~Variables._append
+    ~Variables._clear
     ~Variables._extend
     ~Variables._pop
     ~Variables._relabel

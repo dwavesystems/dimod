@@ -62,6 +62,7 @@ Methods
    ~QuadraticModel.add_variables_from
    ~QuadraticModel.add_variables_from_model
    ~QuadraticModel.change_vartype
+   ~QuadraticModel.clear
    ~QuadraticModel.copy
    ~QuadraticModel.degree
    ~QuadraticModel.energies
@@ -152,6 +153,7 @@ Methods
    ~BinaryQuadraticModel.add_quadratic_from_dense
    ~BinaryQuadraticModel.add_variable
    ~BinaryQuadraticModel.change_vartype
+   ~BinaryQuadraticModel.clear
    ~BinaryQuadraticModel.contract_variables
    ~BinaryQuadraticModel.copy
    ~BinaryQuadraticModel.degree

@@ -359,6 +359,10 @@ cdef class cyQM_template(cyQMBase):
             raise TypeError(f"cannot change vartype {self.vartype(v).name!r} "
                             f"to {vartype.name!r}") from None
 
+    def clear(self):
+        self.cppqm.clear()
+        self.variables._clear()
+
     cdef cppVartype cppvartype(self, object vartype) except? cppVartype.SPIN:
         return cppvartype(vartype)
 

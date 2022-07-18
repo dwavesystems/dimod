@@ -397,6 +397,13 @@ class QuadraticModelBase {
         }
     }
 
+    /// Remove the offset and all variables and interactions from the model.
+    void clear() {
+        this->adj_.clear();
+        this->linear_biases_.clear();
+        this->offset_ = 0;
+    }
+
     /// Return True if the model has no quadratic biases.
     bool is_linear() const {
         for (auto it = adj_.begin(); it != adj_.end(); ++it) {
@@ -1194,6 +1201,11 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
         this->adj_.resize(v + 1);
 
         return v;
+    }
+
+    void clear() {
+        this->varinfo_.clear();
+        base_type::clear();
     }
 
     /// Change the vartype of `v`, updating the biases appropriately.

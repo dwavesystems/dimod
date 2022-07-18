@@ -1,0 +1,7 @@
+---
+features:
+  - Add ``Variables._clear()`` method for use by classes that have ``Variables`` as an attribute.
+  - Add C++ ``dimod::QuadraticModel::clear()`` method.
+  - Add C++ ``dimod::BinaryQuadraticModel::clear()`` method.
+  - Add ``QuadraticModel.clear()`` method.
+  - Add ``BinaryQuadraticModel.clear()`` method.

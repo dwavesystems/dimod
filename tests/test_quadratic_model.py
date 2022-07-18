@@ -346,6 +346,27 @@ class TestChangeVartype(unittest.TestCase):
             qm.change_vartype('SPIN', a)
 
 
+class TestClear(unittest.TestCase):
+    def test_clear(self):
+        qm = QM()
+        i = qm.add_variable('INTEGER')
+        j = qm.add_variable('INTEGER')
+        x = qm.add_variable('BINARY')
+
+        qm.set_linear(i, 1.5)
+        qm.set_linear(x, -2)
+
+        qm.set_quadratic(i, j, 1)
+        qm.set_quadratic(j, j, 5)
+        qm.set_quadratic(x, i, 7)
+
+        qm.clear()
+        self.assertEqual(qm.num_variables, 0)
+        self.assertEqual(qm.num_interactions, 0)
+        self.assertEqual(qm.offset, 0)
+        self.assertEqual(len(qm.variables), 0)
+
+
 class TestConstruction(unittest.TestCase):
     def test_dtype(self):
         self.assertEqual(QM().dtype, np.float64)  # default

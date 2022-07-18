@@ -672,6 +672,10 @@ class QuadraticModel(QuadraticViewsMixin):
         self.data.change_vartype(vartype, v)
         return self
 
+    def clear(self) -> None:
+        """Remove the offset and all variables and interactions from the model."""
+        self.data.clear()
+
     def copy(self):
         """Return a copy."""
         return deepcopy(self)

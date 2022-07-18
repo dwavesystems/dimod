@@ -139,6 +139,9 @@ class VartypeView:
     def change_vartype(self, vartype: VartypeLike):
         self._vartype = as_vartype(vartype)
 
+    def clear(self) -> None:
+        return self.data.clear()
+
     def degree(self, v: Variable):
         return self.data.degree(v)
 
