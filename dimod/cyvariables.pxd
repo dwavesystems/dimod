@@ -26,6 +26,7 @@ cdef class cyVariables:
     cdef Py_ssize_t size(self)
 
     cpdef object _append(self, object v=*, bint permissive=*)
+    cpdef void _clear(self)
     cpdef object _extend(self, object iterable, bint permissive=*)
     cpdef bint _is_range(self)
     cpdef object _pop(self)

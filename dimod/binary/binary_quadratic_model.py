@@ -980,6 +980,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         self.data.change_vartype(vartype)
         return self
 
+    def clear(self) -> None:
+        """Remove the offset and all variables and interactions from the model."""
+        self.data.clear()
+
     def contract_variables(self, u: Variable, v: Variable):
         """Enforce u, v being the same variable in a binary quadratic model.
 

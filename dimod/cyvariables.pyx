@@ -146,6 +146,19 @@ cdef class cyVariables:
         self._stop += 1
         return v
 
+    cpdef void _clear(self):
+        """Remove all variables.
+
+        .. Caution::
+
+            This method is semi-public. It is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+        """
+        self._label_to_index.clear()
+        self._index_to_label.clear()
+        self._stop = 0
+
     cpdef bint _is_range(self):
         """Return whether the variables are currently labelled [0, n)."""
         return not PyDict_Size(self._label_to_index)

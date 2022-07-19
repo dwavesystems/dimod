@@ -173,6 +173,10 @@ class pyBQM:
 
         return self
 
+    def clear(self) -> None:
+        self._adj.clear()
+        self.offset = 0
+
     def degree(self, v: Variable) -> int:
         try:
             return len(self._adj[v]) - 1

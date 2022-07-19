@@ -329,6 +329,17 @@ class TestChangeVartype(unittest.TestCase):
         self.assertConsistentEnergies(spin=bqm, binary=new)
 
 
+class TestClear(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_clear(self, name, BQM):
+        bqm = BQM(np.ones((5, 5)), 'BINARY')
+        bqm.clear()
+        self.assertEqual(bqm.num_variables, 0)
+        self.assertEqual(bqm.num_interactions, 0)
+        self.assertEqual(bqm.offset, 0)
+        self.assertEqual(len(bqm.variables), 0)
+
+
 class TestConstruction(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_array_like(self, name, BQM):

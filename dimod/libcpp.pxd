@@ -87,6 +87,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         index_type add_variable()
         const_quadratic_iterator cbegin_quadratic()
         const_quadratic_iterator cend_quadratic()
+        void clear()
         void change_vartype(cppVartype)
         bias_type energy[Iter](Iter sample_start)
         bint is_linear()
@@ -141,6 +142,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         const_quadratic_iterator cbegin_quadratic()
         void change_vartype(cppVartype, index_type) except +
         const_quadratic_iterator cend_quadratic()
+        void clear()
         bias_type energy[Iter](Iter sample_start)
         bint is_linear()
         bias_type& linear(index_type)
