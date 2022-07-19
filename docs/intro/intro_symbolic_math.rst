@@ -160,7 +160,7 @@ Representing Constraints
 ========================
 
 Many real-world problems include constraints. Typically constraints are either
-equality or inequality, in the form of a left-hand side(``lhs``), right-hand-side
+equality or inequality, in the form of a left-hand side(``lhs``), right-hand side
 (``rhs``), and the :class:`dimod.sym.Sense` (:math:`\le`, :math:`\ge`, or
 :math:`==`). For example, the constraint of the rectangle problem above,
 
@@ -181,6 +181,29 @@ with the model:
 <class 'dimod.sym.Le'>
 >>> 3.75 * i <= 4
 Le(QuadraticModel({'i': 3.75}, {}, 0.0, {'i': 'INTEGER'}, dtype='float64'), 4)
+
+.. note::
+  
+  *dimod* requires that the right-hand side of any equation to be a :class:`float`
+  or an :class:`int`. For example,
+
+  .. math::
+
+    i + j \le ij
+
+  can be transformed into a form supported by *dimod* by subtracting the right-hand side
+  from both sides.
+
+  .. math::
+
+    i + j - ij \le 0
+
+  You can then create the inequality symbolically.
+
+  .. doctest:: python
+
+    i, j = dimod.Integers(['i', 'j'])
+    i + j - i*j <= 0
 
 Performance
 ===========
