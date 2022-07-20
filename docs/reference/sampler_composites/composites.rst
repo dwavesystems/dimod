@@ -30,7 +30,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    StructureComposite.child
    StructureComposite.children
@@ -41,7 +41,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    StructureComposite.sample
    StructureComposite.sample_ising
@@ -62,7 +62,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    TrackingComposite.input
    TrackingComposite.inputs
@@ -76,7 +76,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    TrackingComposite.clear
    TrackingComposite.sample
@@ -98,7 +98,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    TruncateComposite.child
    TruncateComposite.children
@@ -110,7 +110,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    TruncateComposite.sample
    TruncateComposite.sample_ising

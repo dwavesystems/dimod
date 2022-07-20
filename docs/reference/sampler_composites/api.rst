@@ -77,7 +77,7 @@ Abstract Properties
 -------------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Sampler.parameters
    Sampler.properties
@@ -86,7 +86,7 @@ Mixin Methods
 -------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Sampler.sample
    Sampler.sample_ising
@@ -96,7 +96,7 @@ Methods
 -------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Sampler.remove_unknown_kwargs
 
@@ -123,7 +123,7 @@ Abstract Properties
 -------------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Composite.children
 
@@ -132,7 +132,7 @@ Mixin Properties
 ----------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Composite.child
 
@@ -150,7 +150,7 @@ Abstract Properties
 -------------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Structured.nodelist
    Structured.edgelist
@@ -159,7 +159,7 @@ Mixin Properties
 ----------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Structured.adjacency
    Structured.structure
@@ -168,7 +168,7 @@ Mixin Methods
 -------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Structured.to_networkx_graph
 
@@ -185,7 +185,7 @@ Mixin Methods
 -------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    Initialized.parse_initial_states
 
@@ -202,7 +202,7 @@ Abstract Properties
 -------------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolySampler.parameters
    PolySampler.properties
@@ -211,7 +211,7 @@ Abstract Methods
 ----------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolySampler.sample_poly
 
@@ -219,7 +219,7 @@ Mixin Methods
 -------------
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    PolySampler.sample_hising
    PolySampler.sample_hubo

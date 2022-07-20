@@ -28,7 +28,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ExactSolver.sample
    ExactSolver.sample_ising
@@ -43,7 +43,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ExactCQMSolver.sample_cqm
 
@@ -56,7 +56,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    ExactDQMSolver.sample_dqm
 
@@ -69,7 +69,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    IdentitySampler.parameters
 
@@ -77,7 +77,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    IdentitySampler.sample
    IdentitySampler.sample_ising
@@ -92,7 +92,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    NullSampler.parameters
 
@@ -100,7 +100,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    NullSampler.sample
    NullSampler.sample_ising
@@ -115,7 +115,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    RandomSampler.parameters
 
@@ -123,7 +123,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    RandomSampler.sample
    RandomSampler.sample_ising
@@ -141,7 +141,7 @@ Properties
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    SimulatedAnnealingSampler.parameters
 
@@ -149,7 +149,7 @@ Methods
 ~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: ../generated/
 
    SimulatedAnnealingSampler.sample
    SimulatedAnnealingSampler.sample_ising
