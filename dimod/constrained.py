@@ -1775,15 +1775,19 @@ class ConstrainedQuadraticModel:
             the same label.
 
         Examples:
+            Note that the ellipses in the outputs below are stand-ins for the
+            generated variable labels, which differ between runs.
+
             >>> from dimod import Integer, ConstrainedQuadraticModel
             >>> i = Integer('i')
             >>> cqm = ConstrainedQuadraticModel()
             >>> cqm.add_constraint(i*i <=3, label='i squared')
             'i squared'
-            >>> cqm.substitute_self_loops()                      # doctest: +IGNORE_RESULT
-            >>> cqm.constraints   # doctest: +IGNORE_RESULT
-            {'i squared': QuadraticModel({'i': 0.0, 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 0.0}, {('cf651f3d-bdf8-4735-9139-eee0a32e217f', 'i'): 1.0}, 0.0, {'i': 'INTEGER', 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 'INTEGER'}, dtype='float64') <= 3,
-            'cf651f3d-bdf8-4735-9139-eee0a32e217f': QuadraticModel({'i': 1.0, 'cf651f3d-bdf8-4735-9139-eee0a32e217f': -1.0}, {}, 0.0, {'i': 'INTEGER', 'cf651f3d-bdf8-4735-9139-eee0a32e217f': 'INTEGER'}, dtype='float64') == 0}
+            >>> cqm.substitute_self_loops() #doctest: +ELLIPSIS
+            {...}
+            >>> cqm.constraints #doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+            {'i squared': Le(QuadraticModel({'i': 0.0, '...': 0.0}, {('...', 'i'): 1.0}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 3),
+            '...': Eq(QuadraticModel({'i': 1.0, '...': -1.0}, {}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 0)}
         """
         mapping: Dict[Variable, Variable] = dict()
 

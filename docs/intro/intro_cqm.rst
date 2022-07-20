@@ -53,7 +53,8 @@ learning and testing with small CQMs.
 >>> y = dimod.Integer('y')
 >>> cqm = dimod.CQM()
 >>> objective = cqm.set_objective(x+y)
->>> cqm.add_constraint(y <= 3)          # doctest: +IGNORE_RESULT
+>>> cqm.add_constraint(y <= 3) #doctest: +ELLIPSIS
+'...'
 
 For very large models, you might read the data from a file or construct from a NumPy
 array.
