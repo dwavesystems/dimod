@@ -305,10 +305,9 @@ class Sampler(metaclass=SamplerABCMeta):
             >>> with warnings.catch_warnings():
             ...     warnings.filterwarnings('ignore')
             ...     try:
-            ...         kwargs = sampler.remove_unknown_kwargs(num_reads=10,
-            ...                                                non_param=3)
+            ...         sampler.remove_unknown_kwargs(num_reads=10, non_param=3)
             ...     except dimod.exceptions.SamplerUnknownArgWarning:
-            ...:        pass
+            ...        pass
             {'num_reads': 10}
         """
         for kw in [k for k in kwargs if k not in self.parameters]:
