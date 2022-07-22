@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix ``as_samples()`` when given a ``SampleSet`` and using the
+    ``labels_type`` keyword argument. Previously it would raise a ``TypeError``.
+    This fix allows constructions like ``bqm.energies(sampleset)`` to function
+    correctly.

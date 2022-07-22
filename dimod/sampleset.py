@@ -1915,9 +1915,10 @@ def _as_samples_sampleset(samples_like: SampleSet,
                           dtype: Optional[DTypeLike] = None,
                           copy: bool = False,
                           order: ArrayOrder = 'C',
+                          labels_type: type = list,
                           ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
     # this isn't strictly necessary, but it improves performance
-    labels = list(samples_like.variables)
+    labels = labels_type(samples_like.variables)
     if dtype is None:
         arr = np.copy(samples_like.record.sample) if copy else samples_like.record.sample
         return arr, labels
