@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Make ``Vartype.INTEGER`` and ``Vartype.REAL`` pickleable. This fixes the
+    pickling of many downstream objects like ``QuadraticModel`` and ``SampleSet``.
+  

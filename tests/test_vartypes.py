@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import pickle
 import unittest
 
 import dimod
@@ -25,3 +26,9 @@ class TestCopy(unittest.TestCase):
         self.assertIs(dimod.INTEGER, deepcopy(dimod.INTEGER))
         self.assertIs(dimod.SPIN, deepcopy(dimod.SPIN))
         self.assertIs(dimod.REAL, deepcopy(dimod.REAL))
+
+
+class TestPickle(unittest.TestCase):
+    def test_vartypes(self):
+        vartypes = list(dimod.Vartype)
+        self.assertEqual(vartypes, pickle.loads(pickle.dumps(vartypes)))
