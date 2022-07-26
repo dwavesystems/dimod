@@ -774,6 +774,11 @@ class TestPickle(unittest.TestCase):
         self.assertEqual(new, sampleset)
         self.assertEqual(new.info, {'a': 5})
 
+    def test_integer(self):
+        sampleset = dimod.SampleSet.from_samples([0, 1], vartype='INTEGER', energy=1)
+        new = pickle.loads(pickle.dumps(sampleset))
+        self.assertEqual(new, sampleset)
+
 
 class TestTruncate(unittest.TestCase):
     def test_typical(self):

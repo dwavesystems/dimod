@@ -76,6 +76,10 @@ class Integers(Container):
         memo[id(self)] = self
         return self
 
+    def __eq__(self, other):
+        # All Integers objects are equal
+        return type(self) is type(other)
+
 
 class Real(Container):
     """Container for testing real membership."""
@@ -88,6 +92,10 @@ class Real(Container):
     def __deepcopy__(self, memo):
         memo[id(self)] = self
         return self
+
+    def __eq__(self, other):
+        # All Real objects are equal
+        return type(self) is type(other)
 
 
 class Vartype(enum.Enum):
