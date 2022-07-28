@@ -1174,6 +1174,28 @@ class TestEnergies(unittest.TestCase):
         with self.assertRaises(ValueError):
             bqm.energies([])
 
+    @parameterized.expand(BQMs.items())
+    def test_samples_like(self, name, BQM):
+        bqm = BQM({'a': 1}, {'ab': 2}, 3, 'BINARY')
+
+        samples = np.asarray([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.int8)
+        labels = 'ab'
+
+        energies = [3, 3, 4, 6]
+
+        with self.subTest('tuple'):
+            np.testing.assert_array_equal(bqm.energies((samples, labels)), energies)
+
+        with self.subTest('dicts'):
+            np.testing.assert_array_equal(
+                bqm.energies([dict(zip(labels, row)) for row in samples]),
+                energies)
+
+        with self.subTest('sample set'):
+            np.testing.assert_array_equal(
+                bqm.energies(dimod.SampleSet.from_samples_bqm((samples, labels), bqm)),
+                energies)
+
 
 class TestMaximumDeltaEnergy(unittest.TestCase):
     @parameterized.expand(itertools.product(BQMs.values(), ('SPIN', 'BINARY')))

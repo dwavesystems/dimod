@@ -467,6 +467,29 @@ class TestEnergies(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     qm.energy((arr, 'ij'))
 
+    def test_samples_like(self):
+        qm = dimod.QM.from_bqm(dimod.BQM({'a': 1}, {'ab': 2}, 3, 'BINARY'))
+
+        samples = np.asarray([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=np.int8)
+        labels = 'ab'
+
+        energies = [3, 3, 4, 6]
+
+        with self.subTest('tuple'):
+            np.testing.assert_array_equal(qm.energies((samples, labels)), energies)
+
+        with self.subTest('dicts'):
+            np.testing.assert_array_equal(
+                qm.energies([dict(zip(labels, row)) for row in samples]),
+                energies)
+
+        with self.subTest('sample set'):
+            np.testing.assert_array_equal(
+                qm.energies(dimod.SampleSet.from_samples((samples, labels),
+                                                         energy=energies,
+                                                         vartype='BINARY')),
+                energies)
+
     def test_squared(self):
         i, j = dimod.Integers('ij')
         self.assertEqual((i**2 + 2*i*j + 3*j*j).energy({'i': 5, 'j': -1}), 18)
