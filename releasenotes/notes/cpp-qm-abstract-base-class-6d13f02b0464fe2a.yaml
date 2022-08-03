@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Add a pure virtual function ``vartype()`` to ``dimod::QuadraticModelBase``,
+    thereby making it an abstract class.
+  - |
+    Add ``dimod::QuadraticModelBase::add_quadratic()`` overload for dense matrices.
+upgrade:
+  - |
+    ``dimod::QuadraticModelBase`` is now an abstract class.
