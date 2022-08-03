@@ -179,15 +179,9 @@ class Neighborhood {
         }
     }
 
-    value_type& back() {
-        assert(this->size() > 0);
-        return this->neighborhood_.back();
-    }
+    value_type& back() { return this->neighborhood_.back(); }
 
-    const value_type& back() const {
-        assert(this->size() > 0);
-        return this->neighborhood_.back();
-    }
+    const value_type& back() const { return this->neighborhood_.back(); }
 
     /// Returns an iterator to the beginning.
     iterator begin() { return this->neighborhood_.begin(); }
@@ -209,6 +203,9 @@ class Neighborhood {
      * last element.
      */
     void emplace_back(index_type v, bias_type bias) { this->neighborhood_.emplace_back(v, bias); }
+
+    /// Returns whether the neighborhood is empty
+    bool empty() const { return !this->size(); }
 
     /**
      * Erase an element from the neighborhood.
@@ -389,6 +386,54 @@ class QuadraticModelBase {
         }
     }
 
+    /*
+     * Add quadratic biases from a dense matrix.
+     *
+     * `dense` must be an array of length `num_variables^2`.
+     *
+     * Values on the diagonal are treated differently depending on the variable
+     * type.
+     *
+     * # Exceptions
+     * The behavior of this method is undefined when the model has fewer than
+     * `num_variables` variables.
+     */
+    template <class T>
+    void add_quadratic(const T dense[], index_type num_variables) {
+        assert(0 <= num_variables && static_cast<size_t>(num_variables) <= this->num_variables());
+
+        if (this->is_linear()) {
+            for (index_type u = 0; u < num_variables; ++u) {
+                // diagonal
+                this->add_quadratic_back(u, u, dense[u * (num_variables + 1)]);
+
+                // off-diagonal
+                for (index_type v = u + 1; v < num_variables; ++v) {
+                    bias_type qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
+
+                    if (qbias) {
+                        this->add_quadratic_back(u, v, qbias);
+                    }
+                }
+            }
+        } else {
+            // we cannot rely on the ordering
+            for (index_type u = 0; u < num_variables; ++u) {
+                // diagonal
+                this->add_quadratic(u, u, dense[u * (num_variables + 1)]);
+
+                // off-diagonal
+                for (index_type v = u + 1; v < num_variables; ++v) {
+                    bias_type qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
+
+                    if (qbias) {
+                        this->add_quadratic(u, v, qbias);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Add quadratic bias for the given variables at the end of eachother's neighborhoods.
      *
@@ -404,8 +449,12 @@ class QuadraticModelBase {
      * this method is undefined.
      */
     void add_quadratic_back(index_type u, index_type v, bias_type bias) {
-        assert(this->adj_[v].back().first <= u && static_cast<size_t>(u) < this->num_variables());
-        assert(this->adj_[u].back().first <= v && static_cast<size_t>(v) < this->num_variables());
+        assert(0 <= u && static_cast<size_t>(u) <= this->num_variables());
+        assert(0 <= v && static_cast<size_t>(v) <= this->num_variables());
+
+        // check the condition for adding at the back
+        assert(this->adj_[v].empty() || this->adj_[v].back().first <= u);
+        assert(this->adj_[u].empty() || this->adj_[u].back().first <= v);
 
         if (u == v) {
             switch (this->vartype(u)) {
@@ -898,62 +947,6 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     }
 
     using base_type::add_quadratic;
-
-    /*
-     * Add quadratic biases to the BQM from a dense matrix.
-     *
-     * `dense` must be an array of length `num_variables^2`.
-     *
-     * The behavior of this method is undefined when the bqm has fewer than
-     * `num_variables` variables.
-     *
-     * Values on the diagonal are treated differently depending on the variable
-     * type.
-     * If the BQM is SPIN-valued, then the values on the diagonal are
-     * added to the offset.
-     * If the BQM is BINARY-valued, then the values on the diagonal are added
-     * as linear biases.
-     */
-    template <class T>
-    void add_quadratic(const T dense[], index_type num_variables) {
-        // todo: let users add quadratic off the diagonal with row_offset,
-        // col_offset
-
-        assert((size_t)num_variables <= base_type::num_variables());
-
-        bool sort_needed = !base_type::is_linear();  // do we need to sort after
-
-        bias_type qbias;
-        for (index_type u = 0; u < num_variables; ++u) {
-            for (index_type v = u + 1; v < num_variables; ++v) {
-                qbias = dense[u * num_variables + v] + dense[v * num_variables + u];
-
-                if (qbias != 0) {
-                    base_type::adj_[u].emplace_back(v, qbias);
-                    base_type::adj_[v].emplace_back(u, qbias);
-                }
-            }
-        }
-
-        if (sort_needed) {
-            throw std::logic_error("not implemented yet");
-        }
-
-        // handle the diagonal according to vartype
-        if (vartype_ == Vartype::SPIN) {
-            // diagonal is added to the offset since -1*-1 == 1*1 == 1
-            for (index_type v = 0; v < num_variables; ++v) {
-                base_type::offset_ += dense[v * (num_variables + 1)];
-            }
-        } else if (vartype_ == Vartype::BINARY) {
-            // diagonal is added as linear biases since 1*1 == 1, 0*0 == 0
-            for (index_type v = 0; v < num_variables; ++v) {
-                base_type::linear_biases_[v] += dense[v * (num_variables + 1)];
-            }
-        } else {
-            throw std::logic_error("bad vartype");
-        }
-    }
 
     /**
      * Construct a BQM from COO-formated iterators.
