@@ -546,6 +546,8 @@ class QuadraticModelBase {
         return energy(sample.cbegin());
     }
 
+    virtual const bias_type& lower_bound(index_type) const = 0;
+
     /// Return a reference to the linear bias associated with `v`.
     bias_type& linear(index_type v) { return linear_biases_[v]; }
 
@@ -778,6 +780,8 @@ class QuadraticModelBase {
         }
     }
 
+    virtual const bias_type& upper_bound(index_type) const = 0;
+
     virtual const Vartype& vartype(index_type) const = 0;
 
  protected:
@@ -811,10 +815,14 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     using size_type = typename base_type::size_type;
 
     /// Empty constructor. The vartype defaults to `Vartype::BINARY`.
-    BinaryQuadraticModel() : base_type(), vartype_(Vartype::BINARY) {}
+    BinaryQuadraticModel() : BinaryQuadraticModel(Vartype::BINARY) {}
 
     /// Create a BQM of the given `vartype`.
-    explicit BinaryQuadraticModel(Vartype vartype) : base_type(), vartype_(vartype) {}
+    explicit BinaryQuadraticModel(Vartype vartype)
+            : base_type(),
+              vartype_(vartype),
+              lower_bound_(vartype_info<bias_type>::default_min(vartype)),
+              upper_bound_(vartype_info<bias_type>::default_max(vartype)) {}
 
     /// Create a BQM with `n` variables of the given `vartype`.
     BinaryQuadraticModel(index_type n, Vartype vartype) : BinaryQuadraticModel(vartype) {
@@ -1060,12 +1068,12 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
             }
         }
 
-        vartype_ = vartype;
+        this->vartype_ = vartype;
+        this->lower_bound_ = vartype_info<bias_type>::default_min(vartype);
+        this->upper_bound_ = vartype_info<bias_type>::default_max(vartype);
     }
 
-    bias_type lower_bound(index_type v) const {
-        return vartype_info<bias_type>::default_min(this->vartype_);
-    }
+    const bias_type& lower_bound(index_type v) const { return this->lower_bound_; }
 
     /**
      *  Return the number of interactions in the quadratic model.
@@ -1089,11 +1097,11 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
     void swap(BinaryQuadraticModel<bias_type, index_type>& other) {
         base_type::swap(other);
         std::swap(this->vartype_, other.vartype_);
+        std::swap(this->lower_bound_, other.lower_bound_);
+        std::swap(this->upper_bound_, other.upper_bound_);
     }
 
-    bias_type upper_bound(index_type v) const {
-        return vartype_info<bias_type>::default_max(this->vartype_);
-    }
+    const bias_type& upper_bound(index_type v) const { return this->upper_bound_; }
 
     /// Return the vartype of the binary quadratic model.
     const Vartype& vartype() const { return vartype_; }
@@ -1103,6 +1111,10 @@ class BinaryQuadraticModel : public QuadraticModelBase<Bias, Index> {
 
  private:
     Vartype vartype_;
+
+    // hold the lower and upper bounds for the vartype
+    bias_type lower_bound_;
+    bias_type upper_bound_;
 };
 
 template <class T>

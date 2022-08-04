@@ -92,7 +92,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bias_type energy[Iter](Iter sample_start)
         bint is_linear()
         bias_type& linear(index_type)
-        const bias_type lower_bound(index_type)
+        const bias_type& lower_bound(index_type) const
         bias_type& offset()
         bias_type quadratic(index_type, index_type)
         bias_type quadratic_at(index_type, index_type) except +
@@ -108,7 +108,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void scale(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except +
         void swap_variables(index_type, index_type)
-        const bias_type upper_bound(index_type)
+        const bias_type& upper_bound(index_type) const
         cppVartype& vartype()
         cppVartype& vartype(index_type)
 
@@ -146,7 +146,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         bias_type energy[Iter](Iter sample_start)
         bint is_linear()
         bias_type& linear(index_type)
-        const bias_type& lower_bound(index_type)
+        const bias_type& lower_bound(index_type) const
         size_type nbytes()
         size_type nbytes(bint)
         pair[const_neighborhood_iterator, const_neighborhood_iterator] neighborhood(size_type)
@@ -161,7 +161,7 @@ cdef extern from "dimod/quadratic_model.h" namespace "dimod" nogil:
         void set_quadratic(index_type, index_type, bias_type)
         void swap(cppQuadraticModel&)
         void swap_variables(index_type, index_type)
-        const bias_type& upper_bound(index_type)
+        const bias_type& upper_bound(index_type) const
         const cppVartype& vartype(index_type)
 
 cdef extern from "dimod/lp.h" namespace "dimod::lp" nogil:
