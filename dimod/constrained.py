@@ -18,6 +18,7 @@ Constrained Quadratic Model class.
 
 from __future__ import annotations
 
+import collections
 import collections.abc as abc
 import copy
 import json
@@ -61,6 +62,14 @@ class ConstraintData(NamedTuple):
     sense: Sense
     activity: float
     violation: float
+
+
+class SoftConstraint(NamedTuple):
+    weight: float
+    norm: Hashable
+
+
+# SoftConstraint = collections.namedtuple('SoftConstraint', ['weight', 'norm'])
 
 
 class ConstrainedQuadraticModel:
@@ -157,11 +166,12 @@ class ConstrainedQuadraticModel:
         'capacity_bin_3'
 
     """
+
     def __init__(self):
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
-        self.discrete: Set[Hashable] = set()  # collection of discrete constraints
-
+        self.discrete: Set[Hashable] = set()  # collection of discrete constraints\
+        self.soft: Dict[Hashable, SoftConstraint] = dict()
         self._objective = QuadraticModel()
 
     @property
@@ -238,7 +248,11 @@ class ConstrainedQuadraticModel:
                                   sense: Union[Sense, str],
                                   rhs: Bias = 0,
                                   label: Optional[Hashable] = None,
-                                  copy: bool = True) -> Hashable:
+                                  copy: bool = True,
+                                  soft: bool = False,
+                                  weight: float = 1,
+                                  norm: Hashable = 'L0',
+                                  ) -> Hashable:
         """Add a constraint from a quadratic model.
 
         Args:
@@ -307,12 +321,18 @@ class ConstrainedQuadraticModel:
         else:
             raise RuntimeError("unexpected sense")
 
+        if soft:
+            self.soft[label] = SoftConstraint(weight, norm)
+
         return label
 
     def add_constraint_from_comparison(self,
                                        comp: Comparison,
                                        label: Optional[Hashable] = None,
-                                       copy: bool = True) -> Hashable:
+                                       copy: bool = True,
+                                       soft: bool = False,
+                                       weight: float = 1,
+                                       norm: Hashable = 'L0',) -> Hashable:
         r"""Add a constraint from a symbolic comparison.
 
         For a more detailed discussion of symbolic model manipulation, see
@@ -395,7 +415,8 @@ class ConstrainedQuadraticModel:
 
         if isinstance(comp.lhs, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(comp.lhs, comp.sense, rhs=comp.rhs,
-                                                  label=label, copy=copy)
+                                                  label=label, copy=copy, soft=soft,
+                                                  weight=weight, norm=norm)
         else:
             raise ValueError("comparison should have a binary quadratic model "
                              "or quadratic model lhs.")
@@ -404,6 +425,9 @@ class ConstrainedQuadraticModel:
                                      sense: Union[Sense, str],
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
+                                     soft: bool = False,
+                                     weight: float = 1,
+                                     norm: Hashable = 'L0'
                                      ) -> Hashable:
         """Add a constraint from an iterable of tuples.
 
@@ -442,7 +466,8 @@ class ConstrainedQuadraticModel:
 
         # use quadratic model in the future
         return self.add_constraint_from_model(
-            qm, sense, rhs=rhs, label=label, copy=False)
+            qm, sense, rhs=rhs, label=label, copy=False,
+            soft=soft, weight=weight, norm=norm)
 
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.
