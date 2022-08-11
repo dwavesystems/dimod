@@ -36,6 +36,7 @@ from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, Name
 
 import numpy as np
 
+import dimod
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.exceptions import InfeasibileModelError
@@ -66,7 +67,7 @@ class ConstraintData(NamedTuple):
 
 class SoftConstraint(NamedTuple):
     weight: float
-    norm: Hashable
+    penalty: Hashable
 
 
 # SoftConstraint = collections.namedtuple('SoftConstraint', ['weight', 'norm'])
@@ -249,9 +250,8 @@ class ConstrainedQuadraticModel:
                                   rhs: Bias = 0,
                                   label: Optional[Hashable] = None,
                                   copy: bool = True,
-                                  soft: bool = False,
-                                  weight: float = 1,
-                                  norm: Hashable = 'L0',
+                                  weight: Optional[float] = None,
+                                  penalty: Hashable = 'linear',
                                   ) -> Hashable:
         """Add a constraint from a quadratic model.
 
@@ -268,6 +268,13 @@ class ConstrainedQuadraticModel:
             copy: If `True`, model ``qm`` is copied. This can be set to `False`
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -321,8 +328,22 @@ class ConstrainedQuadraticModel:
         else:
             raise RuntimeError("unexpected sense")
 
-        if soft:
-            self.soft[label] = SoftConstraint(weight, norm)
+        if weight is not None:
+
+            if weight < 0:
+                raise ValueError("weight for soft-constraint should be >= 0")
+
+            if penalty not in ['linear', 'quadratic']:
+                raise ValueError(f"penalty should be `linear` or `quadratic`. "
+                                 f"Given: {penalty}")
+
+            if penalty == 'quadratic':
+                # if the qm is a BinaryQuadraticModel then we are fine.
+                # But it is possible to build QuadraticModels with only
+                # Binary Variables, so we have to check for that
+                if isinstance(qm, dimod.QuadraticModel) and not all([qm.vartype(v) is dimod.BINARY for v in qm.variables]):
+                    raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
+            self.soft[label] = SoftConstraint(weight, penalty)
 
         return label
 
@@ -330,9 +351,9 @@ class ConstrainedQuadraticModel:
                                        comp: Comparison,
                                        label: Optional[Hashable] = None,
                                        copy: bool = True,
-                                       soft: bool = False,
-                                       weight: float = 1,
-                                       norm: Hashable = 'L0',) -> Hashable:
+                                       weight: Optional[float] = None,
+                                       penalty: Hashable = 'linear',
+                                       ) -> Hashable:
         r"""Add a constraint from a symbolic comparison.
 
         For a more detailed discussion of symbolic model manipulation, see
@@ -349,6 +370,13 @@ class ConstrainedQuadraticModel:
             copy: If `True`, the model used in the comparison is copied. You can
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -415,8 +443,8 @@ class ConstrainedQuadraticModel:
 
         if isinstance(comp.lhs, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(comp.lhs, comp.sense, rhs=comp.rhs,
-                                                  label=label, copy=copy, soft=soft,
-                                                  weight=weight, norm=norm)
+                                                  label=label, copy=copy, weight=weight,
+                                                  penalty=penalty)
         else:
             raise ValueError("comparison should have a binary quadratic model "
                              "or quadratic model lhs.")
@@ -425,9 +453,8 @@ class ConstrainedQuadraticModel:
                                      sense: Union[Sense, str],
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
-                                     soft: bool = False,
-                                     weight: float = 1,
-                                     norm: Hashable = 'L0'
+                                     weight: Optional[float] = None,
+                                     penalty: Hashable = 'linear',
                                      ) -> Hashable:
         """Add a constraint from an iterable of tuples.
 
@@ -441,6 +468,13 @@ class ConstrainedQuadraticModel:
 
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -467,7 +501,7 @@ class ConstrainedQuadraticModel:
         # use quadratic model in the future
         return self.add_constraint_from_model(
             qm, sense, rhs=rhs, label=label, copy=False,
-            soft=soft, weight=weight, norm=norm)
+            weight=weight, penalty=penalty)
 
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.

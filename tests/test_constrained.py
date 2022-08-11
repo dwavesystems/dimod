@@ -201,6 +201,46 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
+class TestSoftConstraint(unittest.TestCase):
+
+    def test_bqm_linear_penalty(self):
+        cqm = CQM()
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='linear')
+        self.assertIn(c, cqm.soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_bqm_quadratic_penalty(self):
+        cqm = CQM()
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='quadratic')
+        self.assertIn(c, cqm.soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_qm_quadratic_penalty(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('BINARY', 'y')
+        qm.set_linear('x', 1)
+        qm.set_linear('y', 1)
+        c = cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
+        self.assertIn(c, cqm.soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_qm_quadratic_penalty_no_binary(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('INTEGER', 'y', lower_bound=0, upper_bound=10)
+        qm.add_variable('REAL', 'z', lower_bound=0, upper_bound=10)
+        qm.set_linear('x', 1)
+        qm.set_linear('y', 1)
+        qm.set_linear('z', 1)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
+
+
 class TestBounds(unittest.TestCase):
     def test_inconsistent(self):
         i0 = Integer('i')
