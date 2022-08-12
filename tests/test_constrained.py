@@ -1020,6 +1020,25 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.sense, new.constraints[label].sense)
         self.assertSetEqual(cqm.discrete, new.discrete)
 
+    def test_functional_soft(self):
+        cqm = CQM()
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=', weight=2.0, penalty='quadratic')
+        cqm.add_constraint(Spin('a') * Integer('d') * 5 <= 3, weight=3.0)
+
+        new = CQM.from_file(cqm.to_file())
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+
+        for label, info in cqm.soft.items():
+            self.assertEqual(info.weight, new.soft[label].weight)
+            self.assertEqual(info.penalty, new.soft[label].penalty)
+
     def test_header(self):
         from dimod.serialization.fileview import read_header
 
@@ -1107,7 +1126,7 @@ class TestSetObjective(unittest.TestCase):
     def test_set(self):
         cqm = CQM()
         cqm.set_objective(Integer('a') * 5)
-        self.assertTrue(cqm.objective.is_equal(Integer('a') * 5))
+        self.assertTrue(cqm.objective.is_(Integer('a') * 5))
 
     def test_terms_objective(self):
         cqm = CQM()

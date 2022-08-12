@@ -67,7 +67,7 @@ class ConstraintData(NamedTuple):
 
 class SoftConstraint(NamedTuple):
     weight: float
-    penalty: Hashable
+    penalty: str
 
 
 # SoftConstraint = collections.namedtuple('SoftConstraint', ['weight', 'norm'])
@@ -251,7 +251,7 @@ class ConstrainedQuadraticModel:
                                   label: Optional[Hashable] = None,
                                   copy: bool = True,
                                   weight: Optional[float] = None,
-                                  penalty: Hashable = 'linear',
+                                  penalty: str = 'linear',
                                   ) -> Hashable:
         """Add a constraint from a quadratic model.
 
@@ -352,7 +352,7 @@ class ConstrainedQuadraticModel:
                                        label: Optional[Hashable] = None,
                                        copy: bool = True,
                                        weight: Optional[float] = None,
-                                       penalty: Hashable = 'linear',
+                                       penalty: str = 'linear',
                                        ) -> Hashable:
         r"""Add a constraint from a symbolic comparison.
 
@@ -454,7 +454,7 @@ class ConstrainedQuadraticModel:
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
                                      weight: Optional[float] = None,
-                                     penalty: Hashable = 'linear',
+                                     penalty: str = 'linear',
                                      ) -> Hashable:
         """Add a constraint from an iterable of tuples.
 
@@ -1199,8 +1199,15 @@ class ConstrainedQuadraticModel:
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
                 sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
                 discrete = any(zf.read(f"constraints/{constraint}/discrete"))
+
                 label = deserialize_variable(json.loads(constraint))
-                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
+                if f"constraints/{constraint}/weight" in zf.namelist() \
+                        and f"constraints/{constraint}/penalty" in zf.namelist():
+                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"), np.float64)[0]
+                    penalty = zf.read(f"constraints/{constraint}/penalty").decode('ascii')
+                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty)
+                else:
+                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
                 if discrete:
                     cqm.discrete.add(label)
 
@@ -1870,7 +1877,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.2):
+        Format Specification (Version 1.3):
 
             This format is inspired by the `NPY format`_
 
@@ -1910,6 +1917,13 @@ class ConstrainedQuadraticModel:
             the `lhs` as a fileview, the `rhs` as a float and the sense
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
+            Weighted constraints also contain a `weight` and `penalty` file,
+            encoding the weight and the penalty for the constraint.
+
+        Format Specification (Version 1.2):
+            This format is the same as Version 1.3, except that there are no
+            weighted constraints, and thus the `weight` and `penalty` files
+            are not present.
 
         Format Specification (Version 1.1):
 
@@ -1969,6 +1983,13 @@ class ConstrainedQuadraticModel:
 
                 discrete = bytes((label in self.discrete,))
                 zf.writestr(f'constraints/{lstr}/discrete', discrete)
+
+                # soft constraints
+                if label in self.soft:
+                    weight = np.float64(self.soft[label].weight).tobytes()
+                    penalty = bytes(self.soft[label].penalty, 'ascii')
+                    zf.writestr(f'constraints/{lstr}/weight', weight)
+                    zf.writestr(f'constraints/{lstr}/penalty', penalty)
 
         file.seek(0)
         return file
