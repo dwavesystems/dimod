@@ -162,7 +162,6 @@ class ConstrainedQuadraticModel:
         'capacity_bin_3'
 
     """
-
     def __init__(self):
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
@@ -369,7 +368,7 @@ class ConstrainedQuadraticModel:
                 is interpreted as hard.
 
             penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
                 only accepted if the constraint has binary variables.
 
         Returns:
@@ -467,7 +466,7 @@ class ConstrainedQuadraticModel:
                 is interpreted as hard.
 
             penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
                 only accepted if the constraint has binary variables.
 
         Returns:
