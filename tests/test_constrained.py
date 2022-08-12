@@ -1126,7 +1126,7 @@ class TestSetObjective(unittest.TestCase):
     def test_set(self):
         cqm = CQM()
         cqm.set_objective(Integer('a') * 5)
-        self.assertTrue(cqm.objective.is_(Integer('a') * 5))
+        self.assertTrue(cqm.objective.is_equal(Integer('a') * 5))
 
     def test_terms_objective(self):
         cqm = CQM()
