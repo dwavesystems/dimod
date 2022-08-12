@@ -18,7 +18,6 @@ Constrained Quadratic Model class.
 
 from __future__ import annotations
 
-import collections
 import collections.abc as abc
 import copy
 import json
@@ -36,7 +35,6 @@ from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, Name
 
 import numpy as np
 
-import dimod
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
 from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
 from dimod.exceptions import InfeasibileModelError
@@ -68,9 +66,6 @@ class ConstraintData(NamedTuple):
 class SoftConstraint(NamedTuple):
     weight: float
     penalty: str
-
-
-# SoftConstraint = collections.namedtuple('SoftConstraint', ['weight', 'norm'])
 
 
 class ConstrainedQuadraticModel:
@@ -171,7 +166,7 @@ class ConstrainedQuadraticModel:
     def __init__(self):
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
-        self.discrete: Set[Hashable] = set()  # collection of discrete constraints\
+        self.discrete: Set[Hashable] = set()  # collection of discrete constraints
         self.soft: Dict[Hashable, SoftConstraint] = dict()
         self._objective = QuadraticModel()
 
@@ -273,7 +268,7 @@ class ConstrainedQuadraticModel:
                 is interpreted as hard.
 
             penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored is weight is None. 'quadratic'
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
                 only accepted if the constraint has binary variables.
 
         Returns:
@@ -333,16 +328,15 @@ class ConstrainedQuadraticModel:
             if weight < 0:
                 raise ValueError("weight for soft-constraint should be >= 0")
 
-            if penalty not in ['linear', 'quadratic']:
-                raise ValueError(f"penalty should be `linear` or `quadratic`. "
-                                 f"Given: {penalty}")
-
             if penalty == 'quadratic':
                 # if the qm is a BinaryQuadraticModel then we are fine.
                 # But it is possible to build QuadraticModels with only
                 # Binary Variables, so we have to check for that
                 if isinstance(qm, dimod.QuadraticModel) and not all([qm.vartype(v) is dimod.BINARY for v in qm.variables]):
                     raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
+            elif penalty != 'linear':
+                raise ValueError(f"penalty should be `linear` or `quadratic`. "
+                                 f"Given: {penalty}")
             self.soft[label] = SoftConstraint(weight, penalty)
 
         return label
