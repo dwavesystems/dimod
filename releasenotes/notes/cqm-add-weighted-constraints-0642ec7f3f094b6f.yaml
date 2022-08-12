@@ -3,5 +3,4 @@ features:
     Added ``weight`` and `penalty` parameters on ``ConstrainedQuadraticModel.add_constraint`` methods
     to encoded weighted constraints.
   - |
-      Add `weight` and `penalty` files the file created by
-    ``ConstrainedQuadraticModel.to_file``. This increments the version to 1.3.
+    Add constrained quadratic model serialization version 1.3 to support soft constraints.
