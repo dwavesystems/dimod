@@ -1,0 +1,7 @@
+features:
+  - |
+    Added ``weight`` and `penalty` parameters on ``ConstrainedQuadraticModel.add_constraint`` methods
+    to encoded weighted constraints.
+  - |
+      Add `weight` and `penalty` files the file created by
+    ``ConstrainedQuadraticModel.to_file``. This increments the version to 1.3.
