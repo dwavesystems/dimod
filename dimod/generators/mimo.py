@@ -132,10 +132,11 @@ def cdma(num_var: int = 64,  var_per_unit_bandwidth: float = 1.5, SNR: float = 5
     else:
         if constellation == 'BPSK' and len(planted_state) != num_var:
             raise ValueError('planted state is wrong length, should be iterable of num_var real values')
-        elif len(planted_state) != 2*num_var:
-            raise ValueError('planted state is wrong length, should be iterable of 2*num_var real values')
-            transmitted_symbolsI = np.array([planted_state[i] for i in range(num_var, 2*num_var)], dtype=float, shape=(1,num_var))
-        transmitted_symbols = np.array([planted_state[i] for i in range(num_var)], dtype=float, shape=(1,num_var))
+        else:
+            if len(planted_state) != 2*num_var:
+                raise ValueError('planted state is wrong length, should be iterable of 2*num_var real values')
+            transmitted_symbolsI = np.array([[planted_state[i] for i in range(num_var, 2*num_var)]], dtype=float)
+        transmitted_symbols = np.array([[planted_state[i] for i in range(num_var)]], dtype=float)
     # BPSK (real-real) part
     signal = np.reshape(np.sum(spreading_sequence*transmitted_symbols, axis=1),(bandwidth,1)) + white_gaussian_noise
     E0 = sum(signal*signal)
@@ -181,55 +182,3 @@ def cdma(num_var: int = 64,  var_per_unit_bandwidth: float = 1.5, SNR: float = 5
             couplingDict[(u,v)] = J[u][v] + J[v][u]
     bqm = dimod.BinaryQuadraticModel(hDict,couplingDict,dimod.Vartype.SPIN)
     return bqm, random_state, natural_scale, E0
-
-def main():
-    for constellation in ['BPSK','QPSK','16QAM']:
-        print(constellation)
-        print("__main__ calls cdma() to generate an interesting CDMA instance at scale 32 as demonstration.")
-        #cdma(8, 1.5, 0.7, True, 1981) # Checked this case against matlab generator.
-    
-        print('cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, seed = seed, discreteSS = True)')
-        alpha = 1.4
-        SNR = 5
-        num_var = 128
-        seed = None
-        bqm,seed,natural_scale,E0 = cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, constellation=constellation)
-        EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
-        print('Energy in expectation (of all 1 transmitted signal)')
-        print(-2*num_var/(SNR*alpha))
-        print('Energy this instance:')
-        print(EGS0)
-        effFields = np.zeros(num_var)
-        for key in bqm.quadratic:
-            effFields[key[0]] += bqm.adj[key[0]][key[1]]
-            effFields[key[1]] += bqm.adj[key[0]][key[1]]
-        for key in bqm.linear:
-            effFields[key] += bqm.linear[key]
-        print('Median effective field')
-        print(np.median(effFields))
-        print('Max effective field (~zero, marginally stable)')
-        print(max(effFields))
-        print('Integer valued (Gap 2, disc. 1): cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, seed = seed, discreteSS = True, noise_discretization = 1)')
-        if constellation == 'BPSK':
-            bqm, seed, natural_scale,E0 = cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, noise_discretization = 1)
-    
-            EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
-    
-            effFields = np.zeros(num_var)
-            for key in bqm.quadratic:
-                effFields[key[0]] += bqm.adj[key[0]][key[1]]
-                effFields[key[1]] += bqm.adj[key[0]][key[1]]
-            for key in bqm.linear:
-                effFields[key] += bqm.linear[key]
-            print('Discretized case:')
-            print(num_var/(2*SNR*alpha)*natural_scale)
-            print(EGS0)
-            print(np.median(effFields))
-            print(max(effFields))
-            print('Scaled to match undiscretized case:')
-            print(-2*num_var/(SNR*alpha))
-            print(EGS0/natural_scale)
-            print(np.median(effFields)/natural_scale)
-            print(max(effFields)/natural_scale)
-if __name__ == "__main__":
-    main()
