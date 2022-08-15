@@ -27,7 +27,6 @@ except ImportError:
 else:
     _networkx = True
 
-
 class TestRandomGNMRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
         def gen(n):
@@ -1205,3 +1204,57 @@ class TestMagicSquares(unittest.TestCase):
                         self.assertEqual(term, -2)
                     else:
                         self.assertEqual(term, 24)
+class TestMIMO(unittest.TestCase):
+    
+        
+    def all_defaults(self):
+        bqm = dimod.generators.mimo.cdma()
+    def test_bpsk(self):
+        num_var=32
+        tup = dimod.generators.mimo.cdma(num_var=num_var, constellation='BPSK')
+        bqm = tup[0]
+        # Seed specific test (placeholder):
+        def _effFields(bqm):
+            num_var = bqm.num_variables
+            effFields = np.zeros(num_var)
+            for key in bqm.quadratic:
+                effFields[key[0]] += bqm.adj[key[0]][key[1]]
+                effFields[key[1]] += bqm.adj[key[0]][key[1]]
+            for key in bqm.linear:
+                effFields[key] += bqm.linear[key]
+            return effFields
+        
+        alpha = 1.4
+        SNR = 5
+        num_var = 128
+        seed = None
+        tup = dimod.generators.mimo.cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, constellation='BPSK')
+        bqm = tup[0]
+        EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
+        # print(EGS0,tup[-1]) #Resolve later, aren't these meant to agree - maybe missing diagonal terms
+        # Expect a small deviation in energy from expectation, although with low probability failures possible (hard code seed final version):
+        expected_energy = -2*num_var/(SNR*alpha)
+        self.assertLess(abs(EGS0/expected_energy - 1),0.25)
+        # Calculate effective fields (slow)
+        effFields = _effFields(bqm)
+        #Planted therefore local minima: but some instances violate criteria (0), hard-code seed later:
+        self.assertLess(max(effFields),1) 
+        for noise_discretization in [1]:
+            # Minimal discretization is already pretty good:
+            tup = dimod.generators.mimo.cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, noise_discretization = noise_discretization)
+            bqm = tup[0]
+            EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
+            self.assertLess(abs(EGS0/expected_energy/tup[2] - 1),0.25) #Discrization at this scale doesn't change much.
+            effFields = _effFields(bqm)
+            # Planted therefore local minima: but some instances violate criteria (0), hard-code seed later:
+            self.assertLess(max(effFields)/tup[2],1) #Discrization at this scale doesn't change much.
+    def test_qpsk(self):
+        num_var=32
+        bqm = dimod.generators.mimo.cdma(num_var=num_var, constellation='QPSK')
+    def test_16qam(self):
+        num_var=16
+        bqm = dimod.generators.mimo.cdma(num_var=num_var,constellation='16QAM')
+        planted_state = np.random.choice([-3,-1,1,3],2*num_var)
+        #All 1, without loss of generality
+        bqm = dimod.generators.mimo.cdma(num_var=num_var,constellation='16QAM',
+             planted_state=planted_state)
