@@ -23,7 +23,7 @@ __all__ = ['random_knapsack']
 
 
 def random_knapsack(num_items: int,
-                    seed: typing.Optional[int] = None,
+                    seed: typing.Union[None, int, np.random.RandomState] = None,
                     value_range: typing.Tuple[int, int] = (10, 30),
                     weight_range: typing.Tuple[int, int] = (10, 30),
                     tightness_ratio: float = 0.5,

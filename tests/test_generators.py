@@ -1205,56 +1205,107 @@ class TestMagicSquares(unittest.TestCase):
                     else:
                         self.assertEqual(term, 24)
 class TestMIMO(unittest.TestCase):
+
+
+    def _effective_fields(self,bqm):
+        num_var = bqm.num_variables
+        effFields = np.zeros(num_var)
+        for key in bqm.quadratic:
+            effFields[key[0]] += bqm.adj[key[0]][key[1]]
+            effFields[key[1]] += bqm.adj[key[0]][key[1]]
+        for key in bqm.linear:
+            effFields[key] += bqm.linear[key]
+        return effFields
+
+    def test_quadratic_forms(self):
+        # Quadratic form must evaluate to match original objective:
+        num_var = 3
+        bandwidth = 5
+        F = np.random.normal(0,1,size=(bandwidth,num_var)) + 1j*np.random.normal(0,1,size=(bandwidth,num_var))
+        y = np.random.normal(0,1,size=(bandwidth,1)) + 1j*np.random.normal(0,1,size=(bandwidth,1))
+        # Random test case:
+        vUnwrap = np.random.normal(0,1,size=(2*num_var,1))
+        v = vUnwrap[:num_var,:] + 1j*vUnwrap[num_var:,:]
+        vec = y - np.matmul(F,v)
+        val1 = np.matmul(vec.T.conj(),vec)
+        # Check complex quadratic form
+        k, h, J = dimod.generators.mimo._quadratic_form(y,F)
+        val2 = np.matmul(v.T.conj(),np.matmul(J,v)) + (np.matmul(h.T.conj(),v)).real + k
+        self.assertLess(abs(val1 - val2),1e-8)
+        # Check unwrapped complex quadratic form:
+        h,J = dimod.generators.mimo._real_quadratic_form(h,J)
+        val3 = np.matmul(vUnwrap.T,np.matmul(J,vUnwrap)) + np.matmul(h.T,vUnwrap) + k
+        self.assertLess(abs(val1 - val3),1e-8)
+        # Check zero energy for y generated from F:
+        y = np.matmul(F,v)
+        k, h, J = dimod.generators.mimo._quadratic_form(y,F)
+        val2 = np.matmul(v.T.conj(),np.matmul(J,v)) + (np.matmul(h.T.conj(),v)).real + k
+        self.assertLess(abs(val2),1e-8)
+        h, J = dimod.generators.mimo._real_quadratic_form(h,J)
+        val3 = np.matmul(vUnwrap.T,np.matmul(J,vUnwrap)) + np.matmul(h.T,vUnwrap) + k
+        self.assertLess(abs(val3),1e-8)
+        
+    def test_amplitude_modulated_quadratic_form(self):
+        num_var = 3
+        h = np.random.random(size=(num_var,1))
+        J = np.random.random(size=(num_var,num_var))
+        mods = ['BPSK','QPSK','16QAM','64QAM']
+        mod_pref = [1,1,2,3]
+        for offset in [0]:
+            for modI,modulation in enumerate(mods):
+                hO, JO = dimod.generators.mimo._amplitude_modulated_quadratic_form(h,J,modulation=modulation)
+                self.assertEqual(hO.shape[0],num_var*mod_pref[modI])
+                self.assertEqual(JO.shape[0],hO.shape[0])
+                self.assertEqual(JO.shape[0],JO.shape[1])
+                max_val = 2**mod_pref[modI]-1
+                self.assertLess(abs(max_val*np.sum(h)-np.sum(hO)),1e-8)
+                self.assertLess(abs(max_val*max_val*np.sum(J)-np.sum(JO)),1e-8)
+                #self.assertEqual(h.shape[0],num_var*mod_pref[modI])
+                #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))),1e-8)
     
+    def test_spin_encoded_mimo(self):
+        # Quadratic form must evaluate to match original objective:
+        for num_var, bandwidth in [(1,1),(5,1),(1,3),(11,7)]:
+            num_var = 5
+            bandwidth = 3
+            F = np.random.normal(0,1,size=(bandwidth,num_var)) + 1j*np.random.normal(0,1,size=(bandwidth,num_var))
+            y = np.random.normal(0,1,size=(bandwidth,1)) + 1j*np.random.normal(0,1,size=(bandwidth,1))
+            bqm = dimod.generators.mimo.spin_encoded_mimo(modulation='QPSK', y=y, F=F)
+            mod_pref = [1,1,2,3]
+            mods = ['BPSK','QPSK','16QAM','64QAM']
+            for modI,modulation in enumerate(mods):
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, num_var=num_var, bandwidth=bandwidth)
+                if modulation == 'BPSK':
+                    transmitted_symbols = np.ones(shape=(num_var,1))
+                    F_simple = np.ones(shape=(bandwidth,num_var))
+                else:
+                    max_val = 2**mod_pref[modI]-1
+                    # All 1 spin encoding (max symbol in constellation)
+                    transmitted_symbols = max_val*(np.ones(shape=(num_var,1)) 
+                                               + 1j*np.ones(shape=(num_var,1)))
+                    F_simple = np.ones(shape=(bandwidth,num_var)) + 1j*np.ones(shape=(bandwidth,num_var))
+                #Trivial channel:
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
+                                                              F=F_simple,
+                                                              transmitted_symbols=transmitted_symbols,
+                                                              use_offset=True, SNR=float('Inf'))
+                #Machine numbers:
+                ef = self._effective_fields(bqm)
+                self.assertLessEqual(np.max(ef),0)
         
-    def all_defaults(self):
-        bqm = dimod.generators.mimo.cdma()
-    def test_bpsk(self):
-        num_var=32
-        tup = dimod.generators.mimo.cdma(num_var=num_var, constellation='BPSK')
-        bqm = tup[0]
-        # Seed specific test (placeholder):
-        def _effFields(bqm):
-            num_var = bqm.num_variables
-            effFields = np.zeros(num_var)
-            for key in bqm.quadratic:
-                effFields[key[0]] += bqm.adj[key[0]][key[1]]
-                effFields[key[1]] += bqm.adj[key[0]][key[1]]
-            for key in bqm.linear:
-                effFields[key] += bqm.linear[key]
-            return effFields
-        
-        alpha = 1.4
-        SNR = 5
-        num_var = 128
-        seed = None
-        tup = dimod.generators.mimo.cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, constellation='BPSK')
-        bqm = tup[0]
-        EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
-        # print(EGS0,tup[-1]) #Resolve later, aren't these meant to agree - maybe missing diagonal terms
-        # Expect a small deviation in energy from expectation, although with low probability failures possible (hard code seed final version):
-        expected_energy = -2*num_var/(SNR*alpha)
-        self.assertLess(abs(EGS0/expected_energy - 1),0.25)
-        # Calculate effective fields (slow)
-        effFields = _effFields(bqm)
-        #Planted therefore local minima: but some instances violate criteria (0), hard-code seed later:
-        self.assertLess(max(effFields),1) 
-        for noise_discretization in [1]:
-            # Minimal discretization is already pretty good:
-            tup = dimod.generators.mimo.cdma(num_var = num_var,var_per_unit_bandwidth = alpha, SNR = SNR, random_state = seed, discreteSS = True, noise_discretization = noise_discretization)
-            bqm = tup[0]
-            EGS0 = sum(bqm.adj[key[0]][key[1]] for key in bqm.quadratic ) + sum([bqm.linear[key] for key in bqm.linear])
-            self.assertLess(abs(EGS0/expected_energy/tup[2] - 1),0.25) #Discrization at this scale doesn't change much.
-            effFields = _effFields(bqm)
-            # Planted therefore local minima: but some instances violate criteria (0), hard-code seed later:
-            self.assertLess(max(effFields)/tup[2],1) #Discrization at this scale doesn't change much.
-    def test_qpsk(self):
-        num_var=32
-        bqm = dimod.generators.mimo.cdma(num_var=num_var, constellation='QPSK')
-    def test_16qam(self):
-        num_var=16
-        bqm = dimod.generators.mimo.cdma(num_var=num_var,constellation='16QAM')
-        planted_state = np.random.choice([-3,-1,1,3],2*num_var)
-        #All 1, without loss of generality
-        bqm = dimod.generators.mimo.cdma(num_var=num_var,constellation='16QAM',
-             planted_state=planted_state)
+                self.assertEqual(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))),0)
+           
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
+                                                              num_var=num_var, bandwidth=bandwidth,
+                                                              transmitted_symbols=transmitted_symbols,
+                                                              use_offset=True, SNR=float('Inf'))
+                ef=self._effective_fields(bqm)
+                self.assertLessEqual(np.max(ef),0)
+                self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-8)
+                # Add noise, check that offset is positive.
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
+                                                              num_var=num_var, bandwidth=bandwidth,
+                                                              transmitted_symbols=transmitted_symbols,
+                                                              use_offset=True, SNR=1)
+                self.assertLess(0,abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))))
+         
