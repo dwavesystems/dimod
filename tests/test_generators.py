@@ -1283,18 +1283,18 @@ class TestMIMO(unittest.TestCase):
                     # All 1 spin encoding (max symbol in constellation)
                     transmitted_symbols = max_val*(np.ones(shape=(num_var,1)) 
                                                + 1j*np.ones(shape=(num_var,1)))
-                    F_simple = np.ones(shape=(bandwidth,num_var)) + 1j*np.ones(shape=(bandwidth,num_var))
-                #Trivial channel:
+                    F_simple = np.ones(shape=(bandwidth,num_var)) + 1j*np.zeros(shape=(bandwidth,num_var))
+                #Trivial channel (F_simple), machine numbers
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
                                                               F=F_simple,
                                                               transmitted_symbols=transmitted_symbols,
                                                               use_offset=True, SNR=float('Inf'))
-                #Machine numbers:
+                
                 ef = self._effective_fields(bqm)
                 self.assertLessEqual(np.max(ef),0)
-        
                 self.assertEqual(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))),0)
-           
+                
+                #Random channel, potential precision
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
                                                               num_var=num_var, bandwidth=bandwidth,
                                                               transmitted_symbols=transmitted_symbols,
@@ -1302,7 +1302,8 @@ class TestMIMO(unittest.TestCase):
                 ef=self._effective_fields(bqm)
                 self.assertLessEqual(np.max(ef),0)
                 self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-8)
-                # Add noise, check that offset is positive.
+
+                # Add noise, check that offset is positive (random, scales as num_var/SNR)
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
                                                               num_var=num_var, bandwidth=bandwidth,
                                                               transmitted_symbols=transmitted_symbols,
