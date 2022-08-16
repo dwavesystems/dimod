@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 # version is used by serialization below so we need it before everything
-__version__ = '0.11.4'
+__version__ = '0.11.5'
 
 from dimod.constrained import *
 import dimod.constrained
