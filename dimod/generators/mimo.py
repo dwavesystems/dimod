@@ -20,7 +20,7 @@
 
 import numpy as np
 import dimod 
-
+from itertools import product
 from typing import Callable, Sequence, Union, Iterable
 
 def _quadratic_form(y,F):
@@ -57,16 +57,18 @@ def _real_quadratic_form(h,J):
     parts.
     '''
     if h.dtype == np.complex128 or J.dtype == np.complex128:
-        h = np.concatenate((h.real,h.imag),axis=0)
-        J = np.concatenate((np.concatenate((J.real,J.imag),axis=0),
+        hR = np.concatenate((h.real,h.imag),axis=0)
+        JR = np.concatenate((np.concatenate((J.real,J.imag),axis=0),
                             np.concatenate((J.imag.T,J.real),axis=0)),
                            axis=1)
-    return h,J
+        return hR, JR
+    else:
+        return h, J
 
 def _amplitude_modulated_quadratic_form(h,J,modulation):
     if modulation == 'BPSK' or modulation == 'QPSK':
         #Easy case, just extract diagonal
-        pass
+        return h, J
     else:
         #Quadrature + amplitude modulation
         if modulation == '16QAM':
@@ -76,10 +78,72 @@ def _amplitude_modulated_quadratic_form(h,J,modulation):
         else:
             raise ValueError('unknown modulation')
         amps = 2**np.arange(num_amps)
-        h = np.kron(h,amps[:,np.newaxis])
-        J = np.kron(J,np.kron(amps[:,np.newaxis],amps[np.newaxis,:]))
+        hA = np.kron(amps[:,np.newaxis],h)
+        JA = np.kron(np.kron(amps[:,np.newaxis],amps[np.newaxis,:]),J)
+        return hA, JA 
+
     
-    return h, J
+    
+def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
+    "Converts binary/quadrature amplitude modulated symbols to spins, assuming linear encoding"
+    num_symbols = len(symbols)
+    if modulation == 'BPSK':
+        return symbols.copy()
+    else:
+        if modulation == 'QPSK':
+            # spins_per_real_symbol = 1
+            return np.concatenate((symbols.real,symbols.imag))
+        elif modulation == '16QAM':
+            spins_per_real_symbol = 2
+        elif modulation == '64QAM':
+            spins_per_real_symbol = 3
+        else:
+            raise ValueError('Unsupported modulation')
+        # A map from integer parts to real is clearest (and sufficiently performant),
+        # generalizes to gray code more easily as well:
+        
+        symb_to_spins = { np.sum([x*2**xI for xI,x in enumerate(spins)]) : spins
+                          for spins in product(*[(-1,1) for x in range(spins_per_real_symbol)])}
+        print(symb_to_spins)
+        spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real],
+                                                [symb_to_spins[symb][prec] for symb in symbols.imag]))
+                                for prec in range(spins_per_real_symbol)])
+        
+    return spins
+
+def spins_to_symbols(spins: np.array, modulation: str = None, num_symbols: int = None) -> np.array:
+    "Converts spins to modulated symbols assuming a linear encoding"
+    num_spins = len(spins)
+    if num_symbols is None:
+        if modulation == 'BPSK':
+            num_symbols = num_spins
+        elif modulation == 'QPSK':
+            num_symbols = num_spins//2
+        elif modulation == '16QAM':
+            num_symbols = num_spins//4
+        elif modulation == '64QAM':
+            num_symbols = num_spins//6
+        else:
+            raise ValueError('Unsupported modulation')
+        
+    if num_symbols == num_spins:
+        symbols = spins 
+    else:
+        num_amps, rem = divmod(len(spins),(2*num_symbols))
+        if num_amps > 64:
+            raise ValueError('Complex encoding is limited to 64 bits in'
+                             'real and imaginary parts; num_symbols is'
+                             'too small')
+        if rem != 0:
+            raise ValueError('num_spins must be divisible by num_symbols '
+                             'for modulation schemes')
+        
+        spinsR = np.reshape(spins, (num_amps,2*num_symbols))
+        amps = 2**np.arange(0,num_amps)[:,np.newaxis]
+        
+        symbols = np.sum(amps*spinsR[:,:num_symbols],axis=0) \
+                + 1j * np.sum(amps*spinsR[:,num_symbols:],axis=0)
+    return symbols
 
 def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,  
                       *,
@@ -87,7 +151,7 @@ def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,
                       seed: Union[None, int, np.random.RandomState] = None,
                       transmitted_symbols: Iterable = None,
                       F_distribution: str = 'Normal',
-                      use_offset: bool = False):
+                      use_offset: bool = False) -> dimod.BinaryQuadraticModel:
     """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
         
     Users each transmit complex valued symbols over a random channel :math:`F` of 
@@ -209,9 +273,15 @@ def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,
         assert bandwidth > 0, "Expect channel users"
         if F is None:
             if F_distribution == 'Binary':
-                F = (1-2*random_state.randint(2,size=(bandwidth,num_var)));
+                if modulation == 'BPSK':
+                    F = (1-2*random_state.randint(2,size=(bandwidth,num_var)))
+                else:
+                    F = (1-2*random_state.randint(2,size=(bandwidth,num_var))) + 1j*(1-2*random_state.randint(2,size=(bandwidth,num_var)))
             elif F_distribution == 'Normal':
-                F = random_state.normal(0,1,size=(bandwidth,num_var));
+                if modulation == 'BPSK':
+                    F = random_state.normal(0,1,size=(bandwidth,num_var))
+                else:
+                    F = random_state.normal(0,1,size=(bandwidth,num_var)) + 1j*random_state.normal(0,1,size=(bandwidth,num_var))
         if y is None:
             assert SNR > 0, "Expect positive signal to noise ratio"
             if modulation == '16QAM':
@@ -237,9 +307,14 @@ def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,
                                 + 1j*random_state.normal(0,1,size=(bandwidth,1)));
             y = channel_noise + np.matmul(F,transmitted_symbols)
             #print('y',y,'F',F,'transmitted_symbols',transmitted_symbols)
+    #print('y',y,'F',F,'symbols',transmitted_symbols)
     offset, h, J = _quadratic_form(y,F)
+    #print('h',h,'J',J)
     h, J = _real_quadratic_form(h,J)
+    #print('h',h,'J',J)
     h, J = _amplitude_modulated_quadratic_form(h,J,modulation)
+    #print('h',h,'J',J)
+    
     if use_offset:
         return dimod.BQM(h[:,0],J,'SPIN',offset=offset)
     else:
