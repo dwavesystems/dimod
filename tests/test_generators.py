@@ -1207,7 +1207,7 @@ class TestMagicSquares(unittest.TestCase):
 class TestMIMO(unittest.TestCase):
     
 
-    def _effective_fields(self,bqm):
+    def _effective_fields(self, bqm):
         num_var = bqm.num_variables
         effFields = np.zeros(num_var)
         for key in bqm.quadratic:
@@ -1220,53 +1220,53 @@ class TestMIMO(unittest.TestCase):
     def test_quadratic_forms(self):
         # Quadratic form must evaluate to match original objective:
         num_var = 3
-        bandwidth = 5
-        F = np.random.normal(0,1,size=(bandwidth,num_var)) + 1j*np.random.normal(0,1,size=(bandwidth,num_var))
-        y = np.random.normal(0,1,size=(bandwidth,1)) + 1j*np.random.normal(0,1,size=(bandwidth,1))
+        num_receivers = 5
+        F = np.random.normal(0, 1, size=(num_receivers, num_var)) + 1j*np.random.normal(0, 1, size=(num_receivers, num_var))
+        y = np.random.normal(0, 1, size=(num_receivers, 1)) + 1j*np.random.normal(0, 1, size=(num_receivers, 1))
         # Random test case:
-        vUnwrap = np.random.normal(0,1,size=(2*num_var,1))
-        v = vUnwrap[:num_var,:] + 1j*vUnwrap[num_var:,:]
-        vec = y - np.matmul(F,v)
-        val1 = np.matmul(vec.T.conj(),vec)
+        vUnwrap = np.random.normal(0, 1, size=(2*num_var, 1))
+        v = vUnwrap[:num_var, :] + 1j*vUnwrap[num_var:, :]
+        vec = y - np.matmul(F, v)
+        val1 = np.matmul(vec.T.conj(), vec)
         # Check complex quadratic form
-        k, h, J = dimod.generators.mimo._quadratic_form(y,F)
-        val2 = np.matmul(v.T.conj(),np.matmul(J,v)) + (np.matmul(h.T.conj(),v)).real + k
-        self.assertLess(abs(val1 - val2),1e-8)
+        k, h, J = dimod.generators.mimo._quadratic_form(y, F)
+        val2 = np.matmul(v.T.conj(), np.matmul(J, v)) + (np.matmul(h.T.conj(), v)).real + k
+        self.assertLess(abs(val1 - val2), 1e-8)
         # Check unwrapped complex quadratic form:
-        h,J = dimod.generators.mimo._real_quadratic_form(h,J)
-        val3 = np.matmul(vUnwrap.T,np.matmul(J,vUnwrap)) + np.matmul(h.T,vUnwrap) + k
-        self.assertLess(abs(val1 - val3),1e-8)
+        h, J = dimod.generators.mimo._real_quadratic_form(h, J)
+        val3 = np.matmul(vUnwrap.T, np.matmul(J, vUnwrap)) + np.matmul(h.T, vUnwrap) + k
+        self.assertLess(abs(val1 - val3), 1e-8)
         # Check zero energy for y generated from F:
-        y = np.matmul(F,v)
-        k, h, J = dimod.generators.mimo._quadratic_form(y,F)
-        val2 = np.matmul(v.T.conj(),np.matmul(J,v)) + (np.matmul(h.T.conj(),v)).real + k
-        self.assertLess(abs(val2),1e-8)
-        h, J = dimod.generators.mimo._real_quadratic_form(h,J)
-        val3 = np.matmul(vUnwrap.T,np.matmul(J,vUnwrap)) + np.matmul(h.T,vUnwrap) + k
-        self.assertLess(abs(val3),1e-8)
+        y = np.matmul(F, v)
+        k, h, J = dimod.generators.mimo._quadratic_form(y, F)
+        val2 = np.matmul(v.T.conj(), np.matmul(J, v)) + (np.matmul(h.T.conj(), v)).real + k
+        self.assertLess(abs(val2), 1e-8)
+        h, J = dimod.generators.mimo._real_quadratic_form(h, J)
+        val3 = np.matmul(vUnwrap.T, np.matmul(J, vUnwrap)) + np.matmul(h.T, vUnwrap) + k
+        self.assertLess(abs(val3), 1e-8)
         
     def test_amplitude_modulated_quadratic_form(self):
         num_var = 3
-        h = np.random.random(size=(num_var,1))
-        J = np.random.random(size=(num_var,num_var))
-        mods = ['BPSK','QPSK','16QAM','64QAM']
-        mod_pref = [1,1,2,3]
+        h = np.random.random(size=(num_var, 1))
+        J = np.random.random(size=(num_var, num_var))
+        mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
+        mod_pref = [1, 1, 2, 3]
         for offset in [0]:
-            for modI,modulation in enumerate(mods):
-                hO, JO = dimod.generators.mimo._amplitude_modulated_quadratic_form(h,J,modulation=modulation)
-                self.assertEqual(hO.shape[0],num_var*mod_pref[modI])
-                self.assertEqual(JO.shape[0],hO.shape[0])
-                self.assertEqual(JO.shape[0],JO.shape[1])
+            for modI, modulation in enumerate(mods):
+                hO, JO = dimod.generators.mimo._amplitude_modulated_quadratic_form(h, J, modulation=modulation)
+                self.assertEqual(hO.shape[0], num_var*mod_pref[modI])
+                self.assertEqual(JO.shape[0], hO.shape[0])
+                self.assertEqual(JO.shape[0], JO.shape[1])
                 max_val = 2**mod_pref[modI]-1
-                self.assertLess(abs(max_val*np.sum(h)-np.sum(hO)),1e-8)
-                self.assertLess(abs(max_val*max_val*np.sum(J)-np.sum(JO)),1e-8)
-                #self.assertEqual(h.shape[0],num_var*mod_pref[modI])
-                #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))),1e-8)
+                self.assertLess(abs(max_val*np.sum(h)-np.sum(hO)), 1e-8)
+                self.assertLess(abs(max_val*max_val*np.sum(J)-np.sum(JO)), 1e-8)
+                #self.assertEqual(h.shape[0], num_var*mod_pref[modI])
+                #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
 
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
         num_spins = 5
-        spins = np.random.choice([-1,1],size=num_spins)
+        spins = np.random.choice([-1, 1], size=num_spins)
         symbols = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
         spins = dimod.generators.mimo.symbols_to_spins(symbols=spins, modulation='BPSK')
@@ -1274,82 +1274,80 @@ class TestMIMO(unittest.TestCase):
             
     def test_complex_symbol_coding(self):
         num_symbols = 5
-        mod_pref = [1,2,3]
-        mods = ['QPSK','16QAM','64QAM']
-        for modI,mod in enumerate(mods):
+        mod_pref = [1, 2, 3]
+        mods = ['QPSK', '16QAM', '64QAM']
+        for modI, mod in enumerate(mods):
             num_spins = 2*num_symbols*mod_pref[modI]
             max_symb = 2**mod_pref[modI]-1
             #uniform encoding (max spins = max amplitude symbols):
             spins = np.ones(num_spins)
             symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
-            print(mod)
             symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
             self.assertTrue(np.all(symbols_enc == symbols ))
             spins_enc = dimod.generators.mimo.symbols_to_spins(symbols=symbols, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
             #random encoding:
-            spins = np.random.choice([-1,1],size=num_spins)
+            spins = np.random.choice([-1, 1], size=num_spins)
             symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
             spins_enc = dimod.generators.mimo.symbols_to_spins(symbols=symbols_enc, modulation=mod)
-            print(spins_enc,spins)
             self.assertTrue(np.all(spins_enc == spins))
 
     def test_spin_encoded_mimo(self):
-        for num_var, bandwidth in [(1,1),(5,1),(1,3),(11,7)]:
-            F = np.random.normal(0,1,size=(bandwidth,num_var)) + 1j*np.random.normal(0,1,size=(bandwidth,num_var))
-            y = np.random.normal(0,1,size=(bandwidth,1)) + 1j*np.random.normal(0,1,size=(bandwidth,1))
+        for num_transmitters, num_receivers in [(1, 1), (5, 1), (1, 3), (11, 7)]:
+            F = np.random.normal(0, 1, size=(num_receivers, num_transmitters)) + 1j*np.random.normal(0, 1, size=(num_receivers, num_transmitters))
+            y = np.random.normal(0, 1, size=(num_receivers, 1)) + 1j*np.random.normal(0, 1, size=(num_receivers, 1))
             bqm = dimod.generators.mimo.spin_encoded_mimo(modulation='QPSK', y=y, F=F)
-            mod_pref = [1,1,2,3]
-            mods = ['BPSK','QPSK','16QAM','64QAM']
-            for modI,modulation in enumerate(mods):
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, num_var=num_var, bandwidth=bandwidth)
+            mod_pref = [1, 1, 2, 3]
+            mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
+            for modI, modulation in enumerate(mods):
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, num_transmitters=num_transmitters, num_receivers=num_receivers)
                 if modulation == 'BPSK':
-                    constellation = [-1,1]
+                    constellation = [-1, 1]
                     dtype = np.float64
                 else:
                     max_val = 2**mod_pref[modI] - 1
                     dtype = np.complex128
                     # All 1 spin encoding (max symbol in constellation)
                     constellation = [real_part + 1j*imag_part
-                                     for real_part in range(-max_val,max_val+1,2)
-                                     for imag_part in range(-max_val,max_val+1,2)]
+                                     for real_part in range(-max_val, max_val+1, 2)
+                                     for imag_part in range(-max_val, max_val+1, 2)]
                     
-                F_simple = np.ones(shape=(bandwidth,num_var),dtype=dtype)
-                transmitted_symbols_max = np.ones(shape=(num_var,1),dtype=dtype)*constellation[-1]
-                transmitted_symbols_random = np.random.choice(constellation,size=(num_var,1))
+                F_simple = np.ones(shape=(num_receivers, num_transmitters), dtype=dtype)
+                transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), dtype=dtype)*constellation[-1]
+                transmitted_symbols_random = np.random.choice(constellation, size=(num_transmitters, 1))
                 transmitted_spins_random = dimod.generators.mimo.symbols_to_spins(
                     symbols=transmitted_symbols_random.flatten(), modulation=modulation)
                 #Trivial channel (F_simple), machine numbers
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
-                                                              F=F_simple,
-                                                              transmitted_symbols=transmitted_symbols_max,
-                                                              use_offset=True, SNR=float('Inf'))
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
+                                                              F=F_simple, 
+                                                              transmitted_symbols=transmitted_symbols_max, 
+                                                              use_offset=True, SNRb=float('Inf'))
                 
                 ef = self._effective_fields(bqm)
-                self.assertLessEqual(np.max(ef),0)
-                self.assertEqual(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))),0)
+                self.assertLessEqual(np.max(ef), 0)
+                self.assertLessEqual(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-10)
                 
                 #Random channel, potential precision
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
-                                                              num_var=num_var, bandwidth=bandwidth,
-                                                              transmitted_symbols=transmitted_symbols_max,
-                                                              use_offset=True, SNR=float('Inf'))
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
+                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                                                              transmitted_symbols=transmitted_symbols_max, 
+                                                              use_offset=True, SNRb=float('Inf'))
                 ef=self._effective_fields(bqm)
-                self.assertLessEqual(np.max(ef),0)
+                self.assertLessEqual(np.max(ef), 0)
                 self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-8)
 
                 
-                # Add noise, check that offset is positive (random, scales as num_var/SNR)
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
-                                                              num_var=num_var, bandwidth=bandwidth,
-                                                              transmitted_symbols=transmitted_symbols_max,
-                                                              use_offset=True, SNR=1)
-                self.assertLess(0,abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))))
+                # Add noise, check that offset is positive (random, scales as num_var/SNRb)
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
+                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                                                              transmitted_symbols=transmitted_symbols_max, 
+                                                              use_offset=True, SNRb=1)
+                self.assertLess(0, abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))))
                 
                 # Random transmission, should match spin encoding. Spin-encoded energy should be minimal
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation,
-                                                              num_var=num_var, bandwidth=bandwidth,
-                                                              transmitted_symbols=transmitted_symbols_random,
-                                                              use_offset=True, SNR=float('Inf'))
-                self.assertLess(abs(bqm.energy((transmitted_spins_random, np.arange(bqm.num_variables)))),1e-8)
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
+                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                                                              transmitted_symbols=transmitted_symbols_random, 
+                                                              use_offset=True, SNRb=float('Inf'))
+                self.assertLess(abs(bqm.energy((transmitted_spins_random, np.arange(bqm.num_variables)))), 1e-8)
     
