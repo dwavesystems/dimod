@@ -19,567 +19,58 @@
 
 namespace dimod {
 
-TEMPLATE_TEST_CASE_SIG("Scenario: BinaryQuadraticModel tests", "[qmbase][bqm]",
-                       ((typename Bias, Vartype vartype), Bias, vartype), (double, Vartype::BINARY),
-                       (double, Vartype::SPIN), (float, Vartype::BINARY), (float, Vartype::SPIN)) {
-    GIVEN("an empty BQM") {
-        auto bqm = BinaryQuadraticModel<Bias>(vartype);
+// todo: reorganize other tests
+TEST_CASE("QuadraticModel tests") {
+    GIVEN("a linear QM with mixed vartypes") {
+        auto qm = QuadraticModel<double>();
+        qm.add_variable(Vartype::BINARY);
+        qm.add_variable(Vartype::INTEGER, -1, 1);
+        qm.add_variable(Vartype::REAL, -2, 2);
+        qm.add_variable(Vartype::REAL, -3, 3);
+        qm.add_variable(Vartype::SPIN);
+        qm.set_offset(5);
+        qm.set_linear(0, {0, -1, +2, -3, +4});
 
-        WHEN("the bqm is resized") {
-            bqm.resize(10);
+        WHEN("we use remove_variable()") {
+            qm.remove_variable(2);
 
-            THEN("it will have the correct number of variables with 0 bias") {
-                REQUIRE(bqm.num_variables() == 10);
-                REQUIRE(bqm.num_interactions() == 0);
-                for (auto v = 0u; v < bqm.num_variables(); ++v) {
-                    REQUIRE(bqm.linear(v) == 0);
-                }
+            THEN("the variable is removed and the model is reindexed") {
+                REQUIRE(qm.num_variables() == 4);
+                REQUIRE(qm.num_interactions() == 0);
+                CHECK(qm.offset() == 5);
+                CHECK(qm.linear(0) == 0);
+                CHECK(qm.linear(1) == -1);
+                CHECK(qm.linear(2) == -3);  // this was reindexed
+                CHECK(qm.linear(3) == 4);   // this was reindexed
+                CHECK(qm.vartype(0) == Vartype::BINARY);
+                CHECK(qm.vartype(1) == Vartype::INTEGER);
+                CHECK(qm.vartype(2) == Vartype::REAL);  // this was reindexed
+                CHECK(qm.vartype(3) == Vartype::SPIN);  // this was reindexed
+                CHECK(qm.lower_bound(1) == -1);
+                CHECK(qm.lower_bound(2) == -3);  // this was reindexed
+                CHECK(qm.upper_bound(1) == 1);
+                CHECK(qm.upper_bound(2) == 3);  // this was reindexed
             }
         }
 
-        AND_GIVEN("a scale factor for biases and offset") {
-            double scale_factor = 5.5;
-
-            WHEN("we call scale on a filled BQM") {
-                bqm.offset() = 2;
-                bqm.resize(3);
-                bqm.linear(0) = 1;
-                bqm.linear(1) = 2;
-                bqm.linear(2) = 3;
-                bqm.set_quadratic(0, 1, 1);
-                bqm.set_quadratic(1, 2, 2);
-
-                bqm.scale(scale_factor);
-
-                THEN("all biases, interaction, and offset are scaled") {
-                    REQUIRE(bqm.offset() == 11.0);
-                    REQUIRE(bqm.linear(0) == 5.5);
-                    REQUIRE(bqm.linear(1) == 11.0);
-                    REQUIRE(bqm.linear(2) == 16.5);
-                    REQUIRE(bqm.quadratic(0, 1) == 5.5);
-                    REQUIRE(bqm.quadratic(1, 2) == 11.0);
-                }
-            }
-        }
-
-        AND_GIVEN("some COO-formatted arrays") {
-            int irow[4] = {0, 2, 0, 1};
-            int icol[4] = {0, 2, 1, 2};
-            float bias[4] = {.5, -2, 2, -3};
-            std::size_t length = 4;
-
-            WHEN("we add the biases with add_quadratic") {
-                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
-
-                THEN("it takes its values from the arrays") {
-                    REQUIRE(bqm.num_variables() == 3);
-
-                    if (bqm.vartype() == Vartype::SPIN) {
-                        REQUIRE(bqm.linear(0) == 0);
-                        REQUIRE(bqm.linear(1) == 0);
-                        REQUIRE(bqm.linear(2) == 0);
-                        REQUIRE(bqm.offset() == -1.5);
-                    } else {
-                        REQUIRE(bqm.vartype() == Vartype::BINARY);
-                        REQUIRE(bqm.linear(0) == .5);
-                        REQUIRE(bqm.linear(1) == 0);
-                        REQUIRE(bqm.linear(2) == -2);
-                        REQUIRE(bqm.offset() == 0);
-                    }
-
-                    REQUIRE(bqm.num_interactions() == 2);
-                    REQUIRE(bqm.quadratic(0, 1) == 2);
-                    REQUIRE(bqm.quadratic(2, 1) == -3);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
-                }
-            }
-        }
-
-        AND_GIVEN("some COO-formatted arrays with duplicates") {
-            int irow[6] = {0, 2, 0, 1, 0, 0};
-            int icol[6] = {0, 2, 1, 2, 1, 0};
-            float bias[6] = {.5, -2, 2, -3, 4, 1};
-            std::size_t length = 6;
-
-            WHEN("we add the biases with add_quadratic") {
-                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
-
-                THEN("it combines duplicate values") {
-                    REQUIRE(bqm.num_variables() == 3);
-
-                    if (bqm.vartype() == Vartype::SPIN) {
-                        REQUIRE(bqm.linear(0) == 0);
-                        REQUIRE(bqm.linear(1) == 0);
-                        REQUIRE(bqm.linear(2) == 0);
-                        REQUIRE(bqm.offset() == -.5);
-                    } else {
-                        REQUIRE(bqm.vartype() == Vartype::BINARY);
-                        REQUIRE(bqm.linear(0) == 1.5);
-                        REQUIRE(bqm.linear(1) == 0.);
-                        REQUIRE(bqm.linear(2) == -2);
-                        REQUIRE(bqm.offset() == 0);
-                    }
-
-                    REQUIRE(bqm.num_interactions() == 2);
-                    REQUIRE(bqm.quadratic(0, 1) == 6);
-                    REQUIRE(bqm.quadratic(2, 1) == -3);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
-                }
-            }
-        }
-
-        AND_GIVEN("some COO-formatted arrays with multiple duplicates") {
-            int irow[4] = {0, 1, 0, 1};
-            int icol[4] = {1, 2, 1, 0};
-            float bias[4] = {-1, 1, -2, -3};
-            std::size_t length = 4;
-
-            WHEN("we add the biases with add_quadratic") {
-                bqm.add_quadratic(&irow[0], &icol[0], &bias[0], length);
-
-                THEN("it combines duplicate values") {
-                    REQUIRE(bqm.num_variables() == 3);
-                    REQUIRE(bqm.linear(0) == 0);
-                    REQUIRE(bqm.linear(1) == 0);
-                    REQUIRE(bqm.linear(2) == 0);
-
-                    REQUIRE(bqm.num_interactions() == 2);
-                    REQUIRE(bqm.quadratic(0, 1) == -6);
-                    REQUIRE(bqm.quadratic(1, 0) == -6);
-                    REQUIRE(bqm.quadratic(2, 1) == 1);
-                    REQUIRE(bqm.quadratic(1, 2) == 1);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(0, 2), std::out_of_range);
-                    REQUIRE_THROWS_AS(bqm.quadratic_at(2, 0), std::out_of_range);
-                }
-            }
-        }
-    }
-
-    GIVEN("a BQM constructed from a dense array") {
-        float Q[9] = {1, 0, 3, 2, 1, 0, 1, 0, 0};
-        int num_variables = 3;
-
-        auto bqm = BinaryQuadraticModel<Bias>(Q, num_variables, vartype);
-
-        THEN("it handles the diagonal according to its vartype") {
-            REQUIRE(bqm.num_variables() == 3);
-
-            if (bqm.vartype() == Vartype::SPIN) {
-                REQUIRE(bqm.linear(0) == 0);
-                REQUIRE(bqm.linear(1) == 0);
-                REQUIRE(bqm.linear(2) == 0);
-                REQUIRE(bqm.offset() == 2);
-            } else {
-                REQUIRE(bqm.vartype() == Vartype::BINARY);
-                REQUIRE(bqm.linear(0) == 1);
-                REQUIRE(bqm.linear(1) == 1);
-                REQUIRE(bqm.linear(2) == 0);
-                REQUIRE(bqm.offset() == 0);
-            }
-        }
-
-        THEN("it gets its quadratic from the off-diagonal") {
-            REQUIRE(bqm.num_interactions() == 2);
-
-            // test both forward and backward
-            REQUIRE(bqm.quadratic(0, 1) == 2);
-            REQUIRE(bqm.quadratic(1, 0) == 2);
-            REQUIRE(bqm.quadratic(0, 2) == 4);
-            REQUIRE(bqm.quadratic(2, 0) == 4);
-            REQUIRE(bqm.quadratic(1, 2) == 0);
-            REQUIRE(bqm.quadratic(2, 1) == 0);
-
-            // ignores 0s
-            REQUIRE_THROWS_AS(bqm.quadratic_at(1, 2), std::out_of_range);
-            REQUIRE_THROWS_AS(bqm.quadratic_at(2, 1), std::out_of_range);
-        }
-
-        THEN("we can iterate over the neighborhood") {
-            auto span = bqm.neighborhood(0);
-            auto pairs = std::vector<std::pair<std::size_t, Bias>>(span.first, span.second);
-
-            REQUIRE(pairs[0].first == 1);
-            REQUIRE(pairs[0].second == 2);
-            REQUIRE(pairs[1].first == 2);
-            REQUIRE(pairs[1].second == 4);
-            REQUIRE(pairs.size() == 2);
-        }
-
-        WHEN("we iterate over the quadratic biases") {
-            auto first = bqm.cbegin_quadratic();
-            auto last = bqm.cend_quadratic();
-            THEN("we read out the lower triangle") {
-                CHECK(first->u == 1);
-                CHECK(first->v == 0);
-                CHECK(first->bias == 2);
-                CHECK((*first).u == 1);
-                CHECK((*first).v == 0);
-                CHECK((*first).bias == 2);
-
-                ++first;
-
-                CHECK(first->u == 2);
-                CHECK(first->v == 0);
-                CHECK(first->bias == 4);
-
-                first++;
-
-                CHECK(first == last);
-            }
-        }
-    }
-
-    GIVEN("a BQM with five variables, two interactions and an offset") {
-        auto bqm = BinaryQuadraticModel<Bias>(5, vartype);
-        bqm.linear(0) = 1;
-        bqm.linear(1) = -3.25;
-        bqm.linear(2) = 0;
-        bqm.linear(3) = 3;
-        bqm.linear(4) = -4.5;
-        bqm.set_quadratic(0, 3, -1);
-        bqm.set_quadratic(3, 1, 5.6);
-        bqm.set_quadratic(0, 1, 1.6);
-        bqm.offset() = -3.8;
-
-        AND_GIVEN("the set of all possible five variable samples") {
-            // there are smarter ways to do this but it's simple
-            std::vector<std::vector<int>> spn_samples;
-            std::vector<std::vector<int>> bin_samples;
-            for (auto i = 0; i < 1 << bqm.num_variables(); ++i) {
-                std::vector<int> bin_sample;
-                std::vector<int> spn_sample;
-                for (size_t v = 0; v < bqm.num_variables(); ++v) {
-                    bin_sample.push_back((i >> v) & 1);
-                    spn_sample.push_back(2 * ((i >> v) & 1) - 1);
-                }
-
-                bin_samples.push_back(bin_sample);
-                spn_samples.push_back(spn_sample);
-            }
-
-            std::vector<double> energies;
-            if (vartype == Vartype::SPIN) {
-                for (auto& sample : spn_samples) {
-                    energies.push_back(bqm.energy(sample));
-                }
-            } else {
-                for (auto& sample : bin_samples) {
-                    energies.push_back(bqm.energy(sample));
-                }
-            }
-
-            WHEN("we change the vartype to spin") {
-                bqm.change_vartype(Vartype::SPIN);
-
-                THEN("the energies will match") {
-                    for (size_t si = 0; si < energies.size(); ++si) {
-                        REQUIRE(energies[si] == Approx(bqm.energy(spn_samples[si])));
-                    }
-                }
-            }
-
-            WHEN("we change the vartype to binary") {
-                bqm.change_vartype(Vartype::BINARY);
-                THEN("the energies will match") {
-                    for (size_t si = 0; si < energies.size(); ++si) {
-                        REQUIRE(energies[si] == Approx(bqm.energy(bin_samples[si])));
-                    }
-                }
-            }
-        }
-    }
-}
-
-TEMPLATE_TEST_CASE_SIG("Scenario: BQMs can be combined", "[bqm]",
-                       ((typename B0, typename B1, Vartype vartype), B0, B1, vartype),
-                       (float, float, Vartype::BINARY), (double, float, Vartype::BINARY),
-                       (float, double, Vartype::BINARY), (double, double, Vartype::BINARY),
-                       (float, float, Vartype::SPIN), (double, float, Vartype::SPIN),
-                       (float, double, Vartype::SPIN), (double, double, Vartype::SPIN)) {
-    GIVEN("a BQM with 3 variables") {
-        auto bqm0 = BinaryQuadraticModel<B0>(3, vartype);
-        bqm0.linear(2) = -1;
-        bqm0.set_quadratic(0, 1, 1.5);
-        bqm0.set_quadratic(0, 2, -2);
-        bqm0.set_quadratic(1, 2, 7);
-        bqm0.offset() = -4;
-
-        AND_GIVEN("a BQM with 5 variables and the same vartype") {
-            auto bqm1 = BinaryQuadraticModel<B1>(5, vartype);
-            bqm1.linear(0) = 1;
-            bqm1.linear(1) = -3.25;
-            bqm1.linear(2) = 2;
-            bqm1.linear(3) = 3;
-            bqm1.linear(4) = -4.5;
-            bqm1.set_quadratic(0, 1, 5.6);
-            bqm1.set_quadratic(0, 3, -1);
-            bqm1.set_quadratic(1, 2, 1.6);
-            bqm1.set_quadratic(3, 4, -25);
-            bqm1.offset() = -3.8;
-
-            WHEN("the first is updated with the second") {
-                bqm0.add_bqm(bqm1);
-
-                THEN("the biases are added") {
-                    REQUIRE(bqm0.num_variables() == 5);
-                    REQUIRE(bqm0.num_interactions() == 5);
-
-                    CHECK(bqm0.offset() == Approx(-7.8));
-
-                    CHECK(bqm0.linear(0) == Approx(1));
-                    CHECK(bqm0.linear(1) == Approx(-3.25));
-                    CHECK(bqm0.linear(2) == Approx(1));
-                    CHECK(bqm0.linear(3) == Approx(3));
-                    CHECK(bqm0.linear(4) == Approx(-4.5));
-
-                    CHECK(bqm0.quadratic(0, 1) == Approx(7.1));
-                    CHECK(bqm0.quadratic(0, 2) == Approx(-2));
-                    CHECK(bqm0.quadratic(0, 3) == Approx(-1));
-                    CHECK(bqm0.quadratic(1, 2) == Approx(8.6));
-                    CHECK(bqm0.quadratic(3, 4) == Approx(-25));
-                }
-            }
-
-            WHEN("the second is updated with the first") {
-                bqm1.add_bqm(bqm0);
-
-                THEN("the biases are added") {
-                    REQUIRE(bqm1.num_variables() == 5);
-                    REQUIRE(bqm1.num_interactions() == 5);
-
-                    CHECK(bqm1.offset() == Approx(-7.8));
-
-                    CHECK(bqm1.linear(0) == Approx(1));
-                    CHECK(bqm1.linear(1) == Approx(-3.25));
-                    CHECK(bqm1.linear(2) == Approx(1));
-                    CHECK(bqm1.linear(3) == Approx(3));
-                    CHECK(bqm1.linear(4) == Approx(-4.5));
-
-                    CHECK(bqm1.quadratic(0, 1) == Approx(7.1));
-                    CHECK(bqm1.quadratic(0, 2) == Approx(-2));
-                    CHECK(bqm1.quadratic(0, 3) == Approx(-1));
-                    CHECK(bqm1.quadratic(1, 2) == Approx(8.6));
-                    CHECK(bqm1.quadratic(3, 4) == Approx(-25));
-                }
-            }
-        }
-
-        AND_GIVEN("a BQM with 5 variables and a different vartype") {
-            Vartype vt;
-            if (vartype == Vartype::SPIN) {
-                vt = Vartype::BINARY;
-            } else {
-                vt = Vartype::SPIN;
-            }
-
-            auto bqm1 = BinaryQuadraticModel<B1>(5, vt);
-            bqm1.linear(0) = 1;
-            bqm1.linear(1) = -3.25;
-            bqm1.linear(2) = 2;
-            bqm1.linear(3) = 3;
-            bqm1.linear(4) = -4.5;
-            bqm1.set_quadratic(0, 1, 5.6);
-            bqm1.set_quadratic(0, 3, -1);
-            bqm1.set_quadratic(1, 2, 1.6);
-            bqm1.set_quadratic(3, 4, -25);
-            bqm1.offset() = -3.8;
-
-            WHEN("the first is updated with the second") {
-                auto bqm0_cp = BinaryQuadraticModel<B0>(bqm0);
-                auto bqm1_cp = BinaryQuadraticModel<B1>(bqm1);
-
-                bqm0.add_bqm(bqm1);
-
-                THEN("it was as if the vartype was changed first") {
-                    bqm1_cp.change_vartype(vartype);
-                    bqm0_cp.add_bqm(bqm1_cp);
-
-                    REQUIRE(bqm0.num_variables() == bqm0_cp.num_variables());
-                    REQUIRE(bqm0.num_interactions() == bqm0_cp.num_interactions());
-                    REQUIRE(bqm0.offset() == Approx(bqm0_cp.offset()));
-                    for (auto u = 0u; u < bqm0.num_variables(); ++u) {
-                        REQUIRE(bqm0.linear(u) == Approx(bqm0_cp.linear(u)));
-
-                        auto span = bqm0.neighborhood(u);
-                        for (auto it = span.first; it != span.second; ++it) {
-                            REQUIRE((*it).second == Approx(bqm0_cp.quadratic_at(u, (*it).first)));
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-SCENARIO("One bqm can be added to another") {
-    GIVEN("Two BQMs of different vartypes") {
-        auto bin = BinaryQuadraticModel<double>(2, Vartype::BINARY);
-        bin.linear(0) = .3;
-        bin.set_quadratic(0, 1, -1);
-
-        auto spn = BinaryQuadraticModel<double>(2, Vartype::SPIN);
-        spn.linear(1) = -1;
-        spn.set_quadratic(0, 1, 1);
-        spn.offset() = 1.2;
-
-        WHEN("the spin one is added to the binary") {
-            bin.add_bqm(spn);
-
-            THEN("the combined model is correct") {
-                REQUIRE(bin.num_variables() == 2);
-                CHECK(bin.num_interactions() == 1);
-
-                CHECK(bin.linear(0) == -1.7);
-                CHECK(bin.linear(1) == -4);
-
-                CHECK(bin.quadratic(0, 1) == 3);
-            }
-        }
-
-        WHEN("the spin one is added to the binary one with an offset") {
-            std::vector<int> mapping = {1, 2};
-            bin.add_bqm(spn, mapping);
-
-            THEN("the combined model is correct") {
-                REQUIRE(bin.num_variables() == 3);
-                CHECK(bin.num_interactions() == 2);
-
-                CHECK(bin.linear(0) == .3);
-                CHECK(bin.linear(1) == -2);
-                CHECK(bin.linear(2) == -4);
-
-                CHECK(bin.quadratic(0, 1) == -1);
-                CHECK(bin.quadratic(1, 2) == 4);
-                CHECK_THROWS_AS(bin.quadratic_at(0, 2), std::out_of_range);
-            }
-        }
-    }
-
-    GIVEN("Two BQMs of the same vartype") {
-        auto bqm0 = BinaryQuadraticModel<double>(2, Vartype::SPIN);
-        bqm0.linear(0) = -1;
-        bqm0.set_quadratic(0, 1, 1.5);
-        bqm0.offset() = 1.5;
-
-        auto bqm1 = BinaryQuadraticModel<double>(3, Vartype::SPIN);
-        bqm1.linear(0) = -2;
-        bqm1.linear(2) = 3;
-        bqm1.set_quadratic(0, 1, 5);
-        bqm1.set_quadratic(2, 1, 1);
-        bqm1.offset() = 1.5;
-
-        WHEN("the spin one is added to the binary one with a mapping") {
-            std::vector<int> mapping = {0, 1, 2};
-            bqm0.add_bqm(bqm1, mapping);
-
-            THEN("the biases are summed") {
-                REQUIRE(bqm0.num_variables() == 3);
-                CHECK(bqm0.num_interactions() == 2);
-
-                CHECK(bqm0.offset() == 3);
-
-                CHECK(bqm0.linear(0) == -3);
-                CHECK(bqm0.linear(1) == 0);
-                CHECK(bqm0.linear(2) == 3);
-
-                CHECK(bqm0.quadratic(0, 1) == 6.5);
-                CHECK(bqm0.quadratic(1, 2) == 1);
-                CHECK_THROWS_AS(bqm0.quadratic_at(0, 2), std::out_of_range);
-            }
-        }
-    }
-}
-
-SCENARIO("Neighborhood can be manipulated") {
-    GIVEN("An empty Neighborhood") {
-        auto neighborhood = Neighborhood<float, size_t>();
-
-        WHEN("some variables/biases are emplaced") {
-            neighborhood.emplace_back(0, .5);
-            neighborhood.emplace_back(1, 1.5);
-            neighborhood.emplace_back(3, -3);
-
-            THEN("we can retrieve the biases with .at()") {
-                REQUIRE(neighborhood.size() == 3);
-                REQUIRE(neighborhood.at(0) == .5);
-                REQUIRE(neighborhood.at(1) == 1.5);
-                REQUIRE(neighborhood.at(3) == -3);
-
-                // should throw an error
-                REQUIRE_THROWS_AS(neighborhood.at(2), std::out_of_range);
-                REQUIRE(neighborhood.size() == 3);
-            }
-
-            THEN("we can retrieve the biases with []") {
-                REQUIRE(neighborhood.size() == 3);
-                REQUIRE(neighborhood[0] == .5);
-                REQUIRE(neighborhood[1] == 1.5);
-                REQUIRE(neighborhood[2] == 0);  // created
-                REQUIRE(neighborhood[3] == -3);
-                REQUIRE(neighborhood.size() == 4);  // since 2 was inserted
-            }
-
-            THEN("we can retrieve the biases with .get()") {
-                REQUIRE(neighborhood.size() == 3);
-                REQUIRE(neighborhood.get(0) == .5);
-                REQUIRE(neighborhood.get(1) == 1.5);
-                REQUIRE(neighborhood.get(1, 2) == 1.5);  // use real value
-                REQUIRE(neighborhood.get(2) == 0);
-                REQUIRE(neighborhood.get(2, 1.5) == 1.5);  // use default
-                REQUIRE(neighborhood.at(3) == -3);
-                REQUIRE(neighborhood.size() == 3);  // should not change
-            }
-
-            THEN("we can modify the biases with []") {
-                neighborhood[0] += 7;
-                neighborhood[2] -= 3;
-
-                REQUIRE(neighborhood.at(0) == 7.5);
-                REQUIRE(neighborhood.at(2) == -3);
-            }
-
-            THEN("we can create a vector from the neighborhood") {
-                std::vector<std::pair<size_t, float>> pairs(neighborhood.begin(),
-                                                            neighborhood.end());
-
-                REQUIRE(pairs[0].first == 0);
-                REQUIRE(pairs[0].second == .5);
-                REQUIRE(pairs[1].first == 1);
-                REQUIRE(pairs[1].second == 1.5);
-                REQUIRE(pairs[2].first == 3);
-                REQUIRE(pairs[2].second == -3);
-            }
-
-            THEN("we can create a vector from the const neighborhood") {
-                std::vector<std::pair<size_t, float>> pairs(neighborhood.cbegin(),
-                                                            neighborhood.cend());
-
-                REQUIRE(pairs[0].first == 0);
-                REQUIRE(pairs[0].second == .5);
-                REQUIRE(pairs[1].first == 1);
-                REQUIRE(pairs[1].second == 1.5);
-                REQUIRE(pairs[2].first == 3);
-                REQUIRE(pairs[2].second == -3);
-            }
-
-            THEN("we can modify the biases via the iterator") {
-                auto it = neighborhood.begin();
-
-                (*it).second = 18;
-                REQUIRE(neighborhood.at(0) == 18);
-
-                it++;
-                (*it).second = -48;
-                REQUIRE(neighborhood.at(1) == -48);
-
-                ++it;
-                it->second = 104;
-                REQUIRE(neighborhood.at(3) == 104);
-            }
-
-            THEN("we can erase some with an iterator") {
-                neighborhood.erase(neighborhood.begin() + 1, neighborhood.end());
-                REQUIRE(neighborhood.size() == 1);
+        WHEN("we use fix_variable()") {
+            qm.fix_variable(2, -1);
+            THEN("the variable is removed, its biases distributed and the model is reindexed") {
+                REQUIRE(qm.num_variables() == 4);
+                REQUIRE(qm.num_interactions() == 0);
+                CHECK(qm.offset() == 3);  // linear biases -1*2 was added to offset
+                CHECK(qm.linear(0) == 0);
+                CHECK(qm.linear(1) == -1);
+                CHECK(qm.linear(2) == -3);  // this was reindexed
+                CHECK(qm.linear(3) == 4);   // this was reindexed
+                CHECK(qm.vartype(0) == Vartype::BINARY);
+                CHECK(qm.vartype(1) == Vartype::INTEGER);
+                CHECK(qm.vartype(2) == Vartype::REAL);  // this was reindexed
+                CHECK(qm.vartype(3) == Vartype::SPIN);  // this was reindexed
+                CHECK(qm.lower_bound(1) == -1);
+                CHECK(qm.lower_bound(2) == -3);  // this was reindexed
+                CHECK(qm.upper_bound(1) == 1);
+                CHECK(qm.upper_bound(2) == 3);  // this was reindexed
             }
         }
     }
@@ -791,17 +282,38 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
 SCENARIO("A quadratic model can be constructed from a binary quadratic model", "[bqm]") {
     GIVEN("A binary quadratic model") {
         auto bqm = BinaryQuadraticModel<float>(3, Vartype::SPIN);
-        bqm.linear(0) = 4;
-        bqm.linear(2) = -2;
+        bqm.set_linear(0, {4, 0, -2});
         bqm.set_quadratic(0, 1, 1.5);
         bqm.set_quadratic(1, 2, -3);
-        bqm.offset() = 5;
+        bqm.set_offset(5);
 
         WHEN("a quadratic model is constructed from it") {
             auto qm = QuadraticModel<float>(bqm);
 
             THEN("the biases etc are passed in") {
                 REQUIRE(qm.num_variables() == 3);
+                REQUIRE(qm.num_interactions() == 2);
+
+                CHECK(qm.linear(0) == 4);
+                CHECK(qm.linear(1) == 0);
+                CHECK(qm.linear(2) == -2);
+
+                CHECK(qm.vartype(0) == Vartype::SPIN);
+                CHECK(qm.vartype(1) == Vartype::SPIN);
+                CHECK(qm.vartype(2) == Vartype::SPIN);
+
+                CHECK(qm.quadratic(0, 1) == 1.5);
+                CHECK(qm.quadratic(1, 2) == -3);
+                CHECK_THROWS_AS(qm.quadratic_at(0, 2), std::out_of_range);
+            }
+        }
+
+        WHEN("a quadratic model with a different type is constructed from it") {
+            auto qm = QuadraticModel<double>(bqm);
+
+            THEN("the biases etc are passed in") {
+                REQUIRE(qm.num_variables() == 3);
+                REQUIRE(qm.num_interactions() == 2);
 
                 CHECK(qm.linear(0) == 4);
                 CHECK(qm.linear(1) == 0);
@@ -825,8 +337,8 @@ SCENARIO("The variables of a quadratic model can have their vartypes changed", "
         auto s = qm.add_variable(Vartype::SPIN);
         auto x = qm.add_variable(Vartype::BINARY);
 
-        qm.linear(s) = 2;
-        qm.linear(x) = 4;
+        qm.set_linear(s, 2);
+        qm.set_linear(x, 4);
         qm.set_quadratic(s, x, 3);
 
         WHEN("The spin variable is changed to binary") {
@@ -864,6 +376,7 @@ SCENARIO("The variables of a quadratic model can have their vartypes changed", "
                 CHECK(qm.vartype(t) == Vartype::SPIN);
             }
         }
+
         WHEN("The spin variable is changed to integer") {
             qm.change_vartype(Vartype::INTEGER, s);
 
@@ -881,9 +394,9 @@ SCENARIO("The variables of a quadratic model can have their vartypes changed", "
         }
 
         WHEN("The vartype  and bounds are changed manually ") {
-            qm.vartype(s) = Vartype::BINARY;
-            qm.lower_bound(s) = -2;
-            qm.upper_bound(s) = 2;
+            qm.set_vartype(s, Vartype::BINARY);
+            qm.set_lower_bound(s, -2);
+            qm.set_upper_bound(s, 2);
 
             THEN("the biases do not update") {
                 CHECK(qm.linear(s) == 2);
@@ -898,81 +411,6 @@ SCENARIO("The variables of a quadratic model can have their vartypes changed", "
     }
 }
 
-SCENARIO("variables in a quadratic model can be swapped", "[qm]") {
-    GIVEN("a quadratic model with a binary, integer, and spin variable") {
-        auto qm = dimod::QuadraticModel<double>();
-        auto s = qm.add_variable(Vartype::SPIN);
-        auto x = qm.add_variable(Vartype::BINARY);
-        auto i = qm.add_variable(Vartype::INTEGER, -5, 5);
-
-        qm.linear(s) = 1;
-        qm.linear(x) = 2;
-        qm.linear(i) = 3;
-
-        AND_GIVEN("that all the variables have interactions") {
-            qm.set_quadratic(s, x, 4);
-            qm.set_quadratic(s, i, 5);
-            qm.set_quadratic(x, i, 6);
-
-            WHEN("we swap two of the variables") {
-                qm.swap_variables(s, i);
-
-                THEN("everything moves accordingly") {
-                    CHECK(qm.linear(i) == 1);
-                    CHECK(qm.linear(x) == 2);
-                    CHECK(qm.linear(s) == 3);
-                    CHECK(qm.quadratic(i, x) == 4);
-                    CHECK(qm.quadratic(x, i) == 4);
-                    CHECK(qm.quadratic(s, i) == 5);
-                    CHECK(qm.quadratic(i, s) == 5);
-                    CHECK(qm.quadratic(s, x) == 6);
-                    CHECK(qm.quadratic(x, s) == 6);
-                    CHECK(qm.lower_bound(s) == -5);
-                    CHECK(qm.upper_bound(s) == 5);
-                    CHECK(qm.lower_bound(i) == -1);
-                    CHECK(qm.upper_bound(i) == +1);
-                    CHECK(qm.vartype(s) == Vartype::INTEGER);
-                    CHECK(qm.vartype(x) == Vartype::BINARY);
-                    CHECK(qm.vartype(i) == Vartype::SPIN);
-                    CHECK(qm.num_interactions(i) == 2);
-                    CHECK(qm.num_interactions(x) == 2);
-                    CHECK(qm.num_interactions(s) == 2);
-                }
-            }
-        }
-
-        AND_GIVEN("sparse interactions") {
-            qm.set_quadratic(s, x, 4);
-
-            WHEN("we swap two of the variables") {
-                qm.swap_variables(s, i);
-
-                THEN("everything moves accordingly") {
-                    CHECK(qm.linear(i) == 1);
-                    CHECK(qm.linear(x) == 2);
-                    CHECK(qm.linear(s) == 3);
-                    CHECK(qm.quadratic(i, x) == 4);
-                    CHECK(qm.quadratic(x, i) == 4);
-                    CHECK_THROWS_AS(qm.quadratic_at(s, i), std::out_of_range);
-                    CHECK_THROWS_AS(qm.quadratic_at(i, s), std::out_of_range);
-                    CHECK_THROWS_AS(qm.quadratic_at(s, x), std::out_of_range);
-                    CHECK_THROWS_AS(qm.quadratic_at(x, s), std::out_of_range);
-                    CHECK(qm.lower_bound(s) == -5);
-                    CHECK(qm.upper_bound(s) == 5);
-                    CHECK(qm.lower_bound(i) == -1);
-                    CHECK(qm.upper_bound(i) == +1);
-                    CHECK(qm.vartype(s) == Vartype::INTEGER);
-                    CHECK(qm.vartype(x) == Vartype::BINARY);
-                    CHECK(qm.vartype(i) == Vartype::SPIN);
-                    CHECK(qm.num_interactions(i) == 1);
-                    CHECK(qm.num_interactions(x) == 1);
-                    CHECK(qm.num_interactions(s) == 0);
-                }
-            }
-        }
-    }
-}
-
 TEMPLATE_TEST_CASE("Scenario: the size of quadratic models in bytes can be determined", "[qm]",
                    double, float) {
     GIVEN("a binary quadratic model") {
@@ -981,7 +419,12 @@ TEMPLATE_TEST_CASE("Scenario: the size of quadratic models in bytes can be deter
         bqm.add_quadratic(1, 2, 1.5);
         bqm.add_quadratic(2, 3, 1.5);
 
-        auto pair_size = sizeof(std::pair<int, TestType>);
+        struct term {
+            int v;
+            TestType bias;
+        };
+
+        auto pair_size = sizeof(term);
 
         // this assumption is not guaranteed across compilers, but it
         // is required for this test to make sense
@@ -997,12 +440,18 @@ TEMPLATE_TEST_CASE("Scenario: the size of quadratic models in bytes can be deter
         AND_GIVEN("a quadratic model") {
             auto qm = dimod::QuadraticModel<TestType>(bqm);
 
+            struct varinfo_type {
+                Vartype vartype;
+                TestType lb;
+                TestType ub;
+            };
+
             THEN("we can determine the number of bytes used by the elements") {
                 CHECK(qm.nbytes() ==
-                      qm.num_variables() * sizeof(TestType)            // linear
-                              + 2 * qm.num_interactions() * pair_size  // quadratic
-                              + sizeof(TestType)                       // offset
-                              + qm.num_variables() * sizeof(dimod::VarInfo<TestType>));  // vartypes
+                      qm.num_variables() * sizeof(TestType)                  // linear
+                              + 2 * qm.num_interactions() * pair_size        // quadratic
+                              + sizeof(TestType)                             // offset
+                              + qm.num_variables() * sizeof(varinfo_type));  // vartypes
                 CHECK(qm.nbytes(true) >= qm.nbytes());
             }
         }
@@ -1034,30 +483,30 @@ SCENARIO("quadratic models can be swapped", "[qm]") {
         auto x = qm0.add_variable(Vartype::BINARY);
         auto i = qm0.add_variable(Vartype::INTEGER, -5, 5);
 
-        qm0.linear(s) = 1;
-        qm0.linear(x) = 2;
-        qm0.linear(i) = 3;
+        qm0.set_linear(s, 1);
+        qm0.set_linear(x, 2);
+        qm0.set_linear(i, 3);
         qm0.add_quadratic(s, x, 4);
         qm0.add_quadratic(s, i, 5);
         qm0.add_quadratic(x, i, 6);
         qm0.add_quadratic(i, i, 7);
-        qm0.offset() = 8;
+        qm0.set_offset(8);
 
         auto qm1 = dimod::QuadraticModel<double>();
         auto t = qm1.add_variable(Vartype::SPIN);
         auto y = qm1.add_variable(Vartype::BINARY);
         auto j = qm1.add_variable(Vartype::INTEGER, -10, 10);
 
-        qm1.linear(t) = -1;
-        qm1.linear(y) = -2;
-        qm1.linear(j) = -3;
+        qm1.set_linear(t, -1);
+        qm1.set_linear(y, -2);
+        qm1.set_linear(j, -3);
         qm1.add_quadratic(t, y, -4);
         qm1.add_quadratic(t, j, -5);
         qm1.add_quadratic(x, j, -6);
         qm1.add_quadratic(j, j, -7);
 
         WHEN("the swap() method is called") {
-            qm0.swap(qm1);
+            std::swap(qm0, qm1);
 
             THEN("their contents are swapped") {
                 CHECK(qm0.linear(s) == -1);
