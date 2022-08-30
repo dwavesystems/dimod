@@ -1217,6 +1217,10 @@ class ConstrainedQuadraticModel:
                     num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
                     )
+            if header_info.version >= (1, 3):
+                expected.update(
+                    num_weighted_constraints=len(cqm.soft),
+                    )
 
             if expected != header_info.data:
                 raise ValueError(
@@ -1948,6 +1952,7 @@ class ConstrainedQuadraticModel:
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
+                    num_weighted_constraints=len(self.soft),
                     )
 
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
