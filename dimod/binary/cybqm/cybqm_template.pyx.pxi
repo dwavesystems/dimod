@@ -32,7 +32,7 @@ from libcpp.vector cimport vector
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
-from dimod.libcpp cimport cppVartype
+from dimod.libcpp cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.typing import BQMVectors, LabelledBQMVectors, QuadraticVectors
 from dimod.utilities import asintegerarrays, asnumericarrays
@@ -80,16 +80,7 @@ cdef class cyBQM_template(cyBQMBase):
 
     @offset.setter
     def offset(self, bias_type offset):
-        self._set_offset(offset)
-
-    cdef void _add_linear(self, Py_ssize_t vi, bias_type bias):
-        # unsafe version of .add_linear
-        cdef bias_type *b = &(self.cppbqm.linear(vi))
-        b[0] += bias
-
-    cdef void _add_offset(self, bias_type bias):
-        cdef bias_type *b = &(self.cppbqm.offset())
-        b[0] += bias
+        self.cppbqm.set_offset(offset)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -161,18 +152,9 @@ cdef class cyBQM_template(cyBQMBase):
 
         return vi
 
-    cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
-        # unsafe version of .set_linear
-        cdef bias_type *b = &(self.cppbqm.linear(vi))
-        b[0] = bias
-
-    cdef void _set_offset(self, bias_type bias):
-        cdef bias_type *b = &(self.cppbqm.offset())
-        b[0] = bias
-
     def add_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self._index(v, permissive=True)
-        self._add_linear(vi, bias)
+        self.cppbqm.add_linear(vi, bias)
 
     def add_linear_equality_constraint(self, object terms,
                                        bias_type lagrange_multiplier,
@@ -194,20 +176,20 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t num_terms = biases.size()
 
         # offset part
-        self._add_offset(lagrange_multiplier * constant * constant)
+        self.cppbqm.add_offset(lagrange_multiplier * constant * constant)
 
         # linear part
         if self.cppbqm.vartype() == cppVartype.BINARY:
             for i in range(num_terms):
-                self._add_linear(
+                self.cppbqm.add_linear(
                     variables[i],
                     lagrange_multiplier * biases[i] * (2 * constant + biases[i]))
         elif self.cppbqm.vartype() == cppVartype.SPIN:
             for i in range(num_terms):
-                self._add_linear(
+                self.cppbqm.add_linear(
                     variables[i],
                     lagrange_multiplier * biases[i] * 2 * constant)
-                self._add_offset(lagrange_multiplier * biases[i] * biases[i])
+                self.cppbqm.add_offset(lagrange_multiplier * biases[i] * biases[i])
         else:
             raise RuntimeError("unexpected vartype")
 
@@ -231,7 +213,7 @@ cdef class cyBQM_template(cyBQMBase):
                 self.resize(length)
 
             for vi in range(length):
-                self._add_linear(vi, linear[vi])
+                self.cppbqm.add_linear(vi, linear[vi])
         else:
             # need to add them "one by one"
             for vi in range(length):
@@ -242,7 +224,7 @@ cdef class cyBQM_template(cyBQMBase):
     def add_offset_from_array(self, ConstNumeric[::1] offset):
         if offset.shape[0] != 1:
             raise ValueError("array should be of length 1")
-        self._add_offset(offset[0])
+        self.cppbqm.add_offset(offset[0])
 
     def add_quadratic(self, u, v, bias_type bias):
         if u == v:
@@ -285,7 +267,7 @@ cdef class cyBQM_template(cyBQMBase):
         if self.variables._is_range():
             if num_variables > self.num_variables():
                 self.resize(num_variables)
-            self.cppbqm.add_quadratic(&quadratic[0, 0], num_variables)
+            self.cppbqm.add_quadratic_from_dense(&quadratic[0, 0], num_variables)
         else:
             raise NotImplementedError
 
@@ -416,10 +398,10 @@ cdef class cyBQM_template(cyBQMBase):
             bqm.resize(linear.shape[0])
         cdef Py_ssize_t vi
         for vi in range(linear.shape[0]):
-            bqm._add_linear(vi, linear[vi])
+            bqm.cppbqm.add_linear(vi, linear[vi])
 
         # add the offset
-        bqm._add_offset(offset)
+        bqm.cppbqm.add_offset(offset)
 
         return bqm
 
@@ -680,32 +662,33 @@ cdef class cyBQM_template(cyBQMBase):
             ValueError: If the variable does not exist.
 
         """
-        if v is None:
-            try:
-                v = self.variables[-1]
-            except IndexError:
-                raise ValueError("cannot pop from an empty model")
+        raise NotImplementedError
+        # if v is None:
+        #     try:
+        #         v = self.variables[-1]
+        #     except IndexError:
+        #         raise ValueError("cannot pop from an empty model")
 
-        cdef Py_ssize_t vi = self.variables.index(v)
-        cdef Py_ssize_t lasti = self.num_variables() - 1
+        # cdef Py_ssize_t vi = self.variables.index(v)
+        # cdef Py_ssize_t lasti = self.num_variables() - 1
 
-        if vi != lasti:
-            # we're removing a variable in the middle of the
-            # underlying adjacency. We do this by "swapping" the last variable
-            # and v, then popping v from the end
-            self.cppbqm.swap_variables(vi, lasti)
+        # if vi != lasti:
+        #     # we're removing a variable in the middle of the
+        #     # underlying adjacency. We do this by "swapping" the last variable
+        #     # and v, then popping v from the end
+        #     self.cppbqm.swap_variables(vi, lasti)
 
-            # now swap the variable labels
-            last = self.variables.at(lasti)
-            self.variables._relabel({v: last, last: v})
+        #     # now swap the variable labels
+        #     last = self.variables.at(lasti)
+        #     self.variables._relabel({v: last, last: v})
 
-        # remove last from the cppqm and variables
-        self.cppbqm.resize(lasti)
-        tmp = self.variables._pop()
+        # # remove last from the cppqm and variables
+        # self.cppbqm.resize(lasti)
+        # tmp = self.variables._pop()
 
-        assert tmp == v, f"{tmp} == {v}"
+        # assert tmp == v, f"{tmp} == {v}"
 
-        return v
+        # return v
 
     cpdef Py_ssize_t resize(self, Py_ssize_t n) except? 0:
         if n < 0:
@@ -727,7 +710,7 @@ cdef class cyBQM_template(cyBQMBase):
 
     def set_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self._index(v, permissive=True)
-        self._set_linear(vi, bias)
+        self.cppbqm.set_linear(vi, bias)
 
     def set_quadratic(self, u, v, bias_type bias):
         if u == v:
@@ -823,9 +806,11 @@ cdef class cyBQM_template(cyBQMBase):
         for v in other.variables:
             mapping.push_back(self.variables.index(v, permissive=True))
 
-        self.cppbqm.add_bqm(other.cppbqm, mapping)
+        raise NotImplementedError
 
-        assert self.variables.size() == self.cppbqm.num_variables()
+        # self.cppbqm.add_bqm(other.cppbqm, mapping)
+
+        # assert self.variables.size() == self.cppbqm.num_variables()
 
     def update(self, other):
         try:

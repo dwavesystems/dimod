@@ -20,7 +20,7 @@ from libcpp.vector cimport vector
 
 cimport numpy as np
 
-from dimod.libcpp cimport cppBinaryQuadraticModel
+from dimod.libcpp cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 
 ctypedef np.float64_t bias_type
 ctypedef np.int32_t index_type
@@ -62,9 +62,6 @@ cdef class cyDiscreteQuadraticModel:
     cdef readonly object dtype
     cdef readonly object case_dtype
 
-    cdef void _add_offset(self, bias_type offset)
-    cdef void _set_linear(self, Py_ssize_t, bias_type)
-    cdef void _set_offset(self, bias_type offset)
     cpdef Py_ssize_t add_variable(self, Py_ssize_t) except -1
     cpdef bias_type[:] energies(self, index_type[:, :])
     cpdef bias_type get_linear_case(self, index_type, index_type) except? -45.3

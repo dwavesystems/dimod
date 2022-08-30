@@ -709,6 +709,21 @@ class QuadraticModelBase {
     /// The lower bound of variable `v`.
     virtual bias_type lower_bound(index_type) const = 0;
 
+    [[deprecated]] std::pair<const_neighborhood_iterator, const_neighborhood_iterator>
+            neighborhood(index_type v) const {
+        return std::make_pair(cbegin_neighborhood(v), cend_neighborhood(v));
+    }
+
+    [[deprecated]]
+    std::pair<const_neighborhood_iterator, const_neighborhood_iterator> neighborhood(
+            index_type u, index_type start) const {
+        if (has_adj()) {
+            return std::make_pair((*adj_ptr_)[u].lower_bound(start), (*adj_ptr_)[u].cend());
+        } else {
+            return neighborhood(u);
+        }
+    }
+
     /**
      * Total bytes consumed by the biases and indices.
      *
