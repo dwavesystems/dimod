@@ -1168,7 +1168,7 @@ class ConstrainedQuadraticModel:
 
         header_info = read_header(file_like, CQM_MAGIC_PREFIX)
 
-        if not (1, 0) <= header_info.version <= (1, 2):
+        if not (1, 0) <= header_info.version <= (1, 3):
             raise ValueError("cannot load a CQM serialized with version "
                              f"{header_info.version!r}, try upgrading your "
                              "dimod version")
@@ -1950,7 +1950,7 @@ class ConstrainedQuadraticModel:
                     num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 2))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
