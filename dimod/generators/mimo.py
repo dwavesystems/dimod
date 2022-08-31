@@ -104,12 +104,81 @@ def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
         
         symb_to_spins = { np.sum([x*2**xI for xI, x in enumerate(spins)]) : spins
                           for spins in product(*[(-1, 1) for x in range(spins_per_real_symbol)])}
-        spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real], 
-                                                [symb_to_spins[symb][prec] for symb in symbols.imag]))
+        spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()], 
+                                                [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
                                 for prec in range(spins_per_real_symbol)])
-        
+        if len(symbols.shape)>2:
+            if symbols.shape[0] == 1:
+                # If symbols shaped as vector, return as vector:
+                spins.reshape((1,len(spins)))
+            elif symbols.shape[1] == 1:
+                spins.reshape((len(spins),1))
+            else:
+                # Leave for manual reshaping
+                pass 
     return spins
 
+
+def _yF_to_hJ(y, F, modulation):
+    offset, h, J = _quadratic_form(y, F) # Quadratic form re-expression
+    h, J = _real_quadratic_form(h, J, modulation) # Complex symbols to real symbols (if necessary)
+    h, J = _amplitude_modulated_quadratic_form(h, J, modulation) # Real symbol to linear spin encoding
+    return h, J, offset
+
+def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
+    """ Construct linear filter W for estimation of transmitted signals.
+    # https://www.youtube.com/watch?v=U3qjVgX2poM
+   
+    
+    We follow conventions laid out in MacKay et al. 'Achievable sum rate of MIMO MMSE receivers: A general analytic framework'
+    N0 Identity[N_r] = E[n n^dagger]
+    P/N_t Identify[N_t] = E[v v^dagger], i.e. P = constellation_mean_power*Nt for i.i.d elements (1,2,10,42)Nt for BPSK, QPSK, 16QAM, 64QAM.
+    N_r N_t = E_F[Tr[F Fdagger]], i.e. E[||F_{mu,i}||^2]=1 for i.i.d channel.  - normalization is assumed to be pushed into symbols.
+    SNRoverNt = PoverNt/N0 : Intensive quantity. 
+    SNRb = SNR/(Nt*bits_per_symbol)
+
+    Typical use case: set SNRoverNt = SNRb
+    """
+    
+    if method == 'zero_forcing':
+        # Moore-Penrose pseudo inverse
+        W = np.linalg.pinv(F)
+    else:
+        Nr, Nt = F.shape
+         # Matched Filter
+        if method == 'matched_filter':
+            W = F.conj().T/ np.sqrt(PoverNt)
+            # F = root(Nt/P) Fcompconj
+        elif method == 'MMSE':
+            W = np.matmul(F.conj().T, np.linalg.pinv(np.matmul(F,F.conj().T) + np.identity(Nr)/SNRoverNt))/np.sqrt(PoverNt)
+        else:
+            raise ValueError('Unsupported linear method')
+    return W
+    
+def filter_marginal_estimator(x: np.array, modulation: str):
+    if modulation is not None:
+        if modulation == 'BPSK' or modulation == 'QPSK':
+            max_abs = 1
+        elif modulation == '16QAM':
+            max_abs = 3
+        elif modulation == '64QAM':
+            max_abs = 7
+        elif modulation == '128QAM':
+            max_abs = 15
+        else:
+            raise ValueError('Unknown modulation')
+        #Real part (nearest):
+        x_R = 2*np.round((x.real-1)/2)+1
+        x_R = np.where(x_R<-max_abs,-max_abs,x_R)
+        x_R = np.where(x_R>max_abs,max_abs,x_R)
+        if modulation != 'BPSK':
+            x_I = 2*np.round((x.imag-1)/2)+1
+            x_I = np.where(x_I<-max_abs,-max_abs,x_I)
+            x_I = np.where(x_I>max_abs,max_abs,x_I)
+            return x_R + 1j*x_I
+        else:
+            return x_R
+        
 def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: int = None) -> np.array:
     "Converts spins to modulated symbols assuming a linear encoding"
     num_spins = len(spins)
@@ -144,9 +213,11 @@ def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: 
                 + 1j * np.sum(amps*spinsR[:, num_transmitters:], axis=0)
     return symbols
 
-def _create_channel(random_state, num_receivers, num_transmitters, F_distribution):
+def create_channel(num_receivers, num_transmitters, F_distribution=None, random_state=None):
     """Create a channel model"""
     channel_power = 1
+    if random_state is None:
+        random_state = np.random.RandomState(random_state) 
     if F_distribution is None:
         F_distribution = ('Normal', 'Complex')
     elif type(F_distribution) is not tuple or len(F_distribution) !=2:
@@ -155,6 +226,7 @@ def _create_channel(random_state, num_receivers, num_transmitters, F_distributio
         if F_distribution[1] == 'Real':
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters))
         else:
+            channel_power = 2
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
     elif F_distribution[0] == 'Binary':
         if modulation == 'BPSK':
@@ -164,56 +236,104 @@ def _create_channel(random_state, num_receivers, num_transmitters, F_distributio
             F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters))) + 1j*(1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
     return F, channel_power
 
-def _create_signal(random_state, num_receivers, num_transmitters, SNRb, F, channel_power, modulation, transmitted_symbols):
-    assert SNRb > 0, "Expect positive signal to noise ratio"
+
+def constellation_properties(modulation):
+    """ bits per symbol, constellation mean power, and symbol amplitudes. 
+    
+    The constellation mean power assumes symbols are sampled uniformly at
+    random for the signal (standard).
+    """
     
     if modulation == 'BPSK':
         bits_per_transmitter = 1
-        amps = 1
+        constellation_mean_power = 1
+        amps = np.ones(1)
     else:
         bits_per_transmitter = 2
-        if modulation == '16QAM':
-            amps = np.arange(-3, 5, 2)
+        if modulation == 'QPSK':
+            amps = np.ones(1)
+        elif modulation == '16QAM':
+            amps = 1+2*np.arange(2)
             bits_per_transmitter *= 2
         elif modulation == '64QAM':
-            amps = np.arange(-7, 9, 2)
+            amps = 1+2*np.arange(4)
             bits_per_transmitter *= 3
+        elif modulation == '256QAM':
+            amps = 1+2*np.arange(8)
+            bits_per_transmitter *= 4
         else:
-            amps = 1
-            
-    # Energy_per_bit_per_receiver (assuming N0 = 1, for SNRb conversion):
-    expectation_Fv = channel_power*np.mean(amps*amps)/bits_per_transmitter
-    # Eb/N0 = SNRb/2 (N0 = 2 sigma^2, the one-sided PSD ~ kB T at antenna)
-    sigma = np.sqrt(expectation_Fv/(2*SNRb));
-            
+            raise ValueError('Unsupported modulation method')
+        constellation_mean_power = 2*np.mean(amps*amps)
+    return bits_per_transmitter, amps, constellation_mean_power
+
+def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrature: bool = True):
+    """Symbols are generated uniformly at random as a funtion of the quadrature and amplitude modulation. 
+    Note that the power per symbol is not normalized. The signal power is thus proportional to 
+    Nt*sig2; where sig2 = [1,2,10,42] for BPSK, QPSK, 16QAM and 64QAM respectively. The complex and 
+    real valued parts of all constellations are integer.
+    
+    """
+    if quadrature == False:
+        transmitted_symbols = np.random.choice(amps, size=(num_transmitters, 1))
+    else: 
+        transmitted_symbols = np.random.choice(amps, size=(num_transmitters, 1)) \
+                            + 1j * np.random.choice(amps, size=(num_transmitters, 1))
+    return transmitted_symbols
+
+def create_signal(F, transmitted_symbols=None, channel_noise=None,
+                  SNRb=float('Inf'), modulation='BPSK', channel_power=1,
+                  random_state=None, F_norm = 1, v_norm = 1):
+    """ Creates a signal y = F v + n; generating random transmitted symbols and noise as necessary. 
+    F is assumed to consist of i.i.d elements such that Fdagger*F = Nr Identity[Nt]*channel_power. 
+    v are assumed to consist of i.i.d unscaled constellations elements (integer valued in real
+    and complex parts). mean_constellation_power dictates a rescaling relative to E[v v^dagger] = Identity[Nt]
+    channel_noise is assumed, or created to be suitably scaled. N0 Identity[Nt] =  
+    SNRb = /
+    """
+    
+    num_receivers = F.shape[0]
+    num_transmitters = F.shape[1] 
+    bits_per_transmitter, amps, constellation_mean_power = constellation_properties(modulation)
     if transmitted_symbols is None:
+        if random_state is None:
+            random_state = np.random.RandomState(random_state)
         if modulation == 'BPSK':
-            transmitted_symbols = np.ones(shape=(num_transmitters, 1))
-        elif modulation == 'QPSK': 
-            transmitted_symbols = np.ones(shape=(num_transmitters, 1)) \
-                                    + 1j*np.ones(shape=(num_transmitters, 1))
+            transmitted_symbols = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False)
         else:
-            transmitted_symbols = np.random.choice(amps, size=(num_transmitters, 1))
-    if modulation == 'BPSK' and F.dtype==np.float64:
-        #Channel noise is always complex, but only real part is relevant to real channel + real symbols 
-        channel_noise = sigma*random_state.normal(0, 1, size=(num_receivers, 1));
+            transmitted_symbols = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True)
+    if SNRb <= 0:
+       raise ValueError(f"Expect positive signal to noise ratio. SNRb={SNRb}")
+    elif SNRb < float('Inf'):
+        # Energy_per_bit:
+        Eb = channel_power*constellation_mean_power/bits_per_transmitter #Eb is the same for QPSK and BPSK
+        # Eb/N0 = SNRb (N0 = 2 sigma^2, the one-sided PSD ~ kB T at antenna)
+        # SNRb and Eb, together imply N0
+        N0 = Eb/SNRb
+        sigma = np.sqrt(N0/2) # Noise is complex by definition, hence 1/2 power in real and complex parts
+        if channel_noise is None:
+            
+            if random_state is None:
+                random_state = np.random.RandomState(random_state)
+            # Channel noise of covariance N0* I_{NR}. Noise is complex by definition, although
+            # for real channel and symbols we need only worry about real part:
+            if transmitted_symbols.dtype==np.float64 and F.dtype==np.float64:
+                channel_noise = sigma*random_state.normal(0, 1, size=(num_receivers, 1))
+                # Complex part is irrelevant
+            else:
+                channel_noise = sigma*(random_state.normal(0, 1, size=(num_receivers, 1)) \
+                                       + 1j*random_state.normal(0, 1, size=(num_receivers, 1)))
+            
+        y = channel_noise + np.matmul(F, transmitted_symbols)
     else:
-        channel_noise = sigma*(random_state.normal(0, 1, size=(num_receivers, 1)) \
-                               + 1j*random_state.normal(0, 1, size=(num_receivers, 1)));
-    y = channel_noise + np.matmul(F, transmitted_symbols)
-    return y
+        y = np.matmul(F, transmitted_symbols)
+    
+    return y, transmitted_symbols, channel_noise, random_state
 
-def _yF_to_hJ(y, F, modulation):
-    offset, h, J = _quadratic_form(y, F) # Quadratic form re-expression
-    h, J = _real_quadratic_form(h, J, modulation) # Complex symbols to real symbols (if necessary)
-    h, J = _amplitude_modulated_quadratic_form(h, J, modulation) # Real symbol to linear spin encoding
-    return h, J, offset
-
-def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,  
-                      *, 
+def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union[np.array, None] = None,
+                      *,
+                      transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
                       num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
                       seed: Union[None, int, np.random.RandomState] = None, 
-                      transmitted_symbols: Iterable = None, 
                       F_distribution: Union[None, str] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
     """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
@@ -322,37 +442,41 @@ def spin_encoded_mimo(modulation: str, y: np.array = None, F: np.array = None,
     .. [#Prince] Various (https://paws.princeton.edu/) 
     """
     
-    if F is not None and y is not None:
-        pass
-    else:
-        if num_transmitters is None:
-            if F is not None:
-                num_transmitters = F.shape[1]
-            elif transmitted_symbols is not None:
-                num_transmitters = len(transmitted_symbols)
-            else:
-                raise ValueError('num_transmitters is not specified and cannot'
+    if num_transmitters is None:
+        if F is not None:
+            num_transmitters = F.shape[1]
+        elif transmitted_symbols is not None:
+            num_transmitters = len(transmitted_symbols)
+        else:
+            raise ValueError('num_transmitters is not specified and cannot'
                                  'be inferred from F or transmitted_symbols (both None)')
-        if num_receivers is None:
-            if F is not None:
-                num_receivers = F.shape[0]
-            elif y is not None:
-                num_receivers = y.shape[0]
-            else:
-                raise ValueError('num_receivers is not specified and cannot'
-                                 'be inferred from F or y (both None)')
+    if num_receivers is None:
+        if F is not None:
+            num_receivers = F.shape[0]
+        elif y is not None:
+            num_receivers = y.shape[0]
+        elif channel_noise is not None:
+            num_receivers = channel_noise.shape[0]
+        else:
+            raise ValueError('num_receivers is not specified and cannot'
+                             'be inferred from F, y or channel_noise (all None)')
 
-        random_state = np.random.RandomState(seed)
-        assert num_transmitters > 0, "Expect positive number of transmitters"
-        assert num_receivers > 0, "Expect positive number of receivers"
-        
-        F, channel_power = _create_channel(random_state, num_receivers,
-                                           num_transmitters, F_distribution)
+    assert num_transmitters > 0, "Expect positive number of transmitters"
+    assert num_receivers > 0, "Expect positive number of receivers"
+
+    if F is None:
+        seed = np.random.RandomState(seed)
+        F, channel_power = create_channel(num_receivers=num_receivers, num_transmitters=num_transmitters,
+                                          F_distribution=F_distribution, random_state=seed)
+        #Channel power is the value relative to an assumed normalization E[Fui* Fui] = 1 
+    else:
+        channel_power = 1
        
-        if y is None:
-            y = _create_signal(random_state, num_receivers, num_transmitters,
-                               SNRb, F, channel_power, modulation, transmitted_symbols)
-
+    if y is None:
+        y, _, _, _ = create_signal(F, transmitted_symbols=transmitted_symbols, channel_noise=channel_noise,
+                                   SNRb=SNRb, modulation=modulation, channel_power=channel_power,
+                                   random_state=seed)
+    
     h, J, offset = _yF_to_hJ(y, F, modulation)
   
     if use_offset:

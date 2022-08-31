@@ -1205,7 +1205,6 @@ class TestMagicSquares(unittest.TestCase):
                     else:
                         self.assertEqual(term, 24)
 class TestMIMO(unittest.TestCase):
-    
 
     def _effective_fields(self, bqm):
         num_var = bqm.num_variables
@@ -1217,6 +1216,47 @@ class TestMIMO(unittest.TestCase):
             effFields[key] += bqm.linear[key]
         return effFields
 
+        
+    def test_filter_marginal_estimators(self):
+        
+        filtered_signal = np.random.random(20) + np.arange(-20,20,2)
+        estimated_source = dimod.generators.mimo.filter_marginal_estimator(filtered_signal, 'BPSK')
+        self.assertTrue(0 == len(set(estimated_source).difference(np.arange(-1,3,2))))
+        self.assertTrue(np.all(estimated_source[:-1] <= estimated_source[1:]))
+        
+        filtered_signal = filtered_signal + 1j*(-np.random.random(20) + np.arange(20,-20,-2))
+        
+        for modulation in ['QPSK','16QAM','64QAM']:
+            estimated_source = dimod.generators.mimo.filter_marginal_estimator(filtered_signal, modulation=modulation)
+            self.assertTrue(np.all(np.flip(estimated_source.real) == estimated_source.imag))
+    
+    def test_linear_filter(self):
+        Nt = 5
+        Nr = 7
+        # linear_filter(F, method='zero_forcing', PoverNt=1, SNRoverNt = 1)
+        F = np.random.normal(size=(Nr,Nt)) + 1j*np.random.normal(size=(Nr,Nt))
+        Fsimple = np.identity(Nt) # Nt=Nr
+        #BPSK, real channel:
+        #transmitted_symbols_simple = np.ones(shape=(Nt,1))
+        #transmitted_symbols = mimo.create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
+        transmitted_symbolsQAM = dimod.generators.mimo.create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
+        y = np.matmul(F, transmitted_symbolsQAM)
+        # Defaults
+        W = dimod.generators.mimo.linear_filter(F=F)
+        self.assertEqual(W.shape,(Nt,Nr))
+        # Check arguments:
+        W = dimod.generators.mimo.linear_filter(F=F, method='matched_filter', PoverNt=0.5, SNRoverNt=1.2)
+        self.assertEqual(W.shape,(Nt,Nr))
+        # Over constrained noiseless channel by default, zero_forcing and MMSE are perfect:
+        for method in ['zero_forcing','MMSE']:
+            W = dimod.generators.mimo.linear_filter(F=F, method=method)
+            reconstructed_symbols = np.matmul(W,y)
+            self.assertTrue(np.all(np.abs(reconstructed_symbols-transmitted_symbolsQAM)<1e-8))
+        # matched_filter and MMSE (non-zero noise) are erroneous given interfered signal:
+        W = dimod.generators.mimo.linear_filter(F=F, method='MMSE', PoverNt=0.5, SNRoverNt=1)
+        reconstructed_symbols = np.matmul(W,y)
+        self.assertTrue(np.all(np.abs(reconstructed_symbols-transmitted_symbolsQAM)>1e-8))
+            
     def test_quadratic_forms(self):
         # Quadratic form must evaluate to match original objective:
         num_var = 3
