@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``Variables._remove()`` method.

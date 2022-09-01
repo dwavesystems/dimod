@@ -532,33 +532,14 @@ cdef class cyQM_template(cyQMBase):
             raise ValueError(f"{u!r} and {v!r} have no interaction")
 
     def remove_variable(self, v=None):
-        raise NotImplementedError
-        # if v is None:
-        #     try:
-        #         v = self.variables[-1]
-        #     except KeyError:
-        #         raise ValueError("cannot pop from an empty model")
+        if v is None:
+            try:
+                v = self.variables[-1]
+            except IndexError:
+                raise ValueError("cannot pop from an empty model")
 
-        # cdef Py_ssize_t vi = self.variables.index(v)
-        # cdef Py_ssize_t lasti = self.num_variables() - 1
-
-        # if vi != lasti:
-        #     # we're removing a variable in the middle of the
-        #     # underlying adjacency. We do this by "swapping" the last variable
-        #     # and v, then popping v from the end
-        #     self.cppqm.swap_variables(vi, lasti)
-
-        #     # now swap the variable labels
-        #     last = self.variables.at(lasti)
-        #     self.variables._relabel({v: last, last: v})
-
-        # # remove last from the cppqm and variables
-        # self.cppqm.resize(lasti)
-        # tmp = self.variables._pop()
-
-        # assert tmp == v, f"{tmp} == {v}"
-
-        # return v
+        self.cppqm.remove_variable(self.variables.index(v))
+        self.variables._remove(v)
 
     def relabel_variables_as_integers(self):
         return self.variables._relabel_as_integers()

@@ -662,33 +662,16 @@ cdef class cyBQM_template(cyBQMBase):
             ValueError: If the variable does not exist.
 
         """
-        raise NotImplementedError
-        # if v is None:
-        #     try:
-        #         v = self.variables[-1]
-        #     except IndexError:
-        #         raise ValueError("cannot pop from an empty model")
+        if v is None:
+            try:
+                v = self.variables[-1]
+            except IndexError:
+                raise ValueError("cannot pop from an empty model")
 
-        # cdef Py_ssize_t vi = self.variables.index(v)
-        # cdef Py_ssize_t lasti = self.num_variables() - 1
+        self.cppbqm.remove_variable(self.variables.index(v))
+        self.variables._remove(v)
 
-        # if vi != lasti:
-        #     # we're removing a variable in the middle of the
-        #     # underlying adjacency. We do this by "swapping" the last variable
-        #     # and v, then popping v from the end
-        #     self.cppbqm.swap_variables(vi, lasti)
-
-        #     # now swap the variable labels
-        #     last = self.variables.at(lasti)
-        #     self.variables._relabel({v: last, last: v})
-
-        # # remove last from the cppqm and variables
-        # self.cppbqm.resize(lasti)
-        # tmp = self.variables._pop()
-
-        # assert tmp == v, f"{tmp} == {v}"
-
-        # return v
+        return v
 
     cpdef Py_ssize_t resize(self, Py_ssize_t n) except? 0:
         if n < 0:

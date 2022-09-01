@@ -277,6 +277,26 @@ cdef class cyVariables:
         self._label_to_index.clear()
         return mapping
 
+    def _remove(self, v):
+        """Remove the given variable.
+
+        Args:
+            v: A variable label.
+
+        .. Caution::
+
+            This method is semi-public. It is intended to be used by
+            classes that have :class:`.Variables` as an attribute, not by the
+            the user.
+
+        """
+        cdef Py_ssize_t vi = self.index(v)
+
+        # we can do better in terms of performance, but this is easy
+        mapping = dict((self.at(i), self.at(i+1)) for i in range(vi, self.size() - 1))
+        self._pop()
+        self._relabel(mapping)
+
     cdef object at(self, Py_ssize_t idx):
         """Get variable `idx`.
 
