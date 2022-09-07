@@ -1,0 +1,3 @@
+---
+features:
+  - Replaced separate equality and inequality constraints in CQM docstring with single compact notation.

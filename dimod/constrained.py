@@ -74,16 +74,13 @@ class ConstrainedQuadraticModel:
             \text{Minimize an objective:} & \\
             & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
             \text{Subject to constraints:} & \\
-            & \sum_i a_i^{(c)} x_i + \sum_{i \le j} b_{ij}^{(c)} x_i x_j+ c^{(c)} \le 0,
-            \quad c=1, \dots, C_{\rm ineq.}, \\
-            & \sum_i a_i^{(d)} x_i + \sum_{i \le j} b_{ij}^{(d)} x_i x_j + c^{(d)} = 0,
-            \quad d=1, \dots, C_{\rm eq.},
+            & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
+            \quad m=1, \dots, M,
         \end{align}
 
     where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
-    variables, :math:`a_{i}, b_{ij}, c` are real values and
-    :math:`C_{\rm ineq.}, C_{\rm eq,}` are the number of inequality and
-    equality constraints respectively.
+    variables, :math:`a_{i}, b_{ij}, c` are real values,
+    :math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
 
     .. [#]
         For binary variables, the range of the quadratic-term summation is
