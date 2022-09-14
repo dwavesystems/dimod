@@ -59,7 +59,7 @@ class Neighborhood {
     /// A random access iterator to value_type.
     using iterator = typename std::vector<value_type>::iterator;
 
-    /// A random access iterator to value_type`
+    /// A random access iterator to value_type.
     using const_iterator = typename std::vector<value_type>::const_iterator;
 
     using reverse_iterator = typename std::vector<value_type>::reverse_iterator;
@@ -646,7 +646,7 @@ class QuadraticModelBase {
         // associated quadratic biases become linear
         if (has_adj()) {
             for (auto it = cbegin_neighborhood(v); it != cend_neighborhood(v); ++it) {
-                add_linear(it->v, it->bias);
+                add_linear(it->v, it->bias * assignment);
             }
         }
 
@@ -935,8 +935,8 @@ class QuadraticModelBase {
     virtual Vartype vartype(index_type) const = 0;
 
  protected:
-    explicit QuadraticModelBase(std::vector<bias_type>&& biases)
-            : linear_biases_(biases), adj_ptr_(), offset_(0) {}
+    explicit QuadraticModelBase(std::vector<bias_type>&& linear_biases)
+            : linear_biases_(linear_biases), adj_ptr_(), offset_(0) {}
 
     explicit QuadraticModelBase(index_type n) : linear_biases_(n), adj_ptr_(), offset_(0) {}
 

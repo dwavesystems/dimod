@@ -44,7 +44,7 @@ class vartype_limits<Bias, Vartype::BINARY> {
 template <class Bias>
 class vartype_limits<Bias, Vartype::SPIN> {
  public:
-    static constexpr Bias default_max() noexcept { return 1; }
+    static constexpr Bias default_max() noexcept { return +1; }
     static constexpr Bias default_min() noexcept { return -1; }
     static constexpr Bias max() noexcept { return +1; }
     static constexpr Bias min() noexcept { return -1; }
