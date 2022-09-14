@@ -558,7 +558,7 @@ class QuadraticModelBase {
             return (*adj_ptr_)[v].begin();
         } else {
             // I am a bit suspicious that this works, but it seems to
-            return const_neighborhood_iterator(nullptr);
+            return const_neighborhood_iterator();
         }
     }
 
@@ -567,7 +567,7 @@ class QuadraticModelBase {
             return (*adj_ptr_)[v].end();
         } else {
             // I am a bit suspicious that this works, but it seems to
-            return const_neighborhood_iterator(nullptr);
+            return const_neighborhood_iterator();
         }
     }
 
