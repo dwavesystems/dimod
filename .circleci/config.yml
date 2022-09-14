@@ -282,16 +282,24 @@ jobs:
             pip install -r requirements.txt
             python -m unittest
 
-  test-linux-cpp11:
+  test-linux-cpp:
     docker:
       - image: cimg/python:3.9
 
     steps:
       - checkout
-      - run:
+      - run: &cpp-tests
           name: run cpp tests
           command: |
             make -C testscpp/ --always-make
+
+  test-osx-cpp:
+    macos:
+      xcode: 13.4.0
+
+    steps:
+      - checkout
+      - run: *cpp-tests
 
   test-osx:
     parameters:
@@ -424,7 +432,8 @@ workflows:
               # we don't support 1.14.5, the oldest version for Python 3.7.9
               - python-version: 3.7.9
                 dependencies: oldest-supported-numpy
-      - test-linux-cpp11
+      - test-linux-cpp
+      - test-osx-cpp
       - test-osx:
           name: test-osx-py<< matrix.python-version >>
           requires:
