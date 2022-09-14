@@ -1256,7 +1256,9 @@ class QuadraticModel : public QuadraticModelBase<Bias, Index> {
 
     const bias_type& lower_bound(index_type v) const { return varinfo_[v].lb; }
 
-    constexpr bias_type max_integer() { return vartype_limits<bias_type, Vartype::INTEGER>::max(); }
+    constexpr bias_type max_integer() const {
+        return vartype_limits<bias_type, Vartype::INTEGER>::max();
+    }
 
     /**
      * Total bytes consumed by the biases, vartype info, bounds, and indices.

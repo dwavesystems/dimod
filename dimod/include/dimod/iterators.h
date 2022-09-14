@@ -79,7 +79,7 @@ class ConstQuadraticIterator {
         return *this;
     }
 
-    const reference operator*() const { return *term_ptr_; }
+    reference operator*() const { return *term_ptr_; }
 
     const pointer operator->() const { return term_ptr_; }
 
