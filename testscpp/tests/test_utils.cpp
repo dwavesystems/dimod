@@ -15,7 +15,7 @@
 #include <iostream>
 #include <random>
 
-#include "../Catch2/single_include/catch2/catch.hpp"
+#include "catch2/catch.hpp"
 #include "dimod/utils.h"
 
 namespace dimod {
