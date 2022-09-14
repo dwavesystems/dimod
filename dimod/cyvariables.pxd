@@ -34,3 +34,4 @@ cdef class cyVariables:
     cdef Py_ssize_t _count_int(self, object) except -1
     cpdef Py_ssize_t count(self, object) except -1
     cpdef Py_ssize_t index(self, object, bint permissive=*) except -1
+    cpdef _remove(self, object)

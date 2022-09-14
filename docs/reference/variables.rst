@@ -50,3 +50,4 @@ Mutation Methods
     ~Variables._pop
     ~Variables._relabel
     ~Variables._relabel_as_integers
+    ~Variables._remove
