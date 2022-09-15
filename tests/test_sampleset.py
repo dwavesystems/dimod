@@ -354,6 +354,24 @@ class TestConstruction(unittest.TestCase):
         self.assertEqual(sampleset.record.is_feasible.dtype, np.dtype(bool))
         self.assertEqual(sampleset.record.is_satisfied.shape, (0, 0))
 
+    def test_from_samples_cqm_soft(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+        x, y = dimod.Binaries('xy')
+        cqm.set_objective(x-y)
+        cqm.add_constraint(x+y == 2, label='c0', weight=2)
+        cqm.add_constraint(x+y == 1, label='c1', weight=3)
+        cqm.add_constraint(3*x <= 1, label='c2', weight=4, penalty='quadratic')
+        cqm.add_constraint(x+y == 2, label='c3')  # hard
+
+        sampleset = dimod.SampleSet.from_samples_cqm([{'x': 1, 'y': 1}, {'x': 0, 'y': 1}], cqm)
+
+        self.assertEqual(sampleset.info['constraint_labels'], ['c0', 'c1', 'c2', 'c3'])
+        np.testing.assert_array_equal(sampleset.record.is_feasible, [True, False])
+        np.testing.assert_array_equal(sampleset.record.is_satisfied,
+                                      [[True, False, False, True],
+                                       [False, True, True, False]])
+        np.testing.assert_array_equal(sampleset.record.energy, [19, 1])
+
 
 class TestDiscreteSampleSet(unittest.TestCase):
     def test_aggregate(self):

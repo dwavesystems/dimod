@@ -887,15 +887,33 @@ class SampleSet(abc.Iterable, abc.Sized):
             rhs = comparison.rhs
             sense = comparison.sense
             if sense is Sense.Eq:
-                is_satisfied[:, i] = np.abs(lhs - rhs) <= atol + rtol*abs(rhs)
+                violation = np.abs(lhs - rhs)
+                is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
             elif sense is Sense.Ge:
-                is_satisfied[:, i] = lhs - rhs >= -atol - rtol*abs(rhs)
+                violation = lhs - rhs
+                is_satisfied[:, i] = violation >= -atol - rtol*abs(rhs)
             elif sense is Sense.Le:
-                is_satisfied[:, i] = lhs - rhs <= atol + rtol*abs(rhs)
+                violation = lhs - rhs
+                is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
             else:
                 raise RuntimeError("unexpected sense")
 
-        is_feasible = is_satisfied.all(axis=1)
+            if label in cqm._soft and not is_satisfied.all():
+                weight, penalty = cqm._soft[label]
+
+                if penalty == 'linear':
+                    energies += weight * (is_satisfied[:, i] != True) * violation
+                elif penalty == 'quadratic':
+                    energies += weight * (is_satisfied[:, i] != True) * np.power(violation, 2)
+                else:
+                    raise RuntimeError("unexpected penalty")
+
+        if cqm._soft:
+            hard = [i for i, label in enumerate(constraint_labels) if label not in cqm._soft]
+            is_feasible = is_satisfied[:, hard].all(axis=1)
+        else:
+            # no soft constraints to worry about
+            is_feasible = is_satisfied.all(axis=1)
 
         kwargs.setdefault('info', {})['constraint_labels'] = constraint_labels
 
