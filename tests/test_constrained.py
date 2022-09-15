@@ -207,14 +207,14 @@ class TestSoftConstraint(unittest.TestCase):
         cqm = CQM()
         qm = sum(dimod.Binaries('xyz'))
         c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='linear')
-        self.assertIn(c, cqm.soft)
+        self.assertIn(c, cqm._soft)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_bqm_quadratic_penalty(self):
         cqm = CQM()
         qm = sum(dimod.Binaries('xyz'))
         c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='quadratic')
-        self.assertIn(c, cqm.soft)
+        self.assertIn(c, cqm._soft)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_qm_quadratic_penalty(self):
@@ -225,7 +225,7 @@ class TestSoftConstraint(unittest.TestCase):
         qm.set_linear('x', 1)
         qm.set_linear('y', 1)
         c = cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
-        self.assertIn(c, cqm.soft)
+        self.assertIn(c, cqm._soft)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_qm_quadratic_penalty_no_binary(self):
@@ -1035,9 +1035,9 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
 
-        for label, info in cqm.soft.items():
-            self.assertEqual(info.weight, new.soft[label].weight)
-            self.assertEqual(info.penalty, new.soft[label].penalty)
+        for label, info in cqm._soft.items():
+            self.assertEqual(info.weight, new._soft[label].weight)
+            self.assertEqual(info.penalty, new._soft[label].penalty)
 
     def test_header(self):
         from dimod.serialization.fileview import read_header

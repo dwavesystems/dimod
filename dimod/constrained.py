@@ -166,7 +166,7 @@ class ConstrainedQuadraticModel:
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
         self.discrete: Set[Hashable] = set()  # collection of discrete constraints
-        self.soft: Dict[Hashable, SoftConstraint] = dict()
+        self._soft: Dict[Hashable, SoftConstraint] = dict()
         self._objective = QuadraticModel()
 
     @property
@@ -336,7 +336,7 @@ class ConstrainedQuadraticModel:
             elif penalty != 'linear':
                 raise ValueError(f"penalty should be `linear` or `quadratic`. "
                                  f"Given: {penalty}")
-            self.soft[label] = SoftConstraint(weight, penalty)
+            self._soft[label] = SoftConstraint(weight, penalty)
 
         return label
 
@@ -1219,7 +1219,7 @@ class ConstrainedQuadraticModel:
                     )
             if header_info.version >= (1, 3):
                 expected.update(
-                    num_weighted_constraints=len(cqm.soft),
+                    num_weighted_constraints=len(cqm._soft),
                     )
 
             if expected != header_info.data:
@@ -1952,7 +1952,7 @@ class ConstrainedQuadraticModel:
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
-                    num_weighted_constraints=len(self.soft),
+                    num_weighted_constraints=len(self._soft),
                     )
 
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
@@ -1983,9 +1983,9 @@ class ConstrainedQuadraticModel:
                 zf.writestr(f'constraints/{lstr}/discrete', discrete)
 
                 # soft constraints
-                if label in self.soft:
-                    weight = np.float64(self.soft[label].weight).tobytes()
-                    penalty = bytes(self.soft[label].penalty, 'ascii')
+                if label in self._soft:
+                    weight = np.float64(self._soft[label].weight).tobytes()
+                    penalty = bytes(self._soft[label].penalty, 'ascii')
                     zf.writestr(f'constraints/{lstr}/weight', weight)
                     zf.writestr(f'constraints/{lstr}/penalty', penalty)
 
