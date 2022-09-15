@@ -240,6 +240,13 @@ class TestSoftConstraint(unittest.TestCase):
         with self.assertRaises(ValueError):
             cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
 
+    def test_mixed_vartype(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('SPIN', 's')
+        cqm.add_constraint(qm <= 1, weight=3, penalty='quadratic')
+
 
 class TestBounds(unittest.TestCase):
     def test_inconsistent(self):

@@ -331,7 +331,7 @@ class ConstrainedQuadraticModel:
                 # if the qm is a BinaryQuadraticModel then we are fine.
                 # But it is possible to build QuadraticModels with only
                 # Binary Variables, so we have to check for that
-                if isinstance(qm, QuadraticModel) and not all([qm.vartype(v) is Vartype.BINARY for v in qm.variables]):
+                if isinstance(qm, QuadraticModel) and not all([qm.vartype(v) in (Vartype.BINARY, Vartype.SPIN) for v in qm.variables]):
                     raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
             elif penalty != 'linear':
                 raise ValueError(f"penalty should be `linear` or `quadratic`. "
