@@ -1584,6 +1584,9 @@ class ConstrainedQuadraticModel:
                     self.discrete.add(new)
                     self.discrete.remove(old)
 
+                if old in self._soft:
+                    self._soft[new] = self._soft.pop(old)
+
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],
                           inplace: bool = True,
@@ -1635,6 +1638,7 @@ class ConstrainedQuadraticModel:
         except KeyError:
             raise ValueError(f"{label!r} is not a constraint") from None
         self.discrete.discard(label)  # if it's discrete
+        self._soft.pop(label, None)  # if it's soft
 
         if cascade:
             for v in comparison.lhs.variables:

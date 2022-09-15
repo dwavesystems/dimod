@@ -202,6 +202,21 @@ class TestAddDiscrete(unittest.TestCase):
 
 
 class TestSoftConstraint(unittest.TestCase):
+    def test_constraint_manipulation(self):
+        # soft constraints should survive relabeling and removal
+        cqm = CQM()
+        x, y = dimod.Binaries('xy')
+        c0 = cqm.add_constraint(x + y == 1, weight=3, label='a')
+        c1 = cqm.add_constraint(x + y == 2, weight=5, label='b')
+
+        cqm.relabel_constraints({'a': 'c'})
+
+        self.assertIn('c', cqm._soft)
+        self.assertNotIn('a', cqm._soft)
+
+        cqm.remove_constraint('b')
+
+        self.assertNotIn('b', cqm._soft)
 
     def test_bqm_linear_penalty(self):
         cqm = CQM()
