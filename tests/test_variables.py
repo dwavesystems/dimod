@@ -216,6 +216,32 @@ class TestRelabel(unittest.TestCase):
         self.assertEqual(variables, [1, 0, 5, 4, 3])
 
 
+class TestRemove(unittest.TestCase):
+    def test_exceptions(self):
+        variables = Variables([0, 1, 'a', 3, 4])
+
+        with self.assertRaises(ValueError):
+            variables._remove(2)
+
+        with self.assertRaises(ValueError):
+            variables._remove('hello')
+
+    def test_last(self):
+        variables = Variables(['i', 'x', 's'])
+        variables._remove('s')
+        self.assertEqual(variables, 'ix')
+
+    def test_typical(self):
+        variables = Variables(['i', 'x', 's'])
+        variables._remove('i')
+        self.assertEqual(variables, 'xs')
+
+    def test_range(self):
+        variables = Variables(range(10))
+        variables._remove(3)
+        self.assertEqual(variables, [0, 1, 2, 4, 5, 6, 7, 8, 9])
+
+
 class TestSlice(unittest.TestCase):
     def test_slice(self):
         variables = Variables('abd')
