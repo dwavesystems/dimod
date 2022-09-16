@@ -372,6 +372,58 @@ class TestConstruction(unittest.TestCase):
                                        [False, True, True, False]])
         np.testing.assert_array_equal(sampleset.record.energy, [19, 1])
 
+    def test_from_sample_cqm_soft_single_constraint(self):
+        x, y = dimod.Binaries('xy')
+        with self.subTest(">="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y >= 2, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[False], [True]])
+            np.testing.assert_array_equal(sampleset.record.energy, [10, 0])
+
+        with self.subTest("=="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y == 2, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[False], [True]])
+            np.testing.assert_array_equal(sampleset.record.energy, [10, 0])
+
+        with self.subTest("<="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y <= 0, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[True], [False]])
+            np.testing.assert_array_equal(sampleset.record.energy, [0, 10])
+
+    def test_from_sample_cqm_soft_single_constraint_non_zero_activity(self):
+        x, y = dimod.Binaries('xy')
+        with self.subTest(">="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y >= 1, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[False], [True]])
+            np.testing.assert_array_equal(sampleset.record.energy, [5, 0])
+
+        with self.subTest("=="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y == 1, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[False], [False]])
+            np.testing.assert_array_equal(sampleset.record.energy, [5, 5])
+
+        with self.subTest("<="):
+            cqm = dimod.ConstrainedQuadraticModel()
+            c0 = cqm.add_constraint(x + y <= 1, weight=5)
+            sampleset = dimod.SampleSet.from_samples_cqm([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], cqm)
+            np.testing.assert_array_equal(sampleset.record.is_feasible, [True, True])
+            np.testing.assert_array_equal(sampleset.record.is_satisfied, [[True], [False]])
+            np.testing.assert_array_equal(sampleset.record.energy, [0, 5])
+
 
 class TestDiscreteSampleSet(unittest.TestCase):
     def test_aggregate(self):

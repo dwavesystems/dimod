@@ -888,15 +888,14 @@ class SampleSet(abc.Iterable, abc.Sized):
             sense = comparison.sense
             if sense is Sense.Eq:
                 violation = np.abs(lhs - rhs)
-                is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
             elif sense is Sense.Ge:
-                violation = lhs - rhs
-                is_satisfied[:, i] = violation >= -atol - rtol*abs(rhs)
+                violation = rhs - lhs
             elif sense is Sense.Le:
                 violation = lhs - rhs
-                is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
             else:
                 raise RuntimeError("unexpected sense")
+
+            is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
 
             if label in cqm._soft and not is_satisfied.all():
                 weight, penalty = cqm._soft[label]
