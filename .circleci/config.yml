@@ -303,12 +303,17 @@ jobs:
       - attach_workspace:
           at: dist
       - run:
+          # we install pyenv from source so we can get the latest and don't need to wait for package managers
           name: install pyenv
           command: |
-            brew install pyenv
+            git clone https://github.com/pyenv/pyenv.git ~/.pyenv --branch v2.3.4
+            echo '' >> ~/.bash_profile
+            echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+            echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+            echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
       - run:
           name: install python
           command: |
@@ -316,12 +321,10 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
       - run:
           name: install
           command: |
-            eval "$(pyenv init --path)"
-            eval "$(pyenv init -)"
             pyenv local << parameters.python-version >>
             python -m venv env
             . env/bin/activate
@@ -418,7 +421,7 @@ workflows:
             - build-osx
           matrix:
             parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0]  # no 3.11 yet
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
       - test-sdist:
           requires:
             - build-sdist
@@ -428,7 +431,7 @@ workflows:
             - build-windows
           matrix:
             parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 yet
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 with nuget yet
   deploy:
     jobs:
       - build-linux: &deploy-build
