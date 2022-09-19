@@ -372,3 +372,10 @@ class TestDumps(unittest.TestCase):
 
         new = dimod.lp.loads(dimod.lp.dumps(cqm))
         self._assert_cqms_are_equivalent(cqm, new)
+
+    def test_soft_constraint(self):
+        cqm = CQM()
+        a, b = dimod.Binaries(['a', 'b'])
+        cqm.add_constraint(a + 2 * b <= 1, weight=1)
+        with self.assertRaises(ValueError):
+            dimod.lp.dumps(cqm)

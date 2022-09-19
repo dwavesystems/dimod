@@ -63,6 +63,11 @@ class ConstraintData(NamedTuple):
     violation: float
 
 
+class SoftConstraint(NamedTuple):
+    weight: float
+    penalty: str
+
+
 class ConstrainedQuadraticModel:
     r"""A constrained quadratic model.
 
@@ -158,7 +163,7 @@ class ConstrainedQuadraticModel:
         # discrete variable tracking, we probably can do this with less memory
         # but for now let's keep it simple
         self.discrete: Set[Hashable] = set()  # collection of discrete constraints
-
+        self._soft: Dict[Hashable, SoftConstraint] = dict()
         self._objective = QuadraticModel()
 
     @property
@@ -235,7 +240,10 @@ class ConstrainedQuadraticModel:
                                   sense: Union[Sense, str],
                                   rhs: Bias = 0,
                                   label: Optional[Hashable] = None,
-                                  copy: bool = True) -> Hashable:
+                                  copy: bool = True,
+                                  weight: Optional[float] = None,
+                                  penalty: str = 'linear',
+                                  ) -> Hashable:
         """Add a constraint from a quadratic model.
 
         Args:
@@ -251,6 +259,13 @@ class ConstrainedQuadraticModel:
             copy: If `True`, model ``qm`` is copied. This can be set to `False`
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -304,12 +319,31 @@ class ConstrainedQuadraticModel:
         else:
             raise RuntimeError("unexpected sense")
 
+        if weight is not None:
+
+            if weight < 0:
+                raise ValueError("weight for soft-constraint should be >= 0")
+
+            if penalty == 'quadratic':
+                # if the qm is a BinaryQuadraticModel then we are fine.
+                # But it is possible to build QuadraticModels with only
+                # Binary Variables, so we have to check for that
+                if isinstance(qm, QuadraticModel) and not all([qm.vartype(v) in (Vartype.BINARY, Vartype.SPIN) for v in qm.variables]):
+                    raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
+            elif penalty != 'linear':
+                raise ValueError(f"penalty should be `linear` or `quadratic`. "
+                                 f"Given: {penalty}")
+            self._soft[label] = SoftConstraint(weight, penalty)
+
         return label
 
     def add_constraint_from_comparison(self,
                                        comp: Comparison,
                                        label: Optional[Hashable] = None,
-                                       copy: bool = True) -> Hashable:
+                                       copy: bool = True,
+                                       weight: Optional[float] = None,
+                                       penalty: str = 'linear',
+                                       ) -> Hashable:
         r"""Add a constraint from a symbolic comparison.
 
         For a more detailed discussion of symbolic model manipulation, see
@@ -326,6 +360,13 @@ class ConstrainedQuadraticModel:
             copy: If `True`, the model used in the comparison is copied. You can
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -392,7 +433,8 @@ class ConstrainedQuadraticModel:
 
         if isinstance(comp.lhs, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(comp.lhs, comp.sense, rhs=comp.rhs,
-                                                  label=label, copy=copy)
+                                                  label=label, copy=copy, weight=weight,
+                                                  penalty=penalty)
         else:
             raise ValueError("comparison should have a binary quadratic model "
                              "or quadratic model lhs.")
@@ -401,6 +443,8 @@ class ConstrainedQuadraticModel:
                                      sense: Union[Sense, str],
                                      rhs: Bias = 0,
                                      label: Optional[Hashable] = None,
+                                     weight: Optional[float] = None,
+                                     penalty: str = 'linear',
                                      ) -> Hashable:
         """Add a constraint from an iterable of tuples.
 
@@ -414,6 +458,13 @@ class ConstrainedQuadraticModel:
 
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
+
+            weight: weight for soft-constraint. If None, the constraints
+                is interpreted as hard.
+
+            penalty: Penalty type for soft-constraint. Must be one of
+                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
+                only accepted if the constraint has binary variables.
 
         Returns:
             Label of the added constraint.
@@ -439,7 +490,8 @@ class ConstrainedQuadraticModel:
 
         # use quadratic model in the future
         return self.add_constraint_from_model(
-            qm, sense, rhs=rhs, label=label, copy=False)
+            qm, sense, rhs=rhs, label=label, copy=False,
+            weight=weight, penalty=penalty)
 
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.
@@ -1113,7 +1165,7 @@ class ConstrainedQuadraticModel:
 
         header_info = read_header(file_like, CQM_MAGIC_PREFIX)
 
-        if not (1, 0) <= header_info.version <= (1, 2):
+        if not (1, 0) <= header_info.version <= (1, 3):
             raise ValueError("cannot load a CQM serialized with version "
                              f"{header_info.version!r}, try upgrading your "
                              "dimod version")
@@ -1137,8 +1189,15 @@ class ConstrainedQuadraticModel:
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
                 sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
                 discrete = any(zf.read(f"constraints/{constraint}/discrete"))
+
                 label = deserialize_variable(json.loads(constraint))
-                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
+                if f"constraints/{constraint}/weight" in zf.namelist() \
+                        and f"constraints/{constraint}/penalty" in zf.namelist():
+                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"), np.float64)[0]
+                    penalty = zf.read(f"constraints/{constraint}/penalty").decode('ascii')
+                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty)
+                else:
+                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
                 if discrete:
                     cqm.discrete.add(label)
 
@@ -1154,6 +1213,10 @@ class ConstrainedQuadraticModel:
                 expected.update(
                     num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
+                    )
+            if header_info.version >= (1, 3):
+                expected.update(
+                    num_weighted_constraints=len(cqm._soft),
                     )
 
             if expected != header_info.data:
@@ -1518,6 +1581,9 @@ class ConstrainedQuadraticModel:
                     self.discrete.add(new)
                     self.discrete.remove(old)
 
+                if old in self._soft:
+                    self._soft[new] = self._soft.pop(old)
+
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],
                           inplace: bool = True,
@@ -1569,6 +1635,7 @@ class ConstrainedQuadraticModel:
         except KeyError:
             raise ValueError(f"{label!r} is not a constraint") from None
         self.discrete.discard(label)  # if it's discrete
+        self._soft.pop(label, None)  # if it's soft
 
         if cascade:
             for v in comparison.lhs.variables:
@@ -1808,7 +1875,7 @@ class ConstrainedQuadraticModel:
                 the returned file-like's contents will be kept on disk or in
                 memory.
 
-        Format Specification (Version 1.2):
+        Format Specification (Version 1.3):
 
             This format is inspired by the `NPY format`_
 
@@ -1848,6 +1915,13 @@ class ConstrainedQuadraticModel:
             the `lhs` as a fileview, the `rhs` as a float and the sense
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
+            Weighted constraints also contain a `weight` and `penalty` file,
+            encoding the weight and the penalty for the constraint.
+
+        Format Specification (Version 1.2):
+            This format is the same as Version 1.3, except that there are no
+            weighted constraints, and thus the `weight` and `penalty` files
+            are not present.
 
         Format Specification (Version 1.1):
 
@@ -1879,9 +1953,10 @@ class ConstrainedQuadraticModel:
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
+                    num_weighted_constraints=len(self._soft),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 2))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
@@ -1907,6 +1982,13 @@ class ConstrainedQuadraticModel:
 
                 discrete = bytes((label in self.discrete,))
                 zf.writestr(f'constraints/{lstr}/discrete', discrete)
+
+                # soft constraints
+                if label in self._soft:
+                    weight = np.float64(self._soft[label].weight).tobytes()
+                    penalty = bytes(self._soft[label].penalty, 'ascii')
+                    zf.writestr(f'constraints/{lstr}/weight', weight)
+                    zf.writestr(f'constraints/{lstr}/penalty', penalty)
 
         file.seek(0)
         return file

@@ -201,6 +201,68 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
+class TestSoftConstraint(unittest.TestCase):
+    def test_constraint_manipulation(self):
+        # soft constraints should survive relabeling and removal
+        cqm = CQM()
+        x, y = dimod.Binaries('xy')
+        c0 = cqm.add_constraint(x + y == 1, weight=3, label='a')
+        c1 = cqm.add_constraint(x + y == 2, weight=5, label='b')
+
+        cqm.relabel_constraints({'a': 'c'})
+
+        self.assertIn('c', cqm._soft)
+        self.assertNotIn('a', cqm._soft)
+
+        cqm.remove_constraint('b')
+
+        self.assertNotIn('b', cqm._soft)
+
+    def test_bqm_linear_penalty(self):
+        cqm = CQM()
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='linear')
+        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_bqm_quadratic_penalty(self):
+        cqm = CQM()
+        qm = sum(dimod.Binaries('xyz'))
+        c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='quadratic')
+        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_qm_quadratic_penalty(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('BINARY', 'y')
+        qm.set_linear('x', 1)
+        qm.set_linear('y', 1)
+        c = cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
+        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+
+    def test_qm_quadratic_penalty_no_binary(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('INTEGER', 'y', lower_bound=0, upper_bound=10)
+        qm.add_variable('REAL', 'z', lower_bound=0, upper_bound=10)
+        qm.set_linear('x', 1)
+        qm.set_linear('y', 1)
+        qm.set_linear('z', 1)
+        with self.assertRaises(ValueError):
+            cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
+
+    def test_mixed_vartype(self):
+        cqm = CQM()
+        qm = dimod.QuadraticModel()
+        qm.add_variable('BINARY', 'x')
+        qm.add_variable('SPIN', 's')
+        cqm.add_constraint(qm <= 1, weight=3, penalty='quadratic')
+
+
 class TestBounds(unittest.TestCase):
     def test_inconsistent(self):
         i0 = Integer('i')
@@ -980,6 +1042,25 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.sense, new.constraints[label].sense)
         self.assertSetEqual(cqm.discrete, new.discrete)
 
+    def test_functional_soft(self):
+        cqm = CQM()
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=', weight=2.0, penalty='quadratic')
+        cqm.add_constraint(Spin('a') * Integer('d') * 5 <= 3, weight=3.0)
+
+        new = CQM.from_file(cqm.to_file())
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+
+        for label, info in cqm._soft.items():
+            self.assertEqual(info.weight, new._soft[label].weight)
+            self.assertEqual(info.penalty, new._soft[label].penalty)
+
     def test_header(self):
         from dimod.serialization.fileview import read_header
 
@@ -1002,6 +1083,7 @@ class TestSerialization(unittest.TestCase):
                               num_variables=3,
                               num_quadratic_variables_real=0,
                               num_linear_biases_real=0,
+                              num_weighted_constraints=0,
                               ))
 
     def test_header_real(self):
@@ -1025,6 +1107,7 @@ class TestSerialization(unittest.TestCase):
                               num_variables=6,
                               num_quadratic_variables_real=0,
                               num_linear_biases_real=5,
+                              num_weighted_constraints=0,
                               ))
 
         cqm.set_objective(a + b + x + s*i + a*b)
@@ -1037,6 +1120,7 @@ class TestSerialization(unittest.TestCase):
                               num_variables=6,
                               num_quadratic_variables_real=4,
                               num_linear_biases_real=7,
+                              num_weighted_constraints=0,
                               ))
 
 

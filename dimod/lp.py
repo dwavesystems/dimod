@@ -147,6 +147,9 @@ def dump(cqm: dimod.ConstrainedQuadraticModel, file_like: typing.TextIO):
     .. _CPLEX: https://www.ibm.com/docs/en/icos/12.8.0.0?topic=cplex-lp-file-format-algebraic-representation
 
     """
+    # check that there are no soft constraints, LP format does not support them
+    if len(cqm._soft) > 0:
+        raise ValueError(f"LP file does not support soft constraints, {len(cqm._soft)} were given")
 
     # check that constraint labels are serializable
     for c in cqm.constraints:

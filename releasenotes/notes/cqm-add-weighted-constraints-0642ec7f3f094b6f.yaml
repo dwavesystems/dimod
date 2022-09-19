@@ -1,0 +1,6 @@
+features:
+  - |
+    Added ``weight`` and `penalty` parameters on ``ConstrainedQuadraticModel.add_constraint`` methods
+    to encoded weighted constraints.
+  - |
+    Add constrained quadratic model serialization version 1.3 to support soft constraints.
