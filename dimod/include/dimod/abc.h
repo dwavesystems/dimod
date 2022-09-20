@@ -81,7 +81,7 @@ class ConstQuadraticIterator {
         }
     }
 
-    const reference operator*() const { return term_; }
+    reference operator*() const { return term_; }
 
     const pointer operator->() const { return &(term_); }
 
@@ -584,7 +584,7 @@ template <class bias_type, class index_type>
 template <class T>
 void QuadraticModelBase<bias_type, index_type>::add_quadratic_from_dense(const T dense[],
                                                                          index_type num_variables) {
-    static_assert(std::is_arithmetic<T>::value);
+    static_assert(std::is_arithmetic<T>::value, "T must be numeric");
     assert(0 <= num_variables);
     assert(static_cast<size_type>(num_variables) <= this->num_variables());
 
@@ -736,7 +736,7 @@ template <class bias_type, class index_type>
 template <class Iter>
 bias_type QuadraticModelBase<bias_type, index_type>::energy(Iter sample_start) const {
     static_assert(std::is_same<std::random_access_iterator_tag,
-                               typename std::iterator_traits<Iter>::iterator_category>::value);
+                               typename std::iterator_traits<Iter>::iterator_category>::value, "iterators must be random access");
 
     bias_type en = offset();
 
@@ -763,7 +763,7 @@ bias_type QuadraticModelBase<bias_type, index_type>::energy(Iter sample_start) c
 template <class bias_type, class index_type>
 template <class T>
 void QuadraticModelBase<bias_type, index_type>::fix_variable(index_type v, T assignment) {
-    static_assert(std::is_arithmetic<T>::value);
+    static_assert(std::is_arithmetic<T>::value, "T must be numeric");
     assert(v >= 0 && static_cast<size_type>(v) < num_variables());
     // associated quadratic biases become linear
     if (has_adj()) {
