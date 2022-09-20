@@ -1,0 +1,12 @@
+---
+prelude: >
+    The entire C++ library has been rewritten for performance and consistency.
+features:
+  - New ``dimod::abc::QuadraticModelBase`` abstract base class.
+  - Better performance for linear models.
+upgrade:
+  - Rewrite ``dimod::QuadraticModelBase`` and move it to ``dimod::abc::QuadraticModelBase`` in ``abc.h``.
+  - Move ``dimod::Vartype``, ``dimod::vartype_info``, and ``dimod::vartype_limits` to ``vartypes.h``.
+  - Remove the ``dimod::Neighborhood`` class.
+  - Remove ``iterators.h``.
+  - Move ``dimod::BinaryQuadraticModel`` to ``binary_quadratic_model.h``.
