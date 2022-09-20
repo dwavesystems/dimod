@@ -18,7 +18,7 @@
 cimport cython
 cimport numpy as np
 
-from dimod.libcpp cimport cppVartype
+from dimod.libcpp cimport Vartype as cppVartype
 
 __all__ = [
     'as_numpy_float',
