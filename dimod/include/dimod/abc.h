@@ -202,23 +202,9 @@ class QuadraticModelBase {
     template <class T>
     void add_quadratic_from_dense(const T dense[], index_type num_variables);
 
-    const_neighborhood_iterator cbegin_neighborhood(index_type v) const {
-        if (has_adj()) {
-            return (*adj_ptr_)[v].begin();
-        } else {
-            // I am a bit suspicious that this works, but it seems to
-            return const_neighborhood_iterator();
-        }
-    }
+    const_neighborhood_iterator cbegin_neighborhood(index_type v) const;
 
-    const_neighborhood_iterator cend_neighborhood(index_type v) const {
-        if (has_adj()) {
-            return (*adj_ptr_)[v].end();
-        } else {
-            // I am a bit suspicious that this works, but it seems to
-            return const_neighborhood_iterator();
-        }
-    }
+    const_neighborhood_iterator cend_neighborhood(index_type v) const;
 
     /// todo
     const_quadratic_iterator cbegin_quadratic() const;
@@ -454,6 +440,12 @@ class QuadraticModelBase {
         }
     }
 
+    /// Return an empty neighborhood - useful when we don't have an adj
+    static const std::vector<LinearTerm<bias_type, index_type>>& empty_neighborhood() {
+        static std::vector<LinearTerm<bias_type, index_type>> empty;
+        return empty;
+    }
+
     /// Return true if the model's adjacency structure exists
     bool has_adj() const { return static_cast<bool>(adj_ptr_); }
 };
@@ -638,6 +630,28 @@ index_type QuadraticModelBase<bias_type, index_type>::add_variables(index_type n
     }
 
     return size;
+}
+
+template <class bias_type, class index_type>
+typename QuadraticModelBase<bias_type, index_type>::const_neighborhood_iterator
+QuadraticModelBase<bias_type, index_type>::cbegin_neighborhood(index_type v) const {
+    assert(0 <= v && static_cast<size_t>(v) <= num_variables());
+    if (has_adj()) {
+        return (*adj_ptr_)[v].begin();
+    } else {
+        return empty_neighborhood().begin();
+    }
+}
+
+template <class bias_type, class index_type>
+typename QuadraticModelBase<bias_type, index_type>::const_neighborhood_iterator
+QuadraticModelBase<bias_type, index_type>::cend_neighborhood(index_type v) const {
+    assert(0 <= v && static_cast<size_t>(v) <= num_variables());
+    if (has_adj()) {
+        return (*adj_ptr_)[v].end();
+    } else {
+        return empty_neighborhood().end();
+    }
 }
 
 template <class bias_type, class index_type>
