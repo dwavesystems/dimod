@@ -325,11 +325,17 @@ class Reader {
     std::unordered_map<std::string, Variable<bias_type>> variables_;
 
  public:
-    Reader(const std::string filename) : file(fopen(filename.c_str(), "r")) {
+    explicit Reader(const std::string filename) : file(fopen(filename.c_str(), "r")) {
         if (file == nullptr) {
             throw std::invalid_argument("given file cannot be opened");
-        };
-    };
+        }
+    }
+
+    explicit Reader(std::FILE* stream): file(stream) {
+        if (file == nullptr) {
+            throw std::invalid_argument("given file cannot be opened");
+        }
+    }
 
     ~Reader() { fclose(file); }
 
@@ -369,7 +375,7 @@ class Reader {
                 bias_type coef = ((ProcessedConstantToken*)tokens[i].get())->value;
 
                 index_type vi = expr.add_variable(this->variable(name));
-                expr.model.linear(vi) += coef;
+                expr.model.add_linear(vi, coef);
 
                 i += 2;
                 continue;
@@ -377,7 +383,7 @@ class Reader {
 
             // const
             if (tokens.size() - i >= 1 && tokens[i]->type == ProcessedTokenType::CONST) {
-                expr.model.offset() += ((ProcessedConstantToken*)tokens[i].get())->value;
+                expr.model.add_offset(((ProcessedConstantToken*)tokens[i].get())->value);
                 i++;
                 continue;
             }
@@ -387,7 +393,7 @@ class Reader {
                 std::string name = ((ProcessedVarIdToken*)tokens[i].get())->name;
 
                 index_type vi = expr.add_variable(this->variable(name));
-                expr.model.linear(vi) += 1;
+                expr.model.add_linear(vi, 1);
 
                 i++;
                 continue;
@@ -1231,6 +1237,11 @@ template <class Bias, class Index = int>
 LPModel<Bias, Index> read(const std::string filename) {
     // auto r = reader::Reader<Bias, Index>(filename);
     return reader::Reader<Bias, Index>(filename).read();
+}
+
+template <class Bias, class Index = int>
+LPModel<Bias, Index> read(std::FILE* stream) {
+    return reader::Reader<Bias, Index>(stream).read();
 }
 
 }  // namespace lp
