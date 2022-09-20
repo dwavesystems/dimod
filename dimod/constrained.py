@@ -886,7 +886,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
             'One color'
             >>> cqm.fix_variable("red", 1, cascade=True)
-            {'green': 0, 'blue': 0}
+            {'blue': 0, 'green': 0}
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
