@@ -77,27 +77,14 @@ cdef class cyDiscreteQuadraticModel:
 
     @offset.setter
     def offset(self, bias_type offset):
-        self._set_offset(offset)
-
-    cdef void _add_offset(self, bias_type offset):
-        cdef bias_type *off = &(self.cppbqm.offset())
-        off[0] += offset
-
-    cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
-        # unsafe version of .set_linear
-        cdef bias_type *b = &(self.cppbqm.linear(vi))
-        b[0] = bias
-
-    cdef void _set_offset(self, bias_type offset):
-        cdef bias_type *off = &(self.cppbqm.offset())
-        off[0] = offset
+        self.cppbqm.set_offset(offset)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def add_linear_equality_constraint(self, object terms,
                                        bias_type lagrange_multiplier, bias_type constant):
         # adjust energy offset
-        self._add_offset(lagrange_multiplier * constant * constant)
+        self.cppbqm.add_offset(lagrange_multiplier * constant * constant)
 
         # resolve the terms from a python object into a C++ object
         cdef vector[LinearTerm] cppterms
@@ -156,7 +143,7 @@ cdef class cyDiscreteQuadraticModel:
             u_bias = cppterms[i].bias
 
             lbias = lagrange_multiplier * u_bias * (2 * constant + u_bias)
-            self._set_linear(cu, lbias + self.cppbqm.linear(cu))
+            self.cppbqm.set_linear(cu, lbias + self.cppbqm.linear(cu))
 
             for j in range(i + 1, num_terms):
                 cv = cppterms[j].case
@@ -239,7 +226,7 @@ cdef class cyDiscreteQuadraticModel:
         dqm.cppbqm = self.cppbqm
         dqm.case_starts_ = self.case_starts_
         dqm.adj_ = self.adj_
-        dqm._set_offset(self.cppbqm.offset())
+        dqm.cppbqm.set_offset(self.cppbqm.offset())
 
         return dqm
 
@@ -345,7 +332,7 @@ cdef class cyDiscreteQuadraticModel:
         while dqm.cppbqm.num_variables() < num_cases:
             dqm.cppbqm.add_variable()
         for ci in range(num_cases):
-            dqm._set_linear(ci, linear_biases[ci])
+            dqm.cppbqm.set_linear(ci, linear_biases[ci])
 
         # set the case starts
         dqm.case_starts_.resize(case_starts.shape[0] + 1)
@@ -395,7 +382,7 @@ cdef class cyDiscreteQuadraticModel:
                     raise ValueError("A variable has a self-loop")
 
         # add provided offset to dqm
-        dqm._set_offset(offset)
+        dqm.cppbqm.set_offset(offset)
 
         return dqm
 
@@ -565,7 +552,7 @@ cdef class cyDiscreteQuadraticModel:
 
         cdef Py_ssize_t c
         for c in range(biases.shape[0]):
-            self._set_linear(self.case_starts_[v] + c, biases[c])
+            self.cppbqm.set_linear(self.case_starts_[v] + c, biases[c])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -579,7 +566,7 @@ cdef class cyDiscreteQuadraticModel:
             raise ValueError("case {} is invalid, variable only supports {} "
                              "cases".format(case, self.num_cases(v)))
 
-        self._set_linear(self.case_starts_[v] + case, b)
+        self.cppbqm.set_linear(self.case_starts_[v] + case, b)
 
     def set_quadratic(self, index_type u, index_type v, biases):
 

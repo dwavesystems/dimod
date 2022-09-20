@@ -23,18 +23,24 @@ import numpy as np
 cimport numpy as np
 
 from dimod.constrained import ConstrainedQuadraticModel
-from dimod.libcpp cimport cppread_lp, cppLPModel, cppQuadraticModel
+from dimod.libcpp cimport read as cppread_lp, LPModel as cppLPModel, QuadraticModel as cppQuadraticModel
 from dimod.quadratic cimport cyQM_float64
 from dimod.quadratic.cyqm.cyqm_float64 cimport bias_type, index_type
 from dimod.quadratic.cyqm.cyqm_float64 import BIAS_DTYPE
 from dimod.quadratic import QuadraticModel
 
 
+cdef extern from "<algorithm>" namespace "std" nogil:
+    void swap[T](T& a, T& b) except +  # array overload also works
+
+
+
 cdef void _swap_qm(cyQM_float64 qm, cppQuadraticModel[bias_type, index_type]& cppqm, unordered_map[string, index_type] labels) except +:
     assert cppqm.num_variables() == labels.size()
     assert qm.num_variables() == 0
 
-    qm.cppqm.swap(cppqm)
+    # qm.cppqm.swap(cppqm)
+    swap[cppQuadraticModel[bias_type, index_type]](qm.cppqm, cppqm)
 
     cdef vector[string] variables
     variables.resize(labels.size())
