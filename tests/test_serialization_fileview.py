@@ -178,7 +178,8 @@ class TestFunctional(unittest.TestCase):
 class TestLoad(unittest.TestCase):
     def test_bqm(self):
         bqm = BinaryQuadraticModel({'a': -1}, {'ab': 1}, 7, 'SPIN')
-        self.assertEqual(bqm, load(bqm.to_file()))
+        with bqm.to_file() as f:
+            self.assertEqual(bqm, load(f))
 
     def test_cqm(self):
         cqm = dimod.CQM()
@@ -187,7 +188,8 @@ class TestLoad(unittest.TestCase):
         cqm.add_constraint(bqm, '<=')
         cqm.add_constraint(bqm, '>=')  # add it again
 
-        new = load(cqm.to_file())
+        with cqm.to_file() as f:
+            new = load(f)
 
         self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
@@ -202,7 +204,8 @@ class TestLoad(unittest.TestCase):
         dqm.add_variable(6, 'b')
         dqm.set_quadratic_case('a', 0, 'b', 5, 1.5)
 
-        new = load(dqm.to_file())
+        with dqm.to_file() as f:
+            new = load(f)
 
         self.assertEqual(dqm.num_variables(), new.num_variables())
         self.assertEqual(dqm.num_cases(), new.num_cases())

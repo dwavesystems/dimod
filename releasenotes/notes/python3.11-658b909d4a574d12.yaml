@@ -1,0 +1,8 @@
+---
+features:
+  - Build wheels for Python 3.11.
+upgrade:
+  - Build ``manylinux2014`` wheels. Previously we built ``manylinux2010``.
+  - |
+    Build ``arm64`` and ``x86_64`` wheels for macos. Previously we built
+    ``x86_64`` and ``universal2``.

@@ -4,10 +4,6 @@ orbs:
   win: circleci/windows@2.2.0
 
 environment: &global-environment
-  CIBW_BUILD_VERBOSITY: 1
-  CIBW_ENVIRONMENT: DIMOD_NUM_BUILD_JOBS=20
-  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
-  CIBW_SKIP: pp* *musllinux*
   PIP_PROGRESS_BAR: 'off'
 
 jobs:
@@ -30,21 +26,13 @@ jobs:
       - restore_cache: &build-linux-restore-cache
           keys:
             - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
-      - when:
-          condition:
-            matches:
-              pattern: "^3\\.10.*$"
-              value: << parameters.python-version >>
-          steps:
-            # NumPy only has manylinux2014 images for Python 3.10 so we follow them
-            - run: echo 'export CIBW_MANYLINUX_X86_64_IMAGE=manylinux2014' >> $BASH_ENV
       - run: &build-linux-wheels
           name: build wheels
           command: |
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.8.0
+            pip install cibuildwheel==2.10.0
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -68,8 +56,8 @@ jobs:
 
     environment:
       <<: *global-environment
-      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
       CIBW_ARCHS_LINUX: aarch64
+      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
 
     steps: &build-steps
       - checkout
@@ -83,8 +71,6 @@ jobs:
     parameters:
       python-version:
         type: string
-      cibw-arch:
-        type: string
 
     macos:
       xcode: 13.4.0
@@ -92,7 +78,6 @@ jobs:
     environment:
       <<: *global-environment
       CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
-      CIBW_ARCHS_MACOS: << parameters.cibw-arch >>
 
     steps: *build-steps
 
@@ -134,7 +119,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.8.0
+            python -m pip install cibuildwheel==2.10.0
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
@@ -261,7 +246,7 @@ jobs:
         type: string
 
     docker:
-      - image: cimg/python:<< parameters.python-version >>
+      - image: python:<< parameters.python-version >>
 
     steps:
       - checkout
@@ -318,12 +303,17 @@ jobs:
       - attach_workspace:
           at: dist
       - run:
+          # we install pyenv from source so we can get the latest and don't need to wait for package managers
           name: install pyenv
           command: |
-            brew install pyenv
+            git clone https://github.com/pyenv/pyenv.git ~/.pyenv --branch v2.3.4
+            echo '' >> ~/.bash_profile
+            echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+            echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+            echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
       - restore_cache:
           keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
+            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
       - run:
           name: install python
           command: |
@@ -331,12 +321,10 @@ jobs:
       - save_cache:
           paths:
             - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0
+          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
       - run:
           name: install
           command: |
-            eval "$(pyenv init --path)"
-            eval "$(pyenv init -)"
             pyenv local << parameters.python-version >>
             python -m venv env
             . env/bin/activate
@@ -404,17 +392,10 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0]
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
       - build-linux-aarch64: *build
       - build-sdist
-      - build-osx: &build-osx
-          matrix:
-            parameters:
-              python-version: *python-versions
-              cibw-arch: [x86_64, universal2]
-            exclude:
-              - python-version: 3.7.9
-                cibw-arch: universal2
+      - build-osx: *build
       - build-windows: *build
       - test-airspeed-velocity
       - test-codecov
@@ -427,7 +408,7 @@ workflows:
             parameters:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
-              python-version: *python-versions
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
             exclude:
               # we don't support 1.14.5, the oldest version for Python 3.7.9
               - python-version: 3.7.9
@@ -440,7 +421,7 @@ workflows:
             - build-osx
           matrix:
             parameters:
-              python-version: *python-versions         
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
       - test-sdist:
           requires:
             - build-sdist
@@ -450,7 +431,7 @@ workflows:
             - build-windows
           matrix:
             parameters:
-              python-version: *python-versions
+              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 with nuget yet
   deploy:
     jobs:
       - build-linux: &deploy-build
@@ -461,13 +442,7 @@ workflows:
             branches:
               ignore: /.*/
       - build-linux-aarch64: *deploy-build
-      - build-osx:
-          <<: *build-osx
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
+      - build-osx: *deploy-build
       - build-sdist:
           filters:
             tags:

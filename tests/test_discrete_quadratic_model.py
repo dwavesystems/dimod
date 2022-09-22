@@ -293,21 +293,24 @@ class TestFile(unittest.TestCase):
         # this is technically an internal attribute, but none-the-less has
         # surprising behavior
         dqm = dimod.DiscreteQuadraticModel()
-        dqm.to_file()._file.read()
+        with dqm.to_file() as f:
+            f._file.read()
 
     def test_compress(self):
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
 
-        self.assertLess(len(dqm.to_file(compress=True).read()),
-                        len(dqm.to_file().read()))
+        with dqm.to_file(compress=True) as cf:
+            with dqm.to_file() as f:
+                self.assertLess(len(cf.read()), len(f.read()))
 
     def test_compressed(self):
         # deprecated
         dqm = gnp_random_dqm(5, [4, 5, 2, 1, 10], .5, .5, seed=23)
 
         with self.assertWarns(DeprecationWarning):
-            self.assertLess(len(dqm.to_file(compressed=True).read()),
-                            len(dqm.to_file().read()))
+            with dqm.to_file(compressed=True) as cf:
+                with dqm.to_file() as f:
+                    self.assertLess(len(cf.read()), len(f.read()))
 
     @parameterized.expand(file_parameterized)
     def test_functional(self, name, dqm, kwargs):
@@ -331,7 +334,8 @@ class TestFile(unittest.TestCase):
         self.assertDQMEqual(dqm, new)
 
     def test_readable(self):
-        self.assertTrue(dimod.DQM().to_file().readable())
+        with dimod.DQM().to_file() as f:
+            self.assertTrue(f.readable())
 
     def test_readinto(self):
         dqm = dimod.DQM()
@@ -351,10 +355,12 @@ class TestFile(unittest.TestCase):
         self.assertEqual(buff, buff2)
 
     def test_seekable(self):
-        self.assertTrue(dimod.DQM().to_file().seekable())
+        with dimod.DQM().to_file() as f:
+            self.assertTrue(f.seekable())
 
     def test_writeable(self):
-        self.assertTrue(dimod.DQM().to_file().writable())
+        with dimod.DQM().to_file() as f:
+            self.assertTrue(f.writable())
 
 
 class TestLinear(unittest.TestCase):

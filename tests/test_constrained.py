@@ -1010,7 +1010,8 @@ class TestSerialization(unittest.TestCase):
         cqm.set_objective(BQM({'c': -1}, {}, 'SPIN'))
         cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
 
-        new = CQM.from_file(cqm.to_file())
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
 
         self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
@@ -1020,7 +1021,9 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(constraint.sense, new.constraints[label].sense)
 
     def test_functional_empty(self):
-        new = CQM.from_file(CQM().to_file())
+        with CQM().to_file() as f:
+            new = CQM.from_file(f)
+        self.assertEqual(len(new.variables), 0)
 
     def test_functional_discrete(self):
         cqm = CQM()
@@ -1032,7 +1035,8 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(Spin('a')*Integer('d')*5 <= 3)
         cqm.add_discrete('efg')
 
-        new = CQM.from_file(cqm.to_file())
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
 
         self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
@@ -1074,7 +1078,8 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(x*s + x <= 5)
         cqm.add_constraint(i*i + i*s <= 4)
 
-        header_info = read_header(cqm.to_file(), b'DIMODCQM')
+        with cqm.to_file() as f:
+            header_info = read_header(f, b'DIMODCQM')
 
         self.assertEqual(header_info.data,
                          dict(num_biases=11,
@@ -1100,28 +1105,30 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(a - i == 4)
         cqm.add_constraint(x + y + x*y == 5)
 
-        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
-                         dict(num_biases=14,
-                              num_constraints=3,
-                              num_quadratic_variables=2,
-                              num_variables=6,
-                              num_quadratic_variables_real=0,
-                              num_linear_biases_real=5,
-                              num_weighted_constraints=0,
-                              ))
+        with cqm.to_file() as f:
+            self.assertEqual(read_header(f, b'DIMODCQM').data,
+                             dict(num_biases=14,
+                                  num_constraints=3,
+                                  num_quadratic_variables=2,
+                                  num_variables=6,
+                                  num_quadratic_variables_real=0,
+                                  num_linear_biases_real=5,
+                                  num_weighted_constraints=0,
+                                  ))
 
         cqm.set_objective(a + b + x + s*i + a*b)
         cqm.add_constraint(3*a*(1 - b) == 4)
 
-        self.assertEqual(read_header(cqm.to_file(), b'DIMODCQM').data,
-                         dict(num_biases=18,
-                              num_constraints=4,
-                              num_quadratic_variables=4,
-                              num_variables=6,
-                              num_quadratic_variables_real=4,
-                              num_linear_biases_real=7,
-                              num_weighted_constraints=0,
-                              ))
+        with cqm.to_file() as f:
+            self.assertEqual(read_header(f, b'DIMODCQM').data,
+                             dict(num_biases=18,
+                                  num_constraints=4,
+                                  num_quadratic_variables=4,
+                                  num_variables=6,
+                                  num_quadratic_variables_real=4,
+                                  num_linear_biases_real=7,
+                                  num_weighted_constraints=0,
+                                  ))
 
 
 class TestSetObjective(unittest.TestCase):
