@@ -226,7 +226,7 @@ SCENARIO("A small quadratic model can be manipulated", "[qm]") {
                 std::vector<std::int64_t> samples = {4294967296, 4294967296};
 
                 THEN("we get the value we expect") {
-                    CHECK(qm.energy(samples.begin()) == Approx(1.8446744069414584e+19));
+                    CHECK(qm.energy(samples.begin()) == Approx(4294967296.0 * 4294967296.0));
                 }
             }
         }
