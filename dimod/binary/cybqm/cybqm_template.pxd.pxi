@@ -17,7 +17,7 @@ cimport cython
 from dimod.binary.cybqm.base cimport cyBQMBase
 from dimod.cyvariables cimport cyVariables
 from dimod.cyutilities cimport ConstNumeric
-from dimod.libcpp cimport cppBinaryQuadraticModel
+from dimod.libcpp cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 
 
 cdef class cyBQM_template(cyBQMBase):
@@ -31,12 +31,8 @@ cdef class cyBQM_template(cyBQMBase):
     # since python does not really have an unsigned integer type that it
     # likes to use
 
-    cdef void _add_linear(self, Py_ssize_t, bias_type)
-    cdef void _add_offset(self, bias_type)
     cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels)
     cdef Py_ssize_t _index(self, object, bint permissive=*) except -1
-    cdef void _set_linear(self, Py_ssize_t, bias_type)
-    cdef void _set_offset(self, bias_type)
     cpdef Py_ssize_t add_linear_from_array(self, ConstNumeric[:] linear) except -1
     cpdef Py_ssize_t add_quadratic_from_dense(self, ConstNumeric[:, ::1] quadratic) except -1
     cpdef Py_ssize_t change_vartype(self, object) except -1

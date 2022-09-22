@@ -4,36 +4,46 @@
 C++ API
 =======
 
+dimod
+=====
+
 BinaryQuadraticModel
 --------------------
 
 .. doxygenclass:: dimod::BinaryQuadraticModel
     :members:
-    :project: dimod
+
+
+QuadraticModel
+--------------
+
+.. doxygenclass:: dimod::QuadraticModel
+    :members:
 
 Vartype
 -------
 
 .. doxygenenum:: dimod::Vartype
-    :project: dimod
 
-.. dev note: I'd like to add vartype_limits here, but I can't figure out how to
-   get doxygen to play nicely with the partial specialization. Making as TODO
-   for now
-
-Base Classes
+vartype_info
 ------------
 
-Neighborhood
-~~~~~~~~~~~~
-
-.. doxygenclass:: dimod::Neighborhood
+.. doxygenclass:: dimod::vartype_info
     :members:
-    :project: dimod
+    :undoc-members:
 
-QuadraticModelBase
-~~~~~~~~~~~~~~~~~~
+.. Todo: vartype_limits. Getting it to look nice is possible but fiddly
 
-.. doxygenclass:: dimod::QuadraticModelBase
+dimod::abc
+==========
+
+.. doxygenclass:: dimod::abc::QuadraticModelBase
     :members:
-    :project: dimod
+    :protected-members:
+
+.. Todo: dimod lp
+
+dimod::utils
+============
+
+.. doxygenfunction:: zip_sort

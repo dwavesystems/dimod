@@ -28,7 +28,7 @@ import dimod
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
-from dimod.libcpp cimport cppvartype_info
+from dimod.libcpp cimport vartype_info as cppvartype_info
 from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
@@ -65,13 +65,7 @@ cdef class cyQM_template(cyQMBase):
 
     @offset.setter
     def offset(self, bias_type offset):
-        cdef bias_type *b = &(self.cppqm.offset())
-        b[0] = offset
-
-    cdef void _add_linear(self, Py_ssize_t vi, bias_type bias):
-        # unsafe version of .add_linear
-        cdef bias_type *b = &(self.cppqm.linear(vi))
-        b[0] += bias
+        self.cppqm.set_offset(offset)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -186,11 +180,6 @@ cdef class cyQM_template(cyQMBase):
         while self.variables.size() < self.cppqm.num_variables():
             self.variables._append()
 
-    cdef void _set_linear(self, Py_ssize_t vi, bias_type bias):
-        # unsafe version of .set_linear
-        cdef bias_type *b = &(self.cppqm.linear(vi))
-        b[0] = bias
-
     def add_linear(self, v, bias_type bias, *,
                    default_vartype=None,
                    default_lower_bound=None,
@@ -209,7 +198,7 @@ cdef class cyQM_template(cyQMBase):
                               upper_bound=default_upper_bound,
                               )
 
-        self._add_linear(vi, bias)
+        self.cppqm.add_linear(vi, bias)
 
     def add_linear_from_array(self, ConstNumeric[:] linear):
         cdef Py_ssize_t length = linear.shape[0]
@@ -219,7 +208,7 @@ cdef class cyQM_template(cyQMBase):
             if length > self.num_variables():
                 raise ValueError("variables must already exist")
             for vi in range(length):
-                self._add_linear(vi, linear[vi])
+                self.cppqm.add_linear(vi, linear[vi])
         else:
             for vi in range(length):
                 self.add_linear(vi, linear[vi])
@@ -453,7 +442,7 @@ cdef class cyQM_template(cyQMBase):
         cdef cppVartype vartype = bqm.cppbqm.vartype()
         for vi in range(bqm.num_variables()):
             qm.cppqm.add_variable(vartype)
-            qm._set_linear(vi, bqm.cppbqm.linear(vi))
+            qm.cppqm.set_linear(vi, bqm.cppbqm.linear(vi))
         qm.variables._extend(bqm.variables)
 
         # quadratic
@@ -546,29 +535,11 @@ cdef class cyQM_template(cyQMBase):
         if v is None:
             try:
                 v = self.variables[-1]
-            except KeyError:
+            except IndexError:
                 raise ValueError("cannot pop from an empty model")
 
-        cdef Py_ssize_t vi = self.variables.index(v)
-        cdef Py_ssize_t lasti = self.num_variables() - 1
-
-        if vi != lasti:
-            # we're removing a variable in the middle of the
-            # underlying adjacency. We do this by "swapping" the last variable
-            # and v, then popping v from the end
-            self.cppqm.swap_variables(vi, lasti)
-
-            # now swap the variable labels
-            last = self.variables.at(lasti)
-            self.variables._relabel({v: last, last: v})
-
-        # remove last from the cppqm and variables
-        self.cppqm.resize(lasti)
-        tmp = self.variables._pop()
-
-        assert tmp == v, f"{tmp} == {v}"
-
-        return v
+        self.cppqm.remove_variable(self.variables.index(v))
+        self.variables._remove(v)
 
     def relabel_variables_as_integers(self):
         return self.variables._relabel_as_integers()
@@ -697,7 +668,7 @@ cdef class cyQM_template(cyQMBase):
 
     def set_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self.variables.index(v)
-        self._set_linear(vi, bias)
+        self.cppqm.set_linear(vi, bias)
 
     def set_lower_bound(self, v, bias_type lb):
         cdef Py_ssize_t vi = self.variables.index(v)
@@ -725,8 +696,7 @@ cdef class cyQM_template(cyQMBase):
                     f"current upper bound, {self.cppqm.upper_bound(vi)}"
                     )
 
-        cdef bias_type *b = &(self.cppqm.lower_bound(vi))
-        b[0] = lb
+        self.cppqm.set_lower_bound(vi, lb)
 
     def set_upper_bound(self, v, bias_type ub):
         cdef Py_ssize_t vi = self.variables.index(v)
@@ -754,8 +724,7 @@ cdef class cyQM_template(cyQMBase):
                     f"current lower bound, {self.cppqm.lower_bound(vi)}"
                     )
 
-        cdef bias_type *b = &(self.cppqm.upper_bound(vi))
-        b[0] = ub
+        self.cppqm.set_upper_bound(vi, ub)
 
     def set_quadratic(self, u, v, bias_type bias):
         cdef Py_ssize_t ui = self.variables.index(u)
@@ -831,7 +800,7 @@ cdef class cyQM_template(cyQMBase):
         
         # the linear biases
         for vi in range(mapping.size()):
-            self._add_linear(mapping[vi], other.data().linear(vi))
+            self.cppqm.add_linear(mapping[vi], other.data().linear(vi))
 
         # the quadratic biases
         # dev note: for even more speed we could check that mapping is
@@ -847,8 +816,7 @@ cdef class cyQM_template(cyQMBase):
             inc(it)
 
         # the offset
-        cdef bias_type *b = &(self.cppqm.offset())
-        b[0] += other.data().offset()
+        self.cppqm.add_offset(other.data().offset())
 
     def upper_bound(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
