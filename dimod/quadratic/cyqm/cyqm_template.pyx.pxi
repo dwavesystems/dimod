@@ -28,7 +28,7 @@ import dimod
 
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
-from dimod.libcpp cimport vartype_info as cppvartype_info
+from dimod.libcpp.vartypes cimport vartype_info as cppvartype_info
 from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
 from dimod.variables import Variables

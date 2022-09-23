@@ -17,7 +17,7 @@ cimport cython
 from dimod.binary.cybqm.base cimport cyBQMBase
 from dimod.cyvariables cimport cyVariables
 from dimod.cyutilities cimport ConstNumeric
-from dimod.libcpp cimport BinaryQuadraticModel as cppBinaryQuadraticModel
+from dimod.libcpp.binary_quadratic_model cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 
 
 cdef class cyBQM_template(cyBQMBase):
