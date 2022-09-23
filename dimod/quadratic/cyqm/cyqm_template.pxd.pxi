@@ -20,7 +20,8 @@ cimport cython
 from dimod.cyutilities cimport ConstNumeric
 from dimod.cyvariables cimport cyVariables
 from dimod.quadratic.cyqm.cyqm_base cimport cyQMBase
-from dimod.libcpp cimport QuadraticModel as cppQuadraticModel, Vartype as cppVartype
+from dimod.libcpp.quadratic_model cimport QuadraticModel as cppQuadraticModel
+from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
 
 cdef class cyQM_template(cyQMBase):

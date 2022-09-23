@@ -32,7 +32,7 @@ from libcpp.vector cimport vector
 from dimod.binary.cybqm cimport cyBQM
 from dimod.cyutilities cimport as_numpy_float, ConstInteger
 from dimod.cyutilities import coo_sort
-from dimod.libcpp cimport Vartype as cppVartype
+from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.typing import BQMVectors, LabelledBQMVectors, QuadraticVectors
 from dimod.utilities import asintegerarrays, asnumericarrays

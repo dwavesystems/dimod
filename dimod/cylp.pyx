@@ -23,7 +23,8 @@ import numpy as np
 cimport numpy as np
 
 from dimod.constrained import ConstrainedQuadraticModel
-from dimod.libcpp cimport read as cppread_lp, LPModel as cppLPModel, QuadraticModel as cppQuadraticModel
+from dimod.libcpp.lp cimport read as cppread_lp, LPModel as cppLPModel
+from dimod.libcpp.quadratic_model cimport QuadraticModel as cppQuadraticModel
 from dimod.quadratic cimport cyQM_float64
 from dimod.quadratic.cyqm.cyqm_float64 cimport bias_type, index_type
 from dimod.quadratic.cyqm.cyqm_float64 import BIAS_DTYPE
