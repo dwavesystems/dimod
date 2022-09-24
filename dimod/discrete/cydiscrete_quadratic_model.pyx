@@ -324,7 +324,7 @@ cdef class cyDiscreteQuadraticModel:
 
         # set the BQM
         if num_interactions:
-            dqm.cppbqm.add_quadratic(
+            dqm.cppbqm.add_quadratic_from_coo(
                 &irow[0], &icol[0], &quadratic_biases[0],
                 num_interactions)
 
