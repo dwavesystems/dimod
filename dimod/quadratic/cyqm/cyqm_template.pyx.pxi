@@ -78,7 +78,7 @@ cdef class cyQM_template(cyQMBase):
         return ldata
 
     def _ilower_triangle(self, Py_ssize_t vi):
-        cdef Py_ssize_t degree = self.cppqm.num_interactions(vi)
+        cdef Py_ssize_t degree = self.cppqm.degree(vi)
 
         dtype = np.dtype([('v', self.index_dtype), ('b', self.dtype)],
                          align=False)
@@ -361,7 +361,7 @@ cdef class cyQM_template(cyQMBase):
 
     def degree(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
-        return self.cppqm.num_interactions(vi)
+        return self.cppqm.degree(vi)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -583,7 +583,7 @@ cdef class cyQM_template(cyQMBase):
     def reduce_neighborhood(self, u, function, initializer=None):
         cdef Py_ssize_t ui = self.variables.index(u)
 
-        if self.cppqm.num_interactions(ui) == 0 and initializer is None:
+        if self.cppqm.degree(ui) == 0 and initializer is None:
             # feels like this should be a ValueError but python raises
             # TypeError so...
             raise TypeError("reduce_neighborhood() on an empty neighbhorhood")

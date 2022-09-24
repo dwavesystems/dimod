@@ -104,7 +104,7 @@ cdef class cyBQM_template(cyBQMBase):
 
             for vi in range(1, num_variables):
                 neighbors_view[vi] = (neighbors_view[vi - 1]
-                                      + self.cppbqm.num_interactions(vi - 1))
+                                      + self.cppbqm.degree(vi - 1))
                 bias_view[vi] = self.cppbqm.linear(vi)
 
         return ldata
@@ -117,7 +117,7 @@ cdef class cyBQM_template(cyBQMBase):
         if not 0 <= ui < self.num_variables():
             raise ValueError(f"out of range variable, {ui!r}")
 
-        cdef Py_ssize_t degree = self.cppbqm.num_interactions(ui)
+        cdef Py_ssize_t degree = self.cppbqm.degree(ui)
 
         dtype = np.dtype([('ui', self.index_dtype), ('b', self.dtype)],
                          align=False)
@@ -245,7 +245,7 @@ cdef class cyBQM_template(cyBQMBase):
 
         if length:
             if self.variables._is_range():
-                self.cppbqm.add_quadratic(&irow[0], &icol[0], &qdata[0], length)
+                self.cppbqm.add_quadratic_from_coo(&irow[0], &icol[0], &qdata[0], length)
                 self.variables._stop = self.cppbqm.num_variables()
             else:
                 raise NotImplementedError
@@ -300,7 +300,7 @@ cdef class cyBQM_template(cyBQMBase):
 
     def degree(self, v):
         cdef Py_ssize_t vi = self._index(v)
-        return self.cppbqm.num_interactions(vi)
+        return self.cppbqm.degree(vi)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -389,7 +389,7 @@ cdef class cyBQM_template(cyBQMBase):
         cdef Py_ssize_t length = irow.shape[0]
 
         if length:
-            bqm.cppbqm.add_quadratic(&irow[0], &icol[0], &qdata[0], length)
+            bqm.cppbqm.add_quadratic_from_coo(&irow[0], &icol[0], &qdata[0], length)
 
         bqm.variables._stop = bqm.cppbqm.num_variables()
 
@@ -556,7 +556,7 @@ cdef class cyBQM_template(cyBQMBase):
     def reduce_neighborhood(self, u, function, initializer=None):
         cdef Py_ssize_t ui = self.variables.index(u)
 
-        if self.cppbqm.num_interactions(ui) == 0 and initializer is None:
+        if self.cppbqm.degree(ui) == 0 and initializer is None:
             # feels like this should be a ValueError but python raises
             # TypeError so...
             raise TypeError("reduce_neighborhood() on an empty neighbhorhood")
