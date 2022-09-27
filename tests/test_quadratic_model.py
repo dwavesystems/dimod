@@ -861,6 +861,26 @@ class TestRemoveInteraction(unittest.TestCase):
         self.assertEqual(qm.quadratic, {('j', 'i'): 1.0, ('k', 'j'): 1.0})
 
 
+class TestRemoveVariable(unittest.TestCase):
+    def test_middle(self):
+        qm = dimod.QuadraticModel()
+        qm.add_variable('INTEGER', 'i', lower_bound=-5, upper_bound=5)
+        qm.add_variable('INTEGER', 'j', lower_bound=-10, upper_bound=10)
+        qm.add_variable('REAL', 'k', lower_bound=-20, upper_bound=20)
+
+        qm.remove_variable('j')
+
+        self.assertEqual(qm.num_variables, 2)
+
+        self.assertEqual(qm.lower_bound('i'), -5)
+        self.assertEqual(qm.upper_bound('i'), 5)
+        self.assertEqual(qm.vartype('i'), dimod.INTEGER)
+
+        self.assertEqual(qm.lower_bound('k'), -20)
+        self.assertEqual(qm.upper_bound('k'), 20)
+        self.assertEqual(qm.vartype('k'), dimod.REAL)
+
+
 class TestSpinToBinary(unittest.TestCase):
     def test_triangle(self):
         qm = QM()

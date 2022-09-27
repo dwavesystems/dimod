@@ -41,7 +41,7 @@ cdef void _swap_qm(cyQM_float64 qm, cppQuadraticModel[bias_type, index_type]& cp
     assert qm.num_variables() == 0
 
     # qm.cppqm.swap(cppqm)
-    swap[cppQuadraticModel[bias_type, index_type]](qm.cppqm, cppqm)
+    swap[cppQuadraticModel[bias_type, index_type]](qm.cppqm[0], cppqm)
 
     cdef vector[string] variables
     variables.resize(labels.size())

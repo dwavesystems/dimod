@@ -270,7 +270,7 @@ class QuadraticModelBase {
      * If `capacity` is true, use the capacity of the underlying vectors rather
      * than the size.
      */
-    size_type nbytes(bool capacity = false) const;
+    virtual size_type nbytes(bool capacity = false) const;
 
     /// Return the number of interactions in the quadratic model.
     size_type num_interactions() const;
@@ -315,7 +315,7 @@ class QuadraticModelBase {
      * Note that this causes a reindexing, where all variables above `v` have
      * their index reduced by one.
      */
-    void remove_variable(index_type v);
+    virtual void remove_variable(index_type v);
 
     /// Multiply all biases 'scalar'
     void scale(bias_type scalar);

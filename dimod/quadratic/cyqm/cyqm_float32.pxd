@@ -17,8 +17,7 @@
 
 cimport numpy as np
 
-ctypedef np.float32_t bias_type
-ctypedef np.int32_t index_type
+from dimod.cyqmbase.cyqmbase_float32 cimport cyQMBase_float32 as cyQMBase, bias_type, index_type
 
 include "cyqm_template.pxd.pxi"
 

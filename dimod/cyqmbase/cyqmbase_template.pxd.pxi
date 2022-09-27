@@ -15,6 +15,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from dimod.cyvariables cimport cyVariables
+from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 
-cdef class cyQMBase:
-    pass
+
+cdef class cyQMBase_template:
+    cdef cppQuadraticModelBase[bias_type, index_type]* base
+
+    cdef readonly cyVariables variables
+
+    cdef readonly object dtype
+    cdef readonly object index_dtype
+
+    cpdef bint is_linear(self)
+    cpdef Py_ssize_t num_interactions(self)
+    cpdef Py_ssize_t num_variables(self)
