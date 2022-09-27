@@ -12,5 +12,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cdef class cyBQMBase:
+import numpy as np
+
+__all__ = ['cyQMBase_float64']
+
+BIAS_DTYPE = np.float64
+INDEX_DTYPE = np.int32
+
+include "cyqmbase_template.pyx.pxi"
+
+cdef class cyQMBase_float64(cyQMBase_template):
     pass

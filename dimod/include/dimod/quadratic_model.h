@@ -67,9 +67,6 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Change the vartype of `v`, updating the biases appropriately.
     void change_vartype(Vartype vartype, index_type v);
 
-    template <class T>
-    void fix_variable(index_type v, T assignment);
-
     bias_type lower_bound(index_type v) const;
 
     /**
@@ -256,14 +253,6 @@ void QuadraticModel<bias_type, index_type>::change_vartype(Vartype vartype, inde
         // todo: there are more we could support
         throw std::logic_error("unsupported vartype change");
     }
-}
-
-template <class bias_type, class index_type>
-template <class T>
-void QuadraticModel<bias_type, index_type>::fix_variable(index_type v, T assignment) {
-    // should we add an assert for bounds?
-    base_type::fix_variable(v, assignment);
-    this->varinfo_.erase(this->varinfo_.begin() + v);
 }
 
 template <class bias_type, class index_type>

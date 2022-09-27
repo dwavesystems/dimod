@@ -17,29 +17,15 @@
 
 cimport cython
 
-from dimod.cyutilities cimport ConstNumeric
-from dimod.cyvariables cimport cyVariables
-from dimod.quadratic.cyqm.cyqm_base cimport cyQMBase
 from dimod.libcpp.quadratic_model cimport QuadraticModel as cppQuadraticModel
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
 
 cdef class cyQM_template(cyQMBase):
-    cdef cppQuadraticModel[bias_type, index_type] cppqm
-
-    cdef readonly object dtype
-    cdef readonly object index_dtype
-    cdef readonly cyVariables variables
+    cdef cppQuadraticModel[bias_type, index_type]* cppqm
 
     cdef public int REAL_INTERACTIONS
 
     cdef Py_ssize_t _add_quadratic(self, index_type, index_type, bias_type) except -1
-    cdef np.float64_t[::1] _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels)
     cdef cppVartype cppvartype(self, object) except? cppVartype.SPIN
     cdef const cppQuadraticModel[bias_type, index_type]* data(self)
-
-    cpdef bint is_linear(self)
-    cpdef void scale(self, bias_type)
-    cpdef Py_ssize_t nbytes(self, bint capacity=*)
-    cpdef Py_ssize_t num_interactions(self)
-    cpdef Py_ssize_t num_variables(self)
