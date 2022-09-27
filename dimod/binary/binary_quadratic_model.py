@@ -1724,7 +1724,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         Raises:
             TypeError: If :attr:`.dtype` is :class:`object`.
 
-        .. _capacity: https://www.cplusplus.com/reference/vector/vector/capacity/
+        .. _capacity: https://en.wikipedia.org/wiki/Dynamic_array
 
         """
         return self.data.nbytes(capacity)
