@@ -92,6 +92,8 @@ class ConstrainedQuadraticModel:
         :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
         and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
 
+    Constraints are often categorized
+
     The objective and constraints are encoded as either :class:`.QuadraticModel`
     or :class:`.BinaryQuadraticModel` depending on the variable types used.
 
@@ -256,16 +258,19 @@ class ConstrainedQuadraticModel:
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            copy: If `True`, model ``qm`` is copied. This can be set to `False`
+            copy: If ``True``, model ``qm`` is copied. This can be set to ``False``
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
-            weight: weight for soft-constraint. If None, the constraints
-                is interpreted as hard.
+            weight: Weight for a soft constraint. If None, the constraint
+                is hard. In feasible solutions, all the model's hard constraints
+                must be met, while soft constraints might be violated to achieve
+                overall good solutions.
 
-            penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
-                only accepted if the constraint has binary variables.
+            penalty: Penalty type for a soft constraint (a constraint with its
+                ``weight`` parameter set). Supported values are ``'linear'`` and
+                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
+                supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
@@ -361,12 +366,15 @@ class ConstrainedQuadraticModel:
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
-            weight: weight for soft-constraint. If None, the constraints
-                is interpreted as hard.
+            weight: Weight for a soft constraint. If None, the constraint
+                is hard. In feasible solutions, all the model's hard constraints
+                must be met, while soft constraints might be violated to achieve
+                overall good solutions.
 
-            penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
-                only accepted if the constraint has binary variables.
+            penalty: Penalty type for a soft constraint (a constraint with its
+                ``weight`` parameter set). Supported values are ``'linear'`` and
+                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
+                supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
@@ -459,12 +467,15 @@ class ConstrainedQuadraticModel:
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            weight: weight for soft-constraint. If None, the constraints
-                is interpreted as hard.
+            weight: Weight for a soft constraint. If None, the constraint
+                is hard. In feasible solutions, all the model's hard constraints
+                must be met, while soft constraints might be violated to achieve
+                overall good solutions.
 
-            penalty: Penalty type for soft-constraint. Must be one of
-                'linear', 'quadratic'. Ignored if weight is None. 'quadratic'
-                only accepted if the constraint has binary variables.
+            penalty: Penalty type for a soft constraint (a constraint with its
+                ``weight`` parameter set). Supported values are ``'linear'`` and
+                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
+                supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
@@ -1445,7 +1456,7 @@ class ConstrainedQuadraticModel:
                    linear_only: bool = False,
                    ) -> int:
         """Number of biases in the constrained quadratic model.
-        
+
         Includes biases in both the objective and any constraints.
 
         Args:
@@ -1492,7 +1503,7 @@ class ConstrainedQuadraticModel:
                                 include_objective: Optional[bool] = None,
                                 ) -> int:
         """Number of variables with at least one quadratic interaction in the constrained quadratic model.
-        
+
         Includes interactions in both the objective and any constraints.
 
         Args:
@@ -1916,7 +1927,7 @@ class ConstrainedQuadraticModel:
             as a string. Each directory will also contain a `discrete` file,
             encoding whether the constraint represents a discrete variable.
             Weighted constraints also contain a `weight` and `penalty` file,
-            encoding the weight and the penalty for the constraint.
+            encoding the weight and the penalty type for the constraint.
 
         Format Specification (Version 1.2):
             This format is the same as Version 1.3, except that there are no
