@@ -1,5 +1,4 @@
-# temp upper bound to remove error from C++ docs until a patch is released
-sphinx<4.1.0
+sphinx
 sphinx_rtd_theme
 
 breathe
