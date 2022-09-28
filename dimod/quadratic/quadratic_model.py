@@ -1040,7 +1040,7 @@ class QuadraticModel(QuadraticViewsMixin):
         Returns:
             The number of bytes.
 
-        .. _capacity: https://www.cplusplus.com/reference/vector/vector/capacity/
+        .. _capacity: https://en.cppreference.com/w/cpp/container/vector/capacity
 
         """
         return self.data.nbytes(capacity)
