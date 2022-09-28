@@ -92,7 +92,12 @@ class ConstrainedQuadraticModel:
         :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
         and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
 
-    Constraints are often categorized
+    Constraints are often categorized as either "hard" or "soft". Any hard constraint
+    must be satisfied for a solution of the model to qualify as feasible. Soft
+    constraints may be violated to achieve an overall good solution. By setting
+    appropriate weights to soft constraints in comparison to the objective
+    and to other soft constraints, you can express the relative importance of such
+    constraints.
 
     The objective and constraints are encoded as either :class:`.QuadraticModel`
     or :class:`.BinaryQuadraticModel` depending on the variable types used.
@@ -262,15 +267,15 @@ class ConstrainedQuadraticModel:
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
-            weight: Weight for a soft constraint. If None, the constraint
+            weight: Weight for a soft constraint. If ``None``, the constraint
                 is hard. In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
             penalty: Penalty type for a soft constraint (a constraint with its
                 ``weight`` parameter set). Supported values are ``'linear'`` and
-                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
-                supported for a constraint with binary variables only.
+                ``'quadratic'``. Ignored if ``weight`` is ``None``. ``'quadratic'``
+                is supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
@@ -366,15 +371,15 @@ class ConstrainedQuadraticModel:
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
-            weight: Weight for a soft constraint. If None, the constraint
+            weight: Weight for a soft constraint. If ``None``, the constraint
                 is hard. In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
             penalty: Penalty type for a soft constraint (a constraint with its
                 ``weight`` parameter set). Supported values are ``'linear'`` and
-                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
-                supported for a constraint with binary variables only.
+                ``'quadratic'``. Ignored if ``weight`` is ``None``. ``'quadratic'``
+                is supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
