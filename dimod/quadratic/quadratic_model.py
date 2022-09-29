@@ -1034,13 +1034,11 @@ class QuadraticModel(QuadraticViewsMixin):
         Also does not include the memory consumed by the variable labels.
 
         Args:
-            capacity: If ``capacity`` is true, also include the capacity_ of the
-                underlying vectors in the calculation.
+            capacity: If ``capacity`` is true, also include the ``std::vector::capacity``
+            of the underlying vectors in the calculation.
 
         Returns:
             The number of bytes.
-
-        .. _capacity: https://www.cplusplus.com/reference/vector/vector/capacity/
 
         """
         return self.data.nbytes(capacity)
