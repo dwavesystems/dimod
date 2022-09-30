@@ -1209,7 +1209,7 @@ class ConstrainedQuadraticModel:
                 label = deserialize_variable(json.loads(constraint))
 
                 try:
-                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"))
+                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"), np.float64)[0]
                     penalty = zf.read(f"constraints/{constraint}/penalty").decode('ascii')
                 except KeyError:
                     weight = None

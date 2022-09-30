@@ -14,6 +14,7 @@
 
 import itertools
 import json
+import numbers
 import unittest
 
 from textwrap import dedent
@@ -1059,6 +1060,7 @@ class TestSerialization(unittest.TestCase):
 
         for label, info in cqm._soft.items():
             self.assertEqual(info.weight, new._soft[label].weight)
+            self.assertIsInstance(new._soft[label].weight, numbers.Number)
             self.assertEqual(info.penalty, new._soft[label].penalty)
 
     def test_header(self):
