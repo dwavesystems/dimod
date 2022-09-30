@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix the performance of ``ConstrainedQuadraticModel.from_file()`` for
+    constrained quadratic models with a large number of constraints.
+    The poor performanc was accidentally introduced in 0.11.6.dev0.

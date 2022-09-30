@@ -1207,13 +1207,15 @@ class ConstrainedQuadraticModel:
                 discrete = any(zf.read(f"constraints/{constraint}/discrete"))
 
                 label = deserialize_variable(json.loads(constraint))
-                if f"constraints/{constraint}/weight" in zf.namelist() \
-                        and f"constraints/{constraint}/penalty" in zf.namelist():
-                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"), np.float64)[0]
+
+                try:
+                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"))
                     penalty = zf.read(f"constraints/{constraint}/penalty").decode('ascii')
-                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty)
-                else:
-                    cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label)
+                except KeyError:
+                    weight = None
+                    penalty = None
+
+                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty)
                 if discrete:
                     cqm.discrete.add(label)
 
