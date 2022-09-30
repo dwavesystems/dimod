@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix the type of soft constraint weights when loaded from files. The issue was
+    introduced in 0.11.6.dev1.
