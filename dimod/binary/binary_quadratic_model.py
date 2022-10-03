@@ -1588,7 +1588,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
-            if isinstance(other, QuadraticModel):
+            if callable(other.vartype):
                 vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
             else:
                 vartype_eq = self.vartype == other.vartype

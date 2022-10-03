@@ -11,3 +11,10 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+
+from dimod.cyqmbase.cyqmbase_float32 cimport cyQMBase_float32
+from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64
+
+ctypedef fused cyQMBase:
+    cyQMBase_float32
+    cyQMBase_float64

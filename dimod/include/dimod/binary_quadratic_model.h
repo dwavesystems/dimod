@@ -88,6 +88,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     bias_type lower_bound() const;
 
+    /// Return the lower bound on variable ``v``.
     bias_type lower_bound(index_type v) const;
 
     // Resize the model to contain `n` variables.
@@ -95,10 +96,12 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     bias_type upper_bound() const;
 
+    /// Return the upper bound on variable ``v``.
     bias_type upper_bound(index_type v) const;
 
     Vartype vartype() const;
 
+    /// Return the variable type of variable ``v``.
     Vartype vartype(index_type v) const;
 
  private:
@@ -152,9 +155,18 @@ index_type BinaryQuadraticModel<bias_type, index_type>::add_variable() {
 
 template <class bias_type, class index_type>
 void BinaryQuadraticModel<bias_type, index_type>::change_vartype(Vartype vartype) {
-    if (vartype == this->vartype_) return;  // nothing to do
-    base_type::change_vartypes(this->vartype_, vartype);
-    this->vartype_ = vartype;
+    if (vartype_ == vartype) {
+        return;
+    } else if (vartype == Vartype::SPIN) {
+        // binary to spin
+        base_type::substitute_variables(.5, .5);
+    } else if (vartype == Vartype::BINARY) {
+        // spin to binary
+        base_type::substitute_variables(2, -1);
+    } else {
+        throw std::logic_error("unsupported vartype");
+    }
+    vartype_ = vartype;
 }
 
 template <class bias_type, class index_type>
