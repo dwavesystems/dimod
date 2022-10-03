@@ -39,10 +39,12 @@ cdef class cyQMBase_template:
 
         self.variables = Variables()
 
-    def __init__(self):
+        # These should be treated as immutable class attributes, but Cython
+        # doesn't support them
         self.dtype = _dtype
         self.index_dtype = _index_dtype
 
+    def __init__(self):
         # Ensure that this class is not instantiated by itself.
         # It is possible to get segfaults by bypassing this __init__, but that seems
         # like a small enough edge case to be OK.

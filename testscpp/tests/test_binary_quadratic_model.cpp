@@ -58,6 +58,18 @@ TEST_CASE("BinaryQuadraticModel tests") {
                 CHECK(energy == -1 + 2 + 4 + bqm.offset());
             }
         }
+
+        AND_GIVEN("another BQM") {
+            auto bqm2 = BinaryQuadraticModel<double>(10, Vartype::BINARY);
+
+            WHEN("we use the copy assignment operator") {
+                bqm2 = bqm;
+
+                THEN("it updates correctly") {
+                    REQUIRE(bqm2.num_variables() == 5);
+                }
+            }
+        }
     }
 
     GIVEN("a sparse quadratic BQM") {

@@ -44,6 +44,8 @@ struct TwoVarTerm {
 
     explicit TwoVarTerm(index_type u) : u(u), v(-1), bias(NAN) {}
 
+    TwoVarTerm(index_type u, index_type v, bias_type bias): u(u), v(v), bias(bias) {}
+
     friend bool operator==(const TwoVarTerm& a, const TwoVarTerm& b) {
         return (a.u == b.u && a.v == b.v && a.bias == b.bias);
     }
@@ -83,7 +85,7 @@ class ConstQuadraticIterator {
 
     reference operator*() const { return term_; }
 
-    const pointer operator->() const { return &(term_); }
+    const pointer operator->() const { return &term_; }
 
     ConstQuadraticIterator& operator++() {
         index_type& vi = vi_;
@@ -154,7 +156,17 @@ class QuadraticModelBase {
 
     friend class ConstQuadraticIterator<bias_type, index_type>;
 
-    virtual ~QuadraticModelBase() {}
+    virtual ~QuadraticModelBase() = default;
+
+    QuadraticModelBase();
+
+    QuadraticModelBase(const QuadraticModelBase&);
+
+    QuadraticModelBase(QuadraticModelBase&&) = default;
+
+    QuadraticModelBase& operator=(const QuadraticModelBase&);
+
+    QuadraticModelBase& operator=(QuadraticModelBase&&) = default;
 
     /// Add linear bias to variable ``v``.
     void add_linear(index_type v, bias_type bias);
@@ -246,7 +258,7 @@ class QuadraticModelBase {
     /// The linear bias of variable `v`.
     bias_type linear(index_type v) const;
 
-    /// The lower bound of variable `v`.
+    /// Return the lower bound on variable ``v``.
     virtual bias_type lower_bound(index_type v) const = 0;
 
     [[deprecated]] std::pair<const_neighborhood_iterator, const_neighborhood_iterator> neighborhood(
@@ -332,49 +344,17 @@ class QuadraticModelBase {
     /// Set the quadratic bias for the given variables.
     void set_quadratic(index_type u, index_type v, bias_type bias);
 
-    /// Return the upper bound of variable of `v`.
+    void substitute_variable(index_type v, bias_type multiplier, bias_type offset);
+
+    void substitute_variables(bias_type multiplier, bias_type offset);
+
+    /// Return the upper bound on variable ``v``.
     virtual bias_type upper_bound(index_type v) const = 0;
 
-    /// Return the vartype of `v`.
+    /// Return the variable type of variable ``v``.
     virtual Vartype vartype(index_type v) const = 0;
 
  protected:
-    QuadraticModelBase();
-
-    /// Copy constructor
-    QuadraticModelBase(const QuadraticModelBase& other);
-
-    /// Move constructor
-    QuadraticModelBase(QuadraticModelBase&& other) noexcept;
-
-    /// Copy assignment operator
-    QuadraticModelBase& operator=(const QuadraticModelBase& other) {
-        if (this != &other) {
-            this->linear_biases_ = other.linear_biases_;  // copy
-            if (other.has_adj()) {
-                this->adj_ptr_ = std::unique_ptr<
-                        std::vector<std::vector<OneVarTerm<bias_type, index_type>>>>(
-                        new std::vector<std::vector<OneVarTerm<bias_type, index_type>>>(
-                                *other.adj_ptr_));
-            } else {
-                this->adj_ptr_.reset(nullptr);
-            }
-
-            this->offset_ = other.offset_;
-        }
-        return *this;
-    }
-
-    /// Move assignment operator
-    QuadraticModelBase& operator=(QuadraticModelBase&& other) noexcept {
-        if (this != &other) {
-            this->linear_biases_ = std::move(other.linear_biases_);
-            this->adj_ptr_ = std::move(other.adj_ptr_);
-            this->offset_ = other.offset_;
-        }
-        return *this;
-    }
-
     explicit QuadraticModelBase(std::vector<bias_type>&& linear_biases)
             : linear_biases_(linear_biases), adj_ptr_(), offset_(0) {}
 
@@ -386,23 +366,11 @@ class QuadraticModelBase {
     /// Increase the size of the model by `n`. Returns the index of the first variable added.
     index_type add_variables(index_type n);
 
-    /**
-     * Adjust the biases of a single variable to reinterpret it as being a
-     * different vartype.
-     *
-     * This method is meant to be used by subclasses, since it does not check
-     * or update the actual vartypes of the variables.
-     */
-    void change_vartype(Vartype source, Vartype target, index_type v);
-
-    /**
-     * Adjust all of the biases in the model to reinterpret them as being
-     * from the source vartype to the target.
-     *
-     * This method is meant to be used by subclasses, since it does not check
-     * or update the actual vartypes of the variables.
-     */
-    void change_vartypes(Vartype source, Vartype target);
+    /// Return an empty neighborhood - useful when we don't have an adj
+    static const std::vector<OneVarTerm<bias_type, index_type>>& empty_neighborhood() {
+        static std::vector<OneVarTerm<bias_type, index_type>> empty;
+        return empty;
+    }
 
     /// Resize model to contain n variables.
     void resize(index_type n);
@@ -440,12 +408,6 @@ class QuadraticModelBase {
         }
     }
 
-    /// Return an empty neighborhood - useful when we don't have an adj
-    static const std::vector<OneVarTerm<bias_type, index_type>>& empty_neighborhood() {
-        static std::vector<OneVarTerm<bias_type, index_type>> empty;
-        return empty;
-    }
-
     /// Return true if the model's adjacency structure exists
     bool has_adj() const { return static_cast<bool>(adj_ptr_); }
 };
@@ -465,8 +427,20 @@ QuadraticModelBase<bias_type, index_type>::QuadraticModelBase(const QuadraticMod
 }
 
 template <class bias_type, class index_type>
-QuadraticModelBase<bias_type, index_type>::QuadraticModelBase(QuadraticModelBase&& other) noexcept {
-    *this = std::move(other);
+QuadraticModelBase<bias_type, index_type>& QuadraticModelBase<bias_type, index_type>::operator=(
+        const QuadraticModelBase& other) {
+    if (this != &other) {
+        linear_biases_ = other.linear_biases_;
+        if (!other.is_linear()) {
+            adj_ptr_ = std::unique_ptr<std::vector<std::vector<OneVarTerm<bias_type, index_type>>>>(
+                    new std::vector<std::vector<OneVarTerm<bias_type, index_type>>>(
+                            *other.adj_ptr_));
+        } else {
+            adj_ptr_.reset(nullptr);
+        }
+        offset_ = other.offset_;
+    }
+    return *this;
 }
 
 template <class bias_type, class index_type>
@@ -664,79 +638,6 @@ template <class bias_type, class index_type>
 ConstQuadraticIterator<bias_type, index_type>
 QuadraticModelBase<bias_type, index_type>::cend_quadratic() const {
     return const_quadratic_iterator(adj_ptr_.get(), num_variables());
-}
-
-template <class bias_type, class index_type>
-void QuadraticModelBase<bias_type, index_type>::change_vartype(Vartype source, Vartype target,
-                                                               index_type v) {
-    // todo: template version with constexpr if
-    if (source == target) {
-        return;
-    } else if (source == Vartype::SPIN && target == Vartype::BINARY) {
-        if (has_adj()) {
-            for (auto it = (*adj_ptr_)[v].begin(); it != (*adj_ptr_)[v].end(); ++it) {
-                linear_biases_[it->v] -= it->bias;
-                asymmetric_quadratic_ref(it->v, v) *= 2;  // log(n)
-                it->bias *= 2;
-            }
-        }
-
-        offset_ -= linear_biases_[v];
-        linear_biases_[v] *= 2;
-    } else if (source == Vartype::BINARY && target == Vartype::SPIN) {
-        if (has_adj()) {
-            for (auto it = (*adj_ptr_)[v].begin(); it != (*adj_ptr_)[v].end(); ++it) {
-                linear_biases_[it->v] += it->bias / 2;
-                asymmetric_quadratic_ref(it->v, v) /= 2;  // log(n)
-                it->bias /= 2;
-            }
-        }
-
-        offset_ += linear_biases_[v] / 2;
-        linear_biases_[v] /= 2;
-    } else {
-        // todo: there are more we could support
-        throw std::logic_error("unsupported vartype change");
-    }
-}
-
-template <class bias_type, class index_type>
-void QuadraticModelBase<bias_type, index_type>::change_vartypes(Vartype source, Vartype target) {
-    if (source == target) return;  // nothing to do
-
-    bias_type lin_mp, lin_offset_mp, quad_mp, quad_offset_mp, lin_quad_mp;
-    if (source == Vartype::SPIN && target == Vartype::BINARY) {
-        lin_mp = 2;
-        lin_offset_mp = -1;
-        quad_mp = 4;
-        lin_quad_mp = -2;
-        quad_offset_mp = .5;
-    } else if (source == Vartype::BINARY && target == Vartype::SPIN) {
-        lin_mp = .5;
-        lin_offset_mp = .5;
-        quad_mp = .25;
-        lin_quad_mp = .25;
-        quad_offset_mp = .125;
-    } else {
-        throw std::logic_error("unsupported vartype combo");
-    }
-
-    for (size_type u = 0; u < num_variables(); ++u) {
-        bias_type lbias = linear_biases_[u];
-
-        linear_biases_[u] *= lin_mp;
-        offset_ += lin_offset_mp * lbias;
-
-        if (has_adj()) {
-            for (auto it = (*adj_ptr_)[u].begin(); it != (*adj_ptr_)[u].end(); ++it) {
-                bias_type qbias = it->bias;
-
-                it->bias *= quad_mp;
-                linear_biases_[u] += lin_quad_mp * qbias;
-                offset_ += quad_offset_mp * qbias;
-            }
-        }
-    }
 }
 
 template <class bias_type, class index_type>
@@ -1077,6 +978,49 @@ void QuadraticModelBase<bias_type, index_type>::set_quadratic(index_type u, inde
     } else {
         asymmetric_quadratic_ref(u, v) = bias;
         asymmetric_quadratic_ref(v, u) = bias;
+    }
+}
+
+// todo: version the accepts rational numbers
+template <class bias_type, class index_type>
+void QuadraticModelBase<bias_type, index_type>::substitute_variable(index_type v,
+                                                                    bias_type multiplier,
+                                                                    bias_type offset) {
+    offset_ += linear_biases_[v] * offset;
+    linear_biases_[v] *= multiplier;
+
+    if (has_adj()) {
+        for (auto& term : (*adj_ptr_)[v]) {
+            linear_biases_[term.v] += term.bias * offset;
+
+            // the quadratic interactions
+            asymmetric_quadratic_ref(term.v, v) *= multiplier;
+            term.bias *= multiplier;
+        }
+    }
+}
+
+// todo: version that accepts rational numbers
+template <class bias_type, class index_type>
+void QuadraticModelBase<bias_type, index_type>::substitute_variables(bias_type multiplier,
+                                                                     bias_type offset) {
+    bias_type quad_mp = multiplier * multiplier;
+    bias_type lin_quad_mp = multiplier * offset;
+    bias_type quad_offset_mp = offset * offset / 2;  // we do this twice so divide by two
+
+    for (size_type v = 0; v < num_variables(); ++v) {
+        offset_ += linear_biases_[v] * offset;
+        linear_biases_[v] *= multiplier;
+    }
+
+    if (has_adj()) {
+        for (size_type v = 0; v < num_variables(); ++v) {
+            for (auto& term : (*adj_ptr_)[v]) {
+                offset_ += quad_offset_mp * term.bias;
+                linear_biases_[v] += lin_quad_mp * term.bias;
+                term.bias *= quad_mp;
+            }
+        }
     }
 }
 

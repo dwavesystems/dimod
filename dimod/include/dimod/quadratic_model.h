@@ -41,18 +41,10 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     QuadraticModel();
 
-    QuadraticModel(const QuadraticModel& qm);
-
-    QuadraticModel(const QuadraticModel&& qm);
-
     explicit QuadraticModel(const BinaryQuadraticModel<bias_type, index_type>& bqm);
 
     template <class B, class I>
     explicit QuadraticModel(const BinaryQuadraticModel<B, I>& bqm);
-
-    QuadraticModel& operator=(const QuadraticModel& other);
-
-    QuadraticModel& operator=(QuadraticModel&& other) noexcept;
 
     index_type add_variable(Vartype vartype);
 
@@ -67,6 +59,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Change the vartype of `v`, updating the biases appropriately.
     void change_vartype(Vartype vartype, index_type v);
 
+    /// Return the lower bound on variable ``v``.
     bias_type lower_bound(index_type v) const;
 
     /**
@@ -104,8 +97,12 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     void set_vartype(index_type v, Vartype vartype);
 
+    // todo: substitute_variable with vartype/bounds support
+
+    /// Return the upper bound on variable ``v``.
     bias_type upper_bound(index_type v) const;
 
+    /// Return the variable type of variable ``v``.
     Vartype vartype(index_type v) const;
 
  private:
@@ -115,27 +112,30 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
         bias_type ub;
 
         varinfo_type(Vartype vartype, bias_type lb, bias_type ub)
-                : vartype(vartype), lb(lb), ub(ub) {}
+                : vartype(vartype), lb(lb), ub(ub) {
+            assert(lb <= ub);
 
-        explicit varinfo_type(Vartype vartype) : vartype(vartype) {
-            this->lb = vartype_info<bias_type>::default_min(vartype);
-            this->ub = vartype_info<bias_type>::default_max(vartype);
+            assert(lb >= vartype_info<bias_type>::min(vartype));
+            assert(ub <= vartype_info<bias_type>::max(vartype));
+
+            assert(vartype != Vartype::BINARY || lb == 0);
+            assert(vartype != Vartype::BINARY || ub == 1);
+
+            assert(vartype != Vartype::SPIN || lb == -1);
+            assert(vartype != Vartype::SPIN || ub == +1);
         }
+
+        explicit varinfo_type(Vartype vartype)
+                : vartype(vartype),
+                  lb(vartype_info<bias_type>::default_min(vartype)),
+                  ub(vartype_info<bias_type>::default_max(vartype)) {}
     };
 
     std::vector<varinfo_type> varinfo_;
-};  // namespace dimod
+};
 
 template <class bias_type, class index_type>
 QuadraticModel<bias_type, index_type>::QuadraticModel() : base_type(), varinfo_() {}
-
-template <class bias_type, class index_type>
-QuadraticModel<bias_type, index_type>::QuadraticModel(const QuadraticModel& qm)
-        : base_type(qm), varinfo_(qm.varinfo_) {}
-
-template <class bias_type, class index_type>
-QuadraticModel<bias_type, index_type>::QuadraticModel(const QuadraticModel&& qm)
-        : base_type(std::move(qm)), varinfo_(std::move(qm.varinfo_)) {}
 
 template <class bias_type, class index_type>
 QuadraticModel<bias_type, index_type>::QuadraticModel(
@@ -160,65 +160,31 @@ QuadraticModel<bias_type, index_type>::QuadraticModel(const BinaryQuadraticModel
 }
 
 template <class bias_type, class index_type>
-QuadraticModel<bias_type, index_type>& QuadraticModel<bias_type, index_type>::operator=(
-        const QuadraticModel& other) {
-    base_type::operator=(other);
-    this->varinfo_ = other.varinfo_;
-    return *this;
-}
-
-template <class bias_type, class index_type>
-QuadraticModel<bias_type, index_type>& QuadraticModel<bias_type, index_type>::operator=(
-        QuadraticModel&& other) noexcept {
-    using std::swap;
-    base_type::operator=(std::move(other));
-    this->varinfo_ = std::move(other.varinfo_);
-    return *this;
-}
-
-template <class bias_type, class index_type>
 index_type QuadraticModel<bias_type, index_type>::add_variable(Vartype vartype) {
-    return this->add_variable(vartype, vartype_info<bias_type>::default_min(vartype),
-                              vartype_info<bias_type>::default_max(vartype));
+    varinfo_.emplace_back(vartype);
+    return base_type::add_variable();
 }
+
 template <class bias_type, class index_type>
 index_type QuadraticModel<bias_type, index_type>::add_variable(Vartype vartype, bias_type lb,
                                                                bias_type ub) {
-    assert(lb <= ub);
-
-    assert(lb >= vartype_info<bias_type>::min(vartype));
-    assert(ub <= vartype_info<bias_type>::max(vartype));
-
-    assert(vartype != Vartype::BINARY || lb == 0);
-    assert(vartype != Vartype::BINARY || ub == 1);
-
-    assert(vartype != Vartype::SPIN || lb == -1);
-    assert(vartype != Vartype::SPIN || ub == +1);
-
-    index_type v = this->num_variables();
-
-    this->varinfo_.emplace_back(vartype, lb, ub);
-    base_type::add_variable();
-
-    return v;
+    varinfo_.emplace_back(vartype, lb, ub);  // also handles asserts
+    return base_type::add_variable();
 }
+
 template <class bias_type, class index_type>
 index_type QuadraticModel<bias_type, index_type>::add_variables(Vartype vartype, index_type n) {
-    index_type start = this->num_variables();
-    for (index_type i = 0; i < n; ++i) {
-        this->add_variable(vartype);
-    }
-    return start;
+    varinfo_.insert(varinfo_.end(), n, varinfo_type(vartype));
+    return base_type::add_variables(n);
 }
+
 template <class bias_type, class index_type>
 index_type QuadraticModel<bias_type, index_type>::add_variables(Vartype vartype, index_type n,
                                                                 bias_type lb, bias_type ub) {
-    index_type start = this->num_variables();
-    for (index_type i = 0; i < n; ++i) {
-        this->add_variable(vartype, lb, ub);
-    }
-    return start;
+    varinfo_.insert(varinfo_.end(), n, varinfo_type(vartype, lb, ub));
+    return base_type::add_variables(n);
 }
+
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::clear() {
     varinfo_.clear();
@@ -233,12 +199,12 @@ void QuadraticModel<bias_type, index_type>::change_vartype(Vartype vartype, inde
     if (source == target) {
         return;
     } else if (source == Vartype::SPIN && target == Vartype::BINARY) {
-        base_type::change_vartype(source, target, v);
+        base_type::substitute_variable(v, 2, -1);
         this->varinfo_[v].lb = 0;
         this->varinfo_[v].ub = 1;
         this->varinfo_[v].vartype = Vartype::BINARY;
     } else if (source == Vartype::BINARY && target == Vartype::SPIN) {
-        base_type::change_vartype(source, target, v);
+        base_type::substitute_variable(v, .5, .5);
         this->varinfo_[v].lb = -1;
         this->varinfo_[v].ub = +1;
         this->varinfo_[v].vartype = Vartype::SPIN;
@@ -258,7 +224,7 @@ void QuadraticModel<bias_type, index_type>::change_vartype(Vartype vartype, inde
 template <class bias_type, class index_type>
 bias_type QuadraticModel<bias_type, index_type>::lower_bound(index_type v) const {
     // even though v is unused, we need this to conform the the QuadraticModelBase API
-    return this->varinfo_[v].lb;
+    return varinfo_[v].lb;
 }
 
 template <class bias_type, class index_type>
@@ -276,7 +242,7 @@ QuadraticModel<bias_type, index_type>::nbytes(bool capacity) const {
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::remove_variable(index_type v) {
     base_type::remove_variable(v);
-    this->varinfo_.erase(this->varinfo_.begin() + v);
+    varinfo_.erase(varinfo_.begin() + v);
 }
 
 template <class bias_type, class index_type>
@@ -290,65 +256,46 @@ void QuadraticModel<bias_type, index_type>::resize(index_type n) {
     }
     // doesn't matter what vartype we specify since we're shrinking
     base_type::resize(n);
-    this->varinfo_.erase(this->varinfo_.begin() + n, this->varinfo_.end());
+    varinfo_.erase(varinfo_.begin() + n, varinfo_.end());
 }
 
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::resize(index_type n, Vartype vartype) {
-    if (vartype == Vartype::BINARY) {
-        this->resize(n, vartype, 0, 1);
-    } else if (vartype == Vartype::SPIN) {
-        this->resize(n, vartype, -1, +1);
-    } else {
-        throw std::logic_error("must provide bounds for integer vartypes when resizing");
-    }
+    base_type::resize(n);
+    varinfo_.resize(n, varinfo_type(vartype));
 }
 
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::resize(index_type n, Vartype vartype, bias_type lb,
                                                    bias_type ub) {
     assert(n > 0);
-
-    assert(lb <= ub);
-
-    assert(lb >= vartype_info<bias_type>::min(vartype));
-    assert(ub <= vartype_info<bias_type>::max(vartype));
-
-    assert(vartype != Vartype::BINARY || lb == 0);
-    assert(vartype != Vartype::BINARY || ub == 1);
-
-    assert(vartype != Vartype::SPIN || lb == -1);
-    assert(vartype != Vartype::SPIN || ub == +1);
-
-    this->varinfo_.resize(n, varinfo_type(vartype, lb, ub));
+    varinfo_.resize(n, varinfo_type(vartype, lb, ub));
     base_type::resize(n);
 }
 
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::set_lower_bound(index_type v, bias_type lb) {
-    this->varinfo_[v].lb = lb;
+    varinfo_[v].lb = lb;
 }
 
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::set_upper_bound(index_type v, bias_type ub) {
-    this->varinfo_[v].ub = ub;
+    varinfo_[v].ub = ub;
 }
 
 template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::set_vartype(index_type v, Vartype vartype) {
-    this->varinfo_[v].vartype = vartype;
+    varinfo_[v].vartype = vartype;
 }
 
 template <class bias_type, class index_type>
 bias_type QuadraticModel<bias_type, index_type>::upper_bound(index_type v) const {
-    // even though v is unused, we need this to conform the the QuadraticModelBase API
-    return this->varinfo_[v].ub;
+    return varinfo_[v].ub;
 }
 
 template <class bias_type, class index_type>
 Vartype QuadraticModel<bias_type, index_type>::vartype(index_type v) const {
-    // even though v is unused, we need this to conform the the QuadraticModelBase API
-    return this->varinfo_[v].vartype;
+    return varinfo_[v].vartype;
 }
 
 }  // namespace dimod
