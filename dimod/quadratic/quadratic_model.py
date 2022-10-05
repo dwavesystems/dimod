@@ -62,11 +62,11 @@ class LinearSection(Section):
     """Serializes the linear biases of a quadratic model."""
     magic = b'LINB'
 
-    def __init__(self, qm: 'QuadraticModel'):
-        self.quadratic_model = qm
+    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
+        self.model = model
 
     def dump_data(self):
-        return memoryview(self.quadratic_model.data._ilinear()).cast('B')
+        return memoryview(self.model._ilinear()).cast('B')
 
     @classmethod
     def loads_data(self, data, *, dtype, num_variables):
@@ -77,11 +77,11 @@ class LinearSection(Section):
 class NeighborhoodSection(Section):
     magic = b'NEIG'
 
-    def __init__(self, qm: 'QuadraticModel'):
-        self.quadratic_model = qm
+    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
+        self.model = model
 
     def dump_data(self, *, vi: int):
-        arr = self.quadratic_model.data._ilower_triangle(vi)
+        arr = self.model._ineighborhood(vi, lower_triangle=True)
         return (struct.pack('<q', arr.shape[0]) + memoryview(arr).cast('B'))
 
     @classmethod
@@ -93,11 +93,11 @@ class OffsetSection(Section):
     """Serializes the offset of a quadratic model."""
     magic = b'OFFS'
 
-    def __init__(self, qm: 'QuadraticModel'):
-        self.quadratic_model = qm
+    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
+        self.model = model
 
     def dump_data(self):
-        return memoryview(self.quadratic_model.offset).cast('B')
+        return memoryview(self.model.offset).cast('B')
 
     @classmethod
     def loads_data(self, data, *, dtype):
@@ -109,11 +109,11 @@ class VartypesSection(Section):
     """Serializes the vartypes of a quadratic model."""
     magic = b'VTYP'
 
-    def __init__(self, qm: 'QuadraticModel'):
-        self.quadratic_model = qm
+    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
+        self.model = model
 
     def dump_data(self):
-        return self.quadratic_model.data._ivartypes()
+        return memoryview(self.model._ivarinfo()).cast('B')
 
     @classmethod
     def loads_data(self, data):
@@ -1365,16 +1365,16 @@ class QuadraticModel(QuadraticViewsMixin):
         write_header(file, QM_MAGIC_PREFIX, data, version=(1, 0))
 
         # the vartypes
-        file.write(VartypesSection(self).dumps())
+        file.write(VartypesSection(self.data).dumps())
 
         # offset
-        file.write(OffsetSection(self).dumps())
+        file.write(OffsetSection(self.data).dumps())
 
         # linear
-        file.write(LinearSection(self).dumps())
+        file.write(LinearSection(self.data).dumps())
 
         # quadraic
-        neighborhood_section = NeighborhoodSection(self)
+        neighborhood_section = NeighborhoodSection(self.data)
         for vi in range(self.num_variables):
             file.write(neighborhood_section.dumps(vi=vi))
 

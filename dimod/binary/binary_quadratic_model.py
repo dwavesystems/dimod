@@ -2225,7 +2225,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         file.write(memoryview(self.data.offset).cast('B'))
 
         # write the linear biases and the neighborhood lengths
-        file.write(memoryview(self.data._ilinear()).cast('B'))
+        file.write(memoryview(self.data._ilinear_and_degree()).cast('B'))
 
         # now the neighborhoods
         for vi in range(self.data.num_variables()):
