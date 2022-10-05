@@ -17,7 +17,7 @@ from libcpp.vector cimport vector
 from dimod.libcpp.abc cimport QuadraticModelBase
 from dimod.libcpp.vartypes cimport Vartype
 
-__all__ = ['ConstrainedQuadraticModel']
+__all__ = ['ConstrainedQuadraticModel', 'Sense', 'Penalty', 'Constraint', 'Expression']
 
 
 cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
