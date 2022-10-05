@@ -50,6 +50,7 @@ class Constraint : public Expression<Bias, Index> {
 
     explicit Constraint(parent_type* parent);
 
+    bool is_discrete() const { return false; }
     bool is_soft() const;
     Penalty penalty() const;
     bias_type rhs() const;

@@ -89,6 +89,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         Penalty penalty()
         bias_type weight()
 
+        bint is_discrete()
         bint is_soft()
         void set_rhs(bias_type)
         void set_sense(Sense)
