@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import collections.abc
 import copy
 import io
 import json
@@ -56,9 +57,37 @@ class ConstraintData(typing.NamedTuple):
     violation: float
 
 
-class SoftConstraint(typing.NamedTuple):
-    weight: float
-    penalty: str
+class DiscreteView(collections.abc.MutableSet):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __contains__(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        return key in self.parent.constraint_labels and self.parent.constraints[key].lhs.is_discrete()
+
+    def __iter__(self):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        for lbl, comp in self.parent.constraints.items():
+            if comp.lhs.is_discrete():
+                yield lbl
+
+    def __len__(self):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        return sum(1 for _ in self)
+
+    def add(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        self.parent.constraints[key].lhs.mark_discrete(True)
+
+    def discard(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        if key in self.parent.constraint_labels:
+            self.parent.constraints[key].lhs.mark_discrete(False)
 
 
 class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
@@ -67,14 +96,14 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def __init__(self):
         super().__init__()
 
-        self.discrete: typing.Set[typing.Hashable] = set()  # collection of discrete constraints
+        self.discrete: typing.Set[typing.Hashable] = DiscreteView(self)
 
-    def __deepcopy__(self, memo: typing.Dict) -> ConstrainedQuadraticModel:
-        new = super().__deepcopy__(memo)
+    # def __deepcopy__(self, memo: typing.Dict) -> ConstrainedQuadraticModel:
+    #     new = super().__deepcopy__(memo)
 
-        new.discrete = copy.deepcopy(self.discrete, memo)
+    #     new.discrete = copy.deepcopy(self.discrete, memo)
 
-        return new
+    #     return new
 
     def __str__(self):
         vartype_name = {Vartype.SPIN: 'Spin',
@@ -801,7 +830,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         if discrete:
             if value == 1:
-                self.discrete.difference_update(discrete)
+                self.discrete -= discrete
             else:
                 for label, lhs in discrete.items():
                     if lhs.num_variables <= 1:
@@ -1490,7 +1519,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         discrete_indices = [self.constraint_labels.index(c) for c in self.discrete]
         self.constraint_labels._relabel(mapping)
         self.discrete.clear()
-        self.discrete.update(self.constraint_labels[i] for i in discrete_indices)
+        self.discrete |= (self.constraint_labels[i] for i in discrete_indices)
 
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],

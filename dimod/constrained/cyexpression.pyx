@@ -256,5 +256,12 @@ cdef class cyConstraintView(_cyExpression):
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL:
         return self.constraint()
 
+    def is_discrete(self):
+        constraint = self.constraint()
+        return constraint.marked_discrete() and constraint.is_onehot()
+
     def is_soft(self):
         return self.constraint().is_soft()
+
+    def mark_discrete(self, bint marker = True):
+        self.constraint().mark_discrete(marker)
