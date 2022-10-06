@@ -386,5 +386,33 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
         //     }
         // }
     }
+
+    GIVEN("A constraint with one-hot constraints") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 10);
+        auto c0 = cqm.add_linear_constraint({0, 1, 2, 3, 4}, {1, 1, 1, 1, 1}, Sense::EQ, 1);
+        auto c1 = cqm.add_linear_constraint({5, 6, 7, 8, 9}, {2, 2, 2, 2, 2}, Sense::EQ, 2);
+
+        THEN("the constraints can be tests for one-hotness") {
+            CHECK(cqm.constraint_ref(c0).is_onehot());
+            CHECK(cqm.constraint_ref(c1).is_onehot());
+            CHECK(cqm.constraint_ref(c0).is_disjoint(cqm.constraint_ref(c1)));
+        }
+
+        WHEN("we change a linear bias") {
+            cqm.constraint_ref(c0).set_linear(0, 1.5);
+
+            THEN("it's no longer one-hot") { CHECK(!cqm.constraint_ref(c0).is_onehot()); }
+        }
+
+        WHEN("we add an overlapping variable") {
+            cqm.constraint_ref(c0).set_linear(5, 1);
+            THEN("they are no longer disjoint") {
+                CHECK(cqm.constraint_ref(c0).is_onehot());
+                CHECK(cqm.constraint_ref(c1).is_onehot());
+                CHECK(!cqm.constraint_ref(c0).is_disjoint(cqm.constraint_ref(c1)));
+            }
+        }
+    }
 }
 }  // namespace dimod

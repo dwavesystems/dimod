@@ -207,6 +207,8 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
 
     bool has_variable(index_type v) const;
 
+    bool is_disjoint(const Expression& other) const;
+
     // /// Test whether two quadratic models are equal.
     // template <class B, class I>
     // bool is_equal(const Expression<B, I>& other) const;
@@ -372,6 +374,22 @@ void Expression<bias_type, index_type>::clear() {
 template <class bias_type, class index_type>
 bool Expression<bias_type, index_type>::has_variable(index_type v) const {
     return indices_.count(v);
+}
+
+template <class bias_type, class index_type>
+bool Expression<bias_type, index_type>::is_disjoint(const Expression& other) const {
+    // we want to do the direction that has the fewest variables
+    if (other.num_variables() < base_type::num_variables()) {
+        return other.is_disjoint(*this);
+    }
+
+    for (const auto& v : variables_) {
+        if (other.indices_.count(v)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 template <class bias_type, class index_type>

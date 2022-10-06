@@ -41,17 +41,16 @@ class Constraint : public Expression<Bias, Index> {
     /// The second template parameter (Index).
     using index_type = Index;
 
-    using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;
+    using size_type = typename base_type::size_type;
 
-    Sense sense_;
-    bias_type rhs_;
-    bias_type weight_;
-    Penalty penalty_;
+    using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;
 
     explicit Constraint(parent_type* parent);
 
-    bool is_discrete() const { return false; }
+    bool is_onehot() const;
     bool is_soft() const;
+    void mark_discrete(bool mark = true);
+    bool marked_discrete() const;
     Penalty penalty() const;
     bias_type rhs() const;
     Sense sense() const;
@@ -60,6 +59,15 @@ class Constraint : public Expression<Bias, Index> {
     void set_sense(Sense sense);
     void set_weight(bias_type weight);
     bias_type weight() const;
+
+ private:
+    Sense sense_;
+    bias_type rhs_;
+    bias_type weight_;
+    Penalty penalty_;
+
+    // marker(s) - these ar not enforced by code
+    bool marked_discrete_ = false;
 };
 
 template <class bias_type, class index_type>
@@ -71,9 +79,39 @@ Constraint<bias_type, index_type>::Constraint(parent_type* parent)
           penalty_(Penalty::LINEAR) {}
 
 template <class bias_type, class index_type>
+bool Constraint<bias_type, index_type>::is_onehot() const {
+    // must be linear and must have at least two variables
+    if (!base_type::is_linear() || base_type::num_variables() < 2) return false;
+
+    // all of out variables must be binary
+    for (const auto& v : base_type::variables()) {
+        if (base_type::vartype(v) != Vartype::BINARY) return false;
+    }
+
+    // we get a bit cute here and check the linear biases using the
+    // underlying model, thereby bypassing the dict lookup. This is not
+    // super future-proof but faster.
+    for (size_type i = 0; i < base_type::num_variables(); ++i) {
+        if (base_type::base_type::linear(i) != rhs_) return false;
+    }
+
+    return true;
+}
+
+template <class bias_type, class index_type>
 bool Constraint<bias_type, index_type>::is_soft() const {
     // some sort of tolerance value?
     return weight_ != std::numeric_limits<bias_type>::infinity();
+}
+
+template <class bias_type, class index_type>
+void Constraint<bias_type, index_type>::mark_discrete(bool marker) {
+    marked_discrete_ = marker;
+}
+
+template <class bias_type, class index_type>
+bool Constraint<bias_type, index_type>::marked_discrete() const {
+    return marked_discrete_;
 }
 
 template <class bias_type, class index_type>

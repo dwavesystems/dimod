@@ -73,6 +73,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         # size_type num_variables()
 
         bint has_variable(index_type)
+        bint is_disjoint(const Expression&)
 
         # const_quadratic_iterator cbegin_quadratic()
         # const_quadratic_iterator cend_quadratic()
@@ -89,8 +90,10 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         Penalty penalty()
         bias_type weight()
 
-        bint is_discrete()
         bint is_soft()
+        void mark_discrete();
+        void mark_discrete(bint mark);
+        bint marked_discrete() const;
         void set_rhs(bias_type)
         void set_sense(Sense)
         void set_penalty(Penalty)
