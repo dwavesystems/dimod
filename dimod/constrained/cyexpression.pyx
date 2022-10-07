@@ -25,6 +25,7 @@ from dimod.cyutilities cimport as_numpy_float
 from dimod.cyutilities cimport ConstNumeric
 from dimod.cyvariables cimport cyVariables
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
+from dimod.libcpp.constrained_quadratic_model cimport Penalty as cppPenalty
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
@@ -262,3 +263,19 @@ cdef class cyConstraintView(_cyExpression):
 
     def mark_discrete(self, bint marker = True):
         self.constraint().mark_discrete(marker)
+
+    def penalty(self):
+        penalty = self.constraint().penalty()
+
+        if penalty == cppPenalty.LINEAR:
+            return "linear"
+        elif penalty == cppPenalty.QUADRATIC:
+            return "quadratic"
+        elif penalty == cppPenalty.CONSTANT:
+            return "constrant"
+        else:
+            raise RuntimeError("unexpected penalty")
+
+    def weight(self):
+        return self.constraint().weight()
+

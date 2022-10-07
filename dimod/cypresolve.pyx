@@ -70,7 +70,7 @@ cdef class cyPreSolver:
             raise ValueError("expected samples to be integer labelled")
 
         if samples.shape[1] != self.cpppresolver.model().num_variables():
-            raise ValueError
+            raise ValueError("given sample has an unexpected number of variables")
 
         # we need contiguous and unsigned. as_samples actually enforces contiguous
         # but no harm in double checking for some future-proofness

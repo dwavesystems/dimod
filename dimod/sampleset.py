@@ -880,6 +880,7 @@ class SampleSet(abc.Iterable, abc.Sized):
 
         constraint_labels = []
         is_satisfied = np.empty((samples.shape[0], len(cqm.constraints)), dtype=bool)
+        soft = set()
         for i, (label, comparison) in enumerate(cqm.constraints.items()):
             constraint_labels.append(label)
 
@@ -897,8 +898,9 @@ class SampleSet(abc.Iterable, abc.Sized):
 
             is_satisfied[:, i] = violation <= atol + rtol*abs(rhs)
 
-            if label in cqm._soft and not is_satisfied.all():
-                weight, penalty = cqm._soft[label]
+            if comparison.lhs.is_soft() and not is_satisfied.all():
+                weight = comparison.lhs.weight()
+                penalty = comparison.lhs.penalty()
 
                 if penalty == 'linear':
                     energies += weight * (is_satisfied[:, i] != True) * violation
@@ -907,8 +909,10 @@ class SampleSet(abc.Iterable, abc.Sized):
                 else:
                     raise RuntimeError("unexpected penalty")
 
-        if cqm._soft:
-            hard = [i for i, label in enumerate(constraint_labels) if label not in cqm._soft]
+                soft.add(label)
+
+        if soft:
+            hard = [i for i, label in enumerate(constraint_labels) if label not in soft]
             is_feasible = is_satisfied[:, hard].all(axis=1)
         else:
             # no soft constraints to worry about
