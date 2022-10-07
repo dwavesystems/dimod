@@ -1692,3 +1692,6 @@ class TestViews(unittest.TestCase):
 
         np.testing.assert_array_equal(cqm.objective.energies(([[0, 0, 1], [1, 0, 0]], 'abc')), 
                                       [-1, 1])
+
+        self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 1, 'b': 1}), 1)
+        self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 0, 'b': 0}), 0)

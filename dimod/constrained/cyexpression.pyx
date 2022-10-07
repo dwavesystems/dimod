@@ -24,6 +24,7 @@ from dimod.cyqmbase.cyqmbase_float64 import _dtype, _index_dtype
 from dimod.cyutilities cimport as_numpy_float
 from dimod.cyutilities cimport ConstNumeric
 from dimod.cyvariables cimport cyVariables
+from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.variables import Variables
@@ -76,19 +77,14 @@ cdef class _cyExpression:
     def _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels):
         cdef cppExpression[bias_type, index_type]* expression = self.expression()
 
-
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef Py_ssize_t num_variables = samples.shape[1]
 
-        # let's reindex
-        cdef index_type[:] reindex = np.empty(self.parent.cppcqm.num_variables(), dtype=self.index_dtype)
+        # let's reindex, using the underlying variable order
+        cdef index_type[:] reindex = np.empty(expression.num_variables(), dtype=self.index_dtype)
 
-        # currently this requires the sample to have all of the variables in
-        # parent, which is obviously not ideal. But let's leave it here for
-        # now
-        cdef Py_ssize_t vi
-        for vi in range(self.parent.cppcqm.num_variables()):
-            reindex[vi] = labels.index(self.parent.variables.at(vi))
+        for i in range(expression.num_variables()):
+            reindex[i] = labels.index(self.parent.variables.at(expression.variables()[i]))
 
         # we could avoid the copy at this point by checking if it's sorted and
         # the same length of the sample array, but let's not for now
@@ -100,13 +96,14 @@ cdef class _cyExpression:
         cdef Py_ssize_t si
         if subsamples.shape[1]:
             for si in range(num_samples):
-                energies[si] = expression.energy(&subsamples[si, 0])
+                # we cast to QuadraticModelBase so that we're using the underlying variable order
+                # rather than parent's
+                energies[si] = (<cppQuadraticModelBase[bias_type, index_type]*>expression).energy(&subsamples[si, 0])
         else:
             for si in range(num_samples):
                 energies[si] = 0
 
         return energies
-
 
     def energies(self, samples_like):
         samples, labels = as_samples(samples_like, labels_type=Variables)
