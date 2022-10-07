@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -150,6 +151,14 @@ void PreSolver<model_type, assignment_type>::apply() {
         }
     }
 
+    // *-- flip >= constraints
+    for (size_type c = 0; c < model_.num_constraints(); ++c) {
+        auto& constraint = model_.constraint_ref(c);
+        if (constraint.sense() == Sense::GE) {
+            constraint.scale(-1);
+        }
+    }
+
     // Trivial techniques -----------------------------------------------------
 
     bool changes = true;
@@ -178,17 +187,16 @@ void PreSolver<model_type, assignment_type>::apply() {
                 // offset should have already been removed but may as well be safe
                 bias_type rhs = (constraint.rhs() - constraint.offset()) / a;
 
-                switch (constraint.sense()) {
-                    case Sense::EQ:
+                // todo: test if negative
+
+                if (constraint.sense() == Sense::EQ) {
                         model_.set_lower_bound(v, std::max(rhs, model_.lower_bound(v)));
                         model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
-                        break;
-                    case Sense::LE:
-                        model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
-                        break;
-                    case Sense::GE:
-                        model_.set_lower_bound(v, std::max(rhs, model_.lower_bound(v)));
-                        break;
+                } else if ((constraint.sense() == Sense::LE) != (a < 0)) {
+                    model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
+                } else {
+                    assert((constraint.sense() == Sense::GE) == (a >= 0));
+                    model_.set_lower_bound(v, std::max(rhs, model_.lower_bound(v)));
                 }
 
                 model_.remove_constraint(c);

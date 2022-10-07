@@ -45,6 +45,7 @@ class Constraint : public Expression<Bias, Index> {
 
     using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;
 
+    Constraint();
     explicit Constraint(parent_type* parent);
 
     bool is_onehot() const;
@@ -53,6 +54,10 @@ class Constraint : public Expression<Bias, Index> {
     bool marked_discrete() const;
     Penalty penalty() const;
     bias_type rhs() const;
+
+    // note: flips sign when negative
+    void scale(bias_type scalar);
+
     Sense sense() const;
     void set_penalty(Penalty penalty);
     void set_rhs(bias_type rhs);
@@ -69,6 +74,9 @@ class Constraint : public Expression<Bias, Index> {
     // marker(s) - these ar not enforced by code
     bool marked_discrete_ = false;
 };
+
+template <class bias_type, class index_type>
+Constraint<bias_type, index_type>::Constraint() : Constraint(nullptr) {}
 
 template <class bias_type, class index_type>
 Constraint<bias_type, index_type>::Constraint(parent_type* parent)
@@ -122,6 +130,19 @@ Penalty Constraint<bias_type, index_type>::penalty() const {
 template <class bias_type, class index_type>
 bias_type Constraint<bias_type, index_type>::rhs() const {
     return rhs_;
+}
+
+template <class bias_type, class index_type>
+void Constraint<bias_type, index_type>::scale(bias_type scalar) {
+    base_type::scale(scalar);
+    rhs_ *= scalar;
+    if (scalar < 0) {
+        if (sense_ == Sense::LE) {
+            sense_ = Sense::GE;
+        } else if (sense_ == Sense::GE) {
+            sense_ = Sense::LE;
+        }
+    }
 }
 
 template <class bias_type, class index_type>

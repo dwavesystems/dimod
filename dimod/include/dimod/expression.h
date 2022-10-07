@@ -162,6 +162,7 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
 
     friend class ConstrainedQuadraticModel<bias_type, index_type>;
 
+    Expression();
     explicit Expression(parent_type* parent);
 
     Expression(parent_type* parent, base_type&& other);
@@ -306,6 +307,9 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
         return vi;
     }
 };
+
+template <class bias_type, class index_type>
+Expression<bias_type, index_type>::Expression() : Expression(nullptr) {}
 
 template <class bias_type, class index_type>
 Expression<bias_type, index_type>::Expression(parent_type* parent) : base_type(), parent_(parent) {}
