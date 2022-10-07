@@ -1678,13 +1678,17 @@ class TestViews(unittest.TestCase):
         a, b, c = dimod.Binaries('abc')
 
         cqm = CQM()
+        cqm.set_objective(a - c)
         c0 = cqm.add_constraint(a + b + c == 1, label='onehot')
         c1 = cqm.add_constraint(a*b <= 0, label='ab LE')
         c2 = cqm.add_constraint(c >= 1, label='c GE')
 
         sample = {'a': 0, 'b': 0, 'c': 1}  # satisfying sample
 
+        self.assertEqual(cqm.objective.energy(sample), -1)
         self.assertEqual(cqm.constraints[c0].lhs.energy(sample), 1)
         self.assertEqual(cqm.constraints[c1].lhs.energy(sample), 0)
-
         self.assertEqual(cqm.constraints[c2].lhs.energy(sample), 1)
+
+        np.testing.assert_array_equal(cqm.objective.energies(([[0, 0, 1], [1, 0, 0]], 'abc')), 
+                                      [-1, 1])

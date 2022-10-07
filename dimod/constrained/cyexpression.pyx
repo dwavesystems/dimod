@@ -94,7 +94,7 @@ cdef class _cyExpression:
         # the same length of the sample array, but let's not for now
 
         # we could do this manually, but way better to let NumPy handle it
-        cdef ConstNumeric[:, ::1] subsamples = np.asarray(samples)[:, reindex]
+        cdef ConstNumeric[:, ::1] subsamples = np.ascontiguousarray(np.asarray(samples)[:, reindex])
 
         cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
         cdef Py_ssize_t si
