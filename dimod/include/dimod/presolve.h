@@ -96,17 +96,19 @@ void PostSolver<bias_type, index_type, assignment_type>::substitute_variable(ind
     transforms_.back().offset = offset;
 }
 
-template <class Model, class Assignment = double>
+template <class Bias, class Index = int, class Assignment = double>
 class PreSolver {
  public:
-    using bias_type = typename Model::bias_type;
-    using index_type = typename Model::index_type;
-    using size_type = typename Model::size_type;
-    using model_type = Model;
+    using model_type = ConstrainedQuadraticModel<Bias, Index>;
+
+    using bias_type = Bias;
+    using index_type = Index;
+    using size_type = typename model_type::size_type;
+
     using assignment_type = Assignment;
 
-    // explicit PreSolver(model_type model);
-    explicit PreSolver(model_type&& model);
+    PreSolver();
+    explicit PreSolver(model_type model);
 
     void apply();
 
@@ -120,16 +122,16 @@ class PreSolver {
     PostSolver<bias_type, index_type, assignment_type> postsolver_;
 };
 
-// template <class bias_type, class index_type, class assignment_type>
-// PreSolver<bias_type, index_type, assignment_type>::PreSolver(model_type model) :
-// model_(std::move(model)) {}
 
-template <class model_type, class assignment_type>
-PreSolver<model_type, assignment_type>::PreSolver(model_type&& model)
+template <class bias_type, class index_type, class assignment_type>
+PreSolver<bias_type, index_type, assignment_type>::PreSolver(): model_(), postsolver_() {}
+
+template <class bias_type, class index_type, class assignment_type>
+PreSolver<bias_type, index_type, assignment_type>::PreSolver(model_type model)
         : model_(std::move(model)), postsolver_() {}
 
-template <class model_type, class assignment_type>
-void PreSolver<model_type, assignment_type>::apply() {
+template <class bias_type, class index_type, class assignment_type>
+void PreSolver<bias_type, index_type, assignment_type>::apply() {
     // todo: actually read from a vector of techniques or similar
 
     // One time techniques ----------------------------------------------------
@@ -243,19 +245,19 @@ void PreSolver<model_type, assignment_type>::apply() {
     }
 }
 
-template <class model_type, class assignment_type>
-void PreSolver<model_type, assignment_type>::load_default_presolvers() {
+template <class bias_type, class index_type, class assignment_type>
+void PreSolver<bias_type, index_type, assignment_type>::load_default_presolvers() {
     // placeholder, does nothing at the moment
 }
 
-template <class model_type, class assignment_type>
-const model_type& PreSolver<model_type, assignment_type>::model() const {
+template <class bias_type, class index_type, class assignment_type>
+const ConstrainedQuadraticModel<bias_type, index_type>& PreSolver<bias_type, index_type, assignment_type>::model() const {
     return model_;
 }
 
-template <class model_type, class assignment_type>
-const PostSolver<typename model_type::bias_type, typename model_type::index_type, assignment_type>&
-PreSolver<model_type, assignment_type>::postsolver() const {
+template <class bias_type, class index_type, class assignment_type>
+const PostSolver<bias_type, index_type, assignment_type>&
+PreSolver<bias_type, index_type, assignment_type>::postsolver() const {
     return postsolver_;
 }
 

@@ -40,7 +40,7 @@ SCENARIO("constrained quadratic models can be presolved") {
         auto c3b = cqm.add_linear_constraint({v3}, {1}, Sense::GE, 4.5);
 
         WHEN("passed into a presolver") {
-            auto presolver = presolve::PreSolver<ConstrainedQuadraticModel<double>>(std::move(cqm));
+            auto presolver = presolve::PreSolver<double>(std::move(cqm));
 
             THEN("it has moved correctly") {
                 const auto& newcqm = presolver.model();
@@ -107,7 +107,7 @@ SCENARIO("constrained quadratic models can be presolved") {
         }
 
         WHEN("the default presolving is applied") {
-            auto presolver = presolve::PreSolver<ConstrainedQuadraticModel<double>>(std::move(cqm));
+            auto presolver = presolve::PreSolver<double>(std::move(cqm));
             presolver.load_default_presolvers();
             presolver.apply();
 
