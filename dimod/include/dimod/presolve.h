@@ -171,6 +171,8 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
 
         // *-- todo: clear out 0 variables/interactions in the constraints
 
+        // *-- todo: check for NAN
+
         // *-- remove single variable constraints
         size_type c = 0;
         while (c < model_.num_constraints()) {

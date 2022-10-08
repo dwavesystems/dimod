@@ -19,6 +19,8 @@ cimport numpy as np
 import numpy as np
 
 from cython.operator cimport preincrement as inc, dereference as deref
+from libcpp.algorithm cimport lower_bound as cpplower_bound
+from libcpp.unordered_map cimport unordered_map
 
 from dimod.cyqmbase.cyqmbase_float64 import _dtype, _index_dtype
 from dimod.cyutilities cimport as_numpy_float
@@ -131,17 +133,82 @@ cdef class _cyExpression:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _ilinear(self):
-        raise NotImplementedError
+        expression = self.expression()
+
+        cdef bias_type[:] ldata = np.empty(expression.num_variables(), dtype=self.dtype)
+        cdef Py_ssize_t vi
+        for vi in range(expression.num_variables()):
+            ldata[vi] = (<cppQuadraticModelBase[bias_type, index_type]*>expression).linear(vi)
+        return np.asarray(ldata)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _ivarinfo(self):
-        raise NotImplementedError
+        expression = self.expression()
+
+        cdef Py_ssize_t num_variables = expression.num_variables()
+
+        # we could use the bias_type size to determine the vartype dtype to get
+        # more alignment, but it complicates the code, so let's keep it simple
+        # We choose the field names to mirror the internals of the QuadraticModel
+        dtype = np.dtype([('vartype', np.int8), ('lb', self.dtype), ('ub', self.dtype)],
+                         align=False)
+        varinfo = np.empty(num_variables, dtype)
+
+        cdef np.int8_t[:] vartype_view = varinfo['vartype']
+        cdef bias_type[:] lb_view = varinfo['lb']
+        cdef bias_type[:] ub_view = varinfo['ub']
+
+        cdef Py_ssize_t i, vi
+        for i in range(expression.num_variables()):
+            vi = expression.variables()[i]
+            vartype_view[i] = expression.vartype(vi)
+            lb_view[i] = expression.lower_bound(vi)
+            ub_view[i] = expression.upper_bound(vi)
+
+        return varinfo
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _ineighborhood(self, Py_ssize_t vi, bint lower_triangle=False):
-        raise NotImplementedError
+        # Cython will not let us coerce to the underling QuadraticModelBase
+        # because it gets confused about the iterator types.
+        # So we do this pretty unnaturally.
+        expression = self.expression()
+
+
+
+        # Make a NumPy struct array.
+        neighborhood = np.empty(
+            (<cppQuadraticModelBase[bias_type, index_type]*>expression).degree(vi),
+            dtype=np.dtype([('v', self.index_dtype), ('bias', self.dtype)], align=False))
+
+        cdef index_type[:] index_view = neighborhood['v']
+        cdef bias_type[:] biases_view = neighborhood['bias']
+
+        if not index_view.shape[0]:
+            return neighborhood
+
+        cdef unordered_map[index_type, index_type] indices
+        for i in range(expression.num_variables()):
+            indices[expression.variables()[i]] = i
+
+        it = expression.cbegin_neighborhood(expression.variables()[vi])
+        cdef Py_ssize_t length = 0
+        cdef Py_ssize_t ui
+        while it != expression.cend_neighborhood(expression.variables()[vi]):
+            ui = indices[deref(it).v]
+
+            if ui > vi:
+                break
+
+            index_view[length] = ui
+            biases_view[length] = deref(it).bias
+
+            inc(it)
+            length += 1
+
+        return neighborhood[:length]
 
     def get_linear(self, v):
         return as_numpy_float(self.expression().linear(self.parent.variables.index(v)))

@@ -1073,7 +1073,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                     )
             if header_info.version >= (1, 3):
                 expected.update(
-                    num_weighted_constraints=len(cqm._soft),
+                    num_weighted_constraints=cqm.num_soft_constraints(),
                     )
 
             if expected != header_info.data:
@@ -1706,17 +1706,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
-            try:
-                with self.objective.to_file(spool_size=int(1e12)) as f:
-                    # we can avoid a copy by trying to read from the underlying buffer
-                    obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
-                    zf.writestr('objective', obj)
-                    # in the case we got the underlying buffer, we need to delete our
-                    # reference to it, otherwise we get an error when the file is closed
-                    del obj
-            except AttributeError:
-                # no objective to write
-                pass
+            with self.objective.to_file(spool_size=int(1e12)) as f:
+                # we can avoid a copy by trying to read from the underlying buffer
+                obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
+                zf.writestr('objective', obj)
+                # in the case we got the underlying buffer, we need to delete our
+                # reference to it, otherwise we get an error when the file is closed
+                del obj
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
@@ -1740,9 +1736,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 zf.writestr(f'constraints/{lstr}/discrete', discrete)
 
                 # soft constraints
-                if label in self._soft:
-                    weight = np.float64(self._soft[label].weight).tobytes()
-                    penalty = bytes(self._soft[label].penalty, 'ascii')
+                if constraint.lhs.is_soft():
+                    weight = np.float64(constraint.lhs.weight()).tobytes()
+                    penalty = bytes(constraint.lhs.penalty(), 'ascii')
                     zf.writestr(f'constraints/{lstr}/weight', weight)
                     zf.writestr(f'constraints/{lstr}/penalty', penalty)
 

@@ -272,6 +272,16 @@ cdef class cyConstrainedQuadraticModel:
     def lower_bound(self, v):
         return as_numpy_float(self.cppcqm.lower_bound(self.variables.index(v)))
 
+    def num_constraints(self):
+        return self.cppcqm.num_constraints()
+
+    def num_soft_constraints(self):
+        cdef Py_ssize_t count = 0
+        for c in range(self.cppcqm.num_constraints()):
+            if self.cppcqm.constraint_ref(c).is_soft():
+                count += 1 
+        return count
+
     def remove_constraint(self, label):
         cdef Py_ssize_t ci = self.constraint_labels.index(label)
         self.cppcqm.remove_constraint(ci)

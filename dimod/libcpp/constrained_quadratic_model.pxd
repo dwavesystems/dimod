@@ -75,8 +75,8 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         bint has_variable(index_type)
         bint is_disjoint(const Expression&)
 
-        # const_quadratic_iterator cbegin_quadratic()
-        # const_quadratic_iterator cend_quadratic()
+        # exprconst_quadratic_iterator cbegin_quadratic()
+        # exprconst_quadratic_iterator cend_quadratic()
 
         vector[index_type]& variables()
 

@@ -17,17 +17,17 @@
 
 from dimod.constrained.cyconstrained cimport cyConstrainedQuadraticModel
 from dimod.cyqmbase.cyqmbase_float64 cimport bias_type, index_type
+from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Expression as cppExpression, Constraint as cppConstraint
 
 
 cdef class _cyExpression:
-    cdef cyConstrainedQuadraticModel parent
+    cdef readonly cyConstrainedQuadraticModel parent
 
     cdef readonly object dtype
     cdef readonly object index_dtype
 
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL
-
 
 cdef class cyObjectiveView(_cyExpression):
     pass
