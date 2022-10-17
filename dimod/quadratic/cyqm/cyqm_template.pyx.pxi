@@ -64,39 +64,6 @@ cdef class cyQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _ilinear(self):
-        """Return the linear biases in a numpy array."""
-        cdef bias_type[:] ldata = np.empty(self.num_variables(), dtype=self.dtype)
-        cdef Py_ssize_t vi
-        for vi in range(self.num_variables()):
-            ldata[vi] = self.cppqm.linear(vi)
-        return ldata
-
-    def _ilower_triangle(self, Py_ssize_t vi):
-        cdef Py_ssize_t degree = self.cppqm.degree(vi)
-
-        dtype = np.dtype([('v', self.index_dtype), ('b', self.dtype)],
-                         align=False)
-        neighbors = np.empty(degree, dtype=dtype)
-
-        cdef index_type[:] index_view = neighbors['v']
-        cdef bias_type[:] bias_view = neighbors['b']
-
-        span = self.cppqm.neighborhood(vi)
-        cdef Py_ssize_t i = 0
-        while span.first != span.second:
-            if deref(span.first).first > vi:
-                break
-            index_view[i] = deref(span.first).first
-            bias_view[i] = deref(span.first).second
-
-            i += 1
-            inc(span.first)
-
-        return neighbors[:i]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def _ilower_triangle_load(self, Py_ssize_t vi, Py_ssize_t num_neighbors, const unsigned char[:] buff):
         cdef Py_ssize_t index_itemsize = self.index_dtype.itemsize
         cdef Py_ssize_t bias_itemsize = self.dtype.itemsize
@@ -113,30 +80,6 @@ cdef class cyQM_template(cyQMBase):
             memcpy(&bias, &buff[i*itemsize+index_itemsize], bias_itemsize)
 
             self.cppqm.add_quadratic_back(ui, vi, bias)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def _ivartypes(self):
-        cdef Py_ssize_t num_variables = self.num_variables()
-
-        # we could use the bias_type size to determine the vartype dtype to get
-        # more alignment, but it complicates the code, so let's keep it simple
-        dtype = np.dtype([('vartype', np.int8),
-                          ('lb', BIAS_DTYPE), ('ub', BIAS_DTYPE)],
-                         align=False)
-        arr = np.empty(num_variables, dtype)
-
-        cdef np.int8_t[:] vartype_view = arr['vartype']
-        cdef bias_type[:] lb_view = arr['lb']
-        cdef bias_type[:] ub_view = arr['ub']
-
-        cdef Py_ssize_t vi
-        for vi in range(self.num_variables()):
-            vartype_view[vi] = self.cppqm.vartype(vi)
-            lb_view[vi] = self.cppqm.lower_bound(vi)
-            ub_view[vi] = self.cppqm.upper_bound(vi)
-
-        return memoryview(arr).cast('B')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

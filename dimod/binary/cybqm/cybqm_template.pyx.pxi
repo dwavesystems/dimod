@@ -81,10 +81,11 @@ cdef class cyBQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _ilinear(self):
+    def _ilinear_and_degree(self):
         """Return a numpy struct array with the linear biases and the
         indices of the neighborhoods. This method is used for serialization.
         """
+
         cdef Py_ssize_t num_variables = self.num_variables()
 
         dtype = np.dtype([('ni', self.index_dtype), ('b', self.dtype)],
@@ -105,34 +106,6 @@ cdef class cyBQM_template(cyQMBase):
                 bias_view[vi] = self.cppbqm.linear(vi)
 
         return ldata
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def _ineighborhood(self, Py_ssize_t ui):
-        """
-        """
-        if not 0 <= ui < self.num_variables():
-            raise ValueError(f"out of range variable, {ui!r}")
-
-        cdef Py_ssize_t degree = self.cppbqm.degree(ui)
-
-        dtype = np.dtype([('ui', self.index_dtype), ('b', self.dtype)],
-                         align=False)
-        neighbors = np.empty(degree, dtype=dtype)
-        
-        cdef index_type[:] index_view = neighbors['ui']
-        cdef bias_type[:] bias_view = neighbors['b']
-
-        span = self.cppbqm.neighborhood(ui)
-        cdef Py_ssize_t i = 0
-        while span.first != span.second:
-            index_view[i] = deref(span.first).first
-            bias_view[i] = deref(span.first).second
-
-            i += 1
-            inc(span.first)
-
-        return neighbors
 
     cdef Py_ssize_t _index(self, v, bint permissive=False) except -1:
         """Return the index of variable `v`.
