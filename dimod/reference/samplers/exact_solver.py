@@ -281,7 +281,7 @@ def _all_cases_cqm(cqm):
     var_list = list(cqm.variables)
 
     # Set aside logical discrete variables, and the Binary variables which make them up
-    d_cases = [len(cqm.constraints[d].lhs) for d in cqm.discrete]
+    d_cases = [len(cqm.constraints[d].lhs.variables) for d in cqm.discrete]
     d_vars = [x for l in [list(cqm.constraints[d].lhs.variables) for d in cqm.discrete] for x in l]
     s = set(d_vars)
     var_list = [v for v in var_list if v not in s]
