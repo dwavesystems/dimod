@@ -52,11 +52,15 @@ Examples:
     True
 
 """
+from __future__ import annotations
+
 import enum
 import typing
 import warnings
 
 from collections.abc import Container, Iterable
+
+import dimod.typing
 
 __all__ = ['as_vartype',
            'Vartype', 'ExtendedVartype',
@@ -116,6 +120,16 @@ class Vartype(enum.Enum):
     BINARY = frozenset({0, 1})
     INTEGER = DISCRETE = Integers()  # DISCRETE is an alias for INTEGER
     REAL = Real()
+
+    # Dev note:
+    # This allows us to treat QMs and BQMs in the same way, i.e. we can
+    # do bqm.vartype(v).
+    # It would be better to make BQM.vartype a method, but that would be an
+    # enormous backward compatibility break.
+    # I tried instead making a proxy object, but that doesn't allow syntax like
+    # bqm.vartype is SPIN
+    def __call__(self, v: typing.Optional[dimod.typing.Variable] = None) -> Vartype:
+        return self
 
 
 # Deprecated alias

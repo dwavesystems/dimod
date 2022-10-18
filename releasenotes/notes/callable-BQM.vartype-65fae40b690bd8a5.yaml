@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Make ``BinaryQuadraticModel.vartype`` callable. This allows for more
+    uniform syntax between binary quadratic models, quadratic models and
+    constrained quadratic models.
