@@ -295,6 +295,46 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
             ++v;
         }
     }
+
+    // Cleanup
+
+    // *-- remove any invalid discrete markers
+    std::vector<index_type> discrete;
+    for (size_type c = 0; c < model_.num_constraints(); ++c) {
+        auto& constraint = model_.constraint_ref(c);
+
+        if (!constraint.marked_discrete()) continue;
+
+        // we can check if it's well formed
+        if (constraint.is_onehot()) {
+            discrete.push_back(c);
+        } else {
+            constraint.mark_discrete(false);  // if it's not one-hot, it's not discrete
+        }
+    }
+    // check if they overlap
+    size_type i = 0;
+    while (i < discrete.size()) {
+        // check if ci overlaps with any other constraints
+        auto& constraint = model_.constraint_ref(discrete[i]);
+
+        bool overlap = false;
+        for (size_type j = i + 1; j < discrete.size(); ++j) {
+            if (model_.constraint_ref(discrete[j]).shares_variables(constraint)) {
+                // we have overlap!
+                overlap = true;
+                constraint.mark_discrete(false);
+                break;
+            }
+        }
+
+        if (overlap) {
+            discrete.erase(discrete.begin() + i);
+            continue;
+        }
+
+        ++i;
+    }
 }
 
 template <class bias_type, class index_type, class assignment_type>

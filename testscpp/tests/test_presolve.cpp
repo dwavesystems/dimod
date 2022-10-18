@@ -162,6 +162,80 @@ SCENARIO("constrained quadratic models can be presolved") {
                 }
         }
     }
+
+    GIVEN("a CQM with 5 binary variables") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 5);
+
+        WHEN("we add a discrete constraint that has an offset but not a rhs") {
+            auto& c1 = cqm.constraint_ref(cqm.add_constraint());
+            c1.set_linear(0, 1);
+            c1.set_linear(1, 1);
+            c1.set_offset(-1);
+            c1.mark_discrete();
+
+            AND_WHEN("we presolve is applied") {
+                auto presolver = presolve::PreSolver<double>(std::move(cqm));
+                presolver.load_default_presolvers();
+                presolver.apply();
+
+                THEN("the constraint is still marked as discrete") {
+                    REQUIRE(presolver.model().num_constraints() == 1);
+                    CHECK(presolver.model().constraint_ref(0).marked_discrete());
+                }
+            }
+        }
+        WHEN("we add a discrete constraint that has an offset and a rhs") {
+            auto& c1 = cqm.constraint_ref(cqm.add_constraint());
+            c1.set_linear(0, 1);
+            c1.set_linear(1, 1);
+            c1.set_rhs(1);
+            c1.set_offset(-1);
+            c1.mark_discrete();
+
+            AND_WHEN("we presolve is applied") {
+                auto presolver = presolve::PreSolver<double>(std::move(cqm));
+                presolver.load_default_presolvers();
+                presolver.apply();
+
+                THEN("the constraint is still marked as discrete") {
+                    REQUIRE(presolver.model().num_constraints() == 1);
+                    CHECK(!presolver.model().constraint_ref(0).marked_discrete());
+                }
+            }
+        }
+
+        WHEN("we add two overlapping discrete constraints and one non-overlapping") {
+            auto& c1 = cqm.constraint_ref(cqm.add_constraint());
+            c1.set_linear(0, 1);
+            c1.set_linear(1, 1);
+            c1.set_rhs(1);
+            c1.mark_discrete();
+            auto& c2 = cqm.constraint_ref(cqm.add_constraint());
+            c2.set_linear(2, 1);
+            c2.set_linear(1, 1);
+            c2.set_rhs(1);
+            c2.mark_discrete();
+            auto& c3 = cqm.constraint_ref(cqm.add_constraint());
+            c3.set_linear(3, 1);
+            c3.set_linear(4, 1);
+            c3.set_rhs(1);
+            c3.mark_discrete();
+
+            AND_WHEN("we presolve is applied") {
+                auto presolver = presolve::PreSolver<double>(std::move(cqm));
+                presolver.load_default_presolvers();
+                presolver.apply();
+
+                THEN("two will still be marked as discrete") {
+                    REQUIRE(presolver.model().num_constraints() == 3);
+                    CHECK(presolver.model().constraint_ref(0).marked_discrete() !=
+                          presolver.model().constraint_ref(1).marked_discrete());
+                    CHECK(presolver.model().constraint_ref(2).marked_discrete());
+                }
+            }
+        }
+    }
 }
 
 }  // namespace dimod
