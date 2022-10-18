@@ -15,6 +15,7 @@
 #pragma once
 
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -31,6 +32,8 @@ class PostSolver {
     using size_type = std::size_t;
     using assignment_type = Assignment;
 
+    void add_variable(index_type v);
+
     template <class T>
     std::vector<T> apply(std::vector<T> reduced) const;
 
@@ -40,7 +43,7 @@ class PostSolver {
 
  private:
     // we want to track what changes were made
-    enum TransformKind { FIX, SUBSTITUTE };
+    enum TransformKind { FIX, SUBSTITUTE, ADD };
 
     // todo: we could get fancy with pointers and templates to save a bit of
     // space here
@@ -59,6 +62,12 @@ class PostSolver {
 };
 
 template <class bias_type, class index_type, class assignment_type>
+void PostSolver<bias_type, index_type, assignment_type>::add_variable(index_type v) {
+    transforms_.emplace_back(TransformKind::ADD);
+    transforms_.back().v = v;
+}
+
+template <class bias_type, class index_type, class assignment_type>
 template <class T>
 std::vector<T> PostSolver<bias_type, index_type, assignment_type>::apply(
         std::vector<T> sample) const {
@@ -71,6 +80,9 @@ std::vector<T> PostSolver<bias_type, index_type, assignment_type>::apply(
             case TransformKind::SUBSTITUTE:
                 sample[it->v] *= it->multiplier;
                 sample[it->v] += it->offset;
+                break;
+            case TransformKind::ADD:
+                sample.erase(sample.begin() + it->v);
                 break;
         }
     }
@@ -87,8 +99,8 @@ void PostSolver<bias_type, index_type, assignment_type>::fix_variable(index_type
 
 template <class bias_type, class index_type, class assignment_type>
 void PostSolver<bias_type, index_type, assignment_type>::substitute_variable(index_type v,
-                                                                      bias_type multiplier,
-                                                                      bias_type offset) {
+                                                                             bias_type multiplier,
+                                                                             bias_type offset) {
     assert(multiplier);  // cannot undo when it's 0
     transforms_.emplace_back(TransformKind::SUBSTITUTE);
     transforms_.back().v = v;
@@ -120,11 +132,46 @@ class PreSolver {
  private:
     model_type model_;
     PostSolver<bias_type, index_type, assignment_type> postsolver_;
+
+    void substitute_self_loops_expr(Expression<bias_type, index_type>& expression,
+                                    std::unordered_map<index_type, index_type>& mapping) {
+        size_type num_variables = expression.num_variables();
+        for (size_type i = 0; i < num_variables; ++i) {
+            index_type v = expression.variables()[i];
+
+            if (!expression.has_interaction(v, v)) continue;  // no self loop
+
+            auto out = mapping.emplace(v, model_.num_variables());
+
+            if (out.second) {
+                // we haven't seen this variable before
+                model_.add_variable(model_.vartype(v), model_.lower_bound(v),
+                                    model_.upper_bound(v));
+                postsolver_.add_variable(out.first->second);
+            }
+
+            assert(static_cast<size_type>(out.first->second) < model_.num_variables());
+
+            // now set the bias between v and the new variable
+            expression.add_quadratic(v, out.first->second, expression.quadratic(v, v));
+            expression.remove_interaction(v, v);
+        }
+    }
+
+    // todo: break into separate presolver
+    void substitute_self_loops() {
+        std::unordered_map<index_type, index_type> mapping;
+
+        substitute_self_loops_expr(model_.objective, mapping);
+
+        for (size_type c = 0; c < model_.num_constraints(); ++c) {
+            substitute_self_loops_expr(model_.constraint_ref(c), mapping);
+        }
+    }
 };
 
-
 template <class bias_type, class index_type, class assignment_type>
-PreSolver<bias_type, index_type, assignment_type>::PreSolver(): model_(), postsolver_() {}
+PreSolver<bias_type, index_type, assignment_type>::PreSolver() : model_(), postsolver_() {}
 
 template <class bias_type, class index_type, class assignment_type>
 PreSolver<bias_type, index_type, assignment_type>::PreSolver(model_type model)
@@ -161,6 +208,9 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
         }
     }
 
+    // *-- remove self-loops
+    substitute_self_loops();
+
     // Trivial techniques -----------------------------------------------------
 
     bool changes = true;
@@ -194,8 +244,8 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
                 // todo: test if negative
 
                 if (constraint.sense() == Sense::EQ) {
-                        model_.set_lower_bound(v, std::max(rhs, model_.lower_bound(v)));
-                        model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
+                    model_.set_lower_bound(v, std::max(rhs, model_.lower_bound(v)));
+                    model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
                 } else if ((constraint.sense() == Sense::LE) != (a < 0)) {
                     model_.set_upper_bound(v, std::min(rhs, model_.upper_bound(v)));
                 } else {
@@ -253,7 +303,8 @@ void PreSolver<bias_type, index_type, assignment_type>::load_default_presolvers(
 }
 
 template <class bias_type, class index_type, class assignment_type>
-const ConstrainedQuadraticModel<bias_type, index_type>& PreSolver<bias_type, index_type, assignment_type>::model() const {
+const ConstrainedQuadraticModel<bias_type, index_type>&
+PreSolver<bias_type, index_type, assignment_type>::model() const {
     return model_;
 }
 

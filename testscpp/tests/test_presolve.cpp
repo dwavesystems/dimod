@@ -16,7 +16,6 @@
 #include "dimod/constrained_quadratic_model.h"
 #include "dimod/presolve.h"
 
-
 namespace dimod {
 
 SCENARIO("constrained quadratic models can be presolved") {
@@ -127,74 +126,42 @@ SCENARIO("constrained quadratic models can be presolved") {
         }
     }
 
-    //     WHEN("passed through the identity presolver") {
-    //         auto presolver = presolve::PreSolver<double>(cqm);
-    //         presolver.apply();
+    GIVEN("a CQM with self-loops") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::INTEGER, 5);
 
-    //         THEN("nothing has changed") {
-    //             // CHECK(presolver.result.status == unchanged)
+        cqm.objective.set_quadratic(0, 0, 1.5);
+        cqm.objective.set_quadratic(3, 3, 3.5);
 
-    //             const auto& newcqm = presolver.model();
+        cqm.add_constraint();
+        cqm.constraint_ref(0).add_quadratic(4, 4, 5);
+        cqm.constraint_ref(0).add_quadratic(3, 3, 6);
 
-    //             REQUIRE(newcqm.num_variables() == 4);
-    //             REQUIRE(newcqm.num_constraints() == 4);
+        WHEN("presolving is applied") {
+            auto presolver = presolve::PreSolver<double>(std::move(cqm));
+            presolver.load_default_presolvers();
+            presolver.apply();
 
-    //             CHECK(newcqm.vartype(v0) == Vartype::INTEGER);
-    //             CHECK(newcqm.lower_bound(v0) == 0);
-    //             CHECK(newcqm.upper_bound(v0) ==
-    //                   vartype_limits<double, Vartype::INTEGER>::default_max());
-    //             CHECK(newcqm.constraint_ref(c0).linear(v0) == 1);
-    //             CHECK(newcqm.constraint_ref(c0).sense() == Sense::LE);
-    //             CHECK(newcqm.constraint_ref(c0).rhs() == 5);
+            THEN("the self-loops are removed") {
+                auto& model = presolver.model();
 
-    //             CHECK(newcqm.vartype(v1) == Vartype::INTEGER);
-    //             CHECK(newcqm.lower_bound(v1) == 5);
-    //             CHECK(newcqm.upper_bound(v1) == 5);
+                REQUIRE(model.num_variables() == 8);
+                REQUIRE(model.num_constraints() == 1);
+                CHECK(model.objective.num_interactions() == 2);
+                CHECK(model.objective.quadratic(0, 5) == 1.5);
+                CHECK(model.objective.quadratic(3, 6) == 3.5);
 
-    //             CHECK(newcqm.vartype(v2) == Vartype::INTEGER);
-    //             CHECK(newcqm.lower_bound(v2) == 0);
-    //             CHECK(newcqm.upper_bound(v2) ==
-    //                   vartype_limits<double, Vartype::INTEGER>::default_max());
-    //             CHECK(newcqm.constraint_ref(c2).linear(v2) == 1);
-    //             CHECK(newcqm.constraint_ref(c2).sense() == Sense::EQ);
-    //             CHECK(newcqm.constraint_ref(c2).rhs() == 7);
+                CHECK(model.constraint_ref(0).num_interactions() == 2);
+                CHECK(model.constraint_ref(0).quadratic(4, 7) == 5);
+                CHECK(model.constraint_ref(0).quadratic(3, 6) == 6);
+            }
 
-    //             CHECK(newcqm.vartype(v3) == Vartype::INTEGER);
-    //             CHECK(newcqm.lower_bound(v3) == 0);
-    //             CHECK(newcqm.upper_bound(v3) ==
-    //                   vartype_limits<double, Vartype::INTEGER>::default_max());
-    //             CHECK(newcqm.constraint_ref(c3a).linear(v3) == 1);
-    //             CHECK(newcqm.constraint_ref(c3a).sense() == Sense::LE);
-    //             CHECK(newcqm.constraint_ref(c3a).rhs() == 5.5);
-    //             CHECK(newcqm.constraint_ref(c3b).linear(v3) == 1);
-    //             CHECK(newcqm.constraint_ref(c3b).sense() == Sense::GE);
-    //             CHECK(newcqm.constraint_ref(c3b).rhs() == 4.5);
-    //         }
-    //     }
-
-    //     WHEN("passed through the trivial presolver") {
-    //         auto presolver = presolve::PreSolver<double>(cqm);
-    //         presolver.add_presolver<presolve::techniques::TrivialPresolver<double>>();
-    //         presolver.apply();
-
-    //         THEN("several constraints/variables are removed") {
-    //             const auto& newcqm = presolver.model();
-    //             const auto& postsolver = presolver.postsolver();
-
-    //             CHECK(newcqm.num_constraints() == 0);
-
-    //             CHECK(newcqm.num_variables() == 1);
-
-    //             // see if we restore the original problem
-    //             auto reduced = std::vector<int>{3};
-
-    //             auto original = postsolver.apply(reduced);
-
-    //             CHECK(original == std::vector<int>{3, 5, 7, 5});
-    //         }
-    //     }
-    // }
+                AND_WHEN("we then undo the transformation") {
+                    auto original = presolver.postsolver().apply(std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8});
+                    CHECK(original == std::vector<int>{1, 2, 3, 4, 5});
+                }
+        }
+    }
 }
-
 
 }  // namespace dimod
