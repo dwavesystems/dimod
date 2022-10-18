@@ -2757,6 +2757,31 @@ class TestToPolyString(unittest.TestCase):
         self.assertIn(bqm.to_polystring(), ['3*a*b + 7*a*c', '3*b*a + 7*c*a'])
 
 
+class TestVartype(unittest.TestCase):
+    @parameterized.expand(BQMs.items())
+    def test_method_and_property(self, _, BQM):
+        bqm = BQM({'a': 1}, {'ab': 1}, 1.5, dimod.BINARY)
+        self.assertEqual(bqm.vartype, bqm.vartype())
+        self.assertIs(bqm.vartype, bqm.vartype())
+        self.assertEqual(str(bqm.vartype), str(bqm.vartype()))
+        self.assertEqual(repr(bqm.vartype), repr(bqm.vartype()))
+
+        self.assertEqual(bqm.vartype, bqm.vartype('a'))
+        self.assertIs(bqm.vartype, bqm.vartype('a'))
+        self.assertEqual(str(bqm.vartype), str(bqm.vartype('a')))
+        self.assertEqual(repr(bqm.vartype), repr(bqm.vartype('a')))
+
+    # # unfortunately, because the vartype objects are singletonss,
+    # # we don't get this behaviour which would be desired
+    # @parameterized.expand(BQMs.items())
+    # def test_vartype_reference(self, _, BQM):
+    #     bqm = BQM({'a': 1}, {'ab': 1}, 1.5, dimod.BINARY)
+    #     vartype = bqm.vartype
+    #     self.assertEqual(vartype(), dimod.BINARY)
+    #     bqm.change_vartype("SPIN", inplace=True)
+    #     self.assertEqual(vartype(), dimod.SPIN)
+
+
 class TestVartypeViews(unittest.TestCase):
     @parameterized.expand(BQMs.items())
     def test_add_offset_binary(self, name, BQM):
