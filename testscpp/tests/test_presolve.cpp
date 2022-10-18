@@ -236,6 +236,29 @@ SCENARIO("constrained quadratic models can be presolved") {
             }
         }
     }
+
+    GIVEN("a CQM with one integer variable and two bound constraitns") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variable(Vartype::INTEGER);  // unbounded
+
+        auto& constraint = cqm.constraint_ref(cqm.add_linear_constraint({0}, {1}, Sense::LE, 5));
+        constraint.set_weight(5);  // make soft
+
+        CHECK(constraint.is_soft());
+
+        cqm.add_linear_constraint({0}, {1}, Sense::LE, 10);  // hard constraint
+
+        WHEN("we presolve is applied") {
+            auto presolver = presolve::PreSolver<double>(std::move(cqm));
+            presolver.load_default_presolvers();
+            presolver.apply();
+
+            THEN("the hard constraint is removed") {
+                REQUIRE(presolver.model().num_constraints() == 1);
+                CHECK(presolver.model().upper_bound(0) == 10);
+            }
+        }
+    }
 }
 
 }  // namespace dimod

@@ -231,7 +231,7 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
             if (constraint.num_variables() == 0) {
                 // remove after checking feasibity
                 throw std::logic_error("not implemented - infeasible");
-            } else if (constraint.num_variables() == 1) {
+            } else if (constraint.num_variables() == 1 && !constraint.is_soft()) {
                 index_type v = constraint.variables()[0];
 
                 // ax ◯ c
