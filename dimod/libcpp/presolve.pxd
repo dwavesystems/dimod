@@ -26,7 +26,7 @@ cdef extern from "dimod/presolve.h" namespace "dimod::presolve" nogil:
 
         PreSolver()
         PreSolver(model_type)
-        void apply()
+        void apply() except+
         void load_default_presolvers()
 
         model_type& model()

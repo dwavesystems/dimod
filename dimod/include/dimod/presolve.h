@@ -147,6 +147,10 @@ class PreSolver {
                 // we haven't seen this variable before
                 model_.add_variable(model_.vartype(v), model_.lower_bound(v),
                                     model_.upper_bound(v));
+
+                // equality constraint
+                model_.add_linear_constraint({v, out.first->second}, {1, -1}, Sense::EQ, 0);
+
                 postsolver_.add_variable(out.first->second);
             }
 
@@ -230,7 +234,12 @@ void PreSolver<bias_type, index_type, assignment_type>::apply() {
 
             if (constraint.num_variables() == 0) {
                 // remove after checking feasibity
-                throw std::logic_error("not implemented - infeasible");
+                if (constraint.offset() != constraint.rhs()) {
+                    throw std::logic_error("infeasible");
+                }
+                model_.remove_constraint(c);
+                changes = true;
+                continue;
             } else if (constraint.num_variables() == 1 && !constraint.is_soft()) {
                 index_type v = constraint.variables()[0];
 

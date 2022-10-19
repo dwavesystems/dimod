@@ -142,11 +142,11 @@ SCENARIO("constrained quadratic models can be presolved") {
             presolver.load_default_presolvers();
             presolver.apply();
 
-            THEN("the self-loops are removed") {
+            THEN("the self-loops are removed and an equality is added") {
                 auto& model = presolver.model();
 
                 REQUIRE(model.num_variables() == 8);
-                REQUIRE(model.num_constraints() == 1);
+                REQUIRE(model.num_constraints() == 4);
                 CHECK(model.objective.num_interactions() == 2);
                 CHECK(model.objective.quadratic(0, 5) == 1.5);
                 CHECK(model.objective.quadratic(3, 6) == 3.5);
@@ -154,12 +154,41 @@ SCENARIO("constrained quadratic models can be presolved") {
                 CHECK(model.constraint_ref(0).num_interactions() == 2);
                 CHECK(model.constraint_ref(0).quadratic(4, 7) == 5);
                 CHECK(model.constraint_ref(0).quadratic(3, 6) == 6);
+
+                // v0 == v0
+                CHECK(model.constraint_ref(1).num_variables() == 2);
+                CHECK(model.constraint_ref(1).is_linear());
+                CHECK(model.constraint_ref(1).variables() == std::vector<int>{0, 5});
+                CHECK(model.constraint_ref(1).linear(0) + model.constraint_ref(1).linear(5) == 0);
+                CHECK(model.constraint_ref(1).rhs() == 0);
+                CHECK(model.constraint_ref(1).sense() == Sense::EQ);
             }
 
-                AND_WHEN("we then undo the transformation") {
-                    auto original = presolver.postsolver().apply(std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8});
-                    CHECK(original == std::vector<int>{1, 2, 3, 4, 5});
-                }
+            AND_WHEN("we then undo the transformation") {
+                auto original =
+                        presolver.postsolver().apply(std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8});
+                CHECK(original == std::vector<int>{1, 2, 3, 4, 5});
+            }
+        }
+    }
+
+    GIVEN("a CQM with a constraint with no variables") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variable(Vartype::BINARY);
+
+        // 5 == 5 constraint
+        auto& constraint = cqm.constraint_ref(cqm.add_constraint());
+        constraint.set_offset(5);
+        constraint.set_rhs(5);
+
+        WHEN("we presolve is applied") {
+            auto presolver = presolve::PreSolver<double>(std::move(cqm));
+            presolver.load_default_presolvers();
+            presolver.apply();
+
+            THEN("the constraint is removed") {
+                CHECK(cqm.num_constraints() == 0);
+            }
         }
     }
 
