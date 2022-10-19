@@ -91,6 +91,13 @@ bool Constraint<bias_type, index_type>::is_onehot() const {
     // must be linear and must have at least two variables
     if (!base_type::is_linear() || base_type::num_variables() < 2) return false;
 
+    // must be equality
+    if (sense_ != Sense::EQ) return false;
+
+    // we could check the rhs vs offset, but let's treat it canonically as
+    // needing no offset
+    if (base_type::offset()) return false;
+
     // all of out variables must be binary
     for (const auto& v : base_type::variables()) {
         if (base_type::vartype(v) != Vartype::BINARY) return false;
