@@ -254,6 +254,32 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
                 CHECK(it == constraint.cend_neighborhood(7));
             }
         }
+
+        WHEN("we use new_constraint()") {
+            auto constraint = cqm.new_constraint();
+
+            THEN("the constraint references the CQM, but is disconnected") {
+                CHECK(constraint.vartype(4) == Vartype::BINARY);
+                CHECK(cqm.num_constraints() == 0);
+            }
+
+            AND_WHEN("that constraint is modified and moved") {
+                constraint.add_quadratic(5, 6, 10);
+                constraint.set_offset(5);
+                constraint.set_linear(16, -15);
+
+                cqm.add_constraint(std::move(constraint));
+
+                THEN("it has been moved correctly") {
+                    REQUIRE(cqm.num_constraints() == 1);
+                    REQUIRE(cqm.constraint_ref(0).num_variables() == 3);
+
+                    CHECK(cqm.constraint_ref(0).linear(16) == -15);
+                    CHECK(cqm.constraint_ref(0).quadratic(5, 6) == 10);
+                    CHECK(cqm.constraint_ref(0).offset() == 5);
+                }
+            }
+        }
     }
 
     GIVEN("a CQM with a contraint") {
