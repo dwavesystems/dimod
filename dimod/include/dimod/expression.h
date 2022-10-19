@@ -209,6 +209,9 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     template <class T>
     void fix_variable(index_type v, T assignment);
 
+    /// Check whether u and v have an interaction
+    bool has_interaction(index_type u,  index_type v) const;
+
     bool has_variable(index_type v) const;
 
     bool is_disjoint(const Expression& other) const;
@@ -270,6 +273,8 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
 
     /// Set the quadratic bias for the given variables.
     void set_quadratic(index_type u, index_type v, bias_type bias);
+
+    bool shares_variables(const Expression& other) const;
 
     void substitute_variable(index_type v, bias_type multiplier, bias_type offset);
 
@@ -411,6 +416,19 @@ void Expression<bias_type, index_type>::fix_variable(index_type v, T assignment)
 }
 
 template <class bias_type, class index_type>
+bool Expression<bias_type, index_type>::has_interaction(index_type u, index_type v) const {
+    auto uit = indices_.find(u);
+    auto vit = indices_.find(v);
+    if (uit == indices_.end() || vit == indices_.end()) {
+        assert(u >= 0 && static_cast<size_type>(u) < parent_->num_variables());
+        assert(v >= 0 && static_cast<size_type>(v) < parent_->num_variables());
+        return 0;
+    }
+
+    return base_type::has_interaction(uit->second, vit->second);
+}
+
+template <class bias_type, class index_type>
 bool Expression<bias_type, index_type>::has_variable(index_type v) const {
     return indices_.count(v);
 }
@@ -544,6 +562,16 @@ void Expression<bias_type, index_type>::reindex_variables(index_type v) {
 }
 
 template <class bias_type, class index_type>
+bool Expression<bias_type, index_type>::remove_interaction(index_type u, index_type v) {
+    auto uit = indices_.find(u);
+    auto vit = indices_.find(v);
+    if (uit == indices_.end() || vit == indices_.end()) {
+        return false;
+    }
+    return base_type::remove_interaction(uit->second, vit->second);
+}
+
+template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::remove_variable(index_type v) {
     throw std::logic_error("not implemented - remove_variable");
 }
@@ -556,6 +584,14 @@ void Expression<bias_type, index_type>::set_linear(index_type v, bias_type bias)
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::set_quadratic(index_type u, index_type v, bias_type bias) {
     base_type::set_quadratic(enforce_variable(u), enforce_variable(v), bias);
+}
+
+template <class bias_type, class index_type>
+bool Expression<bias_type, index_type>::shares_variables(const Expression& other) const {
+    for (auto& v : variables_) {
+        if (other.has_variable(v)) return true;  // overlap!
+    }
+    return false;
 }
 
 template <class bias_type, class index_type>

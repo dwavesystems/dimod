@@ -248,6 +248,9 @@ class QuadraticModelBase {
     template <class T>
     void fix_variable(index_type v, T assignment);
 
+    /// Check whether u and v have an interaction
+    bool has_interaction(index_type u, index_type v) const;
+
     /// Test whether two quadratic models are equal.
     template <class B, class I>
     bool is_equal(const QuadraticModelBase<B, I>& other) const;
@@ -694,6 +697,24 @@ void QuadraticModelBase<bias_type, index_type>::fix_variable(index_type v, T ass
 
     // finally remove v
     remove_variable(v);
+}
+
+template <class bias_type, class index_type>
+bool QuadraticModelBase<bias_type, index_type>::has_interaction(index_type u, index_type v) const {
+    assert(0 <= u && static_cast<size_type>(u) < num_variables());
+    assert(0 <= v && static_cast<size_type>(v) < num_variables());
+
+    if (!adj_ptr_) {
+        return false;
+    }
+
+    const auto& n = (*adj_ptr_)[u];
+    auto it = std::lower_bound(n.cbegin(), n.cend(), v);
+    if (it == n.cend() || it->v != v) {
+        return false;
+    }
+
+    return true;
 }
 
 template <class bias_type, class index_type>
