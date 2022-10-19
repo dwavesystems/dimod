@@ -1179,31 +1179,31 @@ class TestSetObjective(unittest.TestCase):
         self.assertAlmostEqual(energy, 11)
 
 
-# class TestSubstituteSelfLoops(unittest.TestCase):
-#     def test_typical(self):
-#         i, j, k = dimod.Integers('ijk')
+class TestSubstituteSelfLoops(unittest.TestCase):
+    def test_typical(self):
+        i, j, k = dimod.Integers('ijk')
 
-#         cqm = CQM()
+        cqm = CQM()
 
-#         cqm.set_objective(2*i*i + i*k)
-#         label = cqm.add_constraint(-3*i*i + 4*j*j <= 5)
+        cqm.set_objective(2*i*i + i*k)
+        label = cqm.add_constraint(-3*i*i + 4*j*j <= 5)
 
-#         mapping = cqm.substitute_self_loops()
+        mapping = cqm.substitute_self_loops()
 
-#         self.assertIn('i', mapping)
-#         self.assertIn('j', mapping)
-#         self.assertEqual(len(mapping), 2)
+        self.assertIn('i', mapping)
+        self.assertIn('j', mapping)
+        self.assertEqual(len(mapping), 2)
 
-#         self.assertEqual(cqm.objective.quadratic, {('k', 'i'): 1, (mapping['i'], 'i'): 2})
-#         self.assertEqual(cqm.constraints[label].lhs.quadratic,
-#                          {(mapping['i'], 'i'): -3.0, (mapping['j'], 'j'): 4.0})
-#         self.assertEqual(len(cqm.constraints), 3)
+        self.assertEqual(cqm.objective.quadratic, {('k', 'i'): 1, (mapping['i'], 'i'): 2})
+        self.assertEqual(cqm.constraints[label].lhs.quadratic,
+                         {(mapping['i'], 'i'): -3.0, (mapping['j'], 'j'): 4.0})
+        self.assertEqual(len(cqm.constraints), 3)
 
-#         for v, new in mapping.items():
-#             self.assertIn(new, cqm.constraints)
-#             self.assertEqual(cqm.constraints[new].sense, Sense.Eq)
-#             self.assertEqual(cqm.constraints[new].lhs.linear, {v: 1, new: -1})
-#             self.assertEqual(cqm.constraints[new].rhs, 0)
+        for v, new in mapping.items():
+            self.assertIn(new, cqm.constraints)
+            self.assertEqual(cqm.constraints[new].sense, Sense.Eq)
+            self.assertEqual(cqm.constraints[new].lhs.linear, {v: 1, new: -1})
+            self.assertEqual(cqm.constraints[new].rhs, 0)
 
 
 # class TestCQMFromLPFile(unittest.TestCase):

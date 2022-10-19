@@ -22,6 +22,8 @@ from cython.operator cimport preincrement as inc, dereference as deref
 from libcpp.algorithm cimport lower_bound as cpplower_bound
 from libcpp.unordered_map cimport unordered_map
 
+import dimod
+
 from dimod.cyqmbase.cyqmbase_float64 import _dtype, _index_dtype
 from dimod.cyutilities cimport as_numpy_float
 from dimod.cyutilities cimport ConstNumeric
@@ -71,6 +73,34 @@ cdef class _cyExpression:
 
     def add_linear(self, v, bias):
         raise NotImplementedError
+
+    def add_quadratic(self, u, v, bias):
+        cdef Py_ssize_t ui = self.parent.variables.index(u)
+        cdef Py_ssize_t vi = self.parent.variables.index(v)
+
+        if ui == vi:
+            if self.parent.cppcqm.vartype(ui) == cppVartype.SPIN:
+                raise ValueError(f"SPIN variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+            if self.parent.cppcqm.vartype(ui) == cppVartype.BINARY:
+                raise ValueError(f"BINARY variables (e.g. {self.variables[ui]!r}) "
+                                 "cannot have interactions with themselves"
+                                 )
+
+        if not self.parent.REAL_INTERACTIONS:
+            if self.parent.cppcqm.vartype(ui) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[ui]!r}) "
+                    "cannot have interactions"
+                    )
+            if self.parent.cppcqm.vartype(vi) == cppVartype.REAL:
+                raise ValueError(
+                    f"REAL variables (e.g. {self.variables[vi]!r}) "
+                    "cannot have interactions"
+                    )
+
+        self.expression().add_quadratic(ui, vi, bias)
 
     def degree(self, v):
         return self.expression().degree(self.parent.variables.index(v))
@@ -271,8 +301,11 @@ cdef class _cyExpression:
     def reduce_quadratic(self):
         raise NotImplementedError
 
-    def remove_interaction(self):
-        raise NotImplementedError
+    def remove_interaction(self, u, v):
+        cdef Py_ssize_t ui = self.parent.variables.index(u)
+        cdef Py_ssize_t vi = self.parent.variables.index(v)
+
+        self.expression().remove_interaction(ui, vi)
 
     def remove_variable(self):
         raise NotImplementedError

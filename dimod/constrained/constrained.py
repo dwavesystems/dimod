@@ -1,4 +1,4 @@
-# Copyright 2022 D-Wave Systems Inc.
+# Copyright 2021 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,12 +12,17 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+Constrained Quadratic Model class.
+"""
+
 from __future__ import annotations
 
 import collections.abc
 import copy
 import io
 import json
+import os.path
 import re
 import tempfile
 import typing
@@ -32,7 +37,7 @@ import numpy as np
 import dimod.typing
 
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary
-from dimod.constrained.cyconstrained import cyConstrainedQuadraticModel, ConstraintView
+from dimod.constrained.cyconstrained import cyConstrainedQuadraticModel, ConstraintView, ObjectiveView
 from dimod.quadratic.quadratic_model import QuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
@@ -123,85 +128,108 @@ class SoftView(collections.abc.Mapping):
 
 
 class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
-    _STR_MAX_DISPLAY_ITEMS = 10
+    r"""A constrained quadratic model.
 
+    Constrained quadratic models are problems of the form:
+
+    .. math::
+
+        \begin{align}
+            \text{Minimize an objective:} & \\
+            & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
+            \text{Subject to constraints:} & \\
+            & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
+            \quad m=1, \dots, M,
+        \end{align}
+
+    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
+    variables, :math:`a_{i}, b_{ij}, c` are real values,
+    :math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
+
+    .. [#]
+        For binary variables, the range of the quadratic-term summation is
+        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
+
+    Constraints are often categorized as either "hard" or "soft". Any hard constraint
+    must be satisfied for a solution of the model to qualify as feasible. Soft
+    constraints may be violated to achieve an overall good solution. By setting
+    appropriate weights to soft constraints in comparison to the objective
+    and to other soft constraints, you can express the relative importance of such
+    constraints.
+
+    The objective and constraints are encoded as either :class:`.QuadraticModel`
+    or :class:`.BinaryQuadraticModel` depending on the variable types used.
+
+    Example:
+
+        This example solves the simple `bin packing problem <https://w.wiki/3jz4>`_
+        of packing a set of items of different weights into the smallest
+        possible number of bins.
+
+        `dimod` provides a general :func:`~dimod.generators.random_bin_packing`
+        function to generate bin packing problems, and this example follows the
+        same naming conventions.
+
+        Consider four objects with weights between 0 and 1, and assume that each
+        bin has a capacity to hold up to a total weight of 1.
+
+        >>> weights = [.9, .7, .2, .1]
+        >>> capacity = 1
+
+        Variable :math:`y_j` indicates that bin :math:`j` is used. Clearly, no
+        more than four bins are needed.
+
+        >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
+
+        Variable :math:`x_{i,j}` indicates that item :math:`i` is put in bin
+        :math:`j`.
+
+        >>> x = [[dimod.Binary(f'x_{i}_{j}') for j in range(len(weights))]
+        ...      for i in range(len(weights))]
+
+        Create an empty constrained quadratic model ("empty" meaning that no
+        objective or constraints have set).
+
+        >>> cqm = dimod.ConstrainedQuadraticModel()
+
+        The problem is to minimize the number of bins used. Therefore the objective
+        is to minimize the value of :math:`\sum_j y_j`.
+
+        >>> cqm.set_objective(sum(y))
+
+        Any feasible solution must meet the constraint that each item can only go
+        in one bin. You can express this constraint, for a given item :math:`i`,
+        with :math:`\sum_j x_{i, j} == 1`. Note that the label of each
+        constraint is returned so that you can access them in the future if
+        desired.
+
+        >>> for i in range(len(weights)):
+        ...     cqm.add_constraint(sum(x[i]) == 1, label=f'item_placing_{i}')
+        'item_placing_0'
+        'item_placing_1'
+        'item_placing_2'
+        'item_placing_3'
+
+        Finally, enforce the limits on each bin. You can express this constraint,
+        for a given bin :math:`j`, with :math:`\sum_i x_{i, j} * w_i <= c` where
+        :math:`w_i` is the weight of item :math:`i` and :math:`c` is the capacity.
+
+        >>> for j in range(len(weights)):
+        ...     cqm.add_constraint(
+        ...         sum(weights[i] * x[i][j] for i in range(len(weights))) - y[j] * capacity <= 0,
+        ...         label=f'capacity_bin_{j}')
+        'capacity_bin_0'
+        'capacity_bin_1'
+        'capacity_bin_2'
+        'capacity_bin_3'
+
+    """
     def __init__(self):
         super().__init__()
 
         self.discrete: typing.Set[typing.Hashable] = DiscreteView(self)
         self._soft = SoftView(self)  # todo: remove
-
-    # def __deepcopy__(self, memo: typing.Dict) -> ConstrainedQuadraticModel:
-    #     new = super().__deepcopy__(memo)
-
-    #     new.discrete = copy.deepcopy(self.discrete, memo)
-
-    #     return new
-
-    def __str__(self):
-        vartype_name = {Vartype.SPIN: 'Spin',
-                        Vartype.BINARY: 'Binary',
-                        Vartype.INTEGER: 'Integer',
-                        Vartype.REAL: 'Real'}
-
-        def var_encoder(v):
-            return f'{vartype_name[self.vartype(v)]}({v!r})'
-
-        sio = io.StringIO()
-
-        def render_limited_number(iterable, render_element):
-            tail_limit = self._STR_MAX_DISPLAY_ITEMS // 2
-            head_limit = self._STR_MAX_DISPLAY_ITEMS - tail_limit
-            limited = False
-            tail = []
-
-            for k, x in enumerate(iterable):
-                assert x is not None
-
-                if k < head_limit:
-                    render_element(x)
-                else:
-                    tail.append(x)
-
-                    if len(tail) > tail_limit:
-                        if not limited:
-                            sio.write('  ...\n')
-                            limited = True
-                        tail.pop(0)
-
-            while tail:
-                render_element(tail.pop(0))
-
-        def render_constraint(item):
-            label, c = item
-            sio.write(f'  {label}: ')
-            sio.write(c.to_polystring(encoder=var_encoder))
-            sio.write('\n')
-
-        def render_bound(v):
-            sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
-
-        sio.write('Constrained quadratic model: ')
-        sio.write(f'{len(self.variables)} variables, ')
-        sio.write(f'{len(self.constraints)} constraints, ')
-        sio.write(f'{self.num_biases()} biases\n\n')
-
-        sio.write('Objective\n')
-        sio.write('  ')
-        sio.write(self.objective.to_polystring(encoder=var_encoder))
-        sio.write('\n')
-
-        sio.write('\n')
-        sio.write('Constraints\n')
-        render_limited_number(self.constraints.items(), render_constraint)
-
-        sio.write('\n')
-        sio.write('Bounds\n')
-        bound_vars = (v for v in self.variables
-                      if self.vartype(v) in (Vartype.INTEGER, Vartype.REAL))
-        render_limited_number(bound_vars, render_bound)
-
-        return sio.getvalue()
 
     def add_constraint(self, data, *args, **kwargs) -> typing.Hashable:
         """Add a constraint to the model.
@@ -373,12 +401,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             2*i + 3*j + x*y + i*j <= 1
 
         """
-        qm = self._iterable_to_qm(iterable)
+        if label is None:
+            label = self._new_constraint_label()
+        elif label in self.constraint_labels:
+            raise ValueError("a constraint with that label already exists")
 
-        # use quadratic model in the future
-        return self.add_constraint_from_model(
-            qm, sense, rhs=rhs, label=label, copy=False,
-            weight=weight, penalty=penalty)
+        return super().add_constraint_from_iterable(iterable, sense, rhs, label, weight, penalty)
 
     def add_constraint_from_model(self,
                                   qm: typing.Union[BinaryQuadraticModel, QuadraticModel],
@@ -436,23 +464,15 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> print(cqm.constraints["Risky constraint"].to_polystring())
             2*x <= 3
         """
-        # get sense as an enum
-        if isinstance(sense, str):
-            sense = Sense(sense)
-
         if label is None:
-            # we support up to 100k constraints and :6 gives us 16777216
-            # possible so pretty safe
-            label = 'c' + uuid.uuid4().hex[:6]
-            while label in self.constraint_labels:
-                label = 'c' + uuid.uuid4().hex[:6]
+            label = self._new_constraint_label()
         elif label in self.constraint_labels:
             raise ValueError("a constraint with that label already exists")
 
         if isinstance(qm, BinaryQuadraticModel) and qm.dtype == object:
             qm = BinaryQuadraticModel(qm)
 
-        return super()._add_constraint_from_model(
+        return super().add_constraint_from_model(
             qm.data,
             sense,
             rhs,
@@ -1023,6 +1043,41 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     from_dqm = from_discrete_quadratic_model
 
     @classmethod
+    def from_qm(cls, qm: QuadraticModel) -> 'ConstrainedQuadraticModel':
+        """Alias for :meth:`from_quadratic_model`."""
+        return cls.from_quadratic_model(qm)
+
+    @classmethod
+    def from_quadratic_model(cls, qm: typing.Union[QuadraticModel, BinaryQuadraticModel]
+                             ) -> 'ConstrainedQuadraticModel':
+        """Construct a constrained quadratic model from a quadratic model or
+        binary quadratic model.
+
+        The specified model is set as the objective to be minimzed in the constructed
+        constrained quadratic model (CQM). You can then add constraints that
+        feasible solutions should meet.
+
+        Args:
+            qm: Binary quadratic model (BQM) or quadratic model (QM).
+
+        Examples:
+            This example creates a CQM to minimize a triangular problem with the added
+            constraint that one of the variables must have value 1 in feasible solutions.
+
+            >>> from dimod import ConstrainedQuadraticModel, BinaryQuadraticModel
+            >>> bqm = BinaryQuadraticModel.from_ising({}, {'ab': 1, 'bc': 1, 'ac': 1})
+            >>> cqm = ConstrainedQuadraticModel().from_bqm(bqm)
+            >>> cqm.objective.linear
+            {'a': 0.0, 'b': 0.0, 'c': 0.0}
+            >>> cqm.objective.quadratic
+            {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}
+            >>> label1 = cqm.add_constraint_from_model(BinaryQuadraticModel({'a': 0}, {}, 0, 'SPIN'), '>=', 0)
+        """
+        cqm = cls()
+        cqm.set_objective(qm)
+        return cqm
+
+    @classmethod
     def from_file(cls,
                   fp: typing.Union[typing.BinaryIO, typing.ByteString],
                   *,
@@ -1118,114 +1173,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                     )
 
         return cqm
-
-    @classmethod
-    def from_lp_file(cls,
-                     fp: typing.Union[typing.BinaryIO, typing.ByteString],
-                     lower_bound_default: typing.Optional[float] = None,
-                     upper_bound_default: typing.Optional[float] = None,
-                     ) -> ConstrainedQuadraticModel:
-        """Create a constrained quadratic model from an LP file.
-
-        Args:
-            fp: A file-like or a binary string.
-            lower_bound_default: Deprecated. Does nothing.
-            upper_bound_default: Deprecated. Does nothing.
-
-        Returns:
-            The constrained quadratic model defined by the LP file.
-
-        .. deprecated:: 0.11.0
-
-            This method will be removed in dimod 0.13.0.
-            Use :func:`~dimod.lp.load` or :func:`~dimod.lp.loads` instead.
-
-        .. deprecated:: 0.11.0
-
-            The ``lower_bound_default`` and ``upper_bound_default`` keyword
-            arguments are deprecated and do nothing.
-
-        """
-        from dimod.lp import load, loads
-
-        warnings.warn(
-            "this method is deprecated as of dimod 0.11.0 "
-            "and will be removed in 0.13.0. "
-            "Use dimod.lp.load() or dimod.lp.load() instead.",
-            DeprecationWarning, stacklevel=2)
-
-        if isinstance(fp, (str, bytes)) and not os.path.isfile(fp):
-            obj = loads(fp)
-        else:
-            obj = load(fp)
-
-        return obj
-
-    @classmethod
-    def from_qm(cls, qm: QuadraticModel) -> 'ConstrainedQuadraticModel':
-        """Alias for :meth:`from_quadratic_model`."""
-        return cls.from_quadratic_model(qm)
-
-    @classmethod
-    def from_quadratic_model(cls, qm: typing.Union[QuadraticModel, BinaryQuadraticModel]
-                             ) -> 'ConstrainedQuadraticModel':
-        """Construct a constrained quadratic model from a quadratic model or
-        binary quadratic model.
-
-        The specified model is set as the objective to be minimzed in the constructed
-        constrained quadratic model (CQM). You can then add constraints that
-        feasible solutions should meet.
-
-        Args:
-            qm: Binary quadratic model (BQM) or quadratic model (QM).
-
-        Examples:
-            This example creates a CQM to minimize a triangular problem with the added
-            constraint that one of the variables must have value 1 in feasible solutions.
-
-            >>> from dimod import ConstrainedQuadraticModel, BinaryQuadraticModel
-            >>> bqm = BinaryQuadraticModel.from_ising({}, {'ab': 1, 'bc': 1, 'ac': 1})
-            >>> cqm = ConstrainedQuadraticModel().from_bqm(bqm)
-            >>> cqm.objective.linear
-            {'a': 0.0, 'b': 0.0, 'c': 0.0}
-            >>> cqm.objective.quadratic
-            {('b', 'a'): 1.0, ('c', 'a'): 1.0, ('c', 'b'): 1.0}
-            >>> label1 = cqm.add_constraint_from_model(BinaryQuadraticModel({'a': 0}, {}, 0, 'SPIN'), '>=', 0)
-        """
-        cqm = cls()
-        cqm.set_objective(qm)
-        return cqm
-
-    def _iterable_to_qm(self, iterable: typing.Iterable) -> QuadraticModel:
-        qm = QuadraticModel()
-
-        def _add_variable(v):
-            # handles vartype, and bounds
-            vartype = self.vartype(v)
-
-            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
-                # need to worry about bounds
-                qm.add_variable(vartype, v,
-                                lower_bound=self.lower_bound(v),
-                                upper_bound=self.upper_bound(v))
-            else:
-                qm.add_variable(vartype, v)
-
-        for *variables, bias in iterable:
-            if len(variables) == 0:
-                qm.offset += bias
-            elif len(variables) == 1:
-                v, = variables
-                _add_variable(v)
-                qm.add_linear(v, bias)
-            elif len(variables) == 2:
-                u, v = variables
-                _add_variable(u)
-                _add_variable(v)
-                qm.add_quadratic(u, v, bias)
-            else:
-                raise ValueError("terms must be constant, linear or quadratic")
-        return qm
 
     def iter_constraint_data(self, sample_like: SamplesLike) -> Iterator[ConstraintData]:
         """Yield information about the constraints for the given sample.
@@ -1422,6 +1369,14 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         """Return True if the model has no quadratic interactions."""
         return (self.objective.is_linear() and
                 all(comp.lhs.is_linear() for comp in self.constraints.values()))
+
+    def _new_constraint_label(self) -> str:
+        # we support up to 100k constraints and :6 gives us 16777216
+        # possible so pretty safe
+        label = 'c' + uuid.uuid4().hex[:6]
+        while label in self.constraints:
+            label = 'c' + uuid.uuid4().hex[:6]
+        return label
 
     def num_biases(self, vartype: typing.Optional[dimod.typing.VartypeLike] = None, *,
                    linear_only: bool = False,
@@ -1647,6 +1602,93 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return self
 
+    def _substitute_self_loops_from_model(self, qm: typing.Union[ConstraintView, ObjectiveView],
+                                          mapping: typing.MutableMapping[dimod.typing.Variable,
+                                                                         dimod.typing.Variable]):
+        for u in qm.variables:
+            vartype = qm.vartype(u)
+
+            # integer and binary variables never have self-loops
+            if vartype is Vartype.SPIN or vartype is Vartype.BINARY:
+                continue
+
+            try:
+                bias = qm.get_quadratic(u, u)
+            except ValueError:
+                # no self-loop
+                continue
+
+            lb = qm.lower_bound(u)
+            ub = qm.upper_bound(u)
+
+            if u not in mapping:
+                # we've never seen this integer before
+                new: dimod.typing.Variable = new_variable_label()
+
+                # on the off chance there are conflicts. Luckily self.variables
+                # is global accross all constraints/objective so we don't need
+                # to worry about accidentally picking something we'll regret
+                while new in self.constraints or new in self.variables:
+                    new = new_variable_label()
+
+                mapping[u] = new
+
+                self.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
+
+                # we don't add the constraint yet because we don't want
+                # to modify self.constraints
+            else:
+                new = mapping[u]
+
+            self.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
+
+            qm.add_quadratic(u, new, bias)
+            qm.remove_interaction(u, u)
+
+    def substitute_self_loops(self) -> typing.Dict[dimod.typing.Variable, dimod.typing.Variable]:
+        """Replace any self-loops in the objective or constraints.
+
+        Self-loop :math:`i^2` is removed by introducing a new variable
+        :math:`j` with interaction :math:`i*j` and adding constraint
+        :math:`j == i`.
+
+        Acts on the objective and constraints in-place.
+
+        Returns:
+            Mapping from the integer variable labels to their introduced
+            counterparts. The constraint enforcing :math:`j == i` uses
+            the same label.
+
+        Examples:
+            Note that the ellipses in the outputs below are stand-ins for the
+            generated variable labels, which differ between runs.
+
+            >>> from dimod import Integer, ConstrainedQuadraticModel
+            >>> i = Integer('i')
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.add_constraint(i*i <=3, label='i squared')
+            'i squared'
+            >>> cqm.substitute_self_loops() #doctest: +ELLIPSIS
+            {...}
+            >>> cqm.constraints #doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+            {'i squared': Le(QuadraticModel({'i': 0.0, '...': 0.0}, {('...', 'i'): 1.0}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 3),
+            '...': Eq(QuadraticModel({'i': 1.0, '...': -1.0}, {}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 0)}
+        """
+        # dev note: we can cythonize this for better performance
+
+        mapping: typing.Dict[dimod.typing.Variable, dimod.typing.Variable] = dict()
+
+        self._substitute_self_loops_from_model(self.objective, mapping)
+
+        for comparison in self.constraints.values():
+            self._substitute_self_loops_from_model(comparison.lhs, mapping)
+
+        # finally add the constraints for the variables
+        for v, new in mapping.items():
+            self.add_constraint([(v, 1), (new, -1)], rhs=0, sense='==', label=new)
+
+        return mapping
+
     def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.
 
@@ -1818,6 +1860,115 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         """
         return dict(self.iter_violations(sample_like, skip_satisfied=skip_satisfied, clip=clip))
 
+    @classmethod
+    def from_lp_file(cls,
+                     fp: typing.Union[typing.BinaryIO, typing.ByteString],
+                     lower_bound_default: typing.Optional[float] = None,
+                     upper_bound_default: typing.Optional[float] = None,
+                     ) -> ConstrainedQuadraticModel:
+        """Create a constrained quadratic model from an LP file.
+
+        Args:
+            fp: A file-like or a binary string.
+            lower_bound_default: Deprecated. Does nothing.
+            upper_bound_default: Deprecated. Does nothing.
+
+        Returns:
+            The constrained quadratic model defined by the LP file.
+
+        .. deprecated:: 0.11.0
+
+            This method will be removed in dimod 0.13.0.
+            Use :func:`~dimod.lp.load` or :func:`~dimod.lp.loads` instead.
+
+        .. deprecated:: 0.11.0
+
+            The ``lower_bound_default`` and ``upper_bound_default`` keyword
+            arguments are deprecated and do nothing.
+
+        """
+        from dimod.lp import load, loads
+
+        warnings.warn(
+            "this method is deprecated as of dimod 0.11.0 "
+            "and will be removed in 0.13.0. "
+            "Use dimod.lp.load() or dimod.lp.load() instead.",
+            DeprecationWarning, stacklevel=2)
+
+        if isinstance(fp, (str, bytes)) and not os.path.isfile(fp):
+            obj = loads(fp)
+        else:
+            obj = load(fp)
+
+        return obj
+
+    _STR_MAX_DISPLAY_ITEMS = 10
+
+    def __str__(self) -> str:
+        vartype_name = {Vartype.SPIN: 'Spin',
+                        Vartype.BINARY: 'Binary',
+                        Vartype.INTEGER: 'Integer',
+                        Vartype.REAL: 'Real'}
+
+        def var_encoder(v):
+            return f'{vartype_name[self.vartype(v)]}({v!r})'
+
+        sio = io.StringIO()
+
+        def render_limited_number(iterable, render_element):
+            tail_limit = self._STR_MAX_DISPLAY_ITEMS // 2
+            head_limit = self._STR_MAX_DISPLAY_ITEMS - tail_limit
+            limited = False
+            tail = []
+
+            for k, x in enumerate(iterable):
+                assert x is not None
+
+                if k < head_limit:
+                    render_element(x)
+                else:
+                    tail.append(x)
+
+                    if len(tail) > tail_limit:
+                        if not limited:
+                            sio.write('  ...\n')
+                            limited = True
+                        tail.pop(0)
+
+            while tail:
+                render_element(tail.pop(0))
+
+        def render_constraint(item):
+            label, c = item
+            sio.write(f'  {label}: ')
+            sio.write(c.to_polystring(encoder=var_encoder))
+            sio.write('\n')
+
+        def render_bound(v):
+            sio.write(f'  {self.lower_bound(v)} <= {var_encoder(v)} <= {self.upper_bound(v)}\n')
+
+        sio.write('Constrained quadratic model: ')
+        sio.write(f'{len(self.variables)} variables, ')
+        sio.write(f'{len(self.constraints)} constraints, ')
+        sio.write(f'{self.num_biases()} biases\n\n')
+
+        sio.write('Objective\n')
+        sio.write('  ')
+        sio.write(self.objective.to_polystring(encoder=var_encoder))
+        sio.write('\n')
+
+        sio.write('\n')
+        sio.write('Constraints\n')
+        render_limited_number(self.constraints.items(), render_constraint)
+
+        sio.write('\n')
+        sio.write('Bounds\n')
+        bound_vars = (v for v in self.variables
+                      if self.vartype(v) in (Vartype.INTEGER, Vartype.REAL))
+        render_limited_number(bound_vars, render_bound)
+
+        return sio.getvalue()
+
 
 CQM = ConstrainedQuadraticModel
 
@@ -1861,12 +2012,13 @@ class CQMToBQMInverter:
     __slots__ = ('_binary', '_integers')
 
     def __init__(self,
-                 binary: Mapping[Variable, Vartype],
-                 integers: Mapping[Variable, BinaryQuadraticModel]):
+                 binary: typing.Mapping[dimod.typing.Variable, Vartype],
+                 integers: typing.Mapping[dimod.typing.Variable, BinaryQuadraticModel]):
         self._binary = binary
         self._integers = integers
 
-    def __call__(self, sample: Mapping[Variable, int]) -> Mapping[Variable, int]:
+    def __call__(self, sample: typing.Mapping[dimod.typing.Variable, int],
+                 ) -> typing.Mapping[dimod.typing.Variable, int]:
         new = {}
 
         for v, vartype in self._binary.items():
@@ -1885,7 +2037,8 @@ class CQMToBQMInverter:
         return new
 
     @classmethod
-    def from_dict(cls, doc: Dict[str, Dict[Variable, Any]]) -> 'CQMToBQMInverter':
+    def from_dict(cls, doc: typing.Dict[str, typing.Dict[dimod.typing.Variable, typing.Any]],
+                  ) -> CQMToBQMInverter:
         """Construct an inverter from a serialized representation."""
 
         integers = {}
@@ -1903,7 +2056,7 @@ class CQMToBQMInverter:
             integers,
             )
 
-    def to_dict(self) -> Dict[str, Dict[Variable, Any]]:
+    def to_dict(self) -> typing.Dict[str, typing.Dict[dimod.typing.Variable, typing.Any]]:
         """Return a json-serializable encoding of the inverter."""
         # todo: in 3.8 we can used TypedDict for the typing
         return dict(
@@ -1917,8 +2070,9 @@ class CQMToBQMInverter:
 # Developer note: This function is *super* ad hoc. In the future, we may want
 # A BQM.from_cqm method or similar, but for now I think it makes sense to
 # expose that functionality as a function for easier later deprecation.
-def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bias] = None,
-               ) -> Tuple[BinaryQuadraticModel, CQMToBQMInverter]:
+def cqm_to_bqm(cqm: ConstrainedQuadraticModel,
+               lagrange_multiplier: typing.Optional[dimod.typing.Bias] = None,
+               ) -> typing.Tuple[BinaryQuadraticModel, CQMToBQMInverter]:
     """Construct a binary quadratic model from a constrained quadratic model.
 
     Args:
@@ -1969,8 +2123,8 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
     from dimod.generators.integer import binary_encoding  # avoid circular import
 
     bqm = BinaryQuadraticModel(Vartype.BINARY)
-    binary: Dict[Variable, Vartype] = {}
-    integers: Dict[Variable, BinaryQuadraticModel] = {}
+    binary: typing.Dict[dimod.typing.Variable, Vartype] = {}
+    integers: typing.Dict[dimod.typing.Variable, BinaryQuadraticModel] = {}
 
     # add the variables
     for v in cqm.variables:

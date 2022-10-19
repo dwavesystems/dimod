@@ -23,9 +23,12 @@ from copy import deepcopy
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
 from libcpp.unordered_set cimport unordered_set
+from libcpp.utility cimport move
 from libcpp.vector cimport vector
 
 # import numpy as np
+
+import dimod
 
 from dimod.binary import BinaryQuadraticModel
 from dimod.constrained.expression import ObjectiveView, ConstraintView
@@ -43,6 +46,21 @@ from dimod.sym import Sense, Eq, Ge, Le
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
+
+
+# todo: move to cyutilities?
+cdef cppSense cppsense(object sense) except? cppSense.GE:
+    if isinstance(sense, str):
+        sense = Sense(sense)
+
+    if sense is Sense.Eq:
+        return cppSense.EQ
+    elif sense is Sense.Le:
+        return cppSense.LE
+    elif sense is Sense.Ge:
+        return cppSense.GE
+    else:
+        raise RuntimeError(f"unexpected sense: {sense!r}")
 
 
 cdef class cyConstraintsView:
@@ -109,6 +127,8 @@ cdef class cyConstrainedQuadraticModel:
 
         self.constraints = ConstraintsView(self)
 
+        self.REAL_INTERACTIONS = dimod.REAL_INTERACTIONS
+
     def __deepcopy__(self, memo):
         cdef cyConstrainedQuadraticModel new = type(self)()
 
@@ -120,7 +140,39 @@ cdef class cyConstrainedQuadraticModel:
 
         return new
 
-    def _add_constraint_from_model(self, cyQMBase model, sense, bias_type rhs, label, bint copy, weight, penalty):
+    def add_constraint_from_iterable(self, iterable, sense, bias_type rhs, label, weight, penalty):
+        # get a fresh constraint        
+        constraint = self.cppcqm.new_constraint()
+
+        cdef Py_ssize_t ui, vi
+        cdef bias_type bias
+        for *variables, bias in iterable:
+            if len(variables) == 0:
+                constraint.add_offset(bias)
+            elif len(variables) == 1:
+                vi = self.variables.index(variables[0])  # must already be a variable
+                constraint.add_linear(vi, bias)
+            elif len(variables) == 2:
+                ui = self.variables.index(variables[0])  # must already be a variable
+                vi = self.variables.index(variables[1])
+                constraint.add_quadratic(ui, vi, bias)
+            else:
+                raise ValueError("terms must be constant, linear or quadratic")
+
+
+        constraint.set_sense(cppsense(sense))
+
+        if weight is not None:
+            raise NotImplementedError  # todo
+
+        self.cppcqm.add_constraint(move(constraint))
+        label = self.constraint_labels._append(label)
+
+        assert(self.cppcqm.num_constraints() == self.constraint_labels.size())
+
+        return label
+
+    def add_constraint_from_model(self, cyQMBase model, sense, bias_type rhs, label, bint copy, weight, penalty):
         # get a mapping from the model's variables to ours
         cdef vector[Py_ssize_t] mapping
         mapping.reserve(model.num_variables())
@@ -159,7 +211,7 @@ cdef class cyConstrainedQuadraticModel:
                               )
 
         cdef Py_ssize_t ci = self.cppcqm.add_constraint(deref(model.base),
-                                   cppSense.EQ if sense is Sense.Eq else cppSense.LE if sense is Sense.Le else cppSense.GE,
+                                   cppsense(sense),
                                    rhs,
                                    mapping)
 
