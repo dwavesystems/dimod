@@ -162,9 +162,9 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     friend class ConstrainedQuadraticModel<bias_type, index_type>;
 
     Expression();
-    explicit Expression(parent_type* parent);
+    explicit Expression(const parent_type* parent);
 
-    Expression(parent_type* parent, base_type&& other);
+    Expression(const parent_type* parent, base_type&& other);
 
     /// Add linear bias to variable ``v``.
     void add_linear(index_type v, bias_type bias);
@@ -291,7 +291,7 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     void reindex_variables(index_type v);
 
  private:
-    parent_type* parent_;
+    const parent_type* parent_;
 
     /// List of the parent's label used by expression
     std::vector<index_type> variables_;
@@ -321,10 +321,11 @@ template <class bias_type, class index_type>
 Expression<bias_type, index_type>::Expression() : Expression(nullptr) {}
 
 template <class bias_type, class index_type>
-Expression<bias_type, index_type>::Expression(parent_type* parent) : base_type(), parent_(parent) {}
+Expression<bias_type, index_type>::Expression(const parent_type* parent)
+        : base_type(), parent_(parent) {}
 
 template <class bias_type, class index_type>
-Expression<bias_type, index_type>::Expression(parent_type* parent, base_type&& other) {
+Expression<bias_type, index_type>::Expression(const parent_type* parent, base_type&& other) {
     throw std::logic_error("not implemented - construction from other");
 }
 
