@@ -33,4 +33,6 @@ cdef class cyConstrainedQuadraticModel:
     cdef readonly object dtype
     cdef readonly object index_dtype
 
+    cdef public bint REAL_INTERACTIONS
+
     cdef readonly object constraints
