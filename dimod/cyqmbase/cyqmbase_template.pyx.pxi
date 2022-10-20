@@ -17,6 +17,7 @@ import operator
 cimport cython
 
 from cython.operator cimport preincrement as inc, dereference as deref
+from libcpp.algorithm cimport lower_bound as cpplower_bound
 
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
@@ -153,6 +154,78 @@ cdef class cyQMBase_template:
                 raise ValueError(f"{u!r} and {v!r} have no interaction") from None
             bias = default
         return as_numpy_float(bias)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ilinear(self):
+        """Return the linear biases in a numpy array."""
+        cdef bias_type[:] ldata = np.empty(self.num_variables(), dtype=self.dtype)
+        cdef Py_ssize_t vi
+        for vi in range(self.num_variables()):
+            ldata[vi] = self.base.linear(vi)
+        return ldata
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ineighborhood(self, Py_ssize_t vi, bint lower_triangle=False):
+        """Return a NumPy structured array containing the neighborhood of vi."""
+        if not 0 <= vi < self.num_variables():
+            raise ValueError(f"out of range variable index: {vi}")
+
+        cdef Py_ssize_t length  # length of array we wish to allocate
+        if lower_triangle:
+            begin = self.base.cbegin_neighborhood(vi)
+            loc = cpplower_bound(begin, self.base.cend_neighborhood(vi), vi)
+            
+            # We want to include self-loops
+            if loc != self.base.cend_neighborhood(vi) and deref(loc).v == vi:
+                inc(loc)
+
+            length = loc - begin
+        else:
+            length = self.base.degree(vi)
+
+        # Make a NumPy struct array. 
+        # We choose our labels to match dimod::abc::OneVarTerm
+        # We pack the values by setting align=False
+        neighborhood = np.empty(
+            length, dtype=np.dtype([('v', self.index_dtype), ('bias', self.dtype)], align=False))
+
+        cdef index_type[:] index_view = neighborhood['v']
+        cdef bias_type[:] biases_view = neighborhood['bias']
+
+        # now walk through the neighborhood
+        it = self.base.cbegin_neighborhood(vi)
+        for i in range(length):
+            index_view[i] = deref(it).v
+            biases_view[i] = deref(it).bias
+            inc(it)
+        
+        return neighborhood
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ivarinfo(self):
+        cdef Py_ssize_t num_variables = self.num_variables()
+
+        # we could use the bias_type size to determine the vartype dtype to get
+        # more alignment, but it complicates the code, so let's keep it simple
+        # We choose the field names to mirror the internals of the QuadraticModel
+        dtype = np.dtype([('vartype', np.int8), ('lb', self.dtype), ('ub', self.dtype)],
+                         align=False)
+        varinfo = np.empty(num_variables, dtype)
+
+        cdef np.int8_t[:] vartype_view = varinfo['vartype']
+        cdef bias_type[:] lb_view = varinfo['lb']
+        cdef bias_type[:] ub_view = varinfo['ub']
+
+        cdef Py_ssize_t vi
+        for vi in range(self.num_variables()):
+            vartype_view[vi] = self.base.vartype(vi)
+            lb_view[vi] = self.base.lower_bound(vi)
+            ub_view[vi] = self.base.upper_bound(vi)
+
+        return varinfo
 
     cpdef bint is_linear(self):
         return self.base.is_linear()
