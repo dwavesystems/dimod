@@ -1,7 +1,4 @@
-# distutils: language = c++
-# cython: language_level=3
-
-# Copyright 2021 D-Wave Systems Inc.
+# Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,13 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cimport numpy as np
+from dimod.cyqmbase.cyqmbase_float32 cimport cyQMBase_float32
+from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64
 
-from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64 as cyQMBase, bias_type, index_type
-
-include "cyqm_template.pxd.pxi"
-
-__all__ = ['cyQM_float64']
-
-cdef class cyQM_float64(cyQM_template):
-    pass
+ctypedef fused cyQMBase:
+    cyQMBase_float32
+    cyQMBase_float64

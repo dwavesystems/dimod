@@ -31,30 +31,27 @@ from dimod.variables import iter_deserialize_variables, iter_serialize_variables
 __all__ = ['FileView', 'load']
 
 
-# we want to use SpooledTemporaryFile but have it also include the methods
-# from io.IOBase. This is (probably) forthcoming in future python, see
-# https://bugs.python.org/issue35112
 if issubclass(tempfile.SpooledTemporaryFile, io.IOBase):
-    warnings.warn("Using deprecated SpooledTemporaryFile wrapper, "
-                  "functionality is now included in SpooledTemporaryFile",
-                  DeprecationWarning)
+    # Python 3.11+
+    SpooledTemporaryFile = tempfile.SpooledTemporaryFile
+else:
+    # we want to use SpooledTemporaryFile but have it also include the methods
+    # from io.IOBase.
+    class SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
+        # This is not part of io.IOBase, but it is implemented in io.BytesIO
+        # and io.TextIOWrapper
 
+        def readinto(self, *args, **kwargs):
+            return self._file.readinto(*args, **kwargs)
 
-class SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
-    # This is not part of io.IOBase, but it is implemented in io.BytesIO
-    # and io.TextIOWrapper
+        def readable(self):
+            return self._file.readable()
 
-    def readinto(self, *args, **kwargs):
-        return self._file.readinto(*args, **kwargs)
+        def seekable(self):
+            return self._file.seekable()
 
-    def readable(self):
-        return self._file.readable()
-
-    def seekable(self):
-        return self._file.seekable()
-
-    def writable(self):
-        return self._file.writable()
+        def writable(self):
+            return self._file.writable()
 
 
 class Section(abc.ABC):

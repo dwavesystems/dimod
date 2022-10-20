@@ -1,7 +1,4 @@
-# distutils: language = c++
-# cython: language_level=3
-
-# Copyright 2021 D-Wave Systems Inc.
+# Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,6 +12,22 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+__all__ = ['Vartype', 'vartype_info']
 
-cdef class cyQMBase:
-    pass
+
+cdef extern from "dimod/vartypes.h" namespace "dimod" nogil:
+    enum Vartype:
+        BINARY
+        SPIN
+        INTEGER
+        REAL
+
+    cdef cppclass vartype_info [Bias]:
+        @staticmethod
+        Bias default_max(Vartype)
+        @staticmethod
+        Bias default_min(Vartype)
+        @staticmethod
+        Bias max(Vartype)
+        @staticmethod
+        Bias min(Vartype)

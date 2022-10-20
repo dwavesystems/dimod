@@ -1,4 +1,4 @@
-# Copyright 2021 D-Wave Systems Inc.
+# Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,5 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cdef class cyBQMBase:
-    pass
+from dimod.libcpp.binary_quadratic_model cimport *
+from dimod.libcpp.lp cimport *
+from dimod.libcpp.quadratic_model cimport *
+from dimod.libcpp.vartypes cimport *

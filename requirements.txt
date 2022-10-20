@@ -1,5 +1,6 @@
-numpy==1.21.6
-cython==0.29.28
+numpy==1.21.6; python_version < '3.8'
+oldest-supported-numpy; python_version >= '3.8'
+cython==0.29.32
 
 reno==3.3.0  # for changelog
 

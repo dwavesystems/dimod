@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Break ``dimod/libcpp.pxd`` into a full Cython subpackage to mirror the
+    structure under ``dimod/include/``. This allows for better organization,
+    and less need to recompile all Cython files when changing parts of the
+    C++ library. Packages that depend on dimod are still encouraged to
+    use the ``from dimod.libcpp cimport ...`` syntax.

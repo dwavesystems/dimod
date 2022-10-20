@@ -17,8 +17,7 @@
 
 cimport numpy as np
 
-ctypedef np.float64_t bias_type
-ctypedef np.int32_t index_type
+from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64 as cyQMBase, bias_type, index_type
 
 __all__ = ['cyBQM_float64']
 

@@ -1588,7 +1588,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             return not self.num_variables and bool(self.offset == other)
         # todo: performance
         try:
-            if isinstance(other, QuadraticModel):
+            if callable(other.vartype):
                 vartype_eq = all(other.vartype(v) is self.vartype for v in other.variables)
             else:
                 vartype_eq = self.vartype == other.vartype
@@ -2225,7 +2225,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         file.write(memoryview(self.data.offset).cast('B'))
 
         # write the linear biases and the neighborhood lengths
-        file.write(memoryview(self.data._ilinear()).cast('B'))
+        file.write(memoryview(self.data._ilinear_and_degree()).cast('B'))
 
         # now the neighborhoods
         for vi in range(self.data.num_variables()):

@@ -19,7 +19,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from dimod.libcpp cimport cppvartype_info
+from dimod.libcpp.vartypes cimport vartype_info as cppvartype_info
 from dimod.typing import VartypeLike
 from dimod.vartypes import as_vartype, Vartype
 

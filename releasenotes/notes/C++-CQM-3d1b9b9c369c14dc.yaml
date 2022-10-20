@@ -1,0 +1,4 @@
+---
+features:
+  - Add C++ ``dimod::ConstrainedQuadraticModel`` class.
+  

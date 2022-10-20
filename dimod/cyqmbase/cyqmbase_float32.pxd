@@ -17,11 +17,12 @@
 
 cimport numpy as np
 
-from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64 as cyQMBase, bias_type, index_type
+ctypedef np.float32_t bias_type
+ctypedef np.int32_t index_type
 
-include "cyqm_template.pxd.pxi"
+include "cyqmbase_template.pxd.pxi"
 
-__all__ = ['cyQM_float64']
+__all__ = ['cyQMBase_float32']
 
-cdef class cyQM_float64(cyQM_template):
+cdef class cyQMBase_float32(cyQMBase_template):
     pass

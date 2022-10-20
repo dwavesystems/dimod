@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``dimod.cyqmbase.cyQMBase_template`` Cython class to serve as an
+    abstract base class for Cython quadratic models.
+upgrade:
+  - Remove ``dimod.binary.cybqm.cyBQMBase`` class.
+  - Remove ``dimod.quadratic.cyqm.cyQMBase`` class.

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import collections.abc as abc
 import copy
+import io
 import json
 import os.path
 import re
@@ -902,7 +903,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
             'One color'
             >>> cqm.fix_variable("red", 1, cascade=True)
-            {'green': 0, 'blue': 0}
+            {'blue': 0, 'green': 0}
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
@@ -1979,8 +1980,13 @@ class ConstrainedQuadraticModel:
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
             try:
-                zf.writestr(
-                    'objective', self.objective.to_file(spool_size=int(1e12))._file.getbuffer())
+                with self.objective.to_file(spool_size=int(1e12)) as f:
+                    # we can avoid a copy by trying to read from the underlying buffer
+                    obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
+                    zf.writestr('objective', obj)
+                    # in the case we got the underlying buffer, we need to delete our
+                    # reference to it, otherwise we get an error when the file is closed
+                    del obj
             except AttributeError:
                 # no objective to write
                 pass
@@ -1989,8 +1995,13 @@ class ConstrainedQuadraticModel:
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
-                lhs = constraint.lhs.to_file(spool_size=int(1e12))._file.getbuffer()
-                zf.writestr(f'constraints/{lstr}/lhs', lhs)
+                with constraint.lhs.to_file(spool_size=int(1e12)) as f:
+                    # we can avoid a copy by trying to read from the underlying buffer
+                    lhs = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
+                    zf.writestr(f'constraints/{lstr}/lhs', lhs)
+                    # in the case we got the underlying buffer, we need to delete our
+                    # reference to it, otherwise we get an error when the file is closed
+                    del lhs
 
                 rhs = np.float64(constraint.rhs).tobytes()
                 zf.writestr(f'constraints/{lstr}/rhs', rhs)
