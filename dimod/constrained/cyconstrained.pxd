@@ -36,3 +36,5 @@ cdef class cyConstrainedQuadraticModel:
     cdef public bint REAL_INTERACTIONS
 
     cdef readonly object constraints
+
+cdef object make_cqm(cppConstrainedQuadraticModel[bias_type, index_type] cppcqm)

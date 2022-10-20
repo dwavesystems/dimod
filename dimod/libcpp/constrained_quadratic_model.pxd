@@ -112,6 +112,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         index_type add_variable(Vartype)
         index_type add_variable(Vartype, bias_type, bias_type)
         void change_vartype(Vartype, index_type) except+
+        void clear()
         Constraint[bias_type, index_type]& constraint_ref(index_type)
         void fix_variable[T](index_type, T)
         bias_type lower_bound(index_type)
