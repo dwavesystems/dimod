@@ -310,7 +310,7 @@ cdef class cyConstrainedQuadraticModel:
 
     def clear(self):
         self.variables._clear()
-        self.constraint_labels_clear()
+        self.constraint_labels._clear()
         self.cppcqm.clear()
 
     def fix_variable(self, v, bias_type assignment):

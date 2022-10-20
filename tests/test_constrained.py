@@ -340,6 +340,20 @@ class TestCheckFeasible(unittest.TestCase):
         self.assertTrue(cqm.check_feasible(sample))
 
 
+class TestClear(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 <= 3)
+
+        self.assertTrue(cqm.check_feasible({'x': 1, 'y': 0, 'z': 0}))
+        self.assertTrue(cqm.check_feasible({'x': 0, 'y': 0, 'z': 0}))
+        self.assertFalse(cqm.check_feasible({'x': 1, 'y': 0, 'z': 1}))
+
+        cqm.clear()
+
+
 class TestCopy(unittest.TestCase):
     def test_deepcopy(self):
         from copy import deepcopy
