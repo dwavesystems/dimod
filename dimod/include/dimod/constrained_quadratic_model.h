@@ -43,7 +43,6 @@ class ConstrainedQuadraticModel {
     ConstrainedQuadraticModel(ConstrainedQuadraticModel&& other) noexcept;
     ~ConstrainedQuadraticModel() = default;
     ConstrainedQuadraticModel& operator=(ConstrainedQuadraticModel other);
-    ConstrainedQuadraticModel& operator=(ConstrainedQuadraticModel&& other) noexcept;
 
     index_type add_constraint();
 
@@ -200,14 +199,6 @@ ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>&
 ConstrainedQuadraticModel<bias_type, index_type>::operator=(ConstrainedQuadraticModel other) {
-    swap(*this, other);
-    return *this;
-}
-
-template <class bias_type, class index_type>
-ConstrainedQuadraticModel<bias_type, index_type>&
-ConstrainedQuadraticModel<bias_type, index_type>::operator=(
-        ConstrainedQuadraticModel&& other) noexcept {
     swap(*this, other);
     return *this;
 }
