@@ -46,7 +46,7 @@ class Constraint : public Expression<Bias, Index> {
     using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;
 
     Constraint();
-    explicit Constraint(parent_type* parent);
+    explicit Constraint(const parent_type* parent);
 
     bool is_onehot() const;
     bool is_soft() const;
@@ -79,7 +79,7 @@ template <class bias_type, class index_type>
 Constraint<bias_type, index_type>::Constraint() : Constraint(nullptr) {}
 
 template <class bias_type, class index_type>
-Constraint<bias_type, index_type>::Constraint(parent_type* parent)
+Constraint<bias_type, index_type>::Constraint(const parent_type* parent)
         : base_type(parent),
           sense_(Sense::EQ),
           rhs_(0),

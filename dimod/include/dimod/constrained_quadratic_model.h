@@ -51,6 +51,12 @@ class ConstrainedQuadraticModel {
     index_type add_constraint(const abc::QuadraticModelBase<B, I>& lhs, Sense sense, bias_type rhs,
                               const std::vector<T>& mapping);
 
+    /// Add a constraint.
+    /// @param constraint As created by ConstrainedQuadraticModel::new_constraint()
+    /// @exception Throws std::logic_error If the constraint's parent is not this model.
+    /// If an exception is thrown, there are no changes to the model.
+    index_type add_constraint(Constraint<bias_type, index_type> constraint);
+
     index_type add_constraints(index_type n);
 
     index_type add_linear_constraint(std::initializer_list<index_type> variables,
@@ -75,6 +81,9 @@ class ConstrainedQuadraticModel {
 
     /// Return the lower bound on variable ``v``.
     bias_type lower_bound(index_type v) const;
+
+    /// Return a new constraint without adding it to the model.
+    Constraint<bias_type, index_type> new_constraint() const;
 
     /// Return the number of constraints in the model.
     size_type num_constraints() const;
@@ -206,6 +215,16 @@ ConstrainedQuadraticModel<bias_type, index_type>::operator=(
 template <class bias_type, class index_type>
 index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint() {
     constraints_.emplace_back(this);
+    return constraints_.size() - 1;
+}
+
+template <class bias_type, class index_type>
+index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
+        Constraint<bias_type, index_type> constraint) {
+    if (constraint.parent_ != this) {
+        throw std::logic_error("given constraint has a different parent");
+    }
+    constraints_.push_back(std::move(constraint));
     return constraints_.size() - 1;
 }
 
@@ -370,6 +389,12 @@ void ConstrainedQuadraticModel<bias_type, index_type>::fix_variable(index_type v
 template <class bias_type, class index_type>
 bias_type ConstrainedQuadraticModel<bias_type, index_type>::lower_bound(index_type v) const {
     return varinfo_[v].lb;
+}
+
+template <class bias_type, class index_type>
+Constraint<bias_type, index_type> ConstrainedQuadraticModel<bias_type, index_type>::new_constraint()
+        const {
+    return Constraint<bias_type, index_type>(this);
 }
 
 template <class bias_type, class index_type>
