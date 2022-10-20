@@ -72,6 +72,8 @@ class ConstrainedQuadraticModel {
 
     void change_vartype(Vartype vartype, index_type v);
 
+    void clear();
+
     Constraint<bias_type, index_type>& constraint_ref(index_type c);
     const Constraint<bias_type, index_type>& constraint_ref(index_type c) const;
 
@@ -353,6 +355,13 @@ void ConstrainedQuadraticModel<bias_type, index_type>::change_vartype(Vartype va
         // todo: there are more we could support
         throw std::logic_error("unsupported vartype change");
     }
+}
+
+template <class bias_type, class index_type>
+void ConstrainedQuadraticModel<bias_type, index_type>::clear() {
+    objective.clear();
+    constraints_.clear();
+    varinfo_.clear();
 }
 
 template <class bias_type, class index_type>

@@ -293,6 +293,16 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
 
         std::vector<int> sample{0, 0, 1};
         CHECK(cqm.constraint_ref(c0).energy(sample.begin()) == 1);
+
+        WHEN("we clear it") {
+            cqm.clear();
+
+            THEN("it is empty") {
+                CHECK(cqm.num_variables() == 0);
+                CHECK(cqm.num_constraints() == 0);
+                CHECK(cqm.objective.num_variables() == 0);
+            }
+        }
     }
 
     GIVEN("A CQM with several constraints") {
