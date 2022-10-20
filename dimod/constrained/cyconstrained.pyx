@@ -308,6 +308,11 @@ cdef class cyConstrainedQuadraticModel:
             raise TypeError(f"cannot change vartype {self.vartype(v).name!r} "
                             f"to {vartype.name!r}") from None
 
+    def clear(self):
+        self.variables._clear()
+        self.constraint_labels_clear()
+        self.cppcqm.clear()
+
     def fix_variable(self, v, bias_type assignment):
         self.cppcqm.fix_variable(self.variables.index(v), assignment)
         self.variables._remove(v)
@@ -333,6 +338,9 @@ cdef class cyConstrainedQuadraticModel:
             if self.cppcqm.constraint_ref(c).is_soft():
                 count += 1 
         return count
+
+    def num_variables(self):
+        return self.cppcqm.num_variables()
 
     def remove_constraint(self, label):
         cdef Py_ssize_t ci = self.constraint_labels.index(label)
@@ -502,3 +510,13 @@ cdef class cyConstrainedQuadraticModel:
             return Vartype.REAL
         else:
             raise RuntimeError("unexpected vartype")
+
+
+cdef object make_cqm(cppConstrainedQuadraticModel[bias_type, index_type] cppcqm):
+    cdef cyConstrainedQuadraticModel cqm = dimod.ConstrainedQuadraticModel()
+
+    cqm.variables._extend(range(cppcqm.num_variables()))
+    cqm.constraint_labels._extend(range(cppcqm.num_constraints()))
+    cqm.cppcqm = move(cppcqm)
+
+    return cqm
