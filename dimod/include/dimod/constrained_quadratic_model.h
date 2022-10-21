@@ -43,7 +43,6 @@ class ConstrainedQuadraticModel {
     ConstrainedQuadraticModel(ConstrainedQuadraticModel&& other) noexcept;
     ~ConstrainedQuadraticModel() = default;
     ConstrainedQuadraticModel& operator=(ConstrainedQuadraticModel other);
-    ConstrainedQuadraticModel& operator=(ConstrainedQuadraticModel&& other) noexcept;
 
     index_type add_constraint();
 
@@ -72,6 +71,8 @@ class ConstrainedQuadraticModel {
     index_type add_variables(Vartype vartype, index_type n, bias_type lb, bias_type ub);
 
     void change_vartype(Vartype vartype, index_type v);
+
+    void clear();
 
     Constraint<bias_type, index_type>& constraint_ref(index_type c);
     const Constraint<bias_type, index_type>& constraint_ref(index_type c) const;
@@ -200,14 +201,6 @@ ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>&
 ConstrainedQuadraticModel<bias_type, index_type>::operator=(ConstrainedQuadraticModel other) {
-    swap(*this, other);
-    return *this;
-}
-
-template <class bias_type, class index_type>
-ConstrainedQuadraticModel<bias_type, index_type>&
-ConstrainedQuadraticModel<bias_type, index_type>::operator=(
-        ConstrainedQuadraticModel&& other) noexcept {
     swap(*this, other);
     return *this;
 }
@@ -362,6 +355,13 @@ void ConstrainedQuadraticModel<bias_type, index_type>::change_vartype(Vartype va
         // todo: there are more we could support
         throw std::logic_error("unsupported vartype change");
     }
+}
+
+template <class bias_type, class index_type>
+void ConstrainedQuadraticModel<bias_type, index_type>::clear() {
+    objective.clear();
+    constraints_.clear();
+    varinfo_.clear();
 }
 
 template <class bias_type, class index_type>
