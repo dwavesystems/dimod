@@ -1268,6 +1268,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 else:
                     degree = int(2*num_interactions - ldata['nidx'][v])
 
+                if not degree:
+                    # not needed, but helps with performance
+                    continue
+
                 qdata = np.frombuffer(
                     file_like.read(degree*quadratic_dtype.itemsize),
                     dtype=quadratic_dtype)
