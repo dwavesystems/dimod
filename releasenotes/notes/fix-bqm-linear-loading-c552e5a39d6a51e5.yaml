@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix a performance regression introduced in 0.10.0 when loading linear
+    binary quadratic models from files.
