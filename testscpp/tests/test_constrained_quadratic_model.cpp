@@ -451,4 +451,24 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
         }
     }
 }
+
+TEST_CASE("Bug 0") {
+    GIVEN("A CQM with a single constraint") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 5);
+        cqm.add_linear_constraint({0, 3, 1, 2}, {1, 2, 3, 4}, Sense::GE, -1);
+
+        WHEN("we start removing variables") {
+            cqm.remove_variable(0);
+            CHECK(cqm.constraint_ref(0).variables() == std::vector<int>{2, 0, 1});
+            cqm.remove_variable(2);
+            CHECK(cqm.constraint_ref(0).variables() == std::vector<int>{0, 1});
+            cqm.remove_variable(1);
+            CHECK(cqm.constraint_ref(0).variables() == std::vector<int>{0});
+        }
+    }
+}
+
+
+
 }  // namespace dimod
