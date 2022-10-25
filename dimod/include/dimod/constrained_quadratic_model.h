@@ -266,8 +266,6 @@ template <class bias_type, class index_type>
 index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
         abc::QuadraticModelBase<bias_type, index_type>&& lhs, Sense sense, bias_type rhs,
         std::vector<index_type> mapping) {
-    using std::swap;  // ADL
-
     assert(mapping.size() == lhs.num_variables());
 
     Constraint<bias_type, index_type> constraint = new_constraint();
