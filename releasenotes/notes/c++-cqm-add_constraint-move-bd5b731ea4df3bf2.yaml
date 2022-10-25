@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add C++ ``ConstrainedQuadraticModel.add_constraint()`` overload that allows
+    a user to move a binary quadratic model or quadratic model as a constraint.
