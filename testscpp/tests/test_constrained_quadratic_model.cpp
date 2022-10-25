@@ -469,6 +469,32 @@ TEST_CASE("Bug 0") {
     }
 }
 
+TEST_CASE("Test CQM.constraint_weak_ptr()") {
+    GIVEN("A CQM with several constraints") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 10);
+        cqm.add_linear_constraint({0, 1, 2}, {0, 1, 2}, Sense::EQ, 0);
+        cqm.add_linear_constraint({1, 2, 3}, {1, 2, 3}, Sense::LE, 1);
+        cqm.add_linear_constraint({2, 3, 4}, {2, 3, 4}, Sense::GE, 2);
 
+        WHEN("we get a weak_ptr referencing the third constraint") {
+            auto wk_ptr = cqm.constraint_weak_ptr(2);
+            CHECK(wk_ptr.lock()->linear(4) == 4);
+            cqm.remove_constraint(0);
+            CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
+            cqm.remove_constraint(1);
+            CHECK(wk_ptr.expired());
+        }
 
+        WHEN("we get a weak_ptr referencing a third constraint from a const version") {
+            auto wk_ptr = static_cast<const dimod::ConstrainedQuadraticModel<double>>(cqm)
+                                  .constraint_weak_ptr(2);
+            CHECK(wk_ptr.lock()->linear(4) == 4);
+            cqm.remove_constraint(0);
+            CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
+            cqm.remove_constraint(1);
+            CHECK(wk_ptr.expired());
+        }
+    }
+}
 }  // namespace dimod
