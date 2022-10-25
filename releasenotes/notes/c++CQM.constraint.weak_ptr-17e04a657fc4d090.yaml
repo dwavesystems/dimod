@@ -1,0 +1,3 @@
+---
+features:
+  - Add C++ ``ConstrainedQuadraticModel.constraint_weak_ptr()`` method.
