@@ -530,29 +530,28 @@ Expression<bias_type, index_type>::num_interactions(index_type v) const {
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::reindex_variables(index_type v) {
+    bool remake_indices = false;  // if something changes, we recreate the indices
+
     auto it = indices_.find(v);
     if (it != indices_.end()) {
         // in this case we actually need to remove a variable from the model
         base_type::remove_variable(it->second);
         variables_.erase(variables_.begin() + it->second);
-        indices_.erase(it);
 
-        assert(base_type::num_variables() == indices_.size());
-        assert(indices_.size() == variables_.size());
+        remake_indices = true;
     }
 
     // we need to reindex all of the variable labels that are greater than v
     // variables_ is not ordered, so we just need to go through the whole thing
-    bool reindex_happened = false;
     for (auto& u : variables_) {
-        if (u < v) continue;  // no reindex needed
-        --u;
-        reindex_happened = true;
+        if (u > v) {
+            --u;
+            remake_indices = true;
+        }
     }
 
-    // doing it this way is safe, but no doubt there is a more performant way
-    // to do it
-    if (reindex_happened) {
+    if (remake_indices) {
+        // remake the indices
         indices_.clear();
         for (size_type ui = 0; ui < variables_.size(); ++ui) {
             indices_[variables_[ui]] = ui;
