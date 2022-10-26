@@ -310,8 +310,9 @@ cdef class _cyExpression:
     def remove_variable(self):
         raise NotImplementedError
 
-    def set_linear(self, v, bias):
-        raise NotImplementedError
+    def set_linear(self, v, bias_type bias):
+        cdef Py_ssize_t vi = self.parent.variables.index(v)
+        self.expression().set_linear(vi, bias)
 
     def set_quadratic(self, u, v, bias):
         raise NotImplementedError
