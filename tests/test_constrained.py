@@ -372,6 +372,14 @@ class TestCopy(unittest.TestCase):
         self.assertTrue(new.objective.is_equal(cqm.objective))
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
 
+        cqm.objective.set_linear('i', 10)
+        cqm.constraints[constraint].lhs.set_linear('i', 10)
+
+        self.assertEqual(new.objective.get_linear('i'), 1)
+        self.assertEqual(cqm.objective.get_linear('i'), 10)
+        self.assertEqual(new.constraints[constraint].lhs.get_linear('i'), 1)
+        self.assertEqual(cqm.constraints[constraint].lhs.get_linear('i'), 10)
+
 
 class TestFixVariable(unittest.TestCase):
     def test_typical(self):
