@@ -191,10 +191,12 @@ ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel()
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
         const ConstrainedQuadraticModel& other)
-        : objective(other.objective), constraints_(other.constraints_), varinfo_(other.varinfo_) {
+        : objective(other.objective), constraints_(), varinfo_(other.varinfo_) {
     objective.parent_ = this;
-    for (auto& c_ptr : constraints_) {
-        c_ptr->parent_ = this;
+
+    for (auto& c_ptr : other.constraints_) {
+        constraints_.push_back(std::make_shared<Constraint<bias_type, index_type>>(*c_ptr));
+        constraints_.back()->parent_ = this;
     }
 }
 
