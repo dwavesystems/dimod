@@ -407,7 +407,6 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
                 CHECK(const0.linear(i) == 3);
                 CHECK(const0.quadratic_at(x, j) == 0);
                 CHECK(const0.quadratic_at(i, j) == 5);
-
             }
         }
 
@@ -513,8 +512,82 @@ TEST_CASE("Test CQM.add_constraint()") {
                 CHECK(constraint.rhs() == 2);
 
                 CHECK(bqm.num_variables() == 0);  // moved
-                CHECK(mapping.size() == 0);  // moved
+                CHECK(mapping.size() == 0);       // moved
             }
+        }
+    }
+}
+
+TEST_CASE("Test CQM copy assignment") {
+    GIVEN("A CQM") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto s = cqm.add_variable(Vartype::SPIN);
+        auto x = cqm.add_variable(Vartype::BINARY);
+        auto i = cqm.add_variable(Vartype::INTEGER);
+        auto t = cqm.add_variable(Vartype::SPIN);
+
+        cqm.objective.set_quadratic(s, i, 1);
+        cqm.objective.set_quadratic(t, x, 1);
+        cqm.objective.set_quadratic(s, t, 1);
+
+        auto constraint = cqm.new_constraint();
+        constraint.set_linear(s, 1);
+        constraint.set_linear(t, 1);
+        constraint.set_quadratic(s, t, 1);
+        constraint.set_sense(Sense::LE);
+        constraint.set_rhs(5);
+        cqm.add_constraint(std::move(constraint));
+
+        WHEN("we copy it using copy assignment operator") {
+            auto cqm2 = cqm;
+
+            AND_WHEN("we mutate the copy") {
+                cqm2.objective.set_linear(s, 10);
+                cqm2.constraint_ref(0).set_linear(s, 10);
+
+                THEN("the original is not affected") {
+                    CHECK(cqm.objective.linear(s) == 0);
+                    CHECK(cqm.constraint_ref(0).linear(s) == 1);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Test CQM::change_vartype()") {
+    GIVEN("A CQM with several different vartypes") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto s = cqm.add_variable(Vartype::SPIN);
+        auto x = cqm.add_variable(Vartype::BINARY);
+        auto i = cqm.add_variable(Vartype::INTEGER);
+        auto t = cqm.add_variable(Vartype::SPIN);
+
+        cqm.objective.set_quadratic(s, i, 1);
+        cqm.objective.set_quadratic(t, x, 1);
+        cqm.objective.set_quadratic(s, t, 1);
+
+        auto constraint = cqm.new_constraint();
+        constraint.set_linear(s, 1);
+        constraint.set_linear(t, 1);
+        constraint.set_quadratic(s, t, 1);
+        constraint.set_sense(Sense::LE);
+        constraint.set_rhs(5);
+        cqm.add_constraint(std::move(constraint));
+
+        std::vector<int> sample = {-1, 1, 105, +1};
+
+        auto objective_energy = cqm.objective.energy(sample.begin());
+        auto constraint_energy = cqm.constraint_ref(0).energy(sample.begin());
+
+        THEN("when we change the vartype of the spin variables") {
+            cqm.change_vartype(Vartype::BINARY, s);
+            cqm.change_vartype(Vartype::BINARY, t);
+
+            sample[s] = (sample[s] + 1) / 2;
+            sample[t] = (sample[t] + 1) / 2;
+
+            CHECK(objective_energy == cqm.objective.energy(sample.begin()));
+            CHECK(constraint_energy == cqm.constraint_ref(0).energy(sample.begin()));
         }
     }
 }
@@ -529,6 +602,7 @@ TEST_CASE("Test CQM.constraint_weak_ptr()") {
 
         WHEN("we get a weak_ptr referencing the third constraint") {
             auto wk_ptr = cqm.constraint_weak_ptr(2);
+            REQUIRE(!wk_ptr.expired());
             CHECK(wk_ptr.lock()->linear(4) == 4);
             cqm.remove_constraint(0);
             CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
@@ -537,8 +611,9 @@ TEST_CASE("Test CQM.constraint_weak_ptr()") {
         }
 
         WHEN("we get a weak_ptr referencing a third constraint from a const version") {
-            auto wk_ptr = static_cast<const dimod::ConstrainedQuadraticModel<double>>(cqm)
+            auto wk_ptr = static_cast<const dimod::ConstrainedQuadraticModel<double>&>(cqm)
                                   .constraint_weak_ptr(2);
+            REQUIRE(!wk_ptr.expired());
             CHECK(wk_ptr.lock()->linear(4) == 4);
             cqm.remove_constraint(0);
             CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
