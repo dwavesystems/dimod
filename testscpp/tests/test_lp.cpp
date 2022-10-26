@@ -19,7 +19,6 @@
 
 namespace dimod {
 
-
 TEST_CASE("LP tests") {
     GIVEN("A simple LP file as a string") {
         std::FILE* tmpf = std::tmpfile();
@@ -27,10 +26,45 @@ TEST_CASE("LP tests") {
         std::rewind(tmpf);
         auto model = lp::read<double>(tmpf);
 
-        // dev note: this is really just a smoke test
-        // we'll need to fill this out once we change the LP file reading to
-        // return a proper CQM
+        if (model.variable_labels == std::vector<std::string>{"x0", "x1"}) {
+            THEN("it is read correctly") {
+                REQUIRE(model.variable_labels.size() == 2);
+                REQUIRE(model.model.num_variables() == 2);
+
+                CHECK(model.model.objective.linear(0) == 1);
+                CHECK(model.model.objective.linear(1) == -2);
+
+                REQUIRE(model.constraint_labels == std::vector<std::string>{""});
+                REQUIRE(model.model.num_constraints() == 1);
+
+                CHECK(model.model.constraint_ref(0).linear(0) == 1);
+                CHECK(model.model.constraint_ref(0).linear(1) == 1);
+                CHECK(model.model.constraint_ref(0).is_linear());
+
+                CHECK(model.model.vartype(0) == Vartype::BINARY);
+                CHECK(model.model.vartype(1) == Vartype::REAL);
+            }
+        } else if (model.variable_labels == std::vector<std::string>{"x1", "x0"}) {
+            THEN("it is read correctly") {
+                REQUIRE(model.variable_labels.size() == 2);
+                REQUIRE(model.model.num_variables() == 2);
+
+                CHECK(model.model.objective.linear(1) == 1);
+                CHECK(model.model.objective.linear(0) == -2);
+
+                REQUIRE(model.constraint_labels == std::vector<std::string>{""});
+                REQUIRE(model.model.num_constraints() == 1);
+
+                CHECK(model.model.constraint_ref(0).linear(1) == 1);
+                CHECK(model.model.constraint_ref(0).linear(0) == 1);
+                CHECK(model.model.constraint_ref(0).is_linear());
+
+                CHECK(model.model.vartype(1) == Vartype::BINARY);
+                CHECK(model.model.vartype(0) == Vartype::REAL);
+            }
+        } else {
+            CHECK(false);
+        }
     }
 }
 }  // namespace dimod
-

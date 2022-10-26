@@ -32,9 +32,14 @@
 #include <vector>
 
 #include "dimod/quadratic_model.h"
+#include "dimod/constrained_quadratic_model.h"
 
 namespace dimod {
 namespace lp {
+
+namespace {
+// todo: remove this stuff and replace it with constructing the CQM directly
+// todo: use the latest stuff from HiGHs
 
 template <class Bias>
 struct Variable {
@@ -75,15 +80,25 @@ struct Expression {
 template <class Bias, class Index>
 struct Constraint {
     Expression<Bias, Index> lhs;
-    std::string sense;
+    Sense sense;
     Bias rhs;
 };
 
 template <class Bias, class Index>
-struct LPModel {
+struct LPModel_ {
     Expression<Bias, Index> objective;
     std::vector<Constraint<Bias, Index>> constraints;
     bool minimize = true;
+};
+
+}  // namespace
+
+
+template <class bias_type, class index_type>
+struct LPModel {
+    ConstrainedQuadraticModel<bias_type, index_type> model;
+    std::vector<std::string> variable_labels;
+    std::vector<std::string> constraint_labels;
 };
 
 namespace reader {
@@ -321,7 +336,7 @@ class Reader {
     bool linefullyread;
     bool newline_encountered;
 
-    LPModel<bias_type, index_type> model_;
+    LPModel_<bias_type, index_type> model_;
     std::unordered_map<std::string, Variable<bias_type>> variables_;
 
  public:
@@ -345,7 +360,44 @@ class Reader {
         splittokens();
         processsections();
 
-        return this->model_;
+        // todo: modify so that we're just creating a CQM directly
+
+        LPModel<bias_type, index_type> lpmodel;
+        auto& cqm = lpmodel.model;
+        auto& variable_labels = lpmodel.variable_labels;
+        auto& constraint_labels = lpmodel.constraint_labels;
+
+        std::unordered_map<std::string, index_type> label_to_idx;
+
+        // read out the variable info
+        for (auto& pair : variables_) {
+            label_to_idx[pair.first] = variable_labels.size();
+            variable_labels.push_back(pair.first);
+            cqm.add_variable(pair.second.vartype, pair.second.lower_bound, pair.second.upper_bound);
+        }
+
+        std::vector<index_type> mapping;
+
+        mapping.resize(model_.objective.model.num_variables());
+        for (auto& pair : model_.objective.labels) {
+            mapping[pair.second] = label_to_idx[pair.first];
+        }
+        cqm.set_objective(model_.objective.model, mapping);
+
+        // now each of the constraints
+        for (auto& c : model_.constraints) {
+            // need the variable labels
+            mapping.resize(c.lhs.model.num_variables());
+            for (auto& pair : c.lhs.labels) {
+                mapping[pair.second] = label_to_idx[pair.first];
+            }
+
+            // now add the constraint
+            cqm.add_constraint(std::move(c.lhs.model), c.sense, c.rhs, std::move(mapping));
+            constraint_labels.push_back(c.lhs.name);
+        }
+
+        return lpmodel;
     }
 
  private:
@@ -536,13 +588,13 @@ class Reader {
             switch (((ProcessedComparisonToken*)sectiontokens[LpSectionKeyword::CON][i].get())
                             ->dir) {
                 case LpComparisonType::EQ:
-                    constraint.sense = "==";
+                    constraint.sense = Sense::EQ;
                     break;
                 case LpComparisonType::LEQ:
-                    constraint.sense = "<=";
+                    constraint.sense = Sense::LE;
                     break;
                 case LpComparisonType::GEQ:
-                    constraint.sense = ">=";
+                    constraint.sense = Sense::GE;
                     break;
                 default:
                     assert(false);
