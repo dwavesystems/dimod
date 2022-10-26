@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <memory>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -50,6 +51,9 @@ class ConstrainedQuadraticModel {
     index_type add_constraint(const abc::QuadraticModelBase<B, I>& lhs, Sense sense, bias_type rhs,
                               const std::vector<T>& mapping);
 
+    index_type add_constraint(abc::QuadraticModelBase<bias_type, index_type>&& lhs, Sense sense, bias_type rhs,
+                              std::vector<index_type> mapping);
+
     /// Add a constraint.
     /// @param constraint As created by ConstrainedQuadraticModel::new_constraint()
     /// @exception Throws std::logic_error If the constraint's parent is not this model.
@@ -76,6 +80,9 @@ class ConstrainedQuadraticModel {
 
     Constraint<bias_type, index_type>& constraint_ref(index_type c);
     const Constraint<bias_type, index_type>& constraint_ref(index_type c) const;
+
+    std::weak_ptr<Constraint<bias_type, index_type>> constraint_weak_ptr(index_type c);
+    std::weak_ptr<const Constraint<bias_type, index_type>> constraint_weak_ptr(index_type c) const;
 
     template <class T>
     void fix_variable(index_type v, T assignment);
@@ -137,17 +144,17 @@ class ConstrainedQuadraticModel {
         other.objective.parent_ = &other;
 
         swap(this->constraints_, other.constraints_);
-        for (auto& c : this->constraints_) {
-            c.parent_ = this;
+        for (auto& c_ptr : this->constraints_) {
+            c_ptr->parent_ = this;
         }
-        for (auto& c : other.constraints_) {
-            c.parent_ = &other;
+        for (auto& c_ptr : other.constraints_) {
+            c_ptr->parent_ = &other;
         }
 
         swap(this->varinfo_, other.varinfo_);
     }
 
-    std::vector<Constraint<bias_type, index_type>> constraints_;
+    std::vector<std::shared_ptr<Constraint<bias_type, index_type>>> constraints_;
 
     struct varinfo_type {
         Vartype vartype;
@@ -186,8 +193,8 @@ ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
         const ConstrainedQuadraticModel& other)
         : objective(other.objective), constraints_(other.constraints_), varinfo_(other.varinfo_) {
     objective.parent_ = this;
-    for (auto& c : constraints_) {
-        c.parent_ = this;
+    for (auto& c_ptr : constraints_) {
+        c_ptr->parent_ = this;
     }
 }
 
@@ -207,7 +214,7 @@ ConstrainedQuadraticModel<bias_type, index_type>::operator=(ConstrainedQuadratic
 
 template <class bias_type, class index_type>
 index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint() {
-    constraints_.emplace_back(this);
+    constraints_.push_back(std::make_shared<Constraint<bias_type, index_type>>(this));
     return constraints_.size() - 1;
 }
 
@@ -217,7 +224,8 @@ index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
     if (constraint.parent_ != this) {
         throw std::logic_error("given constraint has a different parent");
     }
-    constraints_.push_back(std::move(constraint));
+    constraints_.push_back(
+            std::make_shared<Constraint<bias_type, index_type>>(std::move(constraint)));
     return constraints_.size() - 1;
 }
 
@@ -226,13 +234,12 @@ template <class B, class I, class T>
 index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
         const abc::QuadraticModelBase<B, I>& lhs, Sense sense, bias_type rhs,
         const std::vector<T>& mapping) {
-    // todo: move version
-    assert(mapping.size() == objective.num_variables());
+    assert(mapping.size() == lhs.num_variables());
 
-    add_constraint();
-    Constraint<bias_type, index_type>& constraint = constraints_.back();
+    auto constraint = new_constraint();
 
     for (size_type i = 0; i < lhs.num_variables(); ++i) {
+        assert(mapping[i] >= 0 && static_cast<size_type>(mapping[i]) < num_variables());
         assert(vartype(mapping[i]) == lhs.vartype(i));
         assert(lower_bound(mapping[i]) == lhs.lower_bound(i));
         assert(upper_bound(mapping[i]) == lhs.upper_bound(i));
@@ -252,7 +259,28 @@ index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
     constraint.set_sense(sense);
     constraint.set_rhs(rhs);
 
-    return constraints_.size() - 1;
+    return add_constraint(std::move(constraint));
+}
+
+template <class bias_type, class index_type>
+index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
+        abc::QuadraticModelBase<bias_type, index_type>&& lhs, Sense sense, bias_type rhs,
+        std::vector<index_type> mapping) {
+    assert(mapping.size() == lhs.num_variables());
+
+    Constraint<bias_type, index_type> constraint = new_constraint();
+
+    // move the underlying biases/offset
+    static_cast<abc::QuadraticModelBase<bias_type, index_type>&>(constraint) = std::move(lhs);
+
+    // and set the labels based on the mapping
+    constraint.relabel_variables(std::move(mapping));
+
+    // sense and rhs
+    constraint.set_sense(sense);
+    constraint.set_rhs(rhs);
+
+    return add_constraint(std::move(constraint));
 }
 
 template <class bias_type, class index_type>
@@ -260,7 +288,7 @@ index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraints(ind
     assert(n >= 0);
     index_type size = constraints_.size();
     for (index_type i = 0; i < n; ++i) {
-        constraints_.emplace_back(this);
+        constraints_.push_back(std::make_shared<Constraint<bias_type, index_type>>(this));
     }
     return size;
 }
@@ -280,7 +308,8 @@ index_type ConstrainedQuadraticModel<bias_type, index_type>::add_linear_constrai
     constraint.set_rhs(rhs);
     constraint.set_sense(sense);
 
-    constraints_.push_back(std::move(constraint));
+    constraints_.push_back(
+            std::make_shared<Constraint<bias_type, index_type>>(std::move(constraint)));
     return constraints_.size() - 1;
 }
 
@@ -330,16 +359,16 @@ void ConstrainedQuadraticModel<bias_type, index_type>::change_vartype(Vartype va
         return;
     } else if (source == Vartype::SPIN && target == Vartype::BINARY) {
         objective.substitute_variable(v, 2, -1);
-        for (auto& constraint : constraints_) {
-            constraint.substitute_variable(v, 2, -1);
+        for (auto& c_ptr : constraints_) {
+            c_ptr->substitute_variable(v, 2, -1);
         }
         varinfo_[v].lb = 0;
         varinfo_[v].ub = 1;
         varinfo_[v].vartype = Vartype::BINARY;
     } else if (source == Vartype::BINARY && target == Vartype::SPIN) {
         objective.substitute_variable(v, .5, .5);
-        for (auto& constraint : constraints_) {
-            constraint.substitute_variable(v, .5, .5);
+        for (auto& c_ptr : constraints_) {
+            c_ptr->substitute_variable(v, .5, .5);
         }
         varinfo_[v].lb = -1;
         varinfo_[v].ub = +1;
@@ -368,12 +397,26 @@ template <class bias_type, class index_type>
 Constraint<bias_type, index_type>& ConstrainedQuadraticModel<bias_type, index_type>::constraint_ref(
         index_type c) {
     assert(c >= 0 && static_cast<size_type>(c) < num_constraints());
-    return constraints_[c];
+    return *constraints_[c];
 }
 
 template <class bias_type, class index_type>
 const Constraint<bias_type, index_type>&
 ConstrainedQuadraticModel<bias_type, index_type>::constraint_ref(index_type c) const {
+    assert(c >= 0 && static_cast<size_type>(c) < num_constraints());
+    return *constraints_[c];
+}
+
+template <class bias_type, class index_type>
+std::weak_ptr<Constraint<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraint_weak_ptr(index_type c) {
+    assert(c >= 0 && static_cast<size_type>(c) < num_constraints());
+    return constraints_[c];
+}
+
+template <class bias_type, class index_type>
+std::weak_ptr<const Constraint<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraint_weak_ptr(index_type c) const {
     assert(c >= 0 && static_cast<size_type>(c) < num_constraints());
     return constraints_[c];
 }
@@ -415,7 +458,7 @@ void ConstrainedQuadraticModel<bias_type, index_type>::remove_constraint(index_t
 template <class bias_type, class index_type>
 void ConstrainedQuadraticModel<bias_type, index_type>::remove_variable(index_type v) {
     assert(v >= 0 && static_cast<size_type>(v) < num_variables());
-    for (auto& constraint : constraints_) constraint.reindex_variables(v);
+    for (auto& c_ptr : constraints_) c_ptr->reindex_variables(v);
     objective.reindex_variables(v);
     varinfo_.erase(varinfo_.begin() + v);
 }
@@ -500,8 +543,8 @@ void ConstrainedQuadraticModel<bias_type, index_type>::substitute_variable(index
                                                                            bias_type multiplier,
                                                                            bias_type offset) {
     objective.substitute_variable(v, multiplier, offset);
-    for (auto& constraint : constraints_) {
-        constraint.substitute_variable(v, multiplier, offset);
+    for (auto& c_ptr : constraints_) {
+        c_ptr->substitute_variable(v, multiplier, offset);
     }
 }
 

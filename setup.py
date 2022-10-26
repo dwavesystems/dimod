@@ -78,7 +78,6 @@ setup(
         ),
     include_dirs=[
         numpy.get_include(),
-        'dimod/include/',
         ],
     install_requires=[
         # this is the oldest supported NumPy on Python 3.8, we cannot

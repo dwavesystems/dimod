@@ -469,6 +469,82 @@ TEST_CASE("Bug 0") {
     }
 }
 
+TEST_CASE("Test CQM.add_constraint()") {
+    GIVEN("A CQM and a BQM") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 5);
 
+        auto bqm = dimod::BinaryQuadraticModel<double>(3, Vartype::BINARY);
+        bqm.set_linear(0, -1);
+        bqm.set_linear(1, -2);
+        bqm.set_linear(2, -3);
+        bqm.set_quadratic(0, 2, 1.5);
+        bqm.set_offset(4);
 
+        WHEN("we add the BQM as a constraint") {
+            cqm.add_constraint(bqm, Sense::EQ, 1, std::vector<int>{4, 2, 0});
+
+            THEN("it was copied correctly") {
+                auto& constraint = cqm.constraint_ref(0);
+
+                CHECK(constraint.variables() == std::vector<int>{4, 2, 0});
+                CHECK(constraint.linear(4) == -1);
+                CHECK(constraint.linear(0) == -3);
+                CHECK(constraint.quadratic_at(4, 0) == 1.5);
+                CHECK(constraint.offset() == 4);
+                CHECK(constraint.sense() == Sense::EQ);
+                CHECK(constraint.rhs() == 1);
+            }
+        }
+
+        WHEN("we move the BQM as a constraint") {
+            std::vector<int> mapping = {4, 2, 0};
+            cqm.add_constraint(std::move(bqm), Sense::LE, 2, std::move(mapping));
+
+            THEN("it was moved correctly") {
+                auto& constraint = cqm.constraint_ref(0);
+
+                CHECK(constraint.variables() == std::vector<int>{4, 2, 0});
+                CHECK(constraint.linear(4) == -1);
+                CHECK(constraint.linear(0) == -3);
+                CHECK(constraint.quadratic_at(4, 0) == 1.5);
+                CHECK(constraint.offset() == 4);
+                CHECK(constraint.sense() == Sense::LE);
+                CHECK(constraint.rhs() == 2);
+
+                CHECK(bqm.num_variables() == 0);  // moved
+                CHECK(mapping.size() == 0);  // moved
+            }
+        }
+    }
+}
+
+TEST_CASE("Test CQM.constraint_weak_ptr()") {
+    GIVEN("A CQM with several constraints") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 10);
+        cqm.add_linear_constraint({0, 1, 2}, {0, 1, 2}, Sense::EQ, 0);
+        cqm.add_linear_constraint({1, 2, 3}, {1, 2, 3}, Sense::LE, 1);
+        cqm.add_linear_constraint({2, 3, 4}, {2, 3, 4}, Sense::GE, 2);
+
+        WHEN("we get a weak_ptr referencing the third constraint") {
+            auto wk_ptr = cqm.constraint_weak_ptr(2);
+            CHECK(wk_ptr.lock()->linear(4) == 4);
+            cqm.remove_constraint(0);
+            CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
+            cqm.remove_constraint(1);
+            CHECK(wk_ptr.expired());
+        }
+
+        WHEN("we get a weak_ptr referencing a third constraint from a const version") {
+            auto wk_ptr = static_cast<const dimod::ConstrainedQuadraticModel<double>>(cqm)
+                                  .constraint_weak_ptr(2);
+            CHECK(wk_ptr.lock()->linear(4) == 4);
+            cqm.remove_constraint(0);
+            CHECK(wk_ptr.lock()->linear(4) == 4);  // should still work
+            cqm.remove_constraint(1);
+            CHECK(wk_ptr.expired());
+        }
+    }
+}
 }  // namespace dimod

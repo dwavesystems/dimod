@@ -260,6 +260,8 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
      */
     bias_type quadratic_at(index_type u, index_type v) const;
 
+    void relabel_variables(std::vector<index_type> labels);
+
     /// Remove the interaction between variables `u` and `v`.
     bool remove_interaction(index_type u, index_type v);
 
@@ -560,6 +562,19 @@ void Expression<bias_type, index_type>::reindex_variables(index_type v) {
 
     assert(indices_.size() == variables_.size());
 }
+
+template <class bias_type, class index_type>
+void Expression<bias_type, index_type>::relabel_variables(std::vector<index_type> labels) {
+    assert(labels.size() == base_type::num_variables());
+
+    variables_ = std::move(labels);
+
+    indices_.clear();
+    for (size_type ui = 0; ui < variables_.size(); ++ui) {
+        indices_[variables_[ui]] = ui;
+    }
+}
+
 
 template <class bias_type, class index_type>
 bool Expression<bias_type, index_type>::remove_interaction(index_type u, index_type v) {
