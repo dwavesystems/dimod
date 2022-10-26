@@ -51,6 +51,9 @@ class ConstrainedQuadraticModel {
     index_type add_constraint(const abc::QuadraticModelBase<B, I>& lhs, Sense sense, bias_type rhs,
                               const std::vector<T>& mapping);
 
+    index_type add_constraint(abc::QuadraticModelBase<bias_type, index_type>&& lhs, Sense sense, bias_type rhs,
+                              std::vector<index_type> mapping);
+
     /// Add a constraint.
     /// @param constraint As created by ConstrainedQuadraticModel::new_constraint()
     /// @exception Throws std::logic_error If the constraint's parent is not this model.
@@ -231,13 +234,12 @@ template <class B, class I, class T>
 index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
         const abc::QuadraticModelBase<B, I>& lhs, Sense sense, bias_type rhs,
         const std::vector<T>& mapping) {
-    // todo: move version
-    assert(mapping.size() == objective.num_variables());
+    assert(mapping.size() == lhs.num_variables());
 
-    add_constraint();
-    Constraint<bias_type, index_type>& constraint = constraints_.back();
+    auto constraint = new_constraint();
 
     for (size_type i = 0; i < lhs.num_variables(); ++i) {
+        assert(mapping[i] >= 0 && static_cast<size_type>(mapping[i]) < num_variables());
         assert(vartype(mapping[i]) == lhs.vartype(i));
         assert(lower_bound(mapping[i]) == lhs.lower_bound(i));
         assert(upper_bound(mapping[i]) == lhs.upper_bound(i));
@@ -257,7 +259,28 @@ index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
     constraint.set_sense(sense);
     constraint.set_rhs(rhs);
 
-    return constraints_.size() - 1;
+    return add_constraint(std::move(constraint));
+}
+
+template <class bias_type, class index_type>
+index_type ConstrainedQuadraticModel<bias_type, index_type>::add_constraint(
+        abc::QuadraticModelBase<bias_type, index_type>&& lhs, Sense sense, bias_type rhs,
+        std::vector<index_type> mapping) {
+    assert(mapping.size() == lhs.num_variables());
+
+    Constraint<bias_type, index_type> constraint = new_constraint();
+
+    // move the underlying biases/offset
+    static_cast<abc::QuadraticModelBase<bias_type, index_type>&>(constraint) = std::move(lhs);
+
+    // and set the labels based on the mapping
+    constraint.relabel_variables(std::move(mapping));
+
+    // sense and rhs
+    constraint.set_sense(sense);
+    constraint.set_rhs(rhs);
+
+    return add_constraint(std::move(constraint));
 }
 
 template <class bias_type, class index_type>
