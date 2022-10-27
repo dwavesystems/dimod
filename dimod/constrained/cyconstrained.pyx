@@ -26,8 +26,6 @@ from libcpp.unordered_set cimport unordered_set
 from libcpp.utility cimport move
 from libcpp.vector cimport vector
 
-# import numpy as np
-
 import dimod
 
 from dimod.binary import BinaryQuadraticModel
@@ -39,9 +37,7 @@ from dimod.cyutilities cimport cppvartype
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Sense as cppSense, Penalty as cppPenalty, Constraint as cppConstraint
 from dimod.libcpp.vartypes cimport Vartype as cppVartype, vartype_info as cppvartype_info
-# from dimod.quadratic cimport cyQM
 
-# from dimod.sampleset import as_samples
 from dimod.sym import Sense, Eq, Ge, Le
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
@@ -328,6 +324,21 @@ cdef class cyConstrainedQuadraticModel:
             raise ValueError(f"can only flip SPIN and BINARY variables")
 
     def lower_bound(self, v):
+        """Return the lower bound on the specified variable.
+
+        Args:
+            v: Variable label for a variable in the model.
+
+        Examples:
+            >>> i = dimod.Integer("i", lower_bound=3)
+            >>> j = dimod.Integer("j", upper_bound=3)
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint_from_comparison(i + j >= 4, label="Lower limit")
+            'Lower limit'
+            >>> cqm.lower_bound("i")
+            3.0
+
+        """
         return as_numpy_float(self.cppcqm.lower_bound(self.variables.index(v)))
 
     def num_constraints(self):
@@ -354,6 +365,22 @@ cdef class cyConstrainedQuadraticModel:
         self.variables._remove(v)
 
     def set_lower_bound(self, v, bias_type lb):
+        """Set the lower bound for a variable.
+
+        Args:
+            v: Variable label of a variable in the constrained quadratic model.
+            lb: Lower bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
+        Examples:
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variable('INTEGER', 'j', upper_bound=5)
+            'j'
+            >>> cqm.set_lower_bound('j', 2)
+        """
         cdef Py_ssize_t vi = self.variables.index(v)
 
         cdef cppVartype vt = self.cppcqm.vartype(vi)
@@ -423,9 +450,19 @@ cdef class cyConstrainedQuadraticModel:
         self.cppcqm.set_objective(deref(objective.base), mapping)
 
     def set_objective(self, objective):
-        """
+        """Set the objective of the constrained quadratic model.
 
-        note: bad inputs = bad models
+        Args:
+            objective: Binary quadratic model (BQM) or quadratic model (QM) or
+                an iterable of tuples.
+
+        Examples:
+            >>> from dimod import Integer, ConstrainedQuadraticModel
+            >>> i = Integer('i')
+            >>> j = Integer('j')
+            >>> cqm = ConstrainedQuadraticModel()
+            >>> cqm.set_objective(2*i - 0.5*i*j + 10)
+
         """
         if isinstance(objective, typing.Iterable):
             terms = objective
@@ -467,6 +504,22 @@ cdef class cyConstrainedQuadraticModel:
                 raise ValueError("terms must be a tuple of length 1, 2, or 3")
 
     def set_upper_bound(self, v, bias_type ub):
+        """Set the upper bound for a variable.
+
+        Args:
+            v: Variable label of a variable in the constrained quadratic model.
+            ub: Upper bound to set for variable ``v``.
+
+        Raises:
+            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
+                or :class:`~dimod.Vartype.BINARY` variable.
+
+        Examples:
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variable('INTEGER', 'j', lower_bound=2)
+            'j'
+            >>> cqm.set_upper_bound('j', 5)
+        """
         cdef Py_ssize_t vi = self.variables.index(v)
         cdef cppVartype vt = self.cppcqm.vartype(vi)
 
@@ -495,6 +548,24 @@ cdef class cyConstrainedQuadraticModel:
         self.cppcqm.set_upper_bound(vi, ub)
 
     def upper_bound(self, v):
+        """Return the upper bound on the specified variable.
+
+        Args:
+            v: Variable label for a variable in the model.
+
+        Examples:
+            >>> i = dimod.Integer("i", upper_bound=3)
+            >>> j = dimod.Integer("j", upper_bound=3)
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_constraint_from_comparison(i + j >= 1, label="Upper limit")
+            'Upper limit'
+            >>> cqm.set_upper_bound("i", 5)
+            >>> cqm.upper_bound("i")
+            5.0
+            >>> cqm.upper_bound("j")
+            3.0
+
+        """
         return as_numpy_float(self.cppcqm.upper_bound(self.variables.index(v)))
 
     def vartype(self, v):
