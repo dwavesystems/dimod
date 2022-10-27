@@ -159,7 +159,7 @@ class TestAddDiscrete(unittest.TestCase):
     def test_iterator(self):
         cqm = CQM()
         label = cqm.add_discrete(iter(range(10)), label='hello')
-        self.assertEqual(cqm.constraints[label].lhs.variables, list(range(10)))
+        self.assertEqual(cqm.constraints[label].lhs.variables, range(10))
 
     def test_label(self):
         cqm = CQM()
@@ -869,7 +869,7 @@ class TestRelabelVariables(unittest.TestCase):
         self.assertEqual(new.objective.variables, [1, 0, 'w'])
         self.assertEqual(new.constraints[c0].lhs.variables, [1, 'w'])
         self.assertEqual(new.constraints[c1].lhs.variables, ['w', 0])
-        self.assertEqual(cqm.objective.variables, list('uvw'))
+        self.assertEqual(cqm.objective.variables, 'uvw')
 
     def test_inplace(self):
         cqm = CQM()

@@ -66,13 +66,13 @@ cdef class _cyExpression:
         variables = self.expression().variables()  # todo: check this a reference?
 
         cdef Py_ssize_t vi
-        out = []
+        cdef cyVariables out = Variables()
         for vi in range(variables.size()):
-            out.append(self.parent.variables.at(variables[vi]))
+            out._append(self.parent.variables.at(variables[vi]))
         return out
 
-    def add_linear(self, v, bias):
-        raise NotImplementedError
+    def add_linear(self, v, bias_type bias):
+        self.expression().add_linear(self.parent.variables.index(v), bias)
 
     def add_quadratic(self, u, v, bias):
         cdef Py_ssize_t ui = self.parent.variables.index(u)
@@ -157,7 +157,6 @@ cdef class _cyExpression:
 
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL:
         # Not implemented. To be overwritten by subclasses.
-        # We can't raise an error without hurting performance
         raise NotImplementedError
 
     @cython.boundscheck(False)
@@ -205,8 +204,6 @@ cdef class _cyExpression:
         # because it gets confused about the iterator types.
         # So we do this pretty unnaturally.
         expression = self.expression()
-
-
 
         # Make a NumPy struct array.
         neighborhood = np.empty(
@@ -293,12 +290,15 @@ cdef class _cyExpression:
         return self.parent.lower_bound(v)
 
     def reduce_linear(self):
+        # todo: migrate to mixin
         raise NotImplementedError
 
     def reduce_neighborhood(self):
+        # todo: migrate to mixin
         raise NotImplementedError
 
     def reduce_quadratic(self):
+        # todo: migrate to mixin
         raise NotImplementedError
 
     def remove_interaction(self, u, v):
@@ -328,8 +328,6 @@ cdef class cyObjectiveView(_cyExpression):
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL:
         return &(self.parent.cppcqm.objective)
 
-    # def _ilinear(self):
-    #     raise NotImplementedError
 
 cdef class cyConstraintView(_cyExpression):
     def __init__(self, cyConstrainedQuadraticModel parent, object label):
@@ -368,4 +366,3 @@ cdef class cyConstraintView(_cyExpression):
 
     def weight(self):
         return self.constraint().weight()
-

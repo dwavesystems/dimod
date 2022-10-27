@@ -19,6 +19,8 @@ import numbers
 import tempfile
 import typing
 
+import numpy as np
+
 import dimod
 
 from dimod.constrained.cyexpression import cyObjectiveView, cyConstraintView
@@ -28,6 +30,11 @@ from dimod.views.quadratic import QuadraticViewsMixin
 class _ExpressionMixin(QuadraticViewsMixin):
     # dev note: I think most of these can actually be promoted to the QuadraticViewsMixin
     # one, but let's leave it alone for now
+
+    @property
+    @abc.abstractmethod
+    def dtype(self) -> np.dtype:
+        pass
 
     @property
     @abc.abstractmethod
