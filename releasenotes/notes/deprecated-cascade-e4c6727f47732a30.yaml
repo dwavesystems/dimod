@@ -1,0 +1,4 @@
+---
+deprecations:
+  - Deprecate the ``cascade`` keyword argument in ``ConstrainedQuadraticModel.fix_variable()``.
+  - Deprecate the ``cascade`` keyword argument in ``ConstrainedQuadraticModel.fix_variables()``.

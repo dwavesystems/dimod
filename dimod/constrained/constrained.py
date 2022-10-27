@@ -849,8 +849,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                    for datum in self.iter_constraint_data(sample_like))
 
     def fix_variable(self, v: dimod.typing.Variable, value: float, *,
-                     cascade: bool = False,
-                     ) -> typing.Dict[dimod.type.Variable, float]:
+                     cascade: typing.Optional[bool] = None,
+                     ) -> typing.Dict[dimod.typing.Variable, float]:
         """Fix the value of a variable in the model.
 
         Note that this function does not test feasibility.
@@ -868,9 +868,15 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         Raises:
             ValueError: If ``v`` is not the label of a variable in the model.
 
+        .. deprecated:: 0.12.0
+            The ``cascade`` keyword argument will be removed in 0.14.0.
+            It currently does nothing.
+
         """
-        # todo: fix above docstring
-        # todo: deprecation warning
+        if cascade is not None:
+            warnings.warn("The 'cascade' keyword argument is deprecated since dimod 0.12.0 "
+                          "and will be removed in 0.14.0", DeprecationWarning,
+                          stacklevel=2)
 
         # get the discrete constaints that are possibly affected
         discrete = dict()
@@ -891,48 +897,30 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return {}
 
     def fix_variables(self,
-                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]],
+                      fixed: typing.Union[typing.Mapping[dimod.typing.Variable, float],
+                                          typing.Iterable[typing.Tuple[dimod.typing.Variable, float]]],
                       *,
-                      cascade: bool = False,
-                      ) -> Dict[Variable, float]:
+                      cascade: typing.Optional[bool] = None,
+                      ) -> typing.Dict[dimod.typing.Variable, float]:
         """Fix the value of the variables and remove them.
 
         Args:
             fixed: Dictionary or iterable of 2-tuples of variable assignments.
-            cascade: See :meth:`.fix_variable`.
+            cascade: Deprecated. Does nothing.
 
         Returns:
-            Assignments of any additional variables fixed.
-            For ``cascade==False``, this is always ``{}``.
-            If you set ``cascade==True``, additional variables may be fixed.
-            See :meth:`.fix_variable`.
+            An empty dictionary, for legacy reasons.
 
-        Raises:
-            ValueError: If given a label for a variable not in the model.
-
-            :exc:`~dimod.exceptions.InfeasibileModelError`: If fixing the
-                given variables results in an infeasible model. Raising this
-                exception is currently supported for only some simple cases;
-                variable fixes may create an infeasible model without raising
-                this error.
-
-        Examples:
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
-            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
-            'One color'
-            >>> cqm.fix_variables({"red": 0, "green": 0}, cascade=True)
-            {'blue': 1}
+        .. deprecated:: 0.12.0
+            The ``cascade`` keyword argument will be removed in 0.14.0.
+            It currently does nothing.
 
         """
-        # todo: fix above docstring
-        # todo: deprecation warning
-
         if isinstance(fixed, typing.Mapping):
             fixed = fixed.items()
 
         for v, val in fixed:
-            self.fix_variable(v, val)
+            self.fix_variable(v, val, cascade=cascade)
 
         return {}
 

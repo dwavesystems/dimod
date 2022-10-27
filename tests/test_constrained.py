@@ -403,39 +403,19 @@ class TestFixVariable(unittest.TestCase):
         self.assertTrue(cqm.constraints[c1].lhs.is_equal(0 + y + z))
         self.assertIn(c1, cqm.discrete)
 
-    # def test_cascade(self):
-    #     with self.subTest('set discrete to 1'):
-    #         cqm = CQM()
-    #         cqm.add_discrete('abc', label='discrete')
-    #         fixed = cqm.fix_variable('a', 1, cascade=True)
-    #         self.assertEqual(fixed, {'b': 0, 'c': 0})
-    #         self.assertEqual(cqm.variables, [])
-    #         self.assertIn('discrete', cqm.constraints)
-    #         self.assertNotIn('discrete', cqm.discrete)
-    #         self.assertEqual(cqm.constraints['discrete'].lhs.linear, {})
-    #         self.assertEqual(cqm.constraints['discrete'].lhs.offset, 1)
+    def test_cascade(self):
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
 
-    #     with self.subTest('set all the 0s'):
-    #         cqm = CQM()
-    #         cqm.add_discrete('abc', label='discrete')
-    #         fixed = cqm.fix_variable('a', 0, cascade=True)
-    #         self.assertEqual(fixed, {})
-    #         fixed = cqm.fix_variable('b', 0, cascade=True)
-    #         self.assertEqual(fixed, {'c': 1})
-    #         self.assertEqual(cqm.variables, [])
-    #         self.assertIn('discrete', cqm.constraints)
-    #         self.assertNotIn('discrete', cqm.discrete)
-    #         self.assertEqual(cqm.constraints['discrete'].lhs.linear, {})
-    #         self.assertEqual(cqm.constraints['discrete'].lhs.offset, 1)
+        cqm = CQM()
+        cqm.set_objective(x + 2*y + 3*i + 4*j)
+        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
 
-    #     with self.subTest('one variable equality'):
-    #         cqm = CQM()
-    #         c0 = cqm.add_constraint(dimod.Integer('i') + dimod.Integer('j') == 7)
-    #         fixed = cqm.fix_variable('i', 4, cascade=True)
-    #         self.assertEqual(fixed, {'j': 3})
-    #         qm = dimod.QM()
-    #         qm.offset = 7
-    #         self.assertTrue(cqm.constraints[c0].lhs.is_equal(qm))
+        with self.assertWarns(DeprecationWarning):
+            cqm.fix_variable('x', 0, cascade=True)
+
+        with self.assertWarns(DeprecationWarning):
+            cqm.fix_variable('y', 0, cascade=False)
 
     def test_discrete(self):
         cqm = CQM()
@@ -463,45 +443,6 @@ class TestFixVariables(unittest.TestCase):
         self.assertTrue(cqm.constraints[c0].lhs.is_equal(3*86+2*1*j+5*86*j))
         self.assertTrue(cqm.constraints[c1].lhs.is_equal(1+y+z))
         self.assertNotIn(c1, cqm.discrete)
-
-    # def test_cascade(self):
-    #     x, y, z = dimod.Binaries('xyz')
-    #     i, j = dimod.Integers('ij')
-
-    #     cqm = CQM()
-    #     cqm.set_objective(x + 2*y + 3*i + 4*j)
-    #     c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-    #     c1 = cqm.add_discrete('xyz', label='c1')
-    #     c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-    #     fixed = cqm.fix_variables({'x': 1, 'i': 7}, cascade=True)
-    #     self.assertEqual({'z': 0, 'y': 0, 'j': 0.0}, fixed)
-
-    # def test_cascade_infeas(self):
-    #     x, y, z = dimod.Binaries('xyz')
-    #     i, j = dimod.Integers('ij')
-
-    #     cqm = CQM()
-    #     cqm.set_objective(x + 2*y + 3*i + 4*j)
-    #     c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-    #     c1 = cqm.add_discrete('xyz', label='c1')
-    #     c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-    #     with self.assertRaises(dimod.exceptions.InfeasibileModelError):
-    #         cqm.fix_variables({'x': 1, 'y': 1}, cascade=True)
-
-    # def test_cascade_redundant(self):
-    #     x, y, z = dimod.Binaries('xyz')
-    #     i, j = dimod.Integers('ij')
-
-    #     cqm = CQM()
-    #     cqm.set_objective(x + 2*y + 3*i + 4*j)
-    #     c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-    #     c1 = cqm.add_discrete('xyz', label='c1')
-    #     c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-    #     fixed = cqm.fix_variables({'x': 1, 'i': 7, 'y': 0}, cascade=True)
-    #     self.assertEqual({'z': 0, 'y': 0, 'j': 0.0}, fixed)  # y appears because it was fixed twice
 
 
 class TestFlipVariable(unittest.TestCase):
