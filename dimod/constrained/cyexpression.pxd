@@ -15,6 +15,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from libcpp.memory cimport weak_ptr
+
 from dimod.constrained.cyconstrained cimport cyConstrainedQuadraticModel
 from dimod.cyqmbase.cyqmbase_float64 cimport bias_type, index_type
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
@@ -29,11 +31,12 @@ cdef class _cyExpression:
 
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL
 
+
 cdef class cyObjectiveView(_cyExpression):
     pass
 
 
 cdef class cyConstraintView(_cyExpression):
-    cdef readonly object label
+    cdef weak_ptr[cppConstraint[bias_type, index_type]] constraint_ptr
 
     cdef cppConstraint[bias_type, index_type]* constraint(self) except NULL

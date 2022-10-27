@@ -334,23 +334,12 @@ cdef class cyObjectiveView(_cyExpression):
 cdef class cyConstraintView(_cyExpression):
     def __init__(self, cyConstrainedQuadraticModel parent, object label):
         super().__init__(parent)
-        self.label = label
+        self.constraint_ptr = parent.cppcqm.constraint_weak_ptr(parent.constraint_labels.index(label))
 
     cdef cppConstraint[bias_type, index_type]* constraint(self) except NULL:
-        # dev note: this is the only safe way I can think of to do this. I
-        # thought about using shared_ptrs down at the C++ level, but I think
-        # that will only introduce ownership issues, not to mention hurting
-        # performance.
-        # One thing we could do in the future is add a lock() method to this
-        # class for when we know we're doing a bunch of operations in a row.
-        # When locked we could keep a pointer alive.
-        cdef Py_ssize_t ci 
-        try:
-           ci = self.parent.constraint_labels.index(self.label)
-        except ValueError:
-            raise RuntimeError(f"unknown constraint label {self.label!r}, "
-                               "this constraint is no longer valid") from None
-        return &self.parent.cppcqm.constraint_ref(ci)
+        if self.constraint_ptr.expired():
+            raise RuntimeError("this constraint is no longer valid")
+        return self.constraint_ptr.lock().get()
 
     cdef cppExpression[bias_type, index_type]* expression(self) except NULL:
         return self.constraint()

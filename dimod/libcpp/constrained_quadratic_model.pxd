@@ -14,6 +14,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from libcpp.memory cimport weak_ptr
 from libcpp.vector cimport vector
 
 from dimod.libcpp.abc cimport QuadraticModelBase
@@ -116,6 +117,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         void change_vartype(Vartype, index_type) except+
         void clear()
         Constraint[bias_type, index_type]& constraint_ref(index_type)
+        weak_ptr[Constraint[bias_type, index_type]] constraint_weak_ptr(index_type)
         void fix_variable[T](index_type, T)
         bias_type lower_bound(index_type)
         Constraint[bias_type, index_type] new_constraint()
