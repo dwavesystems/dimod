@@ -27,14 +27,26 @@ cdef class cyConstrainedQuadraticModel:
     cdef cppConstrainedQuadraticModel[bias_type, index_type] cppcqm
     
     cdef readonly cyObjectiveView objective
+    """Objective to be minimized."""
+
     cdef readonly cyVariables variables
+    """Variables in use over the objective and all constraints."""
+
     cdef readonly cyVariables constraint_labels
+    """The labels for each of the constraints."""
 
     cdef readonly object dtype
+    """The type of the biases."""
+
     cdef readonly object index_dtype
+    """The type of the indices."""
 
     cdef public bint REAL_INTERACTIONS
 
     cdef readonly object constraints
+    """Constraints as a mapping.
+
+    This dictionary and its contents should not be modified.
+    """
 
 cdef object make_cqm(cppConstrainedQuadraticModel[bias_type, index_type] cppcqm)

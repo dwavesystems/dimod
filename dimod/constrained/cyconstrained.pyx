@@ -569,6 +569,11 @@ cdef class cyConstrainedQuadraticModel:
         return as_numpy_float(self.cppcqm.upper_bound(self.variables.index(v)))
 
     def vartype(self, v):
+        """Vartype of the given variable.
+        
+        Args:
+            v: Variable label for a variable in the model.
+        """
         cdef Py_ssize_t vi = self.variables.index(v)
         cdef cppVartype cppvartype = self.cppcqm.vartype(vi)
 
