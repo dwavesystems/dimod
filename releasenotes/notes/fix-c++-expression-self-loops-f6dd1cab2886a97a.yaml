@@ -1,0 +1,3 @@
+---
+fixes:
+  - Fix the handling of self-loops in ``dimod::Expression::add_quadratic()`` and similar methods.
