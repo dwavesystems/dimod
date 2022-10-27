@@ -194,7 +194,7 @@ class TestLoad(unittest.TestCase):
         self.assertTrue(cqm.objective.is_equal(new.objective))
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
-            self.assertEqual(constraint.lhs, new.constraints[label].lhs)
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
 

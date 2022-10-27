@@ -152,10 +152,10 @@ class TestDumps(unittest.TestCase):
             b = new.constraints[key]
             self.assertEqual(a.sense, b.sense)
 
-            # if a.lhs.dtype == np.float32:
-            #     self.assertTrue((a.lhs - a.rhs).is_almost_equal(b.lhs - b.rhs))
-            # else:
-            #     self.assertTrue((a.lhs - a.rhs).is_equal(b.lhs - b.rhs))
+            if a.lhs.dtype == np.float32:
+                self.assertTrue((a.lhs - a.rhs).is_almost_equal(b.lhs - b.rhs))
+            else:
+                self.assertTrue((a.lhs - a.rhs).is_equal(b.lhs - b.rhs))
 
     def test_functional(self):
         cqm = CQM()

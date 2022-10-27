@@ -51,35 +51,41 @@ class _ExpressionMixin(QuadraticViewsMixin):
     def energies(self, samples_like):
         pass
 
+    # developer note: in the future we should just generalize these to QuadraticViewsMixin
+    # todo: __mul__ and __div__, though they don't see much use so will leave that alone for now
     def __add__(self, other):
-        if isinstance(other, QuadraticViewsMixin):
+        if isinstance(other, (QuadraticViewsMixin, numbers.Number)):
             qm = dimod.QuadraticModel()
             qm.update(self)
-            qm.update(other)
+            qm += other
             return qm
-
-        if isinstance(other, numbers.Number):
-            raise NotImplementedError
 
         return NotImplemented
 
     def __radd__(self, other):
-        if isinstance(other, QuadraticViewsMixin):
+        if isinstance(other, (QuadraticViewsMixin, numbers.Number)):
             qm = dimod.QuadraticModel()
-            qm.update(other)
             qm.update(self)
-            return qm
-
-        if isinstance(other, numbers.Number):
-            return self + other
+            return other + qm
 
         return NotImplemented
 
-    def __eq__(self, other):
-        if isinstance(other, numbers.Number):
-            return Eq(self, other)
-        # support equality for backwards compatibility
-        return self.is_equal(other)
+    def __sub__(self, other):
+        if isinstance(other, (QuadraticViewsMixin, numbers.Number)):
+            qm = dimod.QuadraticModel()
+            qm.update(self)
+            qm -= other
+            return qm
+
+        return NotImplemented
+
+    def __rsub__(self, other):
+        if isinstance(other, (QuadraticViewsMixin, numbers.Number)):
+            qm = dimod.QuadraticModel()
+            qm.update(self)
+            return other - qm
+
+        return NotImplemented
 
     def is_almost_equal(self, other, places: int = 7) -> bool:
         """Test for near equality to all biases of a given quadratic model.
