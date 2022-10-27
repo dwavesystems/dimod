@@ -63,6 +63,10 @@ class ConstraintData(NamedTuple):
     violation: float
 
 
+# Previously discrete variables were tracked using `CQM.discrete`. This class
+# allows code that made use of that interface to continue to function.
+# We should start throwing a deprecation warning in 0.12.1 and remove this in
+# 0.14.0
 class DiscreteView(collections.abc.MutableSet):
     def __init__(self, parent):
         self.parent = parent
@@ -106,7 +110,9 @@ class SoftConstraint(NamedTuple):
     penalty: str
 
 
-# todo: remove
+# 0.11.6 added `CQM._soft` as a way to track soft constraints. This class
+# allows code that made use of that to continue functioning. We should
+# start throwing a deprecation warning in 0.12.1 and remove this in 0.13.0.
 class SoftView(collections.abc.Mapping):
     def __init__(self, parent):
         self.parent = parent
