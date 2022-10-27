@@ -1109,7 +1109,7 @@ class TestSerialization(unittest.TestCase):
             header_info = read_header(f, b'DIMODCQM')
 
         self.assertEqual(header_info.data,
-                         dict(num_biases=10,
+                         dict(num_biases=11,
                               num_constraints=2,
                               num_quadratic_variables=4,
                               num_variables=3,
@@ -1438,50 +1438,50 @@ class TestCQMFromLPFile(unittest.TestCase):
             else:
                 raise KeyError('Not expected constraint: {}'.format(cname))
 
-    # def test_pure_quadratic(self):
-    #     filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_variables.lp')
+    def test_pure_quadratic(self):
+        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_variables.lp')
 
-    #     with open(filepath) as f:
-    #         with self.assertWarns(DeprecationWarning):
-    #             cqm = CQM.from_lp_file(f)
+        with open(filepath) as f:
+            with self.assertWarns(DeprecationWarning):
+                cqm = CQM.from_lp_file(f)
 
-    #     self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
-    #     self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
+        self.assertEqual(len(cqm.variables), 2, msg='wrong number of variables')
+        self.assertEqual(len(cqm.constraints), 2, msg='wrong number of constraints')
 
-    #     # check the objective
-    #     self.assertAlmostEqual(cqm.objective.get_linear('x0'), 0.5,
-    #                            msg=' linear(x0) should be 0.5')
-    #     self.assertAlmostEqual(cqm.objective.get_linear('i0'), 0,
-    #                            msg=' linear(i0) should be 0')
+        # check the objective
+        self.assertAlmostEqual(cqm.objective.get_linear('x0'), 0.5,
+                               msg=' linear(x0) should be 0.5')
+        self.assertAlmostEqual(cqm.objective.get_linear('i0'), 0,
+                               msg=' linear(i0) should be 0')
 
-    #     self.assertAlmostEqual(cqm.objective.get_quadratic('i0', 'i0'), 0.5,
-    #                            msg='quad(i0, i0) should be 0.5')
+        self.assertAlmostEqual(cqm.objective.get_quadratic('i0', 'i0'), 0.5,
+                               msg='quad(i0, i0) should be 0.5')
 
-    #     for cname, cmodel in cqm.constraints.items():
+        for cname, cmodel in cqm.constraints.items():
 
-    #         if cname == 'c1':
+            if cname == 'c1':
 
-    #             self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 1,
-    #                                    msg='constraint c1, linear(x0) should be 1')
-    #             self.assertAlmostEqual(cmodel.lhs.offset, 0,
-    #                                    msg='constraint c1, offset should be 0')
-    #             self.assertTrue(cmodel.sense == Sense.Ge,
-    #                             msg='constraint c1, should be >= inequality')
-    #             self.assertAlmostEqual(cmodel.rhs, 1)
+                self.assertAlmostEqual(cmodel.lhs.get_linear('x0'), 1,
+                                       msg='constraint c1, linear(x0) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.offset, 0,
+                                       msg='constraint c1, offset should be 0')
+                self.assertTrue(cmodel.sense == Sense.Ge,
+                                msg='constraint c1, should be >= inequality')
+                self.assertAlmostEqual(cmodel.rhs, 1)
 
-    #         elif cname == 'c2':
-    #             self.assertAlmostEqual(cmodel.lhs.get_linear('i0'), 0,
-    #                                    msg='constraint c2, linear(i0) should be 0')
-    #             self.assertAlmostEqual(cmodel.lhs.get_quadratic('i0', 'i0'), 1,
-    #                                    msg='quad(i0, i0) should be 1')
-    #             self.assertAlmostEqual(cmodel.lhs.offset, 0,
-    #                                    msg='constraint c2, offset should be 0')
-    #             self.assertTrue(cmodel.sense == Sense.Ge,
-    #                             msg='constraint c2, should be >= inequality')
-    #             self.assertAlmostEqual(cmodel.rhs, 25)
+            elif cname == 'c2':
+                self.assertAlmostEqual(cmodel.lhs.get_linear('i0'), 0,
+                                       msg='constraint c2, linear(i0) should be 0')
+                self.assertAlmostEqual(cmodel.lhs.get_quadratic('i0', 'i0'), 1,
+                                       msg='quad(i0, i0) should be 1')
+                self.assertAlmostEqual(cmodel.lhs.offset, 0,
+                                       msg='constraint c2, offset should be 0')
+                self.assertTrue(cmodel.sense == Sense.Ge,
+                                msg='constraint c2, should be >= inequality')
+                self.assertAlmostEqual(cmodel.rhs, 25)
 
-    #         else:
-    #             raise KeyError('Not expected constraint: {}'.format(cname))
+            else:
+                raise KeyError('Not expected constraint: {}'.format(cname))
 
     def test_nameless_objective(self):
 
