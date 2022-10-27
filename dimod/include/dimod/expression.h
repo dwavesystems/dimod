@@ -292,6 +292,10 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     /// This removes a variable from the model *and* reindexes
     void reindex_variables(index_type v);
 
+    /// This gets used by base_type to determine how to handle self-loops, etc.
+    /// So we want to use the vartype relative to the base_type's indices.
+    Vartype vartype_(index_type v) const { return vartype(variables_[v]); }
+
  private:
     const parent_type* parent_;
 

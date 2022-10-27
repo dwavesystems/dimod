@@ -378,6 +378,11 @@ class QuadraticModelBase {
     /// Resize model to contain n variables.
     void resize(index_type n);
 
+    /// Protected version of vartype() that allows subclasses to distinguish
+    /// between the vartype_ called by mixin functions and the public API one.
+    /// By default they are the same.
+    virtual Vartype vartype_(index_type v) const { return vartype(v); }
+
  private:
     std::vector<bias_type> linear_biases_;
 
@@ -466,7 +471,7 @@ void QuadraticModelBase<bias_type, index_type>::add_quadratic(index_type u, inde
     enforce_adj();
 
     if (u == v) {
-        switch (this->vartype(u)) {
+        switch (this->vartype_(u)) {
             case Vartype::BINARY: {
                 // 1*1 == 1 and 0*0 == 0 so this is linear
                 linear_biases_[u] += bias;
@@ -526,7 +531,7 @@ void QuadraticModelBase<bias_type, index_type>::add_quadratic_back(index_type u,
     assert((*adj_ptr_)[u].empty() || (*adj_ptr_)[u].back().v <= v);
 
     if (u == v) {
-        switch (this->vartype(u)) {
+        switch (this->vartype_(u)) {
             case Vartype::BINARY: {
                 // 1*1 == 1 and 0*0 == 0 so this is linear
                 add_linear(u, bias);
@@ -731,7 +736,7 @@ bool QuadraticModelBase<bias_type, index_type>::is_equal(
 
     // check the vartype
     for (size_type v = 0; v < this->num_variables(); ++v) {
-        if (this->vartype(v) != other.vartype(v)) {
+        if (this->vartype_(v) != other.vartype_(v)) {
             return false;
         }
     }
@@ -981,7 +986,7 @@ void QuadraticModelBase<bias_type, index_type>::set_quadratic(index_type u, inde
     enforce_adj();
 
     if (u == v) {
-        switch (this->vartype(u)) {
+        switch (this->vartype_(u)) {
             // unlike add_quadratic, setting is not really defined.
             case Vartype::BINARY: {
                 throw std::domain_error(

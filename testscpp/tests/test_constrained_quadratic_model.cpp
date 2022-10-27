@@ -622,4 +622,34 @@ TEST_CASE("Test CQM.constraint_weak_ptr()") {
         }
     }
 }
+
+TEST_CASE("Test Expression::add_quadratic()") {
+    GIVEN("A CQM with two variables with vartypes") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto i = cqm.add_variable(Vartype::INTEGER);
+        auto x = cqm.add_variable(Vartype::BINARY);
+
+        auto c0 = cqm.add_linear_constraint({i, x}, {0, 0}, Sense::EQ, 1);
+        auto c1 = cqm.add_linear_constraint({x, i}, {0, 0}, Sense::LE, 2);
+
+        WHEN("we add self-loops") {
+            cqm.constraint_ref(c0).add_quadratic(i, i, 1.5);
+            cqm.constraint_ref(c0).add_quadratic(x, x, 2.5);
+            cqm.constraint_ref(c1).add_quadratic(i, i, 1.5);
+            cqm.constraint_ref(c1).add_quadratic(x, x, 2.5);
+
+            THEN("the are applied correctly") {
+                CHECK(cqm.constraint_ref(c0).linear(i) == 0);
+                CHECK(cqm.constraint_ref(c0).linear(x) == 2.5);
+                CHECK(cqm.constraint_ref(c0).quadratic(i, i) == 1.5);
+                CHECK(cqm.constraint_ref(c0).quadratic(x, x) == 0);
+
+                CHECK(cqm.constraint_ref(c1).linear(i) == 0);
+                CHECK(cqm.constraint_ref(c1).linear(x) == 2.5);
+                CHECK(cqm.constraint_ref(c1).quadratic(i, i) == 1.5);
+                CHECK(cqm.constraint_ref(c1).quadratic(x, x) == 0);
+            }
+        }
+    }
+}
 }  // namespace dimod
