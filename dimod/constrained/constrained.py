@@ -304,7 +304,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> cqm.add_constraint(x + y + x*y <= 1, label='c0')
             'c0'
             >>> cqm.constraints['c0'].to_polystring()
-            'x + y + x*y <= 1'
+            'x + y + x*y <= 1.0'
 
         Example:
 
@@ -398,7 +398,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
             >>> print(cqm.constraints[label1].to_polystring())
-            2*i + 3*j + x*y + i*j <= 1
+            2*i + 3*j + y*x + i*j <= 1.0
 
         """
         if label is None:
@@ -412,8 +412,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                                   qm: typing.Union[BinaryQuadraticModel, QuadraticModel],
                                   sense: typing.Union[Sense, str],
                                   rhs: dimod.typing.Bias = 0,
-                                  *,
                                   label: typing.Optional[typing.Hashable] = None,
+                                  *,
                                   copy: bool = True,
                                   weight: typing.Optional[float] = None,
                                   penalty: str = 'linear',
@@ -454,15 +454,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> cqm.add_constraint_from_model(x, '>=', 0, 'Min x')
             'Min x'
             >>> print(cqm.constraints["Min x"].to_polystring())
-            x >= 0
+            x >= 0.0
 
-            Adding a constraint without copying the model requires caution:
-
-            >>> cqm.add_constraint_from_model(x, "<=", 3, "Risky constraint", copy=False)
-            'Risky constraint'
-            >>> x *= 2
-            >>> print(cqm.constraints["Risky constraint"].to_polystring())
-            2*x <= 3
         """
         if label is None:
             label = self._new_constraint_label()
@@ -636,7 +629,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> cqm.add_discrete(color, label='one-color')
             'one-color'
             >>> print(cqm.constraints['one-color'].to_polystring())
-            red + blue + green == 1
+            red + blue + green == 1.0
 
         """
         if label is not None and label in self.constraints:
@@ -704,7 +697,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> cqm.add_discrete(sum([r, g, b]), label="One color")
             'One color'
             >>> print(cqm.constraints["One color"].to_polystring())
-            red + green + blue == 1
+            red + green + blue == 1.0
 
         """
         vartype = qm.vartype if isinstance(qm, QuadraticModel) else lambda v: qm.vartype
@@ -838,7 +831,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> cqm.check_feasible({"i": 4.2}, atol=0.1)
             False
             >>> next(cqm.iter_constraint_data({"i": 4.2})).rhs_energy
-            4
+            4.0
             >>> cqm.check_feasible({"i": 4.2}, rtol=0.1)
             True
 
@@ -1647,20 +1640,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             counterparts. The constraint enforcing :math:`j == i` uses
             the same label.
 
-        Examples:
-            Note that the ellipses in the outputs below are stand-ins for the
-            generated variable labels, which differ between runs.
-
-            >>> from dimod import Integer, ConstrainedQuadraticModel
-            >>> i = Integer('i')
-            >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_constraint(i*i <=3, label='i squared')
-            'i squared'
-            >>> cqm.substitute_self_loops() #doctest: +ELLIPSIS
-            {...}
-            >>> cqm.constraints #doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-            {'i squared': Le(QuadraticModel({'i': 0.0, '...': 0.0}, {('...', 'i'): 1.0}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 3),
-            '...': Eq(QuadraticModel({'i': 1.0, '...': -1.0}, {}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 0)}
         """
         # dev note: we can cythonize this for better performance
 

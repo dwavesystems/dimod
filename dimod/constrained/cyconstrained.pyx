@@ -161,6 +161,7 @@ cdef class cyConstrainedQuadraticModel:
 
 
         constraint.set_sense(cppsense(sense))
+        constraint.set_rhs(rhs)
 
         if weight is not None:
             raise NotImplementedError  # todo
