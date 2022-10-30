@@ -984,7 +984,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     @classmethod
     def from_discrete_quadratic_model(cls, dqm: DiscreteQuadraticModel, *,
                                       relabel_func: Callable[[Variable, int], Variable] = lambda v, c: (v, c),
-                                      ) -> 'ConstrainedQuadraticModel':
+                                      ) -> ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a discrete quadratic model.
 
         Args:
@@ -1037,13 +1037,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     from_dqm = from_discrete_quadratic_model
 
     @classmethod
-    def from_qm(cls, qm: QuadraticModel) -> 'ConstrainedQuadraticModel':
+    def from_qm(cls, qm: QuadraticModel) -> ConstrainedQuadraticModel:
         """Alias for :meth:`from_quadratic_model`."""
         return cls.from_quadratic_model(qm)
 
     @classmethod
     def from_quadratic_model(cls, qm: Union[QuadraticModel, BinaryQuadraticModel]
-                             ) -> 'ConstrainedQuadraticModel':
+                             ) -> ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a quadratic model or
         binary quadratic model.
 
@@ -1508,7 +1508,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],
                           inplace: bool = True,
-                          ) -> 'ConstrainedQuadraticModel':
+                          ) -> ConstrainedQuadraticModel:
         """Relabel the variables of the objective and constraints.
 
         Args:

@@ -300,8 +300,6 @@ cdef class cyConstrainedQuadraticModel:
             self.cppcqm.change_vartype(vt, vi)
         except RuntimeError as err:
             # c++ logic_error
-            print(err)
-
             raise TypeError(f"cannot change vartype {self.vartype(v).name!r} "
                             f"to {vartype.name!r}") from None
 
