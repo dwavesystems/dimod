@@ -15,28 +15,17 @@
 #    limitations under the License.
 
 from libcpp.string cimport string
-from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 
-from dimod.libcpp.quadratic_model cimport QuadraticModel
+from dimod.libcpp.constrained_quadratic_model cimport ConstrainedQuadraticModel
 
 __all__ = ['LPModel', 'read']
 
 
 cdef extern from "dimod/lp.h" namespace "dimod::lp" nogil:
-    cdef cppclass Expression[Bias, Index]:
-        QuadraticModel[Bias, Index] model
-        unordered_map[string, Index] labels
-        string name
-
-    cdef cppclass Constraint[Bias, Index]:
-        Expression[Bias, Index] lhs
-        string sense
-        Bias rhs
-
     cdef cppclass LPModel[Bias, Index]:
-        Expression[Bias, Index] objective
-        vector[Constraint[Bias, Index]] constraints
-        bint minimize
+        ConstrainedQuadraticModel[Bias, Index] model
+        vector[string] variable_labels
+        vector[string] constraint_labels
 
     LPModel[Bias, Index] read[Bias, Index] (const string) except +

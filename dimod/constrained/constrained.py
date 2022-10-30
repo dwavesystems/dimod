@@ -18,7 +18,7 @@ Constrained Quadratic Model class.
 
 from __future__ import annotations
 
-import collections.abc as abc
+import collections.abc
 import copy
 import io
 import json
@@ -36,18 +36,17 @@ from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, Name
 
 import numpy as np
 
-from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary, Spin, as_bqm
-from dimod.discrete.discrete_quadratic_model import DiscreteQuadraticModel
-from dimod.exceptions import InfeasibileModelError
-from dimod.quadratic import QuadraticModel
+from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary
+from dimod.constrained.cyconstrained import cyConstrainedQuadraticModel, ConstraintView, ObjectiveView
+from dimod.quadratic.quadratic_model import QuadraticModel
 from dimod.sampleset import as_samples
-from dimod.sym import Comparison, Eq, Le, Ge, Sense
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
+from dimod.sym import Comparison, Sense
 from dimod.typing import Bias, Variable, SamplesLike
-from dimod.utilities import iter_safe_relabels, new_variable_label
-from dimod.variables import Variables, serialize_variable, deserialize_variable
-from dimod.vartypes import Vartype, as_vartype, VartypeLike
+from dimod.utilities import new_variable_label
+from dimod.variables import serialize_variable, deserialize_variable, Variables
+from dimod.vartypes import as_vartype, Vartype, VartypeLike
 
 __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
@@ -64,12 +63,78 @@ class ConstraintData(NamedTuple):
     violation: float
 
 
+# Previously discrete variables were tracked using `CQM.discrete`. This class
+# allows code that made use of that interface to continue to function.
+# We should start throwing a deprecation warning in 0.12.1 and remove this in
+# 0.14.0
+class DiscreteView(collections.abc.MutableSet):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __contains__(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        return key in self.parent.constraint_labels and self.parent.constraints[key].lhs.is_discrete()
+
+    def __iter__(self):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        for lbl, comp in self.parent.constraints.items():
+            if comp.lhs.is_discrete():
+                yield lbl
+
+    def __len__(self):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        return sum(1 for _ in self)
+
+    def add(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        self.parent.constraints[key].lhs.mark_discrete(True)
+
+    def difference(self, *others):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        return set(self).difference(*others)
+
+    def discard(self, key):
+        # warnings.warn("ConstrainedQuadraticModel.discrete attribute is deprecated",
+        #               DeprecationWarning, stacklevel=3)
+        if key in self.parent.constraint_labels:
+            self.parent.constraints[key].lhs.mark_discrete(False)
+
+
 class SoftConstraint(NamedTuple):
     weight: float
     penalty: str
 
 
-class ConstrainedQuadraticModel:
+# 0.11.6 added `CQM._soft` as a way to track soft constraints. This class
+# allows code that made use of that to continue functioning. We should
+# start throwing a deprecation warning in 0.12.1 and remove this in 0.13.0.
+class SoftView(collections.abc.Mapping):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __getitem__(self, key):
+        constraint = self.parent.constraints[key].lhs
+
+        if not constraint.is_soft():
+            raise KeyError
+
+        return SoftConstraint(constraint.weight(), constraint.penalty())
+
+    def __iter__(self):
+        for label, comp in self.parent.constraints.items():
+            if comp.lhs.is_soft():
+                yield label
+
+    def __len__(self):
+        return sum(1 for _ in self)
+
+
+class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     r"""A constrained quadratic model.
 
     Constrained quadratic models are problems of the form:
@@ -168,59 +233,10 @@ class ConstrainedQuadraticModel:
 
     """
     def __init__(self):
-        # discrete variable tracking, we probably can do this with less memory
-        # but for now let's keep it simple
-        self.discrete: Set[Hashable] = set()  # collection of discrete constraints
-        self._soft: Dict[Hashable, SoftConstraint] = dict()
-        self._objective = QuadraticModel()
+        super().__init__()
 
-    @property
-    def constraints(self) -> Dict[Hashable, Comparison]:
-        """Constraints as a dictionary.
-
-        This dictionary and its contents should not be modified.
-        """
-        try:
-            return self._constraints
-        except AttributeError:
-            pass
-
-        self._constraints: Dict[Hashable, Comparison] = {}
-        return self._constraints
-
-    @property
-    def objective(self) -> QuadraticModel:
-        """Objective to be minimized."""
-        return self._objective
-
-    @property
-    def variables(self) -> Variables:
-        """Variables in use over the objective and all constraints."""
-        try:
-            return self._variables
-        except AttributeError:
-            pass
-
-        self._variables = variables = self.objective.variables
-
-        return variables
-
-    def _add_variables_from(self, model: Union[BinaryQuadraticModel, QuadraticModel]):
-        # todo: singledispatchmethod in 3.8+
-        if isinstance(model, BinaryQuadraticModel):
-            vartype = model.vartype
-
-            for v in model.variables:
-                self.objective.add_variable(vartype, v)
-
-        elif isinstance(model, QuadraticModel):
-            for v in model.variables:
-                # for spin, binary variables the bounds are ignored anyway
-                self.objective.add_variable(model.vartype(v), v,
-                                            lower_bound=model.lower_bound(v),
-                                            upper_bound=model.upper_bound(v))
-        else:
-            raise TypeError("model should be a QuadraticModel or a BinaryQuadraticModel")
+        self.discrete: Set[Hashable] = DiscreteView(self)
+        self._soft = SoftView(self)  # todo: remove
 
     def add_constraint(self, data, *args, **kwargs) -> Hashable:
         """Add a constraint to the model.
@@ -248,6 +264,7 @@ class ConstrainedQuadraticModel:
                                   sense: Union[Sense, str],
                                   rhs: Bias = 0,
                                   label: Optional[Hashable] = None,
+                                  *,
                                   copy: bool = True,
                                   weight: Optional[float] = None,
                                   penalty: str = 'linear',
@@ -264,7 +281,7 @@ class ConstrainedQuadraticModel:
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            copy: If ``True``, model ``qm`` is copied. This can be set to ``False``
+            copy: If `True`, model ``qm`` is copied. This can be set to `False`
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
@@ -291,62 +308,26 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_constraint_from_model(x, '>=', 0, 'Min x')
             'Min x'
             >>> print(cqm.constraints["Min x"].to_polystring())
-            x >= 0
+            x >= 0.0
 
-            Adding a constraint without copying the model requires caution:
-
-            >>> cqm.add_constraint_from_model(x, "<=", 3, "Risky constraint", copy=False)
-            'Risky constraint'
-            >>> x *= 2
-            >>> print(cqm.constraints["Risky constraint"].to_polystring())
-            2*x <= 3
         """
-        variables = self.variables
-
-        # get sense as an enum
-        if isinstance(sense, str):
-            sense = Sense(sense)
-
         if label is None:
-            # we support up to 100k constraints and :6 gives us 16777216
-            # possible so pretty safe
-            label = 'c' + uuid.uuid4().hex[:6]
-            while label in self.constraints:
-                label = 'c' + uuid.uuid4().hex[:6]
-        elif label in self.constraints:
+            label = self._new_constraint_label()
+        elif label in self.constraint_labels:
             raise ValueError("a constraint with that label already exists")
 
-        self._add_variables_from(qm)
+        if isinstance(qm, BinaryQuadraticModel) and qm.dtype == object:
+            qm = BinaryQuadraticModel(qm)
 
-        if copy:
-            qm = qm.copy()
-
-        if sense is Sense.Le:
-            self.constraints[label] = Le(qm, rhs)
-        elif sense is Sense.Ge:
-            self.constraints[label] = Ge(qm, rhs)
-        elif sense is Sense.Eq:
-            self.constraints[label] = Eq(qm, rhs)
-        else:
-            raise RuntimeError("unexpected sense")
-
-        if weight is not None:
-
-            if weight < 0:
-                raise ValueError("weight for soft-constraint should be >= 0")
-
-            if penalty == 'quadratic':
-                # if the qm is a BinaryQuadraticModel then we are fine.
-                # But it is possible to build QuadraticModels with only
-                # Binary Variables, so we have to check for that
-                if isinstance(qm, QuadraticModel) and not all([qm.vartype(v) in (Vartype.BINARY, Vartype.SPIN) for v in qm.variables]):
-                    raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
-            elif penalty != 'linear':
-                raise ValueError(f"penalty should be `linear` or `quadratic`. "
-                                 f"Given: {penalty}")
-            self._soft[label] = SoftConstraint(weight, penalty)
-
-        return label
+        return super().add_constraint_from_model(
+            qm.data,
+            sense,
+            rhs,
+            label,
+            bool(copy),
+            weight,
+            penalty,
+            )
 
     def add_constraint_from_comparison(self,
                                        comp: Comparison,
@@ -403,7 +384,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_constraint(x + y + x*y <= 1, label='c0')
             'c0'
             >>> cqm.constraints['c0'].to_polystring()
-            'x + y + x*y <= 1'
+            'x + y + x*y <= 1.0'
 
         Example:
 
@@ -473,15 +454,15 @@ class ConstrainedQuadraticModel:
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            weight: Weight for a soft constraint. If None, the constraint
+            weight: Weight for a soft constraint. If ``None``, the constraint
                 is hard. In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
             penalty: Penalty type for a soft constraint (a constraint with its
                 ``weight`` parameter set). Supported values are ``'linear'`` and
-                ``'quadratic'``. Ignored if ``weight`` is None. ``'quadratic'`` is
-                supported for a constraint with binary variables only.
+                ``'quadratic'``. Ignored if ``weight`` is ``None``. ``'quadratic'``
+                is supported for a constraint with binary variables only.
 
         Returns:
             Label of the added constraint.
@@ -500,15 +481,15 @@ class ConstrainedQuadraticModel:
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
             >>> print(cqm.constraints[label1].to_polystring())
-            2*i + 3*j + x*y + i*j <= 1
+            2*i + 3*j + y*x + i*j <= 1.0
 
         """
-        qm = self._iterable_to_qm(iterable)
+        if label is None:
+            label = self._new_constraint_label()
+        elif label in self.constraint_labels:
+            raise ValueError("a constraint with that label already exists")
 
-        # use quadratic model in the future
-        return self.add_constraint_from_model(
-            qm, sense, rhs=rhs, label=label, copy=False,
-            weight=weight, penalty=penalty)
+        return super().add_constraint_from_iterable(iterable, sense, rhs, label, weight, penalty)
 
     def add_discrete(self, data, *args, **kwargs) -> Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.
@@ -663,7 +644,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_discrete(color, label='one-color')
             'one-color'
             >>> print(cqm.constraints['one-color'].to_polystring())
-            red + blue + green == 1
+            red + blue + green == 1.0
 
         """
         if label is not None and label in self.constraints:
@@ -730,7 +711,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.add_discrete(sum([r, g, b]), label="One color")
             'One color'
             >>> print(cqm.constraints["One color"].to_polystring())
-            red + green + blue == 1
+            red + green + blue == 1.0
 
         """
         vartype = qm.vartype if isinstance(qm, QuadraticModel) else lambda v: qm.vartype
@@ -761,7 +742,7 @@ class ConstrainedQuadraticModel:
 
     def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
                      *,
-                     lower_bound: float = 0,
+                     lower_bound: Optional[float] = None,
                      upper_bound: Optional[float] = None,
                      ) -> Variable:
         """Add a variable to the model.
@@ -814,8 +795,21 @@ class ConstrainedQuadraticModel:
                 DeprecationWarning, stacklevel=2)
             v, vartype = vartype, v
 
-        return self.objective.add_variable(
-            vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
+        return super().add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
+
+    def add_variables(self,
+                      vartype: dimod.VartypeLike,
+                      variables: Union[int, Sequence[Variable]],
+                      *,
+                      lower_bound: Optional[float] = None,
+                      upper_bound: Optional[float] = None,
+                      ) -> None:
+        if isinstance(variables, Iterable):
+            for v in variables:
+                self.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
+        else:
+            for _ in range(variables):
+                self.add_variable(vartype, lower_bound=lower_bound, upper_bound=upper_bound)
 
     def check_feasible(self, sample_like: SamplesLike, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
         r"""Return the feasibility of the given sample.
@@ -850,7 +844,7 @@ class ConstrainedQuadraticModel:
             >>> cqm.check_feasible({"i": 4.2}, atol=0.1)
             False
             >>> next(cqm.iter_constraint_data({"i": 4.2})).rhs_energy
-            4
+            4.0
             >>> cqm.check_feasible({"i": 4.2}, rtol=0.1)
             True
 
@@ -861,7 +855,7 @@ class ConstrainedQuadraticModel:
                    for datum in self.iter_constraint_data(sample_like))
 
     def fix_variable(self, v: Variable, value: float, *,
-                     cascade: bool = False,
+                     cascade: Optional[bool] = None,
                      ) -> Dict[Variable, float]:
         """Fix the value of a variable in the model.
 
@@ -872,139 +866,69 @@ class ConstrainedQuadraticModel:
 
             value: Value to assign variable ``v``.
 
-            cascade: If ``True``, additional variables may be removed from the
-                model based on the assignment of ``v``.
-                Currently handles the following cases:
-
-                * Discrete constraints (see :meth:`add_discrete`)
-
-                  Fixing one of the binary variables to `1` fixes the remaining
-                  to `0`. Fixing all but one of the binary variables to `0`
-                  fixes the remaining to `1`.
-
-                * Equality constraint
-
-                  Fixing one of two variables fixes the other. For example fixing
-                  ``i`` to `3` in ``i + j == 7`` also fixes ``j`` to `4`
+            cascade: Deprecated. Does nothing.
 
         Returns:
-            Assignments of any additional variables fixed.
-            For ``cascade==False``, this is always ``{}``.
-            If you set ``cascade==True``, additional variables may be fixed.
-            See above.
+            An empty dictionary, for legacy reasons.
 
         Raises:
             ValueError: If ``v`` is not the label of a variable in the model.
 
-        Examples:
-
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
-            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
-            'One color'
-            >>> cqm.fix_variable("red", 1, cascade=True)
-            {'blue': 0, 'green': 0}
-
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
-            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
-            'One color'
-            >>> cqm.fix_variable("red", 0, cascade=True)
-            {}
-            >>> cqm.fix_variable("blue", 0, cascade=True)
-            {'green': 1}
+        .. deprecated:: 0.12.0
+            The ``cascade`` keyword argument will be removed in 0.14.0.
+            It currently does nothing.
 
         """
-        if v not in self.variables:
-            raise ValueError(f"unknown variable {v!r}")
+        if cascade is not None:
+            warnings.warn("The 'cascade' keyword argument is deprecated since dimod 0.12.0 "
+                          "and will be removed in 0.14.0", DeprecationWarning,
+                          stacklevel=2)
 
-        new: Dict[Variable, float] = {}
-        for label, comparison in self.constraints.items():
-            if v in comparison.lhs.variables:
-                comparison.lhs.fix_variable(v, value)
+        # get the discrete constaints that are possibly affected
+        discrete = dict()
+        for label in self.discrete:
+            lhs = self.constraints[label].lhs
+            if v in lhs.variables:
+                discrete[label] = lhs
 
-                if label in self.discrete:
-                    # we've fixed a variable in a discrete constraint, so it
-                    # might not be one any more.
+        super().fix_variable(v, value)
 
-                    if value not in Vartype.BINARY.value:
-                        raise ValueError(
-                            f"variable {v} is part of a discrete constraint so "
-                            "it can only be fixed to 0 or 1")
-
-                    if value == 1:  # we've found the one-hot!
-                        self.discrete.remove(label)
-
-                        if cascade:
-                            # everything else gets set to 0
-                            new.update((v, 0) for v in comparison.lhs.variables)
-
-                    elif len(comparison.lhs.variables) < 2:  # we've made it too small
-                        self.discrete.remove(label)
-
-                        if cascade and len(comparison.lhs.variables) == 1:
-                            new[comparison.lhs.variables[0]] = 1
-
-                elif cascade and comparison.sense is Sense.Eq and len(comparison.lhs.variables) == 1:
-                    # we have a constraint like i == 7, so can just go ahead and set it
-                    new[comparison.lhs.variables[0]] = comparison.rhs - comparison.lhs.offset
-
-        self.objective.fix_variable(v, value)
-
-        for assignment in new.items():
-            self.fix_variable(*assignment)
-
-        return new
+        if discrete:
+            if value == 1:
+                self.discrete -= discrete
+            else:
+                for label, lhs in discrete.items():
+                    if lhs.num_variables <= 1:
+                        self.discrete.discard(label)
+        return {}
 
     def fix_variables(self,
-                      fixed: Union[Mapping[Variable, float], Iterable[Tuple[Variable, float]]],
+                      fixed: Union[Mapping[Variable, float],
+                                          Iterable[Tuple[Variable, float]]],
                       *,
-                      cascade: bool = False,
+                      cascade: Optional[bool] = None,
                       ) -> Dict[Variable, float]:
         """Fix the value of the variables and remove them.
 
         Args:
             fixed: Dictionary or iterable of 2-tuples of variable assignments.
-            cascade: See :meth:`.fix_variable`.
+            cascade: Deprecated. Does nothing.
 
         Returns:
-            Assignments of any additional variables fixed.
-            For ``cascade==False``, this is always ``{}``.
-            If you set ``cascade==True``, additional variables may be fixed.
-            See :meth:`.fix_variable`.
+            An empty dictionary, for legacy reasons.
 
-        Raises:
-            ValueError: If given a label for a variable not in the model.
-
-            :exc:`~dimod.exceptions.InfeasibileModelError`: If fixing the
-                given variables results in an infeasible model. Raising this
-                exception is currently supported for only some simple cases;
-                variable fixes may create an infeasible model without raising
-                this error.
-
-        Examples:
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> r, b, g = dimod.Binaries(["red", "blue", "green"])
-            >>> cqm.add_discrete_from_comparison(r + b + g == 1, label="One color")
-            'One color'
-            >>> cqm.fix_variables({"red": 0, "green": 0}, cascade=True)
-            {'blue': 1}
+        .. deprecated:: 0.12.0
+            The ``cascade`` keyword argument will be removed in 0.14.0.
+            It currently does nothing.
 
         """
         if isinstance(fixed, Mapping):
             fixed = fixed.items()
 
-        fix_variable = self.fix_variable
-
-        new: Dict[Variable, float] = {}
         for v, val in fixed:
-            if v in new:
-                if new[v] != val:
-                    raise InfeasibileModelError()
-            else:
-                new.update(fix_variable(v, val, cascade=cascade))
+            self.fix_variable(v, val, cascade=cascade)
 
-        return new
+        return {}
 
     def flip_variable(self, v: Variable):
         r"""Flip the specified binary variable in the objective and constraints.
@@ -1045,24 +969,22 @@ class ConstrainedQuadraticModel:
             {}
 
         """
-        self.objective.flip_variable(v)  # checks that it exists and is the correct vartype
+        super().flip_variable(v)
 
-        for label, comparison in self.constraints.items():
-            lhs = comparison.lhs
+        for label in list(self.discrete):
+            lhs = self.constraints[label].lhs
             if v in lhs.variables:
-                comparison.lhs.flip_variable(v)
-
                 self.discrete.discard(label)  # no longer a discrete variable
 
     @classmethod
-    def from_bqm(cls, bqm: BinaryQuadraticModel) -> 'ConstrainedQuadraticModel':
+    def from_bqm(cls, bqm: BinaryQuadraticModel) -> ConstrainedQuadraticModel:
         """Alias for :meth:`from_quadratic_model`."""
         return cls.from_quadratic_model(bqm)
 
     @classmethod
     def from_discrete_quadratic_model(cls, dqm: DiscreteQuadraticModel, *,
                                       relabel_func: Callable[[Variable, int], Variable] = lambda v, c: (v, c),
-                                      ) -> 'ConstrainedQuadraticModel':
+                                      ) -> ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a discrete quadratic model.
 
         Args:
@@ -1115,8 +1037,13 @@ class ConstrainedQuadraticModel:
     from_dqm = from_discrete_quadratic_model
 
     @classmethod
+    def from_qm(cls, qm: QuadraticModel) -> ConstrainedQuadraticModel:
+        """Alias for :meth:`from_quadratic_model`."""
+        return cls.from_quadratic_model(qm)
+
+    @classmethod
     def from_quadratic_model(cls, qm: Union[QuadraticModel, BinaryQuadraticModel]
-                             ) -> 'ConstrainedQuadraticModel':
+                             ) -> ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a quadratic model or
         binary quadratic model.
 
@@ -1143,11 +1070,6 @@ class ConstrainedQuadraticModel:
         cqm = cls()
         cqm.set_objective(qm)
         return cqm
-
-    @classmethod
-    def from_qm(cls, qm: QuadraticModel) -> 'ConstrainedQuadraticModel':
-        """Alias for :meth:`from_quadratic_model`."""
-        return cls.from_quadratic_model(qm)
 
     @classmethod
     def from_file(cls,
@@ -1216,7 +1138,7 @@ class ConstrainedQuadraticModel:
                     weight = None
                     penalty = None
 
-                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty)
+                cqm.add_constraint(lhs, rhs=rhs, sense=sense, label=label, weight=weight, penalty=penalty, copy=False)
                 if discrete:
                     cqm.discrete.add(label)
 
@@ -1235,7 +1157,7 @@ class ConstrainedQuadraticModel:
                     )
             if header_info.version >= (1, 3):
                 expected.update(
-                    num_weighted_constraints=len(cqm._soft),
+                    num_weighted_constraints=cqm.num_soft_constraints(),
                     )
 
             if expected != header_info.data:
@@ -1442,23 +1364,13 @@ class ConstrainedQuadraticModel:
         return (self.objective.is_linear() and
                 all(comp.lhs.is_linear() for comp in self.constraints.values()))
 
-    def lower_bound(self, v: Variable) -> Bias:
-        """Return the lower bound on the specified variable.
-
-        Args:
-            v: Variable label for a variable in the model.
-
-        Examples:
-            >>> i = dimod.Integer("i", lower_bound=3)
-            >>> j = dimod.Integer("j", upper_bound=3)
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_constraint_from_comparison(i + j >= 4, label="Lower limit")
-            'Lower limit'
-            >>> cqm.lower_bound("i")
-            3.0
-
-        """
-        return self.objective.lower_bound(v)
+    def _new_constraint_label(self) -> str:
+        # we support up to 100k constraints and :6 gives us 16777216
+        # possible so pretty safe
+        label = 'c' + uuid.uuid4().hex[:6]
+        while label in self.constraints:
+            label = 'c' + uuid.uuid4().hex[:6]
+        return label
 
     def num_biases(self, vartype: Optional[VartypeLike] = None, *,
                    linear_only: bool = False,
@@ -1588,25 +1500,15 @@ class ConstrainedQuadraticModel:
             ['c0', 'c2']
 
         """
-        for submap in iter_safe_relabels(mapping, self.constraints):
-            for old, new in submap.items():
-                try:
-                    self.constraints[new] = self.constraints[old]
-                except KeyError:
-                    continue  # do nothing
-                del self.constraints[old]
-
-                if old in self.discrete:
-                    self.discrete.add(new)
-                    self.discrete.remove(old)
-
-                if old in self._soft:
-                    self._soft[new] = self._soft.pop(old)
+        discrete_indices = [self.constraint_labels.index(c) for c in self.discrete]
+        self.constraint_labels._relabel(mapping)
+        self.discrete.clear()
+        self.discrete |= (self.constraint_labels[i] for i in discrete_indices)
 
     def relabel_variables(self,
                           mapping: Mapping[Variable, Variable],
                           inplace: bool = True,
-                          ) -> 'ConstrainedQuadraticModel':
+                          ) -> ConstrainedQuadraticModel:
         """Relabel the variables of the objective and constraints.
 
         Args:
@@ -1622,9 +1524,7 @@ class ConstrainedQuadraticModel:
         if not inplace:
             return copy.deepcopy(self).relabel_variables(mapping, inplace=True)
 
-        self.objective.relabel_variables(mapping, inplace=True)
-        for constraint in self.constraints.values():
-            constraint.lhs.relabel_variables(mapping, inplace=True)
+        self.variables._relabel(mapping)
 
         return self
 
@@ -1649,96 +1549,35 @@ class ConstrainedQuadraticModel:
             >>> cqm.variables
             Variables(['i', 'j'])
         """
-        try:
-            comparison = self.constraints.pop(label)
-        except KeyError:
-            raise ValueError(f"{label!r} is not a constraint") from None
-        self.discrete.discard(label)  # if it's discrete
-        self._soft.pop(label, None)  # if it's soft
-
         if cascade:
-            for v in comparison.lhs.variables:
-                if self.objective.degree(v) or self.objective.get_linear(v):
-                    # it's used somewhere in the objective
-                    continue
+            # Identify which variables are unique to the constraint we're about
+            # to remove.
+            # We could pull this down to the C++ level, but the performance
+            # is pretty bad regardless so let's keep it simple and do it here.
+            # There are also some potential Python performance improvements here
+            to_remove: Set[Variable] = set()
+            to_remove.update(self.constraints[label].lhs.variables)
+            to_remove.difference_update(self.objective.variables)
+            for lbl, comp in self.constraints.items():
+                if not to_remove:
+                    break
+                if lbl != label:
+                    to_remove.difference_update(comp.lhs.variables)
 
-                if any(v in comp.lhs.variables for comp in self.constraints.values()):
-                    # it's used in at least one constraint
-                    continue
+        super().remove_constraint(label)
+        self.discrete.discard(label)
 
-                self.objective.remove_variable(v)
+        if cascade and to_remove:
+            for v in to_remove:
+                self.remove_variable(v)
 
-    def set_lower_bound(self, v: Variable, lb: float):
-        """Set the lower bound for a variable.
+    def remove_variable(self, v: Variable):
+        for label in self.discrete:
+            if v in self.constraints[label].variables:
+                # todo: support this
+                raise ValueError("cannot remove a variable used in a discrete constraint")
 
-        Args:
-            v: Variable label of a variable in the constrained quadratic model.
-            lb: Lower bound to set for variable ``v``.
-
-        Raises:
-            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
-                or :class:`~dimod.Vartype.BINARY` variable.
-
-        Examples:
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable('INTEGER', 'j', upper_bound=5)
-            'j'
-            >>> cqm.set_lower_bound('j', 2)
-        """
-        self.objective.set_lower_bound(v, lb)
-        for comp in self.constraints.values():
-            qm = comp.lhs
-            if v in qm.variables:
-                qm.set_lower_bound(v, lb)
-
-    def set_objective(self, objective: Union[BinaryQuadraticModel,
-                                             QuadraticModel, Iterable]):
-        """Set the objective of the constrained quadratic model.
-
-        Args:
-            objective: Binary quadratic model (BQM) or quadratic model (QM) or
-                an iterable of tuples.
-
-        Examples:
-            >>> from dimod import Integer, ConstrainedQuadraticModel
-            >>> i = Integer('i')
-            >>> j = Integer('j')
-            >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.set_objective(2*i - 0.5*i*j + 10)
-
-        """
-        if isinstance(objective, Iterable):
-            objective = self._iterable_to_qm(objective)
-
-        # clear out current objective, keeping only the variables
-        if not self.objective.is_linear():
-            self.objective.quadratic.clear()  # there may be a more performant way...
-        self.objective.scale(0)  # set all the remaining biases to 0
-
-        self.objective.update(objective)
-
-    def set_upper_bound(self, v: Variable, ub: float):
-        """Set the upper bound for a variable.
-
-        Args:
-            v: Variable label of a variable in the constrained quadratic model.
-            ub: Upper bound to set for variable ``v``.
-
-        Raises:
-            ValueError: If ``v`` is a :class:`~dimod.Vartype.SPIN`
-                or :class:`~dimod.Vartype.BINARY` variable.
-
-        Examples:
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_variable('INTEGER', 'j', lower_bound=2)
-            'j'
-            >>> cqm.set_upper_bound('j', 5)
-        """
-        self.objective.set_upper_bound(v, ub)
-        for comp in self.constraints.values():
-            qm = comp.lhs
-            if v in qm.variables:
-                qm.set_upper_bound(v, ub)
+        super().remove_variable(v)
 
     def spin_to_binary(self, inplace: bool = False) -> ConstrainedQuadraticModel:
         """Convert any spin-valued variables to binary-valued.
@@ -1751,58 +1590,14 @@ class ConstrainedQuadraticModel:
         if not inplace:
             return copy.deepcopy(self).spin_to_binary(inplace=True)
 
-        self.objective.spin_to_binary(inplace=True)
-
-        for comparison in self.constraints.values():
-            lhs = comparison.lhs
-            if isinstance(lhs, QuadraticModel):
-                lhs.spin_to_binary(inplace=True)
-            elif isinstance(lhs, BinaryQuadraticModel):
-                if lhs.vartype is Vartype.SPIN:
-                    lhs.change_vartype(Vartype.BINARY, inplace=True)
-            else:
-                # shouldn't ever happen
-                raise RuntimeError("unexpected constraint type")
+        for v in self.variables:
+            if self.vartype(v) is Vartype.SPIN:
+                self.change_vartype(Vartype.BINARY, v)
 
         return self
 
-    def _iterable_to_qm(self, iterable: Iterable) -> QuadraticModel:
-        qm = QuadraticModel()
-
-        def _add_variable(v):
-            # handles vartype, and bounds
-            vartype = self.vartype(v)
-
-            if vartype is not Vartype.SPIN and vartype is not Vartype.BINARY:
-                # need to worry about bounds
-                qm.add_variable(vartype, v,
-                                lower_bound=self.lower_bound(v),
-                                upper_bound=self.upper_bound(v))
-            else:
-                qm.add_variable(vartype, v)
-
-        for *variables, bias in iterable:
-            if len(variables) == 0:
-                qm.offset += bias
-            elif len(variables) == 1:
-                v, = variables
-                _add_variable(v)
-                qm.add_linear(v, bias)
-            elif len(variables) == 2:
-                u, v = variables
-                _add_variable(u)
-                _add_variable(v)
-                qm.add_quadratic(u, v, bias)
-            else:
-                raise ValueError("terms must be constant, linear or quadratic")
-        return qm
-
-    def _substitute_self_loops_from_model(self, qm: Union[BinaryQuadraticModel, QuadraticModel],
+    def _substitute_self_loops_from_model(self, qm: Union[ConstraintView, ObjectiveView],
                                           mapping: MutableMapping[Variable, Variable]):
-        if isinstance(qm, BinaryQuadraticModel):
-            # bqms never have self-loops
-            return
-
         for u in qm.variables:
             vartype = qm.vartype(u)
 
@@ -1831,14 +1626,14 @@ class ConstrainedQuadraticModel:
 
                 mapping[u] = new
 
-                self.objective.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
+                self.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
 
                 # we don't add the constraint yet because we don't want
                 # to modify self.constraints
             else:
                 new = mapping[u]
 
-            qm.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
+            self.add_variable(vartype, new, lower_bound=lb, upper_bound=ub)
 
             qm.add_quadratic(u, new, bias)
             qm.remove_interaction(u, u)
@@ -1857,21 +1652,9 @@ class ConstrainedQuadraticModel:
             counterparts. The constraint enforcing :math:`j == i` uses
             the same label.
 
-        Examples:
-            Note that the ellipses in the outputs below are stand-ins for the
-            generated variable labels, which differ between runs.
-
-            >>> from dimod import Integer, ConstrainedQuadraticModel
-            >>> i = Integer('i')
-            >>> cqm = ConstrainedQuadraticModel()
-            >>> cqm.add_constraint(i*i <=3, label='i squared')
-            'i squared'
-            >>> cqm.substitute_self_loops() #doctest: +ELLIPSIS
-            {...}
-            >>> cqm.constraints #doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-            {'i squared': Le(QuadraticModel({'i': 0.0, '...': 0.0}, {('...', 'i'): 1.0}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 3),
-            '...': Eq(QuadraticModel({'i': 1.0, '...': -1.0}, {}, 0.0, {'i': 'INTEGER', '...': 'INTEGER'}, dtype='float64'), 0)}
         """
+        # dev note: we can cythonize this for better performance
+
         mapping: Dict[Variable, Variable] = dict()
 
         self._substitute_self_loops_from_model(self.objective, mapping)
@@ -1972,24 +1755,20 @@ class ConstrainedQuadraticModel:
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
                     num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
-                    num_weighted_constraints=len(self._soft),
+                    num_weighted_constraints=sum(comp.lhs.is_soft() for comp in self.constraints.values()),
                     )
 
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
-            try:
-                with self.objective.to_file(spool_size=int(1e12)) as f:
-                    # we can avoid a copy by trying to read from the underlying buffer
-                    obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
-                    zf.writestr('objective', obj)
-                    # in the case we got the underlying buffer, we need to delete our
-                    # reference to it, otherwise we get an error when the file is closed
-                    del obj
-            except AttributeError:
-                # no objective to write
-                pass
+            with self.objective.to_file(spool_size=int(1e12)) as f:
+                # we can avoid a copy by trying to read from the underlying buffer
+                obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
+                zf.writestr('objective', obj)
+                # in the case we got the underlying buffer, we need to delete our
+                # reference to it, otherwise we get an error when the file is closed
+                del obj
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
@@ -2013,48 +1792,18 @@ class ConstrainedQuadraticModel:
                 zf.writestr(f'constraints/{lstr}/discrete', discrete)
 
                 # soft constraints
-                if label in self._soft:
-                    weight = np.float64(self._soft[label].weight).tobytes()
-                    penalty = bytes(self._soft[label].penalty, 'ascii')
+                if constraint.lhs.is_soft():
+                    weight = np.float64(constraint.lhs.weight()).tobytes()
+                    penalty = bytes(constraint.lhs.penalty(), 'ascii')
                     zf.writestr(f'constraints/{lstr}/weight', weight)
                     zf.writestr(f'constraints/{lstr}/penalty', penalty)
 
         file.seek(0)
         return file
 
-    def upper_bound(self, v: Variable) -> Bias:
-        """Return the upper bound on the specified variable.
-
-        Args:
-            v: Variable label for a variable in the model.
-
-        Examples:
-            >>> i = dimod.Integer("i", upper_bound=3)
-            >>> j = dimod.Integer("j", upper_bound=3)
-            >>> cqm = dimod.ConstrainedQuadraticModel()
-            >>> cqm.add_constraint_from_comparison(i + j >= 1, label="Upper limit")
-            'Upper limit'
-            >>> cqm.set_upper_bound("i", 5)
-            >>> cqm.upper_bound("i")
-            5.0
-            >>> cqm.upper_bound("j")
-            3.0
-
-        """
-        return self.objective.upper_bound(v)
-
-    def vartype(self, v: Variable) -> Vartype:
-        """Vartype of the given variable.
-
-        Args:
-            v: Variable label for a variable in the model.
-
-        """
-        return self.objective.vartype(v)
-
     def violations(self, sample_like: SamplesLike, *,
                    skip_satisfied: bool = False,
-                   clip: bool = False,) -> Dict[Hashable, Bias]:
+                   clip: bool = False) -> Dict[Hashable, Bias]:
         """Return a dict of violations for all constraints.
 
         The dictionary maps constraint labels to the amount each constraint is
@@ -2092,8 +1841,9 @@ class ConstrainedQuadraticModel:
     @classmethod
     def from_lp_file(cls,
                      fp: Union[BinaryIO, ByteString],
-                     lower_bound_default: Optional[int] = None,
-                     upper_bound_default: Optional[int] = None) -> "ConstrainedQuadraticModel":
+                     lower_bound_default: Optional[float] = None,
+                     upper_bound_default: Optional[float] = None,
+                     ) -> ConstrainedQuadraticModel:
         """Create a constrained quadratic model from an LP file.
 
         Args:
@@ -2132,7 +1882,7 @@ class ConstrainedQuadraticModel:
 
     _STR_MAX_DISPLAY_ITEMS = 10
 
-    def __str__(self):
+    def __str__(self) -> str:
         vartype_name = {Vartype.SPIN: 'Spin',
                         Vartype.BINARY: 'Binary',
                         Vartype.INTEGER: 'Integer',
@@ -2263,7 +2013,7 @@ class CQMToBQMInverter:
         return new
 
     @classmethod
-    def from_dict(cls, doc: Dict[str, Dict[Variable, Any]]) -> 'CQMToBQMInverter':
+    def from_dict(cls, doc: Dict[str, Dict[Variable, Any]]) -> CQMToBQMInverter:
         """Construct an inverter from a serialized representation."""
 
         integers = {}
@@ -2372,6 +2122,9 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
         else:
             raise RuntimeError("unexpected vartype")
 
+    for v in binary:
+        bqm.add_variable(v)
+
     # objective, we know it's always a QM
     bqm += _qm_to_bqm(cqm.objective, integers)
 
@@ -2388,12 +2141,9 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
             lagrange_multiplier = 0  # doesn't matter
 
     for constraint in cqm.constraints.values():
-        lhs = constraint.lhs
+        lhs = _qm_to_bqm(constraint.lhs, integers)
         rhs = constraint.rhs
         sense = constraint.sense
-
-        if isinstance(lhs, QuadraticModel):
-            lhs = _qm_to_bqm(lhs, integers)
 
         if not lhs.is_linear():
             raise ValueError("CQM must not have any quadratic constraints")

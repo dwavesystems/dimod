@@ -12,8 +12,4 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dimod.libcpp.binary_quadratic_model cimport *
-from dimod.libcpp.constrained_quadratic_model cimport *
-from dimod.libcpp.lp cimport *
-from dimod.libcpp.quadratic_model cimport *
-from dimod.libcpp.vartypes cimport *
+from dimod.constrained.constrained import *

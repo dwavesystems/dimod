@@ -16,6 +16,8 @@ import io
 import os
 import unittest
 
+import numpy as np
+
 import dimod
 
 from dimod import Binary, BQM, CQM, Integer, Real
@@ -150,7 +152,7 @@ class TestDumps(unittest.TestCase):
             b = new.constraints[key]
             self.assertEqual(a.sense, b.sense)
 
-            if isinstance(a.lhs, dimod.Float32BQM):
+            if a.lhs.dtype == np.float32:
                 self.assertTrue((a.lhs - a.rhs).is_almost_equal(b.lhs - b.rhs))
             else:
                 self.assertTrue((a.lhs - a.rhs).is_equal(b.lhs - b.rhs))
@@ -164,6 +166,7 @@ class TestDumps(unittest.TestCase):
         cqm.add_constraint(Binary('a')*Integer('d')*5 == 3, label='c2')
 
         new = dimod.lp.loads(dimod.lp.dumps(cqm))
+
         self._assert_cqms_are_equivalent(cqm, new)
 
     def test_empty_model(self):

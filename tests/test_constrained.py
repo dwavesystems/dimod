@@ -209,28 +209,21 @@ class TestSoftConstraint(unittest.TestCase):
         x, y = dimod.Binaries('xy')
         c0 = cqm.add_constraint(x + y == 1, weight=3, label='a')
         c1 = cqm.add_constraint(x + y == 2, weight=5, label='b')
-
         cqm.relabel_constraints({'a': 'c'})
-
-        self.assertIn('c', cqm._soft)
-        self.assertNotIn('a', cqm._soft)
-
-        cqm.remove_constraint('b')
-
-        self.assertNotIn('b', cqm._soft)
+        self.assertTrue(cqm.constraints['c'].lhs.is_soft())
 
     def test_bqm_linear_penalty(self):
         cqm = CQM()
         qm = sum(dimod.Binaries('xyz'))
         c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='linear')
-        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_bqm_quadratic_penalty(self):
         cqm = CQM()
         qm = sum(dimod.Binaries('xyz'))
         c = cqm.add_constraint(qm <= 2, label='hello', weight=1.0, penalty='quadratic')
-        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_qm_quadratic_penalty(self):
@@ -241,7 +234,7 @@ class TestSoftConstraint(unittest.TestCase):
         qm.set_linear('x', 1)
         qm.set_linear('y', 1)
         c = cqm.add_constraint(qm <= 1, label='hello', weight=1.0, penalty='quadratic')
-        self.assertIn(c, cqm._soft)
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
     def test_qm_quadratic_penalty_no_binary(self):
@@ -347,6 +340,20 @@ class TestCheckFeasible(unittest.TestCase):
         self.assertTrue(cqm.check_feasible(sample))
 
 
+class TestClear(unittest.TestCase):
+    def test_simple(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint((x + y + z) * 3 <= 3)
+
+        self.assertTrue(cqm.check_feasible({'x': 1, 'y': 0, 'z': 0}))
+        self.assertTrue(cqm.check_feasible({'x': 0, 'y': 0, 'z': 0}))
+        self.assertFalse(cqm.check_feasible({'x': 1, 'y': 0, 'z': 1}))
+
+        cqm.clear()
+
+
 class TestCopy(unittest.TestCase):
     def test_deepcopy(self):
         from copy import deepcopy
@@ -364,6 +371,14 @@ class TestCopy(unittest.TestCase):
 
         self.assertTrue(new.objective.is_equal(cqm.objective))
         self.assertTrue(new.constraints[constraint].lhs.is_equal(cqm.constraints[constraint].lhs))
+
+        cqm.objective.set_linear('i', 10)
+        cqm.constraints[constraint].lhs.set_linear('i', 10)
+
+        self.assertEqual(new.objective.get_linear('i'), 1)
+        self.assertEqual(cqm.objective.get_linear('i'), 10)
+        self.assertEqual(new.constraints[constraint].lhs.get_linear('i'), 1)
+        self.assertEqual(cqm.constraints[constraint].lhs.get_linear('i'), 10)
 
 
 class TestFixVariable(unittest.TestCase):
@@ -383,44 +398,24 @@ class TestFixVariable(unittest.TestCase):
 
         self.assertNotIn('x', cqm.variables)
         self.assertEqual(fixed, {})
-        self.assertTrue(cqm.objective.is_equal(0 + 2*y + 3*i + 4*j + 0*z))
-        self.assertTrue(cqm.constraints[c0].lhs.is_equal(3*i + 2*0*j + 5*i*j))
+        self.assertTrue(cqm.objective.is_equal(2*y + 3*i + 4*j))
+        self.assertTrue(cqm.constraints[c0].lhs.is_equal(3*i + 5*i*j))
         self.assertTrue(cqm.constraints[c1].lhs.is_equal(0 + y + z))
         self.assertIn(c1, cqm.discrete)
 
     def test_cascade(self):
-        with self.subTest('set discrete to 1'):
-            cqm = CQM()
-            cqm.add_discrete('abc', label='discrete')
-            fixed = cqm.fix_variable('a', 1, cascade=True)
-            self.assertEqual(fixed, {'b': 0, 'c': 0})
-            self.assertEqual(cqm.variables, [])
-            self.assertIn('discrete', cqm.constraints)
-            self.assertNotIn('discrete', cqm.discrete)
-            self.assertEqual(cqm.constraints['discrete'].lhs.linear, {})
-            self.assertEqual(cqm.constraints['discrete'].lhs.offset, 1)
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
 
-        with self.subTest('set all the 0s'):
-            cqm = CQM()
-            cqm.add_discrete('abc', label='discrete')
-            fixed = cqm.fix_variable('a', 0, cascade=True)
-            self.assertEqual(fixed, {})
-            fixed = cqm.fix_variable('b', 0, cascade=True)
-            self.assertEqual(fixed, {'c': 1})
-            self.assertEqual(cqm.variables, [])
-            self.assertIn('discrete', cqm.constraints)
-            self.assertNotIn('discrete', cqm.discrete)
-            self.assertEqual(cqm.constraints['discrete'].lhs.linear, {})
-            self.assertEqual(cqm.constraints['discrete'].lhs.offset, 1)
+        cqm = CQM()
+        cqm.set_objective(x + 2*y + 3*i + 4*j)
+        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
 
-        with self.subTest('one variable equality'):
-            cqm = CQM()
-            c0 = cqm.add_constraint(dimod.Integer('i') + dimod.Integer('j') == 7)
-            fixed = cqm.fix_variable('i', 4, cascade=True)
-            self.assertEqual(fixed, {'j': 3})
-            qm = dimod.QM()
-            qm.offset = 7
-            self.assertTrue(cqm.constraints[c0].lhs.is_equal(qm))
+        with self.assertWarns(DeprecationWarning):
+            cqm.fix_variable('x', 0, cascade=True)
+
+        with self.assertWarns(DeprecationWarning):
+            cqm.fix_variable('y', 0, cascade=False)
 
     def test_discrete(self):
         cqm = CQM()
@@ -444,49 +439,10 @@ class TestFixVariables(unittest.TestCase):
 
         cqm.fix_variables({'x': 1, 'i': 86})
 
-        self.assertTrue(cqm.objective.is_equal(1 + 2*y + 3*86 + 4*j + 0*z))
+        self.assertTrue(cqm.objective.is_equal(1 + 2*y + 3*86 + 4*j))
         self.assertTrue(cqm.constraints[c0].lhs.is_equal(3*86+2*1*j+5*86*j))
         self.assertTrue(cqm.constraints[c1].lhs.is_equal(1+y+z))
         self.assertNotIn(c1, cqm.discrete)
-
-    def test_cascade(self):
-        x, y, z = dimod.Binaries('xyz')
-        i, j = dimod.Integers('ij')
-
-        cqm = CQM()
-        cqm.set_objective(x + 2*y + 3*i + 4*j)
-        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-        c1 = cqm.add_discrete('xyz', label='c1')
-        c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-        fixed = cqm.fix_variables({'x': 1, 'i': 7}, cascade=True)
-        self.assertEqual({'z': 0, 'y': 0, 'j': 0.0}, fixed)
-
-    def test_cascade_infeas(self):
-        x, y, z = dimod.Binaries('xyz')
-        i, j = dimod.Integers('ij')
-
-        cqm = CQM()
-        cqm.set_objective(x + 2*y + 3*i + 4*j)
-        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-        c1 = cqm.add_discrete('xyz', label='c1')
-        c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-        with self.assertRaises(dimod.exceptions.InfeasibileModelError):
-            cqm.fix_variables({'x': 1, 'y': 1}, cascade=True)
-
-    def test_cascade_redundant(self):
-        x, y, z = dimod.Binaries('xyz')
-        i, j = dimod.Integers('ij')
-
-        cqm = CQM()
-        cqm.set_objective(x + 2*y + 3*i + 4*j)
-        c0 = cqm.add_constraint(3*i + 2*x*j + 5*i*j <= 5, label='c0')
-        c1 = cqm.add_discrete('xyz', label='c1')
-        c2 = cqm.add_constraint(i + j == 7, label='c2')
-
-        fixed = cqm.fix_variables({'x': 1, 'i': 7, 'y': 0}, cascade=True)
-        self.assertEqual({'z': 0, 'y': 0, 'j': 0.0}, fixed)  # y appears because it was fixed twice
 
 
 class TestFlipVariable(unittest.TestCase):
@@ -960,6 +916,19 @@ class TestRemoveConstraint(unittest.TestCase):
         with self.assertRaises(ValueError):
             cqm.remove_constraint('not a constraint')
 
+    def test_old_reference(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+
+        c0 = cqm.add_constraint(x + y - x*y <= 5, label='c0')
+
+        constraint = cqm.constraints[c0]
+
+        cqm.remove_constraint(c0)
+
+        with self.assertRaises(RuntimeError):
+            constraint.lhs.get_linear('x')
+
 
 class TestSpinToBinary(unittest.TestCase):
     def test_simple(self):
@@ -984,10 +953,7 @@ class TestSpinToBinary(unittest.TestCase):
 
         self.assertFalse(any(new.vartype(v) is dimod.SPIN for v in new.variables))
         for lhs in (comp.lhs for comp in new.constraints.values()):
-            if isinstance(lhs, dimod.QM):
-                self.assertFalse(any(lhs.vartype(v) is dimod.SPIN for v in lhs.variables))
-            else:
-                self.assertIs(lhs.vartype, dimod.BINARY)
+            self.assertFalse(any(lhs.vartype(v) is dimod.SPIN for v in lhs.variables))
 
         cqm.spin_to_binary(inplace=True)
         self.assertTrue(new.is_equal(cqm))
@@ -1109,7 +1075,7 @@ class TestSerialization(unittest.TestCase):
 
         with cqm.to_file() as f:
             self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=14,
+                             dict(num_biases=13,
                                   num_constraints=3,
                                   num_quadratic_variables=2,
                                   num_variables=6,
@@ -1123,7 +1089,7 @@ class TestSerialization(unittest.TestCase):
 
         with cqm.to_file() as f:
             self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=18,
+                             dict(num_biases=17,
                                   num_constraints=4,
                                   num_quadratic_variables=4,
                                   num_variables=6,
@@ -1591,14 +1557,14 @@ class TestStr(unittest.TestCase):
 
         self.assertEqual(str(cqm), dedent(
             '''
-            Constrained quadratic model: 5 variables, 2 constraints, 15 biases
+            Constrained quadratic model: 5 variables, 2 constraints, 14 biases
 
             Objective
-              2*Binary('n') + Real('x') + 0*Real('y') + Binary('m')*Integer('j')
+              2*Binary('n') + Real('x') + Binary('m')*Integer('j')
 
             Constraints
-              c0: Binary('m')*Integer('j') - Binary('m')*Binary('n') <= 0
-              c1: 2*Real('y') + Binary('n')*Integer('j') >= 1
+              c0: Binary('m')*Integer('j') - Binary('m')*Binary('n') <= 0.0
+              c1: 2*Real('y') + Binary('n')*Integer('j') >= 1.0
 
             Bounds
               -10.0 <= Integer('j') <= 11.0
@@ -1642,11 +1608,11 @@ class TestStr(unittest.TestCase):
               0*Integer(0) + 0*Integer(1) + 0*Integer(2) + 0*Integer(3) + 0*Integer(4) + 0*Integer(5)
 
             Constraints
-              c0: Integer(0) <= 5
-              c1: Integer(1) <= 5
+              c0: Integer(0) <= 5.0
+              c1: Integer(1) <= 5.0
               ...
-              c4: Integer(4) <= 5
-              c5: Integer(5) <= 5
+              c4: Integer(4) <= 5.0
+              c5: Integer(5) <= 5.0
 
             Bounds
               0.0 <= Integer(0) <= 9007199254740991.0
@@ -1657,3 +1623,85 @@ class TestStr(unittest.TestCase):
             ''').lstrip())
 
         CQM._STR_MAX_DISPLAY_ITEMS = default_max_display_items
+
+
+class TestViews(unittest.TestCase):
+    def test_objective(self):
+        cqm = dimod.CQM()
+
+        b = dimod.BinaryArray(range(10))
+        cqm.add_variables("BINARY", 10)
+
+        cqm.set_objective(b[5] + 2*b[8] + 3*b[5]*b[8] + 4)
+
+        self.assertEqual(cqm.objective.linear, {5: 1, 8: 2})
+        self.assertEqual(cqm.objective.adj, {5: {8: 3.0}, 8: {5: 3.0}})
+
+    def test_constraint_energies(self):
+        a, b, c = dimod.Binaries('abc')
+
+        cqm = CQM()
+        cqm.set_objective(a - c)
+        c0 = cqm.add_constraint(a + b + c == 1, label='onehot')
+        c1 = cqm.add_constraint(a*b <= 0, label='ab LE')
+        c2 = cqm.add_constraint(c >= 1, label='c GE')
+
+        sample = {'a': 0, 'b': 0, 'c': 1}  # satisfying sample
+
+        self.assertEqual(cqm.objective.energy(sample), -1)
+        self.assertEqual(cqm.constraints[c0].lhs.energy(sample), 1)
+        self.assertEqual(cqm.constraints[c1].lhs.energy(sample), 0)
+        self.assertEqual(cqm.constraints[c2].lhs.energy(sample), 1)
+
+        np.testing.assert_array_equal(cqm.objective.energies(([[0, 0, 1], [1, 0, 0]], 'abc')), 
+                                      [-1, 1])
+
+        self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 1, 'b': 1}), 1)
+        self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 0, 'b': 0}), 0)
+
+    def test_serialization_helpers(self):
+        a, c = dimod.Binaries('ac')
+        b = dimod.Integer('b', upper_bound=5)
+
+        cqm = CQM()
+        cqm.set_objective(a - b + c)
+        c0 = cqm.add_constraint(-b + a - c == 1, label='onehot')
+        c1 = cqm.add_constraint(3*b + a*b <= 0, label='ab LE')
+        c2 = cqm.add_constraint(c >= 1, label='c GE')
+        c3 = cqm.add_constraint(a*c + b == 1, label='last')
+
+        self.assertEqual(cqm.objective.variables, list('abc'))
+        self.assertEqual(cqm.constraints[c0].lhs.variables, list('bac'))
+        self.assertEqual(cqm.constraints[c1].lhs.variables, list('ba'))
+        self.assertEqual(cqm.constraints[c2].lhs.variables, list('c'))
+        self.assertEqual(cqm.constraints[c3].lhs.variables, list('acb'))
+
+        np.testing.assert_array_equal(cqm.objective._ilinear(), [1, -1, 1])
+        np.testing.assert_array_equal(cqm.constraints[c0].lhs._ilinear(), [-1, +1, -1])
+        np.testing.assert_array_equal(cqm.constraints[c1].lhs._ilinear(), [3, 0])
+        np.testing.assert_array_equal(cqm.constraints[c2].lhs._ilinear(), [1])
+
+        dtype = np.dtype([('vartype', np.int8), ('lb', cqm.dtype), ('ub', cqm.dtype)],
+                         align=False)
+        varinfo = np.empty(3, dtype)
+        varinfo['vartype'] = [0, 2, 0]
+        varinfo['lb'] = [0, 0, 0]
+        varinfo['ub'] = [1, 5, 1]
+
+        np.testing.assert_array_equal(cqm.objective._ivarinfo(), varinfo)
+        np.testing.assert_array_equal(cqm.constraints[c0].lhs._ivarinfo(), varinfo[[1, 0, 2]])
+        np.testing.assert_array_equal(cqm.constraints[c1].lhs._ivarinfo(), varinfo[[1, 0]])
+        np.testing.assert_array_equal(cqm.constraints[c2].lhs._ivarinfo(), varinfo[[2]])
+
+        self.assertEqual(cqm.objective._ineighborhood(0).shape, (0,))
+        self.assertEqual(cqm.objective._ineighborhood(1).shape, (0,))
+        self.assertEqual(cqm.objective._ineighborhood(2).shape, (0,))
+
+        dtype = np.dtype([('v', cqm.index_dtype), ('bias', cqm.dtype)], align=False)
+
+        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(0),
+                                      np.asarray([], dtype=dtype))
+        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(1),
+                                      np.asarray([(0, 1)], dtype=dtype))
+        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(2),
+                                      np.asarray([], dtype=dtype))
