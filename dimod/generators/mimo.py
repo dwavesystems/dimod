@@ -506,13 +506,23 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
                       seed: Union[None, int, np.random.RandomState] = None, 
                       F_distribution: Union[None, str] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
-    """Defines a simple coooperative multi-user detection problem coMD.
+    """Defines a simple coooperative multi-point decoding problem coMD.
     Args:
-       lattice: A graph defining the set of nearest neighbor basestations. Each basestation has ``num_receivers`` receivers
-           and num_variables local transmitters. Transmitters from neighboring basestations are also received. The channel
-           F is 
-       See for ``spin_encoded_mimo`` for interpretation of per-basestation parameters. 
+       lattice: A graph defining the set of nearest neighbor basestations. Each 
+       basestation has ``num_receivers`` receivers and ``num_transmitters`` 
+       local transmitters. Transmitters from neighboring basestations are also 
+       received. The channel F should be set to None, it is not dependent on the
+       geometric information for now.
+       lattice can also be set to an integer value, in which case a honeycomb 
+       lattice of the given linear scale (number of basestations O(L^2)) is 
+       created using ``_make_honeycomb()``.
+    
+       See for ``spin_encoded_mimo`` for interpretation of other per-basestation parameters. 
     Returns:
+       bqm: an Ising model in BinaryQuadraticModel format.
+    
+    Reference: 
+        https://en.wikipedia.org/wiki/Cooperative_MIMO
     """
     if type(lattice) is int or type(lattice) is float:
         lattice = _make_honeycomb(lattice)
