@@ -191,7 +191,13 @@ class TestLoad(unittest.TestCase):
         with cqm.to_file() as f:
             new = load(f)
 
-        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))

@@ -1,0 +1,3 @@
+---
+fixes:
+  - Fix constrained quadratic model serialziation to correctly encode all variables in the objective.
