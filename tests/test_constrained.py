@@ -980,7 +980,13 @@ class TestSerialization(unittest.TestCase):
         with cqm.to_file() as f:
             new = CQM.from_file(f)
 
-        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
@@ -1005,7 +1011,13 @@ class TestSerialization(unittest.TestCase):
         with cqm.to_file() as f:
             new = CQM.from_file(f)
 
-        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
@@ -1021,7 +1033,13 @@ class TestSerialization(unittest.TestCase):
 
         new = CQM.from_file(cqm.to_file())
 
-        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
         self.assertEqual(set(cqm.constraints), set(new.constraints))
         for label, constraint in cqm.constraints.items():
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
@@ -1075,7 +1093,7 @@ class TestSerialization(unittest.TestCase):
 
         with cqm.to_file() as f:
             self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=13,
+                             dict(num_biases=14,
                                   num_constraints=3,
                                   num_quadratic_variables=2,
                                   num_variables=6,
@@ -1089,7 +1107,7 @@ class TestSerialization(unittest.TestCase):
 
         with cqm.to_file() as f:
             self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=17,
+                             dict(num_biases=18,
                                   num_constraints=4,
                                   num_quadratic_variables=4,
                                   num_variables=6,
@@ -1097,6 +1115,15 @@ class TestSerialization(unittest.TestCase):
                                   num_linear_biases_real=7,
                                   num_weighted_constraints=0,
                                   ))
+
+    def test_unused_variable(self):
+        cqm = dimod.CQM()
+        cqm.add_variable('BINARY', 'x')
+
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
+
+        self.assertEqual(new.variables, cqm.variables)
 
 
 class TestSetObjective(unittest.TestCase):

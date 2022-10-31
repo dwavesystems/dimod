@@ -1747,14 +1747,36 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> print(cqm2.objective.to_polystring())
             -2*x + 2*x*y
         """
+        # developer note: this function needs a refactor
+
         file = SpooledTemporaryFile(max_size=spool_size)
+
+        # For legacy reasons, the variable info is encoded in the objective,
+        # so our serialized model will be a bit more verbose
+        if self.objective.variables != self.variables:
+            objective = QuadraticModel()
+
+            for v in self.variables:
+                objective.add_variable(self.vartype(v), v,
+                                       lower_bound=self.lower_bound(v),
+                                       upper_bound=self.upper_bound(v))
+
+            objective.update(self.objective)
+
+            surplus_num_biases = objective.num_variables - self.objective.num_variables
+            surplus_num_real_biases = sum(self.vartype(v) is Vartype.REAL
+                                          for v in objective.variables - self.objective.variables)
+        else:
+            objective = self.objective
+            surplus_num_biases = 0
+            surplus_num_real_biases = 0
 
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
-                    num_biases=self.num_biases(),
+                    num_biases=self.num_biases() + surplus_num_biases,
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
-                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
+                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True) + surplus_num_real_biases,
                     num_weighted_constraints=sum(comp.lhs.is_soft() for comp in self.constraints.values()),
                     )
 
@@ -1762,7 +1784,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         # write the values
         with zipfile.ZipFile(file, mode='a') as zf:
-            with self.objective.to_file(spool_size=int(1e12)) as f:
+            with objective.to_file(spool_size=int(1e12)) as f:
                 # we can avoid a copy by trying to read from the underlying buffer
                 obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
                 zf.writestr('objective', obj)
