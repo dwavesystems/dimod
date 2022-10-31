@@ -1391,3 +1391,24 @@ class TestMIMO(unittest.TestCase):
                                                               use_offset=True, SNRb=float('Inf'))
                 self.assertLess(abs(bqm.energy((transmitted_spins_random, np.arange(bqm.num_variables)))), 1e-8)
     
+    def test_make_honeycomb(self):
+        G = dimod.generators.mimo._make_honeycomb(1)
+        self.assertEqual(G.number_of_nodes(),7)
+        self.assertEqual(G.number_of_edges(),(6+6*3)//2)
+        G = dimod.generators.mimo._make_honeycomb(2)
+        self.assertEqual(G.number_of_nodes(),19)
+        self.assertEqual(G.number_of_edges(),(7*6+6*4+6*3)//2)
+        
+    def test_spin_encoded_comp(self):
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
+        lattice = dimod.generators.mimo._make_honeycomb(1)
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters=1, num_receivers=1,
+                                                      modulation='BPSK')
+        num_var = lattice.number_of_nodes()
+        self.assertEqual(num_var,bqm.num_variables)
+        self.assertEqual(21,bqm.num_interactions)
+        # Transmitted symbols are 1 by default
+        lattice = dimod.generators.mimo._make_honeycomb(2)
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters=2, num_receivers=2,
+                                                      modulation='BPSK', SNRb=float('Inf'), use_offset=True)
+        self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables),bqm.variables))),1e-10)

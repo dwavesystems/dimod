@@ -22,6 +22,7 @@ import numpy as np
 import dimod 
 from itertools import product
 from typing import Callable, Sequence, Union, Iterable
+import networkx as nx
 
 def _quadratic_form(y, F):
     '''Convert O(v) = ||y - F v||^2 to a sparse quadratic form, where
@@ -484,5 +485,55 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
     else:
         np.fill_diagonal(J, 0)
         return dimod.BQM(h[:,0], J, 'SPIN')
-    
-    
+
+def _make_honeycomb(L: int):
+    """ 2L by 2L triangular lattice with open boundaries,
+    and cut corners to make hexagon. """
+    G = nx.Graph()
+    G.add_edges_from([((x, y), (x,y+ 1)) for x in range(2*L+1) for y in range(2*L)])
+    G.add_edges_from([((x, y), (x+1, y)) for x in range(2*L) for y in range(2*L + 1)])
+    G.add_edges_from([((x, y), (x+1, y+1)) for x in range(2*L) for y in range(2*L)])
+    G.remove_nodes_from([(i,j) for j in range(L) for i in range(L+1+j,2*L+1) ])
+    G.remove_nodes_from([(i,j) for i in range(L) for j in range(L+1+i,2*L+1)])
+    return G
+
+def spin_encoded_comp(lattice: Union[int,nx.Graph],
+                      modulation: str, y: Union[np.array, None] = None,
+                      F: Union[np.array, None] = None,
+                      *,
+                      transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
+                      num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
+                      seed: Union[None, int, np.random.RandomState] = None, 
+                      F_distribution: Union[None, str] = None, 
+                      use_offset: bool = False) -> dimod.BinaryQuadraticModel:
+    """Defines a simple coooperative multi-user detection problem coMD.
+    Args:
+       lattice: A graph defining the set of nearest neighbor basestations. Each basestation has ``num_receivers`` receivers
+           and num_variables local transmitters. Transmitters from neighboring basestations are also received. The channel
+           F is 
+       See for ``spin_encoded_mimo`` for interpretation of per-basestation parameters. 
+    Returns:
+    """
+    if type(lattice) is int or type(lattice) is float:
+        lattice = _make_honeycomb(lattice)
+    if num_transmitters == None:
+        num_transmitters = 1
+    if num_receivers == None:
+        num_receivers = 1
+    #Convert graph labels
+    bqm = dimod.BinaryQuadraticModel('SPIN');
+    for bs in lattice.nodes():
+        bqm_cell = spin_encoded_mimo(
+            modulation, y, F,
+            transmitted_symbols=transmitted_symbols, channel_noise=channel_noise,
+            num_transmitters=num_transmitters*(1 + lattice.degree(bs)),
+            num_receivers=num_receivers, SNRb=SNRb, seed=seed,
+            F_distribution=F_distribution, use_offset=use_offset)
+        geometric_labels = [(bs,i) for i in range(num_transmitters)] +\
+                           [(neigh,i) for neigh in lattice.neighbors(bs)
+                            for i in range(num_transmitters)]
+        bqm_cell.relabel_variables({idx : l for idx,l in
+                                    enumerate(geometric_labels)})
+        bqm = bqm + bqm_cell;
+
+    return bqm
