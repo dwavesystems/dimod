@@ -81,6 +81,7 @@ setup(
     install_requires=[
         # this is the oldest supported NumPy on Python 3.8
         'numpy>=1.17.3,<2.0.0',
+        'networkx',
         ],
     # we use the generic 'all' so that in the future we can add or remove
     # packages without breaking things
