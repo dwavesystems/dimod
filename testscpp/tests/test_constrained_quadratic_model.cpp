@@ -468,6 +468,56 @@ TEST_CASE("Bug 0") {
     }
 }
 
+TEST_CASE("Test Constraint::scale()") {
+    GIVEN("A CQM with several constraints") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 1);
+        auto c0 = cqm.add_linear_constraint({0}, {4}, Sense::EQ, 2);
+        auto c1 = cqm.add_linear_constraint({0}, {4}, Sense::LE, 2);
+        auto c2 = cqm.add_linear_constraint({0}, {4}, Sense::GE, 2);
+
+            cqm.constraint_ref(c0).set_offset(8);
+            cqm.constraint_ref(c1).set_offset(8);
+            cqm.constraint_ref(c2).set_offset(8);
+
+        WHEN("we scale the constraints by a positive number") {
+            cqm.constraint_ref(c0).scale(.5);
+            cqm.constraint_ref(c1).scale(.5);
+            cqm.constraint_ref(c2).scale(.5);
+
+            THEN("the biases are scaled and everything else stays the same") {
+                for (auto c = c0; c <= c2; ++c) {
+                    CHECK(cqm.constraint_ref(c).offset() == 4);
+                    CHECK(cqm.constraint_ref(c).linear(0) == 2);
+                    CHECK(cqm.constraint_ref(c).rhs() == 1);
+                }
+
+                CHECK(cqm.constraint_ref(c0).sense() == Sense::EQ);
+                CHECK(cqm.constraint_ref(c1).sense() == Sense::LE);
+                CHECK(cqm.constraint_ref(c2).sense() == Sense::GE);
+            }
+        }
+
+        WHEN("we scale the constraints by a negative number") {
+            cqm.constraint_ref(c0).scale(-.5);
+            cqm.constraint_ref(c1).scale(-.5);
+            cqm.constraint_ref(c2).scale(-.5);
+
+            THEN("the biases are scaled and some of the signs flip") {
+                for (auto c = c0; c <= c2; ++c) {
+                    CHECK(cqm.constraint_ref(c).offset() == -4);
+                    CHECK(cqm.constraint_ref(c).linear(0) == -2);
+                    CHECK(cqm.constraint_ref(c).rhs() == -1);
+                }
+
+                CHECK(cqm.constraint_ref(c0).sense() == Sense::EQ);
+                CHECK(cqm.constraint_ref(c1).sense() == Sense::GE);  // flipped
+                CHECK(cqm.constraint_ref(c2).sense() == Sense::LE);  // flipped
+            }
+        }
+    }
+}
+
 TEST_CASE("Test CQM.add_constraint()") {
     GIVEN("A CQM and a BQM") {
         auto cqm = dimod::ConstrainedQuadraticModel<double>();
