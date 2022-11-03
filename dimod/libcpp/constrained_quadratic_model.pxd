@@ -28,6 +28,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         EQ
         LE
         GE
+        NE
 
     enum Penalty:
         LINEAR

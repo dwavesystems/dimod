@@ -77,6 +77,17 @@ class TestAddConstraint(unittest.TestCase):
         with self.assertRaises(ValueError):
             cqm.add_constraint(bqm <= 5, label='hello')
 
+    def test_ne(self):
+        cqm = dimod.CQM()
+
+        x = dimod.Binary('x')
+        i = dimod.Integer('i')
+
+        c0 = cqm.add_constraint(x != 1)
+        cqm.add_constraint(i != 1)
+
+        self.assertIs(cqm.constraints[c0].sense, dimod.sym.Sense.Ne)
+
     def test_symbolic(self):
         cqm = CQM()
 
