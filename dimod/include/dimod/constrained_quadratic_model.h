@@ -21,12 +21,55 @@
 
 #include "dimod/abc.h"
 #include "dimod/constraint.h"
+#include "dimod/iterators.h"
 #include "dimod/expression.h"
 #include "dimod/vartypes.h"
 
 namespace dimod {
 
 template <class Bias, class Index = int>
+class ConstrainedQuadraticModel;
+
+template <class Bias, class Index>
+class ConstraintsView {
+ public:
+    using iterator = iterators::ConstraintIterator<
+            typename std::vector<std::shared_ptr<Constraint<Bias, Index>>>::iterator>;
+    using const_iterator = iterators::ConstraintIterator<
+            typename std::vector<std::shared_ptr<Constraint<Bias, Index>>>::const_iterator,
+            const Constraint<Bias, Index>>;
+
+    explicit ConstraintsView(ConstrainedQuadraticModel<Bias, Index>* parent) : parent_(parent) {}
+
+    Constraint<Bias, Index>& operator[](Index c) { return *(parent_->constraints_[c]); }
+    const Constraint<Bias, Index>& operator[](Index c) const { return *(parent_->constraints_[c]); }
+
+    Constraint<Bias, Index>& at(Index c) { return *(parent_->constraints_.at(c)); }
+    const Constraint<Bias, Index>& at(Index c) const { return *(parent_->constraints_.at(c)); }
+
+    iterator begin() { return iterators::make_constraint_iterator(parent_->constraints_.begin()); }
+    const_iterator begin() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cbegin());
+    }
+    iterator end() { return iterators::make_constraint_iterator(parent_->constraints_.end()); }
+    const_iterator end() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cend());
+    }
+
+    const_iterator cbegin() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cbegin());
+    }
+    const_iterator cend() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cend());
+    }
+
+    std::size_t size() const { return parent_->constraints_.size(); }
+
+ private:
+    ConstrainedQuadraticModel<Bias, Index>* parent_;
+};
+
+template <class Bias, class Index>
 class ConstrainedQuadraticModel {
  public:
     /// The first template parameter (Bias).
@@ -37,6 +80,8 @@ class ConstrainedQuadraticModel {
 
     /// Unsigned integral type that can represent non-negative values.
     using size_type = std::size_t;
+
+    friend class ConstraintsView<bias_type, index_type>;
 
     ConstrainedQuadraticModel();
 
@@ -124,11 +169,13 @@ class ConstrainedQuadraticModel {
     /// Return the variable type of variable ``v``.
     Vartype vartype(index_type v) const;
 
-    Expression<bias_type, index_type> objective;
-
     friend void swap(ConstrainedQuadraticModel& first, ConstrainedQuadraticModel& second) {
         first.myswap(second);
     }
+
+    ConstraintsView<bias_type, index_type> constraints;
+
+    Expression<bias_type, index_type> objective;
 
  private:
     // I can't figure out how to get Expression to grant friendship to friend swap...
@@ -138,6 +185,7 @@ class ConstrainedQuadraticModel {
 
         // for objective and constraints, we need to make sure that their
         // parent_ pointers are pointing at the correct object.
+        swap(this->constraints, other.constraints);
 
         swap(this->objective, other.objective);
         this->objective.parent_ = this;
@@ -186,12 +234,12 @@ class ConstrainedQuadraticModel {
 
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel()
-        : objective(this), constraints_(), varinfo_() {}
+        : constraints(this), objective(this), constraints_(), varinfo_() {}
 
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
         const ConstrainedQuadraticModel& other)
-        : objective(other.objective), constraints_(), varinfo_(other.varinfo_) {
+        : constraints(this), objective(other.objective), constraints_(), varinfo_(other.varinfo_) {
     objective.parent_ = this;
 
     for (auto& c_ptr : other.constraints_) {

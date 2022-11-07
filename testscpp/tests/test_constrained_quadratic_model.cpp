@@ -468,6 +468,70 @@ TEST_CASE("Bug 0") {
     }
 }
 
+TEST_CASE("Test constraints property") {
+    GIVEN("a CQM with one variable and 10 constraints") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        auto x = cqm.add_variable(Vartype::BINARY);
+        for (int i = 0; i < 10; ++i) {
+            cqm.add_linear_constraint({x}, {static_cast<double>(i)}, Sense::EQ, i);
+        }
+
+        THEN("range-based for loops work over the constraints") {
+            int i = 0;
+            for (auto& c : cqm.constraints) {
+                CHECK(c.linear(x) == i);
+                c.set_linear(x, i - 1);  // can modify
+                ++i;
+            }
+        }
+
+        THEN("const iteration functions") {
+            int i = 0;
+            for (auto it = cqm.constraints.cbegin(); it != cqm.constraints.cend(); ++it, ++i) {
+                CHECK(it->linear(x) == i);
+                // it->set_linear(x, i-1);  // raises compiler error
+            }
+        }
+
+        THEN("we can access the constraints by index") {
+            for (int i = 0; i < 10; ++i) {
+                CHECK(cqm.constraints[i].linear(x) == i);
+                CHECK(cqm.constraints.at(i).linear(x) == i);
+
+                cqm.constraints[i].set_linear(x, i + 1);
+                CHECK(cqm.constraints[i].linear(x) == i + 1);
+
+                cqm.constraints.at(i).set_linear(x, i - 1);
+                CHECK(cqm.constraints[i].linear(x) == i - 1);
+
+                CHECK_THROWS_AS(cqm.constraints.at(100), std::out_of_range);
+            }
+        }
+
+        AND_GIVEN("a const reference to the cqm") {
+            const dimod::ConstrainedQuadraticModel<double>& const_cqm = cqm;
+
+            THEN("range-based for loops work over the constraints") {
+                int i = 0;
+                for (auto& c : const_cqm.constraints) {
+                    CHECK(c.linear(x) == i);
+                    // c.set_linear(x, i-1);  // raises compiler error
+                    ++i;
+                }
+            }
+
+            THEN("we can access the constraints by index") {
+                for (int i = 0; i < 10; ++i) {
+                    CHECK(const_cqm.constraints[i].linear(x) == i);
+                    CHECK(const_cqm.constraints.at(i).linear(x) == i);
+
+                    CHECK_THROWS_AS(const_cqm.constraints.at(100), std::out_of_range);
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("Test Constraint::scale()") {
     GIVEN("A CQM with several constraints") {
         auto cqm = dimod::ConstrainedQuadraticModel<double>();
@@ -702,4 +766,5 @@ TEST_CASE("Test Expression::add_quadratic()") {
         }
     }
 }
+
 }  // namespace dimod
