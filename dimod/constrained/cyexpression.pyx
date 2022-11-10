@@ -58,6 +58,10 @@ cdef class _cyExpression:
     def offset(self):
         return as_numpy_float(self.expression().offset())
 
+    @offset.setter
+    def offset(self, bias_type offset):
+        self.expression().set_offset(offset)
+
     @property
     def variables(self):
         # we could do yet another view, but that way lies madness
@@ -101,6 +105,9 @@ cdef class _cyExpression:
                     )
 
         self.expression().add_quadratic(ui, vi, bias)
+
+    def add_variable(self, *args, **kwargs):
+        return self.parent.add_variable(*args, **kwargs)
 
     def degree(self, v):
         return self.expression().degree(self.parent.variables.index(v))

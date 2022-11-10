@@ -801,28 +801,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                                             lagrange_multiplier, -ub_c)
         return slack_terms
 
-    def add_linear_from(self, linear: Union[Iterable, Mapping]):
-        """Add variables and linear biases to a binary quadratic model.
-
-        Args:
-            linear:
-                Variables and their associated linear biases, as either a dict of
-                form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
-                where ``v`` is a variable and ``bias`` is its associated linear
-                bias.
-
-        """
-        if isinstance(linear, abc.Mapping):
-            iterator = linear.items()
-        elif isinstance(linear, abc.Iterable):
-            iterator = linear
-        else:
-            raise TypeError(
-                "expected 'linear' to be a dict or an iterable of 2-tuples.")
-
-        for v, bias in iterator:
-            self.add_linear(v, bias)
-
     def add_linear_from_array(self, linear: Sequence):
         """Add linear biases from an array-like to a binary quadratic model.
 
@@ -847,9 +825,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             ldata = np.array(ldata, copy=True)
 
         self.data.add_linear_from_array(np.asarray(ldata))
-
-    add_variables_from = add_linear_from
-    """Alias for :meth:`add_linear_from`."""
 
     def add_offset(self, bias):
         """Add offset to to the model.
