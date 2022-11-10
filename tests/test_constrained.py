@@ -1653,6 +1653,36 @@ class TestStr(unittest.TestCase):
 
 
 class TestViews(unittest.TestCase):
+    def test_add_linear(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl1 = cqm.add_constraint(x + y <= 1)
+        lbl2 = cqm.add_constraint(x == 1)
+
+        cqm.constraints[lbl2].lhs.set_linear('y', 3)
+        self.assertEqual(cqm.constraints[lbl2].lhs.linear, {'x': 1, 'y': 3})
+
+    def test_add_linear_from(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+
+        cqm.objective.add_linear_from([('x', 3)])
+
+        self.assertEqual(cqm.objective.linear, {'x': 3})
+
+    def test_add_variable(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x == 1)
+        cqm.constraints[lbl].lhs.add_variable(dimod.BINARY, 'y')
+        self.assertIn('y', cqm.variables)
+        cqm.constraints[lbl].lhs.add_variable(dimod.INTEGER, 'i', lower_bound=-5, upper_bound=10)
+        self.assertIn('i', cqm.variables)
+        self.assertEqual(cqm.vartype('i'), dimod.INTEGER)
+        self.assertEqual(cqm.lower_bound('i'), -5)
+        self.assertEqual(cqm.upper_bound('i'), 10)
+
     def test_objective(self):
         cqm = dimod.CQM()
 
@@ -1685,6 +1715,16 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 1, 'b': 1}), 1)
         self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 0, 'b': 0}), 0)
+
+    def test_offset(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+
+        cqm.objective.offset = 5
+        self.assertEqual(cqm.objective.offset, 5)
+        cqm.constraints[lbl].lhs.offset = 3
+        self.assertEqual(cqm.constraints[lbl].lhs.offset, 3)
 
     def test_serialization_helpers(self):
         a, c = dimod.Binaries('ac')

@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import abc
+import collections.abc
 import io
 import operator
 
@@ -399,6 +400,31 @@ class QuadraticViewsMixin(abc.ABC):
     @abc.abstractmethod
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         raise NotImplementedError
+
+    def add_linear_from(self, linear: Union[Iterable, Mapping]):
+        """Add variables and linear biases to a binary quadratic model.
+
+        Args:
+            linear:
+                Variables and their associated linear biases, as either a dict of
+                form ``{v: bias, ...}`` or an iterable of ``(v, bias)`` pairs,
+                where ``v`` is a variable and ``bias`` is its associated linear
+                bias.
+
+        """
+        if isinstance(linear, collections.abc.Mapping):
+            iterator = linear.items()
+        elif isinstance(linear, collections.abc.Iterable):
+            iterator = linear
+        else:
+            raise TypeError(
+                "expected 'linear' to be a dict or an iterable of 2-tuples.")
+
+        for v, bias in iterator:
+            self.add_linear(v, bias)
+
+    add_variables_from = add_linear_from
+    """Alias for :meth:`add_linear_from`."""
 
     def fix_variable(self, v: Variable, value: float):
         """Remove a variable by fixing its value.
