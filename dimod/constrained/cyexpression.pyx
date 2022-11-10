@@ -107,6 +107,7 @@ cdef class _cyExpression:
         self.expression().add_quadratic(ui, vi, bias)
 
     def add_variable(self, *args, **kwargs):
+        """Add a variable to the model. See :meth:`ConstrainedQuadraticModel.add_variable()`."""
         return self.parent.add_variable(*args, **kwargs)
 
     def degree(self, v):
