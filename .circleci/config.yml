@@ -415,23 +415,23 @@ workflows:
                 dependencies: oldest-supported-numpy
       - test-linux-cpp
       - test-osx-cpp
-      - test-osx:
-          name: test-osx-py<< matrix.python-version >>
-          requires:
-            - build-osx
-          matrix:
-            parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
+      # - test-osx:
+      #     name: test-osx-py<< matrix.python-version >>
+      #     requires:
+      #       - build-osx
+      #     matrix:
+      #       parameters:
+      #         python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
       - test-sdist:
           requires:
             - build-sdist
-      - test-windows:
-          name: test-windows-py<< matrix.python-version >>
-          requires:
-            - build-windows
-          matrix:
-            parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 with nuget yet
+      # - test-windows:
+      #     name: test-windows-py<< matrix.python-version >>
+      #     requires:
+      #       - build-windows
+      #     matrix:
+      #       parameters:
+      #         python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 with nuget yet
   deploy:
     jobs:
       - build-linux: &deploy-build
