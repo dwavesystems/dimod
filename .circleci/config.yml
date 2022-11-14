@@ -246,7 +246,7 @@ jobs:
         type: string
 
     docker:
-      - image: python:<< parameters.python-version >>
+      - image: python:<< parameters.python-version >>-slim
 
     steps:
       - checkout
@@ -308,7 +308,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
+              python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -324,7 +324,7 @@ workflows:
             parameters:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
+              python-version: *python-versions
             exclude:
               # we don't support 1.14.5, the oldest version for Python 3.7.9
               - python-version: 3.7.9
