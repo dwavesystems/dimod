@@ -25,7 +25,7 @@
 
 namespace dimod {
 
-enum Sense { LE, GE, EQ };
+enum Sense { LE, GE, EQ, NE };
 
 enum Penalty { LINEAR, QUADRATIC, CONSTANT };
 
@@ -144,10 +144,16 @@ void Constraint<bias_type, index_type>::scale(bias_type scalar) {
     base_type::scale(scalar);
     rhs_ *= scalar;
     if (scalar < 0) {
-        if (sense_ == Sense::LE) {
-            sense_ = Sense::GE;
-        } else if (sense_ == Sense::GE) {
-            sense_ = Sense::LE;
+        switch (sense_) {
+            case Sense::LE :
+                sense_ = Sense::GE;
+                break;
+            case Sense::GE :
+                sense_ = Sense::LE;
+                break;
+            case Sense::EQ:
+            case Sense::NE:
+                break;
         }
     }
 }

@@ -38,7 +38,7 @@ from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import VariablesSection, Section
 from dimod.serialization.fileview import load, read_header, write_header
-from dimod.sym import Eq, Ge, Le, Comparison
+from dimod.sym import Eq, Ge, Le, Ne, Comparison
 from dimod.typing import Variable, Bias, VartypeLike
 from dimod.variables import Variables
 from dimod.vartypes import Vartype, as_vartype
@@ -345,6 +345,11 @@ class QuadraticModel(QuadraticViewsMixin):
     def __le__(self, other: Bias) -> Comparison:
         if isinstance(other, Number):
             return Le(self, other)
+        return NotImplemented
+
+    def __ne__(self, other: Number) -> Comparison:
+        if isinstance(other, Number):
+            return Ne(self, other)
         return NotImplemented
 
     @property

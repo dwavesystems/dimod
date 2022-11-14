@@ -46,7 +46,7 @@ from dimod.quadratic import QuadraticModel, QM
 from dimod.quadratic.quadratic_model import _VariableArray
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
-from dimod.sym import Eq, Ge, Le
+from dimod.sym import Eq, Ge, Le, Ne
 from dimod.typing import (Bias, BQMVectors, LabelledBQMVectors, QuadraticVectors,
                           Variable, VartypeLike)
 from dimod.variables import Variables, iter_deserialize_variables
@@ -482,6 +482,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __ne__(self, other):
+        if isinstance(other, Number):
+            return Ne(self, other)
         return not self.is_equal(other)
 
     @property

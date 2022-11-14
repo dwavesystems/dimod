@@ -29,6 +29,7 @@ class Sense(enum.Enum):
     * ``Le``: less or equal (:math:`\le`)
     * ``Ge``: greater or equal (:math:`\ge`)
     * ``Eq``: equal (:math:`=`)
+    * ``Ne``: not equal( :math:`\ne`)
 
     Example:
 
@@ -43,6 +44,7 @@ class Sense(enum.Enum):
     Le = '<='
     Ge = '>='
     Eq = '=='
+    Ne = '!='
 
 
 class Comparison(abc.ABC):
@@ -96,3 +98,11 @@ class Ge(Comparison, sense='>='):
 
 class Le(Comparison, sense='<='):
     pass
+
+
+class Ne(Comparison, sense='!='):
+    def __bool__(self):
+        try:
+            return not self.lhs.is_equal(self.rhs)
+        except AttributeError:
+            return False

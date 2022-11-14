@@ -38,7 +38,7 @@ from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Sense as cppSense, Penalty as cppPenalty, Constraint as cppConstraint
 from dimod.libcpp.vartypes cimport Vartype as cppVartype, vartype_info as cppvartype_info
 
-from dimod.sym import Sense, Eq, Ge, Le
+from dimod.sym import Sense, Eq, Ge, Le, Ne
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -55,6 +55,8 @@ cdef cppSense cppsense(object sense) except? cppSense.GE:
         return cppSense.LE
     elif sense is Sense.Ge:
         return cppSense.GE
+    elif sense is Sense.Ne:
+        return cppSense.NE
     else:
         raise RuntimeError(f"unexpected sense: {sense!r}")
 
@@ -85,6 +87,8 @@ cdef class cyConstraintsView:
             return Le(lhs, rhs)
         elif self.parent.cppcqm.constraint_ref(vi).sense() == cppSense.GE:
             return Ge(lhs, rhs)
+        elif self.parent.cppcqm.constraint_ref(vi).sense() == cppSense.NE:
+            return Ne(lhs, rhs)
         else:
             raise RuntimeError("unexpected Sense")
 
