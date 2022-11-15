@@ -23,6 +23,14 @@ from dimod.libcpp.vartypes cimport Vartype
 __all__ = ['ConstrainedQuadraticModel', 'Sense', 'Penalty', 'Constraint', 'Expression']
 
 
+cdef extern from "dimod/expression.h" namespace "dimod" nogil:
+    pass
+
+
+cdef extern from "dimod/constraint.h" namespace "dimod" nogil:
+    pass
+
+
 cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
     enum Sense:
         EQ
