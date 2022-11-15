@@ -1737,6 +1737,14 @@ class TestViews(unittest.TestCase):
         self.assertEqual(cqm.constraints[lbl].lhs.quadratic, {})
         self.assertEqual(cqm.constraints[lbl].lhs.num_variables, 1)
         self.assertEqual(cqm.constraints[lbl].lhs.num_interactions, 0)
+        self.assertEqual(cqm.constraints[lbl].lhs.variables, 'y')
+
+        cqm.constraints[lbl].lhs.remove_variable('y')
+
+        self.assertEqual(cqm.constraints[lbl].lhs.linear, {})
+        self.assertEqual(cqm.constraints[lbl].lhs.quadratic, {})
+        self.assertEqual(cqm.constraints[lbl].lhs.num_variables, 0)
+        self.assertEqual(cqm.constraints[lbl].lhs.num_interactions, 0)
 
     def test_serialization_helpers(self):
         a, c = dimod.Binaries('ac')
