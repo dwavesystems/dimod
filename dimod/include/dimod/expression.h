@@ -592,7 +592,20 @@ bool Expression<bias_type, index_type>::remove_interaction(index_type u, index_t
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::remove_variable(index_type v) {
-    throw std::logic_error("not implemented - remove_variable");
+    auto vit = indices_.find(v);
+    if (vit == indices_.end()) return;  // nothing to remove
+
+    // remove the biases
+    base_type::remove_variable(vit->second);
+
+    // update the indices
+    variables_.erase(variables_.begin() + vit->second);
+
+    // indices is no longer valid, so remake
+    indices_.clear();
+    for (size_type ui = 0; ui < variables_.size(); ++ui) {
+        indices_[variables_[ui]] = ui;
+    }
 }
 
 template <class bias_type, class index_type>

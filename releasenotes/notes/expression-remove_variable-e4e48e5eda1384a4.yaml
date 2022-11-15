@@ -1,0 +1,5 @@
+---
+features:
+  - Implement ``Expression::remove_variable()`` method in the C++ code.
+  - Implement ``Expression.remove_variable()`` method in the Python code.
+  - Add ``dimod/libcpp/expression.pxd`` and ``dimod/libcpp/constraint.pxd``.
