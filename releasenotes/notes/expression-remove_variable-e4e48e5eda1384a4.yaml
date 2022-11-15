@@ -1,0 +1,4 @@
+---
+features:
+  - Implement ``Expression::remove_variable()`` method in the C++ code.
+  - Implement ``Expression.remove_variable()`` method in the Python code.

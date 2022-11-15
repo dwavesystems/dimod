@@ -315,8 +315,9 @@ cdef class _cyExpression:
 
         self.expression().remove_interaction(ui, vi)
 
-    def remove_variable(self):
-        raise NotImplementedError
+    def remove_variable(self, v):
+        cdef Py_ssize_t vi = self.parent.variables.index(v)
+        self.expression().remove_variable(vi)
 
     def set_linear(self, v, bias_type bias):
         cdef Py_ssize_t vi = self.parent.variables.index(v)

@@ -1726,6 +1726,18 @@ class TestViews(unittest.TestCase):
         cqm.constraints[lbl].lhs.offset = 3
         self.assertEqual(cqm.constraints[lbl].lhs.offset, 3)
 
+    def test_remove_variable(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(2*x + 3*y - 4*x*y <= 1)
+
+        cqm.constraints[lbl].lhs.remove_variable('x')
+
+        self.assertEqual(cqm.constraints[lbl].lhs.linear, {'y': 3})
+        self.assertEqual(cqm.constraints[lbl].lhs.quadratic, {})
+        self.assertEqual(cqm.constraints[lbl].lhs.num_variables, 1)
+        self.assertEqual(cqm.constraints[lbl].lhs.num_interactions, 0)
+
     def test_serialization_helpers(self):
         a, c = dimod.Binaries('ac')
         b = dimod.Integer('b', upper_bound=5)
