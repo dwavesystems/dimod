@@ -68,6 +68,17 @@ class TestAddConstraint(unittest.TestCase):
         cqm.add_constraint(bqm, '<=')
         cqm.add_constraint(bqm, '>=')  # add it again
 
+    def test_copy(self):
+        cqm = CQM()
+
+        bqm = BQM({'a': -1}, {'ab': 1}, 1.5, 'SPIN')
+        cqm.add_constraint(bqm, '<=', 1, label=1)
+        self.assertTrue(bqm.is_equal(cqm.constraints[1].lhs))
+        cqm.add_constraint(bqm, '>=', 2, label=2, copy=False)
+        self.assertEqual(bqm.num_variables, 0)
+        self.assertEqual(bqm.variables, [])
+        self.assertTrue(cqm.constraints[1].lhs.is_equal(cqm.constraints[2].lhs))
+
     def test_duplicate(self):
         cqm = CQM()
 

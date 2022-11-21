@@ -169,7 +169,7 @@ cdef class cyConstrainedQuadraticModel:
 
     def add_constraint_from_model(self, cyQMBase model, sense, bias_type rhs, label, bint copy, weight, penalty):
         # get a mapping from the model's variables to ours
-        cdef vector[Py_ssize_t] mapping
+        cdef vector[index_type] mapping
         mapping.reserve(model.num_variables())
         cdef Py_ssize_t vi
         for vi in range(model.num_variables()):
@@ -205,7 +205,12 @@ cdef class cyConstrainedQuadraticModel:
                               upper_bound=model.base.upper_bound(vi),
                               )
 
-        self.cppcqm.add_constraint(deref(model.base), cppsense(sense), rhs, mapping)
+        if copy:
+            self.cppcqm.add_constraint(deref(model.base), cppsense(sense), rhs, mapping)
+        else:
+            self.cppcqm.add_constraint(move(deref(model.base)), cppsense(sense), rhs, mapping)
+            model.clear()
+
         label = self.constraint_labels._append(label)
         assert(self.cppcqm.num_constraints() == self.constraint_labels.size())
 
