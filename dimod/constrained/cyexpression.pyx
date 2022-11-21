@@ -373,5 +373,47 @@ cdef class cyConstraintView(_cyExpression):
         else:
             raise RuntimeError("unexpected penalty")
 
+    def set_weight(self, weight, penalty='linear'):
+        """Set the weight of the constraint.
+
+        Args:
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
+                must be met, while soft constraints might be violated to achieve
+                overall good solutions.
+
+            penalty: Penalty type for a soft constraint (a constraint with its
+                ``weight`` parameter set). Supported values are ``'linear'`` and
+                ``'quadratic'``.
+                ``'quadratic'`` is supported for a constraint with binary
+                variables only.
+
+        """
+        cdef bias_type _weight = float('inf') if weight is None else weight
+
+        if _weight <= 0:
+            raise ValueError("weight must be a positive number or None")
+
+        cdef cppConstraint[bias_type, index_type]* constraint = self.constraint()
+
+        cdef cppPenalty _penalty
+        if penalty == 'linear':
+           _penalty = cppPenalty.LINEAR
+        elif penalty == 'quadratic':
+            for i in range(constraint.num_variables()):
+                if (self.parent.cppcqm.vartype(constraint.variables()[i]) != cppVartype.BINARY
+                        and self.parent.cppcqm.vartype(constraint.variables()[i]) != cppVartype.SPIN):
+                    raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
+            _penalty = cppPenalty.QUADRATIC
+        elif penalty == 'constant':
+            raise ValueError('penalty should be "linear" or "quadratic"')
+        else:
+            raise ValueError('penalty should be "linear" or "quadratic"')
+
+        constraint.set_weight(_weight)
+        constraint.set_penalty(_penalty)
+
     def weight(self):
         return self.constraint().weight()

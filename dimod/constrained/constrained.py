@@ -285,8 +285,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
@@ -353,8 +355,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
@@ -454,8 +458,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 

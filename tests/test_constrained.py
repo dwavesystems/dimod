@@ -208,7 +208,7 @@ class TestSoftConstraint(unittest.TestCase):
         cqm = CQM()
         x, y = dimod.Binaries('xy')
         c0 = cqm.add_constraint(x + y == 1, weight=3, label='a')
-        c1 = cqm.add_constraint(x + y == 2, weight=5, label='b')
+        c1 = cqm.add_constraint([('x', 1), ('y', 1)], sense='==', rhs=2, weight=5, label='b')
         cqm.relabel_constraints({'a': 'c'})
         self.assertTrue(cqm.constraints['c'].lhs.is_soft())
 

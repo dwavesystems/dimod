@@ -155,17 +155,15 @@ cdef class cyConstrainedQuadraticModel:
             else:
                 raise ValueError("terms must be constant, linear or quadratic")
 
-
         constraint.set_sense(cppsense(sense))
         constraint.set_rhs(rhs)
 
-        if weight is not None:
-            raise NotImplementedError  # todo
-
         self.cppcqm.add_constraint(move(constraint))
         label = self.constraint_labels._append(label)
-
         assert(self.cppcqm.num_constraints() == self.constraint_labels.size())
+
+        if weight is not None:
+            ConstraintView(self, label).set_weight(weight, penalty=penalty)
 
         return label
 
@@ -207,29 +205,14 @@ cdef class cyConstrainedQuadraticModel:
                               upper_bound=model.base.upper_bound(vi),
                               )
 
-        cdef Py_ssize_t ci = self.cppcqm.add_constraint(deref(model.base),
-                                   cppsense(sense),
-                                   rhs,
-                                   mapping)
+        self.cppcqm.add_constraint(deref(model.base), cppsense(sense), rhs, mapping)
+        label = self.constraint_labels._append(label)
+        assert(self.cppcqm.num_constraints() == self.constraint_labels.size())
 
         if weight is not None:
-            if penalty == 'linear':
-                self.cppcqm.constraint_ref(ci).set_penalty(cppPenalty.LINEAR)
-            elif penalty == 'quadratic':
-                for vi in range(model.num_variables()):
-                    if model.base.vartype(vi) != cppVartype.BINARY and model.base.vartype(vi) != cppVartype.SPIN:
-                        raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
-                self.cppcqm.constraint_ref(ci).set_penalty(cppPenalty.QUADRATIC)
-            elif penalty == 'constant':
-                raise NotImplementedError('penalty should be "linear" or "quadratic"')
-                # self.cppcqm.constraint_ref(ci).set_penalty(cppPenalty.CONSTANT)
-            else:
-                raise NotImplementedError('penalty should be "linear" or "quadratic"')
+            ConstraintView(self, label).set_weight(weight, penalty=penalty)
 
-            self.cppcqm.constraint_ref(ci).set_weight(weight)
-            
-
-        return self.constraint_labels._append(label)
+        return label
 
     def add_variable(self, vartype, v=None, *, lower_bound=None, upper_bound=None):
         cdef cppVartype vt = cppvartype(as_vartype(vartype, extended=True))
