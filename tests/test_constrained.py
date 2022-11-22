@@ -968,6 +968,23 @@ class TestSerialization(unittest.TestCase):
     def tearDownClass(cls):
         dimod.REAL_INTERACTIONS = False
 
+    def test_compress(self):
+        num_variables = 50
+        cqm = dimod.CQM()
+        cqm.add_variables('BINARY', range(num_variables))
+        cqm.set_objective((v, 1) for v in range(num_variables))
+        cqm.add_constraint(((v, 1) for v in range(num_variables)), '==', 0)
+
+        with self.subTest("functional"):
+            new = dimod.CQM.from_file(cqm.to_file(compress=True))
+            self.assertTrue(new.is_equal(cqm))
+
+        with self.subTest("size"):
+            self.assertLess(len(cqm.to_file(compress=True).read()),
+                            len(cqm.to_file(compress=False).read()))
+            self.assertLess(len(cqm.to_file(compress=True).read()),
+                            len(cqm.to_file().read()))  # default
+
     def test_functional(self):
         cqm = CQM()
 

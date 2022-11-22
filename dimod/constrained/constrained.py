@@ -1668,7 +1668,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return mapping
 
-    def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
+    def to_file(self, *,
+                spool_size: int = int(1e9),
+                compress: bool = False,
+                ) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.
 
         Args:
@@ -1676,6 +1679,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 :class:`tempfile.SpooledTemporaryFile`. Determines whether
                 the returned file-like's contents will be kept on disk or in
                 memory.
+
+            compress: If True, the data will be compressed with
+                :class:`zipfile.ZIP_DEFLATED`.
 
         Format Specification (Version 1.3):
 
@@ -1783,7 +1789,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
 
         # write the values
-        with zipfile.ZipFile(file, mode='a') as zf:
+        kwargs = dict(compression=zipfile.ZIP_DEFLATED) if compress else dict()
+        with zipfile.ZipFile(file, mode='a', **kwargs) as zf:
             with objective.to_file(spool_size=int(1e12)) as f:
                 # we can avoid a copy by trying to read from the underlying buffer
                 obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
