@@ -1,12 +1,11 @@
 .. _dimod_models:
 
-======
-Models
-======
+==========================
+Models: BQM, CQM, QM, Etc.
+==========================
 
 This page describes the `dimod` package's quadratic models: classes,
-attributes, methods, and some functions related to these classes. For an introduction
-and the data structure, see :ref:`intro_qm`.
+attributes, and methods. For an introduction and the data structure, see :ref:`intro_qm`.
 
 .. contents::
     :local:
@@ -116,6 +115,9 @@ BQM Methods
 
 Constrained Quadratic Model
 ===========================
+
+For an introduction to BQMs, see
+:std:doc:`Concepts: Constrained Quadratic Models <oceandocs:concepts/cqm>`.
 
 CQM Class
 ---------
@@ -275,8 +277,6 @@ QM Methods
    ~QuadraticModel.update
    ~QuadraticModel.upper_bound
    ~QuadraticModel.vartype
-
-
 
 Additional Models
 =================

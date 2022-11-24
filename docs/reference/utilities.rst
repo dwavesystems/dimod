@@ -7,35 +7,10 @@ Utilities
 .. contents::
     :depth: 3
 
+Converting Between Models
+=========================
 
-Adding Models
-=============
-
-Adding models symbolically:
-
-.. currentmodule:: dimod.binary
-
-.. autosummary::
-   :toctree: generated/
-
-   quicksum
-
-Constructing BQMs
-=================
-
-Generic constructor:
-
-.. currentmodule:: dimod.binary
-
-.. autosummary::
-   :toctree: generated/
-
-   as_bqm
-
-NOTE: maybe move this to Generators?
-
-Converting Models
-=================
+Converting between BQM models:
 
 .. currentmodule:: dimod.utilities
 
@@ -45,7 +20,7 @@ Converting Models
    ising_to_qubo
    qubo_to_ising
 
-Converting constrained quadratic models to other model types:
+Converting CQMs to BQMs:
 
 .. currentmodule:: dimod
 
@@ -54,7 +29,7 @@ Converting constrained quadratic models to other model types:
 
    cqm_to_bqm
 
-Converting from higher-order models to BQMs:
+Converting higher-order models to BQMs:
 
 .. autosummary::
    :toctree: generated/
@@ -105,8 +80,8 @@ Higher-order model energy:
    poly_energy
 
 
-Fixing Variables (Obsolete)
-===========================
+Fixing Variables (Moved)
+========================
 
 .. currentmodule:: dimod.roof_duality
 
@@ -115,11 +90,10 @@ Fixing Variables (Obsolete)
 
    fix_variables
 
-
 Graph Functions
 ===============
 
-Converting BQMs to and from other data structures:
+Converting between BQMs and NetworkX graph:
 
 .. currentmodule:: dimod
 
@@ -128,14 +102,6 @@ Converting BQMs to and from other data structures:
 
    to_networkx_graph
    from_networkx_graph
-
-
-.. currentmodule:: dimod.utilities
-
-.. autosummary::
-   :toctree: generated/
-
-   child_structure_dfs
 
 Traversing BQMs as a graph:
 
@@ -202,6 +168,29 @@ LP
    lp.dumps
    lp.load
    lp.loads
+
+Structure of Composed Sampler
+=============================
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   child_structure_dfs
+
+Summing Models
+==============
+
+Fast summation on models:
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   quicksum
+
 
 Testing
 =======

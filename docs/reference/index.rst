@@ -10,11 +10,11 @@ Reference Documentation
 
    models
    generators
-   sampler_composites/index
-   sampleset
    utilities
-   variables
+   sampleset
    vartypes
+   sampler_composites/index
+   variables
    exceptions
    typing
    cpp
