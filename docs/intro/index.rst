@@ -18,9 +18,7 @@ The following sections give an orientation to dimod with usage examples:
 .. toctree::
   :maxdepth: 1
 
-  intro_cqm
-  intro_quadratic
-  intro_nonquadratic
+  intro_models
   intro_samplers
   intro_samples
   intro_symbolic_math
