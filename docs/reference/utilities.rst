@@ -8,17 +8,8 @@ Utilities
     :depth: 3
 
 
-BQM Functions
+Adding Models
 =============
-
-Generic constructor:
-
-.. currentmodule:: dimod.binary
-
-.. autosummary::
-   :toctree: generated/
-
-   as_bqm
 
 Adding models symbolically:
 
@@ -29,38 +20,22 @@ Adding models symbolically:
 
    quicksum
 
-Fixing variables:
+Constructing BQMs
+=================
 
-.. currentmodule:: dimod.roof_duality
+Generic constructor:
 
-.. autosummary::
-   :toctree: generated/
-
-   fix_variables
-
-Traversing as a graph:
-
-.. currentmodule:: dimod.traversal
+.. currentmodule:: dimod.binary
 
 .. autosummary::
    :toctree: generated/
 
-   connected_components
-   bfs_variables
+   as_bqm
 
+NOTE: maybe move this to Generators?
 
-Converting to and from other data structures:
-
-.. currentmodule:: dimod
-
-.. autosummary::
-   :toctree: generated/
-
-   to_networkx_graph
-   from_networkx_graph
-
-Conversion
-==========
+Converting Models
+=================
 
 .. currentmodule:: dimod.utilities
 
@@ -88,8 +63,6 @@ Converting from higher-order models to BQMs:
    make_quadratic_cqm
    reduce_binary_polynomial
 
-
-
 Decorators
 ==========
 
@@ -111,6 +84,8 @@ Decorators
 Energy Calculations
 ===================
 
+BQM energy:
+
 .. currentmodule:: dimod.utilities
 
 .. autosummary::
@@ -118,6 +93,8 @@ Energy Calculations
 
    ising_energy
    qubo_energy
+
+Higher-order model energy:
 
 .. automodule:: dimod.higherorder.utils
 
@@ -128,8 +105,30 @@ Energy Calculations
    poly_energy
 
 
-Graph-like
-==========
+Fixing Variables (Obsolete)
+===========================
+
+.. currentmodule:: dimod.roof_duality
+
+.. autosummary::
+   :toctree: generated/
+
+   fix_variables
+
+
+Graph Functions
+===============
+
+Converting BQMs to and from other data structures:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   to_networkx_graph
+   from_networkx_graph
+
 
 .. currentmodule:: dimod.utilities
 
@@ -137,6 +136,17 @@ Graph-like
    :toctree: generated/
 
    child_structure_dfs
+
+Traversing BQMs as a graph:
+
+.. currentmodule:: dimod.traversal
+
+.. autosummary::
+   :toctree: generated/
+
+   connected_components
+   bfs_variables
+
 
 
 .. _serialization_dimod:
