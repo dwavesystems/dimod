@@ -431,11 +431,11 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
 
         >>> num_transmitters = 64
         >>> var_per_bandwith = 1.4
-        >>> SNR = 5
-        >>> bqm = dimod.generators.random_nae3sat(modulation='BPSK', num_transmitters = 64, \
-                      num_receivers = round(num_transmitters*var_per_num_receivers), \
-                      SNR=SNR, \
-                      F_distribution = 'Binary')
+        >>> SNRb = 5
+        >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', num_transmitters = 64, \
+                      num_receivers = round(num_transmitters*var_per_bandwidth), \
+                      SNRb=SNRb, \
+                      F_distribution = ('Binary','Real'))
 
          
     .. [#T02] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
@@ -498,8 +498,8 @@ def _make_honeycomb(L: int):
     return G
 
 def spin_encoded_comp(lattice: Union[int,nx.Graph],
-                      modulation: str, y: Union[np.array, None] = None,
-                      F: Union[np.array, None] = None,
+                      modulation: str, ys: Union[np.array, None] = None,
+                      Fs: Union[np.array, None] = None,
                       *,
                       transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
                       num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
@@ -509,14 +509,16 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
     """Defines a simple coooperative multi-point decoding problem coMD.
     Args:
        lattice: A graph defining the set of nearest neighbor basestations. Each 
-       basestation has ``num_receivers`` receivers and ``num_transmitters`` 
-       local transmitters. Transmitters from neighboring basestations are also 
-       received. The channel F should be set to None, it is not dependent on the
-       geometric information for now.
-       lattice can also be set to an integer value, in which case a honeycomb 
-       lattice of the given linear scale (number of basestations O(L^2)) is 
-       created using ``_make_honeycomb()``.
-    
+           basestation has ``num_receivers`` receivers and ``num_transmitters`` 
+           local transmitters. Transmitters from neighboring basestations are also 
+           received. The channel F should be set to None, it is not dependent on the
+           geometric information for now.
+           lattice can also be set to an integer value, in which case a honeycomb 
+           lattice of the given linear scale (number of basestations O(L^2)) is 
+           created using ``_make_honeycomb()``.
+       Fs: A dictionary of channels, one per basestation.
+       ys: A dictionary of signals, one per basestation.
+     
        See for ``spin_encoded_mimo`` for interpretation of other per-basestation parameters. 
     Returns:
        bqm: an Ising model in BinaryQuadraticModel format.
@@ -524,17 +526,27 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
     Reference: 
         https://en.wikipedia.org/wiki/Cooperative_MIMO
     """
-    if type(lattice) is int or type(lattice) is float:
-        lattice = _make_honeycomb(lattice)
+    if type(lattice) is not nx.Graph:
+        lattice = _make_honeycomb(int(lattice))
     if num_transmitters == None:
         num_transmitters = 1
     if num_receivers == None:
         num_receivers = 1
+    if ys is None:
+        ys = {bs : None for bs in lattice.nodes()}
+    if Fs is None:
+        Fs = {bs : None for bs in lattice.nodes()}
+    if (modulation != 'BPSK' and modulation != 'QPSK') or transmitted_symbols is not None:
+        raise ValueError('Generation of problems for which transmitted symbols are'
+                         'not all 1 (default BPSK,QPSK) not yet supported.')
+    if SNRb < float('Inf'):
+        #Spread across basestations by construction
+        SNRb /= (1 + 2*lattice.num_edges/lattice.num_nodes)
     #Convert graph labels
     bqm = dimod.BinaryQuadraticModel('SPIN');
     for bs in lattice.nodes():
         bqm_cell = spin_encoded_mimo(
-            modulation, y, F,
+            modulation, ys[bs], Fs[bs],
             transmitted_symbols=transmitted_symbols, channel_noise=channel_noise,
             num_transmitters=num_transmitters*(1 + lattice.degree(bs)),
             num_receivers=num_receivers, SNRb=SNRb, seed=seed,
