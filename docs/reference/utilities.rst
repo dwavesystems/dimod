@@ -7,6 +7,89 @@ Utilities
 .. contents::
     :depth: 3
 
+
+BQM Functions
+=============
+
+Generic constructor:
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   as_bqm
+
+Adding models symbolically:
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   quicksum
+
+Fixing variables:
+
+.. currentmodule:: dimod.roof_duality
+
+.. autosummary::
+   :toctree: generated/
+
+   fix_variables
+
+Traversing as a graph:
+
+.. currentmodule:: dimod.traversal
+
+.. autosummary::
+   :toctree: generated/
+
+   connected_components
+   bfs_variables
+
+
+Converting to and from other data structures:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   to_networkx_graph
+   from_networkx_graph
+
+Conversion
+==========
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   ising_to_qubo
+   qubo_to_ising
+
+Converting constrained quadratic models to other model types:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   cqm_to_bqm
+
+Converting from higher-order models to BQMs:
+
+.. autosummary::
+   :toctree: generated/
+
+   make_quadratic
+   make_quadratic_cqm
+   reduce_binary_polynomial
+
+
+
 Decorators
 ==========
 
@@ -35,6 +118,14 @@ Energy Calculations
 
    ising_energy
    qubo_energy
+
+.. automodule:: dimod.higherorder.utils
+
+.. autosummary::
+   :toctree: generated/
+
+   poly_energies
+   poly_energy
 
 
 Graph-like
@@ -96,7 +187,7 @@ LP
 
 .. autosummary::
    :toctree: generated/
-   
+
    lp.dump
    lp.dumps
    lp.load
@@ -138,15 +229,3 @@ Test Case Loader
    :toctree: generated/
 
    load_sampler_bqm_tests
-
-
-Vartype Conversion
-==================
-
-.. currentmodule:: dimod.utilities
-
-.. autosummary::
-   :toctree: generated/
-
-   ising_to_qubo
-   qubo_to_ising

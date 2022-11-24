@@ -8,9 +8,7 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   constrained
-   quadratic
-   higherorder
+   models
    generators
    sampler_composites/index
    sampleset
