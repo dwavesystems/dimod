@@ -7,6 +7,37 @@ Utilities
 .. contents::
     :depth: 3
 
+Converting Between Models
+=========================
+
+Converting between BQM models:
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   ising_to_qubo
+   qubo_to_ising
+
+Converting CQMs to BQMs:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   cqm_to_bqm
+
+Converting higher-order models to BQMs:
+
+.. autosummary::
+   :toctree: generated/
+
+   make_quadratic
+   make_quadratic_cqm
+   reduce_binary_polynomial
+
 Decorators
 ==========
 
@@ -28,6 +59,8 @@ Decorators
 Energy Calculations
 ===================
 
+BQM energy:
+
 .. currentmodule:: dimod.utilities
 
 .. autosummary::
@@ -36,16 +69,50 @@ Energy Calculations
    ising_energy
    qubo_energy
 
+Higher-order model energy:
 
-Graph-like
-==========
-
-.. currentmodule:: dimod.utilities
+.. automodule:: dimod.higherorder.utils
 
 .. autosummary::
    :toctree: generated/
 
-   child_structure_dfs
+   poly_energies
+   poly_energy
+
+
+Fixing Variables (Moved)
+========================
+
+.. currentmodule:: dimod.roof_duality
+
+.. autosummary::
+   :toctree: generated/
+
+   fix_variables
+
+Graph Functions
+===============
+
+Converting between BQMs and NetworkX graph:
+
+.. currentmodule:: dimod
+
+.. autosummary::
+   :toctree: generated/
+
+   to_networkx_graph
+   from_networkx_graph
+
+Traversing BQMs as a graph:
+
+.. currentmodule:: dimod.traversal
+
+.. autosummary::
+   :toctree: generated/
+
+   connected_components
+   bfs_variables
+
 
 
 .. _serialization_dimod:
@@ -96,11 +163,34 @@ LP
 
 .. autosummary::
    :toctree: generated/
-   
+
    lp.dump
    lp.dumps
    lp.load
    lp.loads
+
+Structure of Composed Sampler
+=============================
+
+.. currentmodule:: dimod.utilities
+
+.. autosummary::
+   :toctree: generated/
+
+   child_structure_dfs
+
+Summing Models
+==============
+
+Fast summation on models:
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   quicksum
+
 
 Testing
 =======
@@ -138,15 +228,3 @@ Test Case Loader
    :toctree: generated/
 
    load_sampler_bqm_tests
-
-
-Vartype Conversion
-==================
-
-.. currentmodule:: dimod.utilities
-
-.. autosummary::
-   :toctree: generated/
-
-   ising_to_qubo
-   qubo_to_ising

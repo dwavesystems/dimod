@@ -8,15 +8,13 @@ Reference Documentation
 .. toctree::
    :maxdepth: 2
 
-   constrained
-   quadratic
-   higherorder
+   models
    generators
-   sampler_composites/index
-   sampleset
    utilities
-   variables
+   sampleset
    vartypes
+   sampler_composites/index
+   variables
    exceptions
    typing
    cpp
