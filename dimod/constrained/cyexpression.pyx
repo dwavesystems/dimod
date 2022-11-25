@@ -362,16 +362,73 @@ cdef class cyConstraintView(_cyExpression):
         self.constraint().mark_discrete(marker)
 
     def penalty(self):
-        penalty = self.constraint().penalty()
+        """The penalty type for a soft constraint.
 
-        if penalty == cppPenalty.LINEAR:
+        Returns:
+            If the constraint is soft, returns one of ``'linear'`` or ``'quadratic'``.
+            If the constraint is hard, returns ``None``.
+
+        """
+        constraint = self.constraint()
+        penalty = constraint.penalty()
+
+        if not constraint.is_soft():
+            return None
+        elif penalty == cppPenalty.LINEAR:
             return "linear"
         elif penalty == cppPenalty.QUADRATIC:
             return "quadratic"
         elif penalty == cppPenalty.CONSTANT:
-            return "constrant"
+            # user should never see this, but might as well be future proof
+            return "constant"
         else:
             raise RuntimeError("unexpected penalty")
 
+    def set_weight(self, weight, penalty='linear'):
+        """Set the weight of the constraint.
+
+        Args:
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
+                must be met, while soft constraints might be violated to achieve
+                overall good solutions.
+
+            penalty: Penalty type for a soft constraint (a constraint with its
+                ``weight`` parameter set). Supported values are ``'linear'`` and
+                ``'quadratic'``.
+                ``'quadratic'`` is supported for a constraint with binary
+                variables only.
+
+        """
+        cdef bias_type _weight = float('inf') if weight is None else weight
+
+        if _weight <= 0:
+            raise ValueError("weight must be a positive number or None")
+
+        cdef cppConstraint[bias_type, index_type]* constraint = self.constraint()
+
+        cdef cppPenalty _penalty
+        if penalty == 'linear':
+           _penalty = cppPenalty.LINEAR
+        elif penalty == 'quadratic':
+            for i in range(constraint.num_variables()):
+                vartype = self.parent.cppcqm.vartype(constraint.variables()[i])
+                if vartype not in (cppVartype.BINARY, cppVartype.SPIN):
+                    raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
+            _penalty = cppPenalty.QUADRATIC
+        elif penalty == 'constant':
+            raise ValueError('penalty should be "linear" or "quadratic"')
+        else:
+            raise ValueError('penalty should be "linear" or "quadratic"')
+
+        constraint.set_weight(_weight)
+        constraint.set_penalty(_penalty)
+
     def weight(self):
+        """The weight of the constraint.
+
+        If the constraint is hard, will be ``float('inf')``.
+        """
         return self.constraint().weight()

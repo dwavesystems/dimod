@@ -1,0 +1,8 @@
+---
+features:
+  - Add ``ConstraintView.set_weight()`` method. This allows users to set the weight of existing constraints.
+upgrade:
+  - When the constraint is hard, ``ConstraintView.penalty()`` now returns ``None``. Previously it would return either ``'linear'`` or ``'quadratic'``.
+fixes:
+  - Fix ``ConstrainedQuadraticModel.add_constraint_from_iterable()`` to no longer raise a ``NotImplementedError`` when given a weight.
+  - Fix ``ConstrainedQuadraticModel.add_constraint()`` to raise a ``ValueError`` rather than a ``NotImplementedError`` when given an invalid penalty.

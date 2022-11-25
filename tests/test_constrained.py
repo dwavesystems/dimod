@@ -208,7 +208,7 @@ class TestSoftConstraint(unittest.TestCase):
         cqm = CQM()
         x, y = dimod.Binaries('xy')
         c0 = cqm.add_constraint(x + y == 1, weight=3, label='a')
-        c1 = cqm.add_constraint(x + y == 2, weight=5, label='b')
+        c1 = cqm.add_constraint([('x', 1), ('y', 1)], sense='==', rhs=2, weight=5, label='b')
         cqm.relabel_constraints({'a': 'c'})
         self.assertTrue(cqm.constraints['c'].lhs.is_soft())
 
@@ -1809,3 +1809,89 @@ class TestViews(unittest.TestCase):
                                       np.asarray([(0, 1)], dtype=dtype))
         np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(2),
                                       np.asarray([], dtype=dtype))
+
+    def test_set_weight(self):
+        i, j = dimod.Integers('ij')
+        cqm = CQM()
+        c = cqm.add_constraint(i + j <= 5)
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
+
+        with self.assertRaises(ValueError):
+            cqm.constraints[c].lhs.set_weight(-1)
+        with self.assertRaises(ValueError):
+            cqm.constraints[c].lhs.set_weight(1, penalty='not a penalty')
+
+        cqm.constraints[c].lhs.set_weight(1.5)
+
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 1.5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), 'linear')
+
+        cqm.constraints[c].lhs.set_weight(3.5, penalty='linear')
+
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 3.5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), 'linear')
+
+        with self.assertRaises(ValueError):
+            # non-binary
+            cqm.constraints[c].lhs.set_weight(2.5, penalty='quadratic')
+
+        cqm.constraints[c].lhs.set_weight(None)
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
+
+        cqm.constraints[c].lhs.set_weight(float('inf'))
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
+
+    def test_set_weight_binary(self):
+        x, y = dimod.Binaries('ij')
+        cqm = CQM()
+        c = cqm.add_constraint(x + y <= 5)
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
+
+        with self.assertRaises(ValueError):
+            cqm.constraints[c].lhs.set_weight(-1)
+        with self.assertRaises(ValueError):
+            cqm.constraints[c].lhs.set_weight(1, penalty='not a penalty')
+
+        cqm.constraints[c].lhs.set_weight(1.5)
+
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 1.5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), 'linear')
+
+        cqm.constraints[c].lhs.set_weight(3.5, penalty='linear')
+
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 3.5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), 'linear')
+
+        cqm.constraints[c].lhs.set_weight(2.5, penalty='quadratic')
+
+        self.assertTrue(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 2.5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), 'quadratic')
+
+        cqm.constraints[c].lhs.set_weight(None)
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
+
+        cqm.constraints[c].lhs.set_weight(float('inf'))
+
+        self.assertFalse(cqm.constraints[c].lhs.is_soft())
+        self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
+        self.assertIs(cqm.constraints[c].lhs.penalty(), None)
