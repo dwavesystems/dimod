@@ -205,21 +205,6 @@ This example constructs a QM with an interaction between two integer variables.
 >>> qm.add_variables_from('INTEGER', ['i', 'j'])
 >>> qm.add_quadratic('i', 'j', 1.5)
 
-Higher-Order Example
---------------------
-
-This example uses dimod's :class:`~dimod.reference.samplers.ExactSolver` reference
-sampler on a higher-order unconstrained binary optimization (HUBO) model.
-
->>> import dimod
->>> poly = dimod.BinaryPolynomial.from_hubo({('a', 'a'): -1,
-...                                          ('a', 'b'): -0.5,
-...                                          ('a', 'b', 'c'): -2})
->>> sampler = dimod.HigherOrderComposite(dimod.ExactSolver())
->>> sampleset = sampler.sample_poly(poly)
->>> print(sampleset.first.sample["a"])
-1
-
 Data Structure
 ==============
 

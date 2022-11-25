@@ -4,18 +4,6 @@
 Generators and Application Modeling
 ===================================
 
-Constructors
-============
-
-Generic BQM constructor:
-
-.. currentmodule:: dimod.binary
-
-.. autosummary::
-   :toctree: generated/
-
-   as_bqm
-
 .. currentmodule:: dimod.generators
 
 .. automodule:: dimod.generators

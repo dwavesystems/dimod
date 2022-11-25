@@ -29,7 +29,7 @@ BQM Class
 .. autoclass:: BQM
 
 BQM Attributes
-~~~~~~~~~~~~~~
+--------------
 
 .. autosummary::
    :toctree: generated/
@@ -48,7 +48,7 @@ BQM Attributes
    ~BinaryQuadraticModel.vartype
 
 BQM Methods
-~~~~~~~~~~~
+-----------
 
 .. autosummary::
    :toctree: generated/
@@ -110,6 +110,16 @@ BQM Methods
    ~BinaryQuadraticModel.to_qubo
    ~BinaryQuadraticModel.to_serializable
    ~BinaryQuadraticModel.update
+
+Generic BQM Constructor
+-----------------------
+
+.. currentmodule:: dimod.binary
+
+.. autosummary::
+   :toctree: generated/
+
+   as_bqm
 
 .. _cqm:
 
@@ -210,7 +220,7 @@ QM Class
 .. autoclass:: QM
 
 QM Attributes
-~~~~~~~~~~~~~
+-------------
 
 .. autosummary::
    :toctree: generated/
@@ -226,7 +236,7 @@ QM Attributes
    ~QuadraticModel.variables
 
 QM Methods
-~~~~~~~~~~
+----------
 
 .. autosummary::
    :toctree: generated/
