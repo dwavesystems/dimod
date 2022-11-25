@@ -414,8 +414,8 @@ cdef class cyConstraintView(_cyExpression):
            _penalty = cppPenalty.LINEAR
         elif penalty == 'quadratic':
             for i in range(constraint.num_variables()):
-                if (self.parent.cppcqm.vartype(constraint.variables()[i]) != cppVartype.BINARY
-                        and self.parent.cppcqm.vartype(constraint.variables()[i]) != cppVartype.SPIN):
+                vartype = self.parent.cppcqm.vartype(constraint.variables()[i])
+                if vartype not in (cppVartype.BINARY, cppVartype.SPIN):
                     raise ValueError("quadratic penalty only allowed if the constraint has binary variables")
             _penalty = cppPenalty.QUADRATIC
         elif penalty == 'constant':
