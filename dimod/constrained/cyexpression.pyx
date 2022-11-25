@@ -362,14 +362,25 @@ cdef class cyConstraintView(_cyExpression):
         self.constraint().mark_discrete(marker)
 
     def penalty(self):
-        penalty = self.constraint().penalty()
+        """The penalty type for a soft constraint.
 
-        if penalty == cppPenalty.LINEAR:
+        Returns:
+            If the constraint is soft, returns one of ``'linear'`` or ``'quadratic'``.
+            If the constraint is hard, returns ``None``.
+
+        """
+        constraint = self.constraint()
+        penalty = constraint.penalty()
+
+        if not constraint.is_soft():
+            return None
+        elif penalty == cppPenalty.LINEAR:
             return "linear"
         elif penalty == cppPenalty.QUADRATIC:
             return "quadratic"
         elif penalty == cppPenalty.CONSTANT:
-            return "constrant"
+            # user should never see this, but might as well be future proof
+            return "constant"
         else:
             raise RuntimeError("unexpected penalty")
 
@@ -416,4 +427,8 @@ cdef class cyConstraintView(_cyExpression):
         constraint.set_penalty(_penalty)
 
     def weight(self):
+        """The weight of the constraint.
+
+        If the constraint is hard, will be ``float('inf')``.
+        """
         return self.constraint().weight()
