@@ -15,7 +15,9 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -42,7 +44,7 @@ struct TwoVarTerm {
     index_type v;
     bias_type bias;
 
-    explicit TwoVarTerm(index_type u) : u(u), v(-1), bias(NAN) {}
+    explicit TwoVarTerm(index_type u) : u(u), v(-1), bias(std::numeric_limits<double>::signaling_NaN()) {}
 
     TwoVarTerm(index_type u, index_type v, bias_type bias): u(u), v(v), bias(bias) {}
 

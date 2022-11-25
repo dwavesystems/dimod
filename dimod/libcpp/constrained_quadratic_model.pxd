@@ -32,6 +32,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         index_type add_constraint()
         index_type add_constraint(Constraint[bias_type, index_type]) except+
         index_type add_constraint[B, I, T](QuadraticModelBase[B, I]&, Sense, bias_type, vector[T])
+        index_type add_constraint(QuadraticModelBase[bias_type, index_type]&, Sense, bias_type, vector[index_type])
         index_type add_constraints(index_type)
         index_type add_variable(Vartype)
         index_type add_variable(Vartype, bias_type, bias_type)
