@@ -12,6 +12,19 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+r"""Binary quadratic models (BQMs) are problems of the form:
+
+.. math::
+
+    E(\bf{v})
+    = \sum_{i=1} a_i v_i
+    + \sum_{i<j} b_{i,j} v_i v_j
+    + c
+    \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
+
+where :math:`a_{i}, b_{ij}, c` are real values.
+"""
+
 from __future__ import annotations
 
 import collections.abc as abc
@@ -69,18 +82,6 @@ BQM_MAGIC_PREFIX = b'DIMODBQM'
 
 class BinaryQuadraticModel(QuadraticViewsMixin):
     r"""Binary quadratic model.
-
-    Binary quadratic models (BQMs) are problems of the form:
-
-    .. math::
-
-        E(\bf{v})
-        = \sum_{i=1} a_i v_i
-        + \sum_{i<j} b_{i,j} v_i v_j
-        + c
-        \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}
-
-    where :math:`a_{i}, b_{ij}, c` are real values.
 
     This class encodes Ising and quadratic unconstrained binary optimization
     (QUBO) models used by samplers such as the D-Wave system.
