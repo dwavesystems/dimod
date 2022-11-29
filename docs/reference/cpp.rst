@@ -4,22 +4,40 @@
 C++ API
 =======
 
-dimod
-=====
+This page describes the `dimod` package's C++ API.
 
-BinaryQuadraticModel
---------------------
+.. contents::
+    :local:
+    :depth: 3
+
+Models
+======
+
+For the Python API and descriptions of the various models, see :ref:`dimod_models`.
+
+Binary Quadratic Model (BQM)
+----------------------------
 
 .. doxygenclass:: dimod::BinaryQuadraticModel
     :members:
     :project: dimod
 
-QuadraticModel
---------------
+Constrained Quadratic Model (CQM)
+---------------------------------
+
+.. doxygenclass:: dimod::ConstrainedQuadraticModel
+    :members:
+    :project: dimod
+
+Quadratic Model (QM)
+--------------------
 
 .. doxygenclass:: dimod::QuadraticModel
     :members:
     :project: dimod
+
+Variable Type (Vartype)
+=======================
 
 Vartype
 -------
@@ -37,8 +55,8 @@ vartype_info
 
 .. Todo: vartype_limits. Getting it to look nice is possible but fiddly
 
-dimod::abc
-==========
+dimod Abstract Base Class (`dimod::abc`)
+========================================
 
 .. doxygenclass:: dimod::abc::QuadraticModelBase
     :members:
@@ -47,8 +65,8 @@ dimod::abc
 
 .. Todo: dimod lp
 
-dimod::utils
-============
+dimod Utilities (`dimod::utils`)
+================================
 
 .. doxygenfunction:: zip_sort
    :project: dimod

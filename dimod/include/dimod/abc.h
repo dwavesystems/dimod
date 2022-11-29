@@ -144,7 +144,7 @@ class QuadraticModelBase {
     /// The second template parameter (Index).
     using index_type = Index;
 
-    /// Unsigned integral type that can represent non-negative values.
+    /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
 
     /// @private  <- don't doc

@@ -40,7 +40,7 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     /// The second template parameter (Index).
     using index_type = Index;
 
-    /// Unsigned integral type that can represent non-negative values.
+    /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
 
     using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;

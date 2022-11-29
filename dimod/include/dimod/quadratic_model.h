@@ -24,19 +24,20 @@
 
 namespace dimod {
 
+/// A quadratic model (QM) is a polynomial with one or two variables per term.
 template <class Bias, class Index = int>
 class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
  public:
     /// The type of the base class.
     using base_type = abc::QuadraticModelBase<Bias, Index>;
 
-    /// The first template parameter (Bias).
+    /// The first template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// The second template parameter (`Index`).
     using index_type = Index;
 
-    /// Unsigned integral that can represent non-negative values.
+    /// Unsigned integer that can represent non-negative values.
     using size_type = typename base_type::size_type;
 
     QuadraticModel();
@@ -63,7 +64,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     bias_type lower_bound(index_type v) const;
 
     /**
-     * Total bytes consumed by the biases, vartype info, bounds, and indices.
+     * Total bytes consumed by the biases, `vartype` info, bounds, and indices.
      *
      * If `capacity` is true, use the capacity of the underlying vectors rather
      * than the size.
@@ -78,7 +79,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` is used to any new variables added.
+     * The `vartype` value is used for any added variables.
      *
      * The `vartype` must be `Vartype::BINARY` or `Vartype::SPIN`.
      */
@@ -87,7 +88,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` is used to any new variables added.
+     * The `vartype` value is used for any added variables.
      */
     void resize(index_type n, Vartype vartype, bias_type lb, bias_type ub);
 
