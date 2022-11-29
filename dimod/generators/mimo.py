@@ -230,7 +230,7 @@ def create_channel(num_receivers, num_transmitters, F_distribution=None, random_
             channel_power = 2
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
     elif F_distribution[0] == 'Binary':
-        if modulation == 'BPSK':
+        if F_distribution[1] == 'Real':
             F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
         else:
             channel_power = 2 #For integer precision purposes:
