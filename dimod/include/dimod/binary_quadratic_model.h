@@ -35,7 +35,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Unsigned integer that can represent non-negative values.
     using size_type = typename base_type::size_type;
 
-    /// Empty constructor. The vartype defaults to `Vartype::BINARY`.
+    /// Empty constructor. The variable type defaults to `Vartype::BINARY`.
     BinaryQuadraticModel();
 
     /// Create a BQM of the given `vartype`.
@@ -62,7 +62,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     using base_type::add_quadratic;
 
-    /*
+    /**
      * Construct a BQM from COO-formated iterators.
      *
      * A sparse BQM encoded in [COOrdinate] format is specified by three

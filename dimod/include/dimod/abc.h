@@ -138,10 +138,10 @@ class ConstQuadraticIterator {
 template <class Bias, class Index>
 class QuadraticModelBase {
  public:
-    /// The first template parameter (Bias).
+    /// The first template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// The second template parameter (`Index`).
     using index_type = Index;
 
     /// Unsigned integer type that can represent non-negative values.
@@ -174,8 +174,10 @@ class QuadraticModelBase {
     /// Add offset.
     void add_offset(bias_type bias);
 
+    /// Add interaction between variables `v` and `u`.
     void add_quadratic(index_type u, index_type v, bias_type bias);
 
+    /// Add interactions between row `row` and column `col`.
     void add_quadratic(std::initializer_list<index_type> row, std::initializer_list<index_type> col,
                        std::initializer_list<bias_type> biases);
 
@@ -184,7 +186,7 @@ class QuadraticModelBase {
                        index_type length);
 
     /**
-     * Add quadratic bias for the given variables at the end of eachother's neighborhoods.
+     * Add quadratic bias for the given variables at the end of each other's neighborhoods.
      *
      * # Parameters
      * - `u` - a variable.
@@ -214,14 +216,16 @@ class QuadraticModelBase {
     template <class T>
     void add_quadratic_from_dense(const T dense[], index_type num_variables);
 
+    /// First neighbor of variable `v`.
     const_neighborhood_iterator cbegin_neighborhood(index_type v) const;
 
+    /// Last neighbor of variable `v`.
     const_neighborhood_iterator cend_neighborhood(index_type v) const;
 
-    /// todo
+    /// First interaction (edges and quadratic coefficient) in an objective or constraint.
     const_quadratic_iterator cbegin_quadratic() const;
 
-    /// todo
+    /// Last interaction (edges and quadratic coefficient) in an objective or constraint.
     const_quadratic_iterator cend_quadratic() const;
 
     /// Remove the offset and all variables and interactions from the model.

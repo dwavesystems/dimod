@@ -47,12 +47,16 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     template <class B, class I>
     explicit QuadraticModel(const BinaryQuadraticModel<B, I>& bqm);
 
+    /// Add variable of type `vartype`.
     index_type add_variable(Vartype vartype);
 
+    /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub);
 
+    /// Add `n` variables of type `vartype`.
     index_type add_variables(Vartype vartype, index_type n);
 
+    /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variables(Vartype vartype, index_type n, bias_type lb, bias_type ub);
 
     void clear();
@@ -71,6 +75,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
      */
     size_type nbytes(bool capacity = false) const;
 
+    /// Remove variable `v`.
     void remove_variable(index_type v);
 
     // Resize the model to contain `n` variables.
@@ -79,23 +84,25 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` value is used for any added variables.
-     *
-     * The `vartype` must be `Vartype::BINARY` or `Vartype::SPIN`.
+     * Any added variables are of type `vartype` (value must be `Vartype::BINARY` or `Vartype::SPIN`)
      */
     void resize(index_type n, Vartype vartype);
 
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` value is used for any added variables.
+     * Any added variables are of type `vartype` (value must be `Vartype::BINARY` or `Vartype::SPIN`)
+     * and have lower bound `lb` and upper bound `ub`.
      */
     void resize(index_type n, Vartype vartype, bias_type lb, bias_type ub);
 
+    /// Set a lower bound of `lb` on variable `v`.
     void set_lower_bound(index_type v, bias_type lb);
 
+    /// Set an upper bound of `ub` on variable `v`.
     void set_upper_bound(index_type v, bias_type ub);
 
+    /// Set the variable type of variable `v`.
     void set_vartype(index_type v, Vartype vartype);
 
     // todo: substitute_variable with vartype/bounds support

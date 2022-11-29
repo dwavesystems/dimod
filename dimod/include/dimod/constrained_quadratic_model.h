@@ -81,7 +81,7 @@ class ConstrainedQuadraticModel {
     /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variables(Vartype vartype, index_type n, bias_type lb, bias_type ub);
 
-    /// Change the variable type of variable `v` to `vartype`.
+    /// Change the variable type of variable `v` to `vartype`, updating the biases appropriately.
     void change_vartype(Vartype vartype, index_type v);
 
     void clear();
