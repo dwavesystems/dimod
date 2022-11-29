@@ -335,7 +335,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
                       transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
                       num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
                       seed: Union[None, int, np.random.RandomState] = None, 
-                      F_distribution: Union[None, str] = None, 
+                      F_distribution: Union[None, tuple] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
     """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
         
