@@ -30,10 +30,10 @@ namespace dimod {
 template <class Bias, class Index = int>
 class ConstrainedQuadraticModel {
  public:
-    /// The first template parameter (`Bias`).
+    /// First template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (`Index`).
+    /// Second template parameter (`Index`).
     using index_type = Index;
 
     /// Unsigned integer type that can represent non-negative values.

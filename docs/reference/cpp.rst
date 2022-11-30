@@ -29,6 +29,13 @@ Constrained Quadratic Model (CQM)
     :members:
     :project: dimod
 
+Constraints
+~~~~~~~~~~~ 
+
+.. doxygenclass:: dimod::Constraint
+    :members:
+    :project: dimod
+
 Quadratic Model (QM)
 --------------------
 

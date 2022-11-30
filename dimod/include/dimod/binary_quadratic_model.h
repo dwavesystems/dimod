@@ -23,13 +23,13 @@ namespace dimod {
 template <class Bias, class Index = int>
 class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
  public:
-    /// The type of the base class.
+    /// Type of the base class.
     using base_type = abc::QuadraticModelBase<Bias, Index>;
 
-    /// The first template parameter (`Bias`).
+    /// First template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (`Index`).
+    /// Second template parameter (`Index`).
     using index_type = Index;
 
     /// Unsigned integer that can represent non-negative values.
@@ -70,7 +70,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
      *
      * [COOrdinate]: https://w.wiki/n$L
      *
-     * `row_iterator` must be a random access iterator  pointing to the
+     * `row_iterator` must be a random access iterator  pointig to the
      * beginning of the row data. `col_iterator` must be a random access
      * iterator pointing to the beginning of the column data. `bias_iterator`
      * must be a random access iterator pointing to the beginning of the bias

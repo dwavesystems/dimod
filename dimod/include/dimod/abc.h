@@ -234,7 +234,7 @@ class QuadraticModelBase {
     /**
      * Return the energy of the given sample.
      *
-     * The `sample_start` must be random access iterator pointing to the
+     * The `sample_start` must be a random access iterator pointing to the
      * beginning of the sample.
      *
      * The behavior of this function is undefined when the sample is not
@@ -252,14 +252,14 @@ class QuadraticModelBase {
     template <class T>
     void fix_variable(index_type v, T assignment);
 
-    /// Check whether u and v have an interaction
+    /// Check whether `u` and `v` have an interaction.
     bool has_interaction(index_type u, index_type v) const;
 
     /// Test whether two quadratic models are equal.
     template <class B, class I>
     bool is_equal(const QuadraticModelBase<B, I>& other) const;
 
-    /// Return True if the model has no quadratic biases.
+    /// Return true if the model has no quadratic biases.
     bool is_linear() const;
 
     /// The linear bias of variable `v`.
@@ -294,7 +294,7 @@ class QuadraticModelBase {
     /// Return the number of interactions in the quadratic model.
     size_type num_interactions() const;
 
-    /// The number of other variables `v` interacts with.
+    /// Return the number of other variables that `v` interacts with.
     size_type num_interactions(index_type v) const;
 
     /// Return the number of variables in the quadratic model.
@@ -304,24 +304,24 @@ class QuadraticModelBase {
     bias_type offset() const;
 
     /**
-     * Return the quadratic bias associated with `u`, `v`.
+     * Return the quadratic bias associated with `u` and `v`.
      *
      * If `u` and `v` do not have a quadratic bias, returns 0.
      *
-     * Note that this function does not return a reference, this is because
+     * Note that this function does not return a reference because
      * each quadratic bias is stored twice.
      *
      */
     bias_type quadratic(index_type u, index_type v) const;
 
     /**
-     * Return the quadratic bias associated with `u`, `v`.
+     * Return the quadratic bias associated with `u` and `v`.
      *
-     * Note that this function does not return a reference, this is because
+     * Note that this function does not return a reference because
      * each quadratic bias is stored twice.
      *
-     * Raises an `out_of_range` error if either `u` or `v` are not variables or
-     * if they do not have an interaction then the function throws an exception.
+     * Raises an `out_of_range` error if either `u` or `v` are not variables;
+     * if they do not have an interaction, the function throws an exception.
      */
     bias_type quadratic_at(index_type u, index_type v) const;
 
@@ -336,7 +336,7 @@ class QuadraticModelBase {
      */
     virtual void remove_variable(index_type v);
 
-    /// Multiply all biases 'scalar'
+    /// Multiply all biases by the value of `scalar`.
     void scale(bias_type scalar);
 
     /// Set the linear bias of variable `v`.
@@ -348,7 +348,7 @@ class QuadraticModelBase {
     /// Set the offset.
     void set_offset(bias_type offset);
 
-    /// Set the quadratic bias for the given variables.
+    /// Set the quadratic bias between variables `u` and `v`.
     void set_quadratic(index_type u, index_type v, bias_type bias);
 
     void substitute_variable(index_type v, bias_type multiplier, bias_type offset);
@@ -373,7 +373,7 @@ class QuadraticModelBase {
     /// Increase the size of the model by `n`. Returns the index of the first variable added.
     index_type add_variables(index_type n);
 
-    /// Return an empty neighborhood - useful when we don't have an adj
+    /// Return an empty neighborhood; useful when a variable does not have an adjacency.
     static const std::vector<OneVarTerm<bias_type, index_type>>& empty_neighborhood() {
         static std::vector<OneVarTerm<bias_type, index_type>> empty;
         return empty;
@@ -383,7 +383,7 @@ class QuadraticModelBase {
     void resize(index_type n);
 
     /// Protected version of vartype() that allows subclasses to distinguish
-    /// between the vartype_ called by mixin functions and the public API one.
+    /// between the `vartype_` called by mixin functions and the public API one.
     /// By default they are the same.
     virtual Vartype vartype_(index_type v) const { return vartype(v); }
 
