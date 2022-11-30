@@ -30,7 +30,7 @@ Constrained Quadratic Model (CQM)
     :project: dimod
 
 Constraints
-~~~~~~~~~~~ 
+~~~~~~~~~~~
 
 .. doxygenclass:: dimod::Constraint
     :members:
@@ -60,7 +60,16 @@ vartype_info
     :undoc-members:
     :project: dimod
 
+vartype_limits
+--------------
+
 .. Todo: vartype_limits. Getting it to look nice is possible but fiddly
+
+.. doxygenclass:: dimod::vartype_limits
+    :members:
+    :undoc-members:
+    :project: dimod
+
 
 dimod Abstract Base Class (`dimod::abc`)
 ========================================
