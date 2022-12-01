@@ -215,7 +215,7 @@ def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: 
     return symbols
 
 def create_channel(num_receivers, num_transmitters, F_distribution=None, random_state=None):
-    """Create a channel model"""
+    """Create a channel model. Channel power is the expected root mean square signal per receiver. I.e. mean(F^2)*num_transmitters for homogeneous codes."""
     channel_power = 1
     if random_state is None:
         random_state = np.random.RandomState(random_state) 
@@ -235,7 +235,7 @@ def create_channel(num_receivers, num_transmitters, F_distribution=None, random_
         else:
             channel_power = 2 #For integer precision purposes:
             F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters))) + 1j*(1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
-    return F, channel_power
+    return F, channel_power*num_transmitters
 
 
 def constellation_properties(modulation):
@@ -282,7 +282,7 @@ def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrat
     return transmitted_symbols
 
 def create_signal(F, transmitted_symbols=None, channel_noise=None,
-                  SNRb=float('Inf'), modulation='BPSK', channel_power=1,
+                  SNRb=float('Inf'), modulation='BPSK', channel_power=None,
                   random_state=None, F_norm = 1, v_norm = 1):
     """ Creates a signal y = F v + n; generating random transmitted symbols and noise as necessary. 
     F is assumed to consist of i.i.d elements such that Fdagger*F = Nr Identity[Nt]*channel_power. 
@@ -294,6 +294,9 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
     
     num_receivers = F.shape[0]
     num_transmitters = F.shape[1] 
+    if channel_power == None:
+        #Assume its proportional to num_transmitters:
+        channel_power = num_transmitters
     bits_per_transmitter, amps, constellation_mean_power = constellation_properties(modulation)
     if transmitted_symbols is None:
         if random_state is None:
@@ -430,10 +433,10 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
         phase transition _[#T02, #R20]:
 
         >>> num_transmitters = 64
-        >>> var_per_bandwith = 1.4
+        >>> transmitters_per_receiver = 1.5
         >>> SNRb = 5
         >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', num_transmitters = 64, \
-                      num_receivers = round(num_transmitters*var_per_bandwidth), \
+                      num_receivers = round(num_transmitters/transmitters_per_receiver), \
                       SNRb=SNRb, \
                       F_distribution = ('Binary','Real'))
 
@@ -471,7 +474,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
                                           F_distribution=F_distribution, random_state=seed)
         #Channel power is the value relative to an assumed normalization E[Fui* Fui] = 1 
     else:
-        channel_power = 1
+        channel_power = num_transmitters
        
     if y is None:
         y, _, _, _ = create_signal(F, transmitted_symbols=transmitted_symbols, channel_noise=channel_noise,
