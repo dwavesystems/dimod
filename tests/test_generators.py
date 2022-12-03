@@ -1239,7 +1239,7 @@ class TestMIMO(unittest.TestCase):
         #BPSK, real channel:
         #transmitted_symbols_simple = np.ones(shape=(Nt,1))
         #transmitted_symbols = mimo.create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
-        transmitted_symbolsQAM = dimod.generators.mimo.create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
+        transmitted_symbolsQAM,_ = dimod.generators.mimo.create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
         y = np.matmul(F, transmitted_symbolsQAM)
         # Defaults
         W = dimod.generators.mimo.linear_filter(F=F)
@@ -1398,17 +1398,83 @@ class TestMIMO(unittest.TestCase):
         G = dimod.generators.mimo._make_honeycomb(2)
         self.assertEqual(G.number_of_nodes(),19)
         self.assertEqual(G.number_of_edges(),(7*6+6*4+6*3)//2)
-        
-    def test_spin_encoded_comp(self):
-        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
+
+    def create_channel(self):
+        print('Add test')
+    def create_signal(self):
+        print('Add test')
+    
+    def test_spin_encoded_comd(self):
+        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=1, modulation='BPSK')
         lattice = dimod.generators.mimo._make_honeycomb(1)
-        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters=1, num_receivers=1,
+        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice, num_transmitters_per_node=1, num_receivers_per_node=1,
                                                       modulation='BPSK')
         num_var = lattice.number_of_nodes()
         self.assertEqual(num_var,bqm.num_variables)
         self.assertEqual(21,bqm.num_interactions)
         # Transmitted symbols are 1 by default
         lattice = dimod.generators.mimo._make_honeycomb(2)
-        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters=2, num_receivers=2,
+        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+                                                      num_transmitters_per_node=2,
+                                                      num_receivers_per_node=2,
                                                       modulation='BPSK', SNRb=float('Inf'), use_offset=True)
         self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables),bqm.variables))),1e-10)
+
+    def test_noise_scale(self):
+        # After applying use_offset, the expected energy is the sum of noise terms.
+        # (num_transmitters/SNRb)*sum_{mu=1}^{num_receivers} nu_mu^2 , where <nu_mu^2>=1 under default channels
+        # We can do a randomized test (for practicl purpose, I fix the seed to avoid rare outliers):
+        for num_transmitters in [256]:
+            for SNRb in [0.1]:#[0.1,10]
+                for mods in [('BPSK',1,1,1),('64QAM',2,42,6)]:#,('QPSK',2,2,2),('16QAM',2,10,4)]:
+                    mod,channel_power_per_transmitter,constellation_mean_power,bits_per_transmitter = mods
+                    for num_receivers in [num_transmitters*4]: #[num_transmitters//4,num_transmitters]:
+                        EoverN = (channel_power_per_transmitter*constellation_mean_power/bits_per_transmitter/SNRb)*num_transmitters*num_receivers
+                        if mod=='BPSK':
+                            EoverN *= 2 #Real part only
+                        for seed in range(1):
+                            #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
+                            #y,t,n,_ = dimod.generators.mimo.create_signal(F,modulation=mod,channel_power=channel_power,random_state=random_state)
+                            #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
+                            #y,t,n,_ = dimod.generators.mimo.create_signal(F,modulation=mod,channel_power=channel_power,SNRb=1,random_state=random_state)
+
+                            bqm0 = dimod.generators.mimo.spin_encoded_mimo(modulation=mod,
+                                                                          num_transmitters=num_transmitters,
+                                                                          num_receivers=num_receivers,
+                                                                          use_offset=True,seed=seed)                     
+                            bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=mod,
+                                                                          num_transmitters=num_transmitters,
+                                                                          num_receivers=num_receivers, SNRb=SNRb,
+                                                                          use_offset=True,seed=seed)
+                            #E[n^2] constructed from offsets correctly:
+                            scale_n = (bqm.offset-bqm0.offset)/EoverN
+                            self.assertGreater(1.5,scale_n)
+                            self.assertLess(0.5,scale_n)
+                            #scale_n_alt = np.sum(abs(n)**2,axis=0)/EoverN)
+                    for num_transmitter_block in [2]: #[1,2]:
+                        lattice_size = num_transmitters//num_transmitter_block
+                        for num_receiver_block in [1]:#[1,2]:
+                            # Similar applies for COMD, up to boundary conditions. Choose a symmetric lattice:
+                            num_receiversT = lattice_size*num_receiver_block
+                            num_transmittersT = lattice_size*num_transmitter_block
+                            EoverN = (channel_power_per_transmitter*constellation_mean_power/bits_per_transmitter/SNRb)*num_transmittersT*num_receiversT
+                        
+                            if mod=='BPSK':
+                                EoverN *= 2 #Real part only
+                            lattice = nx.Graph()
+                            lattice.add_edges_from((i,(i+1)%lattice_size) for i in range(num_transmitters//num_transmitter_block))
+                            for seed in range(1):
+                                bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+                                                                              num_transmitters_per_node=num_transmitter_block,
+                                                                              num_receivers_per_node=num_receiver_block,
+                                                                              modulation=mod, SNRb=SNRb,
+                                                                              use_offset=True)
+                                bqm0 = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+                                                                               num_transmitters_per_node=num_transmitter_block,
+                                                                               num_receivers_per_node=num_receiver_block,
+                                                                               modulation=mod,
+                                                                               use_offset=True)
+                                scale_n = (bqm.offset-bqm0.offset)/EoverN
+                                self.assertGreater(1.5,scale_n)
+                                self.assertLess(0.5,scale_n)
+                            
