@@ -214,13 +214,27 @@ def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: 
                 + 1j * np.sum(amps*spinsR[:, num_transmitters:], axis=0)
     return symbols
 
-def create_channel(num_receivers, num_transmitters, F_distribution=None, random_state=None):
+def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_node=1,neighbor_root_attenuation=1):
+    # Slow for now. Debugging
+    num_var = lattice.number_of_nodes()
+    A = np.identity(num_var)
+    node_to_int = {n:idx for idx,n in enumerate(lattice.nodes())}
+    for n0 in lattice.nodes:
+        root = node_to_int[n0]
+        for neigh in lattice.neighbors(n0):
+            A[node_to_int[neigh],root]=neighbor_root_attenuation
+    A = np.tile(A,(transmitters_per_node,receivers_per_node))
+    return A
+
+def create_channel(num_receivers, num_transmitters, F_distribution=None, random_state=None, attenuation_matrix=None):
     """Create a channel model. Channel power is the expected root mean square signal per receiver. I.e. mean(F^2)*num_transmitters for homogeneous codes."""
+    #random_state = np.random.RandomState(10) ##DEBUG
     channel_power = 1
-    if random_state is None:
+    if type(random_state) is not np.random.mtrand.RandomState:
         random_state = np.random.RandomState(random_state) 
     if F_distribution is None:
         F_distribution = ('Normal', 'Complex')
+        
     elif type(F_distribution) is not tuple or len(F_distribution) !=2:
         raise ValueError('F_distribution should be a tuple of strings or None')
     if F_distribution[0] == 'Normal':
@@ -235,7 +249,12 @@ def create_channel(num_receivers, num_transmitters, F_distribution=None, random_
         else:
             channel_power = 2 #For integer precision purposes:
             F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters))) + 1j*(1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
-    return F, channel_power*num_transmitters
+    if attenuation_matrix is not None:
+        F=F*dense_attenuation_graph #Dense format for now, this is slow.
+        channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix,axis=0))
+    else:
+        channel_power *= num_transmitters
+    return F, channel_power, random_state
 
 
 def constellation_properties(modulation):
@@ -267,19 +286,22 @@ def constellation_properties(modulation):
         constellation_mean_power = 2*np.mean(amps*amps)
     return bits_per_transmitter, amps, constellation_mean_power
 
-def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrature: bool = True):
+def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrature: bool = True, random_state=None):
     """Symbols are generated uniformly at random as a funtion of the quadrature and amplitude modulation. 
     Note that the power per symbol is not normalized. The signal power is thus proportional to 
     Nt*sig2; where sig2 = [1,2,10,42] for BPSK, QPSK, 16QAM and 64QAM respectively. The complex and 
     real valued parts of all constellations are integer.
     
     """
+    if type(random_state) is not np.random.mtrand.RandomState:
+        random_state = np.random.RandomState(random_state)
+    
     if quadrature == False:
-        transmitted_symbols = np.random.choice(amps, size=(num_transmitters, 1))
+        transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
     else: 
-        transmitted_symbols = np.random.choice(amps, size=(num_transmitters, 1)) \
-                            + 1j * np.random.choice(amps, size=(num_transmitters, 1))
-    return transmitted_symbols
+        transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1)) \
+                            + 1j * random_state.choice(amps, size=(num_transmitters, 1))
+    return transmitted_symbols, random_state
 
 def create_signal(F, transmitted_symbols=None, channel_noise=None,
                   SNRb=float('Inf'), modulation='BPSK', channel_power=None,
@@ -291,20 +313,22 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
     channel_noise is assumed, or created to be suitably scaled. N0 Identity[Nt] =  
     SNRb = /
     """
-    
+    #random_state = np.random.RandomState(1) ##DEBUG
     num_receivers = F.shape[0]
     num_transmitters = F.shape[1] 
     if channel_power == None:
-        #Assume its proportional to num_transmitters:
+        #Assume its proportional to num_transmitters, i.e. every channel component is RMSE 1 and 1 bit
         channel_power = num_transmitters
     bits_per_transmitter, amps, constellation_mean_power = constellation_properties(modulation)
     if transmitted_symbols is None:
-        if random_state is None:
+        if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
         if modulation == 'BPSK':
-            transmitted_symbols = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False)
+            transmitted_symbols, random_state = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False,random_state=random_state)
         else:
-            transmitted_symbols = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True)
+            transmitted_symbols, random_state = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True,random_state=random_state)
+            
+
     if SNRb <= 0:
        raise ValueError(f"Expect positive signal to noise ratio. SNRb={SNRb}")
     elif SNRb < float('Inf'):
@@ -316,7 +340,7 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
         sigma = np.sqrt(N0/2) # Noise is complex by definition, hence 1/2 power in real and complex parts
         if channel_noise is None:
             
-            if random_state is None:
+            if type(random_state) is not np.random.mtrand.RandomState:
                 random_state = np.random.RandomState(random_state)
             # Channel noise of covariance N0* I_{NR}. Noise is complex by definition, although
             # for real channel and symbols we need only worry about real part:
@@ -330,7 +354,7 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
         y = channel_noise + np.matmul(F, transmitted_symbols)
     else:
         y = np.matmul(F, transmitted_symbols)
-    
+
     return y, transmitted_symbols, channel_noise, random_state
 
 def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union[np.array, None] = None,
@@ -339,7 +363,8 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
                       num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
                       seed: Union[None, int, np.random.RandomState] = None, 
                       F_distribution: Union[None, tuple] = None, 
-                      use_offset: bool = False) -> dimod.BinaryQuadraticModel:
+                      use_offset: bool = False,
+                      attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
     """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
         
     Users each transmit complex valued symbols over a random channel :math:`F` of 
@@ -355,7 +380,8 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
             provided, generated from other arguments.
 
         F: A complex or real valued channel in the form of a numpy array. If not
-            provided, generated from other arguments.
+           provided, generated from other arguments. Note that for correct interpretation
+           of SNRb, the channel power should be normalized to num_transmitters.
 
         modulation: Specifies the constellation (symbol set) in use by 
             each user. Symbols are assumed to be transmitted with equal probability.
@@ -424,6 +450,10 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
            high num_receivers/user ratio, and signal to noise ratio, this will
            be the ground state energy with high probability.
 
+        attenuation_matrix:
+           Root power associated to variable to chip communication; use
+           for sparse and structured codes.
+    
     Returns:
         The binary quadratic model defining the log-likelihood function
 
@@ -469,9 +499,8 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
     assert num_receivers > 0, "Expect positive number of receivers"
 
     if F is None:
-        seed = np.random.RandomState(seed)
-        F, channel_power = create_channel(num_receivers=num_receivers, num_transmitters=num_transmitters,
-                                          F_distribution=F_distribution, random_state=seed)
+        F, channel_power, seed = create_channel(num_receivers=num_receivers, num_transmitters=num_transmitters,
+                                                F_distribution=F_distribution, random_state=seed)
         #Channel power is the value relative to an assumed normalization E[Fui* Fui] = 1 
     else:
         channel_power = num_transmitters
@@ -484,6 +513,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
     h, J, offset = _yF_to_hJ(y, F, modulation)
   
     if use_offset:
+        #NB - in this form, offset arises from 
         return dimod.BQM(h[:,0], J, 'SPIN', offset=offset)
     else:
         np.fill_diagonal(J, 0)
@@ -500,12 +530,13 @@ def _make_honeycomb(L: int):
     G.remove_nodes_from([(i,j) for i in range(L) for j in range(L+1+i,2*L+1)])
     return G
 
-def spin_encoded_comp(lattice: Union[int,nx.Graph],
-                      modulation: str, ys: Union[np.array, None] = None,
-                      Fs: Union[np.array, None] = None,
+def spin_encoded_comd(lattice: Union[int,nx.Graph],
+                      modulation: str, y: Union[np.array, None] = None,
+                      F: Union[np.array, None] = None,
                       *,
                       transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
-                      num_transmitters: int = None,  num_receivers: int = None, SNRb: float = float('Inf'), 
+                      num_transmitters_per_node: int = 1,
+                      num_receivers_per_node: int = 1, SNRb: float = float('Inf'), 
                       seed: Union[None, int, np.random.RandomState] = None, 
                       F_distribution: Union[None, str] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
@@ -519,8 +550,8 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
            lattice can also be set to an integer value, in which case a honeycomb 
            lattice of the given linear scale (number of basestations O(L^2)) is 
            created using ``_make_honeycomb()``.
-       Fs: A dictionary of channels, one per basestation.
-       ys: A dictionary of signals, one per basestation.
+       F: Channel
+       y: Signal
      
        See for ``spin_encoded_mimo`` for interpretation of other per-basestation parameters. 
     Returns:
@@ -531,34 +562,18 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
     """
     if type(lattice) is not nx.Graph:
         lattice = _make_honeycomb(int(lattice))
-    if num_transmitters == None:
-        num_transmitters = 1
-    if num_receivers == None:
-        num_receivers = 1
-    if ys is None:
-        ys = {bs : None for bs in lattice.nodes()}
-    if Fs is None:
-        Fs = {bs : None for bs in lattice.nodes()}
-    if (modulation != 'BPSK' and modulation != 'QPSK') or transmitted_symbols is not None:
-        raise ValueError('Generation of problems for which transmitted symbols are'
-                         'not all 1 (default BPSK,QPSK) not yet supported.')
-    if SNRb < float('Inf'):
-        #Spread across basestations by construction
-        SNRb /= (1 + 2*lattice.num_edges/lattice.num_nodes)
-    #Convert graph labels
-    bqm = dimod.BinaryQuadraticModel('SPIN');
-    for bs in lattice.nodes():
-        bqm_cell = spin_encoded_mimo(
-            modulation, ys[bs], Fs[bs],
-            transmitted_symbols=transmitted_symbols, channel_noise=channel_noise,
-            num_transmitters=num_transmitters*(1 + lattice.degree(bs)),
-            num_receivers=num_receivers, SNRb=SNRb, seed=seed,
-            F_distribution=F_distribution, use_offset=use_offset)
-        geometric_labels = [(bs,i) for i in range(num_transmitters)] +\
-                           [(neigh,i) for neigh in lattice.neighbors(bs)
-                            for i in range(num_transmitters)]
-        bqm_cell.relabel_variables({idx : l for idx,l in
-                                    enumerate(geometric_labels)})
-        bqm = bqm + bqm_cell;
-
+    attenuation_matrix = lattice_to_attenuation_matrix(lattice,
+                                                        transmitters_per_node=num_transmitters_per_node,
+                                                        receivers_per_node=num_receivers_per_node,
+                                                        neighbor_root_attenuation=1)
+    num_receivers, num_transmitters = attenuation_matrix.shape
+    bqm = spin_encoded_mimo(modulation=modulation, y=y, F=F,
+                            transmitted_symbols=transmitted_symbols, channel_noise=channel_noise, 
+                            num_transmitters=num_transmitters,  num_receivers=num_receivers,
+                            SNRb=SNRb, 
+                            seed=seed, 
+                            F_distribution=F_distribution, 
+                            use_offset=use_offset,
+                            attenuation_matrix=attenuation_matrix)
+    
     return bqm
