@@ -41,7 +41,7 @@ except ImportError:
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
 from dimod.binary.vartypeview import VartypeView
-from dimod.decorators import forwarding_method, unique_variable_labels
+from dimod.decorators import forwarding_method, unique_variable_labels, property_or_method
 from dimod.quadratic import QuadraticModel, QM
 from dimod.quadratic.quadratic_model import _VariableArray
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
@@ -544,7 +544,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def offset(self, offset):
         self.data.offset = offset
 
-    @property
+    @property_or_method
     def num_interactions(self) -> int:
         """Number of interactions in the model.
 
@@ -552,7 +552,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.num_interactions()
 
-    @property
+    @property_or_method
     def num_variables(self) -> int:
         """Number of variables in the model."""
         return self.data.num_variables()
@@ -614,7 +614,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """The variables of the binary quadratic model."""
         return self.data.variables
 
-    @property
+    @property_or_method
     def vartype(self) -> Vartype:
         """The model's variable type.
 

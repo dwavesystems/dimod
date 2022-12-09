@@ -33,7 +33,7 @@ except ImportError:
     ArrayLike = Any
     DTypeLike = Any
 
-from dimod.decorators import forwarding_method, unique_variable_labels
+from dimod.decorators import forwarding_method, unique_variable_labels, property_or_method
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import VariablesSection, Section
@@ -352,7 +352,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """Data-type of the model's biases."""
         return self.data.dtype
 
-    @property
+    @property_or_method
     def num_interactions(self) -> int:
         """Number of interactions in the model.
 
@@ -360,7 +360,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.num_interactions()
 
-    @property
+    @property_or_method
     def num_variables(self) -> int:
         """Number of variables in the model."""
         return self.data.num_variables()
