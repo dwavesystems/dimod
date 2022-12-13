@@ -24,7 +24,7 @@ r"""Constrained quadratic models are problems of the form:
         \quad m=1, \dots, M,
     \end{align}
 
-where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_, integer, or continuous
 variables, :math:`a_{i}, b_{ij}, c` are real values,
 :math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
 
@@ -33,7 +33,7 @@ variables, :math:`a_{i}, b_{ij}, c` are real values,
     :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
     and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
 
-Constraints are often categorized as either "hard" or "soft". Any hard constraint
+Constraints can be categorized as either "hard" or "soft". Any hard constraint
 must be satisfied for a solution of the model to qualify as feasible. Soft
 constraints may be violated to achieve an overall good solution. By setting
 appropriate weights to soft constraints in comparison to the objective

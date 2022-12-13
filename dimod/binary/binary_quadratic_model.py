@@ -17,7 +17,7 @@ r"""Binary quadratic models (BQMs) are problems of the form:
 .. math::
 
     E(\bf{v})
-    = \sum_{i=1} a_i v_i
+    = \sum_{i} a_i v_i
     + \sum_{i<j} b_{i,j} v_i v_j
     + c
     \qquad\qquad v_i \in\{-1,+1\} \text{  or } \{0,1\}

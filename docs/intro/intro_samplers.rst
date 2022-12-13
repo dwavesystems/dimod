@@ -21,7 +21,7 @@ Example: Using a Reference Sampler
 
 To find solutions to the small four-node
 `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_
-BQM generated in the :ref:`intro_qm` section, shown again in the figure below,
+BQM generated in the :ref:`intro_models` section, shown again in the figure below,
 you can use one of dimod's reference samplers: its
 :class:`~dimod.reference.samplers.ExactSolver` test sampler, for example,
 calculates the energy of all possible samples.

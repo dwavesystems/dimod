@@ -5,7 +5,7 @@ Models: BQM, CQM, QM, Others
 ============================
 
 This page describes the `dimod` package's quadratic models: classes,
-attributes, and methods. For an introduction and the data structure, see :ref:`intro_qm`.
+attributes, and methods. For an introduction and the data structure, see :ref:`intro_models`.
 
 .. contents::
     :local:

@@ -70,7 +70,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
      *
      * [COOrdinate]: https://w.wiki/n$L
      *
-     * `row_iterator` must be a random access iterator  pointig to the
+     * `row_iterator` must be a random access iterator pointing to the
      * beginning of the row data. `col_iterator` must be a random access
      * iterator pointing to the beginning of the column data. `bias_iterator`
      * must be a random access iterator pointing to the beginning of the bias
@@ -83,7 +83,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Add one (disconnected) variable to the BQM and return its index.
     index_type add_variable();
 
-    /// Change the `vartype` of the BQM.
+    /// Change the variable type of the BQM.
     void change_vartype(Vartype vartype);
 
     bias_type lower_bound() const;

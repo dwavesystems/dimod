@@ -216,16 +216,16 @@ class QuadraticModelBase {
     template <class T>
     void add_quadratic_from_dense(const T dense[], index_type num_variables);
 
-    /// First neighbor of variable `v`.
+    /// Return an iterator to the beginning of the neighborhood of `v`.
     const_neighborhood_iterator cbegin_neighborhood(index_type v) const;
 
-    /// Last neighbor of variable `v`.
+    /// Return an iterator to the end of the neighborhood of `v`.
     const_neighborhood_iterator cend_neighborhood(index_type v) const;
 
-    /// First interaction (edges and quadratic coefficient) in an objective or constraint.
+    /// Return an iterator to the beginning of the quadratic interactions.
     const_quadratic_iterator cbegin_quadratic() const;
 
-    /// Last interaction (edges and quadratic coefficient) in an objective or constraint.
+    /// Return an iterator to the end of the quadratic interactions.
     const_quadratic_iterator cend_quadratic() const;
 
     /// Remove the offset and all variables and interactions from the model.
@@ -259,7 +259,7 @@ class QuadraticModelBase {
     template <class B, class I>
     bool is_equal(const QuadraticModelBase<B, I>& other) const;
 
-    /// Return true if the model has no quadratic biases.
+    /// Test whether the model has no quadratic biases.
     bool is_linear() const;
 
     /// The linear bias of variable `v`.
