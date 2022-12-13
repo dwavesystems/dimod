@@ -12,6 +12,21 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+r"""Quadratic models are problems of the form:
+
+.. math::
+
+    E(x) = \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
+
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
+variables and :math:`a_{i}, b_{ij}, c` are real values.
+
+.. [#]
+    For binary variables, the range of the quadratic-term summation is
+    :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+    and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
+"""
+
 from __future__ import annotations
 
 import struct
@@ -121,23 +136,8 @@ class VartypesSection(Section):
 
 
 class QuadraticModel(QuadraticViewsMixin):
-    r"""A quadratic model.
+    r"A quadratic model."
 
-    Quadratic models are problems of the form:
-
-    .. math::
-
-        E(x) = \sum_i a_i x_i + \sum_{i \le j} b_{i, j} x_i x_j + c
-
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
-    variables and :math:`a_{i}, b_{ij}, c` are real values.
-
-    .. [#]
-        For binary variables, the range of the quadratic-term summation is
-        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
-        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
-
-    """
     _DATA_CLASSES = {
         np.dtype(np.float32): cyQM_float32,
         np.dtype(np.float64): cyQM_float64,

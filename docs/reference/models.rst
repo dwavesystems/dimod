@@ -5,7 +5,7 @@ Models: BQM, CQM, QM, Others
 ============================
 
 This page describes the `dimod` package's quadratic models: classes,
-attributes, and methods. For an introduction and the data structure, see :ref:`intro_qm`.
+attributes, and methods. For an introduction and the data structure, see :ref:`intro_models`.
 
 .. contents::
     :local:
@@ -16,8 +16,11 @@ attributes, and methods. For an introduction and the data structure, see :ref:`i
 Binary Quadratic Models
 =======================
 
-For an introduction to BQMs, see
-:std:doc:`Concepts: Binary Quadratic Models <oceandocs:concepts/bqm>`.
+.. automodule:: dimod.binary.binary_quadratic_model
+
+For examples, see
+`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
+and the BQM examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
 
 BQM Class
 ---------
@@ -126,8 +129,11 @@ Generic BQM Constructor
 Constrained Quadratic Model
 ===========================
 
-For an introduction to BQMs, see
-:std:doc:`Concepts: Constrained Quadratic Models <oceandocs:concepts/cqm>`.
+.. automodule:: dimod.constrained.constrained
+
+For examples, see
+`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
+and the CQM examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
 
 CQM Class
 ---------
@@ -207,8 +213,12 @@ Sense Class
 Quadratic Models
 ================
 
-For an introduction to QMs, see
-:std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`.
+.. automodule:: dimod.quadratic.quadratic_model
+
+For examples, see
+`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
+and the examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
+
 
 QM Class
 --------

@@ -12,8 +12,34 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-"""
-Constrained Quadratic Model class.
+r"""Constrained quadratic models are problems of the form:
+
+.. math::
+
+    \begin{align}
+        \text{Minimize an objective:} & \\
+        & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
+        \text{Subject to constraints:} & \\
+        & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
+        \quad m=1, \dots, M,
+    \end{align}
+
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_, integer, or continuous
+variables, :math:`a_{i}, b_{ij}, c` are real values,
+:math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
+
+.. [#]
+    For binary variables, the range of the quadratic-term summation is
+    :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+    and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
+
+Constraints can be categorized as either "hard" or "soft". Any hard constraint
+must be satisfied for a solution of the model to qualify as feasible. Soft
+constraints may be violated to achieve an overall good solution. By setting
+appropriate weights to soft constraints in comparison to the objective
+and to other soft constraints, you can express the relative importance of such
+constraints.
+
 """
 
 from __future__ import annotations
@@ -137,99 +163,15 @@ class SoftView(collections.abc.Mapping):
 class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     r"""A constrained quadratic model.
 
-    Constrained quadratic models are problems of the form:
-
-    .. math::
-
-        \begin{align}
-            \text{Minimize an objective:} & \\
-            & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
-            \text{Subject to constraints:} & \\
-            & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
-            \quad m=1, \dots, M,
-        \end{align}
-
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
-    variables, :math:`a_{i}, b_{ij}, c` are real values,
-    :math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
-
-    .. [#]
-        For binary variables, the range of the quadratic-term summation is
-        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
-        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
-
-    Constraints are often categorized as either "hard" or "soft". Any hard constraint
-    must be satisfied for a solution of the model to qualify as feasible. Soft
-    constraints may be violated to achieve an overall good solution. By setting
-    appropriate weights to soft constraints in comparison to the objective
-    and to other soft constraints, you can express the relative importance of such
-    constraints.
-
     The objective and constraints are encoded as either :class:`.QuadraticModel`
     or :class:`.BinaryQuadraticModel` depending on the variable types used.
 
     Example:
 
-        This example solves the simple `bin packing problem <https://w.wiki/3jz4>`_
-        of packing a set of items of different weights into the smallest
-        possible number of bins.
-
-        `dimod` provides a general :func:`~dimod.generators.random_bin_packing`
-        function to generate bin packing problems, and this example follows the
-        same naming conventions.
-
-        Consider four objects with weights between 0 and 1, and assume that each
-        bin has a capacity to hold up to a total weight of 1.
-
-        >>> weights = [.9, .7, .2, .1]
-        >>> capacity = 1
-
-        Variable :math:`y_j` indicates that bin :math:`j` is used. Clearly, no
-        more than four bins are needed.
-
-        >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
-
-        Variable :math:`x_{i,j}` indicates that item :math:`i` is put in bin
-        :math:`j`.
-
-        >>> x = [[dimod.Binary(f'x_{i}_{j}') for j in range(len(weights))]
-        ...      for i in range(len(weights))]
-
         Create an empty constrained quadratic model ("empty" meaning that no
-        objective or constraints have set).
+        objective or constraints are set).
 
         >>> cqm = dimod.ConstrainedQuadraticModel()
-
-        The problem is to minimize the number of bins used. Therefore the objective
-        is to minimize the value of :math:`\sum_j y_j`.
-
-        >>> cqm.set_objective(sum(y))
-
-        Any feasible solution must meet the constraint that each item can only go
-        in one bin. You can express this constraint, for a given item :math:`i`,
-        with :math:`\sum_j x_{i, j} == 1`. Note that the label of each
-        constraint is returned so that you can access them in the future if
-        desired.
-
-        >>> for i in range(len(weights)):
-        ...     cqm.add_constraint(sum(x[i]) == 1, label=f'item_placing_{i}')
-        'item_placing_0'
-        'item_placing_1'
-        'item_placing_2'
-        'item_placing_3'
-
-        Finally, enforce the limits on each bin. You can express this constraint,
-        for a given bin :math:`j`, with :math:`\sum_i x_{i, j} * w_i <= c` where
-        :math:`w_i` is the weight of item :math:`i` and :math:`c` is the capacity.
-
-        >>> for j in range(len(weights)):
-        ...     cqm.add_constraint(
-        ...         sum(weights[i] * x[i][j] for i in range(len(weights))) - y[j] * capacity <= 0,
-        ...         label=f'capacity_bin_{j}')
-        'capacity_bin_0'
-        'capacity_bin_1'
-        'capacity_bin_2'
-        'capacity_bin_3'
 
     """
     def __init__(self):
