@@ -702,7 +702,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 A_{ub}x \le b_{ub}, \\
                 A_{eq}x = b_{eq}
 
-        where `x` is a vector of binary decision variables,
+        where `x` is a vector of decision variables,
         :math:`b_{ub}` and :math:`b_{eq}` are vectors,
         and :math:`A_{ub}` and :math:`A_{eq}` are matrices.
 
