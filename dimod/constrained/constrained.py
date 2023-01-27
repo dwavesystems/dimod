@@ -69,7 +69,7 @@ from dimod.sampleset import as_samples
 from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Comparison, Sense
-from dimod.typing import Bias, Variable, SamplesLike
+from dimod.typing import ArrayLike, Bias, Variable, SamplesLike
 from dimod.utilities import new_variable_label
 from dimod.variables import serialize_variable, deserialize_variable, Variables
 from dimod.vartypes import as_vartype, Vartype, VartypeLike
@@ -687,6 +687,118 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         label = self.add_constraint_from_model(qm, sense='==', rhs=1, label=label, copy=copy)
         self.discrete.add(label)
         return label
+
+    def add_linear_constraints(self, A: ArrayLike, sense: Union[Sense, str], b: ArrayLike,
+                               *,
+                               variable_labels: Optional[Iterable[Variable]] = None,
+                               constraint_labels: Optional[Iterable[Hashable]] = None,
+                               ):
+        r"""Add multiple linear constraints to the model.
+
+        Add linear constraints defined by
+
+        .. math::
+
+                A_{ub}x \le b_{ub}, \\
+                A_{eq}x = b_{eq}
+
+        where `x` is a vector of binary decision variables,
+        :math:`b_{ub}` and :math:`b_{eq}` are vectors,
+        and :math:`A_{ub}` and :math:`A_{eq}` are matrices.
+
+        Args:
+            A: Each row of ``A`` specifies the coefficients of a linear constraint.
+            sense: One of `<=`, `>=`, `==`.
+            b: An array of left-hand-sides of the constraints.
+            variable_labels: The variable labels corresponding to the columns of `A`.
+                If ``None``, defaults to ``range(A.shape[1])``.
+            constraint_labels: The labels of the constraints. Labels of additional
+                constraints are generated.
+
+        Example:
+
+            Consider a binary linear program subject to the following constraints
+
+            .. math::
+                x_0 + 2x_1 - 7x_2 = 2 \\
+                x_0 + x_2 = 0 \\
+                -x_0 + x_1 \le 1 \\
+                3x_1 + x_2 \le 3
+
+            We can specify the constraints using matrices and vectors
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variables("BINARY", 3)
+            >>> A_eq = [[1, 2, -7], [1, 0, 1]]
+            >>> b_eq = [2, 0]
+            >>> cqm.add_linear_constraints(A_eq, "==", b_eq)
+            >>> A_ub = [[-1, 1, 0], [0, 3, 1]]
+            >>> b_ub = [1, 3]
+            >>> cqm.add_linear_constraints(A_ub, "<=", b_ub)
+            >>> print(cqm)
+            Constrained quadratic model: 3 variables, 4 constraints, 9 biases
+            <BLANKLINE>
+            Objective
+              0
+            <BLANKLINE>
+            Constraints
+              0: Binary(0) + 2*Binary(1) - 7*Binary(2) == 2.0
+              1: Binary(0) + Binary(2) == 0.0
+              2: -Binary(0) + Binary(1) <= 1.0
+              3: 3*Binary(1) + Binary(2) <= 3.0
+            <BLANKLINE>
+            Bounds
+            <BLANKLINE>
+
+            We can also use :class:`str`-labelled variables
+
+            >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm.add_variables("BINARY", ["x0", "x1", "x2"])
+            >>> A_eq = [[1, 2, -7], [1, 0, 1]]
+            >>> b_eq = [2, 0]
+            >>> cqm.add_linear_constraints(A_eq, "==", b_eq, variable_labels=["x0", "x1", "x2"])
+            >>> A_ub = [[-1, 1, 0], [0, 3, 1]]
+            >>> b_ub = [1, 3]
+            >>> cqm.add_linear_constraints(A_ub, "<=", b_ub, variable_labels=["x0", "x1", "x2"])
+            >>> print(cqm)
+            Constrained quadratic model: 3 variables, 4 constraints, 9 biases
+            <BLANKLINE>
+            Objective
+              0
+            <BLANKLINE>
+            Constraints
+              0: Binary('x0') + 2*Binary('x1') - 7*Binary('x2') == 2.0
+              1: Binary('x0') + Binary('x2') == 0.0
+              2: -Binary('x0') + Binary('x1') <= 1.0
+              3: 3*Binary('x1') + Binary('x2') <= 3.0
+            <BLANKLINE>
+            Bounds
+            <BLANKLINE>
+
+        .. versionadded:: 0.12.4
+
+        """
+        A = np.asarray(A)
+        if A.ndim != 2:
+            raise ValueError("expected A to be a 2d array-like")
+        if np.issubdtype(A.dtype, np.unsignedinteger):
+            A = np.asarray(A, dtype=float)
+
+        b = np.asarray(b)
+        if b.ndim != 1:
+            raise ValueError("expected b to be a 1d array-like")
+        if np.issubdtype(b.dtype, np.unsignedinteger):
+            b = np.asarray(b, dtype=float)
+
+        # we could also check for complex, to raise a better error message,
+        # but that seems like enough of an edge case that we should let it
+        # fail lazily.
+
+        return super().add_linear_constraints(
+            A, sense, b,
+            variable_labels=variable_labels,
+            constraint_labels=constraint_labels,
+            )
 
     def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
                      *,

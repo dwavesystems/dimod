@@ -66,6 +66,15 @@ ctypedef fused ConstNumeric:
     const float
     const double
 
+# for when there are two input arguments of different types 
+ctypedef fused ConstNumeric2:
+    const signed char
+    const signed short
+    const signed int
+    const signed long long
+    const float
+    const double
+
 
 cdef object as_numpy_float(cython.floating)
 

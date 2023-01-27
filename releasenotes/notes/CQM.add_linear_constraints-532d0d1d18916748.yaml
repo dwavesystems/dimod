@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``ConstrainedQuadraticModel.add_linear_constraints()`` method.

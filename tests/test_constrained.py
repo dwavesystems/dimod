@@ -213,6 +213,122 @@ class TestAddDiscrete(unittest.TestCase):
         cqm.add_discrete('abc')
 
 
+class TestAddLinearConstraints(unittest.TestCase):
+    def test_simple(self):
+        A = [[0, 1, 1], [0, 0, 1], [1, 0, 0]]
+        b = [1, 2, 3]
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 3)
+        cqm.add_linear_constraints(A, '==', b, constraint_labels='abc')
+
+        self.assertEqual(cqm.num_constraints(), 3)
+
+        self.assertEqual(cqm.constraints['a'].rhs, 1)
+        self.assertEqual(cqm.constraints['a'].sense, Sense.Eq)
+        self.assertTrue(cqm.constraints['a'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['a'].lhs.linear, {1: 1, 2: 1})
+
+        self.assertEqual(cqm.constraints['b'].rhs, 2)
+        self.assertEqual(cqm.constraints['b'].sense, Sense.Eq)
+        self.assertTrue(cqm.constraints['b'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['b'].lhs.linear, {2: 1})
+
+        self.assertEqual(cqm.constraints['c'].rhs, 3)
+        self.assertEqual(cqm.constraints['c'].sense, Sense.Eq)
+        self.assertTrue(cqm.constraints['c'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['c'].lhs.linear, {0: 1})
+
+    def test_empty_row(self):
+        A = [[0, 1, 1], [0, 0, 0]]
+        b = [1, 2]
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 3)
+        cqm.add_linear_constraints(A, '<=', b, constraint_labels='abc')  # allow too many labels
+
+        self.assertEqual(cqm.num_constraints(), 2)
+
+        self.assertEqual(cqm.constraints['a'].rhs, 1)
+        self.assertEqual(cqm.constraints['a'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['a'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['a'].lhs.linear, {1: 1, 2: 1})
+
+        self.assertEqual(cqm.constraints['b'].rhs, 2)
+        self.assertEqual(cqm.constraints['b'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['b'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['b'].lhs.linear, {})
+
+    def test_different_dtype(self):
+        A = np.asarray([[0, 1, 1], [0, 0, 0]], dtype=int)
+        b = np.asarray([1, 2], dtype=float)
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 3)
+        cqm.add_linear_constraints(A, '<=', b, constraint_labels='ab')
+
+        self.assertEqual(cqm.num_constraints(), 2)
+
+        self.assertEqual(cqm.constraints['a'].rhs, 1)
+        self.assertEqual(cqm.constraints['a'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['a'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['a'].lhs.linear, {1: 1, 2: 1})
+
+        self.assertEqual(cqm.constraints['b'].rhs, 2)
+        self.assertEqual(cqm.constraints['b'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['b'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['b'].lhs.linear, {})
+
+    def test_unsigned(self):
+        A = np.asarray([[0, 1, 1], [3, 4, 5]], dtype=np.uint32)
+        b = np.asarray([1, 2], dtype=np.uint8)
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 3)
+        cqm.add_linear_constraints(A, '<=', b, constraint_labels='ab')
+
+        self.assertEqual(cqm.num_constraints(), 2)
+
+        self.assertEqual(cqm.constraints['a'].rhs, 1)
+        self.assertEqual(cqm.constraints['a'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['a'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['a'].lhs.linear, {1: 1, 2: 1})
+
+        self.assertEqual(cqm.constraints['b'].rhs, 2)
+        self.assertEqual(cqm.constraints['b'].sense, Sense.Le)
+        self.assertTrue(cqm.constraints['b'].lhs.is_linear())
+        self.assertEqual(cqm.constraints['b'].lhs.linear, {0: 3.0, 1: 4.0, 2: 5.0})
+
+    def test_variable_labels(self):
+        A = [[0, 1, 1], [3, 4, 5]]
+        b = [1, 2]
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 'abc')
+        cqm.add_linear_constraints(A, '<=', b,
+                                   constraint_labels=[0],  # under-labelled
+                                   variable_labels='cba')
+
+        self.assertEqual(cqm.constraints[0].rhs, 1)
+        self.assertEqual(cqm.constraints[0].sense, Sense.Le)
+        self.assertTrue(cqm.constraints[0].lhs.is_linear())
+        self.assertEqual(cqm.constraints[0].lhs.linear, {'b': 1, 'a': 1})
+
+        self.assertEqual(cqm.constraints[1].rhs, 2)
+        self.assertEqual(cqm.constraints[1].sense, Sense.Le)
+        self.assertTrue(cqm.constraints[1].lhs.is_linear())
+        self.assertEqual(cqm.constraints[1].lhs.linear, {'c': 3.0, 'b': 4.0, 'a': 5.0})
+
+    def test_bad_variable_labels(self):
+        A = [[0, 1, 1], [3, 4, 5]]
+        b = [1, 2]
+
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", 'abc')
+        with self.assertRaises(ValueError):
+            cqm.add_linear_constraints(A, '<=', b, variable_labels='cb')
+
+
 class TestSoftConstraint(unittest.TestCase):
     def test_constraint_manipulation(self):
         # soft constraints should survive relabeling and removal
