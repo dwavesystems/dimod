@@ -709,7 +709,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         Args:
             A: Each row of ``A`` specifies the coefficients of a linear constraint.
             sense: One of `<=`, `>=`, `==`.
-            b: An array of left-hand-sides of the constraints.
+            b: An array of right-hand-sides of the constraints.
             variable_labels: The variable labels corresponding to the columns of `A`.
                 If ``None``, defaults to ``range(A.shape[1])``.
             constraint_labels: The labels of the constraints. Labels of additional
@@ -725,7 +725,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 -x_0 + x_1 \le 1 \\
                 3x_1 + x_2 \le 3
 
-            We can specify the constraints using matrices and vectors
+            You can specify the constraints using matrices and vectors:
 
             >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> cqm.add_variables("BINARY", 3)
