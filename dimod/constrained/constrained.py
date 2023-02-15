@@ -743,21 +743,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 DeprecationWarning, stacklevel=2)
             v, vartype = vartype, v
 
-        return super().add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
-
-    def add_variables(self,
-                      vartype: dimod.VartypeLike,
-                      variables: Union[int, Sequence[Variable]],
-                      *,
-                      lower_bound: Optional[float] = None,
-                      upper_bound: Optional[float] = None,
-                      ) -> None:
-        if isinstance(variables, Iterable):
-            for v in variables:
-                self.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
-        else:
-            for _ in range(variables):
-                self.add_variable(vartype, lower_bound=lower_bound, upper_bound=upper_bound)
+        super().add_variables(vartype, (v,), lower_bound=lower_bound, upper_bound=upper_bound)
+        return self.variables[-1] if v is None else v
 
     def check_feasible(self, sample_like: SamplesLike, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
         r"""Return the feasibility of the given sample.

@@ -219,66 +219,97 @@ cdef class cyConstrainedQuadraticModel:
 
         return label
 
-    def add_variable(self, vartype, v=None, *, lower_bound=None, upper_bound=None):
+    def add_variables(self, vartype, variables, *, lower_bound=None, upper_bound=None):
+        """Add variables to the model.
+
+        Args:
+            vartype:
+                Variable type. One of:
+
+                * :class:`~dimod.Vartype.SPIN`, ``'SPIN'``, ``{-1, 1}``
+                * :class:`~dimod.Vartype.BINARY`, ``'BINARY'``, ``{0, 1}``
+                * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
+                * :class:`~dimod.Vartype.REAL`, ``'REAL'``
+
+            variables:
+                An iterable of variable labels or an integer. An integer ``n``
+                is interpreted as ``range(n)``.
+
+            lower_bound:
+                Lower bound on the variable. Ignored when the variable is
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
+
+            upper_bound:
+                Upper bound on the variable. Ignored when the variable is
+                :class:`~dimod.Vartype.BINARY` or :class:`~dimod.Vartype.SPIN`.
+
+        Exceptions:
+            ValueError: If a variable is added with a different ``vartype``,
+                ``lower_bound``, or ``upper_bound``.
+                Note that the variables before the inconsistent variable will
+                be added to the model.
+
+        """
         cdef cppVartype vt = cppvartype(as_vartype(vartype, extended=True))
 
-        cdef Py_ssize_t vi
-        cdef bias_type lb
-        cdef bias_type ub
-
-        if v is not None and self.variables.count(v):
-            # variable is already present
-            vi = self.variables.index(v)
-            if self.cppcqm.vartype(vi) != vt:
-                raise TypeError(f"variable {v!r} already exists with a different vartype")
-            if vt != cppVartype.BINARY and vt != cppVartype.SPIN:
-                if lower_bound is not None:
-                    lb = lower_bound
-                    if lb != self.cppcqm.lower_bound(vi):
-                        raise ValueError(
-                            f"the specified lower bound, {lower_bound}, for "
-                            f"variable {v!r} is different than the existing lower "
-                            f"bound, {self.cppcqm.lower_bound(vi)}")
-                if upper_bound is not None:
-                    ub = upper_bound
-                    if ub != self.cppcqm.upper_bound(vi):
-                        raise ValueError(
-                            f"the specified upper bound, {upper_bound}, for "
-                            f"variable {v!r} is different than the existing upper "
-                            f"bound, {self.cppcqm.upper_bound(vi)}")
-
-            return v
-
-        # ok, we have a shiny new variable
-
-        if vt == cppVartype.SPIN or vt == cppVartype.BINARY:
-            # we can ignore bounds
-            v = self.variables._append(v)
-            self.cppcqm.add_variable(vt)
-            return v
-
-        if vt != cppVartype.INTEGER and vt != cppVartype.REAL:
+        # for BINARY and SPIN the bounds are ignored
+        if vt == cppVartype.SPIN:
+            lower_bound = -1
+            upper_bound = +1
+        elif vt == cppVartype.BINARY:
+            lower_bound = 0
+            upper_bound = 1
+        elif vt != cppVartype.INTEGER and vt != cppVartype.REAL:
             raise RuntimeError("unexpected vartype")  # catch some future issues
 
-
+        # bound parsing, we'll also want to track whether the bound was specified or not
+        cdef bint lb_given = lower_bound is not None
+        cdef bias_type lb = lower_bound if lb_given else cppvartype_info[bias_type].default_min(vt)
+        if lb < cppvartype_info[bias_type].min(vt):
+            raise ValueError(f"lower_bound cannot be less than {cppvartype_info[bias_type].min(vt)}")
         
-        if lower_bound is None:
-            lb = cppvartype_info[bias_type].default_min(vt)
-        else:
-            lb = lower_bound
-            if lb < cppvartype_info[bias_type].min(vt):
-                raise ValueError(f"lower_bound cannot be less than {cppvartype_info[bias_type].min(vt)}")
+        cdef bint ub_given = upper_bound is not None
+        cdef bias_type ub = upper_bound if ub_given else cppvartype_info[bias_type].default_max(vt)
+        if ub > cppvartype_info[bias_type].max(vt):
+            raise ValueError(f"upper_bound cannot be greater than {cppvartype_info[bias_type].max(vt)}")
 
-        if upper_bound is None:
-            ub = cppvartype_info[bias_type].default_max(vt)
-        else:
-            ub = upper_bound
-            if ub > cppvartype_info[bias_type].max(vt):
-                raise ValueError(f"upper_bound cannot be greater than {cppvartype_info[bias_type].max(vt)}")
+        if lb > ub:
+            raise ValueError("lower_bound must be less than or equal to upper_bound")        
 
-        v = self.variables._append(v)
-        self.cppcqm.add_variable(vt, lb, ub)
-        return v
+        # parse the variables
+        if isinstance(variables, int):
+            variables = range(variables)
+
+        cdef Py_ssize_t count = self.variables.size()
+        for v in variables:
+            self.variables._append(v, permissive=True)
+
+            if count == self.variables.size():
+                # the variable already existed
+                vi = self.variables.index(v)
+
+                if vt != self.cppcqm.vartype(vi):
+                    raise ValueError(f"variable {v!r} already exists with a different vartype")
+
+                if lb_given and lb != self.cppcqm.lower_bound(vi):
+                    raise ValueError(
+                        f"the specified lower bound, {lower_bound}, for "
+                        f"variable {v!r} is different than the existing lower "
+                        f"bound, {self.cppcqm.lower_bound(vi)}")
+
+                if ub_given and ub != self.cppcqm.upper_bound(vi):
+                    raise ValueError(
+                        f"the specified upper bound, {upper_bound}, for "
+                        f"variable {v!r} is different than the existing upper "
+                        f"bound, {self.cppcqm.upper_bound(vi)}")
+
+            elif count == self.variables.size() - 1:
+                # we added a new variable
+                self.cppcqm.add_variable(vt, lb, ub)
+                count += 1
+
+            else:
+                raise RuntimeError("something went wrong")
 
     def change_vartype(self, vartype, v):
         vartype = as_vartype(vartype, extended=True)

@@ -1,0 +1,13 @@
+---
+features:
+  - Improve the performance of the ``ConstrainedQuadraticModel.add_variables()`` method.
+upgrade:
+  - Remove the undocumented ``cyConstrainedQuadraticModel.add_variable()`` method.
+fixes:
+  - |
+    Fix ``ConstrainedQuadraticModel.add_variable()`` to raise a ``ValueError``
+    when given an inconsistent variable type.
+    Previously it incorrectly raised a ``TypeError``.
+  - |
+    Fix ``ConstrainedQuadraticModel.add_variable()`` to raise a ``ValueError``
+    when given invalid variable bounds.

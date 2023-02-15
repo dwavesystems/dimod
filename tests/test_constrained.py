@@ -59,6 +59,41 @@ class TestAddVariable(unittest.TestCase):
         self.assertEqual(cqm.add_variable('SPIN', 'BINARY'), 'BINARY')
         self.assertEqual(cqm.vartype('BINARY'), dimod.SPIN)
 
+    def test_invalid_bounds(self):
+        cqm = dimod.CQM()
+        with self.assertRaises(ValueError):
+            cqm.add_variable("REAL", "a", lower_bound=10, upper_bound=-10)
+
+
+class TestAddVariables(unittest.TestCase):
+    def test_empty(self):
+        cqm = dimod.CQM()
+        cqm.add_variables("BINARY", [])
+        self.assertEqual(cqm.num_variables(), 0)
+
+    def test_overlap_identical(self):
+        cqm = dimod.CQM()
+        cqm.add_variables("INTEGER", 'abc')
+        cqm.add_variables("INTEGER", 'abc')  # should match
+        cqm.add_variables("INTEGER", "cab")  # different order should also be fine
+        self.assertEqual(cqm.variables, 'abc')
+
+    def test_overlap_different(self):
+        cqm = dimod.CQM()
+        cqm.add_variables("INTEGER", 'abc')
+        cqm.add_variables("INTEGER", 'def', lower_bound=-5, upper_bound=5)
+
+        with self.assertRaises(ValueError):
+            cqm.add_variables("INTEGER", 'abc', lower_bound=-5)
+
+        with self.assertRaises(ValueError):
+            cqm.add_variables("INTEGER", 'abc', upper_bound=5)
+
+        cqm.add_variables("INTEGER", 'def')  # not specified so no error
+
+        with self.assertRaises(ValueError):
+            cqm.add_variables("BINARY", 'abc')
+
 
 class TestAddConstraint(unittest.TestCase):
     def test_bqm(self):
