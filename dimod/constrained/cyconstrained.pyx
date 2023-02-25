@@ -20,6 +20,8 @@ import typing
 
 from copy import deepcopy
 
+cimport cython
+
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
 from libcpp.unordered_set cimport unordered_set
@@ -32,7 +34,7 @@ from dimod.binary import BinaryQuadraticModel
 from dimod.constrained.expression import ObjectiveView, ConstraintView
 from dimod.cyqmbase cimport cyQMBase
 from dimod.cyqmbase.cyqmbase_float64 import BIAS_DTYPE, INDEX_DTYPE
-from dimod.cyutilities cimport as_numpy_float
+from dimod.cyutilities cimport as_numpy_float, ConstNumeric, ConstNumeric2
 from dimod.cyutilities cimport cppvartype
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Sense as cppSense, Penalty as cppPenalty, Constraint as cppConstraint
@@ -310,6 +312,57 @@ cdef class cyConstrainedQuadraticModel:
 
             else:
                 raise RuntimeError("something went wrong")
+
+    # dev note: we explicitly don't want contiguous to allow fancy indexing
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def add_linear_constraints(self, ConstNumeric[:, :] A, object sense, ConstNumeric2[:] b,
+                               *,
+                               variable_labels=None, constraint_labels=None):
+
+        # Input parsing for A, b
+        cdef Py_ssize_t num_constraints = A.shape[0]
+        cdef Py_ssize_t num_variables = A.shape[1]
+        if b.shape[0] != num_constraints:
+            raise ValueError("the number of rows in A must equal the number of values in b")
+
+        # Input parsing for sense
+        cdef cppSense sense_ = cppsense(sense)
+
+        # Input parsing for variable labels
+        if variable_labels is None:
+            variable_labels = range(num_variables)
+
+        cdef vector[index_type] variables  # map input variable row to internal index
+        variables.reserve(num_variables)
+        for v in variable_labels:
+            variables.push_back(self.variables.index(v))
+        if variables.size() != num_variables:
+            raise ValueError("expected the length of variable_labels to equal the number of columns in A")
+
+        # Input parsing for constraint_labels
+        # if the list is too short, we start generating random labels
+        if constraint_labels is None:
+            constraint_labels = itertools.repeat(None)
+        else:
+            constraint_labels = itertools.chain(constraint_labels, itertools.repeat(None))
+
+        # At this point we've checked everything, so it should be safe to just
+        # add new constraints to the model, because we shouldn't be able to get
+        # a malformed model partway through
+        cdef Py_ssize_t ci, vi
+        for ci in range(num_constraints):
+            constraint = self.cppcqm.new_constraint()
+
+            constraint.set_sense(sense_)
+            constraint.set_rhs(b[ci])
+
+            for vi in range(num_variables):
+                if A[ci, vi]:
+                    constraint.add_linear(variables[vi], A[ci, vi])
+
+            self.cppcqm.add_constraint(move(constraint))
+            self.constraint_labels._append(next(constraint_labels))
 
     def change_vartype(self, vartype, v):
         vartype = as_vartype(vartype, extended=True)

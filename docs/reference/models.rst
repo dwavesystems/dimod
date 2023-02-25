@@ -168,6 +168,7 @@ CQM Methods
    ~ConstrainedQuadraticModel.add_discrete_from_comparison
    ~ConstrainedQuadraticModel.add_discrete_from_iterable
    ~ConstrainedQuadraticModel.add_discrete_from_model
+   ~ConstrainedQuadraticModel.add_linear_constraints
    ~ConstrainedQuadraticModel.add_variable
    ~ConstrainedQuadraticModel.add_variables
    ~ConstrainedQuadraticModel.check_feasible
