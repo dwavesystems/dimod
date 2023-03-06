@@ -50,6 +50,7 @@ import io
 import json
 import os.path
 import re
+import shutil
 import tempfile
 import uuid
 import warnings
@@ -66,8 +67,11 @@ from dimod.binary.binary_quadratic_model import BinaryQuadraticModel, Binary
 from dimod.constrained.cyconstrained import cyConstrainedQuadraticModel, ConstraintView, ObjectiveView
 from dimod.quadratic.quadratic_model import QuadraticModel
 from dimod.sampleset import as_samples
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
-from dimod.serialization.fileview import load, read_header, write_header
+from dimod.serialization.fileview import (
+    _BytesIO, SpooledTemporaryFile,
+    load, read_header, write_header,
+    VartypesSection,
+    )
 from dimod.sym import Comparison, Sense
 from dimod.typing import Bias, Variable, SamplesLike
 from dimod.utilities import new_variable_label
@@ -78,6 +82,7 @@ __all__ = ['ConstrainedQuadraticModel', 'CQM', 'cqm_to_bqm']
 
 
 CQM_MAGIC_PREFIX = b'DIMODCQM'
+CQM_SERIALIZATION_VERSION = (2, 0)
 
 
 class ConstraintData(NamedTuple):
@@ -941,46 +946,15 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return cqm
 
     @classmethod
-    def from_file(cls,
-                  fp: Union[BinaryIO, ByteString],
-                  *,
-                  check_header: bool = True,
-                  ) -> ConstrainedQuadraticModel:
-        """Construct from a file-like object.
+    def _from_file_legacy(cls,
+                          file_like: BinaryIO,
+                          header_info,
+                          *,
+                          check_header: bool = True,
+                          ) -> ConstrainedQuadraticModel:
+        """Load models that were serialized using serialization version ~=1.0"""
 
-        Args:
-            fp: File pointer to a readable, seekable file-like object.
-
-            check_header: If True, the header is checked for consistency
-                against the deserialized model. Otherwise it is ignored.
-
-        The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
-
-        Examples:
-            >>> cqm1 = dimod.ConstrainedQuadraticModel()
-            >>> x, y = dimod.Binaries(["x", "y"])
-            >>> cqm1.set_objective(2 * x * y - 2 * x)
-            >>> cqm_file = cqm1.to_file()
-            >>> cqm2 = dimod.ConstrainedQuadraticModel.from_file(cqm_file)
-            >>> print(cqm2.objective.to_polystring())
-            -2*x + 2*x*y
-
-        """
-        if isinstance(fp, ByteString):
-            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
-        else:
-            file_like = fp
-
-        header_info = read_header(file_like, CQM_MAGIC_PREFIX)
-
-        if not (1, 0) <= header_info.version <= (1, 3):
-            raise ValueError("cannot load a CQM serialized with version "
-                             f"{header_info.version!r}, try upgrading your "
-                             "dimod version")
-
-        # we don't actually need the data
-
-        cqm = CQM()
+        cqm = cls()
 
         with zipfile.ZipFile(file_like, mode='r') as zf:
             cqm.set_objective(load(zf.read("objective")))
@@ -1028,6 +1002,122 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 expected.update(
                     num_weighted_constraints=cqm.num_soft_constraints(),
                     )
+
+            if expected != header_info.data:
+                raise ValueError(
+                    "header data does not match the deserialized CQM. "
+                    f"Expected {expected!r}, recieved {header_info.data!r}"
+                    )
+
+        return cqm
+
+    @classmethod
+    def from_file(cls,
+                  fp: Union[BinaryIO, ByteString],
+                  *,
+                  check_header: bool = True,
+                  ) -> ConstrainedQuadraticModel:
+        """Construct from a file-like object.
+
+        Args:
+            fp: File pointer to a readable, seekable file-like object.
+
+            check_header: If True, the header is checked for consistency
+                against the deserialized model. Otherwise it is ignored.
+
+        The inverse of :meth:`~ConstrainedQuadraticModel.to_file`.
+
+        Examples:
+            >>> cqm1 = dimod.ConstrainedQuadraticModel()
+            >>> x, y = dimod.Binaries(["x", "y"])
+            >>> cqm1.set_objective(2 * x * y - 2 * x)
+            >>> cqm_file = cqm1.to_file()
+            >>> cqm2 = dimod.ConstrainedQuadraticModel.from_file(cqm_file)
+            >>> print(cqm2.objective.to_polystring())
+            -2*x + 2*x*y
+
+        """
+        if isinstance(fp, ByteString):
+            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+        else:
+            file_like = fp
+
+        header_info = read_header(file_like, CQM_MAGIC_PREFIX)
+
+        num_variables = header_info.data["num_variables"]
+
+        if not (1, 0) <= header_info.version <= (2, 0):
+            raise ValueError("cannot load a CQM serialized with version "
+                             f"{header_info.version!r}, try upgrading your "
+                             "dimod version")
+
+        if header_info.version < (2, 0):
+            return cls._from_file_legacy(file_like, header_info, check_header=check_header)
+
+        cqm = cls()
+
+        with zipfile.ZipFile(file_like, mode='r') as zf:
+            # add the variables to the model
+            with zf.open("varinfo") as f:
+                cqm._ivarinfo_load(VartypesSection.load(f), num_variables)
+
+            # add the objective
+            with zf.open("objective") as f:
+                cqm.objective._from_file(f)
+
+            # next the constraints
+            constraint_labels = set()
+            for arch in zf.namelist():
+                # even on windows zip uses /
+                match = re.match("constraints/([^/]+)/", arch)
+                if match is not None:
+                    constraint_labels.add(match.group(1))
+
+            for constraint in constraint_labels:                
+                label = deserialize_variable(json.loads(constraint))
+
+                rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
+                sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
+
+                try:
+                    weight = np.frombuffer(zf.read(f"constraints/{constraint}/weight"), np.float64)[0]
+                    penalty = zf.read(f"constraints/{constraint}/penalty").decode('ascii')
+                except KeyError:
+                    weight = None
+                    penalty = None
+
+                # add the constraint with everything except the lhs
+                cqm.add_constraint_from_iterable([], sense, rhs, label=label,
+                                                 weight=weight, penalty=penalty)
+                comp = cqm.constraints[label]
+
+                # now load the lhs
+                with zf.open(f"constraints/{constraint}/lhs") as f:
+                    comp.lhs._from_file(f)
+
+                try:
+                    if any(zf.read(f"constraints/{constraint}/discrete")):
+                        comp.lhs.mark_discrete(True)
+                except KeyError:
+                    pass
+
+            # relabel the variables if needed
+            try:  # This is the only way to test whether a file exists
+                variable_labels = json.loads(zf.read("variable_labels.json"))
+            except KeyError:
+                pass
+            else:
+                cqm.relabel_variables(dict(enumerate(variable_labels)))
+
+        if check_header:
+            expected = dict(num_variables=len(cqm.variables),
+                            num_constraints=len(cqm.constraints),
+                            num_biases=cqm.num_biases(),
+                            num_quadratic_variables=cqm.num_quadratic_variables(include_objective=False),
+                            num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                            num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
+                            num_weighted_constraints=sum(comp.lhs.is_soft() for comp in cqm.constraints.values()),
+                            )
 
             if expected != header_info.data:
                 raise ValueError(
@@ -1552,7 +1642,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             compress: If True, the data will be compressed with
                 :class:`zipfile.ZIP_DEFLATED`.
 
-        Format Specification (Version 1.3):
+        Format Specification (Version 2.0):
 
             This format is inspired by the `NPY format`_
 
@@ -1575,41 +1665,55 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 dict(num_variables=len(cqm.variables),
                      num_constraints=len(cqm.constraints),
                      num_biases=cqm.num_biases(),
-                     num_quadratic_variables=cqm.num_quadratic_variables(),
-                     num_quadratic_variables_real=cqm.num_quadratic_variables('REAL', include_objective=True),
-                     num_linear_biases_real=cqm.num_biases('REAL', linear_only=True),
+                     num_quadratic_variables=cqm.num_quadratic_variables(include_objective=False),
+                     num_quadratic_variables_real=cqm.num_quadratic_variables(Vartype.REAL, include_objective=True),
+                     num_linear_biases_real=cqm.num_biases(Vartype.REAL, linear_only=True),
+                     num_weighted_constraints=sum(comp.lhs.is_soft() for comp in cqm.constraints.values()),
                      )
 
             it is terminated by a newline character and padded with spaces to
             make the entire length of the entire header divisible by 64.
 
             The constraint quadratic model data comes after the header. It is
-            encoded as a zip file. The zip file will contain one file
-            named `objective`, containing the objective as encoded as a file
-            view. It will also contain a directory called `constraints`. The
-            `constraints` directory will contain one subdirectory for each
-            constraint, each containing `lhs`, `rhs` and `sense` encoding
-            the `lhs` as a fileview, the `rhs` as a float and the sense
-            as a string. Each directory will also contain a `discrete` file,
-            encoding whether the constraint represents a discrete variable.
-            Weighted constraints also contain a `weight` and `penalty` file,
-            encoding the weight and the penalty type for the constraint.
+            encoded as a zip file with the following structure
 
-        Format Specification (Version 1.2):
-            This format is the same as Version 1.3, except that there are no
-            weighted constraints, and thus the `weight` and `penalty` files
-            are not present.
+            .. code-block:: bash
 
-        Format Specification (Version 1.1):
+                constraints/
+                    <label>/
+                        lhs
+                        rhs
+                        sense
+                        [discrete]
+                        [penalty]
+                        [weight]
+                    ...
+                objective
+                varinfo
+                [variable_labels.json]
 
-            This format is the same as Version 1.2, except that the data dict
-            does not have ``num_quadratic_variables_real`` and
-            ``num_linear_biases_real``.
+            The ``objective`` file encodes the objective.
+            See :meth:`~dimod.constrained.expression.ObjectiveView._to_file()`
+            for details about the file format.
 
-        Format Specification (Version 1.0):
+            The ``varinfo`` file encodes the :class:`Vartype`, lower bound, and
+            upper bound of each variable in the model.
 
-            This format is the same as Version 1.1, except that the data dict
-            does not have `num_quadratic_variables`.
+            If the variable labels are not ``range(num_variables)``, the variable
+            labels are encoded as a json-formatted string in ``variable_labels.json``.
+
+            Each ``constraint/<label>/`` directory encodes a constraint with
+            the matching label.
+            The ``lhs`` file encodes the left-hand-side of the constraint.
+            See :meth:`~dimod.constrained.expression.ConstraintView._to_file()`
+            for details about the file format.
+            The ``rhs`` file stores a single float representing the roght-hand-side
+            of the constraint.
+            The ``sense`` file stores the sense as a string.
+            The ``discrete`` file, if present, encodes whether the constraint
+            is a discrete constraint.
+            The ``penalty`` and ``weight`` files, if present, encode the weight
+            and penalty type for the constraint.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -1622,63 +1726,39 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> print(cqm2.objective.to_polystring())
             -2*x + 2*x*y
         """
-        # developer note: this function needs a refactor
-
         file = SpooledTemporaryFile(max_size=spool_size)
-
-        # For legacy reasons, the variable info is encoded in the objective,
-        # so our serialized model will be a bit more verbose
-        if self.objective.variables != self.variables:
-            objective = QuadraticModel()
-
-            for v in self.variables:
-                objective.add_variable(self.vartype(v), v,
-                                       lower_bound=self.lower_bound(v),
-                                       upper_bound=self.upper_bound(v))
-
-            objective.update(self.objective)
-
-            surplus_num_biases = objective.num_variables - self.objective.num_variables
-            surplus_num_real_biases = sum(self.vartype(v) is Vartype.REAL
-                                          for v in objective.variables - self.objective.variables)
-        else:
-            objective = self.objective
-            surplus_num_biases = 0
-            surplus_num_real_biases = 0
 
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),
-                    num_biases=self.num_biases() + surplus_num_biases,
+                    num_biases=self.num_biases(),
                     num_quadratic_variables=self.num_quadratic_variables(include_objective=False),
                     num_quadratic_variables_real=self.num_quadratic_variables(Vartype.REAL, include_objective=True),
-                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True) + surplus_num_real_biases,
+                    num_linear_biases_real=self.num_biases(Vartype.REAL, linear_only=True),
                     num_weighted_constraints=sum(comp.lhs.is_soft() for comp in self.constraints.values()),
                     )
 
-        write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
+        write_header(file, CQM_MAGIC_PREFIX, data, version=CQM_SERIALIZATION_VERSION)
 
-        # write the values
         kwargs = dict(compression=zipfile.ZIP_DEFLATED) if compress else dict()
         with zipfile.ZipFile(file, mode='a', **kwargs) as zf:
-            with objective.to_file(spool_size=int(1e12)) as f:
-                # we can avoid a copy by trying to read from the underlying buffer
-                obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
-                zf.writestr('objective', obj)
-                # in the case we got the underlying buffer, we need to delete our
-                # reference to it, otherwise we get an error when the file is closed
-                del obj
+
+            # Handle the variables. We need to encode their labels, vartypes, and bounds
+            zf.writestr("varinfo", VartypesSection(self).dumps())
+            if not self.variables._is_range():
+                zf.writestr("variable_labels.json", json.dumps(self.variables.to_serializable()))
+
+            # add the objective
+            with zf.open("objective", "w") as fdst:
+                with self.objective._to_file() as fsrc:
+                    shutil.copyfileobj(fsrc, fdst)
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
-                with constraint.lhs.to_file(spool_size=int(1e12)) as f:
-                    # we can avoid a copy by trying to read from the underlying buffer
-                    lhs = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()
-                    zf.writestr(f'constraints/{lstr}/lhs', lhs)
-                    # in the case we got the underlying buffer, we need to delete our
-                    # reference to it, otherwise we get an error when the file is closed
-                    del lhs
+                with zf.open(f'constraints/{lstr}/lhs', "w") as fdst:
+                    with constraint.lhs._to_file() as fsrc:
+                        shutil.copyfileobj(fsrc, fdst)
 
                 rhs = np.float64(constraint.rhs).tobytes()
                 zf.writestr(f'constraints/{lstr}/rhs', rhs)
@@ -1686,8 +1766,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 sense = bytes(constraint.sense.value, 'ascii')
                 zf.writestr(f'constraints/{lstr}/sense', sense)
 
-                discrete = bytes((label in self.discrete,))
-                zf.writestr(f'constraints/{lstr}/discrete', discrete)
+                if constraint.lhs.is_discrete():
+                    zf.writestr(f'constraints/{lstr}/discrete', bytes((True,)))
 
                 # soft constraints
                 if constraint.lhs.is_soft():
@@ -1723,7 +1803,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             requirement of a second, and violates a third.
 
             >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
-            >>> cqm = dimod.ConstrainedQuadraticModel()
+                >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> cqm.add_constraint(i + j + k == 10, label='equal')
             'equal'
             >>> cqm.add_constraint(i + j <= 15, label='less equal')

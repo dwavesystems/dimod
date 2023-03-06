@@ -50,9 +50,18 @@ except ImportError:
 
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO
-from dimod.serialization.fileview import VariablesSection, Section
-from dimod.serialization.fileview import load, read_header, write_header
+from dimod.serialization.fileview import (
+    SpooledTemporaryFile,
+    _BytesIO,
+    LinearSection,
+    NeighborhoodSection,
+    OffsetSection,
+    VariablesSection,
+    VartypesSection,
+    load,
+    read_header,
+    write_header,
+    )
 from dimod.sym import Eq, Ge, Le, Comparison
 from dimod.typing import Variable, Bias, VartypeLike
 from dimod.variables import Variables
@@ -71,68 +80,6 @@ QM_MAGIC_PREFIX = b'DIMODQM'
 
 
 Vartypes = Union[Mapping[Variable, Vartype], Iterable[Tuple[Variable, VartypeLike]]]
-
-
-class LinearSection(Section):
-    """Serializes the linear biases of a quadratic model."""
-    magic = b'LINB'
-
-    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
-        self.model = model
-
-    def dump_data(self):
-        return memoryview(self.model._ilinear()).cast('B')
-
-    @classmethod
-    def loads_data(self, data, *, dtype, num_variables):
-        arr = np.frombuffer(data[:num_variables*np.dtype(dtype).itemsize], dtype=dtype)
-        return arr
-
-
-class NeighborhoodSection(Section):
-    magic = b'NEIG'
-
-    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
-        self.model = model
-
-    def dump_data(self, *, vi: int):
-        arr = self.model._ineighborhood(vi, lower_triangle=True)
-        return (struct.pack('<q', arr.shape[0]) + memoryview(arr).cast('B'))
-
-    @classmethod
-    def loads_data(self, data):
-        return struct.unpack('<q', data[:8])[0], data[8:]
-
-
-class OffsetSection(Section):
-    """Serializes the offset of a quadratic model."""
-    magic = b'OFFS'
-
-    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
-        self.model = model
-
-    def dump_data(self):
-        return memoryview(self.model.offset).cast('B')
-
-    @classmethod
-    def loads_data(self, data, *, dtype):
-        arr = np.frombuffer(data[:np.dtype(dtype).itemsize], dtype=dtype)
-        return arr[0]
-
-
-class VartypesSection(Section):
-    """Serializes the vartypes of a quadratic model."""
-    magic = b'VTYP'
-
-    def __init__(self, model: typing.Union[cyQM_float32, cyQM_float64]):
-        self.model = model
-
-    def dump_data(self):
-        return memoryview(self.model._ivarinfo()).cast('B')
-
-    @classmethod
-    def loads_data(self, data):
-        return data
 
 
 class QuadraticModel(QuadraticViewsMixin):
