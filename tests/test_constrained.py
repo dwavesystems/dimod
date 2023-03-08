@@ -180,14 +180,33 @@ class TestAddDiscrete(unittest.TestCase):
         self.assertIn(c, cqm.discrete)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
 
+    def test_empty(self):
+        # it is meaningless, but sometimes convenient to create 1 or 0 variable
+        # constraints
+        cqm = dimod.CQM()
+
+        x = dimod.Binary("x")
+
+        c1 = cqm.add_discrete([])
+        c2 = cqm.add_discrete(dimod.BQM("BINARY"))
+        c3 = cqm.add_discrete(dimod.BQM("BINARY") == 1)
+        c4 = cqm.add_discrete(x)
+        c5 = cqm.add_discrete("x")
+        c6 = cqm.add_discrete(x == 1)
+
+        for label in (c1, c2, c3):
+            self.assertTrue(cqm.constraints[label].lhs.is_equal(dimod.BQM("BINARY")))
+            self.assertEqual(cqm.constraints[label].sense, Sense.Eq)
+            self.assertEqual(cqm.constraints[label].rhs, 1)
+
+        for label in (c4, c5, c6):
+            self.assertTrue(cqm.constraints[label].lhs.is_equal(x))
+            self.assertEqual(cqm.constraints[label].sense, Sense.Eq)
+            self.assertEqual(cqm.constraints[label].rhs, 1)
+
     def test_exceptions(self):
         cqm = dimod.CQM()
         x, y, z = dimod.Binaries('xyz')
-        with self.subTest("too few variables"):
-            with self.assertRaises(ValueError):
-                cqm.add_discrete('x')
-            with self.assertRaises(ValueError):
-                cqm.add_discrete(x)
         with self.subTest("wrong sense"):
             with self.assertRaises(ValueError):
                 cqm.add_discrete(x + y <= 1)
@@ -792,6 +811,13 @@ class TestFromDQM(unittest.TestCase):
 
         self.assertEqual(len(cqm.variables), 0)
         self.assertEqual(len(cqm.constraints), 0)
+
+    def test_single_case_variables(self):
+        dqm = dimod.DQM()
+        u = dqm.add_variable(1)
+        v = dqm.add_variable(2)
+        cqm = dimod.CQM.from_dqm(dqm)
+        self.assertEqual(cqm.variables, [(0, 0), (1, 0), (1, 1)])
 
     def test_typical(self):
         dqm = dimod.DQM()
