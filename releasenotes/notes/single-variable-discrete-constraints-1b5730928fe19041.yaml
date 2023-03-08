@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Allow discrete constraints added by ``ConstrainedQuadraticModel.add_discrete()``
+    to have zero or one variables.

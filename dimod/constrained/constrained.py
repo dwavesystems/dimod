@@ -610,9 +610,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             bqm.set_linear(v, 1)
 
-        if bqm.num_variables < 2:
-            raise ValueError("discrete constraints must have at least two variables")
-
         label = self.add_constraint_from_comparison(bqm == 1, label=label, copy=False)
         self.discrete.add(label)
         return label
@@ -666,9 +663,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         if qm.num_interactions:
             raise ValueError("discrete constraints must be linear")
-
-        if qm.num_variables < 2:
-            raise ValueError("discrete constraints must have at least two variables")
 
         for v, bias in qm.iter_linear():
             if v in self.variables:
