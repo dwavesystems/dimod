@@ -1,0 +1,6 @@
+---
+upgrade:
+  - Make ``beta_range``, ``num_reads``, and ``num_sweeps`` keyword-only arguments for ``SimulatedAnnealingSampler.sample()``.
+  - Make ``num_reads`` and ``seed`` keyword-only arguments for ``RandomSampler.sample()``.
+  - Make ``initial_states``, ``initial_states_generator``, ``num_reads`` and ``seed`` keyword-only arguments for ``IdentitySampler.sample()``.
+  - Make ``rtol`` and ``atol`` keyword-only arguments for ``ExactCQMSolver.sample_cqm()``.
