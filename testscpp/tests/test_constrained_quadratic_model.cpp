@@ -410,16 +410,36 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
             }
         }
 
-        // WHEN("we fix a variable") {
-        //     cqm.fix_variable(x, 0);
+        WHEN("we fix a variable that is not used in the expression") {
+            const0.fix_variable(y, 2);
 
-        //     THEN("everything is updated correctly") {
-        //         REQUIRE(cqm.num_variables() == 3);
+            THEN("nothing changes") {
+                REQUIRE(const0.num_variables() == 3);
+                CHECK(const0.linear(x) == 0);
+                CHECK(const0.linear(y) == 0);
+                CHECK(const0.linear(i) == 3);
+                CHECK(const0.linear(j) == 0);
 
-        //         REQUIRE(const0.num_variables() == 2);
-        //         REQUIRE(const0.linear(i-1) == 3);
-        //     }
-        // }
+                CHECK(const0.num_interactions() == 2);
+                CHECK(const0.quadratic(x, j) == 2);
+                CHECK(const0.quadratic(i, j) == 5);
+            }
+        }
+
+        WHEN("we fix a variable that is used in the expression") {
+            const0.fix_variable(x, 2);
+
+            THEN("the biases are updated") {
+                REQUIRE(const0.num_variables() == 2);
+                CHECK(const0.linear(x) == 0);
+                CHECK(const0.linear(y) == 0);
+                CHECK(const0.linear(i) == 3);
+                CHECK(const0.linear(j) == 4);
+
+                CHECK(const0.num_interactions() == 1);
+                CHECK(const0.quadratic(i, j) == 5);
+            }
+        }
     }
 
     GIVEN("A constraint with one-hot constraints") {

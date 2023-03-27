@@ -707,7 +707,7 @@ void QuadraticModelBase<bias_type, index_type>::fix_variable(index_type v, T ass
     add_offset(assignment * linear(v));
 
     // finally remove v
-    remove_variable(v);
+    QuadraticModelBase<bias_type, index_type>::remove_variable(v);
 }
 
 template <class bias_type, class index_type>
