@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Improve the performance of fixing and removing variables from constrained
+    quadratic model expressions.
+  - |
+    Implement the ``Expression::fix_variable()`` C++ method. Previously it would
+    throw ``std::logic_error("not implemented - fix_variable")``.
+upgrade:
+  - |
+    Add an overload to the C++ ``QuadraticModel::remove_variable()`` method.
+    This is binary compatible, but it makes ``&remove_variable`` ambiguous.
