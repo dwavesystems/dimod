@@ -593,9 +593,6 @@ ConstrainedQuadraticModel<bias_type, index_type>::fix_variables(VarIter first, V
     // We could inherit the type from AssignmentIter, but again this seems simpler.
     std::vector<bias_type> assignments(this->num_variables());
 
-    // Map from the new indices to the old
-    std::vector<index_type> new_to_old;
-
     // Fill in our various data vectors and add the variables to the new model
     for (auto it = first; it != last; ++it, ++assignment) {
         old_to_new[*it] = -1;
@@ -606,7 +603,6 @@ ConstrainedQuadraticModel<bias_type, index_type>::fix_variables(VarIter first, V
 
         old_to_new[i] =
                 cqm.add_variable(this->vartype(i), this->lower_bound(i), this->upper_bound(i));
-        new_to_old.push_back(i);
     }
 
     // Objective
