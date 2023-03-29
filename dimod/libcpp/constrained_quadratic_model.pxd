@@ -41,6 +41,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         Constraint[bias_type, index_type]& constraint_ref(index_type)
         weak_ptr[Constraint[bias_type, index_type]] constraint_weak_ptr(index_type)
         void fix_variable[T](index_type, T)
+        ConstrainedQuadraticModel fix_variables[VarIter, AssignmentIter](VarIter, VarIter, AssignmentIter)
         bias_type lower_bound(index_type)
         Constraint[bias_type, index_type] new_constraint()
         size_t num_constraints()

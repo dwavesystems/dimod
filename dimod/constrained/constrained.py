@@ -813,51 +813,39 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                           "and will be removed in 0.14.0", DeprecationWarning,
                           stacklevel=2)
 
-        # get the discrete constaints that are possibly affected
-        discrete = dict()
-        for label in self.discrete:
-            lhs = self.constraints[label].lhs
-            if v in lhs.variables:
-                discrete[label] = lhs
-
         super().fix_variable(v, value)
 
-        if discrete:
-            if value == 1:
-                self.discrete -= discrete
-            else:
-                for label, lhs in discrete.items():
-                    if lhs.num_variables <= 1:
-                        self.discrete.discard(label)
         return {}
 
     def fix_variables(self,
                       fixed: Union[Mapping[Variable, float],
-                                          Iterable[Tuple[Variable, float]]],
+                                   Iterable[Tuple[Variable, float]]],
                       *,
+                      inplace: bool = True,
                       cascade: Optional[bool] = None,
-                      ) -> Dict[Variable, float]:
+                      ) -> ConstrainedQuadraticModel:
         """Fix the value of the variables and remove them.
 
         Args:
             fixed: Dictionary or iterable of 2-tuples of variable assignments.
+            inplace: If False, a new model is returned with the variables fixed.
             cascade: Deprecated. Does nothing.
 
         Returns:
-            An empty dictionary, for legacy reasons.
+            A constrained quadratic model. Itself by default, or a copy if
+            ``inplace`` is set to False.
 
         .. deprecated:: 0.12.0
             The ``cascade`` keyword argument will be removed in 0.14.0.
             It currently does nothing.
 
         """
-        if isinstance(fixed, Mapping):
-            fixed = fixed.items()
+        if cascade is not None:
+            warnings.warn("The 'cascade' keyword argument is deprecated since dimod 0.12.0 "
+                          "and will be removed in 0.14.0", DeprecationWarning,
+                          stacklevel=2)
 
-        for v, val in fixed:
-            self.fix_variable(v, val, cascade=cascade)
-
-        return {}
+        return super().fix_variables(fixed, inplace=inplace)
 
     def flip_variable(self, v: Variable):
         r"""Flip the specified binary variable in the objective and constraints.
