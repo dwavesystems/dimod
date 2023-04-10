@@ -384,6 +384,11 @@ class Reader {
         }
         cqm.set_objective(model_.objective.model, mapping);
 
+        // if the model is maximizing, we flip the sign
+        if (!model_.minimize) {
+            cqm.objective.scale(-1);
+        }
+
         // now each of the constraints
         for (auto& c : model_.constraints) {
             // need the variable labels
