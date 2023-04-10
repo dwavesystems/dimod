@@ -12,8 +12,34 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-"""
-Constrained Quadratic Model class.
+r"""Constrained quadratic models are problems of the form:
+
+.. math::
+
+    \begin{align}
+        \text{Minimize an objective:} & \\
+        & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
+        \text{Subject to constraints:} & \\
+        & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
+        \quad m=1, \dots, M,
+    \end{align}
+
+where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_, integer, or continuous
+variables, :math:`a_{i}, b_{ij}, c` are real values,
+:math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
+
+.. [#]
+    For binary variables, the range of the quadratic-term summation is
+    :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
+    and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
+
+Constraints can be categorized as either "hard" or "soft". Any hard constraint
+must be satisfied for a solution of the model to qualify as feasible. Soft
+constraints may be violated to achieve an overall good solution. By setting
+appropriate weights to soft constraints in comparison to the objective
+and to other soft constraints, you can express the relative importance of such
+constraints.
+
 """
 
 from __future__ import annotations
@@ -137,99 +163,15 @@ class SoftView(collections.abc.Mapping):
 class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     r"""A constrained quadratic model.
 
-    Constrained quadratic models are problems of the form:
-
-    .. math::
-
-        \begin{align}
-            \text{Minimize an objective:} & \\
-            & \sum_{i} a_i x_i + \sum_{i \le j} b_{ij} x_i x_j + c, \\
-            \text{Subject to constraints:} & \\
-            & \sum_i a_i^{(m)} x_i + \sum_{i \le j} b_{ij}^{(m)} x_i x_j+ c^{(m)} \circ 0,
-            \quad m=1, \dots, M,
-        \end{align}
-
-    where :math:`\{ x_i\}_{i=1, \dots, N}` can be binary\ [#]_ or integer
-    variables, :math:`a_{i}, b_{ij}, c` are real values,
-    :math:`\circ \in \{ \ge, \le, = \}` and  :math:`M` is the total number of constraints.
-
-    .. [#]
-        For binary variables, the range of the quadratic-term summation is
-        :math:`i < j` because :math:`x^2 = x` for binary values :math:`\{0, 1\}`
-        and :math:`s^2 = 1` for spin values :math:`\{-1, 1\}`.
-
-    Constraints are often categorized as either "hard" or "soft". Any hard constraint
-    must be satisfied for a solution of the model to qualify as feasible. Soft
-    constraints may be violated to achieve an overall good solution. By setting
-    appropriate weights to soft constraints in comparison to the objective
-    and to other soft constraints, you can express the relative importance of such
-    constraints.
-
     The objective and constraints are encoded as either :class:`.QuadraticModel`
     or :class:`.BinaryQuadraticModel` depending on the variable types used.
 
     Example:
 
-        This example solves the simple `bin packing problem <https://w.wiki/3jz4>`_
-        of packing a set of items of different weights into the smallest
-        possible number of bins.
-
-        `dimod` provides a general :func:`~dimod.generators.random_bin_packing`
-        function to generate bin packing problems, and this example follows the
-        same naming conventions.
-
-        Consider four objects with weights between 0 and 1, and assume that each
-        bin has a capacity to hold up to a total weight of 1.
-
-        >>> weights = [.9, .7, .2, .1]
-        >>> capacity = 1
-
-        Variable :math:`y_j` indicates that bin :math:`j` is used. Clearly, no
-        more than four bins are needed.
-
-        >>> y = [dimod.Binary(f'y_{j}') for j in range(len(weights))]
-
-        Variable :math:`x_{i,j}` indicates that item :math:`i` is put in bin
-        :math:`j`.
-
-        >>> x = [[dimod.Binary(f'x_{i}_{j}') for j in range(len(weights))]
-        ...      for i in range(len(weights))]
-
         Create an empty constrained quadratic model ("empty" meaning that no
-        objective or constraints have set).
+        objective or constraints are set).
 
         >>> cqm = dimod.ConstrainedQuadraticModel()
-
-        The problem is to minimize the number of bins used. Therefore the objective
-        is to minimize the value of :math:`\sum_j y_j`.
-
-        >>> cqm.set_objective(sum(y))
-
-        Any feasible solution must meet the constraint that each item can only go
-        in one bin. You can express this constraint, for a given item :math:`i`,
-        with :math:`\sum_j x_{i, j} == 1`. Note that the label of each
-        constraint is returned so that you can access them in the future if
-        desired.
-
-        >>> for i in range(len(weights)):
-        ...     cqm.add_constraint(sum(x[i]) == 1, label=f'item_placing_{i}')
-        'item_placing_0'
-        'item_placing_1'
-        'item_placing_2'
-        'item_placing_3'
-
-        Finally, enforce the limits on each bin. You can express this constraint,
-        for a given bin :math:`j`, with :math:`\sum_i x_{i, j} * w_i <= c` where
-        :math:`w_i` is the weight of item :math:`i` and :math:`c` is the capacity.
-
-        >>> for j in range(len(weights)):
-        ...     cqm.add_constraint(
-        ...         sum(weights[i] * x[i][j] for i in range(len(weights))) - y[j] * capacity <= 0,
-        ...         label=f'capacity_bin_{j}')
-        'capacity_bin_0'
-        'capacity_bin_1'
-        'capacity_bin_2'
-        'capacity_bin_3'
 
     """
     def __init__(self):
@@ -285,8 +227,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 to improve performance, but subsequently mutating ``qm`` can
                 cause issues.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
@@ -353,8 +297,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
@@ -454,8 +400,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            weight: Weight for a soft constraint. If ``None``, the constraint
-                is hard. In feasible solutions, all the model's hard constraints
+            weight: Weight for a soft constraint.
+                Must be a positive number. If ``None`` or
+                ``float('inf')``, the constraint is hard.
+                In feasible solutions, all the model's hard constraints
                 must be met, while soft constraints might be violated to achieve
                 overall good solutions.
 
@@ -662,9 +610,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             bqm.set_linear(v, 1)
 
-        if bqm.num_variables < 2:
-            raise ValueError("discrete constraints must have at least two variables")
-
         label = self.add_constraint_from_comparison(bqm == 1, label=label, copy=False)
         self.discrete.add(label)
         return label
@@ -718,9 +663,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         if qm.num_interactions:
             raise ValueError("discrete constraints must be linear")
-
-        if qm.num_variables < 2:
-            raise ValueError("discrete constraints must have at least two variables")
 
         for v, bias in qm.iter_linear():
             if v in self.variables:
@@ -795,21 +737,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 DeprecationWarning, stacklevel=2)
             v, vartype = vartype, v
 
-        return super().add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
-
-    def add_variables(self,
-                      vartype: dimod.VartypeLike,
-                      variables: Union[int, Sequence[Variable]],
-                      *,
-                      lower_bound: Optional[float] = None,
-                      upper_bound: Optional[float] = None,
-                      ) -> None:
-        if isinstance(variables, Iterable):
-            for v in variables:
-                self.add_variable(vartype, v, lower_bound=lower_bound, upper_bound=upper_bound)
-        else:
-            for _ in range(variables):
-                self.add_variable(vartype, lower_bound=lower_bound, upper_bound=upper_bound)
+        super().add_variables(vartype, (v,), lower_bound=lower_bound, upper_bound=upper_bound)
+        return self.variables[-1] if v is None else v
 
     def check_feasible(self, sample_like: SamplesLike, rtol: float = 1e-6, atol: float = 1e-8) -> bool:
         r"""Return the feasibility of the given sample.
@@ -1668,7 +1597,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return mapping
 
-    def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
+    def to_file(self, *,
+                spool_size: int = int(1e9),
+                compress: bool = False,
+                ) -> tempfile.SpooledTemporaryFile:
         """Serialize to a file-like object.
 
         Args:
@@ -1676,6 +1608,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 :class:`tempfile.SpooledTemporaryFile`. Determines whether
                 the returned file-like's contents will be kept on disk or in
                 memory.
+
+            compress: If True, the data will be compressed with
+                :class:`zipfile.ZIP_DEFLATED`.
 
         Format Specification (Version 1.3):
 
@@ -1783,7 +1718,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         write_header(file, CQM_MAGIC_PREFIX, data, version=(1, 3))
 
         # write the values
-        with zipfile.ZipFile(file, mode='a') as zf:
+        kwargs = dict(compression=zipfile.ZIP_DEFLATED) if compress else dict()
+        with zipfile.ZipFile(file, mode='a', **kwargs) as zf:
             with objective.to_file(spool_size=int(1e12)) as f:
                 # we can avoid a copy by trying to read from the underlying buffer
                 obj = f._file.getbuffer() if isinstance(f._file, io.BytesIO) else f.read()

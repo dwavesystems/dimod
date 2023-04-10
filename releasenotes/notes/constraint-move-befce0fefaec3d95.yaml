@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fix the ``copy`` keyword argument of ``ConstrainedQuadraticModel.add_constraint_from_model()``.
+    Previously it would always make a copy.
+  - Add missing ``#include`` in ``dimod/include/dimod/abc.h``.

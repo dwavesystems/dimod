@@ -73,6 +73,7 @@ class vartype_limits<Bias, Vartype::REAL> {
 template <class Bias>
 class vartype_info {
  public:
+    /// Default upper bound
     static Bias default_max(Vartype vartype) {
         if (vartype == Vartype::BINARY) {
             return vartype_limits<Bias, Vartype::BINARY>::default_max();
@@ -86,6 +87,7 @@ class vartype_info {
             throw std::logic_error("unknown vartype");
         }
     }
+    /// Default lower bound
     static Bias default_min(Vartype vartype) {
         if (vartype == Vartype::BINARY) {
             return vartype_limits<Bias, Vartype::BINARY>::default_min();
@@ -99,6 +101,7 @@ class vartype_info {
             throw std::logic_error("unknown vartype");
         }
     }
+    /// Maximum supported value
     static Bias max(Vartype vartype) {
         if (vartype == Vartype::BINARY) {
             return vartype_limits<Bias, Vartype::BINARY>::max();
@@ -112,6 +115,7 @@ class vartype_info {
             throw std::logic_error("unknown vartype");
         }
     }
+    /// Minimum supported value
     static Bias min(Vartype vartype) {
         if (vartype == Vartype::BINARY) {
             return vartype_limits<Bias, Vartype::BINARY>::min();

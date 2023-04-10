@@ -40,7 +40,7 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     /// The second template parameter (Index).
     using index_type = Index;
 
-    /// Unsigned integral type that can represent non-negative values.
+    /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
 
     using parent_type = ConstrainedQuadraticModel<bias_type, index_type>;
@@ -419,7 +419,20 @@ void Expression<bias_type, index_type>::clear() {
 template <class bias_type, class index_type>
 template <class T>
 void Expression<bias_type, index_type>::fix_variable(index_type v, T assignment) {
-    throw std::logic_error("not implemented - fix_variable");
+    assert(v >= 0 && static_cast<size_type>(v) < parent_->num_variables());
+
+    auto vit = indices_.find(v);
+    if (vit == indices_.end()) return;  // nothing to remove
+
+    // remove the biases
+    base_type::fix_variable(vit->second, assignment);
+
+    // update the indices
+    auto it = variables_.erase(variables_.begin() + vit->second);
+    indices_.erase(vit);
+    for (; it != variables_.end(); ++it) {
+        indices_[*it] -= 1;
+    }
 }
 
 template <class bias_type, class index_type>
@@ -592,7 +605,20 @@ bool Expression<bias_type, index_type>::remove_interaction(index_type u, index_t
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::remove_variable(index_type v) {
-    throw std::logic_error("not implemented - remove_variable");
+    assert(v >= 0 && static_cast<size_type>(v) < parent_->num_variables());
+
+    auto vit = indices_.find(v);
+    if (vit == indices_.end()) return;  // nothing to remove
+
+    // remove the biases
+    base_type::remove_variable(vit->second);
+
+    // update the indices
+    auto it = variables_.erase(variables_.begin() + vit->second);
+    indices_.erase(vit);
+    for (; it != variables_.end(); ++it) {
+        indices_[*it] -= 1;
+    }
 }
 
 template <class bias_type, class index_type>

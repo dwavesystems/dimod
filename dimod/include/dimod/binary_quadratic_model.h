@@ -19,23 +19,23 @@
 
 namespace dimod {
 
-/// A Binary Quadratic Model is a quadratic polynomial over binary variables.
+/// A binary quadratic model (BQM) is a quadratic polynomial over binary-valued variables.
 template <class Bias, class Index = int>
 class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
  public:
-    /// The type of the base class.
+    /// Type of the base class.
     using base_type = abc::QuadraticModelBase<Bias, Index>;
 
-    /// The first template parameter (Bias).
+    /// First template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// Second template parameter (`Index`).
     using index_type = Index;
 
-    /// Unsigned integral that can represent non-negative values.
+    /// Unsigned integer that can represent non-negative values.
     using size_type = typename base_type::size_type;
 
-    /// Empty constructor. The vartype defaults to `Vartype::BINARY`.
+    /// Empty constructor. The variable type defaults to `Vartype::BINARY`.
     BinaryQuadraticModel();
 
     /// Create a BQM of the given `vartype`.
@@ -51,9 +51,9 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
      *
      * Values on the diagonal are treated differently depending on the variable
      * type.
-     * If the BQM is SPIN-valued, then the values on the diagonal are
+     * If the BQM is SPIN-valued, values on the diagonal are
      * added to the offset.
-     * If the BQM is BINARY-valued, then the values on the diagonal are added
+     * If the BQM is BINARY-valued, values on the diagonal are added
      * as linear biases.
      *
      */
@@ -62,7 +62,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     using base_type::add_quadratic;
 
-    /*
+    /**
      * Construct a BQM from COO-formated iterators.
      *
      * A sparse BQM encoded in [COOrdinate] format is specified by three
@@ -70,7 +70,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
      *
      * [COOrdinate]: https://w.wiki/n$L
      *
-     * `row_iterator` must be a random access iterator  pointing to the
+     * `row_iterator` must be a random access iterator pointing to the
      * beginning of the row data. `col_iterator` must be a random access
      * iterator pointing to the beginning of the column data. `bias_iterator`
      * must be a random access iterator pointing to the beginning of the bias
@@ -83,7 +83,7 @@ class BinaryQuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Add one (disconnected) variable to the BQM and return its index.
     index_type add_variable();
 
-    /// Change the vartype of the binary quadratic model
+    /// Change the variable type of the BQM.
     void change_vartype(Vartype vartype);
 
     bias_type lower_bound() const;

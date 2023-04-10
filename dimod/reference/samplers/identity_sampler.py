@@ -73,7 +73,7 @@ class IdentitySampler(Sampler, Initialized):
 
     properties = {}
 
-    def sample(self, bqm: BinaryQuadraticModel,
+    def sample(self, bqm: BinaryQuadraticModel, *,
                initial_states: typing.Optional[SamplesLike] = None,
                initial_states_generator: InitialStateGenerator = 'random',
                num_reads: typing.Optional[int] = None,

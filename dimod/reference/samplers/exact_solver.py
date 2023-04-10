@@ -214,8 +214,10 @@ class ExactCQMSolver():
         self.properties = {}
         self.parameters = {}
 
-    def sample_cqm(self, cqm: ConstrainedQuadraticModel, rtol: float = 1e-6,
-                   atol: float = 1e-8, **kwargs) -> SampleSet:
+    def sample_cqm(self, cqm: ConstrainedQuadraticModel, *,
+                   rtol: float = 1e-6,
+                   atol: float = 1e-8,
+                   **kwargs) -> SampleSet:
         """Sample from a constrained quadratic model.
 
         Args:

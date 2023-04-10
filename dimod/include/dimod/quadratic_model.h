@@ -24,19 +24,20 @@
 
 namespace dimod {
 
+/// A quadratic model (QM) is a polynomial with one or two variables per term.
 template <class Bias, class Index = int>
 class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
  public:
     /// The type of the base class.
     using base_type = abc::QuadraticModelBase<Bias, Index>;
 
-    /// The first template parameter (Bias).
+    /// The first template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// The second template parameter (`Index`).
     using index_type = Index;
 
-    /// Unsigned integral that can represent non-negative values.
+    /// Unsigned integer that can represent non-negative values.
     using size_type = typename base_type::size_type;
 
     QuadraticModel();
@@ -46,12 +47,16 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     template <class B, class I>
     explicit QuadraticModel(const BinaryQuadraticModel<B, I>& bqm);
 
+    /// Add variable of type `vartype`.
     index_type add_variable(Vartype vartype);
 
+    /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub);
 
+    /// Add `n` variables of type `vartype`.
     index_type add_variables(Vartype vartype, index_type n);
 
+    /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variables(Vartype vartype, index_type n, bias_type lb, bias_type ub);
 
     void clear();
@@ -59,17 +64,27 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /// Change the vartype of `v`, updating the biases appropriately.
     void change_vartype(Vartype vartype, index_type v);
 
+    /**
+     * Remove variable `v` from the model by fixing its value.
+     *
+     * Note that this causes a reindexing, where all variables above `v` have
+     * their index reduced by one.
+     */
+    template <class T>
+    void fix_variable(index_type v, T assignment);
+
     /// Return the lower bound on variable ``v``.
     bias_type lower_bound(index_type v) const;
 
     /**
-     * Total bytes consumed by the biases, vartype info, bounds, and indices.
+     * Total bytes consumed by the biases, `vartype` info, bounds, and indices.
      *
      * If `capacity` is true, use the capacity of the underlying vectors rather
      * than the size.
      */
     size_type nbytes(bool capacity = false) const;
 
+    /// Remove variable `v`.
     void remove_variable(index_type v);
 
     // Resize the model to contain `n` variables.
@@ -78,23 +93,25 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` is used to any new variables added.
-     *
-     * The `vartype` must be `Vartype::BINARY` or `Vartype::SPIN`.
+     * Any added variables are of type `vartype` (value must be `Vartype::BINARY` or `Vartype::SPIN`)
      */
     void resize(index_type n, Vartype vartype);
 
     /**
      * Resize the model to contain `n` variables.
      *
-     * The `vartype` is used to any new variables added.
+     * Any added variables are of type `vartype` (value must be `Vartype::BINARY` or `Vartype::SPIN`)
+     * and have lower bound `lb` and upper bound `ub`.
      */
     void resize(index_type n, Vartype vartype, bias_type lb, bias_type ub);
 
+    /// Set a lower bound of `lb` on variable `v`.
     void set_lower_bound(index_type v, bias_type lb);
 
+    /// Set an upper bound of `ub` on variable `v`.
     void set_upper_bound(index_type v, bias_type ub);
 
+    /// Set the variable type of variable `v`.
     void set_vartype(index_type v, Vartype vartype);
 
     // todo: substitute_variable with vartype/bounds support
@@ -219,6 +236,13 @@ void QuadraticModel<bias_type, index_type>::change_vartype(Vartype vartype, inde
         // todo: there are more we could support
         throw std::logic_error("unsupported vartype change");
     }
+}
+
+template <class bias_type, class index_type>
+template <class T>
+void QuadraticModel<bias_type, index_type>::fix_variable(index_type v, T assignment) {
+    base_type::fix_variable(v, assignment);
+    varinfo_.erase(varinfo_.begin() + v);
 }
 
 template <class bias_type, class index_type>

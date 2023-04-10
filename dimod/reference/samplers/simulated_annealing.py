@@ -58,7 +58,7 @@ class SimulatedAnnealingSampler(Sampler):
                            'num_sweeps': []}
         self.properties = {}
 
-    def sample(self, bqm, beta_range=None, num_reads=10, num_sweeps=1000, **kwargs):
+    def sample(self, bqm, *, beta_range=None, num_reads=10, num_sweeps=1000, **kwargs):
         """Sample from low-energy spin states using simulated annealing.
 
         Args:

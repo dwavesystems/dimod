@@ -27,6 +27,7 @@
 
 namespace dimod {
 
+/// A constrained quadratic model (CQM) can include an objective and constraints as polynomials with one or two variables per term.
 template <class Bias, class Index = int>
 class ConstrainedQuadraticModel;
 
@@ -72,13 +73,13 @@ class ConstraintsView {
 template <class Bias, class Index>
 class ConstrainedQuadraticModel {
  public:
-    /// The first template parameter (Bias).
+    /// First template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// Second template parameter (`Index`).
     using index_type = Index;
 
-    /// Unsigned integral type that can represent non-negative values.
+    /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
 
     friend class ConstraintsView<bias_type, index_type>;
@@ -105,20 +106,27 @@ class ConstrainedQuadraticModel {
     /// If an exception is thrown, there are no changes to the model.
     index_type add_constraint(Constraint<bias_type, index_type> constraint);
 
+    /// Add `n` constraints.
     index_type add_constraints(index_type n);
 
+    /// Add a constraint with only linear coefficients.
     index_type add_linear_constraint(std::initializer_list<index_type> variables,
                                      std::initializer_list<bias_type> biases, Sense sense,
                                      bias_type rhs);
 
+    /// Add variable of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variable(Vartype vartype, bias_type lb, bias_type ub);
 
+    /// Add variable of type `vartype`.
     index_type add_variable(Vartype vartype);
 
+    /// Add `n` variables of type `vartype`.
     index_type add_variables(Vartype vartype, index_type n);
 
+    /// Add `n` variables of type `vartype` with lower bound `lb` and upper bound `ub`.
     index_type add_variables(Vartype vartype, index_type n, bias_type lb, bias_type ub);
 
+    /// Change the variable type of variable `v` to `vartype`, updating the biases appropriately.
     void change_vartype(Vartype vartype, index_type v);
 
     void clear();
@@ -129,6 +137,7 @@ class ConstrainedQuadraticModel {
     std::weak_ptr<Constraint<bias_type, index_type>> constraint_weak_ptr(index_type c);
     std::weak_ptr<const Constraint<bias_type, index_type>> constraint_weak_ptr(index_type c) const;
 
+    /// Fix variable `v` in the model to value `assignment`.
     template <class T>
     void fix_variable(index_type v, T assignment);
 
@@ -147,17 +156,22 @@ class ConstrainedQuadraticModel {
     /// Remove a constraint from the model.
     void remove_constraint(index_type c);
 
+    /// Remove variable `v` from the model.
     void remove_variable(index_type v);
 
+    /// Set a lower bound of `lb` on variable `v`.
     void set_lower_bound(index_type v, bias_type lb);
 
+    /// Set an objective for the model.
     template <class B, class I>
     void set_objective(const abc::QuadraticModelBase<B, I>& objective);
 
+    /// Set an objective for the model using a mapping.
     template <class B, class I, class T>
     void set_objective(const abc::QuadraticModelBase<B, I>& objective,
                        const std::vector<T>& mapping);
 
+    /// Set an upper bound of `ub` on variable `v`.
     void set_upper_bound(index_type v, bias_type ub);
     void set_vartype(index_type v, Vartype vartype);
 

@@ -45,7 +45,7 @@ class RandomSampler(Sampler):
         self.parameters = {'num_reads': []}
         self.properties = {}
 
-    def sample(self, bqm, num_reads=10, seed=None, **kwargs):
+    def sample(self, bqm, *, num_reads=10, seed=None, **kwargs):
         """Return random samples for a binary quadratic model.
 
         Variable assignments are chosen by coin flip.

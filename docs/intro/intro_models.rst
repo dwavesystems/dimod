@@ -1,8 +1,19 @@
-.. _intro_qm:
+.. _intro_models:
 
-===============================
-Quadratic Models: Unconstrained
-===============================
+============================
+Models: BQM, CQM, QM, Others
+============================
+
+Constrained Versus Unconstrained
+================================
+
+Many real-world problems include constraints. For example, a routing problem
+might limit the number of airplanes on the ground at an airport and a scheduling
+problem might require a minimum interval between shifts.
+
+Constrained models such as :class:`~dimod.ConstrainedQuadraticModel` can support
+constraints by encoding both an objective and its set of constraints, as models
+or in symbolic form.
 
 Unconstrained quadratic models are used to submit problems to :term:`sampler`\ s
 such as D-Wave quantum computers\ [#]_ and some hybrid quantum-classical
@@ -29,18 +40,6 @@ formulate the constraints as penalties: see
 Supported Models
 ================
 
-.. _intro_qm_qm:
-
-* **Quadratic Models**
-
-  The :term:`quadratic model` (QM) class, :class:`~dimod.QuadraticModel`, encodes
-  polynomials of binary, integer, and discrete variables, with all terms of degree
-  two or less.
-
-  For an introduction to QMs, see
-  :std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`. For the QM class,
-  its attributes and methods, see the :ref:`QM reference documentation <qm>`.
-
 .. _intro_qm_bqm:
 
 * **Binary Quadratic Models**
@@ -54,6 +53,31 @@ Supported Models
   :std:doc:`Concepts: Binary Quadratic Models <oceandocs:concepts/bqm>`. For the BQM class,
   its attributes and methods, see the :ref:`BQM reference documentation <bqm>`.
 
+.. _intro_cqm:
+
+* **Constrained Quadratic Model**
+
+  The :term:`constrained quadratic model` (CQM) class, :class:`~dimod.ConstrainedQuadraticModel`,
+  encodes a quadratic objective and possibly one or more quadratic equality and
+  inequality constraints.
+
+  For an introduction to CQMs, see
+  :std:doc:`Constrained Quadratic Models <oceandocs:concepts/cqm>`. For
+  descriptions of the CQM class and its methods, see :ref:`cqm`.
+
+.. _intro_qm_qm:
+
+* **Quadratic Models**
+
+  The :term:`quadratic model` (QM) class, :class:`~dimod.QuadraticModel`, encodes
+  polynomials of binary, integer, and discrete variables, with all terms of degree
+  two or less.
+
+  For an introduction to QMs, see
+  :std:doc:`Concepts: Quadratic Models <oceandocs:concepts/qm>`. For the QM class,
+  its attributes and methods, see the :ref:`QM reference documentation <qm>`.
+
+
 * **Discrete Quadratic Models**
 
   The :term:`discrete quadratic model` (BQM) class,
@@ -64,10 +88,12 @@ Supported Models
   :std:doc:`Concepts: Discrete Quadratic Models <oceandocs:concepts/dqm>`. For the DQM
   class, its attributes and methods, see :ref:`DQM reference documentation <dqm>`.
 
-See examples of using QPU solvers and `Leap <https://cloud.dwavesys.com/leap>`_
-hybrid solvers on these models in Ocean documentation's
-:std:doc:`Getting Started examples <oceandocs:getting_started>` and the
-`dwave-examples GitHub repository <https://github.com/dwave-examples>`_.
+.. _intro_nonquadratic:
+
+* **Higher-Order Models**
+
+  dimod provides some :ref:`higher_order_composites` and functionality
+  such as reducing higher-order polynomials to BQMs.
 
 Model Construction
 ==================
@@ -75,23 +101,53 @@ Model Construction
 dimod provides a variety of model generators. These are especially useful for testing
 code and learning.
 
-Example: dimod BQM Generator
-----------------------------
+See examples of using QPU solvers and `Leap <https://cloud.dwavesys.com/leap>`_
+hybrid solvers on these models in Ocean documentation's
+:std:doc:`Getting Started examples <oceandocs:getting_started>` and the
+`dwave-examples GitHub repository <https://github.com/dwave-examples>`_.
+
+Typically you construct a model when reformulating your problem, using such
+techniques as those presented in D-Wave's system documentation's
+:std:doc:`sysdocs_gettingstarted:doc_handbook`.
+
+CQM Example: Using a dimod Generator
+------------------------------------
+
+This example creates a CQM representing a
+`knapsack problem <https://en.wikipedia.org/wiki/Knapsack_problem>`_ of ten
+items.
+
+>>> cqm = dimod.generators.random_knapsack(10)
+
+CQM Example: Symbolic Formulation
+---------------------------------
+
+This example constructs a CQM from symbolic math, which is especially useful for
+learning and testing with small CQMs.
+
+>>> x = dimod.Binary('x')
+>>> y = dimod.Integer('y')
+>>> cqm = dimod.CQM()
+>>> objective = cqm.set_objective(x+y)
+>>> cqm.add_constraint(y <= 3) #doctest: +ELLIPSIS
+'...'
+
+For very large models, you might read the data from a file or construct from a NumPy
+array.
+
+BQM Example: Using a dimod Generator
+------------------------------------
 
 This example generates a BQM from a fully-connected graph (a clique) where all
 linear biases are zero and quadratic values are uniformly selected -1 or +1 values.
 
 >>> bqm = dimod.generators.random.ran_r(1, 7)
 
-Typically you construct a model when reformulating your problem, using such
-techniques as those presented in D-Wave's system documentation's
-:std:doc:`sysdocs_gettingstarted:doc_handbook`.
+BQM Example: Python Formulation
+-------------------------------
 
 For learning and testing with small models, construction in Python is
 convenient.
-
-Example: Python Formulation
----------------------------
 
 The `maximum cut <https://en.wikipedia.org/wiki/Maximum_cut>`_ problem is to find
 a subset of a graph's vertices such that the number of edges between it and the
@@ -120,12 +176,12 @@ example demonstrates how such problems can be formulated as QUBOs:
 ...         (0, 2): 2, (3, 3): -1, (0, 3): 2}
 >>> bqm = dimod.BQM.from_qubo(qubo)
 
+BQM Example: Construction from NumPy Arrays
+-------------------------------------------
+
 For performance, especially with very large BQMs, you might read the data from a
 file using methods, such as :func:`~dimod.binary.BinaryQuadraticModel.from_file`
 or from NumPy arrays.
-
-Example: Construction from NumPy Arrays
----------------------------------------
 
 This example creates a BQM representing a long ferromagnetic loop with two opposite
 non-zero biases.
@@ -140,8 +196,8 @@ non-zero biases.
 >>> bqm.num_variables
 1001
 
-Example: Interaction Between Integer Variables
-----------------------------------------------
+QM Example: Interaction Between Integer Variables
+-------------------------------------------------
 
 This example constructs a QM with an interaction between two integer variables.
 

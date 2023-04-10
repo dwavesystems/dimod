@@ -29,16 +29,17 @@ enum Sense { LE, GE, EQ };
 
 enum Penalty { LINEAR, QUADRATIC, CONSTANT };
 
+/// A constrained quadratic model (CQM) can include hard or soft constraints as polynomials with one or two variables per term.
 template <class Bias, class Index>
 class Constraint : public Expression<Bias, Index> {
  public:
-    /// The type of the base class.
+    /// Type of the base class.
     using base_type = Expression<Bias, Index>;
 
-    /// The first template parameter (Bias).
+    /// First template parameter (`Bias`).
     using bias_type = Bias;
 
-    /// The second template parameter (Index).
+    /// Second template parameter (`Index`).
     using index_type = Index;
 
     using size_type = typename base_type::size_type;
@@ -48,21 +49,44 @@ class Constraint : public Expression<Bias, Index> {
     Constraint();
     explicit Constraint(const parent_type* parent);
 
+    /// Return true for a one-hot constraint of discrete variables.
     bool is_onehot() const;
+
+    /// Return true for a soft constraint with a finite weight that can be violated.
     bool is_soft() const;
+
+    /// Mark the constraint as encoding a discrete variable.
     void mark_discrete(bool mark = true);
+
+    /// Return true if the constraint encodes a discrete variable.
     bool marked_discrete() const;
+
+    /// Return the penalty set for a soft constraint.
     Penalty penalty() const;
+
+    /// Return a constraint's right-hand side.
     bias_type rhs() const;
 
     // note: flips sign when negative
+    /// Scale by multiplying by `scalar`.
     void scale(bias_type scalar);
 
+    /// Sense (greater or equal, less or equal, equal) of a constraint.
     Sense sense() const;
+
+    /// Set the penalty for a soft constraint.
     void set_penalty(Penalty penalty);
+
+    /// Set a constraint's right-hand side.
     void set_rhs(bias_type rhs);
+
+    /// Set the sense (greater or equal, less or equal, equal) of a constraint.
     void set_sense(Sense sense);
+
+    /// Set the weight for a soft constraint.
     void set_weight(bias_type weight);
+
+    /// Return a soft constraint's weight.
     bias_type weight() const;
 
  private:

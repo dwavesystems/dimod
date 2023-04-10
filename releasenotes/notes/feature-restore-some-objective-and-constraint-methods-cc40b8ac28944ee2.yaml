@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    Add the ability to set offsets on ``ObjectiveView`` and ``ConstraintView``.
+    This was previously removed in dimod 0.12.0.
+    See `#1287 <https://github.com/dwavesystems/dimod/issues/1287>`_
+  - |
+    Add ``ObjectiveView.add_linear_from()`` and ``ConstraintView.add_linear_from()`` methods.
+    These were previously removed in dimod 0.12.0.
+  - |
+    Add ``ObjectiveView.add_variable()`` and ``ConstraintView.add_variable()`` methods.
+    These were previously removed in dimod 0.12.0.

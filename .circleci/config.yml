@@ -32,7 +32,7 @@ jobs:
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.10.0
+            pip install cibuildwheel==2.11.2
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -119,7 +119,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.10.0
+            python -m pip install cibuildwheel==2.11.2
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
@@ -246,7 +246,7 @@ jobs:
         type: string
 
     docker:
-      - image: python:<< parameters.python-version >>
+      - image: python:<< parameters.python-version >>-slim
 
     steps:
       - checkout
@@ -286,54 +286,6 @@ jobs:
       - checkout
       - run: *cpp-tests
 
-  test-osx:
-    parameters:
-      python-version:
-        type: string
-
-    macos:
-      xcode: 13.4.0
-
-    environment:
-      <<: *global-environment
-      HOMEBREW_NO_AUTO_UPDATE: 1
-
-    steps:
-      - checkout
-      - attach_workspace:
-          at: dist
-      - run:
-          # we install pyenv from source so we can get the latest and don't need to wait for package managers
-          name: install pyenv
-          command: |
-            git clone https://github.com/pyenv/pyenv.git ~/.pyenv --branch v2.3.4
-            echo '' >> ~/.bash_profile
-            echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
-            echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-            echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
-      - restore_cache:
-          keys:
-            - pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
-      - run:
-          name: install python
-          command: |
-            pyenv install << parameters.python-version>> -s
-      - save_cache:
-          paths:
-            - ~/.pyenv
-          key: pyenv-{{ .Environment.CIRCLE_JOB }}-xcode13.4.0-pyenv2.3.4
-      - run:
-          name: install
-          command: |
-            pyenv local << parameters.python-version >>
-            python -m venv env
-            . env/bin/activate
-            pip install pip --upgrade
-            pip install -r requirements.txt
-            pip install -r tests/requirements.txt
-            pip install dimod --no-index -f dist/ --force-reinstall --no-deps
-      - run: *unix-run-tests
-
   test-sdist:
     docker:
       - image: cimg/python:3.9
@@ -350,49 +302,13 @@ jobs:
             pip install dist/dimod*.tar.gz
       - run: *unix-run-tests
 
-  test-windows:
-    parameters:
-      python-version:
-        type: string
-
-    executor:
-      name: win/default
-
-    steps:
-      - checkout
-      - attach_workspace:
-          at: dist
-
-      - run:
-          name: install python and create venv
-          command: |
-            nuget install python -Version << parameters.python-version >> -ExcludeVersion -OutputDirectory .
-            .\python\tools\python.exe --version
-            .\python\tools\python.exe -m venv env
-
-      - run:
-          name: install dependencies
-          command: |
-            env\Scripts\activate.ps1
-            python --version
-            pip install -r requirements.txt
-            pip install -r tests\requirements.txt
-            pip install dimod --no-index -f dist/ --force-reinstall --no-deps
-
-      - run:
-          name: run unittests
-          command: |
-            env\Scripts\activate.ps1
-            cd tests\
-            python -m unittest
-
 workflows:
   tests:
     jobs:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
+              python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -408,30 +324,16 @@ workflows:
             parameters:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
+              python-version: *python-versions
             exclude:
               # we don't support 1.14.5, the oldest version for Python 3.7.9
               - python-version: 3.7.9
                 dependencies: oldest-supported-numpy
       - test-linux-cpp
       - test-osx-cpp
-      - test-osx:
-          name: test-osx-py<< matrix.python-version >>
-          requires:
-            - build-osx
-          matrix:
-            parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0rc1]
       - test-sdist:
           requires:
             - build-sdist
-      - test-windows:
-          name: test-windows-py<< matrix.python-version >>
-          requires:
-            - build-windows
-          matrix:
-            parameters:
-              python-version: [3.7.9, 3.8.9, 3.9.4, 3.10.0] # no 3.11 with nuget yet
   deploy:
     jobs:
       - build-linux: &deploy-build

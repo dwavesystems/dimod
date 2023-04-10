@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``compress`` keyword argument to ``ConstrainedQuadraticModel.to_file()``.
