@@ -31,22 +31,30 @@ namespace dimod {
 template <class Bias, class Index = int>
 class ConstrainedQuadraticModel;
 
-template <class Bias, class Index>
+template <class CQM>
 class ConstraintsView {
  public:
+    using bias_type = typename CQM::bias_type;
+    using index_type = typename CQM::index_type;
+
+    using constraint_type = typename std::conditional<std::is_const<CQM>::value,
+                                                      const Constraint<bias_type, index_type>,
+                                                      Constraint<bias_type, index_type>>::type;
+
     using iterator = iterators::ConstraintIterator<
-            typename std::vector<std::shared_ptr<Constraint<Bias, Index>>>::iterator>;
+            typename std::vector<std::shared_ptr<Constraint<bias_type, index_type>>>::iterator>;
     using const_iterator = iterators::ConstraintIterator<
-            typename std::vector<std::shared_ptr<Constraint<Bias, Index>>>::const_iterator,
-            const Constraint<Bias, Index>>;
+            typename std::vector<
+                    std::shared_ptr<Constraint<bias_type, index_type>>>::const_iterator,
+            const Constraint<bias_type, index_type>>;
 
-    explicit ConstraintsView(ConstrainedQuadraticModel<Bias, Index>* parent) : parent_(parent) {}
+    explicit ConstraintsView(CQM* parent) : parent_(parent) {}
 
-    Constraint<Bias, Index>& operator[](Index c) { return *(parent_->constraints_[c]); }
-    const Constraint<Bias, Index>& operator[](Index c) const { return *(parent_->constraints_[c]); }
+    constraint_type& operator[](index_type c) { return *(parent_->constraints_[c]); }
+    const constraint_type& operator[](index_type c) const { return *(parent_->constraints_[c]); }
 
-    Constraint<Bias, Index>& at(Index c) { return *(parent_->constraints_.at(c)); }
-    const Constraint<Bias, Index>& at(Index c) const { return *(parent_->constraints_.at(c)); }
+    constraint_type& at(index_type c) { return *(parent_->constraints_.at(c)); }
+    const constraint_type& at(index_type c) const { return *(parent_->constraints_.at(c)); }
 
     iterator begin() { return iterators::make_constraint_iterator(parent_->constraints_.begin()); }
     const_iterator begin() const {
@@ -67,7 +75,7 @@ class ConstraintsView {
     std::size_t size() const { return parent_->constraints_.size(); }
 
  private:
-    ConstrainedQuadraticModel<Bias, Index>* parent_;
+    CQM* const parent_;
 };
 
 template <class Bias, class Index>
@@ -82,7 +90,8 @@ class ConstrainedQuadraticModel {
     /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
 
-    friend class ConstraintsView<bias_type, index_type>;
+    friend class ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>;
+    friend class ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>;
 
     ConstrainedQuadraticModel();
 
@@ -130,6 +139,15 @@ class ConstrainedQuadraticModel {
     void change_vartype(Vartype vartype, index_type v);
 
     void clear();
+
+    /// Return a view over the constraints that can be iterated over.
+    /// @code
+    /// for (auto& constraint : cqm.constraints()) {}
+    /// @endcode
+    ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>> constraints();
+
+    /// @copydoc ConstrainedQuadraticModel::constraints()
+    const ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>> constraints() const;
 
     Constraint<bias_type, index_type>& constraint_ref(index_type c);
     const Constraint<bias_type, index_type>& constraint_ref(index_type c) const;
@@ -187,8 +205,6 @@ class ConstrainedQuadraticModel {
         first.myswap(second);
     }
 
-    ConstraintsView<bias_type, index_type> constraints;
-
     Expression<bias_type, index_type> objective;
 
  private:
@@ -199,7 +215,6 @@ class ConstrainedQuadraticModel {
 
         // for objective and constraints, we need to make sure that their
         // parent_ pointers are pointing at the correct object.
-        swap(this->constraints, other.constraints);
 
         swap(this->objective, other.objective);
         this->objective.parent_ = this;
@@ -248,12 +263,12 @@ class ConstrainedQuadraticModel {
 
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel()
-        : constraints(this), objective(this), constraints_(), varinfo_() {}
+        : objective(this), constraints_(), varinfo_() {}
 
 template <class bias_type, class index_type>
 ConstrainedQuadraticModel<bias_type, index_type>::ConstrainedQuadraticModel(
         const ConstrainedQuadraticModel& other)
-        : constraints(this), objective(other.objective), constraints_(), varinfo_(other.varinfo_) {
+        : objective(other.objective), constraints_(), varinfo_(other.varinfo_) {
     objective.parent_ = this;
 
     for (auto& c_ptr : other.constraints_) {
@@ -455,6 +470,18 @@ void ConstrainedQuadraticModel<bias_type, index_type>::clear() {
     objective.clear();
     constraints_.clear();
     varinfo_.clear();
+}
+
+template <class bias_type, class index_type>
+ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraints() {
+    return ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>(this);
+}
+
+template <class bias_type, class index_type>
+const ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraints() const {
+    return ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>(this);
 }
 
 template <class bias_type, class index_type>

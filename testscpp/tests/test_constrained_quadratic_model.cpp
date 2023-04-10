@@ -488,7 +488,7 @@ TEST_CASE("Bug 0") {
     }
 }
 
-TEST_CASE("Test constraints property") {
+TEST_CASE("Test constraints view") {
     GIVEN("a CQM with one variable and 10 constraints") {
         auto cqm = ConstrainedQuadraticModel<double>();
         auto x = cqm.add_variable(Vartype::BINARY);
@@ -498,7 +498,7 @@ TEST_CASE("Test constraints property") {
 
         THEN("range-based for loops work over the constraints") {
             int i = 0;
-            for (auto& c : cqm.constraints) {
+            for (auto& c : cqm.constraints()) {
                 CHECK(c.linear(x) == i);
                 c.set_linear(x, i - 1);  // can modify
                 ++i;
@@ -507,7 +507,7 @@ TEST_CASE("Test constraints property") {
 
         THEN("const iteration functions") {
             int i = 0;
-            for (auto it = cqm.constraints.cbegin(); it != cqm.constraints.cend(); ++it, ++i) {
+            for (auto it = cqm.constraints().cbegin(); it != cqm.constraints().cend(); ++it, ++i) {
                 CHECK(it->linear(x) == i);
                 // it->set_linear(x, i-1);  // raises compiler error
             }
@@ -515,16 +515,16 @@ TEST_CASE("Test constraints property") {
 
         THEN("we can access the constraints by index") {
             for (int i = 0; i < 10; ++i) {
-                CHECK(cqm.constraints[i].linear(x) == i);
-                CHECK(cqm.constraints.at(i).linear(x) == i);
+                CHECK(cqm.constraints()[i].linear(x) == i);
+                CHECK(cqm.constraints().at(i).linear(x) == i);
 
-                cqm.constraints[i].set_linear(x, i + 1);
-                CHECK(cqm.constraints[i].linear(x) == i + 1);
+                cqm.constraints()[i].set_linear(x, i + 1);
+                CHECK(cqm.constraints()[i].linear(x) == i + 1);
 
-                cqm.constraints.at(i).set_linear(x, i - 1);
-                CHECK(cqm.constraints[i].linear(x) == i - 1);
+                cqm.constraints().at(i).set_linear(x, i - 1);
+                CHECK(cqm.constraints()[i].linear(x) == i - 1);
 
-                CHECK_THROWS_AS(cqm.constraints.at(100), std::out_of_range);
+                CHECK_THROWS_AS(cqm.constraints().at(100), std::out_of_range);
             }
         }
 
@@ -533,7 +533,7 @@ TEST_CASE("Test constraints property") {
 
             THEN("range-based for loops work over the constraints") {
                 int i = 0;
-                for (auto& c : const_cqm.constraints) {
+                for (auto& c : const_cqm.constraints()) {
                     CHECK(c.linear(x) == i);
                     // c.set_linear(x, i-1);  // raises compiler error
                     ++i;
@@ -542,10 +542,10 @@ TEST_CASE("Test constraints property") {
 
             THEN("we can access the constraints by index") {
                 for (int i = 0; i < 10; ++i) {
-                    CHECK(const_cqm.constraints[i].linear(x) == i);
-                    CHECK(const_cqm.constraints.at(i).linear(x) == i);
+                    CHECK(const_cqm.constraints()[i].linear(x) == i);
+                    CHECK(const_cqm.constraints().at(i).linear(x) == i);
 
-                    CHECK_THROWS_AS(const_cqm.constraints.at(100), std::out_of_range);
+                    CHECK_THROWS_AS(const_cqm.constraints().at(100), std::out_of_range);
                 }
             }
         }

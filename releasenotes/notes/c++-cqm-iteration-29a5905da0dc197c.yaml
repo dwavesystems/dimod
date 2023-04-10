@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``dimod::ConstrainedQuadraticModel::constraints()`` method that returns
+    a view of the constraints that is easily iterated over.
