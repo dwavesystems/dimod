@@ -62,6 +62,18 @@ class TestLoads(unittest.TestCase):
 
         cqm = loads(lp)
 
+    def test_invalid_optimizatio_sense(self):
+        lp = """
+        invalid
+            obj: x + y
+        End
+        """
+
+        x, y = dimod.Reals('xy')
+
+        with self.assertRaises(ValueError):
+            cqm = loads(lp)
+
     def test_linear(self):
         lp = """
         minimize
@@ -75,6 +87,26 @@ class TestLoads(unittest.TestCase):
 
         self.assertFalse(cqm.constraints)
         self.assertTrue(cqm.objective.is_equal(x + y))
+
+    def test_maximize(self):
+        lp = """
+        Maximize
+            x0 - 2 x1 + [ 6 x0*x1 ] / 2
+        Subject To
+            x0 + x1 = 1
+        Binary
+            x0 x1
+        End
+        """
+
+        x0, x1 = dimod.Binaries(['x0', 'x1'])
+
+        cqm = loads(lp)
+
+        self.assertTrue(cqm.objective.is_equal(-x0 + 2*x1 - 3*x0*x1))
+        self.assertTrue(cqm.constraints[0].lhs.is_equal(x0 + x1))
+        self.assertEqual(cqm.constraints[0].rhs, 1)
+        self.assertIs(cqm.constraints[0].sense, dimod.sym.Sense.Eq)
 
     def test_quadratic(self):
         lp = """

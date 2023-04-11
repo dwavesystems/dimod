@@ -273,6 +273,10 @@ def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQua
     LP files are a common format for encoding optimization models. See
     documentation from Gurobi_ and CPLEX_.
 
+    Note that if the objective function is specified as a maximization function
+    then it will be converted to a minimization function by flipping the sign
+    of all of the biases.
+
     Args:
         file_like: Either a :class:`str` or :class:`bytes` object representing
             a path, or a file-like_ object.
@@ -343,6 +347,10 @@ def loads(obj: typing.Union[str, typing.ByteString]) -> dimod.ConstrainedQuadrat
 
     LP files are a common format for encoding optimization models. See
     documentation from Gurobi_ and CPLEX_.
+
+    Note that if the objective function is specified as a maximization function
+    then it will be converted to a minimization function by flipping the sign
+    of all of the biases.
 
     Args:
         obj: A :class:`str` or :class:`bytes` formatted like an LP file.

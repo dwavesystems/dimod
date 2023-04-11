@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix ``lp.load()`` and ``lp.loads()`` functions to correctly handle maximization objectives.
+    See `#1321 <https://github.com/dwavesystems/dimod/issues/1321>`_.
