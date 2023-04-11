@@ -28,4 +28,7 @@ cdef extern from "dimod/lp.h" namespace "dimod::lp" nogil:
         vector[string] variable_labels
         vector[string] constraint_labels
 
-    LPModel[Bias, Index] read[Bias, Index] (const string) except +
+    # We convert all errors to ValueError for now. In the future it would
+    # be good to be more specific, but that would be part of a more general
+    # error handling overhaul.
+    LPModel[Bias, Index] read[Bias, Index](const string) except +ValueError

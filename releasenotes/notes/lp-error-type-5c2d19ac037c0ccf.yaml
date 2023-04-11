@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    Change ``lp.load()`` and ``lp.loads()`` to raise a ``ValueErrorr`` rather
+    than a ``RuntimeError`` when given an invalid file format.

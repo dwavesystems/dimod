@@ -62,6 +62,18 @@ class TestLoads(unittest.TestCase):
 
         cqm = loads(lp)
 
+    def test_invalid_optimizatio_sense(self):
+        lp = """
+        invalid
+            obj: x + y
+        End
+        """
+
+        x, y = dimod.Reals('xy')
+
+        with self.assertRaises(ValueError):
+            cqm = loads(lp)
+
     def test_linear(self):
         lp = """
         minimize
