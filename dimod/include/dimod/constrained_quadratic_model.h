@@ -21,6 +21,7 @@
 
 #include "dimod/abc.h"
 #include "dimod/constraint.h"
+#include "dimod/iterators.h"
 #include "dimod/expression.h"
 #include "dimod/vartypes.h"
 
@@ -28,6 +29,56 @@ namespace dimod {
 
 /// A constrained quadratic model (CQM) can include an objective and constraints as polynomials with one or two variables per term.
 template <class Bias, class Index = int>
+class ConstrainedQuadraticModel;
+
+template <class CQM>
+class ConstraintsView {
+ public:
+    using bias_type = typename CQM::bias_type;
+    using index_type = typename CQM::index_type;
+
+    using constraint_type = typename std::conditional<std::is_const<CQM>::value,
+                                                      const Constraint<bias_type, index_type>,
+                                                      Constraint<bias_type, index_type>>::type;
+
+    using iterator = iterators::ConstraintIterator<
+            typename std::vector<std::shared_ptr<Constraint<bias_type, index_type>>>::iterator>;
+    using const_iterator = iterators::ConstraintIterator<
+            typename std::vector<
+                    std::shared_ptr<Constraint<bias_type, index_type>>>::const_iterator,
+            const Constraint<bias_type, index_type>>;
+
+    explicit ConstraintsView(CQM* parent) : parent_(parent) {}
+
+    constraint_type& operator[](index_type c) { return *(parent_->constraints_[c]); }
+    const constraint_type& operator[](index_type c) const { return *(parent_->constraints_[c]); }
+
+    constraint_type& at(index_type c) { return *(parent_->constraints_.at(c)); }
+    const constraint_type& at(index_type c) const { return *(parent_->constraints_.at(c)); }
+
+    iterator begin() { return iterators::make_constraint_iterator(parent_->constraints_.begin()); }
+    const_iterator begin() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cbegin());
+    }
+    iterator end() { return iterators::make_constraint_iterator(parent_->constraints_.end()); }
+    const_iterator end() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cend());
+    }
+
+    const_iterator cbegin() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cbegin());
+    }
+    const_iterator cend() const {
+        return iterators::make_const_constraint_iterator(parent_->constraints_.cend());
+    }
+
+    std::size_t size() const { return parent_->constraints_.size(); }
+
+ private:
+    CQM* const parent_;
+};
+
+template <class Bias, class Index>
 class ConstrainedQuadraticModel {
  public:
     /// First template parameter (`Bias`).
@@ -38,6 +89,9 @@ class ConstrainedQuadraticModel {
 
     /// Unsigned integer type that can represent non-negative values.
     using size_type = std::size_t;
+
+    friend class ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>;
+    friend class ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>;
 
     ConstrainedQuadraticModel();
 
@@ -85,6 +139,15 @@ class ConstrainedQuadraticModel {
     void change_vartype(Vartype vartype, index_type v);
 
     void clear();
+
+    /// Return a view over the constraints. The view can be iterated over.
+    /// @code
+    /// for (auto& constraint : cqm.constraints()) {}
+    /// @endcode
+    ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>> constraints();
+
+    /// @copydoc ConstrainedQuadraticModel::constraints()
+    const ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>> constraints() const;
 
     Constraint<bias_type, index_type>& constraint_ref(index_type c);
     const Constraint<bias_type, index_type>& constraint_ref(index_type c) const;
@@ -138,11 +201,11 @@ class ConstrainedQuadraticModel {
     /// Return the variable type of variable ``v``.
     Vartype vartype(index_type v) const;
 
-    Expression<bias_type, index_type> objective;
-
     friend void swap(ConstrainedQuadraticModel& first, ConstrainedQuadraticModel& second) {
         first.myswap(second);
     }
+
+    Expression<bias_type, index_type> objective;
 
  private:
     // I can't figure out how to get Expression to grant friendship to friend swap...
@@ -407,6 +470,18 @@ void ConstrainedQuadraticModel<bias_type, index_type>::clear() {
     objective.clear();
     constraints_.clear();
     varinfo_.clear();
+}
+
+template <class bias_type, class index_type>
+ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraints() {
+    return ConstraintsView<ConstrainedQuadraticModel<bias_type, index_type>>(this);
+}
+
+template <class bias_type, class index_type>
+const ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>
+ConstrainedQuadraticModel<bias_type, index_type>::constraints() const {
+    return ConstraintsView<const ConstrainedQuadraticModel<bias_type, index_type>>(this);
 }
 
 template <class bias_type, class index_type>
