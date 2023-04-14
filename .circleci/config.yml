@@ -187,8 +187,9 @@ jobs:
             pip install -r requirements.txt -r tests/requirements.txt
             python setup.py build_ext --inplace
             coverage run -m unittest
+            coverage xml
       - codecov/upload:
-          file: .coverage
+          file: coverage.xml
       - codecov/upload:
           file: testscpp/coverage.info
 
