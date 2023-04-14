@@ -140,7 +140,7 @@ class ConstrainedQuadraticModel {
 
     void clear();
 
-    /// Return a view over the constraints that can be iterated over.
+    /// Return a view over the constraints. The view can be iterated over.
     /// @code
     /// for (auto& constraint : cqm.constraints()) {}
     /// @endcode

@@ -501,6 +501,7 @@ TEST_CASE("Test constraints view") {
             for (auto& c : cqm.constraints()) {
                 CHECK(c.linear(x) == i);
                 c.set_linear(x, i - 1);  // can modify
+                CHECK(c.linear(x) == i - 1);
                 ++i;
             }
         }

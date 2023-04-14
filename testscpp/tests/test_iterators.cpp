@@ -59,7 +59,7 @@ TEST_CASE("Test ConstraintIterator") {
             }
         }
 
-        THEN("we can add and subtract") {
+        THEN("we can subtract") {
             auto it1 = make_constraint_iterator(vec.begin() + 3);
             auto it2 = make_constraint_iterator(vec.begin());
             CHECK(it1 - it2 == 3);
