@@ -1,6 +1,7 @@
 version: 2.1
 
 orbs:
+  codecov: codecov/codecov@3
   win: circleci/windows@2.2.0
 
 environment: &global-environment
@@ -186,11 +187,10 @@ jobs:
             pip install -r requirements.txt -r tests/requirements.txt
             python setup.py build_ext --inplace
             coverage run -m unittest
-      - run:
-          name: codecov
-          command: |
-            . env/bin/activate
-            codecov
+      - codecov/upload:
+          file: .coverage
+      - codecov/upload:
+          file: testscpp/coverage.info
 
   test-doctest:
     docker:
