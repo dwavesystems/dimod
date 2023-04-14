@@ -1,5 +1,4 @@
 coverage[toml]
-codecov
 
 parameterized==0.7.4
 
