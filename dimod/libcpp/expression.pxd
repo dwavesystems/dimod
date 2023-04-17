@@ -58,4 +58,4 @@ cdef extern from "dimod/expression.h" namespace "dimod" nogil:
 
         bint has_variable(index_type)
         bint is_disjoint(const Expression&)
-        vector[index_type]& variables()
+        const vector[index_type]& variables()

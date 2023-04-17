@@ -509,6 +509,79 @@ class TestFixVariables(unittest.TestCase):
         self.assertTrue(cqm.constraints[c1].lhs.is_equal(1+y+z))
         self.assertNotIn(c1, cqm.discrete)
 
+    def test_copy_variables(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+
+        cqm.add_variables("BINARY", 5)
+        cqm.add_variable("INTEGER", "i", lower_bound=-5, upper_bound=5)
+        cqm.add_variables("SPIN", "rst")
+        cqm.add_variable("INTEGER", "j", lower_bound=-50, upper_bound=50)
+
+        new = cqm.fix_variables({3: 0, 's': 1, 'i': 5}, inplace=False)
+
+        # no change
+        self.assertEqual(cqm.variables, [0, 1, 2, 3, 4, "i", "r", "s", "t", "j"])
+
+        self.assertEqual(new.variables, [0, 1, 2, 4, "r", "t", "j"])
+
+        for v in [0, 1, 2, 4]:
+            self.assertIs(new.vartype(v), dimod.BINARY)
+            self.assertEqual(new.lower_bound(v), 0)
+            self.assertEqual(new.upper_bound(v), 1)
+
+        for v in "rt":
+            self.assertIs(new.vartype(v), dimod.SPIN)
+            self.assertEqual(new.lower_bound(v), -1)
+            self.assertEqual(new.upper_bound(v), +1)
+
+        self.assertIs(new.vartype("j"), dimod.INTEGER)
+        self.assertEqual(new.lower_bound("j"), -50)
+        self.assertEqual(new.upper_bound("j"), +50)
+
+    def test_copy_objective(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm.set_objective(-1 + x + 2*y + 3*i + 4*x*j + 5*y*z + 6*x*i + 7*z*i)
+
+        new = cqm.fix_variables({"x": 1, "i": 105}, inplace=False)
+        cqm.fix_variables({"x": 1, "i": 105}, inplace=True)
+
+        self.assertTrue(cqm.is_equal(new))
+
+    def test_copy_constraints(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+
+        x, y, z = dimod.Binaries('xyz')
+        i, j = dimod.Integers('ij')
+
+        cqm.set_objective(-1 + x + 2*y + 3*i + 4*x*j + 5*y*z + 6*x*i + 7*z*i)
+        cqm.add_constraint(x*y <= 5)
+        c = cqm.add_constraint(i + j + 5 == 4, weight=5, penalty='linear')
+
+        new = cqm.fix_variables({"x": 1, "i": 105}, inplace=False)
+        cqm.fix_variables({"x": 1, "i": 105}, inplace=True)
+
+        self.assertTrue(cqm.is_equal(new))
+        self.assertEqual(cqm.constraints[c].lhs.weight(), 5)
+        self.assertEqual(cqm.constraints[c].lhs.penalty(), "linear")
+
+    def test_copy_discrete(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+
+        d1 = cqm.add_discrete('abc')
+        d2 = cqm.add_discrete('ijk')
+
+        new = cqm.fix_variables({"a": 0, "i": 1}, inplace=False)
+        cqm.fix_variables({"a": 0, "i": 1}, inplace=True)
+
+        self.assertTrue(cqm.is_equal(new))
+
+        self.assertEqual(set(new.discrete), {d1})
+        self.assertEqual(set(cqm.discrete), {d1})
+
 
 class TestFlipVariable(unittest.TestCase):
     def test_exceptions(self):

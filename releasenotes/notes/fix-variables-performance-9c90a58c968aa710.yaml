@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    Improve the performance of ``ConstrainedQuadraticModel.fix_variable()`` and
+    ``ConstrainedQuadraticModel.fix_variables()``.
+  - |
+    Add ``inplace`` keyword argument to ``ConstrainedQuadraticModel.fix_variables()``.
+upgrade:
+  - |
+    The ``ConstrainedQuadraticModel.fix_variables()`` function now returns
+    a ``ConstrainedQuadraticModel`` rather than an empty dictionary.

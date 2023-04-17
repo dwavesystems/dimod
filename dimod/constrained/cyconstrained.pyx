@@ -20,6 +20,9 @@ import typing
 
 from copy import deepcopy
 
+import numpy as np
+cimport numpy as np
+
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
 from libcpp.unordered_set cimport unordered_set
@@ -328,8 +331,52 @@ cdef class cyConstrainedQuadraticModel:
         self.cppcqm.clear()
 
     def fix_variable(self, v, bias_type assignment):
-        self.cppcqm.fix_variable(self.variables.index(v), assignment)
+        cdef Py_ssize_t vi = self.variables.index(v)
+
+        if self.cppcqm.vartype(vi) == cppVartype.BINARY and assignment:
+            # we may be affecting discrete constraints, so let's update the markers
+            for i in range(self.cppcqm.num_constraints()):
+                constraint = self.cppcqm.constraint_ref(i)
+
+                if constraint.marked_discrete() and constraint.has_variable(vi):
+                    constraint.mark_discrete(False)
+
+        self.cppcqm.fix_variable(vi, assignment)
         self.variables._remove(v)
+
+    def fix_variables(self, fixed, *, bint inplace = True):
+        if isinstance(fixed, typing.Mapping):
+            fixed = fixed.items()
+
+        if inplace:
+            for v, assignment in fixed:
+                self.fix_variable(v, assignment)
+            return self
+
+        cdef vector[index_type] variables
+        cdef vector[bias_type] assignments
+        labels = set()
+
+        for v, bias in fixed:
+            variables.push_back(self.variables.index(v))
+            assignments.push_back(bias)
+            labels.add(v)
+
+        cqm = make_cqm(self.cppcqm.fix_variables(variables.begin(), variables.end(), assignments.begin()))
+
+        # relabel variables
+        mapping = dict()
+        i = 0
+        for v in self.variables:
+            if v not in labels:
+                mapping[i] = v
+                i += 1
+        cqm.relabel_variables(mapping)
+
+        # relabel constraints
+        cqm.relabel_constraints(dict(enumerate(self.constraint_labels)))
+
+        return cqm
 
     def flip_variable(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)
