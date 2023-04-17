@@ -442,6 +442,35 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
         }
     }
 
+    GIVEN("A discrete constraint") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+        cqm.add_variables(Vartype::BINARY, 5);
+        auto c0 = cqm.add_linear_constraint({0, 1, 2, 3, 4}, {1, 1, 1, 1, 1}, Sense::EQ, 1);
+        cqm.constraint_ref(c0).mark_discrete();
+
+        WHEN("we fix a variable to 0 while making a new cqm") {
+            auto sub_cqm = cqm.fix_variables({2}, {0});
+
+            THEN("the constraint is still discrete") {
+                CHECK(sub_cqm.num_variables() == 4);
+                REQUIRE(sub_cqm.num_constraints() == 1);
+                CHECK(sub_cqm.constraint_ref(0).marked_discrete());
+                CHECK(sub_cqm.constraint_ref(0).is_onehot());
+            }
+        }
+
+        WHEN("we fix a variable to 1 while making a new cqm") {
+            auto sub_cqm = cqm.fix_variables({2}, {1});
+
+            THEN("the constraint is no longer discrete") {
+                CHECK(sub_cqm.num_variables() == 4);
+                REQUIRE(sub_cqm.num_constraints() == 1);
+                CHECK(!sub_cqm.constraint_ref(0).marked_discrete());
+                CHECK(!sub_cqm.constraint_ref(0).is_onehot());
+            }
+        }
+    }
+
     GIVEN("A constraint with one-hot constraints") {
         auto cqm = ConstrainedQuadraticModel<double>();
         cqm.add_variables(Vartype::BINARY, 10);

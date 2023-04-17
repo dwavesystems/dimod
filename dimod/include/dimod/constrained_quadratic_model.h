@@ -626,7 +626,7 @@ ConstrainedQuadraticModel<bias_type, index_type>::fix_variables(VarIter first, V
         new_constraint.set_weight(old_constraint_ptr->weight());
         new_constraint.set_penalty(old_constraint_ptr->penalty());
         new_constraint.mark_discrete(old_constraint_ptr->marked_discrete() &&
-                                     old_constraint_ptr->is_onehot());
+                                     new_constraint.is_onehot());
 
         cqm.add_constraint(std::move(new_constraint));
     }
