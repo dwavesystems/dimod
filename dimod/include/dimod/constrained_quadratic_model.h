@@ -162,7 +162,12 @@ class ConstrainedQuadraticModel {
     /// Create a new model by fixing many variables.
     template <class VarIter, class AssignmentIter>
     ConstrainedQuadraticModel fix_variables(VarIter first, VarIter last,
-                                            AssignmentIter assignments) const;
+                                            AssignmentIter assignment) const;
+
+    /// Create a new model by fixing many variables.
+    template <class T>
+    ConstrainedQuadraticModel fix_variables(std::initializer_list<index_type> variables,
+                                            std::initializer_list<T> assignments) const;
 
     /// Return the lower bound on variable ``v``.
     bias_type lower_bound(index_type v) const;
@@ -627,6 +632,14 @@ ConstrainedQuadraticModel<bias_type, index_type>::fix_variables(VarIter first, V
     }
 
     return cqm;
+}
+
+template <class bias_type, class index_type>
+template <class T>
+ConstrainedQuadraticModel<bias_type, index_type>
+ConstrainedQuadraticModel<bias_type, index_type>::fix_variables(
+        std::initializer_list<index_type> variables, std::initializer_list<T> assignments) const {
+    return fix_variables(variables.begin(), variables.end(), assignments.begin());
 }
 
 template <class bias_type, class index_type>
