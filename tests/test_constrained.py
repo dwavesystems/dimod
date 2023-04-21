@@ -891,6 +891,7 @@ class TestFromDQM(unittest.TestCase):
         v = dqm.add_variable(2)
         cqm = dimod.CQM.from_dqm(dqm)
         self.assertEqual(cqm.variables, [(0, 0), (1, 0), (1, 1)])
+        self.assertIsInstance(cqm, dimod.ConstrainedQuadraticModel)
 
     def test_typical(self):
         dqm = dimod.DQM()

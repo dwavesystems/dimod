@@ -20,6 +20,7 @@ import typing
 
 from copy import deepcopy
 
+cimport cython
 import numpy as np
 cimport numpy as np
 
@@ -37,6 +38,7 @@ from dimod.cyqmbase cimport cyQMBase
 from dimod.cyqmbase.cyqmbase_float64 import BIAS_DTYPE, INDEX_DTYPE
 from dimod.cyutilities cimport as_numpy_float
 from dimod.cyutilities cimport cppvartype
+from dimod.discrete.cydiscrete_quadratic_model cimport cyDiscreteQuadraticModel
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Sense as cppSense, Penalty as cppPenalty, Constraint as cppConstraint
 from dimod.libcpp.vartypes cimport Vartype as cppVartype, vartype_info as cppvartype_info
@@ -386,6 +388,48 @@ cdef class cyConstrainedQuadraticModel:
             self.cppcqm.substitute_variable(vi, -1, 1)
         else:
             raise ValueError(f"can only flip SPIN and BINARY variables")
+
+    @classmethod
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def from_discrete_quadratic_model(cls, dqm, relabel_func=lambda v, c: (v, c)):
+        """Construct a constrained quadratic model from a discrete quadratic model.
+
+        Args:
+            dqm: Discrete quadratic model.
+
+            relabel_func (optional): A function that takes two arguments, the
+                variable label and the case label, and returns a new variable
+                label to be used in the CQM. By default generates a 2-tuple
+                `(variable, case)`.
+
+        Returns:
+            A constrained quadratic model.
+
+        """
+        cdef cyConstrainedQuadraticModel cqm = cls()
+
+        cdef cyDiscreteQuadraticModel cydqm = dqm._cydqm
+
+        cqm.cppcqm.set_objective(cydqm.cppbqm)
+        cqm.variables._extend(relabel_func(v, case) for v in dqm.variables for case in dqm.get_cases(v))
+
+        cqm.cppcqm.add_constraints(cydqm.num_variables())
+        cqm.constraint_labels._extend(dqm.variables)
+
+        cdef Py_ssize_t vi, ci
+        for vi in range(cydqm.num_variables()):
+            constraint = cqm.cppcqm.constraint_ref(vi)
+            for ci in range(cydqm.case_starts_[vi], cydqm.case_starts_[vi+1]):
+                constraint.add_linear(ci, 1)
+            constraint.set_sense(cppSense.EQ)
+            constraint.set_rhs(1)
+            constraint.mark_discrete()
+
+        assert(cqm.cppcqm.num_variables() == cqm.variables.size())
+        assert(cqm.cppcqm.num_constraints() == cqm.constraint_labels.size())
+
+        return cqm
 
     def lower_bound(self, v):
         """Return the lower bound on the specified variable.

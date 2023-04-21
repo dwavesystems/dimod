@@ -899,59 +899,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return cls.from_quadratic_model(bqm)
 
     @classmethod
-    def from_discrete_quadratic_model(cls, dqm: DiscreteQuadraticModel, *,
-                                      relabel_func: Callable[[Variable, int], Variable] = lambda v, c: (v, c),
-                                      ) -> ConstrainedQuadraticModel:
-        """Construct a constrained quadratic model from a discrete quadratic model.
-
-        Args:
-            dqm: Discrete quadratic model.
-
-            relabel_func (optional): A function that takes two arguments, the
-                variable label and the case label, and returns a new variable
-                label to be used in the CQM. By default generates a 2-tuple
-                `(variable, case)`.
-
-        Returns:
-            A constrained quadratic model.
-
-        """
-        cqm = cls()
-
-        objective = BinaryQuadraticModel(Vartype.BINARY)
-
-        seen = set()
-        for v in dqm.variables:
-            seen.add(v)
-
-            # convert v, case to a flat set of variables
-            v_vars = list(relabel_func(v, case) for case in dqm.get_cases(v))
-
-            # add the one-hot constraint
-            cqm.add_discrete(v_vars, label=v)
-
-            # add to the objective
-            objective.add_linear_from(zip(v_vars, dqm.get_linear(v)))
-
-            for u in dqm.adj[v]:
-                if u in seen:  # only want upper-triangle
-                    continue
-
-                u_vars = list(relabel_func(u, case) for case in dqm.get_cases(u))
-
-                objective.add_quadratic_from(
-                    (u_vars[cu], v_vars[cv], bias)
-                    for (cu, cv), bias
-                    in dqm.get_quadratic(u, v).items()
-                    )
-
-        objective.offset = dqm.offset
-
-        cqm.set_objective(objective)
-
-        return cqm
-
-    from_dqm = from_discrete_quadratic_model
+    def from_dqm(cls, dqm: DiscreteQuadraticModel, *,
+                 relabel_func: Callable[[Variable, int], Variable] = lambda v, c: (v, c),
+                 ) -> ConstrainedQuadraticModel:
+        """Alias for :meth:`from_discrete_quadratic_model`."""
+        return cls.from_discrete_quadratic_model(dqm, relabel_func)
 
     @classmethod
     def from_qm(cls, qm: QuadraticModel) -> ConstrainedQuadraticModel:
