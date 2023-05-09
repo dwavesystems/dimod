@@ -1,6 +1,9 @@
 ---
 name: Bug Report
 about: Create a report to help us improve this software
+title: ''
+labels: bug/fix
+assignees: ''
 
 ---
 
