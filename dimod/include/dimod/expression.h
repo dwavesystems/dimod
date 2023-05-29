@@ -296,9 +296,9 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     /// So we want to use the vartype relative to the base_type's indices.
     Vartype vartype_(index_type v) const { return vartype(variables_[v]); }
 
- private:
     const parent_type* parent_;
 
+ private:
     /// List of the parent's label used by expression
     std::vector<index_type> variables_;
 

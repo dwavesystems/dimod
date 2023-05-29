@@ -1,0 +1,3 @@
+---
+features:
+  - Add ``dimod::Constraint::clear()`` C++ method.
