@@ -286,15 +286,62 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
         auto cqm = ConstrainedQuadraticModel<double>();
         cqm.add_variables(Vartype::BINARY, 3);
 
-        auto c0 = cqm.add_constraint();
-        cqm.constraint_ref(c0).set_linear(2, 1);
-        cqm.constraint_ref(c0).set_sense(Sense::GE);
-        cqm.constraint_ref(c0).set_rhs(1);
+        auto c0 = cqm.add_linear_constraint({0, 1, 2}, {1, 1, 1}, Sense::GE, 1);
 
-        std::vector<int> sample{0, 0, 1};
-        CHECK(cqm.constraint_ref(c0).energy(sample.begin()) == 1);
+        WHEN("we mark the constraint as discrete") {
+            cqm.constraint_ref(c0).set_sense(Sense::EQ);
+            cqm.constraint_ref(c0).mark_discrete(true);
 
-        WHEN("we clear it") {
+            AND_WHEN("we clear the constraint") {
+                cqm.constraint_ref(c0).clear();
+
+                THEN("the constraint is a 0 == 0 constraint") {
+                    REQUIRE(cqm.num_constraints() == 1);
+                    REQUIRE(cqm.num_variables() == 3);  // no change
+
+                    CHECK(cqm.constraint_ref(c0).num_variables() == 0);
+                    CHECK(cqm.constraint_ref(c0).rhs() == 0);
+                    CHECK(cqm.constraint_ref(c0).sense() == Sense::EQ);
+
+                    CHECK(!cqm.constraint_ref(c0).marked_discrete());
+                }
+            }
+        }
+
+        WHEN("we make the constraint soft") {
+            cqm.constraint_ref(c0).set_weight(5);
+
+            AND_WHEN("we clear the constraint") {
+                cqm.constraint_ref(c0).clear();
+
+                THEN("the constraint is a 0 == 0 constraint") {
+                    REQUIRE(cqm.num_constraints() == 1);
+                    REQUIRE(cqm.num_variables() == 3);  // no change
+
+                    CHECK(cqm.constraint_ref(c0).num_variables() == 0);
+                    CHECK(cqm.constraint_ref(c0).rhs() == 0);
+                    CHECK(cqm.constraint_ref(c0).sense() == Sense::EQ);
+
+                    CHECK(!cqm.constraint_ref(c0).is_soft());
+                    CHECK(cqm.constraint_ref(c0).penalty() == Penalty::LINEAR);
+                }
+            }
+        }
+
+        WHEN("we clear the constraint") {
+            cqm.constraint_ref(c0).clear();
+
+            THEN("the constraint is a 0 == 0 constraint") {
+                REQUIRE(cqm.num_constraints() == 1);
+                REQUIRE(cqm.num_variables() == 3);  // no change
+
+                CHECK(cqm.constraint_ref(c0).num_variables() == 0);
+                CHECK(cqm.constraint_ref(c0).rhs() == 0);
+                CHECK(cqm.constraint_ref(c0).sense() == Sense::EQ);
+            }
+        }
+
+        WHEN("we clear the CQM") {
             cqm.clear();
 
             THEN("it is empty") {

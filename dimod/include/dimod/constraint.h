@@ -49,6 +49,10 @@ class Constraint : public Expression<Bias, Index> {
     Constraint();
     explicit Constraint(const parent_type* parent);
 
+    /// Clear the constraint by changing it to a ``0 == 0`` constraint.
+    /// The weight and/or discrete markers are also cleared if present.
+    void clear();
+
     /// Return true for a one-hot constraint of discrete variables.
     bool is_onehot() const;
 
@@ -135,6 +139,15 @@ bool Constraint<bias_type, index_type>::is_onehot() const {
     }
 
     return true;
+}
+
+template <class bias_type, class index_type>
+void Constraint<bias_type, index_type>::clear() {
+    // Get a fresh empty constraint and swap its contents. This is more future-proof
+    // than clearing each value individually.
+    using std::swap;
+    auto other = Constraint<bias_type, index_type>(this->parent_);
+    swap(*this, other);
 }
 
 template <class bias_type, class index_type>
