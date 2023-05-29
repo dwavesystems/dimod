@@ -143,7 +143,7 @@ bool Constraint<bias_type, index_type>::is_onehot() const {
 
 template <class bias_type, class index_type>
 void Constraint<bias_type, index_type>::clear() {
-    // Get a fresh empty constraint and swap it's contents. This is more future-proof
+    // Get a fresh empty constraint and swap its contents. This is more future-proof
     // than clearing each value individually.
     using std::swap;
     auto other = Constraint<bias_type, index_type>(this->parent_);
