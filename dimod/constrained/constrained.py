@@ -1006,7 +1006,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             if expected != header_info.data:
                 raise ValueError(
                     "header data does not match the deserialized CQM. "
-                    f"Expected {expected!r}, recieved {header_info.data!r}"
+                    f"Expected {expected!r}, received {header_info.data!r}"
                     )
 
         return cqm
@@ -1803,7 +1803,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             requirement of a second, and violates a third.
 
             >>> i, j, k = dimod.Binaries(['i', 'j', 'k'])
-                >>> cqm = dimod.ConstrainedQuadraticModel()
+            >>> cqm = dimod.ConstrainedQuadraticModel()
             >>> cqm.add_constraint(i + j + k == 10, label='equal')
             'equal'
             >>> cqm.add_constraint(i + j <= 15, label='less equal')
