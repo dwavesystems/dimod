@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Implement ``CaseLabelDQM.to_file()`` when the keyword argument ``ignore_labels``
+    is true. Also make the error message clearer in the case that ``ignore_labels``
+    is false.
+upgrade:
+  - Make the arguments of ``DiscreteQuadraticModel.to_file()`` keyword-only.

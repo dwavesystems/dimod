@@ -764,7 +764,7 @@ class DiscreteQuadraticModel:
         file.write(np.dtype('<u4').type(end - start).tobytes())
         file.seek(end)
 
-    def to_file(self, compress=False, compressed=None, ignore_labels=False,
+    def to_file(self, *, compress=False, compressed=None, ignore_labels=False,
                 spool_size=int(1e9)):
         """Convert the DQM to a file-like object.
 
@@ -1299,8 +1299,15 @@ class CaseLabelDQM(DQM):
         else:
             return list(range_)
 
-    def to_file(self, *args, **kwargs):
-        raise NotImplementedError
+    def to_file(self, *, ignore_labels=False, **kwargs):
+        # We keep the default value the same as the super class, but if
+        # we're ignoring the labels, the serialization is identical to
+        # that of the unlabelled DQM
+        if ignore_labels:
+            return super().to_file(ignore_labels=True, **kwargs)
+
+        raise NotImplementedError("serialization for CaseLabelDQM is not implemented, "
+                                  "try using ignore_labels=True")
 
     def map_sample(self, sample):
         """Transform a sample to reflect case labels.
