@@ -50,7 +50,7 @@ cdef extern from "dimod/constrained_quadratic_model.h" namespace "dimod" nogil:
         void remove_constraint(index_type)
         void remove_variable(index_type)
         void set_lower_bound(index_type, bias_type)
-        void set_objective[B, I](QuadraticModelBase&)
+        void set_objective[B, I](QuadraticModelBase[B, I]&)
         void set_objective[B, I, T](QuadraticModelBase[B, I]&, vector[T])
         void set_upper_bound(index_type, bias_type)
         void substitute_variable(index_type, bias_type, bias_type)

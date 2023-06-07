@@ -1,0 +1,3 @@
+---
+features:
+  - Improve the performance of ``ConstrainedQuadraticModel.from_discrete_quadratic_model()``.
