@@ -362,6 +362,25 @@ class TestFile(unittest.TestCase):
         with dimod.DQM().to_file() as f:
             self.assertTrue(f.writable())
 
+    def test_case_label(self):
+        cldqm = dimod.CaseLabelDQM()
+        cldqm.add_variable('abcde')
+        cldqm.add_variable('fghijkl')
+
+        cldqm.set_linear('d', 1.5)
+        cldqm.set_quadratic('a', 'g', 1.5)
+        cldqm.set_quadratic('d', 'j', 1)
+
+        dqm = dimod.DQM()
+        dqm.add_variable(5)
+        dqm.add_variable(7)
+
+        dqm.set_linear_case(0, 3, 1.5)
+        dqm.set_quadratic(0, 1, {(0, 1): 1.5, (3, 4): 1})
+
+        with cldqm.to_file(ignore_labels=True) as f:
+            self.assertDQMEqual(dimod.DQM.from_file(f), dqm)
+
 
 class TestLinear(unittest.TestCase):
     def test_set_linear_case(self):
