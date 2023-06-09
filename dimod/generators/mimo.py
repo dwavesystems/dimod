@@ -250,7 +250,7 @@ def create_channel(num_receivers, num_transmitters, F_distribution=None, random_
             channel_power = 2 #For integer precision purposes:
             F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters))) + 1j*(1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
     if attenuation_matrix is not None:
-        F=F*dense_attenuation_graph #Dense format for now, this is slow.
+        F=F*attenuation_matrix #Dense format for now, this is slow.
         channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix,axis=0))
     else:
         channel_power *= num_transmitters
@@ -500,7 +500,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
 
     if F is None:
         F, channel_power, seed = create_channel(num_receivers=num_receivers, num_transmitters=num_transmitters,
-                                                F_distribution=F_distribution, random_state=seed)
+                                                F_distribution=F_distribution, random_state=seed, attenuation_matrix=attenuation_matrix)
         #Channel power is the value relative to an assumed normalization E[Fui* Fui] = 1 
     else:
         channel_power = num_transmitters
@@ -530,7 +530,7 @@ def _make_honeycomb(L: int):
     G.remove_nodes_from([(i,j) for i in range(L) for j in range(L+1+i,2*L+1)])
     return G
 
-def spin_encoded_comd(lattice: Union[int,nx.Graph],
+def spin_encoded_comp(lattice: Union[int,nx.Graph],
                       modulation: str, y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
@@ -540,7 +540,7 @@ def spin_encoded_comd(lattice: Union[int,nx.Graph],
                       seed: Union[None, int, np.random.RandomState] = None, 
                       F_distribution: Union[None, str] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
-    """Defines a simple coooperative multi-point decoding problem coMD.
+    """Defines a simple coooperative multi-point decoding problem CoMP.
     Args:
        lattice: A graph defining the set of nearest neighbor basestations. Each 
            basestation has ``num_receivers`` receivers and ``num_transmitters`` 
