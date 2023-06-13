@@ -202,6 +202,15 @@ CQM Methods
    ~ConstrainedQuadraticModel.vartype
    ~ConstrainedQuadraticModel.violations
 
+.. currentmodule:: dimod.constrained.expression
+
+.. autosummary::
+   :hidden:
+   :toctree: generated/
+
+   ~ConstraintView._to_file
+   ~ObjectiveView._to_file
+
 Sense Class
 -----------
 

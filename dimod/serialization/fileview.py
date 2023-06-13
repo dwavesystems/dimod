@@ -77,7 +77,7 @@ class Section(abc.ABC):
         magic = self.magic
 
         if not isinstance(magic, bytes):
-            raise TypeError("magic string should by bytes object")
+            raise TypeError("magic string should be bytes object")
         if len(magic) != 4:
             raise ValueError("magic string should be 4 bytes in length")
 
@@ -111,6 +111,84 @@ class Section(abc.ABC):
         return cls.loads_data(fp.read(int(length)), **kwargs)
 
 
+# Developer note: The following Section types were inherited from QuadraticModel.
+# I dislike the asymmetry between dumping using a method and loading returning
+# raw bytes. But in the interest of minimizing changes, I will leave them alone
+# for right now.
+
+class IndicesSection(Section):
+    magic = b"INDX"
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._iindices()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
+
+
+class LinearSection(Section):
+    magic = b'LINB'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._ilinear()).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype, num_variables):
+        arr = np.frombuffer(data[:num_variables*np.dtype(dtype).itemsize], dtype=dtype)
+        return arr
+
+
+class NeighborhoodSection(Section):
+    magic = b'NEIG'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self, *, vi: int):
+        arr = self.model._ineighborhood(vi, lower_triangle=True)
+        return (struct.pack('<q', arr.shape[0]) + memoryview(arr).cast('B'))
+
+    @classmethod
+    def loads_data(self, data):
+        return struct.unpack('<q', data[:8])[0], data[8:]
+
+
+class OffsetSection(Section):
+    magic = b'OFFS'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model.offset).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype):
+        arr = np.frombuffer(data[:np.dtype(dtype).itemsize], dtype=dtype)
+        return arr[0]
+
+
+class QuadraticSection(Section):
+    magic = b"QUAD"
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._iquadratic()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
+
+
 class VariablesSection(Section):
     magic = b'VARS'
 
@@ -124,6 +202,24 @@ class VariablesSection(Section):
     @classmethod
     def loads_data(self, data):
         return iter_deserialize_variables(json.loads(data.decode('ascii')))
+
+
+class VartypesSection(Section):
+    """Serializes the vartypes of a model.
+
+    Model must have a ``._varinfo()`` method that returns a NumPy array.
+    """
+    magic = b'VTYP'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._ivarinfo()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
 
 
 def FileView(bqm, version=(1, 0), ignore_labels=False):

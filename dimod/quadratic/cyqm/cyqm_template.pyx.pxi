@@ -101,19 +101,7 @@ cdef class cyQM_template(cyQMBase):
         cdef Py_ssize_t vi
         cdef cppVartype cpp_vartype
         for vi in range(num_variables):
-            # I hate that we have to do this manually, but cython doesn't
-            # really like static_cast in this context
-            if vartype_view[vi] == 0:
-                cpp_vartype = cppVartype.BINARY
-            elif vartype_view[vi] == 1:
-                cpp_vartype = cppVartype.SPIN
-            elif vartype_view[vi] == 2:
-                cpp_vartype = cppVartype.INTEGER
-            elif vartype_view[vi] == 3:
-                cpp_vartype = cppVartype.REAL
-            else:
-                raise RuntimeError
-            self.cppqm.add_variable(cpp_vartype, lb_view[vi], ub_view[vi])
+            self.cppqm.add_variable(<cppVartype>(vartype_view[vi]), lb_view[vi], ub_view[vi])
 
         while self.variables.size() < self.cppqm.num_variables():
             self.variables._append()

@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import numbers
+import typing
 
 cimport cython
 cimport numpy as np
@@ -32,7 +33,15 @@ from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Penalty as cppPenalty
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
+from dimod.serialization.fileview import (
+    SpooledTemporaryFile, _BytesIO,
+    read_header, write_header,
+    IndicesSection, LinearSection, OffsetSection, NeighborhoodSection, QuadraticSection,
+    )
 from dimod.variables import Variables
+
+
+EXPRESSION_MAGIC_PREFIX = b"DIMODEXPR"
 
 
 cdef class _cyExpression:
@@ -169,6 +178,35 @@ cdef class _cyExpression:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    def _iindices(self):
+        expression = self.expression()
+
+        cdef index_type[:] indices = np.empty(expression.num_variables(), dtype=self.index_dtype)
+
+        it = expression.variables().const_begin()
+        end = expression.variables().const_end()
+        cdef Py_ssize_t vi = 0
+        while it != end:
+            indices[vi] = deref(it)
+            vi += 1
+            inc(it)
+
+        return np.asarray(indices)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _iindices_load(self, buff, Py_ssize_t num_variables, object dtype):
+        expression = self.expression()
+
+        if expression.num_variables():
+            raise RuntimeError("indices can only be loaded into an empty expression")
+
+        cdef const index_type[:] indices = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
+        for vi in range(num_variables):
+            expression.add_linear(indices[vi], 0)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _ilinear(self):
         expression = self.expression()
 
@@ -180,70 +218,62 @@ cdef class _cyExpression:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _ivarinfo(self):
+    def _ilinear_load(self, buff, Py_ssize_t num_variables, object dtype):
         expression = self.expression()
 
-        cdef Py_ssize_t num_variables = expression.num_variables()
+        if expression.num_variables() != num_variables:
+            raise RuntimeError("num_variables must match expression.num_variables()")
 
-        # we could use the bias_type size to determine the vartype dtype to get
-        # more alignment, but it complicates the code, so let's keep it simple
-        # We choose the field names to mirror the internals of the QuadraticModel
-        dtype = np.dtype([('vartype', np.int8), ('lb', self.dtype), ('ub', self.dtype)],
-                         align=False)
-        varinfo = np.empty(num_variables, dtype)
-
-        cdef np.int8_t[:] vartype_view = varinfo['vartype']
-        cdef bias_type[:] lb_view = varinfo['lb']
-        cdef bias_type[:] ub_view = varinfo['ub']
-
-        cdef Py_ssize_t i, vi
-        for i in range(expression.num_variables()):
-            vi = expression.variables()[i]
-            vartype_view[i] = expression.vartype(vi)
-            lb_view[i] = expression.lower_bound(vi)
-            ub_view[i] = expression.upper_bound(vi)
-
-        return varinfo
+        cdef const bias_type[:] ldata = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
+        for vi in range(num_variables):
+            (<cppQuadraticModelBase[bias_type, index_type]*>expression).set_linear(vi, ldata[vi])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _ineighborhood(self, Py_ssize_t vi, bint lower_triangle=False):
-        # Cython will not let us coerce to the underling QuadraticModelBase
-        # because it gets confused about the iterator types.
-        # So we do this pretty unnaturally.
+    def _iquadratic(self):
         expression = self.expression()
 
-        # Make a NumPy struct array.
-        neighborhood = np.empty(
-            (<cppQuadraticModelBase[bias_type, index_type]*>expression).degree(vi),
-            dtype=np.dtype([('v', self.index_dtype), ('bias', self.dtype)], align=False))
+        # We choose the field names to mirror the quadratic iterator
+        dtype = np.dtype([('u', self.index_dtype), ('v', self.index_dtype), ('bias', self.dtype)],
+                         align=False)
+        quadratic = np.empty(expression.num_interactions(), dtype)
+        cdef index_type[:] irow = quadratic["u"]
+        cdef index_type[:] icol = quadratic["v"]
+        cdef bias_type[:] qdata = quadratic["bias"]
 
-        cdef index_type[:] index_view = neighborhood['v']
-        cdef bias_type[:] biases_view = neighborhood['bias']
-
-        if not index_view.shape[0]:
-            return neighborhood
-
-        cdef unordered_map[index_type, index_type] indices
-        for i in range(expression.num_variables()):
-            indices[expression.variables()[i]] = i
-
-        it = expression.cbegin_neighborhood(expression.variables()[vi])
-        cdef Py_ssize_t length = 0
-        cdef Py_ssize_t ui
-        while it != expression.cend_neighborhood(expression.variables()[vi]):
-            ui = indices[deref(it).v]
-
-            if ui > vi:
-                break
-
-            index_view[length] = ui
-            biases_view[length] = deref(it).bias
+        cdef cppQuadraticModelBase[bias_type, index_type].const_quadratic_iterator2 it
+        it = (<cppQuadraticModelBase[bias_type, index_type]*>expression).cbegin_quadratic()
+        for vi in range(qdata.shape[0]):
+            irow[vi] = deref(it).u
+            icol[vi] = deref(it).v
+            qdata[vi] = deref(it).bias
 
             inc(it)
-            length += 1
 
-        return neighborhood[:length]
+        return quadratic
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _iquadratic_load(self, buff, Py_ssize_t num_interactions):
+        # Note: it's possible to get segfaults by using this method directly.
+        # We could add more safety, but for now I think marking it private is good
+        # enough.
+        expression = self.expression()
+
+        if not expression.is_linear():
+            raise RuntimeError("quadratic biases can only be loaded into a linear model")
+
+        dtype = np.dtype([('u', self.index_dtype), ('v', self.index_dtype), ('bias', self.dtype)],
+                         align=False)
+        quadratic = np.frombuffer(buff[:dtype.itemsize*num_interactions], dtype=dtype)
+        cdef const index_type[:] irow = quadratic["u"]
+        cdef const index_type[:] icol = quadratic["v"]
+        cdef const bias_type[:] qdata = quadratic["bias"]
+
+        for i in range(num_interactions):
+            # we're traversing the lower triangle, so it's OK to use add_quadratic_back
+            (<cppQuadraticModelBase[bias_type, index_type]*>expression).add_quadratic_back(
+                irow[i], icol[i], qdata[i])
 
     def get_linear(self, v):
         return as_numpy_float(self.expression().linear(self.parent.variables.index(v)))
@@ -325,6 +355,106 @@ cdef class _cyExpression:
 
     def set_quadratic(self, u, v, bias):
         raise NotImplementedError
+
+    def _to_file(self):
+        """Serialize the expression to a file-like object.
+
+        Format Specification (Version 2.0):
+
+            This format is inspired by the `NPY format`_
+
+            The first 9 bytes are a magic string: exactly "DIMODEXPR".
+
+            The next 1 byte is an unsigned byte: the major version of the file
+            format.
+
+            The next 1 byte is an unsigned byte: the minor version of the file
+            format.
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the header data HEADER_LEN.
+
+            The next HEADER_LEN bytes form the header data. This is a
+            json-serialized dictionary. The dictionary is exactly:
+
+            .. code-block:: python
+
+                data = dict(shape=expr.shape,
+                            dtype=expr.dtype.name,
+                            itype=expr.index_dtype.name,
+                            type=type(expr).__name__,
+                            )
+
+            it is terminated by a newline character and padded with spaces to
+            make the entire length of the entire header divisible by 64.
+
+            The expression data comes after the header.
+
+        .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
+
+        """
+        # This is intended to look like a cut-down quadratic model
+
+        from dimod.constrained.constrained import CQM_SERIALIZATION_VERSION
+
+        file = SpooledTemporaryFile()
+
+        data = dict(shape=self.shape,
+                    dtype=self.dtype.name,
+                    itype=self.index_dtype.name,
+                    type=type(self).__name__,
+                    )
+
+        write_header(file, EXPRESSION_MAGIC_PREFIX, data, version=CQM_SERIALIZATION_VERSION)
+
+        # the indices of each variable in the parent model
+        file.write(IndicesSection(self).dumps())
+
+        # offset
+        file.write(OffsetSection(self).dumps())
+
+        # linear
+        file.write(LinearSection(self).dumps())
+
+        file.write(QuadraticSection(self).dumps())
+
+        file.seek(0)
+        return file
+
+    def _from_file(self, fp):
+        expr = self.expression()
+
+        if expr.num_variables():
+            raise RuntimeError("._from_file() can only be called on an empty expression")
+
+        if isinstance(fp, typing.ByteString):
+            file_like = _BytesIO(fp)
+        else:
+            file_like = fp
+
+        header_info = read_header(file_like, EXPRESSION_MAGIC_PREFIX)
+
+        # we don't bother checking the header version under the assumption that
+        # this method is called from CQM.from_file
+
+        cdef Py_ssize_t num_variables = header_info.data['shape'][0]
+        cdef Py_ssize_t num_interactions = header_info.data['shape'][1]
+        dtype = np.dtype(header_info.data['dtype'])
+        itype = np.dtype(header_info.data['itype'])
+
+        # variable indices
+        self._iindices_load(IndicesSection.load(file_like),
+                            dtype=self.index_dtype, num_variables=num_variables)
+
+        # offset
+        self.offset += OffsetSection.load(file_like, dtype=dtype)
+
+        # linear
+        self._ilinear_load(LinearSection.load(file_like, dtype=dtype, num_variables=num_variables),
+                           dtype=dtype, num_variables=num_variables)
+
+        # quadratic
+        self._iquadratic_load(QuadraticSection.load(file_like), num_interactions=num_interactions)
 
     def upper_bound(self, v):
         return self.parent.upper_bound(v)
