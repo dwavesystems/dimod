@@ -31,13 +31,14 @@ import glob
 import numbers
 import os
 import os.path
+import re
 import shutil
 import typing
 import unittest
 
 import dimod
 
-DIMOD_VERSION = tuple(map(int, dimod.__version__.split(".")))[:3]
+DIMOD_VERSION = tuple(map(int, re.search(r"\d+.\d+.\d+", dimod.__version__).group(0).split(".")))
 
 try:
     # dimod>=0.12.4
