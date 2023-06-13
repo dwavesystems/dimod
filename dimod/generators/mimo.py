@@ -86,7 +86,11 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
     
     
 def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
-    "Converts binary/quadrature amplitude modulated symbols to spins, assuming linear encoding"
+    """Convert quadrature amplitude modulated (QAM) symbols to spins. 
+    
+    Encoding must be linear. Supports binary phase-shift keying (BPSK, or 2-QAM) 
+    and quadrature (QPSK, or 4-QAM).     
+    """
     num_transmitters = len(symbols)
     if modulation == 'BPSK':
         return symbols.copy()
@@ -101,10 +105,10 @@ def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
         else:
             raise ValueError('Unsupported modulation')
         # A map from integer parts to real is clearest (and sufficiently performant), 
-        # generalizes to gray code more easily as well:
+        # generalizes to Gray coding more easily as well:
         
         symb_to_spins = { np.sum([x*2**xI for xI, x in enumerate(spins)]) : spins
-                          for spins in product(*[(-1, 1) for x in range(spins_per_real_symbol)])}
+                          for spins in product(*spins_per_real_symbol*[(-1, 1)])}
         spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()], 
                                                 [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
                                 for prec in range(spins_per_real_symbol)])
