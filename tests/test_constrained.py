@@ -877,6 +877,13 @@ class TestFromDQM(unittest.TestCase):
 
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
 
+        for v in dqm.variables:
+            self.assertEqual(cqm.constraints[v].lhs.num_variables, dqm.num_cases(v))
+            self.assertTrue(cqm.constraints[v].lhs.is_discrete())
+
+        self.assertEqual(cqm.constraints["v"].lhs.variables,
+                         [('v', 'blue'), ('v', 'yellow'), ('v', 'brown')])
+
     def test_empty(self):
         dqm = dimod.DiscreteQuadraticModel()
 
@@ -913,6 +920,10 @@ class TestFromDQM(unittest.TestCase):
 
         # keys of constraints are the variables of DQM
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
+
+        for v in dqm.variables:
+            self.assertEqual(cqm.constraints[v].lhs.num_variables, dqm.num_cases(v))
+            self.assertTrue(cqm.constraints[v].lhs.is_discrete())
 
 
 class TestNumBiases(unittest.TestCase):
