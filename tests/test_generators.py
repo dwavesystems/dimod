@@ -1427,17 +1427,17 @@ class TestMIMO(unittest.TestCase):
     def create_signal(self):
         print('Add test')
     
-    def test_spin_encoded_comd(self):
-        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=1, modulation='BPSK')
+    def test_spin_encoded_comp(self):
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
         lattice = dimod.generators.mimo._make_honeycomb(1)
-        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice, num_transmitters_per_node=1, num_receivers_per_node=1,
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters_per_node=1, num_receivers_per_node=1,
                                                       modulation='BPSK')
         num_var = lattice.number_of_nodes()
         self.assertEqual(num_var,bqm.num_variables)
         self.assertEqual(21,bqm.num_interactions)
         # Transmitted symbols are 1 by default
         lattice = dimod.generators.mimo._make_honeycomb(2)
-        bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
                                                       num_transmitters_per_node=2,
                                                       num_receivers_per_node=2,
                                                       modulation='BPSK', SNRb=float('Inf'), use_offset=True)
@@ -1487,12 +1487,12 @@ class TestMIMO(unittest.TestCase):
                             lattice = nx.Graph()
                             lattice.add_edges_from((i,(i+1)%lattice_size) for i in range(num_transmitters//num_transmitter_block))
                             for seed in range(1):
-                                bqm = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+                                bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
                                                                               num_transmitters_per_node=num_transmitter_block,
                                                                               num_receivers_per_node=num_receiver_block,
                                                                               modulation=mod, SNRb=SNRb,
                                                                               use_offset=True)
-                                bqm0 = dimod.generators.mimo.spin_encoded_comd(lattice=lattice,
+                                bqm0 = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
                                                                                num_transmitters_per_node=num_transmitter_block,
                                                                                num_receivers_per_node=num_receiver_block,
                                                                                modulation=mod,
