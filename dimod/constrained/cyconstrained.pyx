@@ -415,17 +415,18 @@ cdef class cyConstrainedQuadraticModel:
         cqm.cppcqm.set_objective(cydqm.cppbqm)
         cqm.variables._extend(relabel_func(v, case) for v in dqm.variables for case in dqm.get_cases(v))
 
-        cqm.cppcqm.add_constraints(cydqm.num_variables())
-        cqm.constraint_labels._extend(dqm.variables)
-
         cdef Py_ssize_t vi, ci
         for vi in range(cydqm.num_variables()):
-            constraint = cqm.cppcqm.constraint_ref(vi)
+            constraint = cqm.cppcqm.new_constraint()
             for ci in range(cydqm.case_starts_[vi], cydqm.case_starts_[vi+1]):
                 constraint.add_linear(ci, 1)
             constraint.set_sense(cppSense.EQ)
             constraint.set_rhs(1)
             constraint.mark_discrete()
+
+            cqm.cppcqm.add_constraint(move(constraint))
+
+        cqm.constraint_labels._extend(dqm.variables)  # adjust the labels to match
 
         assert(cqm.cppcqm.num_variables() == cqm.variables.size())
         assert(cqm.cppcqm.num_constraints() == cqm.constraint_labels.size())

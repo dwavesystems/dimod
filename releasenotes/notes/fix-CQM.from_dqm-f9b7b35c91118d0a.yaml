@@ -1,0 +1,4 @@
+---
+fixes:
+  - Fix ``ConstrainedQuadraticModel.from_discrete_quadratic_model()`` incorrectly
+    formulating the discrete constraints. This bug was introcued in version 0.12.7.
