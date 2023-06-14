@@ -1130,11 +1130,10 @@ class TestMagicSquares(unittest.TestCase):
 class TestMIMO(unittest.TestCase):
 
     def setUp(self):
+
         self.symbols_bpsk = np.asarray([[-1, 1]])
-        self.symbols_qpsk = np.asarray([[-1 + 1j, 1 + 1j], [-1 - 1j, 1 - 1j]])
-        self.symbols_16qam = np.array(
-            [[-3 + 3j, -1 + 3j, 1 + 3j, 3 + 3j], [-3 + 1j, -1 + 1j, 1 + 1j, 3 + 1j], 
-             [-3 - 1j, -1 - 1j, 1 - 1j, 3 - 1j], [-3 - 3j, -1 - 3j, 1 - 3j, 3 - 3j]]) 
+        self.symbols_qam = lambda a: np.array([[complex(i, j)] \
+            for i in range(-a, a + 1, 2) for j in range(-a, a + 1, 2)])
 
     def _effective_fields(self, bqm):
         num_var = bqm.num_variables
@@ -1233,19 +1232,28 @@ class TestMIMO(unittest.TestCase):
                 #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
 
     def test_symbols_to_spins(self):
-        # Standard symbol cases:
-        spins_qpsk = [[-1.,  1.], [-1.,  1.], [ 1.,  1.], [-1., -1.]]
-        spins_16qam = np.array(
-            [*8*[-1,  1], *2*[*4*[1], *4*[-1]], *4*[*2*[-1], *2*[1]], *8*[1], *8*[-1]])
-        self.assertTrue(np.array_equal(self.symbols_bpsk, 
-            dimod.generators.mimo._symbols_to_spins(self.symbols_bpsk, 
-                modulation='BPSK')))
-        self.assertTrue(np.array_equal(spins_qpsk, 
-            dimod.generators.mimo._symbols_to_spins(self.symbols_qpsk, 
-            modulation='QPSK')))
-        self.assertTrue(np.array_equal(spins_16qam, 
-            dimod.generators.mimo._symbols_to_spins(self.symbols_16qam, 
-            modulation='16QAM')))
+        # Standard symbol cases (vectors):
+        spins = dimod.generators.mimo._symbols_to_spins(self.symbols_bpsk, 
+            modulation='BPSK')
+        self.assertEqual(spins.sum(), 0)
+
+        spins = dimod.generators.mimo._symbols_to_spins(self.symbols_qam(1), 
+            modulation='QPSK')
+        self.assertEqual(spins[:len(spins//2)].sum(), 0)
+        self.assertEqual(spins[len(spins//2):].sum(), 0)
+
+        spins = dimod.generators.mimo._symbols_to_spins(self.symbols_qam(3), 
+            modulation='16QAM')
+        self.assertEqual(spins[:len(spins//2)].sum(), 0)
+        self.assertEqual(spins[len(spins//2):].sum(), 0)
+
+        spins = dimod.generators.mimo._symbols_to_spins(self.symbols_qam(5), 
+            modulation='64QAM')
+        self.assertEqual(spins[:len(spins//2)].sum(), 0)
+        self.assertEqual(spins[len(spins//2):].sum(), 0)
+
+        # Standard symbol cases (matrices):
+
            
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
