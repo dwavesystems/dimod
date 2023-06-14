@@ -114,12 +114,12 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
             raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
         if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
             spins.reshape((len(spins), ))
-        elif symbols.shape[0] == 1:   
-            spins.reshape((1, len(spins)))
-        elif symbols.shape[1] == 1:
-            spins.reshape((len(spins), 1))
-        else:   # Leave for manual reshaping
-            pass 
+        # elif symbols.shape[0] == 1:   #Jack: I think this is already baked in
+        #     spins.reshape((1, len(spins)))
+        # elif symbols.shape[1] == 1:
+        #     spins.reshape((len(spins), 1))
+        # else:   # Leave for manual reshaping
+        #     pass 
     return spins
 
 

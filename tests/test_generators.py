@@ -1232,15 +1232,17 @@ class TestMIMO(unittest.TestCase):
                 #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
 
     def test_symbols_to_spins(self):
-        # Standard symbol cases (vectors):
+        # Standard symbol cases (2D input):
         spins = dimod.generators.mimo._symbols_to_spins(self.symbols_bpsk, 
             modulation='BPSK')
         self.assertEqual(spins.sum(), 0)
+        self.assertTrue(spins.ndim, 2)
 
         spins = dimod.generators.mimo._symbols_to_spins(self.symbols_qam(1), 
             modulation='QPSK')
         self.assertEqual(spins[:len(spins//2)].sum(), 0)
         self.assertEqual(spins[len(spins//2):].sum(), 0)
+        self.assertTrue(spins.ndim, 2)
 
         spins = dimod.generators.mimo._symbols_to_spins(self.symbols_qam(3), 
             modulation='16QAM')
@@ -1252,8 +1254,13 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(spins[:len(spins//2)].sum(), 0)
         self.assertEqual(spins[len(spins//2):].sum(), 0)
 
-        # Standard symbol cases (matrices):
-
+        # Standard symbol cases (1D input):
+        spins = dimod.generators.mimo._symbols_to_spins(
+            self.symbols_qam(1).reshape(4,), 
+            modulation='QPSK')
+        self.assertTrue(spins.ndim, 1)
+        self.assertEqual(spins[:len(spins//2)].sum(), 0)
+        self.assertEqual(spins[len(spins//2):].sum(), 0)
            
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
