@@ -83,7 +83,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
         return hA, JA 
       
-def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
+def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     """Convert quadrature amplitude modulated (QAM) symbols to spins. 
     
     Encoding must be linear. Supports binary phase-shift keying (BPSK, or 2-QAM) 

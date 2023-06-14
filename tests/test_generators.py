@@ -1238,13 +1238,13 @@ class TestMIMO(unittest.TestCase):
         spins_16qam = np.array(
             [*8*[-1,  1], *2*[*4*[1], *4*[-1]], *4*[*2*[-1], *2*[1]], *8*[1], *8*[-1]])
         self.assertTrue(np.array_equal(self.symbols_bpsk, 
-            dimod.generators.mimo.symbols_to_spins(self.symbols_bpsk, 
+            dimod.generators.mimo._symbols_to_spins(self.symbols_bpsk, 
                 modulation='BPSK')))
         self.assertTrue(np.array_equal(spins_qpsk, 
-            dimod.generators.mimo.symbols_to_spins(self.symbols_qpsk, 
+            dimod.generators.mimo._symbols_to_spins(self.symbols_qpsk, 
             modulation='QPSK')))
         self.assertTrue(np.array_equal(spins_16qam, 
-            dimod.generators.mimo.symbols_to_spins(self.symbols_16qam, 
+            dimod.generators.mimo._symbols_to_spins(self.symbols_16qam, 
             modulation='16QAM')))
            
     def test_BPSK_symbol_coding(self):
@@ -1253,7 +1253,7 @@ class TestMIMO(unittest.TestCase):
         spins = np.random.choice([-1, 1], size=num_spins)
         symbols = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
-        spins = dimod.generators.mimo.symbols_to_spins(symbols=spins, modulation='BPSK')
+        spins = dimod.generators.mimo._symbols_to_spins(symbols=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
             
     def test_constellation_properties(self):
@@ -1291,12 +1291,12 @@ class TestMIMO(unittest.TestCase):
             symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
             symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
             self.assertTrue(np.all(symbols_enc == symbols ))
-            spins_enc = dimod.generators.mimo.symbols_to_spins(symbols=symbols, modulation=mod)
+            spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
             #random encoding:
             spins = np.random.choice([-1, 1], size=num_spins)
             symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
-            spins_enc = dimod.generators.mimo.symbols_to_spins(symbols=symbols_enc, modulation=mod)
+            spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols_enc, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
 
     def test_spin_encoded_mimo(self):
@@ -1322,7 +1322,7 @@ class TestMIMO(unittest.TestCase):
                 F_simple = np.ones(shape=(num_receivers, num_transmitters), dtype=dtype)
                 transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), dtype=dtype)*constellation[-1]
                 transmitted_symbols_random = np.random.choice(constellation, size=(num_transmitters, 1))
-                transmitted_spins_random = dimod.generators.mimo.symbols_to_spins(
+                transmitted_spins_random = dimod.generators.mimo._symbols_to_spins(
                     symbols=transmitted_symbols_random.flatten(), modulation=modulation)
                 #Trivial channel (F_simple), machine numbers
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
