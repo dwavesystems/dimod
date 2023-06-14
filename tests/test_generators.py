@@ -1261,7 +1261,12 @@ class TestMIMO(unittest.TestCase):
         self.assertTrue(spins.ndim, 1)
         self.assertEqual(spins[:len(spins//2)].sum(), 0)
         self.assertEqual(spins[len(spins//2):].sum(), 0)
-           
+
+        # Unsupported input
+        with self.assertRaises(ValueError):
+            spins = dimod.generators.mimo._symbols_to_spins(self.symbols_bpsk, 
+            modulation='unsupported')
+                   
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
         num_spins = 5
