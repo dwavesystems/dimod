@@ -1129,6 +1129,13 @@ class TestMagicSquares(unittest.TestCase):
                         self.assertEqual(term, 24)
 class TestMIMO(unittest.TestCase):
 
+    def setUp(self):
+        self.symbols_bpsk = np.asarray([[-1, 1]])
+        self.symbols_qpsk = np.asarray([[-1 + 1j, 1 + 1j], [-1 - 1j, 1 - 1j]])
+        self.symbols_16qam = np.array(
+            [[-3 + 3j, -1 + 3j, 1 + 3j, 3 + 3j], [-3 + 1j, -1 + 1j, 1 + 1j, 3 + 1j], 
+             [-3 - 1j, -1 - 1j, 1 - 1j, 3 - 1j], [-3 - 3j, -1 - 3j, 1 - 3j, 3 - 3j]]) 
+
     def _effective_fields(self, bqm):
         num_var = bqm.num_variables
         effFields = np.zeros(num_var)
@@ -1138,7 +1145,6 @@ class TestMIMO(unittest.TestCase):
         for key in bqm.linear:
             effFields[key] += bqm.linear[key]
         return effFields
-
         
     def test_filter_marginal_estimators(self):
         
@@ -1226,6 +1232,21 @@ class TestMIMO(unittest.TestCase):
                 #self.assertEqual(h.shape[0], num_var*mod_pref[modI])
                 #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
 
+    def test_symbols_to_spins(self):
+        # Standard symbol cases:
+        spins_qpsk = [[-1.,  1.], [-1.,  1.], [ 1.,  1.], [-1., -1.]]
+        spins_16qam = np.array(
+            [*8*[-1,  1], *2*[*4*[1], *4*[-1]], *4*[*2*[-1], *2*[1]], *8*[1], *8*[-1]])
+        self.assertTrue(np.array_equal(self.symbols_bpsk, 
+            dimod.generators.mimo.symbols_to_spins(self.symbols_bpsk, 
+                modulation='BPSK')))
+        self.assertTrue(np.array_equal(spins_qpsk, 
+            dimod.generators.mimo.symbols_to_spins(self.symbols_qpsk, 
+            modulation='QPSK')))
+        self.assertTrue(np.array_equal(spins_16qam, 
+            dimod.generators.mimo.symbols_to_spins(self.symbols_16qam, 
+            modulation='16QAM')))
+           
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
         num_spins = 5

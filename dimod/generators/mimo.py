@@ -82,9 +82,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         hA = np.kron(amps[:, np.newaxis], h)
         JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
         return hA, JA 
-
-    
-    
+      
 def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     """Convert quadrature amplitude modulated (QAM) symbols to spins. 
     
@@ -112,15 +110,16 @@ def symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
         spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()], 
                                                 [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
                                 for prec in range(spins_per_real_symbol)])
-        if len(symbols.shape)>2:
-            if symbols.shape[0] == 1:
-                # If symbols shaped as vector, return as vector:
-                spins.reshape((1,len(spins)))
-            elif symbols.shape[1] == 1:
-                spins.reshape((len(spins),1))
-            else:
-                # Leave for manual reshaping
-                pass 
+        if len(symbols.shape) > 2:
+            raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
+        if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
+            spins.reshape((len(spins), ))
+        elif symbols.shape[0] == 1:   
+            spins.reshape((1, len(spins)))
+        elif symbols.shape[1] == 1:
+            spins.reshape((len(spins), 1))
+        else:   # Leave for manual reshaping
+            pass 
     return spins
 
 
