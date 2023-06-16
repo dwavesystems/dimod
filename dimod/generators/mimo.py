@@ -251,8 +251,13 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
         attenuation_matrix: Root of the power associated with a variable to 
         chip communication ... Jack: what does this represent in the field?
 
+    Returns:
+        Three-tuple of channel, channel power, and the random state used. 
+
     """
 
+    if num_receivers < 1 or num_transmitters < 1:
+        raise ValueError('At least one receiver and one transmitter are required.')
     #random_state = np.random.RandomState(10) ##DEBUG
     channel_power = 1
     if not random_state:

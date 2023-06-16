@@ -1323,7 +1323,21 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(G.number_of_edges(),(7*6+6*4+6*3)//2)
 
     def create_channel(self):
-        print('Add test')
+        # Test some defaults
+        c, cp, r = dimod.generators.mimo.create_channel()[0]
+        self.assertEqual(cp, 2)
+        self.assertEqual(c.shape, (1, 1))
+        self.assertEqual(type(r), np.random.mtrand.RandomState)
+
+        c, cp, _ = dimod.generators.mimo.create_channel(5, 5, F_distribution=("normal", "real"))
+        self.assertTrue(np.isin(c, [-1, 1]).all())
+        self.assertEqual(cp, 5)
+
+        c, cp, _ = dimod.generators.mimo.create_channel(5, 5, F_distribution=("binary", "complex"))
+        self.assertTrue(np.isin(c, [-1-1j, -1+1j, 1-1j, 1+1j]).all())
+        self.assertEqual(cp, 10)
+
+
     def create_signal(self):
         print('Add test')
     
