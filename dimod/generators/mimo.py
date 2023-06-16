@@ -259,7 +259,7 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
     if num_receivers < 1 or num_transmitters < 1:
         raise ValueError('At least one receiver and one transmitter are required.')
     #random_state = np.random.RandomState(10) ##DEBUG
-    channel_power = 1
+    channel_power = num_transmitters
     if not random_state:
         random_state = np.random.RandomState(10)
     elif type(random_state) is not np.random.mtrand.RandomState:
@@ -274,22 +274,20 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
         if F_distribution[1] == 'real':
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters))
         else:
-            channel_power = 2
+            channel_power = 2*num_transmitters
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + \
                 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
     elif F_distribution[0] == 'binary':
         if F_distribution[1] == 'real':
             F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
         else:
-            channel_power = 2 #For integer precision purposes:
+            channel_power = 2*num_transmitters #For integer precision purposes:
             F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))) + \
                 1j*(1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
             
     if attenuation_matrix is not None:
         F = F*attenuation_matrix #Dense format for now, this is slow.
         channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix, axis=0))
-    else:
-        channel_power *= num_transmitters
 
     return F, channel_power, random_state
 
