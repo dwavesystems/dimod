@@ -21,7 +21,7 @@
 import numpy as np
 import dimod 
 from itertools import product
-from typing import Callable, Sequence, Union, Iterable
+from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 import networkx as nx
 
 def _quadratic_form(y, F):
@@ -226,36 +226,67 @@ def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_
     A = np.tile(A,(transmitters_per_node,receivers_per_node))
     return A
 
-def create_channel(num_receivers, num_transmitters, F_distribution=None, random_state=None, attenuation_matrix=None):
-    """Create a channel model. Channel power is the expected root mean square signal per receiver. I.e. mean(F^2)*num_transmitters for homogeneous codes."""
+def create_channel(num_receivers: int = 1, num_transmitters: int = 1, 
+                   F_distribution: Optional[Tuple[str, str]] = None, 
+                   random_state: Optional[Union[int, np.random.mtrand.RandomState]] = None, 
+                   attenuation_matrix: Optional[np.ndarray] = None) -> Tuple[
+                       np.ndarray, float, np.random.mtrand.RandomState]:
+    """Create a channel model. 
+
+    Channel power is the expected root mean square signal per receiver; i.e., 
+    :math:`mean(F^2)*num_transmitters` for homogeneous codes.
+
+    args:
+        num_receivers: Number of receivers.
+
+        num_transmitters: Number of transmitters.
+
+        F_distribution: Distribution for the channel. Supported values are:
+
+        *   First value: ``normal`` and ``binary``.
+        *   Second value: ``real`` and ``complex``.
+        
+        random_state: Seed for a random state or a random state. 
+
+        attenuation_matrix: Root of the power associated with a variable to 
+        chip communication ... Jack: what does this represent in the field?
+
+    """
+
     #random_state = np.random.RandomState(10) ##DEBUG
     channel_power = 1
-    if type(random_state) is not np.random.mtrand.RandomState:
+    if not random_state:
+        random_state = np.random.RandomState(10)
+    elif type(random_state) is not np.random.mtrand.RandomState:
         random_state = np.random.RandomState(random_state) 
+
     if F_distribution is None:
-        F_distribution = ('Normal', 'Complex')
-        
+        F_distribution = ('normal', 'complex')    
     elif type(F_distribution) is not tuple or len(F_distribution) !=2:
         raise ValueError('F_distribution should be a tuple of strings or None')
-    if F_distribution[0] == 'Normal':
-        if F_distribution[1] == 'Real':
+    
+    if F_distribution[0] == 'normal':
+        if F_distribution[1] == 'real':
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters))
         else:
             channel_power = 2
-            F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
-    elif F_distribution[0] == 'Binary':
-        if F_distribution[1] == 'Real':
-            F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
+            F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + \
+                1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
+    elif F_distribution[0] == 'binary':
+        if F_distribution[1] == 'real':
+            F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
         else:
             channel_power = 2 #For integer precision purposes:
-            F = (1-2*random_state.randint(2, size=(num_receivers, num_transmitters))) + 1j*(1-2*random_state.randint(2, size=(num_receivers, num_transmitters)))
+            F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))) + \
+                1j*(1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
+            
     if attenuation_matrix is not None:
-        F=F*attenuation_matrix #Dense format for now, this is slow.
-        channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix,axis=0))
+        F = F*attenuation_matrix #Dense format for now, this is slow.
+        channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix, axis=0))
     else:
         channel_power *= num_transmitters
-    return F, channel_power, random_state
 
+    return F, channel_power, random_state
 
 def constellation_properties(modulation):
     """ bits per symbol, constellation mean power, and symbol amplitudes. 
@@ -435,14 +466,14 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
            When F is None, this argument describes the zero-mean variance 1 
            distribution used to sample each element in F. Permitted values are in
            tuple form: (str, str). The first string is either 
-           'Normal' or 'Binary'. The second string is either 'Real' or 'Complex'.
+           'normal' or 'binary'. The second string is either 'real' or 'complex'.
            For large num_receivers and number of users the statistical properties of 
            the likelihood are weakly dependent on the first argument. Choosing 
-           'Binary' allows for integer valued Hamiltonians, 'Normal' is a more 
-           standard model. The channel can be Real or Complex. In many cases this 
+           'binary' allows for integer valued Hamiltonians, 'normal' is a more 
+           standard model. The channel can be real or complex. In many cases this 
            also represents a superficial distinction up to rescaling. For real 
-           valued symbols (BPSK) the default is ('Normal', 'Real'), otherwise it
-           is ('Normal', 'Complex')
+           valued symbols (BPSK) the default is ('normal', 'real'), otherwise it
+           is ('normal', 'complex')
 
         use_offset:
            When True, a constant is added to the Ising model energy so that
@@ -468,7 +499,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
         >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', num_transmitters = 64, \
                       num_receivers = round(num_transmitters/transmitters_per_receiver), \
                       SNRb=SNRb, \
-                      F_distribution = ('Binary','Real'))
+                      F_distribution = ('binary','real'))
 
          
     .. [#T02] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
