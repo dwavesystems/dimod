@@ -1046,10 +1046,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         num_variables = header_info.data["num_variables"]
 
-        if not (1, 0) <= header_info.version <= (2, 0):
-            raise ValueError("cannot load a CQM serialized with version "
-                             f"{header_info.version!r}, try upgrading your "
-                             "dimod version")
+        if header_info.version < (1, 0):
+            raise ValueError("cannot load CQMs serialized with CQM serialization version "
+                             f"{header_info.version!r}, try upgrading your dimod version")
+        elif header_info.version > (2, 0):
+            raise ValueError("cannot load CQMs serialized with CQM serialization version "
+                             f"{header_info.version!r}, try downgrading your dimod version")
 
         if header_info.version < (2, 0):
             return cls._from_file_legacy(file_like, header_info, check_header=check_header)
