@@ -1225,6 +1225,44 @@ class TestSerialization(unittest.TestCase):
             self.assertIsInstance(new._soft[label].weight, numbers.Number)
             self.assertEqual(info.penalty, new._soft[label].penalty)
 
+    def test_functional_tuple_label(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+
+        dimod_vars = [
+            dimod.Integer(i, lower_bound=-5000, upper_bound=5000) for i in range(63)
+        ]
+        num_discrete = 3
+        num_cases = 7
+        dimod_vars.extend(
+            [
+                dimod.Binary((c, i))
+                for c in range(num_discrete)
+                for i in range(num_cases)
+            ]
+        )
+
+        for c in range(num_discrete):
+            cqm.add_discrete([(c, i) for i in range(num_cases)])
+
+        cqm.set_objective(dimod.QM() + sum(2 * u for u in dimod_vars))
+
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
+
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+        self.assertSetEqual(cqm.discrete, new.discrete)        
+
     def test_objective_only(self):
         cqm = dimod.CQM()
         x = dimod.Binary("x")

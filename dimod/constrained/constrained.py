@@ -1105,7 +1105,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             # relabel the variables if needed
             try:  # This is the only way to test whether a file exists
-                variable_labels = json.loads(zf.read("variable_labels.json"))
+                variable_labels = map(deserialize_variable, json.loads(zf.read("variable_labels.json")))
             except KeyError:
                 pass
             else:
