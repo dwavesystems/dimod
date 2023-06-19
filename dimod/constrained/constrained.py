@@ -1758,7 +1758,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
-                with zf.open(f'constraints/{lstr}/lhs', "w") as fdst:
+                with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     with constraint.lhs._to_file() as fsrc:
                         shutil.copyfileobj(fsrc, fdst)
 
