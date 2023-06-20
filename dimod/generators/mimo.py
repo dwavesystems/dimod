@@ -286,6 +286,8 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
                 1j*(1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
             
     if attenuation_matrix is not None:
+        if np.iscomplex(attenuation_matrix).any():
+            raise ValueError('attenuation_matrix must not have complex values')
         F = F*attenuation_matrix #Dense format for now, this is slow.
         channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix, axis=0))
 

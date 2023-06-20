@@ -1355,10 +1355,10 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(cp, 2*n_trans)
 
         c, cp, _ = dimod.generators.mimo.create_channel(5, 5, 
-            F_distribution=("normal", "real"), 
-            attenuation_matrix=np.array([[1+1j, 0.5+0.5j],[2, 3]]))
-        self.assertTrue(type(c[0][0]), np.complex128)
-        self.assertEqual(c[1][1].imag, 0)
+            F_distribution=("binary", "real"), 
+            attenuation_matrix=np.array([[1, 2], [3, 4]]))
+        self.assertLess(c.ptp(), 8)
+        self.assertEqual(cp, 30)
         
     def create_signal(self):
         print('Add test')
