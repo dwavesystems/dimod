@@ -1235,6 +1235,14 @@ class TestMIMO(unittest.TestCase):
         spins = dimod.generators.mimo.symbols_to_spins(symbols=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
             
+    def test_constellation_properties(self):
+        _cp = dimod.generators.mimo._constellation_properties
+        self.assertEqual(_cp("QPSK")[0], 2)
+        self.assertEqual(sum(_cp("16QAM")[1]), 4)
+        self.assertEqual(_cp("64QAM")[2], 42.0) 
+        with self.assertRaises(ValueError):
+            bits_per_transmitter, amps, constellation_mean_power = _cp("dummy")
+
     def test_complex_symbol_coding(self):
         num_symbols = 5
         mod_pref = [1, 2, 3]

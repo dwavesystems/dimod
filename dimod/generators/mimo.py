@@ -292,35 +292,28 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
         channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix, axis=0))
 
     return F, channel_power, random_state
+    
+constellation = {   # bits per transmitter (bpt) and amplitudes (amps)
+    "BPSK": [1, np.ones(1)],       
+    "QPSK": [2, np.ones(1)],
+    "16QAM": [4, 1+2*np.arange(2)],
+    "64QAM": [6, 1+2*np.arange(4)],
+    "256QAM": [8, 1+2*np.arange(8)]} 
 
-def constellation_properties(modulation):
-    """ bits per symbol, constellation mean power, and symbol amplitudes. 
+def _constellation_properties(modulation):
+    """Return bits per symbol, symbol amplitudes, and mean power for QAM constellation. 
     
-    The constellation mean power assumes symbols are sampled uniformly at
-    random for the signal (standard).
+    Constellation mean power makes the standard assumption that symbols are 
+    sampled uniformly at random for the signal.
     """
+
+    bpt_amps = constellation.get(modulation)
+    if not bpt_amps:
+        raise ValueError('Unsupported modulation method')
     
-    if modulation == 'BPSK':
-        bits_per_transmitter = 1
-        constellation_mean_power = 1
-        amps = np.ones(1)
-    else:
-        bits_per_transmitter = 2
-        if modulation == 'QPSK':
-            amps = np.ones(1)
-        elif modulation == '16QAM':
-            amps = 1+2*np.arange(2)
-            bits_per_transmitter *= 2
-        elif modulation == '64QAM':
-            amps = 1+2*np.arange(4)
-            bits_per_transmitter *= 3
-        elif modulation == '256QAM':
-            amps = 1+2*np.arange(8)
-            bits_per_transmitter *= 4
-        else:
-            raise ValueError('Unsupported modulation method')
-        constellation_mean_power = 2*np.mean(amps*amps)
-    return bits_per_transmitter, amps, constellation_mean_power
+    constellation_mean_power = 1 if modulation == 'BPSK' else 2*np.mean(bpt_amps[1]*bpt_amps[1]) 
+
+    return bpt_amps[0], bpt_amps[1], constellation_mean_power 
 
 def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrature: bool = True, random_state=None):
     """Symbols are generated uniformly at random as a funtion of the quadrature and amplitude modulation. 
@@ -355,7 +348,7 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
     if channel_power == None:
         #Assume its proportional to num_transmitters, i.e. every channel component is RMSE 1 and 1 bit
         channel_power = num_transmitters
-    bits_per_transmitter, amps, constellation_mean_power = constellation_properties(modulation)
+    bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
     if transmitted_symbols is None:
         if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
