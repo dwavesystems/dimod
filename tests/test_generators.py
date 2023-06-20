@@ -1243,6 +1243,19 @@ class TestMIMO(unittest.TestCase):
         with self.assertRaises(ValueError):
             bits_per_transmitter, amps, constellation_mean_power = _cp("dummy")
 
+    def test_create_transmitted_symbols(self):
+        _cts = dimod.generators.mimo._create_transmitted_symbols
+        self.assertTrue(_cts(1, amps=[-1, 1], quadrature=False)[0][0][0] in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0][0].real in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0][0].imag in [-1, 1])
+        self.assertEqual(len(_cts(5, amps=[-1, 1])[0]), 5)
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3])[0].real, [-1, -3, 1, 3]).all())
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3])[0].imag, [-1, -3, 1, 3]).all())
+        with self.assertRaises(ValueError):
+            transmitted_symbols, random_state = _cts(1, amps=[-1.1, 1], quadrature=False)
+        with self.assertRaises(ValueError):
+            transmitted_symbols, random_state = _cts(1, amps=np.array([-1, 1.1]), quadrature=False)
+
     def test_complex_symbol_coding(self):
         num_symbols = 5
         mod_pref = [1, 2, 3]
