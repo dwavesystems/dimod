@@ -1161,8 +1161,8 @@ class TestMIMO(unittest.TestCase):
         Fsimple = np.identity(Nt) # Nt=Nr
         #BPSK, real channel:
         #transmitted_symbols_simple = np.ones(shape=(Nt,1))
-        #transmitted_symbols = mimo.create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
-        transmitted_symbolsQAM,_ = dimod.generators.mimo.create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
+        #transmitted_symbols = mimo._create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
+        transmitted_symbolsQAM,_ = dimod.generators.mimo._create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
         y = np.matmul(F, transmitted_symbolsQAM)
         # Defaults
         W = dimod.generators.mimo.linear_filter(F=F)

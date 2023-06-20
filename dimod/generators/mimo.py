@@ -315,13 +315,36 @@ def _constellation_properties(modulation):
 
     return bpt_amps[0], bpt_amps[1], constellation_mean_power 
 
-def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrature: bool = True, random_state=None):
-    """Symbols are generated uniformly at random as a funtion of the quadrature and amplitude modulation. 
-    Note that the power per symbol is not normalized. The signal power is thus proportional to 
-    Nt*sig2; where sig2 = [1,2,10,42] for BPSK, QPSK, 16QAM and 64QAM respectively. The complex and 
-    real valued parts of all constellations are integer.
+def _create_transmitted_symbols(num_transmitters, 
+                                amps=[-1, 1], 
+                                quadrature=True, 
+                                random_state=None):
+    """Generate symbols.
+
+    Symbols are generated uniformly at random as a function of the quadrature 
+    and amplitude modulation. 
+    
+    The power per symbol is not normalized, it is proportional to :math:`N_t*sig2`, 
+    where :math:`sig2 = [1, 2, 10, 42]` for BPSK, QPSK, 16QAM and 64QAM respectively. 
+    
+    The complex and real-valued parts of all constellations are integer.
+
+    args:
+        num_transmitters: Number of transmitters.
+
+        amps: Amplitudes as an interable. 
+
+        quadrature: Quadrature (True) or only phase-shift keying such as BPSK (False).
+
+        random_state: Seed for a random state or a random state.
     
     """
+
+    amps_remainder = any(np.modf(amps)[0]) if not any(np.iscomplex(amps)) else \
+        any(np.modf(amps.real)[0] + np.modf(amps.imag)[0])
+    if amps_remainder:         
+        raise ValueError('Amplitudes must have integer values')
+    
     if type(random_state) is not np.random.mtrand.RandomState:
         random_state = np.random.RandomState(random_state)
     
@@ -329,7 +352,8 @@ def create_transmitted_symbols(num_transmitters, amps: Iterable = [-1,1],quadrat
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
     else: 
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1)) \
-                            + 1j * random_state.choice(amps, size=(num_transmitters, 1))
+            + 1j * random_state.choice(amps, size=(num_transmitters, 1))
+        
     return transmitted_symbols, random_state
 
 def create_signal(F, transmitted_symbols=None, channel_noise=None,
@@ -353,9 +377,9 @@ def create_signal(F, transmitted_symbols=None, channel_noise=None,
         if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
         if modulation == 'BPSK':
-            transmitted_symbols, random_state = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False,random_state=random_state)
+            transmitted_symbols, random_state = _create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False,random_state=random_state)
         else:
-            transmitted_symbols, random_state = create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True,random_state=random_state)
+            transmitted_symbols, random_state = _create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True,random_state=random_state)
             
 
     if SNRb <= 0:
