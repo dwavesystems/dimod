@@ -340,9 +340,9 @@ def _create_transmitted_symbols(num_transmitters,
     
     """
 
-    amps_remainder = any(np.modf(amps)[0]) if not any(np.iscomplex(amps)) else \
-        any(np.modf(amps.real)[0] + np.modf(amps.imag)[0])
-    if amps_remainder:         
+    if any(np.iscomplex(amps)):
+        raise ValueError('Amplitudes cannot have complex values')
+    if any(np.modf(amps)[0]):
         raise ValueError('Amplitudes must have integer values')
     
     if type(random_state) is not np.random.mtrand.RandomState:

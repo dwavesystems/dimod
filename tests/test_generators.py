@@ -1255,6 +1255,8 @@ class TestMIMO(unittest.TestCase):
             transmitted_symbols, random_state = _cts(1, amps=[-1.1, 1], quadrature=False)
         with self.assertRaises(ValueError):
             transmitted_symbols, random_state = _cts(1, amps=np.array([-1, 1.1]), quadrature=False)
+        with self.assertRaises(ValueError):
+            transmitted_symbols, random_state = _cts(1, amps=np.array([-1, 1+1j]))
 
     def test_complex_symbol_coding(self):
         num_symbols = 5
