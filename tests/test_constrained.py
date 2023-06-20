@@ -1240,6 +1240,7 @@ class TestSerialization(unittest.TestCase):
                 for i in range(num_cases)
             ]
         )
+        dimod_vars.append(dimod.Binary(("nested", ("tuple",))))
 
         for c in range(num_discrete):
             cqm.add_discrete([(c, i) for i in range(num_cases)])
@@ -1261,7 +1262,7 @@ class TestSerialization(unittest.TestCase):
             self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
             self.assertEqual(constraint.rhs, new.constraints[label].rhs)
             self.assertEqual(constraint.sense, new.constraints[label].sense)
-        self.assertSetEqual(cqm.discrete, new.discrete)        
+        self.assertSetEqual(cqm.discrete, new.discrete)
 
     def test_objective_only(self):
         cqm = dimod.CQM()
