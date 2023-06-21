@@ -21,7 +21,10 @@ exclude_lines = [
 
 [tool.cibuildwheel]
 build-verbosity = "1"
-skip = "pp* *musllinux*"
+
+# NumPy (as of 1.25.0) only builds musllinux for 3.9+ and x86_64
+skip = "pp* cp38-musllinux_x86_64 *-musllinux_aarch64"
+
 before-test = "pip install -r {project}/tests/requirements.txt"
 test-command = "python -m unittest discover {project}/tests/"
 
@@ -29,6 +32,7 @@ test-command = "python -m unittest discover {project}/tests/"
 archs = "x86_64 aarch64"
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
+musllinux-x86_64-image = "musllinux_1_1"
 
 [tool.cibuildwheel.macos]
 # We follow NumPy and don't build universal wheels, see https://github.com/numpy/numpy/pull/20787
