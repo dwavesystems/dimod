@@ -409,16 +409,19 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
  
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
 
-    if transmitted_symbols is None:
+    if transmitted_symbols:
+        if modulation == 'BPSK' and any(np.iscomplex(transmitted_symbols)):
+            raise ValueError(f"BPSK transmitted signals must be real")
+        if modulation != 'BPSK' and any(np.isreal(transmitted_symbols)):
+            raise ValueError(f"Quadrature transmitted signals must be complex")
+    else:
         if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
-        if modulation == 'BPSK':
-            transmitted_symbols, random_state = _create_transmitted_symbols(
-                num_transmitters, amps=amps, quadrature=False, random_state=random_state)
-        else:
-            transmitted_symbols, random_state = _create_transmitted_symbols(
-                num_transmitters, amps=amps, quadrature=True, random_state=random_state)
-            
+        
+        quadrature = False if modulation == 'BPSK' else True
+        transmitted_symbols, random_state = _create_transmitted_symbols(
+                num_transmitters, amps=amps, quadrature=quadrature, random_state=random_state)
+           
     if SNRb <= 0:
        raise ValueError(f"signal-to-noise ratio must be positive. SNRb={SNRb}")
     
