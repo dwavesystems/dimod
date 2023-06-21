@@ -79,8 +79,7 @@ setup(
         numpy.get_include(),
         ],
     install_requires=[
-        # this is the oldest supported NumPy on Python 3.8, we cannot
-        # support the oldest for 3.7, 1.14.5
+        # this is the oldest supported NumPy on Python 3.8
         'numpy>=1.17.3,<2.0.0',
         ],
     # we use the generic 'all' so that in the future we can add or remove
