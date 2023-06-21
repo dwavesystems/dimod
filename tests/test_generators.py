@@ -1425,6 +1425,7 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(cp, 30)
         
     def test_create_signal(self):
+        # Only required parameters
         got, sent, noise, _ = dimod.generators.mimo._create_signal(F=np.array([[1]]))
         self.assertEqual(got, sent)
         self.assertTrue(all(np.isreal(got)))
@@ -1442,6 +1443,7 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(got.shape, (1, 1))
         self.assertEqual(sent.shape, (2, 1))
 
+        # Optional parameters
         got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), modulation="QPSK")
         self.assertTrue(all(np.iscomplex(got)))
         self.assertTrue(all(np.iscomplex(sent)))
@@ -1453,6 +1455,21 @@ class TestMIMO(unittest.TestCase):
         self.assertEqual(got, sent)
         self.assertEqual(got[0][0], 1)
 
+        with self.assertRaises(ValueError): # Complex symbols for BPSK
+            a, b, c, d = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1+1j]]))
+
+        with self.assertRaises(ValueError): # Non-complex symbols for non-BPSK
+            a, b, c, d = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), modulation="QPSK")
+
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), channel_noise=0.2+0.3j)
+        self.assertEqual(got, sent)
+        noise = 0.2+0.3j
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), channel_noise=noise, SNRb=10 )
+        self.assertEqual(got, sent + noise)
    
     def test_spin_encoded_comp(self):
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')

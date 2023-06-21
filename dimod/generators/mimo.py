@@ -239,7 +239,7 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
     Channel power is the expected root mean square signal per receiver; i.e., 
     :math:`mean(F^2)*num_transmitters` for homogeneous codes.
 
-    args:
+    Args:
         num_receivers: Number of receivers.
 
         num_transmitters: Number of transmitters.
@@ -255,7 +255,10 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
         chip communication ... Jack: what does this represent in the field?
 
     Returns:
-        Three-tuple of channel, channel power, and the random state used. 
+        Three-tuple of channel, channel power, and the random state used, where 
+        the channel is an :math:`i \times j` matrix with :math:`i` rows 
+        corresponding to the receivers and :math:`j` columns to the transmitters, 
+        and channel power is a number. 
 
     """
 
@@ -332,7 +335,7 @@ def _create_transmitted_symbols(num_transmitters,
     
     The complex and real-valued parts of all constellations are integer.
 
-    args:
+    Args:
         num_transmitters: Number of transmitters.
 
         amps: Amplitudes as an interable. 
@@ -340,6 +343,11 @@ def _create_transmitted_symbols(num_transmitters,
         quadrature: Quadrature (True) or only phase-shift keying such as BPSK (False).
 
         random_state: Seed for a random state or a random state.
+
+    Returns:
+
+        Two-tuple of symbols and the random state used, where the symbols is 
+        a column vector of length ``num_transmitters``.
     
     """
 
@@ -378,9 +386,11 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     SNRb = /   @jack, please finish this statement; also I removed unused F_norm = 1, v_norm = 1
 
     Args:
-        F: Wireless channel as a matrix of complex values.
+        F: Wireless channel as an :math:`i \times j` matrix of complex values, 
+            where :math:`i` rows correspond to :math:`y_i` receivers and :math:`j` 
+            columns correspond to :math:`v_i` transmitted symbols. 
 
-        transmitted_symbols: Transmitted symbols.
+        transmitted_symbols: Transmitted symbols as a column vector.
 
         channel_noise: Channel noise as a complex value.
 
@@ -396,7 +406,8 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
 
     Returns:
         Four-tuple of received signals (``y``), transmitted symbols (``v``), 
-        channel noise, and random_state.
+        channel noise, and random_state, where ``y`` is a column vector of length
+        equal to the rows of ``F``.
     """
 
     num_receivers = F.shape[0]
