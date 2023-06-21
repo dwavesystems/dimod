@@ -1457,9 +1457,9 @@ class TestMIMO(unittest.TestCase):
                             EoverN *= 2 #Real part only
                         for seed in range(1):
                             #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
-                            #y,t,n,_ = dimod.generators.mimo.create_signal(F,modulation=mod,channel_power=channel_power,random_state=random_state)
+                            #y,t,n,_ = dimod.generators.mimo._create_signal(F,modulation=mod,channel_power=channel_power,random_state=random_state)
                             #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
-                            #y,t,n,_ = dimod.generators.mimo.create_signal(F,modulation=mod,channel_power=channel_power,SNRb=1,random_state=random_state)
+                            #y,t,n,_ = dimod.generators.mimo._create_signal(F,modulation=mod,channel_power=channel_power,SNRb=1,random_state=random_state)
 
                             bqm0 = dimod.generators.mimo.spin_encoded_mimo(modulation=mod,
                                                                           num_transmitters=num_transmitters,
