@@ -376,6 +376,27 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     
     ``channel_noise`` is assumed, or created, to be suitably scaled. N0 Identity[Nt] =  
     SNRb = /   @jack, please finish this statement; also I removed unused F_norm = 1, v_norm = 1
+
+    Args:
+        F: Wireless channel as a matrix of complex values.
+
+        transmitted_symbols: Transmitted symbols.
+
+        channel_noise: Channel noise as a complex value.
+
+        SNRb: Signal-to-noise ratio.
+
+        modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM', 
+            '64QAM', and '256QAM'.
+
+        channel_power: Channel power. By default, proportional to the number 
+            of transmitters. 
+
+        random_state: Seed for a random state or a random state.
+
+    Returns:
+        Four-tuple of received signals (``y``), transmitted symbols (``v``), 
+        channel noise, and random_state.
     """
 
     num_receivers = F.shape[0]
