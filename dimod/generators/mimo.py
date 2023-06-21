@@ -409,7 +409,7 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
  
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
 
-    if transmitted_symbols:
+    if transmitted_symbols is not None:
         if modulation == 'BPSK' and any(np.iscomplex(transmitted_symbols)):
             raise ValueError(f"BPSK transmitted signals must be real")
         if modulation != 'BPSK' and any(np.isreal(transmitted_symbols)):
@@ -443,7 +443,7 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
             # Channel noise of covariance N0*I_{NR}. Noise is complex by definition, although
             # for real channel and symbols we need only worry about real part:
 
-            if transmitted_symbols.dtype == np.float64 and F.dtype == np.float64:
+            if modulation == 'BPSK' and np.isreal(F).all():
                 # Complex part is irrelevant
                 channel_noise = sigma * random_state.normal(0, 1, size=(num_receivers, 1))
             else:
