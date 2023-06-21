@@ -1424,9 +1424,23 @@ class TestMIMO(unittest.TestCase):
         self.assertLess(c.ptp(), 8)
         self.assertEqual(cp, 30)
         
-    def create_signal(self):
-        print('Add test')
-    
+    def test_create_signal(self):
+        got, sent, noise, _ = dimod.generators.mimo._create_signal(F=np.array([[1]]))
+        self.assertEqual(got, sent)
+        self.assertIsNone(noise)
+
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[-1]]))
+        self.assertEqual(got, -sent)
+
+        got, sent, noise, _ = dimod.generators.mimo._create_signal(F=np.array([[1], [1]]))
+        self.assertEqual(got.shape, (2, 1))
+        self.assertEqual(sent.shape, (1, 1))
+        self.assertIsNone(noise)
+
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1, 1]]))
+        self.assertEqual(got.shape, (1, 1))
+        self.assertEqual(sent.shape, (2, 1))
+   
     def test_spin_encoded_comp(self):
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
         lattice = dimod.generators.mimo._make_honeycomb(1)

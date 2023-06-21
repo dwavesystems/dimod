@@ -407,19 +407,18 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     elif type(random_state) is not np.random.mtrand.RandomState:
         random_state = np.random.RandomState(random_state)
  
-    if channel_power == None:   
-        #Assume proportional to num_transmitters; i.e., every channel component is RMSE 1 and 1 bit
-        channel_power = num_transmitters
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
+
     if transmitted_symbols is None:
         if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
         if modulation == 'BPSK':
-            transmitted_symbols, random_state = _create_transmitted_symbols(num_transmitters,amps=amps,quadrature=False,random_state=random_state)
+            transmitted_symbols, random_state = _create_transmitted_symbols(
+                num_transmitters, amps=amps, quadrature=False, random_state=random_state)
         else:
-            transmitted_symbols, random_state = _create_transmitted_symbols(num_transmitters,amps=amps,quadrature=True,random_state=random_state)
+            transmitted_symbols, random_state = _create_transmitted_symbols(
+                num_transmitters, amps=amps, quadrature=True, random_state=random_state)
             
-
     if SNRb <= 0:
        raise ValueError(f"signal-to-noise ratio must be positive. SNRb={SNRb}")
     
@@ -427,6 +426,10 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
        y = np.matmul(F, transmitted_symbols)
     else:
         # Energy_per_bit:
+        if channel_power == None:   
+            #Assume proportional to num_transmitters; i.e., every channel component is RMSE 1 and 1 bit
+            channel_power = num_transmitters
+
         Eb = channel_power * constellation_mean_power / bits_per_transmitter #Eb is the same for QPSK and BPSK
         # Eb/N0 = SNRb (N0 = 2 sigma^2, the one-sided PSD ~ kB T at antenna)
         # SNRb and Eb, together imply N0
