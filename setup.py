@@ -72,7 +72,7 @@ setup(
          'dimod/quadratic/cyqm/*.pyx',
          'dimod/*.pyx',
          ],
-        annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
+        annotate=True,
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),
         ),
     include_dirs=[
