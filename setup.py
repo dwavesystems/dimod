@@ -19,8 +19,7 @@ from setuptools import setup
 import numpy
 
 from Cython.Build import cythonize
-from distutils.extension import Extension
-from distutils.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_ext import build_ext as _build_ext
 
 extra_compile_args = {
     'msvc': ['/EHsc'],
