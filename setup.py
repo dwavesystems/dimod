@@ -19,8 +19,7 @@ from setuptools import setup
 import numpy
 
 from Cython.Build import cythonize
-from distutils.extension import Extension
-from distutils.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_ext import build_ext as _build_ext
 
 extra_compile_args = {
     'msvc': ['/EHsc'],
@@ -73,15 +72,14 @@ setup(
          'dimod/quadratic/cyqm/*.pyx',
          'dimod/*.pyx',
          ],
-        annotate=bool(os.getenv('CYTHON_ANNOTATE', False)),
+        annotate=True,
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),
         ),
     include_dirs=[
         numpy.get_include(),
         ],
     install_requires=[
-        # this is the oldest supported NumPy on Python 3.8, we cannot
-        # support the oldest for 3.7, 1.14.5
+        # this is the oldest supported NumPy on Python 3.8
         'numpy>=1.17.3,<2.0.0',
         ],
     # we use the generic 'all' so that in the future we can add or remove
