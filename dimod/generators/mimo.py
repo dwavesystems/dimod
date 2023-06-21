@@ -458,13 +458,6 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
             + 1j*random_state.normal(0, 1, size=(num_receivers, 1)))
         if modulation == 'BPSK' and np.isreal(F).all():
             channel_noise = channel_noise.real
-
-        # if modulation == 'BPSK' and np.isreal(F).all():
-        #     # Complex part is irrelevant
-        #     channel_noise = sigma * random_state.normal(0, 1, size=(num_receivers, 1))
-        # else:
-        #     channel_noise = sigma*(random_state.normal(0, 1, size=(num_receivers, 1)) \
-        #         + 1j*random_state.normal(0, 1, size=(num_receivers, 1)))
             
         y = channel_noise + np.matmul(F, transmitted_symbols)
 

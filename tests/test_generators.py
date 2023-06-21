@@ -1463,13 +1463,16 @@ class TestMIMO(unittest.TestCase):
             a, b, c, d = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
             transmitted_symbols=np.array([[1]]), modulation="QPSK")
 
-        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
-            transmitted_symbols=np.array([[1]]), channel_noise=0.2+0.3j)
-        self.assertEqual(got, sent)
         noise = 0.2+0.3j
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), channel_noise=noise)
+        self.assertEqual(got, sent)
         got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
             transmitted_symbols=np.array([[1]]), channel_noise=noise, SNRb=10 )
         self.assertEqual(got, sent + noise)
+        got, sent, _, __ = dimod.generators.mimo._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), SNRb=10 )
+        self.assertNotEqual(got, sent)
    
     def test_spin_encoded_comp(self):
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
