@@ -50,7 +50,6 @@ import io
 import json
 import os.path
 import re
-import shutil
 import tempfile
 import uuid
 import warnings
@@ -1695,8 +1694,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 [variable_labels.json]
 
             The ``objective`` file encodes the objective.
-            See :meth:`~dimod.constrained.expression.ObjectiveView._to_file()`
-            for details about the file format.
+            See Expression Format Specification below for details about the file format.
 
             The ``varinfo`` file encodes the :class:`Vartype`, lower bound, and
             upper bound of each variable in the model.
@@ -1707,8 +1705,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             Each ``constraint/<label>/`` directory encodes a constraint with
             the matching label.
             The ``lhs`` file encodes the left-hand-side of the constraint.
-            See :meth:`~dimod.constrained.expression.ConstraintView._to_file()`
-            for details about the file format.
+            See Expression Format Specification below for details about the file format.
             The ``rhs`` file stores a single float representing the roght-hand-side
             of the constraint.
             The ``sense`` file stores the sense as a string.
@@ -1716,6 +1713,37 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             is a discrete constraint.
             The ``penalty`` and ``weight`` files, if present, encode the weight
             and penalty type for the constraint.
+
+        Expression Format Specification (Version 2.0):
+
+            This format is inspired by the `NPY format`_
+
+            The first 9 bytes are a magic string: exactly "DIMODEXPR".
+
+            The next 1 byte is an unsigned byte: the major version of the file
+            format.
+
+            The next 1 byte is an unsigned byte: the minor version of the file
+            format.
+
+            The next 4 bytes form a little-endian unsigned int, the length of
+            the header data HEADER_LEN.
+
+            The next HEADER_LEN bytes form the header data. This is a
+            json-serialized dictionary. The dictionary is exactly:
+
+            .. code-block:: python
+
+                data = dict(shape=expr.shape,
+                            dtype=expr.dtype.name,
+                            itype=expr.index_dtype.name,
+                            type=type(expr).__name__,
+                            )
+
+            it is terminated by a newline character and padded with spaces to
+            make the entire length of the entire header divisible by 64.
+
+            The expression data comes after the header.
 
         .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
 
@@ -1750,17 +1778,15 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 zf.writestr("variable_labels.json", json.dumps(self.variables.to_serializable()))
 
             # add the objective
-            with zf.open("objective", "w") as fdst:
-                with self.objective._to_file() as fsrc:
-                    shutil.copyfileobj(fsrc, fdst)
+            with zf.open("objective", "w", force_zip64=True) as fdst:
+                self.objective._into_file(fdst)
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
-                with zf.open(f'constraints/{lstr}/lhs', "w") as fdst:
-                    with constraint.lhs._to_file() as fsrc:
-                        shutil.copyfileobj(fsrc, fdst)
+                with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
+                    constraint.lhs._into_file(fdst)
 
                 rhs = np.float64(constraint.rhs).tobytes()
                 zf.writestr(f'constraints/{lstr}/rhs', rhs)

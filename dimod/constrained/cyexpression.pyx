@@ -356,48 +356,14 @@ cdef class _cyExpression:
     def set_quadratic(self, u, v, bias):
         raise NotImplementedError
 
-    def _to_file(self):
-        """Serialize the expression to a file-like object.
+    def _into_file(self, fp):
+        """Copy the constraint data into the given file-like.
 
-        Format Specification (Version 2.0):
-
-            This format is inspired by the `NPY format`_
-
-            The first 9 bytes are a magic string: exactly "DIMODEXPR".
-
-            The next 1 byte is an unsigned byte: the major version of the file
-            format.
-
-            The next 1 byte is an unsigned byte: the minor version of the file
-            format.
-
-            The next 4 bytes form a little-endian unsigned int, the length of
-            the header data HEADER_LEN.
-
-            The next HEADER_LEN bytes form the header data. This is a
-            json-serialized dictionary. The dictionary is exactly:
-
-            .. code-block:: python
-
-                data = dict(shape=expr.shape,
-                            dtype=expr.dtype.name,
-                            itype=expr.index_dtype.name,
-                            type=type(expr).__name__,
-                            )
-
-            it is terminated by a newline character and padded with spaces to
-            make the entire length of the entire header divisible by 64.
-
-            The expression data comes after the header.
-
-        .. _NPY format: https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html
-
+        See ConstrainedQuadraticModel.to_file() for a description of the file format.
         """
         # This is intended to look like a cut-down quadratic model
 
         from dimod.constrained.constrained import CQM_SERIALIZATION_VERSION
-
-        file = SpooledTemporaryFile()
 
         data = dict(shape=self.shape,
                     dtype=self.dtype.name,
@@ -405,21 +371,18 @@ cdef class _cyExpression:
                     type=type(self).__name__,
                     )
 
-        write_header(file, EXPRESSION_MAGIC_PREFIX, data, version=CQM_SERIALIZATION_VERSION)
+        write_header(fp, EXPRESSION_MAGIC_PREFIX, data, version=CQM_SERIALIZATION_VERSION)
 
         # the indices of each variable in the parent model
-        file.write(IndicesSection(self).dumps())
+        fp.write(IndicesSection(self).dumps())
 
         # offset
-        file.write(OffsetSection(self).dumps())
+        fp.write(OffsetSection(self).dumps())
 
         # linear
-        file.write(LinearSection(self).dumps())
+        fp.write(LinearSection(self).dumps())
 
-        file.write(QuadraticSection(self).dumps())
-
-        file.seek(0)
-        return file
+        fp.write(QuadraticSection(self).dumps())
 
     def _from_file(self, fp):
         expr = self.expression()

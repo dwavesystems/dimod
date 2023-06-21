@@ -55,6 +55,11 @@ else:
 
 
 class Section(abc.ABC):
+    NUM_LENGTH_BYTES = 4  # sufficient for ~500,000,000 doubles
+    """The number of bytes following the magic string that encode the length
+    of the data.
+    """
+
     @property
     @abc.abstractmethod
     def magic(self):
@@ -81,7 +86,7 @@ class Section(abc.ABC):
         if len(magic) != 4:
             raise ValueError("magic string should be 4 bytes in length")
 
-        length = bytes(4)  # placeholder 4 bytes for length
+        length = bytes(self.NUM_LENGTH_BYTES)  # placeholder bytes for length
 
         data = self.dump_data(**kwargs)
 
@@ -94,7 +99,7 @@ class Section(abc.ABC):
             parts.append(b' '*pad_length)
             data_length += pad_length
 
-        parts[1] = np.dtype('<u4').type(data_length).tobytes()
+        parts[1] = np.dtype(f"<u{self.NUM_LENGTH_BYTES}").type(data_length).tobytes()
 
         assert sum(map(len, parts)) % 64 == 0
 
@@ -107,7 +112,7 @@ class Section(abc.ABC):
         if magic != cls.magic:
             raise ValueError("unknown subheader, expected {} but recieved "
                              "{}".format(cls.magic, magic))
-        length = np.frombuffer(fp.read(4), '<u4')[0]
+        length = np.frombuffer(fp.read(cls.NUM_LENGTH_BYTES), f"<u{cls.NUM_LENGTH_BYTES}")[0]
         return cls.loads_data(fp.read(int(length)), **kwargs)
 
 
@@ -177,6 +182,8 @@ class OffsetSection(Section):
 
 class QuadraticSection(Section):
     magic = b"QUAD"
+
+    NUM_LENGTH_BYTES = 8  # Our usual limit is not sufficient for quadratic biases
 
     def __init__(self, model):
         self.model = model
