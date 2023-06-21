@@ -33,7 +33,7 @@ jobs:
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.11.2
+            pip install cibuildwheel==2.13.1
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -120,7 +120,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.11.2
+            python -m pip install cibuildwheel==2.13.1
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
