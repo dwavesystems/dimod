@@ -42,7 +42,6 @@ def _quadratic_form(y, F):
         Three tuple of offset, as a real scalar, linear biases :math:`h`, as a dense
         real vector, and quadratic interactions, :math:`J`, as a dense real symmetric 
         matrix.
-    
     """
     if len(y.shape) != 2 or y.shape[1] != 1:
         raise ValueError(f"y should have shape (n, 1) for some n; given: {y.shape}")
@@ -92,17 +91,35 @@ def _real_quadratic_form(h, J, modulation=None):
         return h.real, J.real
 
 def _amplitude_modulated_quadratic_form(h, J, modulation):
+    """Amplitude-modulate the quadratic form.
+    
+    Updates bias amplitudes for quadrature amplitude modulation.
+
+    Args:
+        h: Linear biases as a NumPy vector. 
+        
+        J: Quadratic interactions as a matrix.
+
+        modulation: Modulation. Supported values are non-quadrature modulations 
+        'BPSK', 'QPSK' and '16QAM' and quadrature modulations '64QAM' and '256QAM'.
+
+    Returns:
+        Two-tuple of amplitude-modulated linear biases, :math:`h`, as a NumPy 
+        vector  and amplitude-modulated quadratic interactions, :math:`J`, as 
+        a matrix.
+    """
     if modulation == 'BPSK' or modulation == 'QPSK':
         #Easy case, just extract diagonal
         return h, J
     else:
-        #Quadrature + amplitude modulation
+        # Quadrature + amplitude modulation
         if modulation == '16QAM':
             num_amps = 2
         elif modulation == '64QAM':
             num_amps = 3
         else:
             raise ValueError('unknown modulation')
+        
         amps = 2 ** np.arange(num_amps)
         hA = np.kron(amps[:, np.newaxis], h)
         JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
