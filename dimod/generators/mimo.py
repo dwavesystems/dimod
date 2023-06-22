@@ -26,29 +26,34 @@ from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 import dimod 
 
 def _quadratic_form(y, F):
-    """Convert O(v) = ||y - F v||^2 to a sparse quadratic form, where
-    y, F are assumed to be complex or real valued.
-
-    Constructs coefficients for the form O(v) = v^dag J v - 2 Re [h^dag vD] + k
+    """Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
     
-    Inputs
-        v: column vector of complex values
-        y: column vector of complex values
-        F: matrix of complex values
-    Output
-        k: real scalar
-        h: dense real vector
-        J: dense real symmetric matrix
+    Constructs coefficients for the form 
+    :math:`O(v) = v^{\dagger} J v - 2 \Re(h^{\dagger} v) + \\text{offset}`. 
+
+    Args:
+        y: Received symbols as a NumPy column vector of complex or real values.
+
+        F: Wireless channel as an :math:`i \\times j` NumPy matrix of complex 
+            values, where :math:`i` rows correspond to :math:`y_i` receivers 
+            and :math:`j` columns correspond to :math:`v_i` transmitted symbols.
+    
+    Returns:
+        Three tuple of offset, as a real scalar, linear biases :math:`h`, as a dense
+        real vector, and quadratic interactions, :math:`J`, as a dense real symmetric 
+        matrix.
     
     """
     if len(y.shape) != 2 or y.shape[1] != 1:
-        raise ValueError('y should have shape [n, 1] for some n')
+        raise ValueError(f"y should have shape (n, 1) for some n; given: {y.shape}")
+    
     if len(F.shape) != 2 or F.shape[0] != y.shape[0]:
-        raise ValueError('F should have shape [n, m] for some m, n'
-                         'and n should equal y.shape[1]')
+        raise ValueError("F should have shape (n, m) for some m, n "
+                         "and n should equal y.shape[1];" 
+                         f" given: {F.shape}, n={y.shape[1]}")
 
     offset = np.matmul(y.imag.T, y.imag) + np.matmul(y.real.T, y.real)
-    h = - 2*np.matmul(F.T.conj(), y) ## Be careful with interpretation!
+    h = - 2*np.matmul(F.T.conj(), y)    # Be careful with interpretation!
     J = np.matmul(F.T.conj(), F) 
 
     return offset, h, J
@@ -513,6 +518,7 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     return y, transmitted_symbols, channel_noise, random_state
 
 # JP: Leave remainder untouched for next PRs to avoid conflicts before this is merged
+#     Next PR should bring in commit https://github.com/jackraymond/dimod/commit/ef99d2ae1c364f2066018046a0ece977443b229e
 
 def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union[np.array, None] = None,
                       *,
