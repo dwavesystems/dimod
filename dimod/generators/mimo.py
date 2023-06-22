@@ -59,11 +59,30 @@ def _quadratic_form(y, F):
     return offset, h, J
 
 def _real_quadratic_form(h, J, modulation=None):
-    """Unwraps objective function on complex variables onto objective
-    function of concatenated real variables: the real and imaginary
-    parts.
+    """Separate real and imaginary parts of quadratic form.
+    
+    Unwraps objective function on complex variables as an objective function of 
+    concatenated real variables, first the real and then the imaginary part.
+
+    Args:
+        h: Linear biases as a dense real NumPy vector. 
+        
+        J: Quadratic interactions as a dense real symmetric matrix.
+
+        modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM', 
+            '64QAM', and '256QAM'.
+
+    Returns:
+        Two-tuple of linear biases, :math:`h`, as a NumPy real vector with any 
+        imaginary part following the real part, and quadratic interactions, 
+        :math:`J`, as a real matrix with any imaginary part moved to above and 
+        below the diagonal.
     """
-    if modulation != 'BPSK' and (h.dtype == np.complex128 or J.dtype == np.complex128):
+    # JP: I added this but awaiting answer from Jack on BPSK ignoring F-induced complex parts 
+    # if modulation == 'BPSK' and (any(np.iscomplex(h)) or any(np.iscomplex(J))): 
+    #     raise ValueError('BPSK biases cannot have complex values')
+
+    if modulation != 'BPSK' and (any(np.iscomplex(h)) or any(np.iscomplex(J))):
         hR = np.concatenate((h.real, h.imag), axis=0)
         JR = np.concatenate((np.concatenate((J.real, J.imag), axis=0), 
                              np.concatenate((J.imag.T, J.real), axis=0)), 
