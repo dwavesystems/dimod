@@ -522,7 +522,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
                       F_distribution: Union[None, tuple] = None, 
                       use_offset: bool = False,
                       attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
-    """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
+    """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
         
     Users each transmit complex valued symbols over a random channel :math:`F` of 
     some num_receivers, subject to additive white Gaussian noise. Given the received
@@ -530,42 +530,46 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
     :math:`MLE = argmin || y - F v ||_2`. When v is encoded as a linear
     sum of spins the optimization problem is defined by a Binary Quadratic Model. 
     Depending on arguments used, this may be a model for Code Division Multiple
-    Access _[#T02, #R20], 5G communication network problems _[#Prince], or others.
+    Access [#T02]_ [#R20]_, 5G communication network problems [#Prince]_, or others.
     
     Args:
         y: A complex or real valued signal in the form of a numpy array. If not
             provided, generated from other arguments.
 
         F: A complex or real valued channel in the form of a numpy array. If not
-           provided, generated from other arguments. Note that for correct interpretation
-           of SNRb, the channel power should be normalized to num_transmitters.
+            provided, generated from other arguments. Note that for correct interpretation
+            of SNRb, the channel power should be normalized to num_transmitters.
 
         modulation: Specifies the constellation (symbol set) in use by 
             each user. Symbols are assumed to be transmitted with equal probability.
             Options are:
-               * 'BPSK'
-                   Binary Phase Shift Keying. Transmitted symbols are +1, -1;
-                   no encoding is required.
-                   A real valued channel is assumed.
 
-               * 'QPSK'
-                   Quadrature Phase Shift Keying. 
-                   Transmitted symbols are +1, -1, +1j, -1j;
-                   spins are encoded as a real vector concatenated with an imaginary vector.
+            * 'BPSK'
+
+                Binary Phase Shift Keying. Transmitted symbols are +1, -1;
+                no encoding is required. A real valued channel is assumed.
+
+            * 'QPSK'
+
+                Quadrature Phase Shift Keying. 
+                Transmitted symbols are +1, -1, +1j, -1j;
+                spins are encoded as a real vector concatenated with an imaginary vector.
                    
-               * '16QAM'
-                   Each user is assumed to select independently from 16 symbols.
-                   The transmitted symbol is a complex value that can be encoded by two spins
-                   in the imaginary part, and two spins in the real part. v = 2 s_1 + s_2.
-                   Highest precision real and imaginary spin vectors, are concatenated to 
-                   lower precision spin vectors.
+            * '16QAM'
+
+                Each user is assumed to select independently from 16 symbols.
+                The transmitted symbol is a complex value that can be encoded by two spins
+                in the imaginary part, and two spins in the real part. v = 2 s_1 + s_2.
+                Highest precision real and imaginary spin vectors, are concatenated to 
+                lower precision spin vectors.
                    
-               * '64QAM'
-                   A QPSK symbol set is generated, symbols are further amplitude modulated 
-                   by an independently and uniformly distributed random amount from [1, 3].
+            * '64QAM'
+
+                A QPSK symbol set is generated, symbols are further amplitude modulated 
+                by an independently and uniformly distributed random amount from [1, 3].
 
         num_transmitters: Number of users. Since each user transmits 1 symbol per frame, also the
-             number of transmitted symbols, must be consistent with F argument.
+            number of transmitted symbols, must be consistent with F argument.
 
         num_receivers: Num_Receivers of channel, :code:`len(y)`. Must be consistent with y argument.
 
@@ -573,7 +577,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
             to generate the noisy signal. In the case float('Inf') no noise is 
             added. SNRb = Eb/N0, where Eb is the energy per bit, and N0 is the one-sided
             power-spectral density. A one-sided . N0 is typically kB T at the receiver. 
-            To convert units of dB to SNRb use SNRb=10**(SNRb[decibells]/10).
+            To convert units of dB to SNRb use SNRb=10**(SNRb[decibel]/10).
         
         transmitted_symbols: 
             The set of symbols transmitted, this argument is used in combination with F
@@ -612,12 +616,12 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
            for sparse and structured codes.
     
     Returns:
-        The binary quadratic model defining the log-likelihood function
+        Binary quadratic model defining the log-likelihood function.
 
     Example:
 
         Generate an instance of a CDMA problem in the high-load regime, near a first order
-        phase transition _[#T02, #R20]:
+        phase transition:
 
         >>> num_transmitters = 64
         >>> transmitters_per_receiver = 1.5
@@ -629,7 +633,12 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
 
          
     .. [#T02] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
-    .. [#R20] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, "Improving performance of logical qubits by parameter tuning and topology compensation, " 2020 IEEE International Conference on Quantum Computing and Engineering (QCE), Denver, CO, USA, 2020, pp. 295-305, doi: 10.1109/QCE49297.2020.00044.
+
+    .. [#R20] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, 
+        "Improving performance of logical qubits by parameter tuning and topology compensation," 
+        2020 IEEE International Conference on Quantum Computing and Engineering (QCE), 
+        Denver, CO, USA, 2020, pp. 295-305, doi: 10.1109/QCE49297.2020.00044.
+
     .. [#Prince] Various (https://paws.princeton.edu/) 
     """
     
@@ -677,8 +686,9 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union
         return dimod.BQM(h[:,0], J, 'SPIN')
 
 def _make_honeycomb(L: int):
-    """ 2L by 2L triangular lattice with open boundaries,
-    and cut corners to make hexagon. """
+    """2L by 2L triangular lattice with open boundaries,
+    and cut corners to make hexagon. 
+    """
     G = nx.Graph()
     G.add_edges_from([((x, y), (x,y+ 1)) for x in range(2*L+1) for y in range(2*L)])
     G.add_edges_from([((x, y), (x+1, y)) for x in range(2*L) for y in range(2*L + 1)])
@@ -699,7 +709,8 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
                       seed: Union[None, int, np.random.RandomState] = None, 
                       F_distribution: Union[None, str] = None, 
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
-    """Defines a simple coooperative multi-point decoding problem CoMP.
+    """Generate a simple coooperative multi-point (CoMP) decoding problem.
+
     Args:
        lattice: A graph defining the set of nearest neighbor basestations. Each 
            basestation has ``num_receivers`` receivers and ``num_transmitters`` 
@@ -720,15 +731,18 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
            In specific, for BPSK with at most one transmitter per site, there is 1 
            spin per lattice node with a transmitter, inherits lattice label)
        F: Channel
+
        y: Signal
      
        See for ``spin_encoded_mimo`` for interpretation of other per-basestation parameters. 
+
     Returns:
        bqm: an Ising model in BinaryQuadraticModel format.
     
     Reference: 
         https://en.wikipedia.org/wiki/Cooperative_MIMO
     """
+
     if type(lattice) is not nx.Graph:
         lattice = _make_honeycomb(int(lattice))
     if modulation is None:
