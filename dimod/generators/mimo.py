@@ -203,41 +203,61 @@ def _yF_to_hJ(y, F, modulation):
     return h, J, offset
 
 def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
-    """ Construct linear filter W for estimation of transmitted signals.
-    # https://www.youtube.com/watch?v=U3qjVgX2poM
-   
+    """Construct a linear filter for estimating transmitted signals. 
     
-    We follow conventions laid out in MacKay et al. 'Achievable sum rate of MIMO 
-    MMSE receivers: A general analytic framework'
-    N0 Identity[N_r] = E[n n^dagger]
-    P/N_t Identify[N_t] = E[v v^dagger], i.e. P = constellation_mean_power*Nt for 
-    i.i.d elements (1,2,10,42)Nt for BPSK, QPSK, 16QAM, 64QAM.
-    N_r N_t = E_F[Tr[F Fdagger]], i.e. E[||F_{mu,i}||^2]=1 for i.i.d channel.  
-    normalization is assumed to be pushed into symbols.
-    SNRoverNt = PoverNt/N0 : Intensive quantity. 
-    SNRb = SNR/(Nt*bits_per_symbol)
+    # Jack: you'll need to go over the following carefully
+    Following the conventions of MacKay\ [#Mackay]_, a filter is constructed for:
 
-    Typical use case: set SNRoverNt = SNRb
-    """
+    :math:`N_0 I[N_r] = E[n n^{\dagger}]`
+
+    For independent and identically distributed (i.i.d) elements 
+    :math:`(1, 2, 10, 42)N_t` for BPSK, QPSK, 16QAM, 64QAM, 
+
+    :math:`P/N_t I[N_t] = E[v v^{\dagger}] \qquad \Rightarrow \qquad P = <P_c>*N_t`, 
+
+    where :math:`<P_{c}>` is the constellation's mean power. 
+
+    For an i.i.d channel,
     
+    :math:`N_r N_t = E_F[T_r[F F^{\dagger}]] \qquad \Rightarrow \qquad E[||F_{\mu, i}||^2] = 1` 
+     
+    Symbols are assumed to be normalized:
+
+    :math:`\\frac{SNR}{N_t} = \\frac{P}{Nt}/N0` 
+    
+    :math:`SNRb = \\frac{SNR}{N_t bps}`
+
+    where :math:`bps` is bit per symbol.
+
+    Typical use case: set :math:`\\frac{SNR}{N_t} = SNRb`.
+
+    .. [#Mackay] Matthew R. McKay, Iain B. Collings, Antonia M. Tulino. 
+        "Achievable sum rate of MIMO MMSE receivers: A general analytic framework" 
+        IEEE Transactions on Information Theory, February 2010
+        arXiv:0903.0666 [cs.IT]
+
+    Reference:
+
+        https://www.youtube.com/watch?v=U3qjVgX2poM
+    """
+    if method not in ['zero_forcing', 'matched_filter', 'MMSE']:
+        raise ValueError('Unsupported filtering method')
+
     if method == 'zero_forcing':
         # Moore-Penrose pseudo inverse
-        W = np.linalg.pinv(F)
-    else:
-        Nr, Nt = F.shape
-         # Matched Filter
-        if method == 'matched_filter':
-            W = F.conj().T / np.sqrt(PoverNt)
-            # F = root(Nt/P) Fcompconj
-        elif method == 'MMSE':
-            W = np.matmul(
-                F.conj().T, 
-                np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
-                         ) / np.sqrt(PoverNt)
-        else:
-            raise ValueError('Unsupported linear method')
-    return W
-    
+        return np.linalg.pinv(F)
+ 
+    Nr, Nt = F.shape
+        
+    if method == 'matched_filter':  # F = root(Nt/P) Fcompconj
+        return F.conj().T / np.sqrt(PoverNt)
+        
+    # method == 'MMSE':
+    return np.matmul(
+        F.conj().T, 
+        np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
+                    ) / np.sqrt(PoverNt)
+
 def filter_marginal_estimator(x: np.array, modulation: str):
     if modulation is not None:
         if modulation == 'BPSK' or modulation == 'QPSK':
