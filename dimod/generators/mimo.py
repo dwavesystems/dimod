@@ -172,11 +172,34 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     return spins
 
 def _yF_to_hJ(y, F, modulation):
-    offset, h, J = _quadratic_form(y, F) # Quadratic form re-expression
-    # Complex to real symbols (if necessary): 
+    """Convert :math:`O(v) = ||y - F v||^2` to modulated quadratic form.
+    
+    Constructs coefficients for the form 
+    :math:`O(v) = v^{\dagger} J v - 2 \Re(h^{\dagger} v) + \\text{offset}`. 
+
+    Args:
+        y: Received symbols as a NumPy column vector of complex or real values.
+
+        F: Wireless channel as an :math:`i \\times j` NumPy matrix of complex 
+            values, where :math:`i` rows correspond to :math:`y_i` receivers 
+            and :math:`j` columns correspond to :math:`v_i` transmitted symbols.
+
+        modulation: Modulation. Supported values are non-quadrature modulation 
+            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
+    
+    Returns:
+        Three tuple of amplitude-modulated linear biases :math:`h`, as a NumPy
+        vector, amplitude-modulated quadratic interactions, :math:`J`, as a  
+        matrix, and offset as a real scalar.
+    """
+    offset, h, J = _quadratic_form(y, F) # Conversion to quadratic form 
+
+    # Separate real and imaginary parts of quadratic form: 
     h, J = _real_quadratic_form(h, J, modulation) 
-    # Real symbol to linear spin encoding:
+
+    # Amplitude-modulate the biases in the quadratic form:
     h, J = _amplitude_modulated_quadratic_form(h, J, modulation) 
+
     return h, J, offset
 
 def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
