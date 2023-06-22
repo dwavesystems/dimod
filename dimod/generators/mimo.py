@@ -77,9 +77,14 @@ def _real_quadratic_form(h, J, modulation=None):
         :math:`J`, as a real matrix with any imaginary part moved to above and 
         below the diagonal.
     """
-    # JP: I added this but awaiting answer from Jack on BPSK ignoring F-induced complex parts 
-    # if modulation == 'BPSK' and (any(np.iscomplex(h)) or any(np.iscomplex(J))): 
-    #     raise ValueError('BPSK biases cannot have complex values')
+    # Here, for BPSK F-induced complex parts of h and J are discarded:  
+    # Given y = F x + nu, for independent and identically distributed channel F 
+    # and complex noise nu, the system of equations defined by the real part is 
+    # sufficient to define the canonical decoding problem. 
+    # In essence, rotate y to the eigenbasis of F, throw away the orthogonal noise 
+    # (the complex problem as the real part with suitable adjustment factor 2 to 
+    # signal to noise ratio: F^{-1}*y = I*x + F^{-1}*nu)
+    # JR: revisit and prove
 
     if modulation != 'BPSK' and (any(np.iscomplex(h)) or any(np.iscomplex(J))):
         hR = np.concatenate((h.real, h.imag), axis=0)
@@ -100,8 +105,8 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         
         J: Quadratic interactions as a matrix.
 
-        modulation: Modulation. Supported values are non-quadrature modulations 
-        'BPSK', 'QPSK' and '16QAM' and quadrature modulations '64QAM' and '256QAM'.
+        modulation: Modulation. Supported values are non-quadrature modulation 
+            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
 
     Returns:
         Two-tuple of amplitude-modulated linear biases, :math:`h`, as a NumPy 
@@ -127,9 +132,16 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
       
 def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     """Convert quadrature amplitude modulated (QAM) symbols to spins. 
-    
-    Encoding must be linear. Supports binary phase-shift keying (BPSK, or 2-QAM) 
-    and quadrature (QPSK, or 4-QAM).     
+
+    Args:
+        symbols: Transmitted symbols as a NumPy column vector. 
+ 
+        modulation: Modulation. Supported values are non-quadrature modulation 
+            binary phase-shift keying (BPSK, or 2-QAM) and quadrature modulations 
+            'QPSK', '16QAM', '64QAM', and '256QAM'.
+
+    Returns:
+        Spins as a NumPy array.    
     """
     num_transmitters = len(symbols)
     if modulation == 'BPSK':
@@ -156,14 +168,8 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
             raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
         if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
             spins.reshape((len(spins), ))
-        # elif symbols.shape[0] == 1:   #Jack: I think this is already baked in
-        #     spins.reshape((1, len(spins)))
-        # elif symbols.shape[1] == 1:
-        #     spins.reshape((len(spins), 1))
-        # else:   # Leave for manual reshaping
-        #     pass 
-    return spins
 
+    return spins
 
 def _yF_to_hJ(y, F, modulation):
     offset, h, J = _quadratic_form(y, F) # Quadratic form re-expression
