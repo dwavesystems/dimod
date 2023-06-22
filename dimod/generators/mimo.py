@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2022 D-Wave Systems Inc.
+# Copyright 2023 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -18,14 +18,15 @@
 #Author: Jack Raymond
 #Date: December 18th 2020
 
-import numpy as np
-import dimod 
 from itertools import product
-from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 import networkx as nx
+import numpy as np
+from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
+
+import dimod 
 
 def _quadratic_form(y, F):
-    '''Convert O(v) = ||y - F v||^2 to a sparse quadratic form, where
+    """Convert O(v) = ||y - F v||^2 to a sparse quadratic form, where
     y, F are assumed to be complex or real valued.
 
     Constructs coefficients for the form O(v) = v^dag J v - 2 Re [h^dag vD] + k
@@ -39,7 +40,7 @@ def _quadratic_form(y, F):
         h: dense real vector
         J: dense real symmetric matrix
     
-    '''
+    """
     if len(y.shape) != 2 or y.shape[1] != 1:
         raise ValueError('y should have shape [n, 1] for some n')
     if len(F.shape) != 2 or F.shape[0] != y.shape[0]:
@@ -47,21 +48,21 @@ def _quadratic_form(y, F):
                          'and n should equal y.shape[1]')
 
     offset = np.matmul(y.imag.T, y.imag) + np.matmul(y.real.T, y.real)
-    h = - 2*np.matmul(F.T.conj(), y) ## Be careful with interpretaion!
+    h = - 2*np.matmul(F.T.conj(), y) ## Be careful with interpretation!
     J = np.matmul(F.T.conj(), F) 
 
     return offset, h, J
 
 def _real_quadratic_form(h, J, modulation=None):
-    '''Unwraps objective function on complex variables onto objective
+    """Unwraps objective function on complex variables onto objective
     function of concatenated real variables: the real and imaginary
     parts.
-    '''
+    """
     if modulation != 'BPSK' and (h.dtype == np.complex128 or J.dtype == np.complex128):
         hR = np.concatenate((h.real, h.imag), axis=0)
         JR = np.concatenate((np.concatenate((J.real, J.imag), axis=0), 
-                            np.concatenate((J.imag.T, J.real), axis=0)), 
-                           axis=1)
+                             np.concatenate((J.imag.T, J.real), axis=0)), 
+                             axis=1)
         return hR, JR
     else:
         return h.real, J.real
@@ -78,7 +79,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
             num_amps = 3
         else:
             raise ValueError('unknown modulation')
-        amps = 2**np.arange(num_amps)
+        amps = 2 ** np.arange(num_amps)
         hA = np.kron(amps[:, np.newaxis], h)
         JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
         return hA, JA 
@@ -125,8 +126,10 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
 
 def _yF_to_hJ(y, F, modulation):
     offset, h, J = _quadratic_form(y, F) # Quadratic form re-expression
-    h, J = _real_quadratic_form(h, J, modulation) # Complex symbols to real symbols (if necessary)
-    h, J = _amplitude_modulated_quadratic_form(h, J, modulation) # Real symbol to linear spin encoding
+    # Complex to real symbols (if necessary): 
+    h, J = _real_quadratic_form(h, J, modulation) 
+    # Real symbol to linear spin encoding:
+    h, J = _amplitude_modulated_quadratic_form(h, J, modulation) 
     return h, J, offset
 
 def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
@@ -134,10 +137,13 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
     # https://www.youtube.com/watch?v=U3qjVgX2poM
    
     
-    We follow conventions laid out in MacKay et al. 'Achievable sum rate of MIMO MMSE receivers: A general analytic framework'
+    We follow conventions laid out in MacKay et al. 'Achievable sum rate of MIMO 
+    MMSE receivers: A general analytic framework'
     N0 Identity[N_r] = E[n n^dagger]
-    P/N_t Identify[N_t] = E[v v^dagger], i.e. P = constellation_mean_power*Nt for i.i.d elements (1,2,10,42)Nt for BPSK, QPSK, 16QAM, 64QAM.
-    N_r N_t = E_F[Tr[F Fdagger]], i.e. E[||F_{mu,i}||^2]=1 for i.i.d channel.  - normalization is assumed to be pushed into symbols.
+    P/N_t Identify[N_t] = E[v v^dagger], i.e. P = constellation_mean_power*Nt for 
+    i.i.d elements (1,2,10,42)Nt for BPSK, QPSK, 16QAM, 64QAM.
+    N_r N_t = E_F[Tr[F Fdagger]], i.e. E[||F_{mu,i}||^2]=1 for i.i.d channel.  
+    normalization is assumed to be pushed into symbols.
     SNRoverNt = PoverNt/N0 : Intensive quantity. 
     SNRb = SNR/(Nt*bits_per_symbol)
 
@@ -151,10 +157,13 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
         Nr, Nt = F.shape
          # Matched Filter
         if method == 'matched_filter':
-            W = F.conj().T/ np.sqrt(PoverNt)
+            W = F.conj().T / np.sqrt(PoverNt)
             # F = root(Nt/P) Fcompconj
         elif method == 'MMSE':
-            W = np.matmul(F.conj().T, np.linalg.pinv(np.matmul(F,F.conj().T) + np.identity(Nr)/SNRoverNt))/np.sqrt(PoverNt)
+            W = np.matmul(
+                F.conj().T, 
+                np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
+                         ) / np.sqrt(PoverNt)
         else:
             raise ValueError('Unsupported linear method')
     return W
@@ -172,19 +181,20 @@ def filter_marginal_estimator(x: np.array, modulation: str):
         else:
             raise ValueError('Unknown modulation')
         #Real part (nearest):
-        x_R = 2*np.round((x.real-1)/2)+1
-        x_R = np.where(x_R<-max_abs,-max_abs,x_R)
-        x_R = np.where(x_R>max_abs,max_abs,x_R)
+        x_R = 2*np.round((x.real - 1)/2) + 1
+        x_R = np.where(x_R < -max_abs, -max_abs, x_R)
+        x_R = np.where(x_R > max_abs, max_abs, x_R)
         if modulation != 'BPSK':
-            x_I = 2*np.round((x.imag-1)/2)+1
-            x_I = np.where(x_I<-max_abs,-max_abs,x_I)
-            x_I = np.where(x_I>max_abs,max_abs,x_I)
+            x_I = 2*np.round((x.imag - 1)/2) + 1
+            x_I = np.where(x_I <- max_abs, -max_abs, x_I)
+            x_I = np.where(x_I > max_abs, max_abs, x_I)
             return x_R + 1j*x_I
         else:
             return x_R
         
-def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: int = None) -> np.array:
-    "Converts spins to modulated symbols assuming a linear encoding"
+def spins_to_symbols(spins: np.array, modulation: str = None, 
+                     num_transmitters: int = None) -> np.array:
+    """Converts spins to modulated symbols assuming a linear encoding"""
     num_spins = len(spins)
     if num_transmitters is None:
         if modulation == 'BPSK':
@@ -214,7 +224,7 @@ def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: 
         amps = 2**np.arange(0, num_amps)[:, np.newaxis]
         
         symbols = np.sum(amps*spinsR[:, :num_transmitters], axis=0) \
-                + 1j * np.sum(amps*spinsR[:, num_transmitters:], axis=0)
+                + 1j*np.sum(amps*spinsR[:, num_transmitters:], axis=0)
     return symbols
 
 def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_node=1,neighbor_root_attenuation=1):
@@ -312,7 +322,7 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
 
     if F_distribution is None:
         F_distribution = ('normal', 'complex')    
-    elif type(F_distribution) is not tuple or len(F_distribution) !=2:
+    elif type(F_distribution) is not tuple or len(F_distribution) != 2:
         raise ValueError('F_distribution should be a tuple of strings or None')
     
     if F_distribution[0] == 'normal':
@@ -402,7 +412,7 @@ def _create_transmitted_symbols(num_transmitters,
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
     else: 
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1)) \
-            + 1j * random_state.choice(amps, size=(num_transmitters, 1))
+            + 1j*random_state.choice(amps, size=(num_transmitters, 1))
         
     return transmitted_symbols, random_state
 
@@ -501,6 +511,8 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
         y = channel_noise + np.matmul(F, transmitted_symbols)
 
     return y, transmitted_symbols, channel_noise, random_state
+
+# JP: Leave remainder untouched for next PRs to avoid conflicts before this is merged
 
 def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None, F: Union[np.array, None] = None,
                       *,
