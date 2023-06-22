@@ -122,7 +122,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
             num_amps = 2
         elif modulation == '64QAM':
             num_amps = 3
-        else:
+        else:   # JP: add 256QAM
             raise ValueError('unknown modulation')
         
         amps = 2 ** np.arange(num_amps)
@@ -154,7 +154,7 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
             spins_per_real_symbol = 2
         elif modulation == '64QAM':
             spins_per_real_symbol = 3
-        else:
+        else:   # JP: add 256QAM
             raise ValueError('Unsupported modulation')
         # A map from integer parts to real is clearest (and sufficiently performant), 
         # generalizes to Gray coding more easily as well:
@@ -258,45 +258,32 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
         np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
                     ) / np.sqrt(PoverNt)
 
-def filter_marginal_estimator(x: np.array, modulation: str):
-    if modulation is not None:
-        if modulation == 'BPSK' or modulation == 'QPSK':
-            max_abs = 1
-        elif modulation == '16QAM':
-            max_abs = 3
-        elif modulation == '64QAM':
-            max_abs = 7
-        elif modulation == '128QAM':
-            max_abs = 15
-        else:
-            raise ValueError('Unknown modulation')
-        #Real part (nearest):
-        x_R = 2*np.round((x.real - 1)/2) + 1
-        x_R = np.where(x_R < -max_abs, -max_abs, x_R)
-        x_R = np.where(x_R > max_abs, max_abs, x_R)
-        if modulation != 'BPSK':
-            x_I = 2*np.round((x.imag - 1)/2) + 1
-            x_I = np.where(x_I <- max_abs, -max_abs, x_I)
-            x_I = np.where(x_I > max_abs, max_abs, x_I)
-            return x_R + 1j*x_I
-        else:
-            return x_R
-        
+transmitters_per_spin = {
+    'BPSK': 1,
+    'QPSK': 2,
+    '16QAM': 4,
+    '64QAM': 6} # JP: add 256QAM
+
 def spins_to_symbols(spins: np.array, modulation: str = None, 
                      num_transmitters: int = None) -> np.array:
-    """Converts spins to modulated symbols assuming a linear encoding"""
+    """Convert spins to modulated symbols.
+
+    Args:
+        spins: Spins as a NumPy array. 
+
+        modulation: Modulation. Supported values are non-quadrature modulation 
+            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
+
+    Returns:
+        Transmitted symbols as a NumPy vector.
+    """
+    if modulation not in transmitters_per_spin.keys():
+        raise ValueError(f"Unsupported modulation: {modulation}")
+    
     num_spins = len(spins)
+
     if num_transmitters is None:
-        if modulation == 'BPSK':
-            num_transmitters = num_spins
-        elif modulation == 'QPSK':
-            num_transmitters = num_spins//2
-        elif modulation == '16QAM':
-            num_transmitters = num_spins//4
-        elif modulation == '64QAM':
-            num_transmitters = num_spins//6
-        else:
-            raise ValueError('Unsupported modulation')
+        num_transmitters = num_spins // transmitters_per_spin[modulation]
         
     if num_transmitters == num_spins:
         symbols = spins 
@@ -314,7 +301,8 @@ def spins_to_symbols(spins: np.array, modulation: str = None,
         amps = 2**np.arange(0, num_amps)[:, np.newaxis]
         
         symbols = np.sum(amps*spinsR[:, :num_transmitters], axis=0) \
-                + 1j*np.sum(amps*spinsR[:, num_transmitters:], axis=0)
+            + 1j*np.sum(amps*spinsR[:, num_transmitters:], axis=0)
+        
     return symbols
 
 def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_node=1,neighbor_root_attenuation=1):
@@ -847,3 +835,28 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
         bqm.relabel_variables({n: rtn[n] for n in bqm.variables})
     
     return bqm
+
+# Moved to end of file until we do something with this 
+def filter_marginal_estimator(x: np.array, modulation: str):
+    if modulation is not None:
+        if modulation == 'BPSK' or modulation == 'QPSK':
+            max_abs = 1
+        elif modulation == '16QAM':
+            max_abs = 3
+        elif modulation == '64QAM':
+            max_abs = 7
+        elif modulation == '128QAM':
+            max_abs = 15
+        else:
+            raise ValueError('Unknown modulation')
+        #Real part (nearest):
+        x_R = 2*np.round((x.real - 1)/2) + 1
+        x_R = np.where(x_R < -max_abs, -max_abs, x_R)
+        x_R = np.where(x_R > max_abs, max_abs, x_R)
+        if modulation != 'BPSK':
+            x_I = 2*np.round((x.imag - 1)/2) + 1
+            x_I = np.where(x_I <- max_abs, -max_abs, x_I)
+            x_I = np.where(x_I > max_abs, max_abs, x_I)
+            return x_R + 1j*x_I
+        else:
+            return x_R

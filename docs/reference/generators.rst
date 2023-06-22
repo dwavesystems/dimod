@@ -51,6 +51,7 @@ Optimization
    random_multi_knapsack
    spin_encoded_comp
    spin_encoded_mimo
+
 Random
 ======
 

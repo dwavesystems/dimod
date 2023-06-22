@@ -1146,6 +1146,7 @@ class TestMIMO(unittest.TestCase):
         return effFields
         
     def test_filter_marginal_estimators(self):
+        # Tested but so far this function is unused
         
         filtered_signal = np.random.random(20) + np.arange(-20,20,2)
         estimated_source = dimod.generators.mimo.filter_marginal_estimator(filtered_signal, 'BPSK')
@@ -1236,6 +1237,9 @@ class TestMIMO(unittest.TestCase):
 
     def test_yF_to_hJ(self):
         print('Add tests for _yF_to_hJ')
+
+    def test_spins_to_symbols(self):
+        print('Add tests for spins_to_symbols')
 
     def test_symbols_to_spins(self):
         # Standard symbol cases (2D input):
