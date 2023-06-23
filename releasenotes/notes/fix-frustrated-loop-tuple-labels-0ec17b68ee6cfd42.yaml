@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix ``dimod.generators.frustrated_loop()`` to correctly handle graphs with
+    tuple labels. See `#1342 <https://github.com/dwavesystems/dimod/issues/1342>`_.

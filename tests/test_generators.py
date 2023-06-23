@@ -411,6 +411,16 @@ class TestFCL(unittest.TestCase):
         all_ones = {v:1 for v in G}
         self.assertNotEqual(bqm.energy(planted),bqm.energy(all_ones))
 
+    def test_smoke_tuple_labels(self):
+        # https://github.com/dwavesystems/dimod/issues/1342
+        g = nx.erdos_renyi_graph(100, 0.5)
+        tuple_map = dict()
+        for node in g.nodes:
+            tuple_map[node] = (node, node, node)
+        g = nx.relabel_nodes(g, tuple_map)
+        bqm = dimod.generators.frustrated_loop(g, R=3, num_cycles=100)
+
+
 class TestCombinations(unittest.TestCase):
 
     def check_combinations(self, variables, k, bqm, strength):
