@@ -218,15 +218,48 @@ def spins_to_symbols(spins: np.array, modulation: str = None, num_transmitters: 
     return symbols
 
 def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_node=1,neighbor_root_attenuation=1):
-    # Slow for now. Debugging
+    """The attenuation matrix is an ndarray and specifies the expected root-power of transmission between integer indexed transmitters and receivers.
+    The shape of the attenuation matrix is num_receivers by num_transmitters.
+    In this code, there is uniform transmission of power for on-site trasmitter/receiver pairs, and unifrom transmission
+    from transmitters to receivers up to graph distance 1.
+    Note that this code requires work - we should exploit sparsity, and track the label map.
+    This could be generalized to account for asymmetric transmission patterns, or real-valued spatial structure."""
     num_var = lattice.number_of_nodes()
-    A = np.identity(num_var)
-    node_to_int = {n:idx for idx,n in enumerate(lattice.nodes())}
-    for n0 in lattice.nodes:
-        root = node_to_int[n0]
-        for neigh in lattice.neighbors(n0):
-            A[node_to_int[neigh],root]=neighbor_root_attenuation
-    A = np.tile(A,(transmitters_per_node,receivers_per_node))
+
+    if any('num_transmitters' in lattice.nodes[n] for n in lattice.nodes) or any('num_receivers' in lattice.nodes[n] for n in lattice.nodes):
+        node_to_transmitters = {} #Integer labels of transmitters at node
+        node_to_receivers = {} #Integer labels of receivers at node
+        t_ind = 0
+        r_ind = 0
+        for n in lattice.nodes:
+            num = transmitters_per_node
+            if 'num_transmitters' in lattice.nodes[n]:
+                num = lattice.nodes[n]['num_transmitters']
+            node_to_transmitters[n] = list(range(t_ind,t_ind+num))
+            t_ind = t_ind + num
+            num = receivers_per_node
+            if 'num_receivers' in lattice.nodes[n]:
+                num = lattice.nodes[n]['num_receivers']
+            node_to_receivers[n] = list(range(r_ind,r_ind+num))
+            r_ind = r_ind + num
+        A = np.zeros(shape=(r_ind, t_ind))
+        for n0 in lattice.nodes:
+            root_receivers = node_to_receivers[n0]
+            for r in root_receivers:
+                for t in node_to_transmitters[n0]:
+                    A[r,t] = 1
+                for neigh in lattice.neighbors(n0):
+                    for t in node_to_transmitters[neigh]:
+                        A[r,t]=neighbor_root_attenuation
+    else:
+        A = np.identity(num_var)
+        # Uniform case:
+        node_to_int = {n:idx for idx,n in enumerate(lattice.nodes())}
+        for n0 in lattice.nodes:
+            root = node_to_int[n0]
+            for neigh in lattice.neighbors(n0):
+                A[node_to_int[neigh],root]=neighbor_root_attenuation
+        A = np.tile(A,(receivers_per_node,transmitters_per_node))
     return A
 
 def create_channel(num_receivers: int = 1, num_transmitters: int = 1, 
@@ -253,6 +286,9 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
 
         attenuation_matrix: Root of the power associated with a variable to 
         chip communication ... Jack: what does this represent in the field?
+        Joel: This is the root-power part of the matrix F. It basically sparsifies
+        F so as to match the lattice transmission structure. The function now
+        has some additional branches that make things more explicit.
 
     Returns:
         Three-tuple of channel, channel power, and the random state used, where 
@@ -636,6 +672,7 @@ def _make_honeycomb(L: int):
     G.remove_nodes_from([(i,j) for i in range(L) for j in range(L+1+i,2*L+1)])
     return G
 
+
 def spin_encoded_comp(lattice: Union[int,nx.Graph],
                       modulation: str, y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
@@ -653,6 +690,8 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
            local transmitters. Transmitters from neighboring basestations are also 
            received. The channel F should be set to None, it is not dependent on the
            geometric information for now.
+           Node attributes 'num_receivers' and 'num_transmitters' override the 
+           input defaults.
            lattice can also be set to an integer value, in which case a honeycomb 
            lattice of the given linear scale (number of basestations O(L^2)) is 
            created using ``_make_honeycomb()``.
