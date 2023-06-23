@@ -18,6 +18,7 @@
 #Author: Jack Raymond
 #Date: December 18th 2020
 
+from functools import wraps
 from itertools import product
 import networkx as nx
 import numpy as np
@@ -25,14 +26,24 @@ from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 
 import dimod 
 
-mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number of amps
-    "BPSK": {"bpt": 1, "amps": 1, "tps": 1, "na": 1},       
-    "QPSK": {"bpt": 2, "amps": 1, "tps": 2, "na": 1},
-    "16QAM": {"bpt": 4, "amps": 2, "tps": 4, "na": 2},
-    "64QAM": {"bpt": 6, "amps": 4, "tps": 6, "na": 3},
-    "256QAM": {"bpt": 8, "amps": 8, "tps": 8, "na": 5}   #JP: check numbers for 256QAM
+mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number of amps, spins per symbol
+    "BPSK": {"bpt": 1, "amps": 1, "tps": 1, "na": 1, "sps": 1},       
+    "QPSK": {"bpt": 2, "amps": 1, "tps": 2, "na": 1, "sps": 1},
+    "16QAM": {"bpt": 4, "amps": 2, "tps": 4, "na": 2, "sps": 2},
+    "64QAM": {"bpt": 6, "amps": 4, "tps": 6, "na": 3, "sps": 3},
+    "256QAM": {"bpt": 8, "amps": 8, "tps": 8, "na": 5, "sps": 4}   #JP: check numbers for 256QAM
     } 
 
+# def supported_modulation(f):      JP: would be nicer but needs work
+#     @wraps(f)
+#     def check_support(*args, **kwargs):
+#         modulation = kwargs.get("modulation", None)
+#         print(modulation)
+#         if modulation and modulation not in mod_config.keys():
+#             raise ValueError(f"Unsupported modulation: {modulation}")
+#         return f(*args, **kwargs) 
+#     return check_support
+             
 def _quadratic_form(y, F):
     """Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
     
@@ -65,6 +76,7 @@ def _quadratic_form(y, F):
 
     return offset, h, J
 
+# @supported_modulation 
 def _real_quadratic_form(h, J, modulation=None):
     """Separate real and imaginary parts of quadratic form.
     
@@ -142,31 +154,31 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     Returns:
         Spins as a NumPy array.    
     """
+    if modulation not in mod_config.keys():
+        raise ValueError(f"Unsupported modulation: {modulation}")
+    
     num_transmitters = len(symbols)
+
     if modulation == 'BPSK':
         return symbols.copy()
-    else:
-        if modulation == 'QPSK':
-            # spins_per_real_symbol = 1
-            return np.concatenate((symbols.real, symbols.imag))
-        elif modulation == '16QAM':
-            spins_per_real_symbol = 2
-        elif modulation == '64QAM':
-            spins_per_real_symbol = 3
-        else:   # JP: add 256QAM
-            raise ValueError('Unsupported modulation')
-        # A map from integer parts to real is clearest (and sufficiently performant), 
-        # generalizes to Gray coding more easily as well:
-        
-        symb_to_spins = { np.sum([x*2**xI for xI, x in enumerate(spins)]) : spins
-                          for spins in product(*spins_per_real_symbol*[(-1, 1)])}
-        spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()], 
-                                                [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
-                                for prec in range(spins_per_real_symbol)])
-        if len(symbols.shape) > 2:
-            raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
-        if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
-            spins.reshape((len(spins), ))
+    
+    if modulation == 'QPSK':
+        return np.concatenate((symbols.real, symbols.imag))
+    
+    spins_per_real_symbol = mod_config[modulation]["sps"]
+
+    # A map from integer parts to real is clearest (and sufficiently performant), 
+    # generalizes to Gray coding more easily as well:
+    
+    symb_to_spins = { np.sum([x*2**xI for xI, x in enumerate(spins)]) : spins
+                        for spins in product(*spins_per_real_symbol*[(-1, 1)])}
+    spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()], 
+                                            [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
+                            for prec in range(spins_per_real_symbol)])
+    if len(symbols.shape) > 2:
+        raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
+    if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
+        spins.reshape((len(spins), ))
 
     return spins
 
