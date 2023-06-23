@@ -25,6 +25,14 @@ from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 
 import dimod 
 
+mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number of amps
+    "BPSK": {"bpt": 1, "amps": 1, "tps": 1, "na": 1},       
+    "QPSK": {"bpt": 2, "amps": 1, "tps": 2, "na": 1},
+    "16QAM": {"bpt": 4, "amps": 2, "tps": 4, "na": 2},
+    "64QAM": {"bpt": 6, "amps": 4, "tps": 6, "na": 3},
+    "256QAM": {"bpt": 8, "amps": 8, "tps": 8, "na": 5}   #JP: check numbers for 256QAM
+    } 
+
 def _quadratic_form(y, F):
     """Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
     
@@ -113,22 +121,13 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         vector  and amplitude-modulated quadratic interactions, :math:`J`, as 
         a matrix.
     """
-    if modulation == 'BPSK' or modulation == 'QPSK':
-        #Easy case, just extract diagonal
-        return h, J
-    else:
-        # Quadrature + amplitude modulation
-        if modulation == '16QAM':
-            num_amps = 2
-        elif modulation == '64QAM':
-            num_amps = 3
-        else:   # JP: add 256QAM
-            raise ValueError('unknown modulation')
-        
-        amps = 2 ** np.arange(num_amps)
-        hA = np.kron(amps[:, np.newaxis], h)
-        JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
-        return hA, JA 
+    if modulation not in mod_config.keys():
+        raise ValueError(f"Unsupported modulation: {modulation}")
+    
+    amps = 2 ** np.arange(mod_config[modulation]["na"])
+    hA = np.kron(amps[:, np.newaxis], h)
+    JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
+    return hA, JA 
       
 def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     """Convert quadrature amplitude modulated (QAM) symbols to spins. 
@@ -258,12 +257,6 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
         np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
                     ) / np.sqrt(PoverNt)
 
-transmitters_per_spin = {
-    'BPSK': 1,
-    'QPSK': 2,
-    '16QAM': 4,
-    '64QAM': 6} # JP: add 256QAM
-
 def spins_to_symbols(spins: np.array, modulation: str = None, 
                      num_transmitters: int = None) -> np.array:
     """Convert spins to modulated symbols.
@@ -277,13 +270,13 @@ def spins_to_symbols(spins: np.array, modulation: str = None,
     Returns:
         Transmitted symbols as a NumPy vector.
     """
-    if modulation not in transmitters_per_spin.keys():
+    if modulation not in mod_config.keys():
         raise ValueError(f"Unsupported modulation: {modulation}")
     
     num_spins = len(spins)
 
     if num_transmitters is None:
-        num_transmitters = num_spins // transmitters_per_spin[modulation]
+        num_transmitters = num_spins // mod_config[modulation]["tps"]
         
     if num_transmitters == num_spins:
         symbols = spins 
@@ -439,14 +432,13 @@ def _constellation_properties(modulation):
     Constellation mean power makes the standard assumption that symbols are 
     sampled uniformly at random for the signal.
     """
-
-    bpt_amps = constellation.get(modulation)
-    if not bpt_amps:
+    if modulation not in mod_config.keys():
         raise ValueError('Unsupported modulation method')
-    
-    constellation_mean_power = 1 if modulation == 'BPSK' else 2*np.mean(bpt_amps[1]*bpt_amps[1]) 
 
-    return bpt_amps[0], bpt_amps[1], constellation_mean_power 
+    amps = 1+2*np.arange(mod_config[modulation]["amps"])
+    constellation_mean_power = 1 if modulation == 'BPSK' else 2*np.mean(amps*amps) 
+
+    return mod_config[modulation]["bpt"], amps, constellation_mean_power 
 
 def _create_transmitted_symbols(num_transmitters, 
                                 amps=[-1, 1], 
