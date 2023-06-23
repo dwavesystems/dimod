@@ -261,8 +261,8 @@ def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_
             for neigh in lattice.neighbors(n0):
                 A[node_to_int[neigh],root]=neighbor_root_attenuation
         A = np.tile(A,(receivers_per_node,transmitters_per_node))
-        node_to_receivers = {n: [v+i*len(node_to_list) for i in range(receivers_per_node)] for n in node_to_int}
-        node_to_transmitters = {n: [v+i*len(node_to_list) for i in range(transmitters_per_node)] for n in node_to_int}
+        node_to_receivers = {n: [node_to_int[n]+i*len(node_to_int) for i in range(receivers_per_node)] for n in node_to_int}
+        node_to_transmitters = {n: [node_to_int[n]+i*len(node_to_int) for i in range(transmitters_per_node)] for n in node_to_int}
     return A, node_to_transmitters, node_to_receivers
 
 def create_channel(num_receivers: int = 1, num_transmitters: int = 1, 
@@ -725,7 +725,6 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
                                                                  transmitters_per_node=num_transmitters_per_node,
                                                                  receivers_per_node=num_receivers_per_node,
                                                                  neighbor_root_attenuation=1)
-    print(attenuation_matrix.shape)
     num_receivers, num_transmitters = attenuation_matrix.shape
     bqm = spin_encoded_mimo(modulation=modulation, y=y, F=F,
                             transmitted_symbols=transmitted_symbols, channel_noise=channel_noise, 
