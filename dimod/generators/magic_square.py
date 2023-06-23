@@ -19,11 +19,11 @@ from dimod.binary.binary_quadratic_model import quicksum
 from dimod.quadratic import Integer 
 
 def magic_square(size : int, power : int = 1) -> ConstrainedQuadraticModel: 
-    """Generate a magic square of a particular size. Also can generate a magic square of squares, or of cubes, etc.
+    """Generate a magic square of a particular size. Also can generate a magic square of squares.
 
     Args:
         size (int): The sidelength of the magic square, the magic square will have size * size integer variables. 
-        power (int, optional): If set to 1 the problem is a normal magic square, if set to 2 it is a magic square of squares, etc. Must be positive. Defaults to 1.
+        power (int, optional): If set to 1 the problem is a normal magic square, if set to 2 it is a magic square of squares. Must be 1 or 2. Defaults to 1.
 
     Returns:
         dimod.ConstrainedQuadraticModel: 
@@ -33,8 +33,8 @@ def magic_square(size : int, power : int = 1) -> ConstrainedQuadraticModel:
             by var_i_j**power . 
     """
     
-    if power <= 0: 
-        raise ValueError(f"power must be >= 1, recieved {power}")
+    if power not in [1, 2]: 
+        raise ValueError(f"power must be either 1 or 2, recieved {power}")
     
     variables = {}
     for i, j in product(range(size), range(size)): 
