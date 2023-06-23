@@ -1495,33 +1495,30 @@ class TestMIMO(unittest.TestCase):
         lattice=nx.Graph()
         num_var = 10
         lattice.add_nodes_from(n for n in range(num_var))
-        
-        A = dimod.generators.mimo.lattice_to_attenuation_matrix(lattice)
-        
+
+        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(lattice)
         self.assertFalse(np.any(A-np.identity(num_var)))
+
         for t_per_node in range(1,3):
             for r_per_node in range(1,3):
-                A = dimod.generators.mimo.lattice_to_attenuation_matrix(
+                A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
                     lattice,
                     transmitters_per_node=t_per_node,
                     receivers_per_node=r_per_node,
                     neighbor_root_attenuation=np.random.random())
                 self.assertFalse(np.any(A- np.tile(np.identity(num_var), (r_per_node,t_per_node))))
-                # self.assertEqual(np.sum(A), num_var*t_per_node*r_per_node)
-                # self.assertEqual(np.unique(A), np.arrange(2))
-                # self.assertEqual(A.shape,(num_var*r_per_node,num_var*t_per_node))
 
         for ea in range(2):
             lattice.add_edge(ea,ea+1)
             neighbor_root_attenuation=np.random.random()
-            A = dimod.generators.mimo.lattice_to_attenuation_matrix(
+            A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
                 lattice, neighbor_root_attenuation=2)
             self.assertFalse(np.any(A-A.transpose()))
             self.assertTrue(all(A[eap,eap+1]==2 for eap in range(ea+1)))
         ## Check num_transmitters and num_receivers override:
         nx.set_node_attributes(lattice, values=3, name="num_transmitters")
         nx.set_node_attributes(lattice, values=1, name="num_receivers")
-        A = dimod.generators.mimo.lattice_to_attenuation_matrix(
+        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
             lattice,
             transmitters_per_node=2,
             receivers_per_node=2)
@@ -1530,9 +1527,9 @@ class TestMIMO(unittest.TestCase):
         nx.set_node_attributes(lattice, values={0:2, 3:1}, name="num_receivers")
         nx.set_node_attributes(lattice, values=0, name="num_transmitters")
         nx.set_node_attributes(lattice, values={i:1 for i in [0,1,2,4]}, name="num_transmitters")
-        # t/r2 -- t -- t   r  t
+        # t/r2 -- t -- t   r  t #We can assume the ntr and ntt arguments.
         Acorrect = np.array([[1, 2, 0, 0], [1, 2, 0, 0], [0, 0, 0, 0]])
-        A = dimod.generators.mimo.lattice_to_attenuation_matrix(
+        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
             lattice, neighbor_root_attenuation=2)
         self.assertFalse(np.any(A-Acorrect))
 

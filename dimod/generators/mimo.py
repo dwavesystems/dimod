@@ -237,6 +237,7 @@ def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_
                 num = lattice.nodes[n]['num_transmitters']
             node_to_transmitters[n] = list(range(t_ind,t_ind+num))
             t_ind = t_ind + num
+            
             num = receivers_per_node
             if 'num_receivers' in lattice.nodes[n]:
                 num = lattice.nodes[n]['num_receivers']
@@ -260,7 +261,9 @@ def lattice_to_attenuation_matrix(lattice,transmitters_per_node=1,receivers_per_
             for neigh in lattice.neighbors(n0):
                 A[node_to_int[neigh],root]=neighbor_root_attenuation
         A = np.tile(A,(receivers_per_node,transmitters_per_node))
-    return A
+        node_to_receivers = {n: [v+i*len(node_to_list) for i in range(receivers_per_node)] for n in node_to_int}
+        node_to_transmitters = {n: [v+i*len(node_to_list) for i in range(transmitters_per_node)] for n in node_to_int}
+    return A, node_to_transmitters, node_to_receivers
 
 def create_channel(num_receivers: int = 1, num_transmitters: int = 1, 
                    F_distribution: Optional[Tuple[str, str]] = None, 
@@ -677,6 +680,7 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
                       modulation: str, y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
+                      integer_labeling: bool = True,
                       transmitted_symbols: Union[np.array, None] = None, channel_noise: Union[np.array, None] = None, 
                       num_transmitters_per_node: int = 1,
                       num_receivers_per_node: int = 1, SNRb: float = float('Inf'), 
@@ -695,6 +699,14 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
            lattice can also be set to an integer value, in which case a honeycomb 
            lattice of the given linear scale (number of basestations O(L^2)) is 
            created using ``_make_honeycomb()``.
+       modulation: modulation
+       integer_labeling:
+           When True, the geometric, quadrature and modulation-scale information
+           associated to every spin is compressed to a non-redundant integer label sequence.
+           When False, spin variables are labeled (in general, but not yet implemented):
+           (geometric_position, index at geometric position, quadrature, bit-precision)
+           In specific, for BPSK with at most one transmitter per site, there is 1 
+           spin per lattice node with a transmitter, inherits lattice label)
        F: Channel
        y: Signal
      
@@ -707,10 +719,13 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
     """
     if type(lattice) is not nx.Graph:
         lattice = _make_honeycomb(int(lattice))
-    attenuation_matrix = lattice_to_attenuation_matrix(lattice,
-                                                        transmitters_per_node=num_transmitters_per_node,
-                                                        receivers_per_node=num_receivers_per_node,
-                                                        neighbor_root_attenuation=1)
+    if modulation is None:
+        modulation = 'BPSK'
+    attenuation_matrix, ntr, ntt = lattice_to_attenuation_matrix(lattice,
+                                                                 transmitters_per_node=num_transmitters_per_node,
+                                                                 receivers_per_node=num_receivers_per_node,
+                                                                 neighbor_root_attenuation=1)
+    print(attenuation_matrix.shape)
     num_receivers, num_transmitters = attenuation_matrix.shape
     bqm = spin_encoded_mimo(modulation=modulation, y=y, F=F,
                             transmitted_symbols=transmitted_symbols, channel_noise=channel_noise, 
@@ -720,5 +735,13 @@ def spin_encoded_comp(lattice: Union[int,nx.Graph],
                             F_distribution=F_distribution, 
                             use_offset=use_offset,
                             attenuation_matrix=attenuation_matrix)
+    # I should relabel the integer representation back to (geometric_position, index_at_position, imag/real, precision)
+    # Easy case (for now) BPSK num_transmitters per site at most 1.
+
+    if modulation == 'BPSK' and num_transmitters_per_node == 1 and integer_labeling==False: 
+        rtn = {v[0]: k for k,v in ntr.items()} #Invertible mapping
+        # Need to check attributes really,..
+        print(rtn)
+        bqm.relabel_variables({n: rtn[n] for n in bqm.variables})
     
     return bqm
