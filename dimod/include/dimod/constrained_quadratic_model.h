@@ -184,6 +184,12 @@ class ConstrainedQuadraticModel {
     /// Remove a constraint from the model.
     void remove_constraint(index_type c);
 
+    /// Remove all constraints satisfying a certain criteria as defined by
+    /// a unary predicate p which accepts a constraint reference and
+    /// returns true if the constraint should be removed.
+    template<class UnaryPredicate>
+    void remove_constraints_if(UnaryPredicate p);
+
     /// Remove variable `v` from the model.
     void remove_variable(index_type v);
 
@@ -666,6 +672,18 @@ std::size_t ConstrainedQuadraticModel<bias_type, index_type>::num_variables() co
 template <class bias_type, class index_type>
 void ConstrainedQuadraticModel<bias_type, index_type>::remove_constraint(index_type c) {
     constraints_.erase(constraints_.begin() + c, constraints_.begin() + c + 1);
+}
+
+template <class bias_type, class index_type>
+template <class UnaryPredicate>
+void ConstrainedQuadraticModel<bias_type, index_type>::remove_constraints_if(UnaryPredicate p) {
+    // create a new predicate that acts on a shared_ptr rather than the constraint
+    auto pred = [&](std::shared_ptr<Constraint<bias_type, index_type>>& constraint_ptr) {
+        return p(*constraint_ptr);
+    };
+
+    constraints_.erase(std::remove_if(constraints_.begin(), constraints_.end(), pred),
+                       constraints_.end());
 }
 
 template <class bias_type, class index_type>
