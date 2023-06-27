@@ -1,0 +1,3 @@
+---
+features:
+  - Add C++ ``ConstrainedQuadraticModel::remove_constraints_if()`` method.

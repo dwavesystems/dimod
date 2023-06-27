@@ -389,6 +389,43 @@ SCENARIO("ConstrainedQuadraticModel  tests") {
             }
         }
 
+        WHEN("we remove constraints via a predicate that always returns true") {
+            cqm.remove_constraints_if([](Constraint<double, int>& c) { return true; });
+
+            THEN("All constraints are removed") {
+                CHECK(cqm.num_constraints() == 0);
+            }
+        }
+
+        WHEN("we remove constraints via a predicate that always returns false") {
+            cqm.remove_constraints_if([](Constraint<double, int>& c) { return false; });
+
+            THEN("No constraints are removed") {
+                CHECK(cqm.num_constraints() == 3);
+            }
+        }
+
+        WHEN("we remove constraints via a predicate that removes constraints with a certain variable") {
+            cqm.remove_constraints_if(
+                [](const Constraint<double, int>& c) { return c.has_variable(3); }
+                );
+
+            THEN("those constrints are removed") {
+                REQUIRE(cqm.num_constraints() == 2);
+
+                CHECK(cqm.constraint_ref(0).linear(0) == 1.5);
+                CHECK(cqm.constraint_ref(0).linear(1) == 2.5);
+                CHECK(cqm.constraint_ref(0).linear(2) == 3.5);
+                CHECK(cqm.constraint_ref(0).is_linear());
+
+                // what was previously c2 is removed
+
+                CHECK(cqm.constraint_ref(1).linear(4) == 7.5);
+                CHECK(cqm.constraint_ref(1).linear(5) == 8.5);
+                CHECK(cqm.constraint_ref(1).is_linear());
+            }
+        }
+
         WHEN("a variable is removed") {
             cqm.remove_variable(3);
 
