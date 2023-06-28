@@ -1,0 +1,3 @@
+---
+fixes:
+  - Support serializing constraints that need more than 2GB to save.

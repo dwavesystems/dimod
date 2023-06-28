@@ -55,6 +55,11 @@ else:
 
 
 class Section(abc.ABC):
+    NUM_LENGTH_BYTES = 4  # sufficient for ~500,000,000 doubles
+    """The number of bytes following the magic string that encode the length
+    of the data.
+    """
+
     @property
     @abc.abstractmethod
     def magic(self):
@@ -77,11 +82,11 @@ class Section(abc.ABC):
         magic = self.magic
 
         if not isinstance(magic, bytes):
-            raise TypeError("magic string should by bytes object")
+            raise TypeError("magic string should be bytes object")
         if len(magic) != 4:
             raise ValueError("magic string should be 4 bytes in length")
 
-        length = bytes(4)  # placeholder 4 bytes for length
+        length = bytes(self.NUM_LENGTH_BYTES)  # placeholder bytes for length
 
         data = self.dump_data(**kwargs)
 
@@ -94,7 +99,7 @@ class Section(abc.ABC):
             parts.append(b' '*pad_length)
             data_length += pad_length
 
-        parts[1] = np.dtype('<u4').type(data_length).tobytes()
+        parts[1] = np.dtype(f"<u{self.NUM_LENGTH_BYTES}").type(data_length).tobytes()
 
         assert sum(map(len, parts)) % 64 == 0
 
@@ -107,8 +112,88 @@ class Section(abc.ABC):
         if magic != cls.magic:
             raise ValueError("unknown subheader, expected {} but recieved "
                              "{}".format(cls.magic, magic))
-        length = np.frombuffer(fp.read(4), '<u4')[0]
+        length = np.frombuffer(fp.read(cls.NUM_LENGTH_BYTES), f"<u{cls.NUM_LENGTH_BYTES}")[0]
         return cls.loads_data(fp.read(int(length)), **kwargs)
+
+
+# Developer note: The following Section types were inherited from QuadraticModel.
+# I dislike the asymmetry between dumping using a method and loading returning
+# raw bytes. But in the interest of minimizing changes, I will leave them alone
+# for right now.
+
+class IndicesSection(Section):
+    magic = b"INDX"
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._iindices()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
+
+
+class LinearSection(Section):
+    magic = b'LINB'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._ilinear()).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype, num_variables):
+        arr = np.frombuffer(data[:num_variables*np.dtype(dtype).itemsize], dtype=dtype)
+        return arr
+
+
+class NeighborhoodSection(Section):
+    magic = b'NEIG'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self, *, vi: int):
+        arr = self.model._ineighborhood(vi, lower_triangle=True)
+        return (struct.pack('<q', arr.shape[0]) + memoryview(arr).cast('B'))
+
+    @classmethod
+    def loads_data(self, data):
+        return struct.unpack('<q', data[:8])[0], data[8:]
+
+
+class OffsetSection(Section):
+    magic = b'OFFS'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model.offset).cast('B')
+
+    @classmethod
+    def loads_data(self, data, *, dtype):
+        arr = np.frombuffer(data[:np.dtype(dtype).itemsize], dtype=dtype)
+        return arr[0]
+
+
+class QuadraticSection(Section):
+    magic = b"QUAD"
+
+    NUM_LENGTH_BYTES = 8  # Our usual limit is not sufficient for quadratic biases
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._iquadratic()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
 
 
 class VariablesSection(Section):
@@ -124,6 +209,24 @@ class VariablesSection(Section):
     @classmethod
     def loads_data(self, data):
         return iter_deserialize_variables(json.loads(data.decode('ascii')))
+
+
+class VartypesSection(Section):
+    """Serializes the vartypes of a model.
+
+    Model must have a ``._varinfo()`` method that returns a NumPy array.
+    """
+    magic = b'VTYP'
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_data(self):
+        return memoryview(self.model._ivarinfo()).cast('B')
+
+    @classmethod
+    def loads_data(self, data):
+        return data
 
 
 def FileView(bqm, version=(1, 0), ignore_labels=False):

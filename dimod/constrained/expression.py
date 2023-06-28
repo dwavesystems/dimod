@@ -163,22 +163,6 @@ class _ExpressionMixin(QuadraticViewsMixin):
         except AttributeError:
             return False
 
-    def to_file(self, *, spool_size: int = int(1e9)) -> tempfile.SpooledTemporaryFile:
-        # serialize as a QM.
-        # todo: turn this into a function rather than a method
-        from dimod.quadratic.quadratic_model import QuadraticModel
-        from dimod.variables import Variables
-
-        class Model:
-            data = self
-            dtype = self.dtype
-            index_dtype = self.index_dtype
-            num_variables = self.num_variables
-            shape = (self.num_variables, self.num_interactions)
-            variables = Variables(self.variables)
-
-        return QuadraticModel.to_file(Model(), spool_size=spool_size)
-
     @abc.abstractmethod
     def vartype(self, v: dimod.typing.Variable) -> dimod.Vartype:
         pass

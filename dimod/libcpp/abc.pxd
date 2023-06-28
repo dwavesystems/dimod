@@ -69,6 +69,23 @@ cdef extern from "dimod/abc.h" namespace "dimod::abc" nogil:
             bint operator==(const_quadratic_iterator)
             bint operator!=(const_quadratic_iterator)
 
+        # Without this, Cython can get confused about the return type of
+        # .cbegin_quadratic() when casting.
+        cppclass const_quadratic_iterator2 "const_quadratic_iterator":
+            cppclass value_type:
+                index_type u
+                index_type v
+                bias_type bias
+
+            const_quadratic_iterator2()
+            const_quadratic_iterator2(const_quadratic_iterator2&) except +
+            operator=(const_quadratic_iterator2&) except +
+            const value_type& operator*()
+            const_quadratic_iterator2 operator++()
+            const_quadratic_iterator2 operator++(int)
+            bint operator==(const_quadratic_iterator2)
+            bint operator!=(const_quadratic_iterator2)
+
         # developer note: we avoid any overloads, due to a bug in Cython
         # https://github.com/cython/cython/issues/1357
         # https://github.com/cython/cython/issues/1868

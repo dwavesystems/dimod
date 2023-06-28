@@ -877,6 +877,13 @@ class TestFromDQM(unittest.TestCase):
 
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
 
+        for v in dqm.variables:
+            self.assertEqual(cqm.constraints[v].lhs.num_variables, dqm.num_cases(v))
+            self.assertTrue(cqm.constraints[v].lhs.is_discrete())
+
+        self.assertEqual(cqm.constraints["v"].lhs.variables,
+                         [('v', 'blue'), ('v', 'yellow'), ('v', 'brown')])
+
     def test_empty(self):
         dqm = dimod.DiscreteQuadraticModel()
 
@@ -913,6 +920,10 @@ class TestFromDQM(unittest.TestCase):
 
         # keys of constraints are the variables of DQM
         self.assertEqual(set(cqm.constraints), set(dqm.variables))
+
+        for v in dqm.variables:
+            self.assertEqual(cqm.constraints[v].lhs.num_variables, dqm.num_cases(v))
+            self.assertTrue(cqm.constraints[v].lhs.is_discrete())
 
 
 class TestNumBiases(unittest.TestCase):
@@ -1214,79 +1225,86 @@ class TestSerialization(unittest.TestCase):
             self.assertIsInstance(new._soft[label].weight, numbers.Number)
             self.assertEqual(info.penalty, new._soft[label].penalty)
 
-    def test_header(self):
-        from dimod.serialization.fileview import read_header
+    def test_functional_tuple_label(self):
+        cqm = dimod.ConstrainedQuadraticModel()
 
-        cqm = CQM()
+        dimod_vars = [
+            dimod.Integer(i, lower_bound=-5000, upper_bound=5000) for i in range(63)
+        ]
+        num_discrete = 3
+        num_cases = 7
+        dimod_vars.extend(
+            [
+                dimod.Binary((c, i))
+                for c in range(num_discrete)
+                for i in range(num_cases)
+            ]
+        )
+        dimod_vars.append(dimod.Binary(("nested", ("tuple",))))
 
-        x = Binary('x')
-        s = Spin('s')
-        i = Integer('i')
+        for c in range(num_discrete):
+            cqm.add_discrete([(c, i) for i in range(num_cases)])
 
-        cqm.set_objective(x + 3*i + s*x)
-        cqm.add_constraint(x*s + x <= 5)
-        cqm.add_constraint(i*i + i*s <= 4)
-
-        with cqm.to_file() as f:
-            header_info = read_header(f, b'DIMODCQM')
-
-        self.assertEqual(header_info.data,
-                         dict(num_biases=11,
-                              num_constraints=2,
-                              num_quadratic_variables=4,
-                              num_variables=3,
-                              num_quadratic_variables_real=0,
-                              num_linear_biases_real=0,
-                              num_weighted_constraints=0,
-                              ))
-
-    def test_header_real(self):
-        from dimod.serialization.fileview import read_header
-
-        x, y = dimod.Binaries('xy')
-        s = Spin('s')
-        i = Integer('i')
-        a, b = dimod.Reals('ab')
-
-        cqm = CQM()
-        cqm.set_objective(a + b + x + s*i)
-        cqm.add_constraint(a + b <= 5)
-        cqm.add_constraint(a - i == 4)
-        cqm.add_constraint(x + y + x*y == 5)
+        cqm.set_objective(dimod.QM() + sum(2 * u for u in dimod_vars))
 
         with cqm.to_file() as f:
-            self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=14,
-                                  num_constraints=3,
-                                  num_quadratic_variables=2,
-                                  num_variables=6,
-                                  num_quadratic_variables_real=0,
-                                  num_linear_biases_real=5,
-                                  num_weighted_constraints=0,
-                                  ))
+            new = CQM.from_file(f)
 
-        cqm.set_objective(a + b + x + s*i + a*b)
-        cqm.add_constraint(3*a*(1 - b) == 4)
+        self.assertTrue(new.objective.variables >= cqm.objective.variables)
+        for v, bias in cqm.objective.iter_linear():
+            self.assertEqual(new.objective.get_linear(v), bias)
+        for u, v, bias in cqm.objective.iter_quadratic():
+            self.assertEqual(new.objective.get_quadratic(u, v), bias)
+        self.assertEqual(new.objective.offset, cqm.objective.offset)
+
+        self.assertEqual(set(cqm.constraints), set(new.constraints))
+        for label, constraint in cqm.constraints.items():
+            self.assertTrue(constraint.lhs.is_equal(new.constraints[label].lhs))
+            self.assertEqual(constraint.rhs, new.constraints[label].rhs)
+            self.assertEqual(constraint.sense, new.constraints[label].sense)
+        self.assertSetEqual(cqm.discrete, new.discrete)
+
+    def test_objective_only(self):
+        cqm = dimod.CQM()
+        x = dimod.Binary("x")
+        i = dimod.Integer("i")
+        j = dimod.Integer("j", lower_bound=-5, upper_bound=5)
+
+        cqm.set_objective(x + 2*i + 3*j + 4*i*j + 5)
 
         with cqm.to_file() as f:
-            self.assertEqual(read_header(f, b'DIMODCQM').data,
-                             dict(num_biases=18,
-                                  num_constraints=4,
-                                  num_quadratic_variables=4,
-                                  num_variables=6,
-                                  num_quadratic_variables_real=4,
-                                  num_linear_biases_real=7,
-                                  num_weighted_constraints=0,
-                                  ))
+            new = CQM.from_file(f)
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(list(cqm.objective.variables), list(new.objective.variables))  # order
+
+    def test_objective_only_reversed_order(self):
+        cqm = dimod.CQM()
+        x = dimod.Binary("x")
+        i = dimod.Integer("i")
+        j = dimod.Integer("j", lower_bound=-5, upper_bound=5)
+
+        cqm.set_objective(3*j + 2*i + x + 4*i*j)
+
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
+
+        self.assertTrue(cqm.objective.is_equal(new.objective))
+        self.assertEqual(list(cqm.objective.variables), list(new.objective.variables))  # order
 
     def test_unused_variable(self):
         cqm = dimod.CQM()
         cqm.add_variable('BINARY', 'x')
+        cqm.add_variable('INTEGER', 'i')
+        cqm.add_variable('INTEGER', 'j', lower_bound=-5, upper_bound=5)
 
         with cqm.to_file() as f:
             new = CQM.from_file(f)
 
         self.assertEqual(new.variables, cqm.variables)
+        for v in cqm.variables:
+            self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
+            self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
 
 
 class TestSetObjective(unittest.TestCase):
@@ -1899,53 +1917,6 @@ class TestViews(unittest.TestCase):
         self.assertEqual(cqm.constraints[lbl].lhs.quadratic, {})
         self.assertEqual(cqm.constraints[lbl].lhs.num_variables, 0)
         self.assertEqual(cqm.constraints[lbl].lhs.num_interactions, 0)
-
-    def test_serialization_helpers(self):
-        a, c = dimod.Binaries('ac')
-        b = dimod.Integer('b', upper_bound=5)
-
-        cqm = CQM()
-        cqm.set_objective(a - b + c)
-        c0 = cqm.add_constraint(-b + a - c == 1, label='onehot')
-        c1 = cqm.add_constraint(3*b + a*b <= 0, label='ab LE')
-        c2 = cqm.add_constraint(c >= 1, label='c GE')
-        c3 = cqm.add_constraint(a*c + b == 1, label='last')
-
-        self.assertEqual(cqm.objective.variables, list('abc'))
-        self.assertEqual(cqm.constraints[c0].lhs.variables, list('bac'))
-        self.assertEqual(cqm.constraints[c1].lhs.variables, list('ba'))
-        self.assertEqual(cqm.constraints[c2].lhs.variables, list('c'))
-        self.assertEqual(cqm.constraints[c3].lhs.variables, list('acb'))
-
-        np.testing.assert_array_equal(cqm.objective._ilinear(), [1, -1, 1])
-        np.testing.assert_array_equal(cqm.constraints[c0].lhs._ilinear(), [-1, +1, -1])
-        np.testing.assert_array_equal(cqm.constraints[c1].lhs._ilinear(), [3, 0])
-        np.testing.assert_array_equal(cqm.constraints[c2].lhs._ilinear(), [1])
-
-        dtype = np.dtype([('vartype', np.int8), ('lb', cqm.dtype), ('ub', cqm.dtype)],
-                         align=False)
-        varinfo = np.empty(3, dtype)
-        varinfo['vartype'] = [0, 2, 0]
-        varinfo['lb'] = [0, 0, 0]
-        varinfo['ub'] = [1, 5, 1]
-
-        np.testing.assert_array_equal(cqm.objective._ivarinfo(), varinfo)
-        np.testing.assert_array_equal(cqm.constraints[c0].lhs._ivarinfo(), varinfo[[1, 0, 2]])
-        np.testing.assert_array_equal(cqm.constraints[c1].lhs._ivarinfo(), varinfo[[1, 0]])
-        np.testing.assert_array_equal(cqm.constraints[c2].lhs._ivarinfo(), varinfo[[2]])
-
-        self.assertEqual(cqm.objective._ineighborhood(0).shape, (0,))
-        self.assertEqual(cqm.objective._ineighborhood(1).shape, (0,))
-        self.assertEqual(cqm.objective._ineighborhood(2).shape, (0,))
-
-        dtype = np.dtype([('v', cqm.index_dtype), ('bias', cqm.dtype)], align=False)
-
-        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(0),
-                                      np.asarray([], dtype=dtype))
-        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(1),
-                                      np.asarray([(0, 1)], dtype=dtype))
-        np.testing.assert_array_equal(cqm.constraints[c3].lhs._ineighborhood(2),
-                                      np.asarray([], dtype=dtype))
 
     def test_set_weight(self):
         i, j = dimod.Integers('ij')

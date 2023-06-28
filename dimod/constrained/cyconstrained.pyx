@@ -26,6 +26,7 @@ cimport numpy as np
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
+from libcpp.cast cimport reinterpret_cast
 from libcpp.unordered_set cimport unordered_set
 from libcpp.utility cimport move
 from libcpp.vector cimport vector
@@ -414,22 +415,67 @@ cdef class cyConstrainedQuadraticModel:
         cqm.cppcqm.set_objective(cydqm.cppbqm)
         cqm.variables._extend(relabel_func(v, case) for v in dqm.variables for case in dqm.get_cases(v))
 
-        cqm.cppcqm.add_constraints(cydqm.num_variables())
-        cqm.constraint_labels._extend(dqm.variables)
-
         cdef Py_ssize_t vi, ci
         for vi in range(cydqm.num_variables()):
-            constraint = cqm.cppcqm.constraint_ref(vi)
+            constraint = cqm.cppcqm.new_constraint()
             for ci in range(cydqm.case_starts_[vi], cydqm.case_starts_[vi+1]):
                 constraint.add_linear(ci, 1)
             constraint.set_sense(cppSense.EQ)
             constraint.set_rhs(1)
             constraint.mark_discrete()
 
+            cqm.cppcqm.add_constraint(move(constraint))
+
+        cqm.constraint_labels._extend(dqm.variables)  # adjust the labels to match
+
         assert(cqm.cppcqm.num_variables() == cqm.variables.size())
         assert(cqm.cppcqm.num_constraints() == cqm.constraint_labels.size())
 
         return cqm
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ivarinfo(self):
+        cdef Py_ssize_t num_variables = self.cppcqm.num_variables()
+
+        # We choose the field names to mirror the internals of the ConstrainedQuadraticModel
+        dtype = np.dtype([('vartype', np.int8), ('lb', self.dtype), ('ub', self.dtype)],
+                         align=False)
+        varinfo = np.empty(num_variables, dtype)
+
+        cdef np.int8_t[:] vartype_view = varinfo['vartype']
+        cdef bias_type[:] lb_view = varinfo['lb']
+        cdef bias_type[:] ub_view = varinfo['ub']
+
+        cdef Py_ssize_t vi
+        for vi in range(self.num_variables()):
+            vartype_view[vi] = self.cppcqm.vartype(vi)
+            lb_view[vi] = self.cppcqm.lower_bound(vi)
+            ub_view[vi] = self.cppcqm.upper_bound(vi)
+
+        return varinfo
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _ivarinfo_load(self, buff, Py_ssize_t num_variables):
+        """Inverse of ._ivarinfo()"""
+        if self.cppcqm.num_variables():
+            raise RuntimeError("varinfo can only be loaded into an empty model")
+
+        dtype = np.dtype([('vartype', np.int8), ('lb', self.dtype), ('ub', self.dtype)],
+                         align=False)
+
+        arr = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
+        cdef const np.int8_t[:] vartype_view = arr['vartype']
+        cdef const bias_type[:] lb_view = arr['lb']
+        cdef const bias_type[:] ub_view = arr['ub']
+
+        cdef Py_ssize_t vi
+        cdef cppVartype cpp_vartype
+        for vi in range(num_variables):
+            self.cppcqm.add_variable(<cppVartype>(vartype_view[vi]), lb_view[vi], ub_view[vi])
+
+        self.variables._extend(range(num_variables))
 
     def lower_bound(self, v):
         """Return the lower bound on the specified variable.

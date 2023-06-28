@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Implement version 2.0 of constrained quadratic model serialization.
+    See ``ConstrainedQuadraticModel.to_file()`` for details.
+upgrade:
+  - Remove the ``ObjectView.to_file()`` method.
+  - Remove the ``ConstraintView.to_file()`` method.
