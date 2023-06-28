@@ -1,5 +1,0 @@
----
-fixes:
-  - |
-    Fix loading constrained quadratic models that are serialized with CQM
-    serialization version 2.0 and that have tuple labels.
