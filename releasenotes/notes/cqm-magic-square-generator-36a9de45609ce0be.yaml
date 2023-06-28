@@ -1,5 +1,6 @@
 ---
 features:
   - |
-    Added `dimod.generators.magic_square` which allows for the generation of a `ConstrainedQuadaticModel` whos feasible 
-    solutions are normal magic squares. The function also generated magic squares of squares when passed `power=2` as a key-word argument.
+    Add ``dimod.generators.magic_square()`` which allows for the generation of a
+    constrained quadratic model whose feasible solutions are normal magic squares.
+    The function also generates magic squares of squares when passed ``power=2`` as a keyword argument.
