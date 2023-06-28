@@ -1,5 +1,5 @@
 ---
 features:
-  - Improve LP file reading by wrapping `HiGHS' <https://github.com/ERGO-Code/HiGHS>_` LP file parser.
+  - Improve LP file reading by wrapping `HiGHS <https://github.com/ERGO-Code/HiGHS>_` LP file parser.
 upgrade:
   - Remove ``dimod::lp`` C++ namespace.
