@@ -411,6 +411,16 @@ class TestFCL(unittest.TestCase):
         all_ones = {v:1 for v in G}
         self.assertNotEqual(bqm.energy(planted),bqm.energy(all_ones))
 
+    def test_smoke_tuple_labels(self):
+        # https://github.com/dwavesystems/dimod/issues/1342
+        g = nx.erdos_renyi_graph(100, 0.5)
+        tuple_map = dict()
+        for node in g.nodes:
+            tuple_map[node] = (node, node, node)
+        g = nx.relabel_nodes(g, tuple_map)
+        bqm = dimod.generators.frustrated_loop(g, R=3, num_cycles=100)
+
+
 class TestCombinations(unittest.TestCase):
 
     def check_combinations(self, variables, k, bqm, strength):
@@ -746,6 +756,7 @@ class TestGates(unittest.TestCase):
              best.sample['p3']]
         self.assertEqual(p, [1, 0, 0, 1])
 
+
 class TestInteger(unittest.TestCase):
     def test_exceptions(self):
         with self.assertRaises(ValueError):
@@ -1030,3 +1041,91 @@ class TestSatisfiability(unittest.TestCase):
     def test_labels(self):
         self.assertEqual(dimod.generators.random_2in4sat(10, 1).variables, range(10))
         self.assertEqual(dimod.generators.random_2in4sat('abdef', 1).variables, 'abdef')
+
+
+class TestMagicSquares(unittest.TestCase):
+    def test_invalid_power(self):
+        for power in [-1, 0, 3, 5, 10]:
+            with self.assertRaises(ValueError):
+                dimod.generators.magic_square(1, power)
+
+    def test_size(self):
+        for size in [2**i for i in range(5)]:
+            magic_square = dimod.generators.magic_square(size)
+            
+            self.assertEqual(len(magic_square.constraints), 2*size + 3)
+            self.assertEqual(magic_square.num_variables(), size**2 + 1)
+    
+    def test_constraints(self):
+        
+        magic_square = dimod.generators.magic_square(5)
+        
+        constraint_names = magic_square.constraints.keys()
+        
+        for name in constraint_names:
+            if name != "uniqueness":
+                self.assertEqual(magic_square.constraints[name].rhs, 0)
+                
+                constraint_lhs = magic_square.constraints[name].lhs
+                
+                for name, term in constraint_lhs.linear.items():
+                    if name != "sum":
+                        self.assertEqual(term, 1)
+                    else:
+                        self.assertEqual(term, -1)
+                
+                for name, term in constraint_lhs.quadratic.items():
+                    self.assertEqual(term, 1)
+                
+            else:
+                self.assertEqual(magic_square.constraints[name].rhs, 300)
+                
+                constraint_lhs = magic_square.constraints[name].lhs
+                
+                for name, term in constraint_lhs.linear.items():
+                    self.assertEqual(term, 0)
+                    
+                self_squares = [(i, i) for i in magic_square.variables]
+                
+                for name, term in constraint_lhs.quadratic.items():
+                    if name not in self_squares:
+                        self.assertEqual(term, -2)
+                    else:
+                        self.assertEqual(term, 24)
+    
+    def test_constraints_squares(self):
+        
+        magic_square = dimod.generators.magic_square(5, power=2)
+        
+        constraint_names = magic_square.constraints.keys()
+        
+        for name in constraint_names:
+            if name != "uniqueness":
+                self.assertEqual(magic_square.constraints[name].rhs, 0)
+                
+                constraint_lhs = magic_square.constraints[name].lhs
+                
+                for name, term in constraint_lhs.linear.items():
+                    if name != "sum":
+                        self.assertEqual(term, 0)
+                    else:
+                        self.assertEqual(term, -1)
+                  
+                for name, term in constraint_lhs.quadratic.items():
+                    self.assertEqual(term, 1)
+                
+            else:
+                self.assertEqual(magic_square.constraints[name].rhs, 300)
+                
+                constraint_lhs = magic_square.constraints[name].lhs
+
+                for name, term in constraint_lhs.linear.items():
+                    self.assertEqual(term, 0)
+                    
+                self_squares = [(i, i) for i in magic_square.variables]
+                
+                for name, term in constraint_lhs.quadratic.items():
+                    if name not in self_squares:
+                        self.assertEqual(term, -2)
+                    else:
+                        self.assertEqual(term, 24)

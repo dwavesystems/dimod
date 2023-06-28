@@ -24,3 +24,4 @@ from dimod.generators.knapsack import *
 from dimod.generators.binpacking import *
 from dimod.generators.multi_knapsack import *
 from dimod.generators.satisfiability import *
+from dimod.generators.magic_square import *

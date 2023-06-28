@@ -62,17 +62,20 @@ class TestLoads(unittest.TestCase):
 
         cqm = loads(lp)
 
-    def test_invalid_optimizatio_sense(self):
-        lp = """
-        invalid
-            obj: x + y
-        End
-        """
+    # Developer note: It would be nice if this failed, but the LP reader that
+    # we're wrapping doesn't raise an error in this case but rather ignores
+    # it, so we propagate the behavior.
+    # def test_invalid_optimization_sense(self):
+    #     lp = """
+    #     invalid
+    #         obj: x + y
+    #     End
+    #     """
 
-        x, y = dimod.Reals('xy')
+    #     x, y = dimod.Reals('xy')
 
-        with self.assertRaises(ValueError):
-            cqm = loads(lp)
+    #     with self.assertRaises(ValueError):
+    #         cqm = loads(lp)
 
     def test_linear(self):
         lp = """

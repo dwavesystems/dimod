@@ -33,7 +33,7 @@ jobs:
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.11.2
+            pip install cibuildwheel==2.13.1
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -120,7 +120,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.11.2
+            python -m pip install cibuildwheel==2.13.1
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
@@ -195,7 +195,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.7 # as of may 2022 RTD uses 3.7
+      - image: cimg/python:3.9
 
     steps:
       - checkout
@@ -309,7 +309,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.7.9, 3.8.9, 3.9.4, 3.10.0, 3.11.0]
+              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -326,10 +326,6 @@ workflows:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
               python-version: *python-versions
-            exclude:
-              # we don't support 1.14.5, the oldest version for Python 3.7.9
-              - python-version: 3.7.9
-                dependencies: oldest-supported-numpy
       - test-linux-cpp
       - test-osx-cpp
       - test-sdist:

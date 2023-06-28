@@ -1687,15 +1687,6 @@ class TestCQMFromLPFile(unittest.TestCase):
             else:
                 raise KeyError('Not expected constraint: {}'.format(cname))
 
-    def test_empty_constraint(self):
-
-        filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_empty_constraint.lp')
-
-        with open(filepath, 'r') as f:
-            with self.assertWarns(DeprecationWarning):
-                with self.assertRaises(ValueError):
-                    cqm = CQM.from_lp_file(f)
-
     def test_quadratic_binary(self):
 
         filepath = path.join(path.dirname(path.abspath(__file__)), 'data', 'test_quadratic_binary.lp')

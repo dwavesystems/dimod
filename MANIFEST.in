@@ -2,3 +2,4 @@ include pyproject.toml
 recursive-include dimod/include *h
 recursive-include dimod *.pyx *.pxd *.pxi *.pyx.src
 include dimod/py.typed
+graft extern/filereaderlp

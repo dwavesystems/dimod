@@ -16,9 +16,8 @@ import warnings
 
 from typing import Callable, Collection, List, Mapping, Optional
 
-import numpy.random
+import numpy as np
 
-from numpy import prod
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.decorators import graph_argument
 from dimod.typing import GraphLike, Variable
@@ -108,7 +107,7 @@ def frustrated_loop(graph: GraphLike,
     if max_failed_cycles <= 0:
         raise ValueError("max_failed_cycles should be a positive integer")
     
-    r = numpy.random.RandomState(seed)
+    r = np.random.RandomState(seed)
 
     adj = {v: set() for v in nodes}
     for u, v in edges:
@@ -142,7 +141,7 @@ def frustrated_loop(graph: GraphLike,
         else:
             # randomly select from all frustrated loops (odd number of AFM edges)
             cycle_J = {(cycle[i], cycle[i+1]) : -1 for i in range(len(cycle)-1)}
-            cycle_J[(cycle[-1],cycle[0])] = (1 - 2*(len(cycle_J) & 1))*prod(list(cycle_J.values()))
+            cycle_J[(cycle[-1], cycle[0])] = (1 - 2*(len(cycle_J) & 1))*np.prod(list(cycle_J.values()))
             
         # update the bqm
         bqm.add_interactions_from(cycle_J)
@@ -195,8 +194,13 @@ def _random_cycle(adj, random_state):
             # we've walked into a dead end
             return None
 
+        # in some cases, neighbors will be interpreted as a 2d array by np.random.choice
+        # so let's ensure it's always a 1d
+        arr = np.empty(len(neighbors), dtype=object)
+        arr[:] = neighbors
+
         # get a random neighbor
-        u = random_state.choice(neighbors)
+        u = random_state.choice(arr)
         if u in visited:
             # if we've seen this neighbour, then we have a cycle starting from it
             return walk[visited[u]:]
