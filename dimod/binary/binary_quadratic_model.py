@@ -803,15 +803,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                     sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
                     slack_terms.append((sv, ub_c - slack_upper_bound))
     
-            self.add_linear_equality_constraint(terms,lagrange_multiplier[0], -ub_c)
-
-            return slack_terms
+            self.add_linear_equality_constraint(terms,lagrange_multiplier, -ub_c)
 
         elif penalization_method == "unbalanced":
             self.add_linear_equality_constraint(terms,lagrange_multiplier[0], -ub_c)
             for v, bias in terms:
                 self.add_linear(v, -lagrange_multiplier[1] * bias)
-            return []
+            slack_terms = []
+
+        return slack_terms
 
     def add_linear_from_array(self, linear: Sequence):
         """Add linear biases from an array-like to a binary quadratic model.
