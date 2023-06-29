@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Expose method ``is_onehot``.
