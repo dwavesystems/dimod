@@ -224,7 +224,7 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
     For independent and identically distributed (i.i.d) elements 
     :math:`(1, 2, 10, 42)N_t` for BPSK, QPSK, 16QAM, 64QAM, 
 
-    :math:`P/N_t I[N_t] = E[v v^{\dagger}] \qquad \Rightarrow \qquad P = <P_c>*N_t`, 
+    :math:`P/N_t I[N_t] = E[v v^{\dagger}] \qquad \Rightarrow \qquad P = <P_c> N_t`, 
 
     where :math:`<P_{c}>` is the constellation's mean power. 
 
@@ -234,7 +234,7 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
      
     Symbols are assumed to be normalized:
 
-    :math:`\\frac{SNR}{N_t} = \\frac{P}{Nt}/N0` 
+    :math:`\\frac{SNR}{N_t} = \\frac{P}{Nt}/N_0` 
     
     :math:`SNRb = \\frac{SNR}{N_t bps}`
 
