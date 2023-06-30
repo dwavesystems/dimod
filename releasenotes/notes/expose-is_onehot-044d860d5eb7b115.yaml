@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``Constraint.is_onehot()`` method.
