@@ -217,16 +217,17 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
     """Construct a linear filter for estimating transmitted signals. 
     
     # Jack: you'll need to go over the following carefully
-    Following the conventions of MacKay\ [#Mackay]_, a filter is constructed for:
+    Following the conventions of MacKay\ [#Mackay]_, a filter is constructed for independent and identically 
+    distributed Gaussian noise at power spectral density `N_0`:
 
     :math:`N_0 I[N_r] = E[n n^{\dagger}]`
 
-    For independent and identically distributed (i.i.d) elements 
-    :math:`(1, 2, 10, 42)N_t` for BPSK, QPSK, 16QAM, 64QAM, 
+    For independent and identically distributed (i.i.d), zero mean, transmitted symbols 
 
-    :math:`P/N_t I[N_t] = E[v v^{\dagger}] \qquad \Rightarrow \qquad P = <P_c> N_t`, 
+    :math:`P_c I[N_t] = E[v v^{\dagger}]`
 
-    where :math:`<P_{c}>` is the constellation's mean power. 
+    where :math:`P_{c}` is the constellation's mean power equal to  :math:`(1, 2, 10, 42)N_t` 
+    for BPSK, QPSK, 16QAM, 64QAM respectively.
 
     For an i.i.d channel,
     
@@ -234,13 +235,14 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
      
     Symbols are assumed to be normalized:
 
-    :math:`\\frac{SNR}{N_t} = \\frac{P}{Nt}/N_0` 
+    :math:`\\frac{SNR}{N_t} = \\frac{P_c}{N_0}` 
     
-    :math:`SNRb = \\frac{SNR}{N_t bps}`
+    :math:`SNR_b = \\frac{SNR}{N_t B_c}`
 
-    where :math:`bps` is bit per symbol.
+    where :math:`B_c` is bit per symbol  equal to  :math:`(1, 2, 4, 8)` 
+    for BPSK, QPSK, 16QAM, 64QAM respectively 
 
-    Typical use case: set :math:`\\frac{SNR}{N_t} = SNRb`.
+    Typical use case: set :math:`\\frac{SNR}{N_t} = SNR_b`.
 
     .. [#Mackay] Matthew R. McKay, Iain B. Collings, Antonia M. Tulino. 
         "Achievable sum rate of MIMO MMSE receivers: A general analytic framework" 
