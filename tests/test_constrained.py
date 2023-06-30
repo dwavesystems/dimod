@@ -2031,6 +2031,3 @@ class TestViews(unittest.TestCase):
         self.assertFalse(cqm.constraints[c].lhs.is_soft())
         self.assertEqual(cqm.constraints[c].lhs.weight(), float('inf'))
         self.assertIs(cqm.constraints[c].lhs.penalty(), None)
-
-if __name__ == "__main__":
-    unittest.main()
