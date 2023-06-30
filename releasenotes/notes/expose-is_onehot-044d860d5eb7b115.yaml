@@ -1,4 +1,4 @@
 ---
 features:
   - |
-    Expose method ``is_onehot``.
+    Add ``Constraint.is_onehot()`` method.
