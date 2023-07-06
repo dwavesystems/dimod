@@ -16,6 +16,7 @@
 
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -266,6 +267,10 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     bool remove_interaction(index_type u, index_type v);
 
     virtual void remove_variable(index_type v);
+
+    /// Remove several variables from the expression.
+    template<class Iter>
+    void remove_variables(Iter first, Iter last);
 
     /// Set the linear bias of variable `v`.
     void set_linear(index_type v, bias_type bias);
@@ -621,6 +626,38 @@ void Expression<bias_type, index_type>::remove_variable(index_type v) {
     indices_.erase(vit);
     for (; it != variables_.end(); ++it) {
         indices_[*it] -= 1;
+    }
+}
+
+template <class bias_type, class index_type>
+template <class Iter>
+void Expression<bias_type, index_type>::remove_variables(Iter first, Iter last) {
+    std::unordered_set<index_type> to_remove;
+    for (auto it = first; it != last; ++it) {
+        if (indices_.find(*it) != indices_.end()) {
+            to_remove.emplace(*it);
+        }
+    }
+
+    if (!to_remove.size()) {
+        return;  // nothing to remove
+    }
+
+    // now remove any variables found in to_remove
+    size_type i = 0;
+    while (i < this->num_variables()) {
+        if (to_remove.count(variables_[i])) {
+            base_type::remove_variable(i);
+            variables_.erase(variables_.begin() + i);
+        } else {
+            ++i;
+        }
+    }
+
+    // finally fix the indices by rebuilding from scratch
+    indices_.clear();
+    for (size_type i = 0, end = variables_.size(); i < end; ++i) {
+        indices_[variables_[i]] = i;
     }
 }
 
