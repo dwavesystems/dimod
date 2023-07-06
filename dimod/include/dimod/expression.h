@@ -366,7 +366,7 @@ void Expression<bias_type, index_type>::add_quadratic(ItRow row_iterator, ItCol 
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::add_quadratic_back(index_type u, index_type v, bias_type bias) {
-    throw std::logic_error("not implemented - add_quadratic_back");
+    base_type::add_quadratic_back(enforce_variable(u), enforce_variable(v), bias);
 }
 
 template <class bias_type, class index_type>
