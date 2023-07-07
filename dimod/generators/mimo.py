@@ -72,8 +72,6 @@ def _quadratic_form(y, F):
         real vector, and quadratic interactions, :math:`J`, as a dense real symmetric
         matrix.
     """
-    if len(y.shape) != 2 or y.shape[1] != 1:
-        raise ValueError(f"y should have shape (n, 1) for some n; given: {y.shape}")
 
     if len(F.shape) != 2 or F.shape[0] != y.shape[0]:
         raise ValueError("F should have shape (n, m) for some m, n "
@@ -762,6 +760,12 @@ def spin_encoded_mimo(modulation: str,
     """
 
     random_state = make_random_state(seed)
+
+    if y is not None:
+        if len(y.shape) == 1:
+            y = y.reshape(y.shape[0], 1)
+        elif len(y.shape) != 2 or y.shape[1] != 1:
+            raise ValueError(f"y should have shape (n, 1) or (n,) for some n; given: {y.shape}")
 
     if F is None:
 
