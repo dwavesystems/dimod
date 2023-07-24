@@ -612,114 +612,143 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
                       F_distribution: Union[None, tuple] = None,
                       use_offset: bool = False,
                       attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
-    """ Generate a multi-input multiple-output (MIMO) channel-decoding problem.
+    """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
 
-    Users each transmit complex valued symbols over a random channel :math:`F` of
-    some num_receivers, subject to additive white Gaussian noise. Given the received
-    signal y the log likelihood of a given symbol set :math:`v` is given by
-    :math:`MLE = argmin || y - F v ||_2`. When v is encoded as a linear
-    sum of spins the optimization problem is defined by a Binary Quadratic Model.
-    Depending on arguments used, this may be a model for Code Division Multiple
-    Access _[#T02, #R20], 5G communication network problems _[#Prince], or others.
+    Users transmit complex-valued symbols over a random channel, :math:`F`, 
+    to some number of receivers, subject to additive white Gaussian noise. 
+    For a received signal, :math:`y`, the log likelihood of a symbol set, 
+    :math:`v`, is given by :math:`argmin || y - F v ||_2`. For :math:`v` 
+    encoded as a linear sum of spins, the optimization problem can be 
+    represented as a binary quadratic model (BQM).
+
+    For appropriate parameters, the MIMO decoding problem can model Code 
+    Division Multiple Access [#T02]_ [#R20]_, 5G communication networks 
+    [#Prince]_, and other communication problems.
 
     Args:
-        y: A complex or real valued signal in the form of a numpy array. If not
-            provided, generated from other arguments.
+        y: Complex- or real-valued received signal, as a NumPy array. If 
+            ``None``, generated from other arguments.
 
-        F: A complex or real valued channel in the form of a numpy array. If not
-           provided, generated from other arguments. Note that for correct interpretation
-           of SNRb, the channel power should be normalized to num_transmitters.
+        F: Complex- or real-valued channel, as a NumPy array. If ``None``, 
+            generated from other arguments. Note that for correct interpretation
+            of SNRb, channel power should be normalized to ``num_transmitters``.
 
-        modulation: Specifies the constellation (symbol set) in use by
-            each user. Symbols are assumed to be transmitted with equal probability.
-            Options are:
-               * 'BPSK'
-                   Binary Phase Shift Keying. Transmitted symbols are +1, -1;
-                   no encoding is required.
-                   A real valued channel is assumed.
+        modulation: Constellation (symbol set) users can transmit. Symbols are 
+            assumed to be transmitted with equal probability. Supported values 
+            are:
 
-               * 'QPSK'
-                   Quadrature Phase Shift Keying.
-                   Transmitted symbols are +1, -1, +1j, -1j;
-                   spins are encoded as a real vector concatenated with an imaginary vector.
+            * 'BPSK'
 
-               * '16QAM'
-                   Each user is assumed to select independently from 16 symbols.
-                   The transmitted symbol is a complex value that can be encoded by two spins
-                   in the imaginary part, and two spins in the real part. v = 2 s_1 + s_2.
-                   Highest precision real and imaginary spin vectors, are concatenated to
-                   lower precision spin vectors.
+                Binary Phase Shift Keying. Transmitted symbols are :math:`+1, -1`;
+                no encoding is required. A real-valued channel is assumed.
 
-               * '64QAM'
-                   A QPSK symbol set is generated, symbols are further amplitude modulated
-                   by an independently and uniformly distributed random amount from [1, 3].
+            * 'QPSK'
 
-        num_transmitters: Number of users. Since each user transmits 1 symbol per frame, also the
-             number of transmitted symbols, must be consistent with F argument.
+                Quadrature Phase Shift Keying. Transmitted symbols are 
+                :math:`+1, -1, +1j, -1j`; spins are encoded as a real vector 
+                concatenated with an imaginary vector.
 
-        num_receivers: Num_Receivers of channel, :code:`len(y)`. Must be consistent with y argument.
+            * '16QAM'
 
-        SNRb: Signal to noise ratio per bit on linear scale. When y is not provided, this is used
-            to generate the noisy signal. In the case float('Inf') no noise is
-            added. SNRb = Eb/N0, where Eb is the energy per bit, and N0 is the one-sided
-            power-spectral density. A one-sided . N0 is typically kB T at the receiver.
-            To convert units of dB to SNRb use SNRb=10**(SNRb[decibells]/10).
+                Each user is assumed to select independently from 16 symbols.
+                The transmitted symbol is a complex value that can be encoded 
+                by two spins in the imaginary part and two spins in the real 
+                part. Highest precision real and imaginary spin vectors are 
+                concatenated to lower precision spin vectors.
+
+            * '64QAM'
+
+                A QPSK symbol set is generated and symbols are further amplitude 
+                modulated by an independently and uniformly distributed random 
+                amount from :math:`[1, 3]`.
+
+            * '256QAM'
+
+                A QPSK symbol set is generated and symbols are further amplitude 
+                modulated by an independently and uniformly distributed random 
+                amount from :math:`[1, 3, 5]`.
+
+        num_transmitters: Number of users. Each user transmits one symbol per 
+            frame.
+
+        num_receivers: Number of receivers of a channel. Must be consistent 
+            with the length of any provided signal, ``len(y)``.
+
+        SNRb: Signal-to-noise ratio per bit used to generate the noisy signal 
+            when ``y`` is not provided. If ``float('Inf')``, no noise is
+            added. 
+            
+            :math:`SNR_b = E_b/N_0`, where :math:`E_b` is energy per bit, 
+            and :math:`N_0` is the one-sided power-spectral density. :math:`N_0` 
+            is typically :math:`k_B T` at the receiver. To convert units of 
+            :math:`dB` to :math:`SNR_b` use :math:`SNRb=10^{SNR_b[decibels]/10}`.
 
         transmitted_symbols:
-            The set of symbols transmitted, this argument is used in combination with F
-            to generate the signal y.
-            For BPSK and QPSK modulations the statistics
-            of the ensemble are unimpacted by the choice (all choices are equivalent
-            subject to spin-reversal transform). If the argument is None, symbols are
-            chosen as 1 or 1 + 1j for all users, respectively for BPSK and QPSK.
-            For QAM modulations, amplitude randomness impacts the likelihood in a
-            non-trivial way. If the argument is None in these cases, symbols are
-            chosen i.i.d. from the appropriate constellation. Note that, for correct
-            analysis of some solvers in BPSK and QPSK cases it is necessary to apply
-            a spin-reversal transform.
+            Set of symbols transmitted. Used in combination with ``F`` to 
+            generate the received signal, :math:`y`. The number of transmitted 
+            symbols must be consistent with ``F``.
+            
+            For BPSK and QPSK modulations, statistics of the ensemble do not 
+            depend on the choice: all choices are equivalent. By default, 
+            symbols are chosen for all users as :math:`1` or :math:`1 + 1j`, 
+            respectively. Note that for correct analysis by some solvers, applying 
+            spin-reversal transforms may be necessary.
+            
+            For QAM modulations, amplitude randomness affects likelihood in a 
+            non-trivial way. By default, symbols are chosen independently and 
+            identically distributed from the constellations. 
 
         F_distribution:
-           When F is None, this argument describes the zero-mean variance 1
-           distribution used to sample each element in F. Permitted values are in
-           tuple form: (str, str). The first string is either
-           'normal' or 'binary'. The second string is either 'real' or 'complex'.
-           For large num_receivers and number of users the statistical properties of
-           the likelihood are weakly dependent on the first argument. Choosing
-           'binary' allows for integer valued Hamiltonians, 'normal' is a more
-           standard model. The channel can be real or complex. In many cases this
-           also represents a superficial distinction up to rescaling. For real
-           valued symbols (BPSK) the default is ('normal', 'real'), otherwise it
-           is ('normal', 'complex')
+            Zero-mean, variance-one distribution, in tuple form 
+            ``(distribution, type)``, used to generate each element in ``F`` 
+            when ``F`` is not provided . Supported values are:
+            
+                * ``'normal'`` or ``'binary'`` for the distribution 
+                * ``'real'`` or ``'complex'`` for the type 
+
+            For large numbers of receivers and transmitters, statistical 
+            properties of the likelihood are weakly dependent on the 
+            distribution. Choosing ``'binary'`` allows for integer-valued 
+            Hamiltonians while ``'normal'`` is a more typical model. The channel 
+            can be real or complex; in many cases this represents a superficial 
+            distinction up to rescaling. For real-valued symbols (BPSK) the 
+            default is ``('normal', 'real')``; otherwise, the default is 
+            ``('normal', 'complex')``. 
 
         use_offset:
-           When True, a constant is added to the Ising model energy so that
-           the energy evaluated for the transmitted symbols is zero. At sufficiently
-           high num_receivers/user ratio, and signal to noise ratio, this will
-           be the ground state energy with high probability.
+           Adds a constant to the Ising model energy so that the energy 
+           evaluated for the transmitted symbols is zero. At sufficiently
+           high ratios of receivers to users, and with high signal-to-noise 
+           ratio, this is with high probability the ground-state energy.
 
         attenuation_matrix:
            Root power associated to variable to chip communication; use
            for sparse and structured codes.
 
     Returns:
-        The binary quadratic model defining the log-likelihood function
+        Binary quadratic model defining the log-likelihood function.
 
     Example:
 
-        Generate an instance of a CDMA problem in the high-load regime, near a first order
-        phase transition _[#T02, #R20]:
+        This example generates an instance of a CDMA problem in the high-load 
+        regime, near a first-order phase transition.
 
         >>> num_transmitters = 64
         >>> transmitters_per_receiver = 1.5
         >>> SNRb = 5
-        >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', num_transmitters = 64, \
-                      num_receivers = round(num_transmitters/transmitters_per_receiver), \
-                      SNRb=SNRb, \
-                      F_distribution = ('binary', 'real'))
-
+        >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', 
+        ...     num_transmitters = 64, 
+        ...     num_receivers = round(num_transmitters/transmitters_per_receiver), 
+        ...     SNRb=SNRb, 
+        ...     F_distribution = ('binary', 'real'))
 
     .. [#T02] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
-    .. [#R20] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, "Improving performance of logical qubits by parameter tuning and topology compensation, " 2020 IEEE International Conference on Quantum Computing and Engineering (QCE), Denver, CO, USA, 2020, pp. 295-305, doi: 10.1109/QCE49297.2020.00044.
+
+    .. [#R20] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, 
+        "Improving performance of logical qubits by parameter tuning and topology compensation," 
+        2020 IEEE International Conference on Quantum Computing and Engineering (QCE), 
+        Denver, CO, USA, 2020, pp. 295-305, doi: 10.1109/QCE49297.2020.00044.
+
     .. [#Prince] Various (https://paws.princeton.edu/)
     """
 
