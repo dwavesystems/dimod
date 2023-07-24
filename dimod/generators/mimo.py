@@ -34,6 +34,16 @@ mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number
     "256QAM": {"bpt": 8, "amps": 8, "tps": 8, "na": 5, "sps": 4}   #JP: check numbers for 256QAM
     }
 
+def make_random_state(seed_or_state):
+    if not seed_or_state:
+        return np.random.RandomState(None)
+    elif type(seed_or_state) is np.random.mtrand.RandomState:
+        return seed_or_state
+    elif type(seed_or_state) is int:
+        return np.random.RandomState(seed_or_state)
+    else:
+        raise ValueError(f"Unsupported seed type: {seed_or_state}")
+
 # def supported_modulation(f):      JP: would be nicer but needs work
 #     @wraps(f)
 #     def check_support(*args, **kwargs):
@@ -389,22 +399,20 @@ def create_channel(num_receivers: int = 1, num_transmitters: int = 1,
         has some additional branches that make things more explicit.
 
     Returns:
-        Three-tuple of channel, channel power, and the random state used, where
-        the channel is an :math:`i \times j` matrix with :math:`i` rows
-        corresponding to the receivers and :math:`j` columns to the transmitters,
-        and channel power is a number.
+        Two-tuple of channel and channel power, where the channel is an 
+        :math:`i \times j` matrix with :math:`i` rows corresponding to the 
+        receivers and :math:`j` columns to the transmitters, and channel power 
+        is a number.
 
     """
 
     if num_receivers < 1 or num_transmitters < 1:
         raise ValueError('At least one receiver and one transmitter are required.')
-    #random_state = np.random.RandomState(10) ##DEBUG
+    
     channel_power = num_transmitters
-    if not random_state:
-        random_state = np.random.RandomState(10)
-    elif type(random_state) is not np.random.mtrand.RandomState:
-        random_state = np.random.RandomState(random_state)
 
+    random_state = make_random_state(random_state)
+    
     if F_distribution is None:
         F_distribution = ('normal', 'complex')
     elif type(F_distribution) is not tuple or len(F_distribution) != 2:
@@ -480,8 +488,7 @@ def _create_transmitted_symbols(num_transmitters,
 
     Returns:
 
-        Two-tuple of symbols and the random state used, where the symbols is
-        a column vector of length ``num_transmitters``.
+        Symbols, as a column vector of length ``num_transmitters``.
 
     """
 
@@ -490,8 +497,7 @@ def _create_transmitted_symbols(num_transmitters,
     if any(np.modf(amps)[0]):
         raise ValueError('Amplitudes must have integer values')
 
-    if type(random_state) is not np.random.mtrand.RandomState:
-        random_state = np.random.RandomState(random_state)
+    random_state = make_random_state(random_state)
 
     if quadrature == False:
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
@@ -499,7 +505,7 @@ def _create_transmitted_symbols(num_transmitters,
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1)) \
             + 1j*random_state.choice(amps, size=(num_transmitters, 1))
 
-    return transmitted_symbols, random_state
+    return transmitted_symbols
 
 def _create_signal(F, transmitted_symbols=None, channel_noise=None,
                   SNRb=float('Inf'), modulation='BPSK', channel_power=None,
@@ -547,10 +553,7 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     num_receivers = F.shape[0]
     num_transmitters = F.shape[1]
 
-    if not random_state:
-        random_state = np.random.RandomState(10)
-    elif type(random_state) is not np.random.mtrand.RandomState:
-        random_state = np.random.RandomState(random_state)
+    random_state = make_random_state(random_state)
 
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
 
@@ -564,7 +567,7 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
             random_state = np.random.RandomState(random_state)
 
         quadrature = False if modulation == 'BPSK' else True
-        transmitted_symbols, random_state = _create_transmitted_symbols(
+        transmitted_symbols = _create_transmitted_symbols(
                 num_transmitters, amps=amps, quadrature=quadrature, random_state=random_state)
 
     if SNRb <= 0:
@@ -597,7 +600,8 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
+def spin_encoded_mimo(modulation: str, 
+                      y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
                       transmitted_symbols: Union[np.array, None] = None,
@@ -680,6 +684,9 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
             is typically :math:`k_B T` at the receiver. To convert units of 
             :math:`dB` to :math:`SNR_b` use :math:`SNRb=10^{SNR_b[decibels]/10}`.
 
+        seed: Random seed, as an integer, or state, as a 
+            :class:`numpy.random.RandomState` instance.   
+            
         transmitted_symbols:
             Set of symbols transmitted. Used in combination with ``F`` to 
             generate the received signal, :math:`y`. The number of transmitted 
@@ -749,6 +756,8 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
     .. [#Prince] Various (https://paws.princeton.edu/)
     """
 
+    random_state = make_random_state(seed)
+
     if F is None:
 
         if num_transmitters:
@@ -771,10 +780,10 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
             raise ValueError('`num_receivers` is not specified and cannot'
                 'be inferred from `F`, `y` or `channel_noise` (all None)')  
 
-        F, channel_power, seed = create_channel(num_receivers=num_receivers,
+        F, channel_power = create_channel(num_receivers=num_receivers,
                                                 num_transmitters=num_transmitters,
                                                 F_distribution=F_distribution,
-                                                random_state=seed,
+                                                random_state=random_state,
                                                 attenuation_matrix=attenuation_matrix)
 
     else:
@@ -786,7 +795,7 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
                                     channel_noise=channel_noise,
                                     SNRb=SNRb, modulation=modulation,
                                     channel_power=channel_power,
-                                    random_state=seed)
+                                    random_state=random_state)
 
     h, J, offset = _yF_to_hJ(y, F, modulation)
 

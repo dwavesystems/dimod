@@ -1168,7 +1168,7 @@ class TestMIMO(unittest.TestCase):
         #BPSK, real channel:
         #transmitted_symbols_simple = np.ones(shape=(Nt,1))
         #transmitted_symbols = mimo._create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
-        transmitted_symbolsQAM,_ = dimod.generators.mimo._create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
+        transmitted_symbolsQAM = dimod.generators.mimo._create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
         y = np.matmul(F, transmitted_symbolsQAM)
         # Defaults
         W = dimod.generators.mimo.linear_filter(F=F)
@@ -1296,18 +1296,18 @@ class TestMIMO(unittest.TestCase):
 
     def test_create_transmitted_symbols(self):
         _cts = dimod.generators.mimo._create_transmitted_symbols
-        self.assertTrue(_cts(1, amps=[-1, 1], quadrature=False)[0][0][0] in [-1, 1])
-        self.assertTrue(_cts(1, amps=[-1, 1])[0][0][0].real in [-1, 1])
-        self.assertTrue(_cts(1, amps=[-1, 1])[0][0][0].imag in [-1, 1])
-        self.assertEqual(len(_cts(5, amps=[-1, 1])[0]), 5)
-        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3])[0].real, [-1, -3, 1, 3]).all())
-        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3])[0].imag, [-1, -3, 1, 3]).all())
+        self.assertTrue(_cts(1, amps=[-1, 1], quadrature=False)[0][0] in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0].real in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0].imag in [-1, 1])
+        self.assertEqual(len(_cts(5, amps=[-1, 1])), 5)
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3]).real, [-1, -3, 1, 3]).all())
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3]).imag, [-1, -3, 1, 3]).all())
         with self.assertRaises(ValueError):
-            transmitted_symbols, random_state = _cts(1, amps=[-1.1, 1], quadrature=False)
+            transmitted_symbols = _cts(1, amps=[-1.1, 1], quadrature=False)
         with self.assertRaises(ValueError):
-            transmitted_symbols, random_state = _cts(1, amps=np.array([-1, 1.1]), quadrature=False)
+            transmitted_symbols = _cts(1, amps=np.array([-1, 1.1]), quadrature=False)
         with self.assertRaises(ValueError):
-            transmitted_symbols, random_state = _cts(1, amps=np.array([-1, 1+1j]))
+            transmitted_symbols = _cts(1, amps=np.array([-1, 1+1j]))
 
     def test_complex_symbol_coding(self):
         num_symbols = 5
@@ -1398,37 +1398,36 @@ class TestMIMO(unittest.TestCase):
 
     def create_channel(self):
         # Test some defaults
-        c, cp, r = dimod.generators.mimo.create_channel()[0]
+        c, cp = dimod.generators.mimo.create_channel()[0]
         self.assertEqual(cp, 2)
         self.assertEqual(c.shape, (1, 1))
-        self.assertEqual(type(r), np.random.mtrand.RandomState)
 
-        c, cp, _ = dimod.generators.mimo.create_channel(5, 5, 
+        c, cp = dimod.generators.mimo.create_channel(5, 5, 
             F_distribution=("normal", "real"))
         self.assertTrue(np.isin(c, [-1, 1]).all())
         self.assertEqual(cp, 5)
 
-        c, cp, _ = dimod.generators.mimo.create_channel(5, 5, 
+        c, cp = dimod.generators.mimo.create_channel(5, 5, 
             F_distribution=("binary", "complex"))
         self.assertTrue(np.isin(c, [-1-1j, -1+1j, 1-1j, 1+1j]).all())
         self.assertEqual(cp, 10)
 
         n_trans = 40
-        c, cp, _ = dimod.generators.mimo.create_channel(30, n_trans, 
+        c, cp = dimod.generators.mimo.create_channel(30, n_trans, 
             F_distribution=("normal", "real"))
         self.assertLess(c.mean(), 0.2)  
         self.assertLess(c.std(), 1.3)    
         self.assertGreater(c.std(), 0.7)
         self.assertEqual(cp, n_trans)
 
-        c, cp, _ = dimod.generators.mimo.create_channel(30, n_trans, 
+        c, cp = dimod.generators.mimo.create_channel(30, n_trans, 
             F_distribution=("normal", "complex"))
         self.assertLess(c.mean().complex, 0.2)  
         self.assertLess(c.real.std(), 1.3)    
         self.assertGreater(c.real.std(), 0.7)
         self.assertEqual(cp, 2*n_trans)
 
-        c, cp, _ = dimod.generators.mimo.create_channel(5, 5, 
+        c, cp = dimod.generators.mimo.create_channel(5, 5, 
             F_distribution=("binary", "real"), 
             attenuation_matrix=np.array([[1, 2], [3, 4]]))
         self.assertLess(c.ptp(), 8)
