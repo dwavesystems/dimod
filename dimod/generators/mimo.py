@@ -597,9 +597,6 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-# JP: Leave remainder untouched for next PRs to avoid conflicts before this is merged
-#     Next PR should bring in commit https://github.com/jackraymond/dimod/commit/ef99d2ae1c364f2066018046a0ece977443b229e
-
 def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
@@ -752,36 +749,34 @@ def spin_encoded_mimo(modulation: str, y: Union[np.array, None] = None,
     .. [#Prince] Various (https://paws.princeton.edu/)
     """
 
-    if num_transmitters is None:
-        if F is not None:
-            num_transmitters = F.shape[1]
-        elif transmitted_symbols is not None:
+    if F is None:
+
+        if num_transmitters:
+            if num_transmitters <= 0:
+                raise ValueError('Configured number of transmitters must be positive')
+        elif transmitted_symbols:
             num_transmitters = len(transmitted_symbols)
         else:
-            raise ValueError('num_transmitters is not specified and cannot'
-                                 'be inferred from F or transmitted_symbols (both None)')
-    if num_receivers is None:
-        if F is not None:
-            num_receivers = F.shape[0]
-        elif y is not None:
+           ValueError('`num_transmitters` is not specified and cannot'
+                'be inferred from `F` or `transmitted_symbols` (both None)') 
+           
+        if num_receivers:
+            if num_receivers <= 0:
+                raise ValueError('Configured number of receivers must be positive')
+        elif y:
             num_receivers = y.shape[0]
-        elif channel_noise is not None:
-            num_receivers = channel_noise.shape[0]
+        elif channel_noise:
+            num_receivers = channel_noise.shape[0]  
         else:
-            raise ValueError('num_receivers is not specified and cannot'
-                             'be inferred from F, y or channel_noise (all None)')
+            raise ValueError('`num_receivers` is not specified and cannot'
+                'be inferred from `F`, `y` or `channel_noise` (all None)')  
 
-    assert num_transmitters > 0, "Expect positive number of transmitters"
-    assert num_receivers > 0, "Expect positive number of receivers"
-
-    if F is None:
         F, channel_power, seed = create_channel(num_receivers=num_receivers,
                                                 num_transmitters=num_transmitters,
                                                 F_distribution=F_distribution,
                                                 random_state=seed,
                                                 attenuation_matrix=attenuation_matrix)
-        # Channel power is the value relative to an assumed
-        # normalization E[Fui* Fui] = 1
+
     else:
         channel_power = num_transmitters
 
