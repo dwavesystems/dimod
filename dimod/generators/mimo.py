@@ -615,16 +615,17 @@ def spin_encoded_mimo(modulation: str,
                       attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
     """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
 
-    Users transmit complex-valued symbols over a random channel, :math:`F`, 
-    to some number of receivers, subject to additive white Gaussian noise. 
-    For a received signal, :math:`y`, the log likelihood of a symbol set, 
-    :math:`v`, is given by :math:`argmin || y - F v ||_2`. For :math:`v` 
-    encoded as a linear sum of spins, the optimization problem can be 
-    represented as a binary quadratic model (BQM).
+    In radio networks, `MIMO <https://en.wikipedia.org/wiki/MIMO>`_ is a method 
+    of increasing link capacity by using multiple transmission and receiving 
+    antennas to exploit multipath propagation.
 
-    For appropriate parameters, the MIMO decoding problem can model Code 
-    Division Multiple Access [#T02]_ [#R20]_, 5G communication networks 
-    [#Prince]_, and other communication problems.
+    Users each transmit complex valued symbols over a random channel :math:`F` of
+    some num_receivers, subject to additive white Gaussian noise. Given the received
+    signal y the log likelihood of a given symbol set :math:`v` is given by
+    :math:`MLE = argmin || y - F v ||_2`. When v is encoded as a linear
+    sum of spins the optimization problem is defined by a Binary Quadratic Model.
+    Depending on arguments used, this may be a model for Code Division Multiple
+    Access _[#T02, #R20], 5G communication network problems _[#Prince], or others.
 
     Args:
         y: Complex- or real-valued received signal, as a NumPy array. If 
@@ -822,7 +823,8 @@ def _make_honeycomb(L: int):
     return G
 
 def spin_encoded_comp(lattice: Union[int, nx.Graph],
-                      modulation: str, y: Union[np.array, None] = None,
+                      modulation: str, 
+                      y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
                       integer_labeling: bool = True,
@@ -834,46 +836,141 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
                       seed: Union[None, int, np.random.RandomState] = None,
                       F_distribution: Union[None, str] = None,
                       use_offset: bool = False) -> dimod.BinaryQuadraticModel:
-    """Defines a simple coooperative multi-point decoding problem CoMP.
+    """Generate a coooperative multi-point (CoMP) decoding problem.
+
+    In `coordinated multipoint (CoMP) <https://en.wikipedia.org/wiki/Cooperative_MIMO>`_
+    neighboring cellular base stations coordinate transmissions and jointly 
+    process received signals.
+
+    Users each transmit complex valued symbols over a random channel :math:`F` of
+    some num_receivers, subject to additive white Gaussian noise. Given the received
+    signal y the log likelihood of a given symbol set :math:`v` is given by
+    :math:`MLE = argmin || y - F v ||_2`. When v is encoded as a linear
+    sum of spins the optimization problem is defined by a Binary Quadratic Model.
+
     Args:
-       lattice: A graph defining the set of nearest neighbor basestations. Each
-           basestation has ``num_receivers`` receivers and ``num_transmitters``
-           local transmitters. Transmitters from neighboring basestations are also
-           received. The channel F should be set to None, it is not dependent on the
-           geometric information for now.
-           Node attributes 'num_receivers' and 'num_transmitters' override the
-           input defaults.
-           lattice can also be set to an integer value, in which case a honeycomb
-           lattice of the given linear scale (number of basestations O(L^2)) is
-           created using ``_make_honeycomb()``.
-       modulation: modulation
-       integer_labeling:
-           When True, the geometric, quadrature and modulation-scale information
-           associated to every spin is compressed to a non-redundant integer label sequence.
-           When False, spin variables are labeled (in general, but not yet implemented):
-           (geometric_position, index at geometric position, quadrature, bit-precision)
-           In specific, for BPSK with at most one transmitter per site, there is 1
-           spin per lattice node with a transmitter, inherits lattice label)
-       F: Channel
-       y: Signal
+        lattice: Geometry, as a graph or integer, defining the set of 
+        nearest-neighbor basestations. Each basestation has ``num_receivers`` 
+        receivers and ``num_transmitters`` local transmitters. Transmitters from 
+        neighboring basestations are also received. 
+           
+        When set to an integer value, a honeycomb lattice of the given linear 
+        scale (number of basestations :math:`O(L^2)`) is created.
 
-       See for ``spin_encoded_mimo`` for interpretation of other per-basestation parameters.
+        modulation: Constellation (symbol set) users can transmit. Symbols are 
+            assumed to be transmitted with equal probability. Supported values 
+            are:
+
+            * 'BPSK'
+                Binary Phase Shift Keying. Transmitted symbols are :math:`+1, -1`;
+                no encoding is required. A real-valued channel is assumed.
+            * 'QPSK'
+                Quadrature Phase Shift Keying. Transmitted symbols are 
+                :math:`+1, -1, +1j, -1j`; spins are encoded as a real vector 
+                concatenated with an imaginary vector.
+            * '16QAM'
+                Each user is assumed to select independently from 16 symbols.
+                The transmitted symbol is a complex value that can be encoded 
+                by two spins in the imaginary part and two spins in the real 
+                part. Highest precision real and imaginary spin vectors are 
+                concatenated to lower precision spin vectors.
+            * '64QAM'
+                A QPSK symbol set is generated and symbols are further amplitude 
+                modulated by an independently and uniformly distributed random 
+                amount from :math:`[1, 3]`.
+            * '256QAM'
+                A QPSK symbol set is generated and symbols are further amplitude 
+                modulated by an independently and uniformly distributed random 
+                amount from :math:`[1, 3, 5]`.
+ 
+        y:  Complex- or real-valued received signal, as a NumPy array. If 
+            ``None``, generated from other arguments.
+
+        F:  The channel F should be set to None, it is not dependent on the geometric information for now."
+            'll remove this parameter until it is implemented
+
+        integer_labeling:
+            Compresses geometric, quadrature, and modulation-scale information
+            for every spin to a non-redundant integer label sequence. In 
+            particular, for BPSK with at most one transmitter per site, there
+            is one spin per lattice node with a transmitter, which inherits the 
+            lattice label.
+            When False, spin variables are labeled with geometric_position, 
+            index at geometric position, quadrature, bit-precision. 
+            This option is currently not supported. 
+
+        transmitted_symbols: Set of symbols transmitted. Used in combination 
+            with ``F`` to generate the received signal, :math:`y`. The number 
+            of transmitted symbols must be consistent with ``F``.
+            
+            For BPSK and QPSK modulations, statistics of the ensemble do not 
+            depend on the choice: all choices are equivalent. By default, 
+            symbols are chosen for all users as :math:`1` or :math:`1 + 1j`, 
+            respectively. Note that for correct analysis by some solvers, 
+            applying spin-reversal transforms may be necessary.
+            
+            For QAM modulations, amplitude randomness affects likelihood in a 
+            non-trivial way. By default, symbols are chosen independently and 
+            identically distributed from the constellations. 
+        
+        channel_noise: Channel noise as a complex value.
+
+        num_transmitters_per_node: Number of users. Each user transmits one 
+            symbol per frame. Overrides any ``num_transmitters`` attribute of
+            the ``lattice`` parameter. 
+
+        num_receivers_per_node: Number of receivers of a channel. Must be 
+            consistent with the length of any provided signal, ``len(y)``.
+            Overrides any ``num_receivers`` attribute of the ``lattice`` 
+            parameter.
+
+        SNRb: Signal-to-noise ratio per bit used to generate the noisy signal 
+            when ``y`` is not provided. If ``float('Inf')``, no noise is
+            added.  
+        
+        seed: Random seed, as an integer, or state, as a 
+            :class:`numpy.random.RandomState` instance.
+        
+        F_distribution: Zero-mean, variance-one distribution, in tuple form 
+            ``(distribution, type)``, used to generate each element in ``F`` 
+            when ``F`` is not provided . Supported values are:
+            
+            * ``'normal'`` or ``'binary'`` for the distribution 
+            * ``'real'`` or ``'complex'`` for the type 
+            
+            For large numbers of receivers and transmitters, statistical 
+            properties of the likelihood are weakly dependent on the 
+            distribution. Choosing ``'binary'`` allows for integer-valued 
+            Hamiltonians while ``'normal'`` is a more typical model. The channel 
+            can be real or complex; in many cases this represents a superficial 
+            distinction up to rescaling. For real-valued symbols (BPSK) the 
+            default is ``('normal', 'real')``; otherwise, the default is 
+            ``('normal', 'complex')``.
+        
+        use_offset: Adds a constant to the Ising model energy so that the 
+            energy evaluated for the transmitted symbols is zero. At 
+            sufficiently high ratios of receivers to users, and with high 
+            signal-to-noise ratio, this is with high probability the 
+            ground-state energy.
+
     Returns:
-       bqm: an Ising model in BinaryQuadraticModel format.
-
-    Reference:
-        https://en.wikipedia.org/wiki/Cooperative_MIMO
+        bqm: Binary quadratic model defining the log-likelihood function.
     """
+
     if type(lattice) is not nx.Graph:
         lattice = _make_honeycomb(int(lattice))
+
     if modulation is None:
         modulation = 'BPSK'
+
     attenuation_matrix, ntr, ntt = lattice_to_attenuation_matrix(
         lattice,
         transmitters_per_node=num_transmitters_per_node,
         receivers_per_node=num_receivers_per_node,
         neighbor_root_attenuation=1)
+    
     num_receivers, num_transmitters = attenuation_matrix.shape
+
     bqm = spin_encoded_mimo(
         modulation=modulation,
         y=y,
