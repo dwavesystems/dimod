@@ -703,6 +703,9 @@ def spin_encoded_mimo(modulation: str,
             non-trivial way. By default, symbols are chosen independently and 
             identically distributed from the constellations. 
 
+        channel_noise: Channel noise as a NumPy array of complex values. Must 
+            be consistent with the number of receivers. 
+
         F_distribution:
             Zero-mean, variance-one distribution, in tuple form 
             ``(distribution, type)``, used to generate each element in ``F`` 
