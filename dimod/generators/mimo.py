@@ -646,7 +646,8 @@ def spin_encoded_mimo(modulation: str,
             * 'QPSK'
 
                 Quadrature Phase Shift Keying. Transmitted symbols are 
-                :math:`+1, -1, +1j, -1j`; spins are encoded as a real vector 
+                :math:`1+1j, 1-1j, -1+1j, -1-1j` normalized by 
+                :math:`\\frac{1}{\\sqrt{2}}`. spins are encoded as a real vector 
                 concatenated with an imaginary vector.
 
             * '16QAM'
