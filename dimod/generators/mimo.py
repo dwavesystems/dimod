@@ -849,13 +849,16 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
     sum of spins the optimization problem is defined by a Binary Quadratic Model.
 
     Args:
-        lattice: Geometry, as a graph or integer, defining the set of 
-        nearest-neighbor basestations. Each basestation has ``num_receivers`` 
-        receivers and ``num_transmitters`` local transmitters. Transmitters from 
-        neighboring basestations are also received. 
+        lattice: Geometry, as a :class:`networkx.Graph` or integer, defining 
+            the set of nearest-neighbor basestations. 
+            
+            Each basestation has ``num_receivers`` receivers and 
+            ``num_transmitters`` local transmitters, set as either attributes
+            of the graph or as per-node values. Transmitters from neighboring 
+            basestations are also received. 
            
-        When set to an integer value, a honeycomb lattice of the given linear 
-        scale (number of basestations :math:`O(L^2)`) is created.
+            When set to an integer value, a honeycomb lattice of the given 
+            linear scale (number of basestations :math:`O(L^2)`) is created.
 
         modulation: Constellation (symbol set) users can transmit. Symbols are 
             assumed to be transmitted with equal probability. Supported values 
@@ -917,7 +920,7 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
 
         num_transmitters_per_node: Number of users. Each user transmits one 
             symbol per frame. Overrides any ``num_transmitters`` attribute of
-            the ``lattice`` parameter. 
+            a :class:`networkx.Graph` provided as the ``lattice`` parameter. 
 
         num_receivers_per_node: Number of receivers of a channel. Must be 
             consistent with the length of any provided signal, ``len(y)``.
@@ -955,6 +958,24 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
 
     Returns:
         bqm: Binary quadratic model defining the log-likelihood function.
+
+    Example:
+
+        Generate an instance of a CDMA problem in the high-load regime, near a
+        first-order phase transition:
+
+        >>> import networkx as nx
+        >>> G = nx.complete_graph(4)
+        >>> nx.set_node_attributes(G, values={n:2*n+1 for n in G.nodes()}, name='num_transmitters')
+        >>> nx.set_node_attributes(G, values={n:2 for n in G.nodes()}, name='num_receivers')
+        >>> transmitted_symbols = np.random.choice([1, -1], 
+        ...     size=(sum(nx.get_node_attributes(G, "num_transmitters").values()), 1))
+        >>> bqm = dimod.generators.spin_encoded_comp(G,
+        ...     modulation='BPSK', 
+        ...     transmitted_symbols=transmitted_symbols,
+        ...     SNRb=5,
+        ...     F_distribution = ('binary', 'real'))
+
     """
 
     if type(lattice) is not nx.Graph:
