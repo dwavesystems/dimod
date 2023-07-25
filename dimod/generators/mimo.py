@@ -116,7 +116,7 @@ def _real_quadratic_form(h, J, modulation=None):
     # signal to noise ratio: F^{-1}*y = I*x + F^{-1}*nu)
     # JR: revisit and prove
 
-    if modulation != 'BPSK' and (any(np.iscomplex(h)) or any(np.iscomplex(J))):
+    if modulation != 'BPSK' and (np.iscomplex(h).any() or np.iscomplex(J).any()):
         hR = np.concatenate((h.real, h.imag), axis=0)
         JR = np.concatenate((np.concatenate((J.real, J.imag), axis=0),
                              np.concatenate((J.imag.T, J.real), axis=0)),
@@ -480,7 +480,7 @@ def _create_transmitted_symbols(num_transmitters,
     Args:
         num_transmitters: Number of transmitters.
 
-        amps: Amplitudes as an interable.
+        amps: Amplitudes as an iterable.
 
         quadrature: Quadrature (True) or only phase-shift keying such as BPSK (False).
 
@@ -492,7 +492,7 @@ def _create_transmitted_symbols(num_transmitters,
 
     """
 
-    if any(np.iscomplex(amps)):
+    if np.iscomplex(amps).any():
         raise ValueError('Amplitudes cannot have complex values')
     if any(np.modf(amps)[0]):
         raise ValueError('Amplitudes must have integer values')
@@ -558,9 +558,9 @@ def _create_signal(F, transmitted_symbols=None, channel_noise=None,
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
 
     if transmitted_symbols is not None:
-        if modulation == 'BPSK' and any(np.iscomplex(transmitted_symbols)):
+        if modulation == 'BPSK' and np.iscomplex(transmitted_symbols).any():
             raise ValueError(f"BPSK transmitted signals must be real")
-        if modulation != 'BPSK' and any(np.isreal(transmitted_symbols)):
+        if modulation != 'BPSK' and np.isreal(transmitted_symbols).any():
             raise ValueError(f"Quadrature transmitted signals must be complex")
     else:
         if type(random_state) is not np.random.mtrand.RandomState:
