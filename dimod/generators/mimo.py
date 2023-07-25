@@ -869,7 +869,8 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
                 no encoding is required. A real-valued channel is assumed.
             * 'QPSK'
                 Quadrature Phase Shift Keying. Transmitted symbols are 
-                :math:`+1, -1, +1j, -1j`; spins are encoded as a real vector 
+                :math:`1+1j, 1-1j, -1+1j, -1-1j` normalized by 
+                :math:`\\frac{1}{\\sqrt{2}}`. Spins are encoded as a real vector 
                 concatenated with an imaginary vector.
             * '16QAM'
                 Each user is assumed to select independently from 16 symbols.
