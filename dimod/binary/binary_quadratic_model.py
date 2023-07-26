@@ -777,6 +777,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             raise ValueError(
                 f'The given constraint ({label}) is infeasible with any value'
                 ' for state variables.')
+
         if penalization_method == "slack":
             slack_upper_bound = int(ub_c - lb_c)
             if slack_upper_bound == 0:
@@ -806,9 +807,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             self.add_linear_equality_constraint(terms,lagrange_multiplier, -ub_c)
 
         elif penalization_method == "unbalanced":
-            self.add_linear_equality_constraint(terms,lagrange_multiplier[0], -ub_c)
+            if not isinstance(lagrange_multiplier, Iterable):
+                raise TypeError('A list with two lagrange_multiplier are needed'
+                                'for the unbalanced penalization method.')
+
             for v, bias in terms:
-                self.add_linear(v, -lagrange_multiplier[1] * bias)
+                self.add_linear(v, -lagrange_multiplier[0] * bias)
+            self.add_linear_equality_constraint(terms, lagrange_multiplier[1], -ub_c)
             slack_terms = []
 
         return slack_terms
