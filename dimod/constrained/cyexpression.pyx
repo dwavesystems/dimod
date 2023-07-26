@@ -448,6 +448,9 @@ cdef class cyConstraintView(_cyExpression):
         constraint = self.constraint()
         return constraint.marked_discrete() and constraint.is_onehot()
 
+    def is_onehot(self):
+        return self.constraint().is_onehot()
+
     def is_soft(self):
         return self.constraint().is_soft()
 

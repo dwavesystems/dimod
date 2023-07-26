@@ -695,6 +695,34 @@ class TestIsEqual(unittest.TestCase):
         cqm1.add_constraint(x*y == 1)
         self.assertFalse(cqm0.is_equal(cqm1))
 
+class TestIsOnehot(unittest.TestCase):
+    def test_onehot(self):
+        x, y, z = dimod.Binaries('xyz')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint(x + y + z == 1, label="x+y+z=1")
+        cqm.add_constraint(x + y == 1, label="x+y=1")
+        for label, constraint in cqm.constraints.items():
+            with self.subTest(label=label):
+                self.assertTrue(constraint.lhs.is_onehot())
+
+    def test_not_onehot(self):
+        x, y, z = dimod.Binaries('xyz')
+        i = dimod.Integer('i')
+
+        cqm = dimod.CQM()
+        cqm.add_constraint(x*y + y + z == 1, label='quadratic')
+        cqm.add_constraint(x + y + z >= 1, label='le')
+        cqm.add_constraint(x + y + z <= 1, label='ge')
+        cqm.add_constraint(x + y == 2, label="not_one")
+        cqm.add_constraint(x == 1, label="one_variable")
+        cqm.add_constraint(i + x == 1, label='integer')
+        cqm.add_constraint(y + x + 1 == 1, label='offset')
+
+        for label, constraint in cqm.constraints.items():
+            with self.subTest(label=label):
+                self.assertFalse(constraint.lhs.is_onehot())
+
 
 class TestIsLinear(unittest.TestCase):
     def test_empty(self):
@@ -1882,7 +1910,7 @@ class TestViews(unittest.TestCase):
         self.assertEqual(cqm.constraints[c1].lhs.energy(sample), 0)
         self.assertEqual(cqm.constraints[c2].lhs.energy(sample), 1)
 
-        np.testing.assert_array_equal(cqm.objective.energies(([[0, 0, 1], [1, 0, 0]], 'abc')), 
+        np.testing.assert_array_equal(cqm.objective.energies(([[0, 0, 1], [1, 0, 0]], 'abc')),
                                       [-1, 1])
 
         self.assertEqual(cqm.constraints[c1].lhs.energy({'a': 1, 'b': 1}), 1)

@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix ``dimod::ConstrainedQuadraticModel::fix_variables()`` C++ method to work
+    correctly with quadratic objectives and constraints.
+    This fixes a bug introduced in dimod 0.12.5.
+    See `#1351 <https://github.com/dwavesystems/dimod/issues/1351>`_.

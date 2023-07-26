@@ -545,9 +545,8 @@ template <class bias_type, class index_type>
 void ConstrainedQuadraticModel<bias_type, index_type>::fix_variables_expr(
         const Expression<bias_type, index_type>& src, Expression<bias_type, index_type>& dst,
         const std::vector<index_type>& old_to_new, const std::vector<bias_type>& assignments) {
-    // We'll want to access the expressions by index for speed
+    // We'll want to access the source expression by index for speed
     const abc::QuadraticModelBase<bias_type, index_type>& isrc = src;
-    abc::QuadraticModelBase<bias_type, index_type>& idst = dst;
 
     // offset
     dst.add_offset(src.offset());
@@ -565,23 +564,27 @@ void ConstrainedQuadraticModel<bias_type, index_type>::fix_variables_expr(
         }
     }
 
-    // quadratic, and it's safe to do everything by index!
-    for (auto it = isrc.cbegin_quadratic(); it != isrc.cend_quadratic(); ++it) {
-        auto u = src.variables()[it->u];
-        auto v = src.variables()[it->v];
+    // quadratic
+    for (auto it = isrc.cbegin_quadratic(), end = isrc.cend_quadratic(); it != end; ++it) {
+        const index_type u = src.variables()[it->u];  // variable u in the source
+        const index_type v = src.variables()[it->v];  // variable v in the source
+        const bias_type bias = it->bias;  // bias in the source
 
-        if (old_to_new[u] < 0 && old_to_new[v] < 0) {
+        const index_type new_u = old_to_new[u];  // variable u in the destination
+        const index_type new_v = old_to_new[v];  // variable v in the destination
+
+        if (new_u < 0 && new_v < 0) {
             // both fixed, becomes offset
-            idst.add_offset(assignments[u] * assignments[v] * it->bias);
-        } else if (old_to_new[u] < 0) {
+            dst.add_offset(assignments[u] * assignments[v] * bias);
+        } else if (new_u < 0) {
             // u fixed, v unfixed
-            idst.add_linear(old_to_new[it->v], assignments[u] * it->bias);
-        } else if (old_to_new[v] < 0) {
+            dst.add_linear(new_v, assignments[u] * bias);
+        } else if (new_v < 0) {
             // u unfixed, v fixed
-            idst.add_linear(old_to_new[it->u], assignments[v] * it->bias);
+            dst.add_linear(new_u, assignments[v] * bias);
         } else {
             // neither fixed
-            idst.add_quadratic_back(old_to_new[it->u], old_to_new[it->v], it->bias);
+            dst.add_quadratic_back(new_u, new_v, bias);
         }
     }
 }

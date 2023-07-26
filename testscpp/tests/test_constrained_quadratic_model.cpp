@@ -871,6 +871,40 @@ TEST_CASE("Test CQM.constraint_weak_ptr()") {
     }
 }
 
+TEST_CASE("Test ConstrainedQuadraticModel::fix_variables()") {
+    GIVEN("A CQM with a quadratic constraint") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+
+        cqm.add_variables(Vartype::BINARY, 5);
+
+        auto c = cqm.add_linear_constraint({3, 1, 4, 0}, {1, 2, 3, 4}, Sense::LE, 5);
+        cqm.constraint_ref(c).add_quadratic(3, 1, -15);
+        cqm.constraint_ref(c).add_quadratic(4, 0, 14);
+        cqm.constraint_ref(c).add_quadratic(4, 3, 17);
+
+        WHEN("we fix some variables") {
+            std::vector<int> variables{1, 2, 3};
+            std::vector<double> values{1, 1, 1};
+
+            auto fixed = cqm.fix_variables(variables.begin(), variables.end(), values.begin());
+            // relabels x0 -> x0
+            // relabels x4 -> x1
+
+            THEN("the offset, linear, and quadratic biases are updated as expected") {
+                REQUIRE(fixed.num_constraints() == 1);
+
+                CHECK(fixed.constraint_ref(c).num_variables() == 2);
+                CHECK(fixed.constraint_ref(c).num_interactions() == 1);
+
+                CHECK(fixed.constraint_ref(c).offset() == -12);
+                CHECK(fixed.constraint_ref(c).linear(1) == 20);
+                CHECK(fixed.constraint_ref(c).linear(0) == 4);
+                CHECK(fixed.constraint_ref(c).quadratic(1, 0) == 14);
+            }
+        }
+    }
+}
+
 TEST_CASE("Test Expression::add_quadratic()") {
     GIVEN("A CQM with two variables with vartypes") {
         auto cqm = dimod::ConstrainedQuadraticModel<double>();
@@ -896,6 +930,87 @@ TEST_CASE("Test Expression::add_quadratic()") {
                 CHECK(cqm.constraint_ref(c1).linear(x) == 2.5);
                 CHECK(cqm.constraint_ref(c1).quadratic(i, i) == 1.5);
                 CHECK(cqm.constraint_ref(c1).quadratic(x, x) == 0);
+            }
+        }
+    }
+}
+
+TEST_CASE("Test Expression::add_quadratic_back()") {
+    GIVEN("A CQM with three variables and one constraints") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto i = cqm.add_variable(Vartype::INTEGER);
+        auto x = cqm.add_variable(Vartype::BINARY);
+        auto y = cqm.add_variable(Vartype::BINARY);
+
+        auto c0 = cqm.add_linear_constraint({i, x, y}, {1, 1, 1}, Sense::LE, 1);
+
+        WHEN("add_quadratic_back() is used on an empty constraint") {
+            cqm.constraint_ref(c0).add_quadratic_back(i, x, 1.5);
+
+            THEN("we can read the value out as expected") {
+                CHECK(cqm.constraint_ref(c0).quadratic(i, x) == 1.5);
+            }
+
+            AND_WHEN("we add another quadratic") {
+                cqm.constraint_ref(c0).add_quadratic_back(y, x, 2.5);
+
+                THEN("we can read the value out as expected") {
+                    CHECK(cqm.constraint_ref(c0).quadratic(y, x) == 2.5);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Test Expression::remove_variables()") {
+    GIVEN("A CQM with five variables, an objective, and one constraint") {
+        auto cqm = ConstrainedQuadraticModel<double>();
+
+        cqm.add_variables(Vartype::BINARY, 10);
+        cqm.objective.set_linear(2, 1);
+        cqm.objective.set_linear(3, 2);
+        cqm.objective.set_linear(5, 3);
+        cqm.objective.set_linear(8, 4);
+        cqm.objective.set_quadratic(5, 8, 5);
+
+        auto c = cqm.add_linear_constraint({2, 3, 5, 8}, {1, 2, 3, 4}, Sense::EQ, 1);
+        cqm.constraint_ref(c).set_quadratic(5, 8, 5);
+
+        std::vector<int> fixed = {3, 8};
+
+        WHEN("We remove several variables from the objective") {
+            cqm.objective.remove_variables(fixed.cbegin(), fixed.cend());  // works with cbegin/cend
+
+            THEN("they are removed as expected") {
+                CHECK(cqm.num_variables() == 10);  // not changed
+
+                CHECK(cqm.objective.num_variables() == 2);
+                CHECK(cqm.objective.num_interactions() == 0);
+
+                CHECK(cqm.objective.linear(2) == 1);
+                CHECK(cqm.objective.linear(3) == 0);  // removed
+                CHECK(cqm.objective.linear(5) == 3);
+                CHECK(cqm.objective.linear(8) == 0);  // removed
+
+                CHECK(cqm.objective.variables() == std::vector<int>{2, 5});
+            }
+        }
+
+        WHEN("We remove several variables from the constraint") {
+            cqm.constraint_ref(c).remove_variables(fixed.begin(), fixed.end());
+
+            THEN("they are removed as expected") {
+                CHECK(cqm.num_variables() == 10);  // not changed
+
+                CHECK(cqm.constraint_ref(c).num_variables() == 2);
+                CHECK(cqm.constraint_ref(c).num_interactions() == 0);
+
+                CHECK(cqm.constraint_ref(c).linear(2) == 1);
+                CHECK(cqm.constraint_ref(c).linear(3) == 0);  // removed
+                CHECK(cqm.constraint_ref(c).linear(5) == 3);
+                CHECK(cqm.constraint_ref(c).linear(8) == 0);  // removed
+
+                CHECK(cqm.constraint_ref(c).variables() == std::vector<int>{2, 5});
             }
         }
     }
