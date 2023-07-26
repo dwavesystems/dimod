@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``dimod::Expression::remove_variables()`` C++ method.
+    This method is useful for removing variables in bulk from the objective
+    or constraints of a constrained quadratic model.
