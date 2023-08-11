@@ -1767,7 +1767,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             :meth:`~.SampleSet.from_serializable`
 
         """
-        schema_version = "3.1.0"
+        schema_version = "3.2.0"
 
         # developer note: numpy's record array stores the samples, energies,
         # num_occ. etc as a struct array. If we dumped that array directly to

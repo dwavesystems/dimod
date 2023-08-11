@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Implement ``SampleSet`` serialization schema version 3.2.0.
+
+    Version 3.2.0 replaces ``float`` values that represent integers with ``int``
+    in the ``"data"`` field of any arrays returned by ``SampleSet.to_serializable()``.
+    In some pathological cases this can result in a much smaller representation
+    when the data dictionaries are json-serialized by avoiding the redundant
+    ``.0`` appended to every value.
+
+    This is a backwards-compatible change.

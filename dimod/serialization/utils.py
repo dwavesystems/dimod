@@ -13,9 +13,45 @@
 #    limitations under the License.
 
 import collections.abc as abc
+
 from numbers import Integral, Number
+from typing import List, Union
 
 import numpy as np
+
+
+__all__ = ["serialize_ndarray", "deserialize_ndarray",
+           "serialize_ndarrays", "deserialize_ndarrays",
+           "pack_samples", "unpack_samples",
+           ]
+
+
+def _replace_float_with_int(arr: Union[List[float], List[List]]):
+    """Replace floats representing integers with ints in a list representing an array.
+
+    Take a list of floats, as produced by :meth:`numpy.ndarray.tolist` from an array
+    of floating types, and convert any ``float`` representing an integer value into
+    ``int``.
+
+    This function assumes some uniformity of the list structure. For instance giving it
+    a list like ``[0.0, 0]`` or ``[0.0, [0.0]`` will cause it to fail.
+
+    Acts on the list(s) in-place.
+    """
+    if not len(arr):
+        # nothing to do when the list is empty
+        pass
+
+    elif isinstance(arr[0], List):
+        for subarr in arr:
+            _replace_float_with_int(subarr)
+
+    elif hasattr(arr[0], "is_integer"):
+        arr[:] = (int(a) if a.is_integer() else a for a in arr)
+
+    else:
+        raise ValueError("expected a (possibly nested) list of floats, "
+                         f"recieved a (possible nested) list of {type(arr[0])}")
 
 
 def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
@@ -43,6 +79,10 @@ def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
         data = bytes_type(arr.tobytes(order='C'))
     else:
         data = arr.tolist()
+
+        if np.issubdtype(arr.dtype, np.floating):
+            _replace_float_with_int(data)
+
     return dict(type='array',
                 data=data,
                 data_type=arr.dtype.name,
