@@ -34,7 +34,7 @@ def _replace_float_with_int(arr: Union[List[float], List[List]]):
     ``int``.
 
     This function assumes some uniformity of the list structure. For instance giving it
-    a list like ``[0.0, 0]`` or ``[0.0, [0.0]`` will cause it to fail.
+    a list like ``[0.0, 0]`` or ``[0.0, [0.0]]`` will cause it to fail.
 
     Acts on the list(s) in-place.
     """
@@ -51,7 +51,7 @@ def _replace_float_with_int(arr: Union[List[float], List[List]]):
 
     else:
         raise ValueError("expected a (possibly nested) list of floats, "
-                         f"recieved a (possible nested) list of {type(arr[0])}")
+                         f"received a (possibly nested) list of {type(arr[0])}")
 
 
 def serialize_ndarray(arr, use_bytes=False, bytes_type=bytes):
