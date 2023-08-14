@@ -1,0 +1,10 @@
+---
+features:
+  - |
+    Make ``SampleSet.relabel_variables()`` non-blocking in all cases. Previously
+    it would block when ``inplace=False``.
+fixes:
+  - |
+    Fix the behavior of ``SampleSet.relabel_variables()`` when ``inplace=True``.
+    Previously the method incorrectly returned a copy when the sample set was
+    unresolved.

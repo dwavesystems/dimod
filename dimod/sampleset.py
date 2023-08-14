@@ -1438,8 +1438,7 @@ class SampleSet(abc.Iterable, abc.Sized):
             itself.
 
         Notes:
-            This function is non-blocking unless `inplace==True`, in which case
-            the sample set is resolved.
+            This function is non-blocking.
 
         Examples:
             This example creates a relabeled copy of a :class:`SampleSet`.
@@ -1450,17 +1449,33 @@ class SampleSet(abc.Iterable, abc.Sized):
             Variables([0, 1])
 
         """
-        if not inplace:
+        done = self.done()
+
+        if inplace and done:
+            self.variables._relabel(mapping)
+            return self
+
+        elif done:  # and not inplace
             return self.copy().relabel_variables(mapping, inplace=True)
 
-        if not self.done():
+        elif inplace:  # and not done
+            old_hook = self._result_hook
+
+            def new_hook(future):
+                sampleset = old_hook(future)
+                sampleset.resolve()
+                return sampleset.relabel_variables(mapping, inplace=False)
+
+            self._result_hook = new_hook
+
+            return self
+
+        else:  # neither done nor inplace
             def hook(sampleset):
                 sampleset.resolve()
-                return sampleset.relabel_variables(mapping, inplace=True)
-            return self.from_future(self, hook)
+                return sampleset.relabel_variables(mapping, inplace=False)
 
-        self.variables._relabel(mapping)
-        return self
+            return self.from_future(self, hook)
 
     def resolve(self):
         """Ensure that the sampleset is resolved if constructed from a future.
