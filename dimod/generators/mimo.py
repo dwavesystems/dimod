@@ -26,6 +26,8 @@ from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
 
 import dimod
 
+__all__ = ['spin_encoded_mimo', 'spin_encoded_comp']
+
 mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number of amps, spins per symbol
     "BPSK": {"bpt": 1, "amps": 1, "tps": 1, "na": 1, "sps": 1},
     "QPSK": {"bpt": 2, "amps": 1, "tps": 2, "na": 1, "sps": 1},
