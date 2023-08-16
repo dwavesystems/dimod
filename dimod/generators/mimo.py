@@ -84,9 +84,9 @@ def _real_quadratic_form(h, J, modulation=None):
     concatenated real variables, first the real and then the imaginary part.
 
     Args:
-        h: Linear biases as a dense real NumPy vector.
+        h: Linear biases as a dense NumPy vector.
 
-        J: Quadratic interactions as a dense real symmetric matrix.
+        J: Quadratic interactions as a dense symmetric matrix.
 
         modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM',
             '64QAM', and '256QAM'.

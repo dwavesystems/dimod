@@ -1215,7 +1215,18 @@ class TestMIMO(unittest.TestCase):
         self.assertLess(abs(val3), 1e-8)
 
     def test_real_quadratic_form(self):
-        print('Add tests for _real_quadratic_form')
+        h_in, J_in = np.array([1, 1]), np.array([2])
+        h, J = dimod.generators.mimo._real_quadratic_form(h_in, J_in)
+        self.assertTrue(np.array_equal(h_in, h))
+        self.assertTrue(np.array_equal(J_in, J))
+
+        h_in, J_in = np.array([1+1j, 1-1j]), np.array([[0, 2], [0, 0]])
+        h, J = dimod.generators.mimo._real_quadratic_form(h_in, J_in)
+        self.assertTrue(len(h) == 2*len(h_in))
+        self.assertTrue(J.shape == (4, 4))
+        h, J = dimod.generators.mimo._real_quadratic_form(h_in, J_in, 'BPSK')
+        self.assertTrue(np.array_equal(np.real(h_in), h))
+        self.assertTrue(np.array_equal(J_in, J))
 
     def test_amplitude_modulated_quadratic_form(self):
         num_var = 3
@@ -1239,7 +1250,26 @@ class TestMIMO(unittest.TestCase):
         print('Add tests for _yF_to_hJ')
 
     def test_spins_to_symbols(self):
-        print('Add tests for _spins_to_symbols')
+        symbols = dimod.generators.mimo._spins_to_symbols(self.symbols_bpsk, 
+            modulation='BPSK')
+        self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
+        
+        symbols = dimod.generators.mimo._spins_to_symbols(self.symbols_bpsk, 
+            modulation='BPSK', num_transmitters=1)
+        self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
+
+        symbols = dimod.generators.mimo._spins_to_symbols(self.symbols_qam(1), 
+            modulation='QPSK')
+        self.assertEqual(len(symbols), 2)
+
+        symbols = dimod.generators.mimo._spins_to_symbols(self.symbols_qam(1), 
+            modulation='16QAM')
+        self.assertEqual(len(symbols), 1)
+        
+        with self.assertRaises(ValueError):
+            spins = dimod.generators.mimo._spins_to_symbols(self.symbols_qam(1), 
+            modulation='QPSK', num_transmitters=3)
+
 
     def test_symbols_to_spins(self):
         # Standard symbol cases (2D input):
