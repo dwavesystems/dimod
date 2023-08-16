@@ -1239,7 +1239,7 @@ class TestMIMO(unittest.TestCase):
         print('Add tests for _yF_to_hJ')
 
     def test_spins_to_symbols(self):
-        print('Add tests for spins_to_symbols')
+        print('Add tests for _spins_to_symbols')
 
     def test_symbols_to_spins(self):
         # Standard symbol cases (2D input):
@@ -1281,7 +1281,7 @@ class TestMIMO(unittest.TestCase):
         #This is simply read in read out.
         num_spins = 5
         spins = np.random.choice([-1, 1], size=num_spins)
-        symbols = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation='BPSK')
+        symbols = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
         spins = dimod.generators.mimo._symbols_to_spins(symbols=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
@@ -1319,13 +1319,13 @@ class TestMIMO(unittest.TestCase):
             #uniform encoding (max spins = max amplitude symbols):
             spins = np.ones(num_spins)
             symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
-            symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
+            symbols_enc = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation=mod)
             self.assertTrue(np.all(symbols_enc == symbols ))
             spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
             #random encoding:
             spins = np.random.choice([-1, 1], size=num_spins)
-            symbols_enc = dimod.generators.mimo.spins_to_symbols(spins=spins, modulation=mod)
+            symbols_enc = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation=mod)
             spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols_enc, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
 
@@ -1505,12 +1505,12 @@ class TestMIMO(unittest.TestCase):
         num_var = 10
         lattice.add_nodes_from(n for n in range(num_var))
 
-        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(lattice)
+        A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(lattice)
         self.assertFalse(np.any(A-np.identity(num_var)))
 
         for t_per_node in range(1,3):
             for r_per_node in range(1,3):
-                A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
+                A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
                     lattice,
                     transmitters_per_node=t_per_node,
                     receivers_per_node=r_per_node,
@@ -1520,14 +1520,14 @@ class TestMIMO(unittest.TestCase):
         for ea in range(2):
             lattice.add_edge(ea,ea+1)
             neighbor_root_attenuation=np.random.random()
-            A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
+            A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
                 lattice, neighbor_root_attenuation=2)
             self.assertFalse(np.any(A-A.transpose()))
             self.assertTrue(all(A[eap,eap+1]==2 for eap in range(ea+1)))
         ## Check num_transmitters and num_receivers override:
         nx.set_node_attributes(lattice, values=3, name="num_transmitters")
         nx.set_node_attributes(lattice, values=1, name="num_receivers")
-        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
+        A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
             lattice,
             transmitters_per_node=2,
             receivers_per_node=2)
@@ -1538,7 +1538,7 @@ class TestMIMO(unittest.TestCase):
         nx.set_node_attributes(lattice, values={i:1 for i in [0,1,2,4]}, name="num_transmitters")
         # t/r2 -- t -- t   r  t #We can assume the ntr and ntt arguments.
         Acorrect = np.array([[1, 2, 0, 0], [1, 2, 0, 0], [0, 0, 0, 0]])
-        A,_,_ = dimod.generators.mimo.lattice_to_attenuation_matrix(
+        A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
             lattice, neighbor_root_attenuation=2)
         self.assertFalse(np.any(A-Acorrect))
 
