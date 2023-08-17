@@ -1127,14 +1127,14 @@ class TestMagicSquares(unittest.TestCase):
                         self.assertEqual(term, -2)
                     else:
                         self.assertEqual(term, 24)
+
 class TestMIMO(unittest.TestCase):
 
     def setUp(self):
-
         self.symbols_bpsk = np.asarray([[-1, 1]])
         self.symbols_qam = lambda a: np.array([[complex(i, j)] \
             for i in range(-a, a + 1, 2) for j in range(-a, a + 1, 2)])
-
+            
     def _effective_fields(self, bqm):
         num_var = bqm.num_variables
         effFields = np.zeros(num_var)
@@ -1147,64 +1147,78 @@ class TestMIMO(unittest.TestCase):
         
     def test_filter_marginal_estimators(self):
         # Tested but so far this function is unused
+        fme = dimod.generators.mimo.filter_marginal_estimator
         
-        filtered_signal = np.random.random(20) + np.arange(-20,20,2)
-        estimated_source = dimod.generators.mimo.filter_marginal_estimator(filtered_signal, 'BPSK')
-        self.assertTrue(0 == len(set(estimated_source).difference(np.arange(-1,3,2))))
+        filtered_signal = np.random.random(20) + np.arange(-20, 20, 2)
+        estimated_source = fme(filtered_signal, 'BPSK')
+        self.assertTrue(0 == len(set(estimated_source).difference(np.arange(-1, 3, 2))))
         self.assertTrue(np.all(estimated_source[:-1] <= estimated_source[1:]))
         
-        filtered_signal = filtered_signal + 1j*(-np.random.random(20) + np.arange(20,-20,-2))
+        filtered_signal = filtered_signal + 1j*(-np.random.random(20) + np.arange(20, -20, -2))
         
         for modulation in ['QPSK','16QAM','64QAM']:
-            estimated_source = dimod.generators.mimo.filter_marginal_estimator(filtered_signal, modulation=modulation)
+            estimated_source = fme(filtered_signal, modulation=modulation)
             self.assertTrue(np.all(np.flip(estimated_source.real) == estimated_source.imag))
     
     def test_linear_filter(self):
+
         Nt = 5
         Nr = 7
         # linear_filter(F, method='zero_forcing', PoverNt=1, SNRoverNt = 1)
         F = np.random.normal(size=(Nr,Nt)) + 1j*np.random.normal(size=(Nr,Nt))
         Fsimple = np.identity(Nt) # Nt=Nr
+
         #BPSK, real channel:
-        #transmitted_symbols_simple = np.ones(shape=(Nt,1))
-        #transmitted_symbols = mimo._create_transmitted_symbols(Nt, amps=[-1,1], quadrature=False)
-        transmitted_symbolsQAM = dimod.generators.mimo._create_transmitted_symbols(Nt, amps=[-3,-1,1,3], quadrature=True)
+        transmitted_symbolsQAM = dimod.generators.mimo._create_transmitted_symbols(Nt, 
+            amps=[-3, -1, 1, 3], quadrature=True)
+
         y = np.matmul(F, transmitted_symbolsQAM)
+
         # Defaults
         W = dimod.generators.mimo.linear_filter(F=F)
         self.assertEqual(W.shape,(Nt,Nr))
+
         # Check arguments:
-        W = dimod.generators.mimo.linear_filter(F=F, method='matched_filter', PoverNt=0.5, SNRoverNt=1.2)
+        W = dimod.generators.mimo.linear_filter(F=F, 
+            method='matched_filter', PoverNt=0.5, SNRoverNt=1.2)
         self.assertEqual(W.shape,(Nt,Nr))
-        # Over constrained noiseless channel by default, zero_forcing and MMSE are perfect:
-        for method in ['zero_forcing','MMSE']:
+
+        # Over-constrained noiseless channel by default, zero_forcing and MMSE are perfect:
+        for method in ['zero_forcing', 'MMSE']:
             W = dimod.generators.mimo.linear_filter(F=F, method=method)
             reconstructed_symbols = np.matmul(W,y)
-            self.assertTrue(np.all(np.abs(reconstructed_symbols-transmitted_symbolsQAM)<1e-8))
+            self.assertTrue(np.all(np.abs(reconstructed_symbols - transmitted_symbolsQAM) < 1e-8))
+
         # matched_filter and MMSE (non-zero noise) are erroneous given interfered signal:
         W = dimod.generators.mimo.linear_filter(F=F, method='MMSE', PoverNt=0.5, SNRoverNt=1)
-        reconstructed_symbols = np.matmul(W,y)
-        self.assertTrue(np.all(np.abs(reconstructed_symbols-transmitted_symbolsQAM)>1e-8))
+        reconstructed_symbols = np.matmul(W, y)
+        self.assertTrue(np.all(np.abs(reconstructed_symbols - transmitted_symbolsQAM) > 1e-8))
             
     def test_quadratic_forms(self):
         # Quadratic form must evaluate to match original objective:
         num_var = 3
         num_receivers = 5
-        F = np.random.normal(0, 1, size=(num_receivers, num_var)) + 1j*np.random.normal(0, 1, size=(num_receivers, num_var))
-        y = np.random.normal(0, 1, size=(num_receivers, 1)) + 1j*np.random.normal(0, 1, size=(num_receivers, 1))
+        F = np.random.normal(0, 1, size=(num_receivers, num_var)) + \
+            1j*np.random.normal(0, 1, size=(num_receivers, num_var))
+        y = np.random.normal(0, 1, size=(num_receivers, 1)) + \
+            1j*np.random.normal(0, 1, size=(num_receivers, 1))
+
         # Random test case:
         vUnwrap = np.random.normal(0, 1, size=(2*num_var, 1))
         v = vUnwrap[:num_var, :] + 1j*vUnwrap[num_var:, :]
         vec = y - np.matmul(F, v)
         val1 = np.matmul(vec.T.conj(), vec)
+
         # Check complex quadratic form
         k, h, J = dimod.generators.mimo._quadratic_form(y, F)
         val2 = np.matmul(v.T.conj(), np.matmul(J, v)) + (np.matmul(h.T.conj(), v)).real + k
         self.assertLess(abs(val1 - val2), 1e-8)
+
         # Check unwrapped complex quadratic form:
         h, J = dimod.generators.mimo._real_quadratic_form(h, J)
         val3 = np.matmul(vUnwrap.T, np.matmul(J, vUnwrap)) + np.matmul(h.T, vUnwrap) + k
         self.assertLess(abs(val1 - val3), 1e-8)
+
         # Check zero energy for y generated from F:
         y = np.matmul(F, v)
         k, h, J = dimod.generators.mimo._quadratic_form(y, F)
@@ -1224,6 +1238,7 @@ class TestMIMO(unittest.TestCase):
         h, J = dimod.generators.mimo._real_quadratic_form(h_in, J_in)
         self.assertTrue(len(h) == 2*len(h_in))
         self.assertTrue(J.shape == (4, 4))
+
         h, J = dimod.generators.mimo._real_quadratic_form(h_in, J_in, 'BPSK')
         self.assertTrue(np.array_equal(np.real(h_in), h))
         self.assertTrue(np.array_equal(J_in, J))
@@ -1236,10 +1251,12 @@ class TestMIMO(unittest.TestCase):
         mod_pref = [1, 1, 2, 3]
         for offset in [0]:
             for modI, modulation in enumerate(mods):
-                hO, JO = dimod.generators.mimo._amplitude_modulated_quadratic_form(h, J, modulation=modulation)
+                hO, JO = dimod.generators.mimo._amplitude_modulated_quadratic_form(h, 
+                    J, modulation=modulation)
                 self.assertEqual(hO.shape[0], num_var*mod_pref[modI])
                 self.assertEqual(JO.shape[0], hO.shape[0])
                 self.assertEqual(JO.shape[0], JO.shape[1])
+
                 max_val = 2**mod_pref[modI]-1
                 self.assertLess(abs(max_val*np.sum(h)-np.sum(hO)), 1e-8)
                 self.assertLess(abs(max_val*max_val*np.sum(J)-np.sum(JO)), 1e-8)
@@ -1343,9 +1360,11 @@ class TestMIMO(unittest.TestCase):
         num_symbols = 5
         mod_pref = [1, 2, 3]
         mods = ['QPSK', '16QAM', '64QAM']
+
         for modI, mod in enumerate(mods):
             num_spins = 2*num_symbols*mod_pref[modI]
             max_symb = 2**mod_pref[modI]-1
+
             #uniform encoding (max spins = max amplitude symbols):
             spins = np.ones(num_spins)
             symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
@@ -1353,6 +1372,7 @@ class TestMIMO(unittest.TestCase):
             self.assertTrue(np.all(symbols_enc == symbols ))
             spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
+
             #random encoding:
             spins = np.random.choice([-1, 1], size=num_spins)
             symbols_enc = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation=mod)
@@ -1361,13 +1381,17 @@ class TestMIMO(unittest.TestCase):
 
     def test_spin_encoded_mimo(self):
         for num_transmitters, num_receivers in [(1, 1), (5, 1), (1, 3), (11, 7)]:
-            F = np.random.normal(0, 1, size=(num_receivers, num_transmitters)) + 1j*np.random.normal(0, 1, size=(num_receivers, num_transmitters))
-            y = np.random.normal(0, 1, size=(num_receivers, 1)) + 1j*np.random.normal(0, 1, size=(num_receivers, 1))
+            F = np.random.normal(0, 1, size=(num_receivers, num_transmitters)) + \
+                    1j*np.random.normal(0, 1, size=(num_receivers, num_transmitters))
+            y = np.random.normal(0, 1, size=(num_receivers, 1)) + \
+                    1j*np.random.normal(0, 1, size=(num_receivers, 1))
             bqm = dimod.generators.mimo.spin_encoded_mimo(modulation='QPSK', y=y, F=F)
+
             mod_pref = [1, 1, 2, 3]
             mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
             for modI, modulation in enumerate(mods):
-                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, num_transmitters=num_transmitters, num_receivers=num_receivers)
+                bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
+                    num_transmitters=num_transmitters, num_receivers=num_receivers)
                 if modulation == 'BPSK':
                     constellation = [-1, 1]
                     dtype = np.float64
@@ -1380,43 +1404,48 @@ class TestMIMO(unittest.TestCase):
                                      for imag_part in range(-max_val, max_val+1, 2)]
                     
                 F_simple = np.ones(shape=(num_receivers, num_transmitters), dtype=dtype)
-                transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), dtype=dtype)*constellation[-1]
-                transmitted_symbols_random = np.random.choice(constellation, size=(num_transmitters, 1))
+                transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), 
+                    dtype=dtype)*constellation[-1]
+                transmitted_symbols_random = np.random.choice(constellation, 
+                    size=(num_transmitters, 1))
                 transmitted_spins_random = dimod.generators.mimo._symbols_to_spins(
                     symbols=transmitted_symbols_random.flatten(), modulation=modulation)
+
                 #Trivial channel (F_simple), machine numbers
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
-                                                              F=F_simple, 
-                                                              transmitted_symbols=transmitted_symbols_max, 
-                                                              use_offset=True, SNRb=float('Inf'))
+                    F=F_simple, transmitted_symbols=transmitted_symbols_max, 
+                    use_offset=True, SNRb=float('Inf'))
                 
                 ef = self._effective_fields(bqm)
                 self.assertLessEqual(np.max(ef), 0)
-                self.assertLessEqual(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-10)
+                self.assertLessEqual(abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))), 1e-10)
                 
                 #Random channel, potential precision
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
-                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
-                                                              transmitted_symbols=transmitted_symbols_max, 
-                                                              use_offset=True, SNRb=float('Inf'))
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_max, 
+                    use_offset=True, SNRb=float('Inf'))
                 ef=self._effective_fields(bqm)
                 self.assertLessEqual(np.max(ef), 0)
-                self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))), 1e-8)
-
+                self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))), 1e-8)
                 
                 # Add noise, check that offset is positive (random, scales as num_var/SNRb)
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
-                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
-                                                              transmitted_symbols=transmitted_symbols_max, 
-                                                              use_offset=True, SNRb=1)
-                self.assertLess(0, abs(bqm.energy((np.ones(bqm.num_variables), np.arange(bqm.num_variables)))))
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_max, 
+                    use_offset=True, SNRb=1)
+                self.assertLess(0, abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))))
                 
                 # Random transmission, should match spin encoding. Spin-encoded energy should be minimal
                 bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=modulation, 
-                                                              num_transmitters=num_transmitters, num_receivers=num_receivers, 
-                                                              transmitted_symbols=transmitted_symbols_random, 
-                                                              use_offset=True, SNRb=float('Inf'))
-                self.assertLess(abs(bqm.energy((transmitted_spins_random, np.arange(bqm.num_variables)))), 1e-8)
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_random, 
+                    use_offset=True, SNRb=float('Inf'))
+                self.assertLess(abs(bqm.energy((transmitted_spins_random, 
+                    np.arange(bqm.num_variables)))), 1e-8)
     
     def test_make_honeycomb(self):
         G = dimod.generators.mimo._make_honeycomb(1)
@@ -1516,18 +1545,17 @@ class TestMIMO(unittest.TestCase):
     def test_spin_encoded_comp(self):
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
         lattice = dimod.generators.mimo._make_honeycomb(1)
-        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, num_transmitters_per_node=1, num_receivers_per_node=1,
-                                                      modulation='BPSK')
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, 
+            num_transmitters_per_node=1, num_receivers_per_node=1, modulation='BPSK')
         num_var = lattice.number_of_nodes()
         self.assertEqual(num_var,bqm.num_variables)
         self.assertEqual(21,bqm.num_interactions)
         # Transmitted symbols are 1 by default
         lattice = dimod.generators.mimo._make_honeycomb(2)
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
-                                                      num_transmitters_per_node=2,
-                                                      num_receivers_per_node=2,
-                                                      modulation='BPSK', SNRb=float('Inf'), use_offset=True)
-        self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables),bqm.variables))),1e-10)
+            num_transmitters_per_node=2, num_receivers_per_node=2,
+            modulation='BPSK', SNRb=float('Inf'), use_offset=True)
+        self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), bqm.variables))), 1e-10)
 
     def test_attenuation_matrix(self):
         #Check that attenuation matches the matrix
@@ -1545,15 +1573,16 @@ class TestMIMO(unittest.TestCase):
                     transmitters_per_node=t_per_node,
                     receivers_per_node=r_per_node,
                     neighbor_root_attenuation=np.random.random())
-                self.assertFalse(np.any(A- np.tile(np.identity(num_var), (r_per_node,t_per_node))))
+                self.assertFalse(np.any(A - np.tile(np.identity(num_var), (r_per_node, t_per_node))))
 
         for ea in range(2):
-            lattice.add_edge(ea,ea+1)
-            neighbor_root_attenuation=np.random.random()
+            lattice.add_edge(ea, ea+1)
+            neighbor_root_attenuation = np.random.random()
             A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
                 lattice, neighbor_root_attenuation=2)
-            self.assertFalse(np.any(A-A.transpose()))
-            self.assertTrue(all(A[eap,eap+1]==2 for eap in range(ea+1)))
+            self.assertFalse(np.any(A - A.transpose()))
+            self.assertTrue(all(A[eap, eap + 1]==2 for eap in range(ea + 1)))
+
         ## Check num_transmitters and num_receivers override:
         nx.set_node_attributes(lattice, values=3, name="num_transmitters")
         nx.set_node_attributes(lattice, values=1, name="num_receivers")
@@ -1566,67 +1595,68 @@ class TestMIMO(unittest.TestCase):
         nx.set_node_attributes(lattice, values={0:2, 3:1}, name="num_receivers")
         nx.set_node_attributes(lattice, values=0, name="num_transmitters")
         nx.set_node_attributes(lattice, values={i:1 for i in [0,1,2,4]}, name="num_transmitters")
+
         # t/r2 -- t -- t   r  t #We can assume the ntr and ntt arguments.
         Acorrect = np.array([[1, 2, 0, 0], [1, 2, 0, 0], [0, 0, 0, 0]])
         A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
             lattice, neighbor_root_attenuation=2)
-        self.assertFalse(np.any(A-Acorrect))
+        self.assertFalse(np.any(A - Acorrect))
 
     def test_noise_scale(self):
         # After applying use_offset, the expected energy is the sum of noise terms.
         # (num_transmitters/SNRb)*sum_{mu=1}^{num_receivers} nu_mu^2 , where <nu_mu^2>=1 under default channels
         # We can do a randomized test (for practicl purpose, I fix the seed to avoid rare outliers):
         for num_transmitters in [256]:
-            for SNRb in [0.1]:#[0.1,10]
-                for mods in [('BPSK',1,1,1),('64QAM',2,42,6)]:#,('QPSK',2,2,2),('16QAM',2,10,4)]:
-                    mod,channel_power_per_transmitter,constellation_mean_power,bits_per_transmitter = mods
+            for SNRb in [0.1]:  #[0.1,10]
+                for mods in [('BPSK', 1, 1, 1),('64QAM', 2, 42, 6)]:    #,('QPSK',2,2,2),('16QAM',2,10,4)]:
+                    mod, channel_power_per_transmitter, constellation_mean_power, bits_per_transmitter = mods
                     for num_receivers in [num_transmitters*4]: #[num_transmitters//4,num_transmitters]:
-                        EoverN = (channel_power_per_transmitter*constellation_mean_power/bits_per_transmitter/SNRb)*num_transmitters*num_receivers
+                        EoverN = (channel_power_per_transmitter * \
+                            constellation_mean_power/bits_per_transmitter/SNRb) * \
+                            num_transmitters * num_receivers
                         if mod=='BPSK':
                             EoverN *= 2 #Real part only
                         for seed in range(1):
-                            #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
-                            #y,t,n,_ = dimod.generators.mimo._create_signal(F,modulation=mod,channel_power=channel_power,random_state=random_state)
-                            #F,channel_power,random_state = dimod.generators.mimo.create_channel(num_transmitters=num_transmitters,num_receivers=num_receivers,random_state=seed)
-                            #y,t,n,_ = dimod.generators.mimo._create_signal(F,modulation=mod,channel_power=channel_power,SNRb=1,random_state=random_state)
-
                             bqm0 = dimod.generators.mimo.spin_encoded_mimo(modulation=mod,
-                                                                          num_transmitters=num_transmitters,
-                                                                          num_receivers=num_receivers,
-                                                                          use_offset=True,seed=seed)                     
+                                num_transmitters=num_transmitters, num_receivers=num_receivers,
+                                use_offset=True,seed=seed)                     
                             bqm = dimod.generators.mimo.spin_encoded_mimo(modulation=mod,
-                                                                          num_transmitters=num_transmitters,
-                                                                          num_receivers=num_receivers, SNRb=SNRb,
-                                                                          use_offset=True,seed=seed)
+                                num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                                SNRb=SNRb, use_offset=True,seed=seed)
+
                             #E[n^2] constructed from offsets correctly:
-                            scale_n = (bqm.offset-bqm0.offset)/EoverN
-                            self.assertGreater(1.5,scale_n)
-                            self.assertLess(0.5,scale_n)
+                            scale_n = (bqm.offset - bqm0.offset)/EoverN
+                            self.assertGreater(1.5, scale_n)
+                            self.assertLess(0.5, scale_n)
                             #scale_n_alt = np.sum(abs(n)**2,axis=0)/EoverN)
+
                     for num_transmitter_block in [2]: #[1,2]:
                         lattice_size = num_transmitters//num_transmitter_block
-                        for num_receiver_block in [1]:#[1,2]:
+                        for num_receiver_block in [1]:  #[1,2]:
                             # Similar applies for COMP, up to boundary conditions. Choose a symmetric lattice:
-                            num_receiversT = lattice_size*num_receiver_block
-                            num_transmittersT = lattice_size*num_transmitter_block
-                            EoverN = (channel_power_per_transmitter*constellation_mean_power/bits_per_transmitter/SNRb)*num_transmittersT*num_receiversT
+                            num_receiversT = lattice_size * num_receiver_block
+                            num_transmittersT = lattice_size * num_transmitter_block
+                            EoverN = (channel_power_per_transmitter * \
+                                constellation_mean_power/bits_per_transmitter/SNRb) * \
+                                num_transmittersT * num_receiversT
                         
                             if mod=='BPSK':
                                 EoverN *= 2 #Real part only
                             lattice = nx.Graph()
-                            lattice.add_edges_from((i,(i+1)%lattice_size) for i in range(num_transmitters//num_transmitter_block))
+                            lattice.add_edges_from((i, (i + 1)%lattice_size) for i in 
+                                range(num_transmitters//num_transmitter_block))
                             for seed in range(1):
                                 bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
-                                                                              num_transmitters_per_node=num_transmitter_block,
-                                                                              num_receivers_per_node=num_receiver_block,
-                                                                              modulation=mod, SNRb=SNRb,
-                                                                              use_offset=True)
+                                    num_transmitters_per_node=num_transmitter_block,
+                                    num_receivers_per_node=num_receiver_block,
+                                    modulation=mod, SNRb=SNRb,
+                                    use_offset=True)
                                 bqm0 = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
-                                                                               num_transmitters_per_node=num_transmitter_block,
-                                                                               num_receivers_per_node=num_receiver_block,
-                                                                               modulation=mod,
-                                                                               use_offset=True)
-                                scale_n = (bqm.offset-bqm0.offset)/EoverN
-                                self.assertGreater(1.5,scale_n)
-                                #self.assertLess(0.5,scale_n)
+                                    num_transmitters_per_node=num_transmitter_block,
+                                    num_receivers_per_node=num_receiver_block,
+                                    modulation=mod,
+                                    use_offset=True)
+                                scale_n = (bqm.offset - bqm0.offset)/EoverN
+                                self.assertGreater(1.5, scale_n)
+                                #self.assertLess(0.5, scale_n)
                             
