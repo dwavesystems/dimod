@@ -22,7 +22,7 @@ from functools import wraps
 from itertools import product
 import networkx as nx
 import numpy as np
-from typing import Callable, Iterable, Optional, Sequence, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import dimod
 
@@ -72,7 +72,7 @@ def _quadratic_form(y, F):
                          f" given: {F.shape}, n={y.shape[1]}")
 
     offset = np.matmul(y.imag.T, y.imag) + np.matmul(y.real.T, y.real)
-    h = - 2*np.matmul(F.T.conj(), y)    # Be careful with interpretation!
+    h = -2 * np.matmul(F.T.conj(), y)    # Be careful with interpretation!
     J = np.matmul(F.T.conj(), F)
 
     return offset, h, J
@@ -160,8 +160,6 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     if modulation not in mod_config.keys():
         raise ValueError(f"Unsupported modulation: {modulation}")
 
-    num_transmitters = len(symbols)
-
     if modulation == 'BPSK':
         return symbols.copy()
 
@@ -173,13 +171,16 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     # A map from integer parts to real is clearest (and sufficiently performant),
     # generalizes to Gray coding more easily as well:
 
-    symb_to_spins = { np.sum([x*2**xI for xI, x in enumerate(spins)]) : spins
-                        for spins in product(*spins_per_real_symbol*[(-1, 1)])}
-    spins = np.concatenate([np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()],
-                                            [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
-                            for prec in range(spins_per_real_symbol)])
+    symb_to_spins = { np.sum([x * 2**xI for xI, x in enumerate(spins)]) : spins
+                        for spins in product(*spins_per_real_symbol * [(-1, 1)])}
+    spins = np.concatenate(
+        [np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()],
+                         [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
+        for prec in range(spins_per_real_symbol)])
+    
     if len(symbols.shape) > 2:
         raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
+    
     if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
         spins.reshape((len(spins), ))
 
@@ -216,64 +217,6 @@ def _yF_to_hJ(y, F, modulation):
 
     return h, J, offset
 
-def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
-    """Construct a linear filter for estimating transmitted signals.
-
-    Following the conventions of MacKay\ [#Mackay]_, a filter is constructed 
-    for independent and identically distributed Gaussian noise at power spectral 
-    density `N_0`:
-
-    :math:`N_0 I[N_r] = E[n n^{\dagger}]`
-
-    For independent and identically distributed (i.i.d), zero mean, transmitted symbols,
-
-    :math:`P_c I[N_t] = E[v v^{\dagger}]`
-
-    where :math:`P_{c}` is the constellation's mean power equal to 
-    :math:`(1, 2, 10, 42)N_t` for BPSK, QPSK, 16QAM, 64QAM respectively.
-
-    For an i.i.d channel,
-
-    :math:`N_r N_t = E_F[T_r[F F^{\dagger}]] \qquad \Rightarrow \qquad E[||F_{\mu, i}||^2] = 1`
-
-    Symbols are assumed to be normalized:
-
-    :math:`\\frac{SNR}{N_t} = \\frac{P_c}{N_0}`
-
-    :math:`SNR_b = \\frac{SNR}{N_t B_c}`
-
-    where :math:`B_c` is bit per symbol, equal to  :math:`(1, 2, 4, 8)`
-    for BPSK, QPSK, 16QAM, 64QAM respectively.
-
-    Typical use case: set :math:`\\frac{SNR}{N_t} = SNR_b`.
-
-    .. [#Mackay] Matthew R. McKay, Iain B. Collings, Antonia M. Tulino.
-        "Achievable sum rate of MIMO MMSE receivers: A general analytic framework"
-        IEEE Transactions on Information Theory, February 2010
-        arXiv:0903.0666 [cs.IT]
-
-    Reference:
-
-        https://www.youtube.com/watch?v=U3qjVgX2poM
-    """
-    if method not in ['zero_forcing', 'matched_filter', 'MMSE']:
-        raise ValueError('Unsupported filtering method')
-
-    if method == 'zero_forcing':
-        # Moore-Penrose pseudo inverse
-        return np.linalg.pinv(F)
-
-    Nr, Nt = F.shape
-
-    if method == 'matched_filter':  # F = root(Nt/P) Fcompconj
-        return F.conj().T / np.sqrt(PoverNt)
-
-    # method == 'MMSE':
-    return np.matmul(
-        F.conj().T,
-        np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
-                    ) / np.sqrt(PoverNt)
-
 def _spins_to_symbols(spins: np.array, 
                      modulation: str = None,
                      num_transmitters: int = None) -> np.array:
@@ -302,14 +245,14 @@ def _spins_to_symbols(spins: np.array,
         num_amps, rem = divmod(len(spins), (2*num_transmitters))
         if num_amps > 64:
             raise ValueError('Complex encoding is limited to 64 bits in'
-                             'real and imaginary parts; num_transmitters is'
+                             'real and imaginary parts; `num_transmitters` is'
                              'too small')
         if rem != 0:
-            raise ValueError('num_spins must be divisible by num_transmitters '
+            raise ValueError('number of spins must be divisible by `num_transmitters` '
                              'for modulation schemes')
 
-        spinsR = np.reshape(spins, (num_amps, 2*num_transmitters))
-        amps = 2**np.arange(0, num_amps)[:, np.newaxis]
+        spinsR = np.reshape(spins, (num_amps, 2 * num_transmitters))
+        amps = 2 ** np.arange(0, num_amps)[:, np.newaxis]
 
         symbols = np.sum(amps*spinsR[:, :num_transmitters], axis=0) \
             + 1j*np.sum(amps*spinsR[:, num_transmitters:], axis=0)
@@ -335,26 +278,24 @@ def _lattice_to_attenuation_matrix(lattice,
     # The code could be generalized to account for asymmetric transmission patterns, 
     # or real-valued spatial structure.
 
-    num_var = lattice.number_of_nodes()
-
     if any('num_transmitters' in lattice.nodes[n] for n in lattice.nodes) or \
        any('num_receivers' in lattice.nodes[n] for n in lattice.nodes):
 
-        node_to_transmitters = {} #Integer labels of transmitters at node
-        node_to_receivers = {} #Integer labels of receivers at node
+        node_to_transmitters = {}   #Integer labels of transmitters at node
+        node_to_receivers = {}      #Integer labels of receivers at node
         t_ind = 0
         r_ind = 0
         for n in lattice.nodes:
             num = transmitters_per_node
             if 'num_transmitters' in lattice.nodes[n]:
                 num = lattice.nodes[n]['num_transmitters']
-            node_to_transmitters[n] = list(range(t_ind, t_ind+num))
+            node_to_transmitters[n] = list(range(t_ind, t_ind + num))
             t_ind = t_ind + num
 
             num = receivers_per_node
             if 'num_receivers' in lattice.nodes[n]:
                 num = lattice.nodes[n]['num_receivers']
-            node_to_receivers[n] = list(range(r_ind, r_ind+num))
+            node_to_receivers[n] = list(range(r_ind, r_ind + num))
             r_ind = r_ind + num
 
         A = np.zeros(shape=(r_ind, t_ind))
@@ -365,21 +306,21 @@ def _lattice_to_attenuation_matrix(lattice,
                     A[r, t] = 1
                 for neigh in lattice.neighbors(n0):
                     for t in node_to_transmitters[neigh]:
-                        A[r, t]=neighbor_root_attenuation
+                        A[r, t] = neighbor_root_attenuation
     else:
-        A = np.identity(num_var)
+        A = np.identity(lattice.number_of_nodes())
         # Uniform case:
         node_to_int = {n:idx for idx, n in enumerate(lattice.nodes())}
         for n0 in lattice.nodes:
             root = node_to_int[n0]
             for neigh in lattice.neighbors(n0):
-                A[node_to_int[neigh], root]=neighbor_root_attenuation
+                A[node_to_int[neigh], root] = neighbor_root_attenuation
         A = np.tile(A, (receivers_per_node, transmitters_per_node))
 
-        node_to_receivers = {n: [node_to_int[n]+i*len(node_to_int) for 
+        node_to_receivers = {n: [node_to_int[n] + i*len(node_to_int) for 
             i in range(receivers_per_node)] for n in node_to_int}
 
-        node_to_transmitters = {n: [node_to_int[n]+i*len(node_to_int) for 
+        node_to_transmitters = {n: [node_to_int[n] + i*len(node_to_int) for 
             i in range(transmitters_per_node)] for n in node_to_int}
 
     return A, node_to_transmitters, node_to_receivers
@@ -433,23 +374,23 @@ def create_channel(num_receivers: int = 1,
         if F_distribution[1] == 'real':
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters))
         else:
-            channel_power = 2*num_transmitters
+            channel_power = 2 * num_transmitters
             F = random_state.normal(0, 1, size=(num_receivers, num_transmitters)) + \
                 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
     elif F_distribution[0] == 'binary':
         if F_distribution[1] == 'real':
             F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
         else:
-            channel_power = 2*num_transmitters #For integer precision purposes:
+            channel_power = 2*num_transmitters      #For integer precision purposes:
             F = ((1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))) +
                  1j*(1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))))
 
     if attenuation_matrix is not None:
         if np.iscomplex(attenuation_matrix).any():
             raise ValueError('attenuation_matrix must not have complex values')
-        F = F*attenuation_matrix #Dense format for now, this is slow.
-        channel_power *= np.mean(np.sum(attenuation_matrix*attenuation_matrix,
-                                        axis=0))/num_receivers
+        F = F * attenuation_matrix    #Dense format for now, this is slow.
+        channel_power *= np.mean(np.sum(attenuation_matrix * attenuation_matrix,
+                                        axis=0)) / num_receivers
 
     return F, channel_power
     
@@ -469,8 +410,8 @@ def _constellation_properties(modulation):
     if modulation not in mod_config.keys():
         raise ValueError('Unsupported modulation method')
 
-    amps = 1+2*np.arange(mod_config[modulation]["amps"])
-    constellation_mean_power = 1 if modulation == 'BPSK' else 2*np.mean(amps*amps)
+    amps = 1 + 2*np.arange(mod_config[modulation]["amps"])
+    constellation_mean_power = 1 if modulation == 'BPSK' else 2 * np.mean(amps*amps)
 
     return mod_config[modulation]["bpt"], amps, constellation_mean_power
 
@@ -596,17 +537,21 @@ def _create_signal(F,
     else:
         # Energy_per_bit:
         if channel_power == None:
-            #Assume proportional to num_transmitters; i.e., every channel component is RMSE 1 and 1 bit
+            #Assume proportional to num_transmitters; i.e., every channel 
+            # component is RMSE 1 and 1 bit
             channel_power = num_transmitters
 
-        Eb = channel_power * constellation_mean_power / bits_per_transmitter #Eb is the same for QPSK and BPSK
+        #Eb is the same for QPSK and BPSK
         # Eb/N0 = SNRb (N0 = 2 sigma^2, the one-sided PSD ~ kB T at antenna)
         # SNRb and Eb, together imply N0
+        Eb = channel_power * constellation_mean_power / bits_per_transmitter 
         N0 = Eb / SNRb
-        sigma = np.sqrt(N0/2) # Noise is complex by definition, hence 1/2 power in real and complex parts
+        # Noise is complex by definition, hence 1/2 power in real & complex parts
+        sigma = np.sqrt(N0 / 2) 
 
-        # Channel noise of covariance N0*I_{NR}. Noise is complex by definition, although
-        # for real channel and symbols we need only worry about real part:
+        # Channel noise of covariance N0*I_{NR}. Noise is complex by definition, 
+        # although for real channel and symbols we need only worry about 
+        # real part:
         channel_noise = sigma*(random_state.normal(0, 1, size=(num_receivers, 1)) \
             + 1j*random_state.normal(0, 1, size=(num_receivers, 1)))
         if modulation == 'BPSK' and np.isreal(F).all():
@@ -765,7 +710,7 @@ def spin_encoded_mimo(modulation: str,
         >>> SNRb = 5
         >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', 
         ...     num_transmitters = 64, 
-        ...     num_receivers = round(num_transmitters/transmitters_per_receiver), 
+        ...     num_receivers = round(num_transmitters / transmitters_per_receiver), 
         ...     SNRb=SNRb, 
         ...     F_distribution = ('binary', 'real'))
 
@@ -814,7 +759,6 @@ def spin_encoded_mimo(modulation: str,
                                                 F_distribution=F_distribution,
                                                 random_state=random_state,
                                                 attenuation_matrix=attenuation_matrix)
-
     else:
         channel_power = num_transmitters
 
@@ -839,14 +783,20 @@ def _make_honeycomb(L: int):
     """Generate 2L by 2L triangular lattice. 
     
     The generated lattice has open boundaries and cut corners to make a hexagon. 
+
+    Args:
+        L: Length of lattice.
+
+    Returns:
+        :class:`networkx.Graph`.
     """
     G = nx.Graph()
 
-    G.add_edges_from([((x, y), (x, y+ 1)) for x in range(2*L+1) for y in range(2*L)])
-    G.add_edges_from([((x, y), (x+1, y)) for x in range(2*L) for y in range(2*L + 1)])
-    G.add_edges_from([((x, y), (x+1, y+1)) for x in range(2*L) for y in range(2*L)])
-    G.remove_nodes_from([(i, j) for j in range(L) for i in range(L+1+j, 2*L+1) ])
-    G.remove_nodes_from([(i, j) for i in range(L) for j in range(L+1+i, 2*L+1)])
+    G.add_edges_from([((x, y), (x, y + 1)) for x in range(2*L + 1) for y in range(2*L)])
+    G.add_edges_from([((x, y), (x + 1, y)) for x in range(2*L) for y in range(2*L + 1)])
+    G.add_edges_from([((x, y), (x + 1, y +1 )) for x in range(2*L) for y in range(2*L)])
+    G.remove_nodes_from([(i, j) for j in range(L) for i in range(L + 1 + j, 2*L + 1) ])
+    G.remove_nodes_from([(i, j) for i in range(L) for j in range(L + 1 + i, 2*L + 1)])
 
     return G
 
@@ -1033,12 +983,13 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
         F_distribution=F_distribution,
         use_offset=use_offset,
         attenuation_matrix=attenuation_matrix)
+    
     # JR: I should relabel the integer representation back to
     # (geometric_position, index_at_position, imag/real, precision)
     # Easy case (for now) BPSK num_transmitters per site at most 1.
 
     if (modulation == 'BPSK' and num_transmitters_per_node == 1
-        and integer_labeling==False):
+        and integer_labeling == False):
         rtn = {v[0]: k for k, v in ntr.items()}  # Invertible mapping
         # Need to check attributes really, ..
         print(rtn)
@@ -1046,7 +997,67 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
 
     return bqm
 
-# Moved to end of file until we do something with this
+# Linear-filter functions. These are not used for spin-encoding MIMO problems
+# and are maintained here for user convenience 
+ 
+def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
+    """Construct a linear filter for estimating transmitted signals.
+
+    Following the conventions of MacKay\ [#Mackay]_, a filter is constructed 
+    for independent and identically distributed Gaussian noise at power spectral 
+    density :math:`N_0`:
+
+    :math:`N_0 I[N_r] = E[n n^{\dagger}]`
+
+    For independent and identically distributed (i.i.d), zero mean, transmitted symbols,
+
+    :math:`P_c I[N_t] = E[v v^{\dagger}]`
+
+    where :math:`P_{c}`, the constellation's mean power, is equal to 
+    :math:`(1, 2, 10, 42)N_t` for BPSK, QPSK, 16QAM, 64QAM respectively.
+
+    For an i.i.d channel,
+
+    :math:`N_r N_t = E_F[T_r[F F^{\dagger}]] \qquad \Rightarrow \qquad E[||F_{\mu, i}||^2] = 1`
+
+    Symbols are assumed to be normalized:
+
+    :math:`\\frac{SNR}{N_t} = \\frac{P_c}{N_0}`
+
+    :math:`SNR_b = \\frac{SNR}{N_t B_c}`
+
+    where :math:`B_c` is bit per symbol, equal to  :math:`(1, 2, 4, 8)`
+    for BPSK, QPSK, 16QAM, 64QAM respectively.
+
+    Typical use case: set :math:`\\frac{SNR}{N_t} = SNR_b`.
+
+    .. [#Mackay] Matthew R. McKay, Iain B. Collings, Antonia M. Tulino.
+        "Achievable sum rate of MIMO MMSE receivers: A general analytic framework"
+        IEEE Transactions on Information Theory, February 2010
+        arXiv:0903.0666 [cs.IT]
+
+    Reference:
+
+        https://www.youtube.com/watch?v=U3qjVgX2poM
+    """
+    if method not in ['zero_forcing', 'matched_filter', 'MMSE']:
+        raise ValueError('Unsupported filtering method')
+
+    if method == 'zero_forcing':
+        # Moore-Penrose pseudo inverse
+        return np.linalg.pinv(F)
+
+    Nr, Nt = F.shape
+
+    if method == 'matched_filter':  # F = root(Nt/P) Fcompconj
+        return F.conj().T / np.sqrt(PoverNt)
+
+    # method == 'MMSE':
+    return np.matmul(
+        F.conj().T,
+        np.linalg.pinv(np.matmul(F, F.conj().T) + np.identity(Nr)/SNRoverNt)
+            ) / np.sqrt(PoverNt)
+
 def filter_marginal_estimator(x: np.array, modulation: str):
     if modulation is not None:
         if modulation == 'BPSK' or modulation == 'QPSK':
@@ -1059,10 +1070,12 @@ def filter_marginal_estimator(x: np.array, modulation: str):
             max_abs = 15
         else:
             raise ValueError('Unknown modulation')
+
         #Real part (nearest):
         x_R = 2*np.round((x.real - 1)/2) + 1
         x_R = np.where(x_R < -max_abs, -max_abs, x_R)
         x_R = np.where(x_R > max_abs, max_abs, x_R)
+
         if modulation != 'BPSK':
             x_I = 2*np.round((x.imag - 1)/2) + 1
             x_I = np.where(x_I <- max_abs, -max_abs, x_I)
