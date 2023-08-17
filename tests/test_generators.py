@@ -1264,7 +1264,29 @@ class TestMIMO(unittest.TestCase):
                 #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
 
     def test_yF_to_hJ(self):
-        print('Add tests for _yF_to_hJ')
+        F = np.array([[0, 1], [1, 1]])
+
+        y = np.ones(2)
+        h_bpsk, J_bpsk, o_bpsk = dimod.generators.mimo._yF_to_hJ(y, F, 'BPSK')
+        h_qpsk, J_qpsk, o_qpsk = dimod.generators.mimo._yF_to_hJ(y, F, 'QPSK')
+        self.assertTrue(np.array_equal(h_bpsk, h_qpsk))
+        self.assertTrue(np.array_equal(J_bpsk, J_qpsk))
+        self.assertTrue(np.array_equal(o_bpsk, o_qpsk))
+
+        y = np.array([1, -1+1j])
+        h_bpsk, J_bpsk, o_bpsk = dimod.generators.mimo._yF_to_hJ(y, F, 'BPSK')
+        h_qpsk, J_qpsk, o_qpsk = dimod.generators.mimo._yF_to_hJ(y, F, 'QPSK')
+        h_16, J_16, o_16 = dimod.generators.mimo._yF_to_hJ(y, F, '16QAM')
+        self.assertFalse(np.array_equal(h_bpsk, h_qpsk))
+        self.assertFalse(np.array_equal(J_bpsk, J_qpsk))
+        self.assertFalse(np.array_equal(h_qpsk, h_16))
+        self.assertFalse(np.array_equal(J_qpsk, J_16))
+        self.assertTrue(np.array_equal(h_bpsk, h_qpsk[:, :2]))
+        self.assertTrue(np.array_equal(J_bpsk, J_qpsk[:2, :2]))
+        self.assertTrue(np.array_equal(o_bpsk, o_qpsk))
+        self.assertTrue(np.array_equal(h_qpsk, h_16[:1, :]))
+        self.assertTrue(np.array_equal(J_qpsk, J_16[:4, :4]))
+        self.assertTrue(np.array_equal(o_qpsk, o_16))
 
     def test_spins_to_symbols(self):
         symbols = dimod.generators.mimo._spins_to_symbols(self.symbols_bpsk, 
