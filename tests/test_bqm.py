@@ -3644,6 +3644,24 @@ class TestConstraint(unittest.TestCase):
         self.assertEqual(bqm_equal, bqm2)
 
     @parameterized.expand(BQMs.items())
+    def test_inequality_constraint_unbalanced(self, name, BQM):
+        bqm = BQM('BINARY')
+        num_variables = 3
+        x = {}
+        for i in range(num_variables):
+            x[i] = bqm.add_variable('x_{i}'.format(i=i))
+        terms = iter([(x[i], 2.0) for i in range(num_variables)])
+        unbalanced_terms = bqm.add_linear_inequality_constraint(
+            terms, lagrange_multiplier=[1.0, 1.0], label='inequality0', constant=0.0, ub=5,
+            penalization_method="unbalanced")
+        self.assertTrue(len(unbalanced_terms) == 0)
+        for i in x:
+            self.assertEqual(bqm.get_linear(x[i]), -14.0)
+            for j in x:
+                if j > i:
+                    self.assertEqual(bqm.get_quadratic(x[i], x[j]), 8.0)
+
+    @parameterized.expand(BQMs.items())
     def test_simple_constraint_iterator(self, name, BQM):
         bqm = BQM('BINARY')
         num_variables = 2

@@ -40,7 +40,7 @@ from numbers import Integral, Number
 from typing import (Any, BinaryIO, ByteString, Callable, Dict,
                     Hashable, Iterable, Iterator,
                     Mapping, MutableMapping, Optional, Sequence,
-                    Tuple, Union,
+                    Tuple, Union, Literal
                     )
 
 import numpy as np
@@ -702,14 +702,15 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         self.offset += lagrange_multiplier * constant * constant
 
     def add_linear_inequality_constraint(
-            self, terms: Iterable[Tuple[Variable, int]],
-            lagrange_multiplier: Bias,
-            label: str,
-            constant: int = 0,
-            lb: int = np.iinfo(np.int64).min,
-            ub: int = 0,
-            cross_zero: bool = False
-    ) -> Iterable[Tuple[Variable, int]]:
+                self, terms: Iterable[Tuple[Variable, int]],
+                lagrange_multiplier: Bias,
+                label: str,
+                constant: int = 0,
+                lb: int = np.iinfo(np.int64).min,
+                ub: int = 0,
+                cross_zero: bool = False,
+                penalization_method: Literal["slack", "unbalanced"] = "slack",
+        ) -> Iterable[Tuple[Variable, int]]:
         """Add a linear inequality constraint as a quadratic objective.
 
         The linear inequality constraint is of the form:
@@ -739,6 +740,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 Upper bound for the constraint.
             cross_zero:
                 When True, adds zero to the domain of constraint.
+            penalization_method:
+                Whether to use slack variables or the unbalanced penalization method [1].
+                ("slack", "unbalanced")
+                [1] https://arxiv.org/abs/2211.13914
 
         Returns:
             slack_terms:  Values of :math:`\sum_{i} b_{i} slack_{i}` as an
@@ -772,35 +777,50 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             raise ValueError(
                 f'The given constraint ({label}) is infeasible with any value'
                 ' for state variables.')
+        if penalization_method == "slack":
+            slack_upper_bound = int(ub_c - lb_c)
+            if slack_upper_bound == 0:
+                self.add_linear_equality_constraint(terms, lagrange_multiplier, -ub_c)
+                return []
+            else:
+                slack_terms = []
+                zero_constraint = False
+                if cross_zero:
+                    if lb_c > 0 or ub_c < 0:
+                        if ub_c-slack_upper_bound > 0:
+                            zero_constraint = True
+    
+                num_slack = int(np.floor(np.log2(slack_upper_bound)))
+                slack_coefficients = [2 ** j for j in range(num_slack)]
+                if slack_upper_bound - 2 ** num_slack >= 0:
+                    slack_coefficients.append(slack_upper_bound - 2 ** num_slack + 1)
+    
+                for j, s in enumerate(slack_coefficients):
+                    sv = self.add_variable(f'slack_{label}_{j}')
+                    slack_terms.append((sv, s))
+    
+                if zero_constraint:
+                    sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
+                    slack_terms.append((sv, ub_c - slack_upper_bound))
+    
+            self.add_linear_equality_constraint(terms + slack_terms,
+                                                lagrange_multiplier, -ub_c)
+            return slack_terms
 
-        slack_upper_bound = int(ub_c - lb_c)
-        if slack_upper_bound == 0:
-            self.add_linear_equality_constraint(terms, lagrange_multiplier, -ub_c)
+        elif penalization_method == "unbalanced":
+            if not isinstance(lagrange_multiplier, Iterable):
+                raise TypeError('A list with two lagrange_multiplier are needed'
+                                ' for the unbalanced penalization method.')
+
+            for v, bias in terms:
+                self.add_linear(v, lagrange_multiplier[0] * bias)
+            self.offset += -ub_c
+            self.add_linear_equality_constraint(terms, lagrange_multiplier[1], -ub_c)
+            
             return []
         else:
-            slack_terms = []
-            zero_constraint = False
-            if cross_zero:
-                if lb_c > 0 or ub_c < 0:
-                    if ub_c-slack_upper_bound > 0:
-                        zero_constraint = True
-
-            num_slack = int(np.floor(np.log2(slack_upper_bound)))
-            slack_coefficients = [2 ** j for j in range(num_slack)]
-            if slack_upper_bound - 2 ** num_slack >= 0:
-                slack_coefficients.append(slack_upper_bound - 2 ** num_slack + 1)
-
-            for j, s in enumerate(slack_coefficients):
-                sv = self.add_variable(f'slack_{label}_{j}')
-                slack_terms.append((sv, s))
-
-            if zero_constraint:
-                sv = self.add_variable(f'slack_{label}_{num_slack + 1}')
-                slack_terms.append((sv, ub_c - slack_upper_bound))
-
-        self.add_linear_equality_constraint(terms + slack_terms,
-                                            lagrange_multiplier, -ub_c)
-        return slack_terms
+            raise ValueError(f"The method {penalization_method} is not a valid method."
+                             ' Choose between ["slack", "unbalanced"]')
 
     def add_linear_from_array(self, linear: Sequence):
         """Add linear biases from an array-like to a binary quadratic model.
