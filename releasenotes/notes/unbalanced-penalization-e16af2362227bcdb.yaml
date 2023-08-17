@@ -1,3 +1,4 @@
 ---
 features:
-  - Add `BinaryQuadraticModel::add_linear_inequality_constraint:penalization_method` parameter. It allows the use of unbalanced penalization https://arxiv.org/abs/2211.13914 instead of the slack variables method for the inequality constraints.
+  - Add ``penalization_method`` parameter to ``BinaryQuadraticModel.add_linear_inequality_constraint()``. It allows the use of unbalanced penalization https://arxiv.org/abs/2211.13914 instead of the slack variables method for the inequality constraints.
+  
