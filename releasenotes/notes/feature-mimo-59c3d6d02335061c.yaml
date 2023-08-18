@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``spin_encoded_mimo()`` function for generating a multi-input 
+    multiple-output (MIMO) channel-decoding problem. 
+  - |  
+    Add ``spin_encoded_comp()`` function for generating a coordinated multi-point 
+    (CoMP) decoding problem.
