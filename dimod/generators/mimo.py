@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2023 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +11,6 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express 93or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#
-# ===============================================================================================
-
-#Author: Jack Raymond
-#Date: December 18th 2020
 
 from functools import wraps
 from itertools import product
@@ -218,8 +212,8 @@ def _yF_to_hJ(y, F, modulation):
     return h, J, offset
 
 def _spins_to_symbols(spins: np.array, 
-                     modulation: str = None,
-                     num_transmitters: int = None) -> np.array:
+                      modulation: str = None,
+                      num_transmitters: int = None) -> np.array:
     """Convert spins to modulated symbols.
 
     Args:
@@ -260,9 +254,9 @@ def _spins_to_symbols(spins: np.array,
     return symbols
 
 def _lattice_to_attenuation_matrix(lattice, 
-                                  transmitters_per_node=1, 
-                                  receivers_per_node=1, 
-                                  neighbor_root_attenuation=1):
+                                   transmitters_per_node=1, 
+                                   receivers_per_node=1, 
+                                   neighbor_root_attenuation=1):
     """Generate an attenuation matrix from a given lattice.
 
     The attenuation matrix, a NumPy :class:`~numpy.ndarray` matrix with a row 
@@ -561,7 +555,7 @@ def _create_signal(F,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-def spin_encoded_mimo(modulation: str, 
+def spin_encoded_mimo(modulation: typing.Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"], 
                       y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
