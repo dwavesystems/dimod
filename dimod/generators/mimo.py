@@ -15,7 +15,7 @@
 from functools import wraps
 from itertools import product
 import numpy as np
-from typing import Optional, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 
 import dimod
 from dimod.typing import GraphLike
@@ -555,7 +555,7 @@ def _create_signal(F,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-def spin_encoded_mimo(modulation: typing.Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"], 
+def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"], 
                       y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
