@@ -1134,6 +1134,29 @@ class TestMIMO(unittest.TestCase):
         self.symbols_bpsk = np.asarray([[-1, 1]])
         self.symbols_qam = lambda a: np.array([[complex(i, j)] \
             for i in range(-a, a + 1, 2) for j in range(-a, a + 1, 2)])
+        
+        def _make_honeycomb(L: int):    
+            """Generate 2L by 2L triangular lattice. 
+            
+            The generated lattice has open boundaries and cut corners to make a hexagon. 
+
+            Args:
+                L: Length of lattice.
+
+            Returns:
+                :class:`networkx.Graph`.
+            """
+            G = nx.Graph()
+
+            G.add_edges_from([((x, y), (x, y + 1)) for x in range(2*L + 1) for y in range(2*L)])
+            G.add_edges_from([((x, y), (x + 1, y)) for x in range(2*L) for y in range(2*L + 1)])
+            G.add_edges_from([((x, y), (x + 1, y +1 )) for x in range(2*L) for y in range(2*L)])
+            G.remove_nodes_from([(i, j) for j in range(L) for i in range(L + 1 + j, 2*L + 1) ])
+            G.remove_nodes_from([(i, j) for i in range(L) for j in range(L + 1 + i, 2*L + 1)])
+
+            return G
+        
+        self._make_honeycomb = lambda L: _make_honeycomb(L)
             
     def _effective_fields(self, bqm):
         num_var = bqm.num_variables
@@ -1468,14 +1491,6 @@ class TestMIMO(unittest.TestCase):
                     use_offset=True, SNRb=float('Inf'))
                 self.assertLess(abs(bqm.energy((transmitted_spins_random, 
                     np.arange(bqm.num_variables)))), 1e-8)
-    
-    def test_make_honeycomb(self):
-        G = dimod.generators.mimo._make_honeycomb(1)
-        self.assertEqual(G.number_of_nodes(),7)
-        self.assertEqual(G.number_of_edges(),(6+6*3)//2)
-        G = dimod.generators.mimo._make_honeycomb(2)
-        self.assertEqual(G.number_of_nodes(),19)
-        self.assertEqual(G.number_of_edges(),(7*6+6*4+6*3)//2)
 
     def create_channel(self):
         # Test some defaults
@@ -1565,15 +1580,15 @@ class TestMIMO(unittest.TestCase):
         self.assertNotEqual(got, sent)
    
     def test_spin_encoded_comp(self):
-        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=1, modulation='BPSK')
-        lattice = dimod.generators.mimo._make_honeycomb(1)
+        bqm = dimod.generators.mimo.spin_encoded_comp(lattice=nx.complete_graph(1), modulation='BPSK')
+        lattice = self._make_honeycomb(1)
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice, 
             num_transmitters_per_node=1, num_receivers_per_node=1, modulation='BPSK')
         num_var = lattice.number_of_nodes()
         self.assertEqual(num_var,bqm.num_variables)
         self.assertEqual(21,bqm.num_interactions)
         # Transmitted symbols are 1 by default
-        lattice = dimod.generators.mimo._make_honeycomb(2)
+        lattice = self._make_honeycomb(2)
         bqm = dimod.generators.mimo.spin_encoded_comp(lattice=lattice,
             num_transmitters_per_node=2, num_receivers_per_node=2,
             modulation='BPSK', SNRb=float('Inf'), use_offset=True)

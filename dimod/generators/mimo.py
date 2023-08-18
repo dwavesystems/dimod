@@ -20,11 +20,11 @@
 
 from functools import wraps
 from itertools import product
-import networkx as nx
 import numpy as np
 from typing import Optional, Tuple, Union
 
 import dimod
+from dimod.typing import GraphLike
 
 __all__ = ['spin_encoded_mimo', 'spin_encoded_comp', ]
 
@@ -779,28 +779,7 @@ def spin_encoded_mimo(modulation: str,
         np.fill_diagonal(J, 0)
         return dimod.BQM(h[:, 0], J, 'SPIN')
 
-def _make_honeycomb(L: int):
-    """Generate 2L by 2L triangular lattice. 
-    
-    The generated lattice has open boundaries and cut corners to make a hexagon. 
-
-    Args:
-        L: Length of lattice.
-
-    Returns:
-        :class:`networkx.Graph`.
-    """
-    G = nx.Graph()
-
-    G.add_edges_from([((x, y), (x, y + 1)) for x in range(2*L + 1) for y in range(2*L)])
-    G.add_edges_from([((x, y), (x + 1, y)) for x in range(2*L) for y in range(2*L + 1)])
-    G.add_edges_from([((x, y), (x + 1, y +1 )) for x in range(2*L) for y in range(2*L)])
-    G.remove_nodes_from([(i, j) for j in range(L) for i in range(L + 1 + j, 2*L + 1) ])
-    G.remove_nodes_from([(i, j) for i in range(L) for j in range(L + 1 + i, 2*L + 1)])
-
-    return G
-
-def spin_encoded_comp(lattice: Union[int, nx.Graph],
+def spin_encoded_comp(lattice: GraphLike,
                       modulation: str, 
                       y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
@@ -827,7 +806,7 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
     a linear sum of spins, the optimization problem is a binary quadratic model.
 
     Args:
-        lattice: Geometry, as a :class:`networkx.Graph` or integer, defining 
+        lattice: Geometry, as a :class:`networkx.Graph`, defining 
             the set of nearest-neighbor base stations. 
             
             Each base station has ``num_receivers`` receivers and 
@@ -835,9 +814,6 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
             of the graph or as per-node values. Transmitters from neighboring 
             base stations are also received. 
            
-            When set to an integer value, creates a honeycomb lattice of the given 
-            linear scale (number of bases tations :math:`O(L^2)`).
-
         modulation: Constellation (symbol set) users can transmit. Symbols are 
             assumed to be transmitted with equal probability. Supported values 
             are:
@@ -942,22 +918,25 @@ def spin_encoded_comp(lattice: Union[int, nx.Graph],
         Generate an instance of a CDMA problem in the high-load regime, near a
         first-order phase transition:
 
-        >>> import networkx as nx
-        >>> G = nx.complete_graph(4)
-        >>> nx.set_node_attributes(G, values={n:2*n+1 for n in G.nodes()}, name='num_transmitters')
-        >>> nx.set_node_attributes(G, values={n:2 for n in G.nodes()}, name='num_receivers')
-        >>> transmitted_symbols = np.random.choice([1, -1], 
-        ...     size=(sum(nx.get_node_attributes(G, "num_transmitters").values()), 1))
-        >>> bqm = dimod.generators.spin_encoded_comp(G,
-        ...     modulation='BPSK', 
-        ...     transmitted_symbols=transmitted_symbols,
-        ...     SNRb=5,
-        ...     F_distribution = ('binary', 'real'))
+        .. doctest::                    # TODO: reconsider example/default graph 
+            :skipif: True
+
+            >>> import networkx as nx       
+            >>> G = nx.complete_graph(4)    
+            >>> nx.set_node_attributes(G, values={n:2*n+1 for n in G.nodes()}, name='num_transmitters')
+            >>> nx.set_node_attributes(G, values={n:2 for n in G.nodes()}, name='num_receivers')
+            >>> transmitted_symbols = np.random.choice([1, -1], 
+            ...     size=(sum(nx.get_node_attributes(G, "num_transmitters").values()), 1))
+            >>> bqm = dimod.generators.spin_encoded_comp(G,
+            ...     modulation='BPSK', 
+            ...     transmitted_symbols=transmitted_symbols,
+            ...     SNRb=5,
+            ...     F_distribution = ('binary', 'real'))
 
     """
 
-    if type(lattice) is not nx.Graph:
-        lattice = _make_honeycomb(int(lattice))
+    if not hasattr(lattice, 'edges') or not hasattr(lattice, 'nodes'): # not nx.Graph:
+        raise ValueError('Lattice must be a :class:`networkx.Graph`')
 
     if modulation is None:
         modulation = 'BPSK'
