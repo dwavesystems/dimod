@@ -12,23 +12,29 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from collections import namedtuple
 from functools import wraps
 from itertools import product
-import numpy as np
 from typing import Literal, Optional, Tuple, Union
+
+import numpy as np
 
 import dimod
 from dimod.typing import GraphLike
 
 __all__ = ['spin_encoded_mimo', 'spin_encoded_comp', ]
 
-mod_config = { # bits per transmitter, amplitudes, transmitters_per_spin, number of amps, spins per symbol
-    "BPSK": {"bpt": 1, "amps": 1, "tps": 1, "na": 1, "sps": 1},
-    "QPSK": {"bpt": 2, "amps": 1, "tps": 2, "na": 1, "sps": 1},
-    "16QAM": {"bpt": 4, "amps": 2, "tps": 4, "na": 2, "sps": 2},
-    "64QAM": {"bpt": 6, "amps": 4, "tps": 6, "na": 3, "sps": 3},
-    "256QAM": {"bpt": 8, "amps": 8, "tps": 8, "na": 5, "sps": 4}   #JP: check numbers for 256QAM
-    }
+mod_params = namedtuple("mod_params", ["bits_per_transmitter", 
+                                       "amplitudes", 
+                                       "transmitters_per_spin", 
+                                       "number_of_amps", 
+                                       "spins_per_symbol"])
+mod_config = {
+    "BPSK": mod_params(1, 1, 1, 1, 1),
+    "QPSK": mod_params(2, 1, 2, 1, 1),
+    "16QAM": mod_params(4, 2, 4, 2, 2),
+    "64QAM": mod_params(6, 4, 6, 3, 3),
+    "256QAM": mod_params(8, 8, 8, 5, 4)}
 
 def _make_random_state(seed_or_state):
     """Return a random state."""
@@ -100,7 +106,7 @@ def _real_quadratic_form(h, J, modulation=None):
     # signal to noise ratio: F^{-1}*y = I*x + F^{-1}*nu)
     # JR: revisit and prove
 
-    if modulation and modulation not in mod_config.keys():
+    if modulation and modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
     if modulation != 'BPSK' and (np.iscomplex(h).any() or np.iscomplex(J).any()):
@@ -133,7 +139,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
     if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
-    amps = 2 ** np.arange(mod_config[modulation]["na"])
+    amps = 2 ** np.arange(mod_config[modulation].number_of_amps)
     hA = np.kron(amps[:, np.newaxis], h)
     JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
     return hA, JA
@@ -151,7 +157,7 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     Returns:
         Spins as a NumPy array.
     """
-    if modulation not in mod_config.keys():
+    if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
     if modulation == 'BPSK':
@@ -160,7 +166,7 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     if modulation == 'QPSK':
         return np.concatenate((symbols.real, symbols.imag))
 
-    spins_per_real_symbol = mod_config[modulation]["sps"]
+    spins_per_real_symbol = mod_config[modulation].spins_per_symbol
 
     # A map from integer parts to real is clearest (and sufficiently performant),
     # generalizes to Gray coding more easily as well:
@@ -225,13 +231,13 @@ def _spins_to_symbols(spins: np.array,
     Returns:
         Transmitted symbols as a NumPy vector.
     """
-    if modulation not in mod_config.keys():
+    if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
     num_spins = len(spins)
 
     if num_transmitters is None:
-        num_transmitters = num_spins // mod_config[modulation]["tps"]
+        num_transmitters = num_spins // mod_config[modulation].transmitters_per_spin
 
     if num_transmitters == num_spins:
         symbols = spins
@@ -388,26 +394,19 @@ def create_channel(num_receivers: int = 1,
 
     return F, channel_power
     
-constellation = {   # bits per transmitter (bpt) and amplitudes (amps)
-    "BPSK": [1, np.ones(1)],       
-    "QPSK": [2, np.ones(1)],
-    "16QAM": [4, 1+2*np.arange(2)],
-    "64QAM": [6, 1+2*np.arange(4)],
-    "256QAM": [8, 1+2*np.arange(8)]} 
-
 def _constellation_properties(modulation):
     """Return bits per symbol, amplitudes, and mean power for QAM constellation.
 
     Constellation mean power makes the standard assumption that symbols are
     sampled uniformly at random for the signal.
     """
-    if modulation not in mod_config.keys():
+    if modulation not in mod_config:
         raise ValueError('Unsupported modulation method')
 
-    amps = 1 + 2*np.arange(mod_config[modulation]["amps"])
+    amps = 1 + 2*np.arange(mod_config[modulation].amplitudes)
     constellation_mean_power = 1 if modulation == 'BPSK' else 2 * np.mean(amps*amps)
 
-    return mod_config[modulation]["bpt"], amps, constellation_mean_power
+    return mod_config[modulation].bits_per_transmitter, amps, constellation_mean_power
 
 def _create_transmitted_symbols(num_transmitters,
                                 amps=[-1, 1],
@@ -773,7 +772,7 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
         np.fill_diagonal(J, 0)
         return dimod.BQM(h[:, 0], J, 'SPIN')
 
-def spin_encoded_comp(lattice: networkx.Graph,
+def spin_encoded_comp(lattice: 'networkx.Graph',
                       modulation: str, 
                       y: Optional[np.array] = None,
                       F: Union[np.array, None] = None,
