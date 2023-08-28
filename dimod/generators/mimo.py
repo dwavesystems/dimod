@@ -396,7 +396,7 @@ def create_channel(num_receivers: int = 1,
 
     return F, channel_power
     
-def _constellation_properties(modulation="BPSK"):
+def _constellation_properties(modulation):
     """Return bits per symbol, amplitudes, and mean power for QAM constellation.
 
     Constellation mean power makes the standard assumption that symbols are
@@ -564,7 +564,6 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
                       SNRb: float = float('Inf'),
                       seed: Union[None, int, np.random.RandomState] = None,
                       F_distribution: Union[None, tuple] = None,
-                      use_offset: bool = False,
                       attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
     """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
 
@@ -679,12 +678,6 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
             default is ``('normal', 'real')``; otherwise, the default is 
             ``('normal', 'complex')``. 
 
-        use_offset:
-           Adds a constant to the Ising model energy so that the energy 
-           evaluated for the transmitted symbols is zero. At sufficiently
-           high ratios of receivers to users, and with high signal-to-noise 
-           ratio, this is with high probability the ground-state energy.
-
         attenuation_matrix:
            Root of the power associated with each transmitter-receiver channel; 
            use for sparse and structured codes.
@@ -758,33 +751,25 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
         y, _, _, _ = _create_signal(F,
                                     transmitted_symbols=transmitted_symbols,
                                     channel_noise=channel_noise,
-                                    SNRb=SNRb, modulation=modulation,
+                                    SNRb=SNRb, 
+                                    modulation=modulation,
                                     channel_power=channel_power,
                                     random_state=random_state)
 
     h, J, offset = _yF_to_hJ(y, F, modulation)
 
-    if use_offset:
-        #NB - in this form, offset arises from
-        return dimod.BQM(h[:, 0], J, 'SPIN', offset=offset)
-    else:
-        np.fill_diagonal(J, 0)
-        return dimod.BQM(h[:, 0], J, 'SPIN')
-
+    return dimod.BQM(h[:, 0], J, 'SPIN', offset=offset)
+    
 def spin_encoded_comp(lattice: 'networkx.Graph',
                       modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
                       y: Optional[np.array] = None,
                       F: Union[np.array, None] = None,
                       *,
-                      integer_labeling: bool = True,
                       transmitted_symbols: Union[np.array, None] = None,
                       channel_noise: Union[np.array, None] = None,
-                      num_transmitters_per_node: int = 1,
-                      num_receivers_per_node: int = 1,
                       SNRb: float = float('Inf'),
                       seed: Union[None, int, np.random.RandomState] = None,
-                      F_distribution: Union[None, str] = None,
-                      use_offset: bool = False) -> dimod.BinaryQuadraticModel:
+                      F_distribution: Union[None, str] = None) -> dimod.BinaryQuadraticModel:
     """Generate a coordinated multi-point (CoMP) decoding problem.
 
     In `coordinated multipoint (CoMP) <https://en.wikipedia.org/wiki/Cooperative_MIMO>`_
@@ -838,16 +823,6 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
 
         F:  Transmission channel. Currently not supported and must be ``None``.
 
-        integer_labeling: Currently not supported and must be ``True``.
-
-            Compresses geometric, quadrature, and modulation-scale information
-            for every spin to a non-redundant integer label sequence. In 
-            particular, for BPSK with at most one transmitter per site, there
-            is one spin per lattice node with a transmitter, which inherits the 
-            lattice label.
-            When ``False``, spin variables are labeled with ``geometric_position`` 
-            index at geometric position. This option is currently not implemented. 
-
         transmitted_symbols: Set of symbols transmitted. Used in combination 
             with ``F`` to generate the received signal, :math:`y`. The number 
             of transmitted symbols must be consistent with ``F``.
@@ -863,15 +838,6 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
             identically distributed from the constellations. 
         
         channel_noise: Channel noise as a complex value.
-
-        num_transmitters_per_node: Number of users. Each user transmits one 
-            symbol per frame. Overrides any ``num_transmitters`` attribute of
-            a :class:`networkx.Graph` provided as the ``lattice`` parameter. 
-
-        num_receivers_per_node: Number of receivers of a channel. Must be 
-            consistent with the length of any provided signal, ``len(y)``.
-            Overrides any ``num_receivers`` attribute of the ``lattice`` 
-            parameter.
 
         SNRb: Signal-to-noise ratio per bit, :math:`SNRb=10^{SNR_b[decibels]/10}`, 
             used to generate the noisy signal when ``y`` is not provided. 
@@ -896,12 +862,6 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
             default is ``('normal', 'real')``; otherwise, the default is 
             ``('normal', 'complex')``.
         
-        use_offset: Adds a constant to the Ising model energy so that the 
-            energy evaluated for the transmitted symbols is zero. At 
-            sufficiently high ratios of receivers to users, and with high 
-            signal-to-noise ratio, this is with high probability the 
-            ground-state energy.
-
     Returns:
         bqm: Binary quadratic model defining the log-likelihood function.
 
@@ -930,11 +890,7 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
     if not hasattr(lattice, 'edges') or not hasattr(lattice, 'nodes'): # not nx.Graph:
         raise ValueError('Lattice must be a :class:`networkx.Graph`')
 
-    attenuation_matrix, ntr, ntt = _lattice_to_attenuation_matrix(
-        lattice,
-        transmitters_per_node=num_transmitters_per_node,
-        receivers_per_node=num_receivers_per_node,
-        neighbor_root_attenuation=1)
+    attenuation_matrix, _, _ = _lattice_to_attenuation_matrix(lattice)
     
     num_receivers, num_transmitters = attenuation_matrix.shape
 
@@ -949,18 +905,7 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
         SNRb=SNRb,
         seed=seed,
         F_distribution=F_distribution,
-        use_offset=use_offset,
         attenuation_matrix=attenuation_matrix)
-    
-    # JR: I should relabel the integer representation back to
-    # (geometric_position, index_at_position, imag/real, precision)
-    # Easy case (for now) BPSK num_transmitters per site at most 1.
-
-    if (modulation == 'BPSK' and num_transmitters_per_node == 1
-        and integer_labeling == False):
-        rtn = {v[0]: k for k, v in ntr.items()}  # Invertible mapping
-        # Need to check attributes really, ..
-        bqm.relabel_variables({n: rtn[n] for n in bqm.variables})
 
     return bqm
 
