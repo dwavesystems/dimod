@@ -171,8 +171,8 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
     # A map from integer parts to real is clearest (and sufficiently performant),
     # generalizes to Gray coding more easily as well:
 
-    symb_to_spins = { np.sum([x * 2**xI for xI, x in enumerate(spins)]) : spins
-                        for spins in product(*spins_per_real_symbol * [(-1, 1)])}
+    symb_to_spins = {np.sum([x * 2**xI for xI, x in enumerate(spins)]): spins
+        for spins in product(*spins_per_real_symbol * [(-1, 1)])}
     spins = np.concatenate(
         [np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()],
                          [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
@@ -329,8 +329,7 @@ def create_channel(num_receivers: int = 1,
                    num_transmitters: int = 1,
                    F_distribution: Optional[Tuple[str, str]] = None,
                    random_state: Optional[Union[int, np.random.mtrand.RandomState]] = None,
-                   attenuation_matrix: Optional[np.ndarray] = None) -> Tuple[
-                       np.ndarray, float, np.random.mtrand.RandomState]:
+                   attenuation_matrix: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
     """Create a channel model.
 
     Channel power is the expected root-mean-square signal per receiver (i.e.,
@@ -513,18 +512,15 @@ def _create_signal(F,
         if modulation != 'BPSK' and np.isreal(transmitted_symbols).any():
             raise ValueError(f"Quadrature transmitted signals must be complex")
     else:
-        if type(random_state) is not np.random.mtrand.RandomState:
-            random_state = np.random.RandomState(random_state)
-
         quadrature = modulation != 'BPSK'
         transmitted_symbols = _create_transmitted_symbols(
-                num_transmitters, amps=amps, quadrature=quadrature, random_state=random_state)
+            num_transmitters, amps=amps, quadrature=quadrature, random_state=random_state)
 
     if SNRb <= 0:
-       raise ValueError(f"signal-to-noise ratio must be positive. SNRb={SNRb}")
+        raise ValueError(f"signal-to-noise ratio must be positive. SNRb={SNRb}")
 
     if SNRb == float('Inf'):
-       y = np.matmul(F, transmitted_symbols)
+        y = np.matmul(F, transmitted_symbols)
     elif channel_noise is not None:
         y = channel_noise + np.matmul(F, transmitted_symbols)
     else:
@@ -584,13 +580,6 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
     other problems.
 
     Args:
-        y: Complex- or real-valued received signal, as a NumPy array. If 
-            ``None``, generated from other arguments.
-
-        F: Complex- or real-valued channel, as a NumPy array. If ``None``, 
-            generated from other arguments. Note that for correct interpretation
-            of SNRb, channel power should be normalized to ``num_transmitters``.
-
         modulation: Constellation (symbol set) users can transmit. Symbols are 
             assumed to be transmitted with equal probability. Supported values 
             are:
@@ -626,6 +615,13 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
                 A QPSK symbol set is generated and symbols are further amplitude 
                 modulated by an independently and uniformly distributed random 
                 amount from :math:`[1, 3, 5]`.
+
+        y: Complex- or real-valued received signal, as a NumPy array. If 
+            ``None``, generated from other arguments.
+
+        F: Complex- or real-valued channel, as a NumPy array. If ``None``, 
+            generated from other arguments. Note that for correct interpretation
+            of SNRb, channel power should be normalized to ``num_transmitters``.
 
         num_transmitters: Number of users. Each user transmits one symbol per 
             frame.
@@ -964,7 +960,6 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
         and integer_labeling == False):
         rtn = {v[0]: k for k, v in ntr.items()}  # Invertible mapping
         # Need to check attributes really, ..
-        print(rtn)
         bqm.relabel_variables({n: rtn[n] for n in bqm.variables})
 
     return bqm
