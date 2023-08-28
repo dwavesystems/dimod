@@ -34,9 +34,9 @@ def _make_random_state(seed_or_state):
     """Return a random state."""
     if not seed_or_state:
         return np.random.RandomState(None)
-    elif type(seed_or_state) is np.random.mtrand.RandomState:
+    elif isinstance(seed_or_state, np.random.mtrand.RandomState):
         return seed_or_state
-    elif type(seed_or_state) is int:
+    elif isinstance(seed_or_state, int):
         return np.random.RandomState(seed_or_state)
     else:
         raise ValueError(f"Unsupported seed type: {seed_or_state}")
@@ -130,7 +130,7 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         vector  and amplitude-modulated quadratic interactions, :math:`J`, as
         a matrix.
     """
-    if modulation not in mod_config.keys():
+    if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
     amps = 2 ** np.arange(mod_config[modulation]["na"])
@@ -517,7 +517,7 @@ def _create_signal(F,
         if type(random_state) is not np.random.mtrand.RandomState:
             random_state = np.random.RandomState(random_state)
 
-        quadrature = False if modulation == 'BPSK' else True
+        quadrature = modulation != 'BPSK'
         transmitted_symbols = _create_transmitted_symbols(
                 num_transmitters, amps=amps, quadrature=quadrature, random_state=random_state)
 
@@ -773,9 +773,9 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
         np.fill_diagonal(J, 0)
         return dimod.BQM(h[:, 0], J, 'SPIN')
 
-def spin_encoded_comp(lattice: GraphLike,
+def spin_encoded_comp(lattice: networkx.Graph,
                       modulation: str, 
-                      y: Union[np.array, None] = None,
+                      y: Optional[np.array] = None,
                       F: Union[np.array, None] = None,
                       *,
                       integer_labeling: bool = True,
