@@ -88,7 +88,7 @@ def _real_quadratic_form(h, J, modulation=None):
 
         J: Quadratic interactions as a dense symmetric matrix.
 
-        modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM',
+        modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM', 
             '64QAM', and '256QAM'.
 
     Returns:
@@ -118,7 +118,7 @@ def _real_quadratic_form(h, J, modulation=None):
     else:
         return h.real, J.real
 
-def _amplitude_modulated_quadratic_form(h, J, modulation):
+def _amplitude_modulated_quadratic_form(h, J, modulation="BPSK"):
     """Amplitude-modulate the quadratic form.
 
     Updates bias amplitudes for quadrature amplitude modulation.
@@ -129,7 +129,8 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
         J: Quadratic interactions as a matrix.
 
         modulation: Modulation. Supported values are non-quadrature modulation
-            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
+            'BPSK' (the default) and quadrature modulations 'QPSK', '16QAM', 
+            '64QAM', and '256QAM'.
 
     Returns:
         Two-tuple of amplitude-modulated linear biases, :math:`h`, as a NumPy
@@ -144,15 +145,15 @@ def _amplitude_modulated_quadratic_form(h, J, modulation):
     JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
     return hA, JA
 
-def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
+def _symbols_to_spins(symbols, modulation="BPSK"):
     """Convert quadrature amplitude modulated (QAM) symbols to spins.
 
     Args:
         symbols: Transmitted symbols as a NumPy column vector.
 
-        modulation: Modulation. Supported values are non-quadrature modulation
-            binary phase-shift keying (BPSK, or 2-QAM) and quadrature modulations
-            'QPSK', '16QAM', '64QAM', and '256QAM'.
+        modulation: Modulation. Supported values are the default non-quadrature 
+            modulation, binary phase-shift keying (BPSK, or 2-QAM), and 
+            quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
 
     Returns:
         Spins as a NumPy array.
@@ -186,7 +187,7 @@ def _symbols_to_spins(symbols: np.array, modulation: str) -> np.array:
 
     return spins
 
-def _yF_to_hJ(y, F, modulation):
+def _yF_to_hJ(y, F, modulation="BPSK"):
     """Convert :math:`O(v) = ||y - F v||^2` to modulated quadratic form.
 
     Constructs coefficients for the form
@@ -199,8 +200,9 @@ def _yF_to_hJ(y, F, modulation):
             values, where :math:`i` rows correspond to :math:`y_i` receivers
             and :math:`j` columns correspond to :math:`v_i` transmitted symbols.
 
-        modulation: Modulation. Supported values are non-quadrature modulation
-            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
+        modulation: Modulation. Supported values are the default non-quadrature 
+            modulation, 'BPSK', and quadrature modulations 'QPSK', '16QAM', 
+            '64QAM', and '256QAM'.
 
     Returns:
         Three tuple of amplitude-modulated linear biases :math:`h`, as a NumPy
@@ -217,16 +219,17 @@ def _yF_to_hJ(y, F, modulation):
 
     return h, J, offset
 
-def _spins_to_symbols(spins: np.array, 
-                      modulation: str = None,
-                      num_transmitters: int = None) -> np.array:
+def _spins_to_symbols(spins, 
+                      modulation="BPSK",
+                      num_transmitters=None):
     """Convert spins to modulated symbols.
 
     Args:
         spins: Spins as a NumPy array.
 
-        modulation: Modulation. Supported values are non-quadrature modulation
-            BPSK and quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
+        modulation: Modulation. Supported values are the default non-quadrature 
+            modulation, 'BPSK', and quadrature modulations 'QPSK', '16QAM', 
+            '64QAM', and '256QAM'.
 
     Returns:
         Transmitted symbols as a NumPy vector.
@@ -393,7 +396,7 @@ def create_channel(num_receivers: int = 1,
 
     return F, channel_power
     
-def _constellation_properties(modulation):
+def _constellation_properties(modulation="BPSK"):
     """Return bits per symbol, amplitudes, and mean power for QAM constellation.
 
     Constellation mean power makes the standard assumption that symbols are
@@ -550,7 +553,7 @@ def _create_signal(F,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"], 
+def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
                       y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
@@ -769,7 +772,7 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
         return dimod.BQM(h[:, 0], J, 'SPIN')
 
 def spin_encoded_comp(lattice: 'networkx.Graph',
-                      modulation: str, 
+                      modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
                       y: Optional[np.array] = None,
                       F: Union[np.array, None] = None,
                       *,
@@ -926,9 +929,6 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
 
     if not hasattr(lattice, 'edges') or not hasattr(lattice, 'nodes'): # not nx.Graph:
         raise ValueError('Lattice must be a :class:`networkx.Graph`')
-
-    if modulation is None:
-        modulation = 'BPSK'
 
     attenuation_matrix, ntr, ntt = _lattice_to_attenuation_matrix(
         lattice,
