@@ -1131,6 +1131,7 @@ class TestMagicSquares(unittest.TestCase):
 class TestMIMO(unittest.TestCase):
 
     def setUp(self):
+        self.rng = np.random.default_rng(1)
         self.symbols_bpsk = np.asarray([[-1, 1]])
         self.symbols_qam = lambda a: np.array([[complex(i, j)] \
             for i in range(-a, a + 1, 2) for j in range(-a, a + 1, 2)])
@@ -1172,12 +1173,12 @@ class TestMIMO(unittest.TestCase):
         # Tested but so far this function is unused
         fme = dimod.generators.mimo.filter_marginal_estimator
         
-        filtered_signal = np.random.random(20) + np.arange(-20, 20, 2)
+        filtered_signal = self.rng.random(20) + np.arange(-20, 20, 2)
         estimated_source = fme(filtered_signal, 'BPSK')
         self.assertTrue(0 == len(set(estimated_source).difference(np.arange(-1, 3, 2))))
         self.assertTrue(np.all(estimated_source[:-1] <= estimated_source[1:]))
         
-        filtered_signal = filtered_signal + 1j*(-np.random.random(20) + np.arange(20, -20, -2))
+        filtered_signal = filtered_signal + 1j*(-self.rng.random(20) + np.arange(20, -20, -2))
         
         for modulation in ['QPSK','16QAM','64QAM']:
             estimated_source = fme(filtered_signal, modulation=modulation)
@@ -1188,7 +1189,7 @@ class TestMIMO(unittest.TestCase):
         Nt = 5
         Nr = 7
         # linear_filter(F, method='zero_forcing', PoverNt=1, SNRoverNt = 1)
-        F = np.random.normal(size=(Nr,Nt)) + 1j*np.random.normal(size=(Nr,Nt))
+        F = self.rng.normal(size=(Nr,Nt)) + 1j*self.rng.normal(size=(Nr,Nt))
         Fsimple = np.identity(Nt) # Nt=Nr
 
         #BPSK, real channel:
@@ -1221,13 +1222,13 @@ class TestMIMO(unittest.TestCase):
         # Quadratic form must evaluate to match original objective:
         num_var = 3
         num_receivers = 5
-        F = np.random.normal(0, 1, size=(num_receivers, num_var)) + \
-            1j*np.random.normal(0, 1, size=(num_receivers, num_var))
-        y = np.random.normal(0, 1, size=(num_receivers, 1)) + \
-            1j*np.random.normal(0, 1, size=(num_receivers, 1))
+        F = self.rng.normal(0, 1, size=(num_receivers, num_var)) + \
+            1j*self.rng.normal(0, 1, size=(num_receivers, num_var))
+        y = self.rng.normal(0, 1, size=(num_receivers, 1)) + \
+            1j*self.rng.normal(0, 1, size=(num_receivers, 1))
 
         # Random test case:
-        vUnwrap = np.random.normal(0, 1, size=(2*num_var, 1))
+        vUnwrap = self.rng.normal(0, 1, size=(2*num_var, 1))
         v = vUnwrap[:num_var, :] + 1j*vUnwrap[num_var:, :]
         vec = y - np.matmul(F, v)
         val1 = np.matmul(vec.T.conj(), vec)
@@ -1268,8 +1269,8 @@ class TestMIMO(unittest.TestCase):
 
     def test_amplitude_modulated_quadratic_form(self):
         num_var = 3
-        h = np.random.random(size=(num_var, 1))
-        J = np.random.random(size=(num_var, num_var))
+        h = self.rng.random(size=(num_var, 1))
+        J = self.rng.random(size=(num_var, num_var))
         mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
         mod_pref = [1, 1, 2, 3]
         for offset in [0]:
@@ -1372,7 +1373,7 @@ class TestMIMO(unittest.TestCase):
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
         num_spins = 5
-        spins = np.random.choice([-1, 1], size=num_spins)
+        spins = self.rng.choice([-1, 1], size=num_spins)
         symbols = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation='BPSK')
         self.assertTrue(np.all(spins == symbols))
         spins = dimod.generators.mimo._symbols_to_spins(symbols=spins, modulation='BPSK')
@@ -1419,17 +1420,17 @@ class TestMIMO(unittest.TestCase):
             self.assertTrue(np.all(spins_enc == spins))
 
             #random encoding:
-            spins = np.random.choice([-1, 1], size=num_spins)
+            spins = self.rng.choice([-1, 1], size=num_spins)
             symbols_enc = dimod.generators.mimo._spins_to_symbols(spins=spins, modulation=mod)
             spins_enc = dimod.generators.mimo._symbols_to_spins(symbols=symbols_enc, modulation=mod)
             self.assertTrue(np.all(spins_enc == spins))
 
     def test_spin_encoded_mimo(self):
         for num_transmitters, num_receivers in [(1, 1), (5, 1), (1, 3), (11, 7)]:
-            F = np.random.normal(0, 1, size=(num_receivers, num_transmitters)) + \
-                    1j*np.random.normal(0, 1, size=(num_receivers, num_transmitters))
-            y = np.random.normal(0, 1, size=(num_receivers, 1)) + \
-                    1j*np.random.normal(0, 1, size=(num_receivers, 1))
+            F = self.rng.normal(0, 1, size=(num_receivers, num_transmitters)) + \
+                    1j*self.rng.normal(0, 1, size=(num_receivers, num_transmitters))
+            y = self.rng.normal(0, 1, size=(num_receivers, 1)) + \
+                    1j*self.rng.normal(0, 1, size=(num_receivers, 1))
             bqm = dimod.generators.mimo.spin_encoded_mimo(modulation='QPSK', y=y, F=F)
 
             mod_pref = [1, 1, 2, 3]
@@ -1451,7 +1452,7 @@ class TestMIMO(unittest.TestCase):
                 F_simple = np.ones(shape=(num_receivers, num_transmitters), dtype=dtype)
                 transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), 
                     dtype=dtype)*constellation[-1]
-                transmitted_symbols_random = np.random.choice(constellation, 
+                transmitted_symbols_random = self.rng.choice(constellation, 
                     size=(num_transmitters, 1))
                 transmitted_spins_random = dimod.generators.mimo._symbols_to_spins(
                     symbols=transmitted_symbols_random.flatten(), modulation=modulation)
@@ -1605,12 +1606,12 @@ class TestMIMO(unittest.TestCase):
                     lattice,
                     transmitters_per_node=t_per_node,
                     receivers_per_node=r_per_node,
-                    neighbor_root_attenuation=np.random.random())
+                    neighbor_root_attenuation=self.rng.random())
                 self.assertFalse(np.any(A - np.tile(np.identity(num_var), (r_per_node, t_per_node))))
 
         for ea in range(2):
             lattice.add_edge(ea, ea+1)
-            neighbor_root_attenuation = np.random.random()
+            neighbor_root_attenuation = self.rng.random()
             A,_,_ = dimod.generators.mimo._lattice_to_attenuation_matrix(
                 lattice, neighbor_root_attenuation=2)
             self.assertFalse(np.any(A - A.transpose()))
