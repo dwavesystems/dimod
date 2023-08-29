@@ -370,11 +370,11 @@ def create_channel(num_receivers: int = 1,
                 1j*random_state.normal(0, 1, size=(num_receivers, num_transmitters))
     elif F_distribution[0] == 'binary':
         if F_distribution[1] == 'real':
-            F = (1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters)))
+            F = (1 - 2*random_state.integers(2, size=(num_receivers, num_transmitters)))
         else:
             channel_power = 2*num_transmitters      #For integer precision purposes:
-            F = ((1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))) +
-                 1j*(1 - 2*random_state.randint(2, size=(num_receivers, num_transmitters))))
+            F = ((1 - 2*random_state.integers(2, size=(num_receivers, num_transmitters))) +
+                 1j*(1 - 2*random_state.integers(2, size=(num_receivers, num_transmitters))))
 
     if attenuation_matrix is not None:
         if np.iscomplex(attenuation_matrix).any():
