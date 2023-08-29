@@ -36,17 +36,6 @@ mod_config = {
     "64QAM": mod_params(6, 4, 6, 3, 3),
     "256QAM": mod_params(8, 8, 8, 5, 4)}
 
-def _make_random_state(seed_or_state):
-    """Return a random state."""
-    if not seed_or_state:
-        return np.random.RandomState(None)
-    elif isinstance(seed_or_state, np.random.mtrand.RandomState):
-        return seed_or_state
-    elif isinstance(seed_or_state, int):
-        return np.random.RandomState(seed_or_state)
-    else:
-        raise ValueError(f"Unsupported seed type: {seed_or_state}")
-
 def _quadratic_form(y, F):
     """Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
 
@@ -365,7 +354,7 @@ def create_channel(num_receivers: int = 1,
     
     channel_power = num_transmitters
 
-    random_state = _make_random_state(random_state)
+    random_state = np.random.default_rng(random_state)
     
     if F_distribution is None:
         F_distribution = ('normal', 'complex')
@@ -445,7 +434,7 @@ def _create_transmitted_symbols(num_transmitters,
     if any(np.modf(amps)[0]):
         raise ValueError('Amplitudes must have integer values')
 
-    random_state = _make_random_state(random_state)
+    random_state = np.random.default_rng(random_state)
 
     if quadrature == False:
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
@@ -505,7 +494,7 @@ def _create_signal(F,
     num_receivers = F.shape[0]
     num_transmitters = F.shape[1]
 
-    random_state = _make_random_state(random_state)
+    random_state = np.random.default_rng(random_state)
 
     bits_per_transmitter, amps, constellation_mean_power = _constellation_properties(modulation)
 
@@ -709,7 +698,7 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
     .. [#Prince] Various (https://paws.princeton.edu/)
     """
 
-    random_state = _make_random_state(seed)
+    random_state = np.random.default_rng(seed)
 
     if y is not None:
         if len(y.shape) == 1:
