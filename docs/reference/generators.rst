@@ -43,14 +43,14 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
+   comp
    independent_set
    maximum_independent_set
    maximum_weight_independent_set
+   mimo
    random_bin_packing
    random_knapsack
    random_multi_knapsack
-   spin_encoded_comp
-   spin_encoded_mimo
 
 Random
 ======

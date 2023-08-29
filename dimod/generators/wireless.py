@@ -20,9 +20,8 @@ from typing import Literal, Optional, Tuple, Union
 import numpy as np
 
 import dimod
-from dimod.typing import GraphLike
 
-__all__ = ['spin_encoded_mimo', 'spin_encoded_comp', ]
+__all__ = ['mimo', 'comp', ]
 
 mod_params = namedtuple("mod_params", ["bits_per_transmitter", 
                                        "amplitudes", 
@@ -542,7 +541,7 @@ def _create_signal(F,
 
     return y, transmitted_symbols, channel_noise, random_state
 
-def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
+def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
                       y: Union[np.array, None] = None,
                       F: Union[np.array, None] = None,
                       *,
@@ -682,7 +681,7 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
         >>> num_transmitters = 64
         >>> transmitters_per_receiver = 1.5
         >>> SNRb = 5
-        >>> bqm = dimod.generators.spin_encoded_mimo(modulation='BPSK', 
+        >>> bqm = dimod.generators.mimo(modulation='BPSK', 
         ...     num_transmitters = 64, 
         ...     num_receivers = round(num_transmitters / transmitters_per_receiver), 
         ...     SNRb=SNRb, 
@@ -749,7 +748,7 @@ def spin_encoded_mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256
 
     return dimod.BQM(h[:, 0], J, 'SPIN', offset=offset)
     
-def spin_encoded_comp(lattice: 'networkx.Graph',
+def comp(lattice: 'networkx.Graph',
                       modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
                       y: Optional[np.array] = None,
                       F: Union[np.array, None] = None,
@@ -868,7 +867,7 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
             >>> nx.set_node_attributes(G, values={n:2 for n in G.nodes()}, name='num_receivers')
             >>> transmitted_symbols = np.random.choice([1, -1], 
             ...     size=(sum(nx.get_node_attributes(G, "num_transmitters").values()), 1))
-            >>> bqm = dimod.generators.spin_encoded_comp(G,
+            >>> bqm = dimod.generators.comp(G,
             ...     modulation='BPSK', 
             ...     transmitted_symbols=transmitted_symbols,
             ...     SNRb=5,
@@ -883,7 +882,7 @@ def spin_encoded_comp(lattice: 'networkx.Graph',
     
     num_receivers, num_transmitters = attenuation_matrix.shape
 
-    bqm = spin_encoded_mimo(
+    bqm = mimo(
         modulation=modulation,
         y=y,
         F=F,
