@@ -1578,16 +1578,17 @@ class TestMIMO(unittest.TestCase):
             transmitted_symbols=np.array([[1]]), SNRb=10 )
         self.assertNotEqual(got, sent)
    
-    def test_comp(self):
-        bqm = dimod.generators.wireless.comp(lattice=nx.complete_graph(1), modulation='BPSK')
+    def test_coordinated_multipoint(self):
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=nx.complete_graph(1), 
+            modulation='BPSK')
         lattice = self._make_honeycomb(1)
-        bqm = dimod.generators.wireless.comp(lattice=lattice)
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice)
         num_var = lattice.number_of_nodes()
         self.assertEqual(num_var,bqm.num_variables)
         self.assertEqual(21,bqm.num_interactions)
         # Transmitted symbols are 1 by default
         lattice = self._make_honeycomb(2)
-        bqm = dimod.generators.wireless.comp(lattice=lattice,
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
             modulation='BPSK', SNRb=float('Inf'))
         self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), bqm.variables))), 1e-10)
 
@@ -1680,9 +1681,9 @@ class TestMIMO(unittest.TestCase):
                             lattice.add_edges_from((i, (i + 1)%lattice_size) for i in 
                                 range(num_transmitters//num_transmitter_block))
                             for seed in range(1):
-                                bqm = dimod.generators.wireless.comp(lattice=lattice,
+                                bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
                                     modulation=mod, SNRb=SNRb)
-                                bqm0 = dimod.generators.wireless.comp(lattice=lattice,
+                                bqm0 = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
                                     modulation=mod)
                                 scale_n = (bqm.offset - bqm0.offset)/EoverN
                                 self.assertGreater(1.5, scale_n)

@@ -21,7 +21,7 @@ import numpy as np
 
 import dimod
 
-__all__ = ['mimo', 'comp', ]
+__all__ = ['mimo', 'coordinated_multipoint', ]
 
 mod_params = namedtuple("mod_params", ["bits_per_transmitter", 
                                        "amplitudes", 
@@ -747,16 +747,16 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
 
     return dimod.BQM(h[:, 0], J, 'SPIN', offset=offset)
     
-def comp(lattice: 'networkx.Graph',
-         modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
-         y: Optional[np.array] = None,
-         F: Union[np.array, None] = None,
-         *,
-         transmitted_symbols: Union[np.array, None] = None,
-         channel_noise: Union[np.array, None] = None,
-         SNRb: float = float('Inf'),
-         seed: Union[None, int, np.random.RandomState] = None,
-         F_distribution: Union[None, str] = None) -> dimod.BinaryQuadraticModel:
+def coordinated_multipoint(lattice: 'networkx.Graph',
+    modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
+    y: Optional[np.array] = None,
+    F: Union[np.array, None] = None,
+    *,
+    transmitted_symbols: Union[np.array, None] = None,
+    channel_noise: Union[np.array, None] = None,
+    SNRb: float = float('Inf'),
+    seed: Union[None, int, np.random.RandomState] = None,
+    F_distribution: Union[None, str] = None) -> dimod.BinaryQuadraticModel:
     """Generate a coordinated multi-point (CoMP) decoding problem.
 
     In `coordinated multipoint (CoMP) <https://en.wikipedia.org/wiki/Cooperative_MIMO>`_
@@ -866,7 +866,7 @@ def comp(lattice: 'networkx.Graph',
             >>> nx.set_node_attributes(G, values={n:2 for n in G.nodes()}, name='num_receivers')
             >>> transmitted_symbols = np.random.choice([1, -1], 
             ...     size=(sum(nx.get_node_attributes(G, "num_transmitters").values()), 1))
-            >>> bqm = dimod.generators.comp(G,
+            >>> bqm = dimod.generators.coordinated_multipoint(G,
             ...     modulation='BPSK', 
             ...     transmitted_symbols=transmitted_symbols,
             ...     SNRb=5,
@@ -958,6 +958,11 @@ def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
             ) / np.sqrt(PoverNt)
 
 def filter_marginal_estimator(x: np.array, modulation: str):
+    """Map filter output to valid symbols.
+
+    Takes the continuous filter output and maps each estimated symbol to 
+    the nearest valid constellation value.
+    """
     if modulation is not None:
         if modulation == 'BPSK' or modulation == 'QPSK':
             max_abs = 1

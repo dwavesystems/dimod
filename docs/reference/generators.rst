@@ -43,7 +43,7 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
-   comp
+   coordinated_multipoint
    independent_set
    maximum_independent_set
    maximum_weight_independent_set
