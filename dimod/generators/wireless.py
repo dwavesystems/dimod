@@ -60,7 +60,7 @@ def _quadratic_form(y, F):
                          f" given: {F.shape}, n={y.shape[1]}")
 
     offset = np.matmul(y.imag.T, y.imag) + np.matmul(y.real.T, y.real)
-    h = -2 * np.matmul(F.T.conj(), y)    # Be careful with interpretation!
+    h = -2 * np.matmul(F.T.conj(), y)    
     J = np.matmul(F.T.conj(), F)
 
     return offset, h, J
@@ -541,17 +541,17 @@ def _create_signal(F,
     return y, transmitted_symbols, channel_noise, random_state
 
 def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
-                      y: Union[np.array, None] = None,
-                      F: Union[np.array, None] = None,
-                      *,
-                      transmitted_symbols: Union[np.array, None] = None,
-                      channel_noise: Union[np.array, None] = None,
-                      num_transmitters: int = None,
-                      num_receivers: int = None,
-                      SNRb: float = float('Inf'),
-                      seed: Union[None, int, np.random.RandomState] = None,
-                      F_distribution: Union[None, tuple] = None,
-                      attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
+         y: Union[np.array, None] = None,
+         F: Union[np.array, None] = None,
+         *,
+         transmitted_symbols: Union[np.array, None] = None,
+         channel_noise: Union[np.array, None] = None,
+         num_transmitters: int = None,
+         num_receivers: int = None,
+         SNRb: float = float('Inf'),
+         seed: Union[None, int, np.random.RandomState] = None,
+         F_distribution: Union[None, tuple] = None,
+         attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
     """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
 
     In radio networks, `MIMO <https://en.wikipedia.org/wiki/MIMO>`_ is a method 
@@ -748,15 +748,15 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
     return dimod.BQM(h[:, 0], J, 'SPIN', offset=offset)
     
 def comp(lattice: 'networkx.Graph',
-                      modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
-                      y: Optional[np.array] = None,
-                      F: Union[np.array, None] = None,
-                      *,
-                      transmitted_symbols: Union[np.array, None] = None,
-                      channel_noise: Union[np.array, None] = None,
-                      SNRb: float = float('Inf'),
-                      seed: Union[None, int, np.random.RandomState] = None,
-                      F_distribution: Union[None, str] = None) -> dimod.BinaryQuadraticModel:
+         modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK", 
+         y: Optional[np.array] = None,
+         F: Union[np.array, None] = None,
+         *,
+         transmitted_symbols: Union[np.array, None] = None,
+         channel_noise: Union[np.array, None] = None,
+         SNRb: float = float('Inf'),
+         seed: Union[None, int, np.random.RandomState] = None,
+         F_distribution: Union[None, str] = None) -> dimod.BinaryQuadraticModel:
     """Generate a coordinated multi-point (CoMP) decoding problem.
 
     In `coordinated multipoint (CoMP) <https://en.wikipedia.org/wiki/Cooperative_MIMO>`_
