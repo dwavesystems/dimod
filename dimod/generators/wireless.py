@@ -103,8 +103,7 @@ def _real_quadratic_form(h, J, modulation=None):
                              np.concatenate((J.imag.T, J.real), axis=0)),
                              axis=1)
         return hR, JR
-    else:
-        return h.real, J.real
+    return h.real, J.real
 
 def _amplitude_modulated_quadratic_form(h, J, modulation="BPSK"):
     """Amplitude-modulate the quadratic form.
@@ -435,7 +434,7 @@ def _create_transmitted_symbols(num_transmitters,
 
     random_state = np.random.default_rng(random_state)
 
-    if quadrature == False:
+    if not quadrature:
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1))
     else:
         transmitted_symbols = random_state.choice(amps, size=(num_transmitters, 1)) \
@@ -981,5 +980,4 @@ def filter_marginal_estimator(x: np.array, modulation: str):
             x_I = np.where(x_I <- max_abs, -max_abs, x_I)
             x_I = np.where(x_I > max_abs, max_abs, x_I)
             return x_R + 1j*x_I
-        else:
-            return x_R
+        return x_R
