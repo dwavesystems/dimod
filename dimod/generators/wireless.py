@@ -322,7 +322,7 @@ def create_channel(num_receivers: int = 1,
                    attenuation_matrix: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
     """Create a channel model.
 
-    Channel power is the expected root-mean-square signal per receiver (i.e.,
+    Channel power is the expected mean-square signal amplification per receiver (i.e.,
     :math:`mean(F^2)*num_transmitters`) for homogeneous codes.
 
     Args:
@@ -471,14 +471,14 @@ def _create_signal(F,
 
         transmitted_symbols: Transmitted symbols as a column vector.
 
-        channel_noise: Channel noise as a complex value.
+        channel_noise: Channel noise as a column vector.
 
         SNRb: Signal-to-noise ratio.
 
         modulation: Modulation. Supported values are 'BPSK', 'QPSK', '16QAM',
             '64QAM', and '256QAM'.
 
-        channel_power: Channel power. By default, proportional to the number
+        channel_power: Channel power. By default, equal to the number
             of transmitters.
 
         random_state: Seed for a random state or a random state.
