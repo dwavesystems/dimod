@@ -1128,6 +1128,7 @@ class TestMagicSquares(unittest.TestCase):
                     else:
                         self.assertEqual(term, 24)
 
+@unittest.skipUnless(_networkx, "no networkx installed")
 class TestMIMO(unittest.TestCase):
 
     def setUp(self):
