@@ -25,9 +25,9 @@ __all__ = ['mimo', 'coordinated_multipoint', ]
 
 mod_params = namedtuple("mod_params", ["bits_per_transmitter", 
                                        "amplitudes", 
-                                       "transmitters_per_spin", 
+                                       "transmitters_per_bit", 
                                        "number_of_amps", 
-                                       "spins_per_symbol"])
+                                       "bits_per_symbol"])
 mod_config = {
     "BPSK": mod_params(1, 1, 1, 1, 1),
     "QPSK": mod_params(2, 1, 2, 1, 1),
@@ -132,8 +132,8 @@ def _amplitude_modulated_quadratic_form(h, J, modulation="BPSK"):
     JA = np.kron(np.kron(amps[:, np.newaxis], amps[np.newaxis, :]), J)
     return hA, JA
 
-def _symbols_to_spins(symbols, modulation="BPSK"):
-    """Convert quadrature amplitude modulated (QAM) symbols to spins.
+def _symbols_to_bits(symbols, modulation="BPSK"):
+    """Convert quadrature amplitude modulated (QAM) symbols to bits.
 
     Args:
         symbols: Transmitted symbols as a NumPy column vector.
@@ -143,7 +143,7 @@ def _symbols_to_spins(symbols, modulation="BPSK"):
             quadrature modulations 'QPSK', '16QAM', '64QAM', and '256QAM'.
 
     Returns:
-        Spins as a NumPy array.
+        Bits as a NumPy array.
     """
     if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
@@ -154,25 +154,25 @@ def _symbols_to_spins(symbols, modulation="BPSK"):
     if modulation == 'QPSK':
         return np.concatenate((symbols.real, symbols.imag))
 
-    spins_per_real_symbol = mod_config[modulation].spins_per_symbol
+    bits_per_real_symbol = mod_config[modulation].bits_per_symbol
 
     # A map from integer parts to real is clearest (and sufficiently performant),
     # generalizes to Gray coding more easily as well:
 
-    symb_to_spins = {np.sum([x * 2**xI for xI, x in enumerate(spins)]): spins
-        for spins in product(*spins_per_real_symbol * [(-1, 1)])}
-    spins = np.concatenate(
-        [np.concatenate(([symb_to_spins[symb][prec] for symb in symbols.real.flatten()],
-                         [symb_to_spins[symb][prec] for symb in symbols.imag.flatten()]))
-        for prec in range(spins_per_real_symbol)])
+    symb_to_bits = {np.sum([x * 2**xI for xI, x in enumerate(bits)]): bits
+        for bits in product(*bits_per_real_symbol * [(-1, 1)])}
+    bits = np.concatenate(
+        [np.concatenate(([symb_to_bits[symb][prec] for symb in symbols.real.flatten()],
+                         [symb_to_bits[symb][prec] for symb in symbols.imag.flatten()]))
+        for prec in range(bits_per_real_symbol)])
     
     if len(symbols.shape) > 2:
         raise ValueError(f"`symbols` should be 1 or 2 dimensional but is shape {symbols.shape}")
     
     if symbols.ndim == 1:    # If symbols shaped as vector, return as vector
-        spins.reshape((len(spins), ))
+        bits.reshape((len(bits), ))
 
-    return spins
+    return bits
 
 def _yF_to_hJ(y, F, modulation="BPSK"):
     """Convert :math:`O(v) = ||y - F v||^2` to modulated quadratic form.
@@ -206,13 +206,13 @@ def _yF_to_hJ(y, F, modulation="BPSK"):
 
     return h, J, offset
 
-def _spins_to_symbols(spins, 
+def _bits_to_symbols(bits, 
                       modulation="BPSK",
                       num_transmitters=None):
-    """Convert spins to modulated symbols.
+    """Convert bits to modulated symbols.
 
     Args:
-        spins: Spins as a NumPy array.
+        bits: Bits as a NumPy array.
 
         modulation: Modulation. Supported values are the default non-quadrature 
             modulation, 'BPSK', and quadrature modulations 'QPSK', '16QAM', 
@@ -224,28 +224,28 @@ def _spins_to_symbols(spins,
     if modulation not in mod_config:
         raise ValueError(f"Unsupported modulation: {modulation}")
 
-    num_spins = len(spins)
+    num_bits = len(bits)
 
     if num_transmitters is None:
-        num_transmitters = num_spins // mod_config[modulation].transmitters_per_spin
+        num_transmitters = num_bits // mod_config[modulation].transmitters_per_bit
 
-    if num_transmitters == num_spins:
-        symbols = spins
+    if num_transmitters == num_bits:
+        symbols = bits
     else:
-        num_amps, rem = divmod(len(spins), (2*num_transmitters))
+        num_amps, rem = divmod(len(bits), (2*num_transmitters))
         if num_amps > 64:
             raise ValueError('Complex encoding is limited to 64 bits in'
                              'real and imaginary parts; `num_transmitters` is'
                              'too small')
         if rem != 0:
-            raise ValueError('number of spins must be divisible by `num_transmitters` '
+            raise ValueError('number of bits must be divisible by `num_transmitters` '
                              'for modulation schemes')
 
-        spinsR = np.reshape(spins, (num_amps, 2 * num_transmitters))
+        bitsR = np.reshape(bits, (num_amps, 2 * num_transmitters))
         amps = 2 ** np.arange(0, num_amps)[:, np.newaxis]
 
-        symbols = np.sum(amps*spinsR[:, :num_transmitters], axis=0) \
-            + 1j*np.sum(amps*spinsR[:, num_transmitters:], axis=0)
+        symbols = np.sum(amps*bitsR[:, :num_transmitters], axis=0) \
+            + 1j*np.sum(amps*bitsR[:, num_transmitters:], axis=0)
 
     return symbols
 
@@ -321,9 +321,6 @@ def create_channel(num_receivers: int = 1,
                    random_state: Optional[Union[int, np.random.mtrand.RandomState]] = None,
                    attenuation_matrix: Optional[np.ndarray] = None) -> Tuple[np.ndarray, float]:
     """Create a channel model.
-
-    Channel power is the expected mean-square signal amplification per receiver (i.e.,
-    :math:`mean(F^2)*num_transmitters`) for homogeneous codes.
 
     Args:
         num_receivers: Number of receivers.
@@ -562,7 +559,7 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
     subject to additive white Gaussian noise. Given the received signal, 
     :math:`y`, the log likelihood of a given symbol set, :math:`v`, is 
     :math:`MLE = argmin || y - F v ||_2`. When :math:`v` is encoded as 
-    a linear sum of spins, the optimization problem is a binary quadratic model.
+    a linear sum of bits, the optimization problem is a binary quadratic model.
     
     Depending on its parameters, this function can model code division multiple
     access (CDMA) _[#T02, #R20], 5G communication networks _[#Prince], or 
@@ -582,16 +579,16 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
 
                 Quadrature Phase Shift Keying. Transmitted symbols are 
                 :math:`1+1j, 1-1j, -1+1j, -1-1j` normalized by 
-                :math:`\\frac{1}{\\sqrt{2}}`. spins are encoded as a real vector 
+                :math:`\\frac{1}{\\sqrt{2}}`. Bits are encoded as a real vector 
                 concatenated with an imaginary vector.
 
             * '16QAM'
 
                 Each user is assumed to select independently from 16 symbols.
                 The transmitted symbol is a complex value that can be encoded 
-                by two spins in the imaginary part and two spins in the real 
-                part. Highest precision real and imaginary spin vectors are 
-                concatenated to lower precision spin vectors.
+                by two bits in the imaginary part and two bits in the real 
+                part. Highest precision real and imaginary bit vectors are 
+                concatenated to lower precision bit vectors.
 
             * '64QAM'
 
@@ -641,9 +638,9 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
             respectively. Note that for correct analysis by some solvers, applying 
             spin-reversal transforms may be necessary.
             
-            For QAM modulations, amplitude randomness affects likelihood in a 
-            non-trivial way. By default, symbols are chosen independently and 
-            identically distributed from the constellations. 
+            For QAM modulations such as 16QAM, amplitude randomness affects 
+            likelihood in a non-trivial way. By default, symbols are chosen 
+            independently and identically distributed from the constellations. 
 
         channel_noise: Channel noise as a NumPy array of complex values. Must 
             be consistent with the number of receivers. 
@@ -767,7 +764,7 @@ def coordinated_multipoint(lattice: 'networkx.Graph',
     subject to additive white Gaussian noise. Given the received signal, 
     :math:`y`, the log likelihood of a given symbol set, :math:`v`, is 
     :math:`MLE = argmin || y - F v ||_2`. When :math:`v` is encoded as 
-    a linear sum of spins, the optimization problem is a binary quadratic model.
+    a linear sum of bits, the optimization problem is a binary quadratic model.
 
     Args:
         lattice: Geometry, as a :class:`networkx.Graph`, defining 
@@ -788,14 +785,14 @@ def coordinated_multipoint(lattice: 'networkx.Graph',
             * 'QPSK'
                 Quadrature Phase Shift Keying. Transmitted symbols are 
                 :math:`1+1j, 1-1j, -1+1j, -1-1j` normalized by 
-                :math:`\\frac{1}{\\sqrt{2}}`. Spins are encoded as a real vector 
+                :math:`\\frac{1}{\\sqrt{2}}`. Bits are encoded as a real vector 
                 concatenated with an imaginary vector.
             * '16QAM'
                 Each user is assumed to select independently from 16 symbols.
                 The transmitted symbol is a complex value that can be encoded 
-                by two spins in the imaginary part and two spins in the real 
-                part. Highest precision real and imaginary spin vectors are 
-                concatenated to lower precision spin vectors.
+                by two bits in the imaginary part and two bits in the real 
+                part. Highest precision real and imaginary bit vectors are 
+                concatenated to lower precision bit vectors.
             * '64QAM'
                 A QPSK symbol set is generated and symbols are further amplitude 
                 modulated by an independently and uniformly distributed random 
@@ -820,9 +817,9 @@ def coordinated_multipoint(lattice: 'networkx.Graph',
             respectively. Note that for correct analysis by some solvers, 
             applying spin-reversal transforms may be necessary.
             
-            For QAM modulations, amplitude randomness affects likelihood in a 
-            non-trivial way. By default, symbols are chosen independently and 
-            identically distributed from the constellations. 
+            For QAM modulations such as 16QAM, amplitude randomness affects 
+            likelihood in a non-trivial way. By default, symbols are chosen 
+            independently and identically distributed from the constellations. 
         
         channel_noise: Channel noise as a complex value.
 
@@ -896,7 +893,7 @@ def coordinated_multipoint(lattice: 'networkx.Graph',
 
     return bqm
 
-# Linear-filter functions. These are not used for spin-encoding MIMO problems
+# Linear-filter functions. These are not used for bit-encoding MIMO problems
 # and are maintained here for user convenience 
  
 def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):

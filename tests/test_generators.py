@@ -1313,72 +1313,72 @@ class TestMIMO(unittest.TestCase):
         self.assertTrue(np.array_equal(J_qpsk, J_16[:4, :4]))
         self.assertTrue(np.array_equal(o_qpsk, o_16))
 
-    def test_spins_to_symbols(self):
-        symbols = dimod.generators.wireless._spins_to_symbols(self.symbols_bpsk, 
+    def test_bits_to_symbols(self):
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_bpsk, 
             modulation='BPSK')
         self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
         
-        symbols = dimod.generators.wireless._spins_to_symbols(self.symbols_bpsk, 
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_bpsk, 
             modulation='BPSK', num_transmitters=1)
         self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
 
-        symbols = dimod.generators.wireless._spins_to_symbols(self.symbols_qam(1), 
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
             modulation='QPSK')
         self.assertEqual(len(symbols), 2)
 
-        symbols = dimod.generators.wireless._spins_to_symbols(self.symbols_qam(1), 
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
             modulation='16QAM')
         self.assertEqual(len(symbols), 1)
         
         with self.assertRaises(ValueError):
-            spins = dimod.generators.wireless._spins_to_symbols(self.symbols_qam(1), 
+            bits = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
             modulation='QPSK', num_transmitters=3)
 
 
-    def test_symbols_to_spins(self):
+    def test_symbols_to_bits(self):
         # Standard symbol cases (2D input):
-        spins = dimod.generators.wireless._symbols_to_spins(self.symbols_bpsk, 
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_bpsk, 
             modulation='BPSK')
-        self.assertEqual(spins.sum(), 0)
-        self.assertTrue(spins.ndim, 2)
+        self.assertEqual(bits.sum(), 0)
+        self.assertTrue(bits.ndim, 2)
 
-        spins = dimod.generators.wireless._symbols_to_spins(self.symbols_qam(1), 
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(1), 
             modulation='QPSK')
-        self.assertEqual(spins[:len(spins//2)].sum(), 0)
-        self.assertEqual(spins[len(spins//2):].sum(), 0)
-        self.assertTrue(spins.ndim, 2)
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
+        self.assertTrue(bits.ndim, 2)
 
-        spins = dimod.generators.wireless._symbols_to_spins(self.symbols_qam(3), 
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(3), 
             modulation='16QAM')
-        self.assertEqual(spins[:len(spins//2)].sum(), 0)
-        self.assertEqual(spins[len(spins//2):].sum(), 0)
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
 
-        spins = dimod.generators.wireless._symbols_to_spins(self.symbols_qam(5), 
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(5), 
             modulation='64QAM')
-        self.assertEqual(spins[:len(spins//2)].sum(), 0)
-        self.assertEqual(spins[len(spins//2):].sum(), 0)
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
 
         # Standard symbol cases (1D input):
-        spins = dimod.generators.wireless._symbols_to_spins(
+        bits = dimod.generators.wireless._symbols_to_bits(
             self.symbols_qam(1).reshape(4,), 
             modulation='QPSK')
-        self.assertTrue(spins.ndim, 1)
-        self.assertEqual(spins[:len(spins//2)].sum(), 0)
-        self.assertEqual(spins[len(spins//2):].sum(), 0)
+        self.assertTrue(bits.ndim, 1)
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
 
         # Unsupported input
         with self.assertRaises(ValueError):
-            spins = dimod.generators.wireless._symbols_to_spins(self.symbols_bpsk, 
+            bits = dimod.generators.wireless._symbols_to_bits(self.symbols_bpsk, 
             modulation='unsupported')
                    
     def test_BPSK_symbol_coding(self):
         #This is simply read in read out.
-        num_spins = 5
-        spins = self.rng.choice([-1, 1], size=num_spins)
-        symbols = dimod.generators.wireless._spins_to_symbols(spins=spins, modulation='BPSK')
-        self.assertTrue(np.all(spins == symbols))
-        spins = dimod.generators.wireless._symbols_to_spins(symbols=spins, modulation='BPSK')
-        self.assertTrue(np.all(spins == symbols))
+        num_bits = 5
+        bits = self.rng.choice([-1, 1], size=num_bits)
+        symbols = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation='BPSK')
+        self.assertTrue(np.all(bits == symbols))
+        bits = dimod.generators.wireless._symbols_to_bits(symbols=bits, modulation='BPSK')
+        self.assertTrue(np.all(bits == symbols))
             
     def test_constellation_properties(self):
         _cp = dimod.generators.wireless._constellation_properties
@@ -1409,22 +1409,22 @@ class TestMIMO(unittest.TestCase):
         mods = ['QPSK', '16QAM', '64QAM']
 
         for modI, mod in enumerate(mods):
-            num_spins = 2*num_symbols*mod_pref[modI]
+            num_bits = 2*num_symbols*mod_pref[modI]
             max_symb = 2**mod_pref[modI]-1
 
-            #uniform encoding (max spins = max amplitude symbols):
-            spins = np.ones(num_spins)
+            #uniform encoding (max bits = max amplitude symbols):
+            bits = np.ones(num_bits)
             symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
-            symbols_enc = dimod.generators.wireless._spins_to_symbols(spins=spins, modulation=mod)
+            symbols_enc = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation=mod)
             self.assertTrue(np.all(symbols_enc == symbols ))
-            spins_enc = dimod.generators.wireless._symbols_to_spins(symbols=symbols, modulation=mod)
-            self.assertTrue(np.all(spins_enc == spins))
+            bits_enc = dimod.generators.wireless._symbols_to_bits(symbols=symbols, modulation=mod)
+            self.assertTrue(np.all(bits_enc == bits))
 
             #random encoding:
-            spins = self.rng.choice([-1, 1], size=num_spins)
-            symbols_enc = dimod.generators.wireless._spins_to_symbols(spins=spins, modulation=mod)
-            spins_enc = dimod.generators.wireless._symbols_to_spins(symbols=symbols_enc, modulation=mod)
-            self.assertTrue(np.all(spins_enc == spins))
+            bits = self.rng.choice([-1, 1], size=num_bits)
+            symbols_enc = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation=mod)
+            bits_enc = dimod.generators.wireless._symbols_to_bits(symbols=symbols_enc, modulation=mod)
+            self.assertTrue(np.all(bits_enc == bits))
 
     def test_mimo(self):
         for num_transmitters, num_receivers in [(1, 1), (5, 1), (1, 3), (11, 7)]:
@@ -1445,7 +1445,7 @@ class TestMIMO(unittest.TestCase):
                 else:
                     max_val = 2**mod_pref[modI] - 1
                     dtype = np.complex128
-                    # All 1 spin encoding (max symbol in constellation)
+                    # All 1 bit encoding (max symbol in constellation)
                     constellation = [real_part + 1j*imag_part
                                      for real_part in range(-max_val, max_val+1, 2)
                                      for imag_part in range(-max_val, max_val+1, 2)]
@@ -1455,7 +1455,7 @@ class TestMIMO(unittest.TestCase):
                     dtype=dtype)*constellation[-1]
                 transmitted_symbols_random = self.rng.choice(constellation, 
                     size=(num_transmitters, 1))
-                transmitted_spins_random = dimod.generators.wireless._symbols_to_spins(
+                transmitted_bits_random = dimod.generators.wireless._symbols_to_bits(
                     symbols=transmitted_symbols_random.flatten(), modulation=modulation)
 
                 #Trivial channel (F_simple), machine numbers
@@ -1485,11 +1485,11 @@ class TestMIMO(unittest.TestCase):
                 self.assertLess(0, abs(bqm.energy((np.ones(bqm.num_variables), 
                     np.arange(bqm.num_variables)))))
                 
-                # Random transmission, should match spin encoding. Spin-encoded energy should be minimal
+                # Random transmission, should match bit encoding. Bit-encoded energy should be minimal
                 bqm = dimod.generators.wireless.mimo(modulation=modulation, 
                     num_transmitters=num_transmitters, num_receivers=num_receivers, 
                     transmitted_symbols=transmitted_symbols_random, SNRb=float('Inf'))
-                self.assertLess(abs(bqm.energy((transmitted_spins_random, 
+                self.assertLess(abs(bqm.energy((transmitted_bits_random, 
                     np.arange(bqm.num_variables)))), 1e-8)
 
     def create_channel(self):
